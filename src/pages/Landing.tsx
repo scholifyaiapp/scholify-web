@@ -140,7 +140,7 @@ function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?
         aria-label="Scholify"
       >
         <img
-          src="/logo.png"
+          src="/logo.svg"
           alt="Scholify"
           width={size}
           height={size}

@@ -11,7 +11,7 @@ const HAIR = "rgba(20,20,26,0.08)"
 function ScholifyMark({ size = 28 }: { size?: number }) {
   return (
     <img
-      src="/logo.png"
+      src="/logo.svg"
       alt="Scholify"
       width={size}
       height={size}

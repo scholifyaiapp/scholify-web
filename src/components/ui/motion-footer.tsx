@@ -216,7 +216,7 @@ export function CinematicFooter({
               <span className="animate-footer-heartbeat text-sm md:text-base text-destructive">❤</span>
               <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">for learners by</span>
               <img
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Scholify"
                 width={18}
                 height={18}
