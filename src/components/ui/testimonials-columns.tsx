@@ -1,5 +1,4 @@
 import { Fragment } from "react"
-import { motion } from "motion/react"
 
 export interface Testimonial {
   text: string
@@ -14,27 +13,26 @@ interface ColumnProps {
   duration?: number
 }
 
-function TestimonialsColumn({ className, testimonials, duration = 15 }: ColumnProps) {
+function TestimonialsColumn({ className, testimonials, duration = 30 }: ColumnProps) {
   return (
     <div className={className}>
-      <motion.ul
-        animate={{ translateY: "-50%" }}
-        transition={{
-          duration,
-          repeat: Infinity,
-          ease: "linear",
-          repeatType: "loop",
+      <ul
+        className="flex flex-col gap-6 pb-6 bg-transparent list-none m-0 p-0 testimonials-scroll"
+        style={{
+          // CSS-driven scroll: runs purely on the compositor thread (GPU)
+          animation: `testimonials-scroll ${duration}s linear infinite`,
+          willChange: "transform",
         }}
-        className="flex flex-col gap-6 pb-6 bg-transparent list-none m-0 p-0"
       >
-        {Array.from({ length: 2 }).map((_, index) => (
-          <Fragment key={index}>
+        {Array.from({ length: 2 }).map((_, copyIndex) => (
+          <Fragment key={copyIndex}>
             {testimonials.map(({ text, image, name, role }, i) => (
               <li
-                key={`${index}-${i}`}
-                aria-hidden={index === 1 ? "true" : "false"}
-                tabIndex={index === 1 ? -1 : 0}
+                key={`${copyIndex}-${i}`}
+                aria-hidden={copyIndex === 1 ? "true" : "false"}
+                tabIndex={copyIndex === 1 ? -1 : 0}
                 className="p-7 rounded-2xl border border-neutral-200 shadow-sm shadow-black/5 max-w-xs w-full bg-white cursor-default select-none focus:outline-none focus:ring-2 focus:ring-[#5B5BF5]/30"
+                style={{ contain: "layout paint" }}
               >
                 <blockquote className="m-0 p-0">
                   <p className="text-neutral-700 leading-relaxed text-[15px] m-0">
@@ -47,6 +45,7 @@ function TestimonialsColumn({ className, testimonials, duration = 15 }: ColumnPr
                       src={image}
                       alt={`Photo of ${name}`}
                       decoding="async"
+                      loading="lazy"
                       className="h-10 w-10 rounded-full object-cover ring-2 ring-neutral-100"
                     />
                     <div className="flex flex-col">
@@ -63,7 +62,7 @@ function TestimonialsColumn({ className, testimonials, duration = 15 }: ColumnPr
             ))}
           </Fragment>
         ))}
-      </motion.ul>
+      </ul>
     </div>
   )
 }
@@ -83,14 +82,14 @@ export function TestimonialsColumns({ testimonials, maxHeight = 720 }: Testimoni
 
   return (
     <div
-      className="flex justify-center gap-6 mt-10 [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_90%,transparent)] overflow-hidden"
+      className="flex justify-center gap-6 mt-10 [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_90%,transparent)] overflow-hidden testimonials-viewport"
       role="region"
       aria-label="Learner testimonials"
-      style={{ maxHeight }}
+      style={{ maxHeight, contain: "layout paint" }}
     >
-      <TestimonialsColumn testimonials={first} duration={15} />
-      <TestimonialsColumn testimonials={second} className="hidden md:block" duration={19} />
-      <TestimonialsColumn testimonials={third} className="hidden lg:block" duration={17} />
+      <TestimonialsColumn testimonials={first} duration={40} />
+      <TestimonialsColumn testimonials={second} className="hidden md:block" duration={50} />
+      <TestimonialsColumn testimonials={third} className="hidden lg:block" duration={45} />
     </div>
   )
 }

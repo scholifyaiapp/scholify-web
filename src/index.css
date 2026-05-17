@@ -328,6 +328,15 @@
 @keyframes border-rotate {
   to { --grad-pos: 360deg; }
 }
+
+/* Auto-scrolling testimonial columns — GPU-only animation */
+@keyframes testimonials-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, -50%, 0); }
+}
+.testimonials-viewport:hover .testimonials-scroll {
+  animation-play-state: paused;
+}
 @property --grad-pos {
   syntax: "<angle>";
   initial-value: 0deg;
