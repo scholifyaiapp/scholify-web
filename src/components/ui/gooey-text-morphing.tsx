@@ -16,11 +16,25 @@ export function GooeyText({
   className,
   textClassName,
 }: GooeyTextProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
   const text1Ref = React.useRef<HTMLSpanElement>(null)
   const text2Ref = React.useRef<HTMLSpanElement>(null)
   const filterId = React.useId().replace(/:/g, "")
+  const [active, setActive] = React.useState(true)
 
   React.useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      (entries) => setActive(entries.some((e) => e.isIntersecting)),
+      { rootMargin: "0px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  React.useEffect(() => {
+    if (!active) return
     let textIndex = texts.length - 1
     let time = new Date()
     let morph = 0
@@ -85,10 +99,10 @@ export function GooeyText({
     return () => {
       if (rafId) cancelAnimationFrame(rafId)
     }
-  }, [texts, morphTime, cooldownTime])
+  }, [texts, morphTime, cooldownTime, active])
 
   return (
-    <div className={cn("relative", className)}>
+    <div ref={containerRef} className={cn("relative", className)}>
       <svg className="absolute h-0 w-0" aria-hidden focusable="false">
         <defs>
           <filter id={`threshold-${filterId}`}>

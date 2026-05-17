@@ -28,6 +28,7 @@ import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glas
 import { StoreBadge } from "@/components/ui/store-badge"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
+import { GooeyText } from "@/components/ui/gooey-text-morphing"
 import LazyOnView from "@/components/LazyOnView"
 
 const SpiralAnimation = lazy(() =>
@@ -322,22 +323,27 @@ function Nav() {
 
 function HeroHeadline() {
   return (
-    <motion.h1
+    <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: EASE_DECISIVE, delay: 0.1 }}
-      className="font-display tracking-[-0.03em]"
+      transition={{ duration: 1, ease: EASE_DECISIVE, delay: 0.1 }}
       style={{
         marginTop: 32,
         width: "100%",
-        fontSize: "clamp(48px, 8.2vw, 128px)",
-        color: "#14141A",
-        lineHeight: 1.05,
-        textAlign: "center",
+        height: "clamp(82px, 12vw, 168px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      Learn anything.
-    </motion.h1>
+      <GooeyText
+        texts={["Learn anything.", "Stay consistent."]}
+        morphTime={1.4}
+        cooldownTime={2}
+        className="w-full h-full"
+        textClassName="font-display !text-[clamp(48px,8.2vw,128px)] !text-[#14141A] tracking-[-0.03em]"
+      />
+    </motion.div>
   )
 }
 
