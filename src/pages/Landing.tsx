@@ -2,8 +2,6 @@ import { useEffect, useRef, useState, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   motion,
-  useScroll,
-  useTransform,
   useInView,
   useReducedMotion,
   AnimatePresence,
@@ -31,7 +29,6 @@ import { StoreBadge } from "@/components/ui/store-badge"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { MagneticButton } from "@/components/ui/magnetic-button"
-import { GooeyText } from "@/components/ui/gooey-text-morphing"
 import LazyOnView from "@/components/LazyOnView"
 
 const SpiralAnimation = lazy(() =>
@@ -322,37 +319,28 @@ function Nav() {
 
 function HeroHeadline() {
   return (
-    <motion.div
+    <motion.h1
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1, ease: EASE_DECISIVE, delay: 0.1 }}
+      transition={{ duration: 0.8, ease: EASE_DECISIVE, delay: 0.1 }}
+      className="font-display tracking-[-0.03em]"
       style={{
         marginTop: 32,
         width: "100%",
-        /* Tight to the text — just enough for a touch of breathing room.
-           clamp(82px, 12vw, 168px) tracks the text size closely. */
-        height: "clamp(82px, 12vw, 168px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        fontSize: "clamp(48px, 8.2vw, 128px)",
+        color: "#14141A",
+        lineHeight: 1.05,
+        textAlign: "center",
       }}
     >
-      <GooeyText
-        texts={["Learn anything.", "Stay consistent."]}
-        morphTime={1.4}
-        cooldownTime={2}
-        className="w-full h-full"
-        textClassName="font-display !text-[clamp(48px,8.2vw,128px)] !text-[#14141A] tracking-[-0.03em]"
-      />
-    </motion.div>
+      Learn anything.
+    </motion.h1>
   )
 }
 
-function FloatingParticle({ left, top, color, delay, size = 12, range = 40 }: { left: string; top: string; color: string; delay: number; size?: number; range?: number }) {
+function FloatingParticle({ left, top, color, size = 12 }: { left: string; top: string; color: string; delay?: number; size?: number; range?: number }) {
   return (
-    <motion.span
-      animate={{ y: [0, -range, 0], x: [0, range / 3, 0] }}
-      transition={{ duration: 7 + delay, repeat: Infinity, ease: "easeInOut", delay }}
+    <span
       style={{
         position: "absolute",
         left,
@@ -370,12 +358,8 @@ function FloatingParticle({ left, top, color, delay, size = 12, range = 40 }: { 
 }
 
 function PhoneMockup() {
-  const prefersReduced = useReducedMotion()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const inView = useInView(containerRef, { once: true, margin: "-120px" })
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "center center"] })
-  const rotateRaw = useTransform(scrollYProgress, [0, 1], [-8, 0])
-  const rotate = prefersReduced ? 0 : rotateRaw
 
   const streak = useCountUp(14, 1200, inView)
   const greeting = useTypewriter("Hey Nuriddin", 32, inView)
@@ -421,7 +405,6 @@ function PhoneMockup() {
           position: "relative",
           transformStyle: "preserve-3d",
           perspective: 1200,
-          rotate,
         }}
       >
         <div style={{ width: 90, height: 28, background: "#000", borderRadius: "0 0 16px 16px", margin: "0 auto" }} />

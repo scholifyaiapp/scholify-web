@@ -33,7 +33,15 @@ export default function LazyOnView({
   }, [rootMargin, visible])
 
   return (
-    <div ref={ref} style={style} className={className}>
+    <div
+      ref={ref}
+      style={{
+        contain: "layout style paint",
+        contentVisibility: "auto",
+        ...style,
+      } as CSSProperties}
+      className={className}
+    >
       {visible ? children : null}
     </div>
   )
