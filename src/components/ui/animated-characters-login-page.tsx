@@ -243,12 +243,17 @@ function LoginPage() {
 
   return (
     <div className="min-h-[100dvh] grid lg:grid-cols-2">
-      {/* Left panel — characters on premium milk-white */}
+      <style>{`
+        :root { --char-scale: 0.45; }
+        @media (min-width: 480px) { :root { --char-scale: 0.55; } }
+        @media (min-width: 640px) { :root { --char-scale: 0.7; } }
+        @media (min-width: 1024px) { :root { --char-scale: 1; } }
+      `}</style>
+      {/* Left panel — characters on premium milk-white (visible everywhere; compact on mobile) */}
       <div
-        className="relative hidden lg:flex flex-col justify-between p-12 text-[#14141A] overflow-hidden"
+        className="relative flex flex-col justify-between p-6 lg:p-12 text-[#14141A] overflow-hidden"
         style={{
-          background:
-            "linear-gradient(180deg, #FFFFFF 0%, #FBFBF8 100%)",
+          background: "linear-gradient(180deg, #FFFFFF 0%, #FBFBF8 100%)",
           borderRight: "1px solid rgba(20,20,26,0.06)",
         }}
       >
@@ -259,8 +264,16 @@ function LoginPage() {
           </Link>
         </div>
 
-        <div className="relative z-20 flex items-end justify-center h-[500px]">
-          <div className="relative" style={{ width: 550, height: 400 }}>
+        <div className="relative z-20 flex items-end justify-center h-[240px] sm:h-[320px] lg:h-[500px] overflow-hidden">
+          <div
+            className="relative origin-bottom"
+            style={{
+              width: 550,
+              height: 400,
+              transform: "scale(var(--char-scale, 1))",
+              transformOrigin: "bottom center",
+            }}
+          >
             {/* Purple */}
             <div
               ref={purpleRef}
@@ -399,7 +412,7 @@ function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-20 flex items-center gap-8 text-sm text-neutral-500">
+        <div className="relative z-20 hidden lg:flex items-center gap-8 text-sm text-neutral-500">
           <a href="#" className="hover:text-[#14141A] transition-colors">Privacy</a>
           <a href="#" className="hover:text-[#14141A] transition-colors">Terms</a>
           <a href="#" className="hover:text-[#14141A] transition-colors">Contact</a>
@@ -410,12 +423,8 @@ function LoginPage() {
       </div>
 
       {/* Right login panel */}
-      <div className="flex items-center justify-center p-8 bg-[#FAFAF7]">
+      <div className="flex items-center justify-center p-6 sm:p-8 bg-[#FAFAF7]">
         <div className="w-full max-w-[420px]">
-          <div className="lg:hidden flex items-center justify-center gap-2 text-lg font-semibold mb-12">
-            <img src="/logo.svg" alt="Scholify" width={28} height={28} decoding="async" style={{ borderRadius: 6, display: "block" }} />
-            <span className="text-[#14141A]">Scholify</span>
-          </div>
 
           <div className="text-center mb-10">
             <h1 className="font-display text-3xl sm:text-4xl font-normal tracking-tight mb-2 text-[#14141A]">Welcome back.</h1>
