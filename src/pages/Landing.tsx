@@ -1355,8 +1355,8 @@ function Identity() {
 
         <div style={{ marginTop: 56 }}>
           <ImageComparison
-            beforeImage="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1600&q=80&auto=format&fit=crop"
-            afterImage="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1600&q=80&auto=format&fit=crop"
+            beforeImage="/identity-before.png"
+            afterImage="/identity-after.png"
             beforeLabel="BEFORE SCHOLIFY"
             afterLabel="AFTER SCHOLIFY"
             altBefore="A student before using Scholify — distracted, surrounded by unfinished courses and unused notebooks."
