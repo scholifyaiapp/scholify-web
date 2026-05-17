@@ -26,7 +26,6 @@ import { GlowCard } from "@/components/ui/spotlight-card"
 import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { StoreBadge } from "@/components/ui/store-badge"
-import { TextRotate } from "@/components/ui/text-rotate"
 import { TestimonialsColumns } from "@/components/ui/testimonials-columns"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
@@ -636,46 +635,11 @@ function Hero() {
           </span>
         </motion.div>
 
-        <div
-          style={{
-            marginTop: 96,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 18,
-          }}
-        >
-          <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.18em", fontWeight: 500 }}>
-            DESIGNED FOR
-          </p>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              fontSize: "clamp(36px, 5.5vw, 72px)",
-              lineHeight: 1.05,
-            }}
-          >
-            <TextRotate
-              texts={[
-                "curious minds.",
-                "comeback stories.",
-                "future doctors.",
-                "indie hackers.",
-                "lifelong learners.",
-                "the consistent few.",
-              ]}
-              mainClassName="font-display italic text-white bg-[#5B5BF5] px-5 py-1.5 rounded-2xl overflow-hidden"
-              splitLevelClassName="overflow-hidden pb-1"
-              staggerFrom="first"
-              staggerDuration={0.022}
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "-120%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              rotationInterval={2400}
-            />
-          </div>
+        <div style={{ marginTop: 48 }}>
+          <HandWrittenTitle
+            title="Just show up."
+            subtitle="The rest is on Lara."
+          />
         </div>
       </div>
     </section>
