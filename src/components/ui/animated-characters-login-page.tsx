@@ -243,16 +243,17 @@ function LoginPage() {
 
   return (
     <div className="min-h-[100dvh] grid lg:grid-cols-2">
-      {/* Left panel — characters on indigo */}
+      {/* Left panel — characters on premium milk-white */}
       <div
-        className="relative hidden lg:flex flex-col justify-between p-12 text-white overflow-hidden"
+        className="relative hidden lg:flex flex-col justify-between p-12 text-[#14141A] overflow-hidden"
         style={{
           background:
-            "linear-gradient(135deg, #5B5BF5 0%, #4F46E5 50%, #6D5DEA 100%)",
+            "linear-gradient(180deg, #FFFFFF 0%, #FBFBF8 100%)",
+          borderRight: "1px solid rgba(20,20,26,0.06)",
         }}
       >
         <div className="relative z-20">
-          <Link to="/" className="flex items-center gap-2 text-lg font-semibold" aria-label="Scholify home">
+          <Link to="/" className="flex items-center gap-2 text-lg font-semibold text-[#14141A]" aria-label="Scholify home">
             <img src="/logo.svg" alt="Scholify" width={32} height={32} decoding="async" style={{ borderRadius: 8, display: "block" }} />
             <span>Scholify</span>
           </Link>
@@ -398,14 +399,14 @@ function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-20 flex items-center gap-8 text-sm text-white/60">
-          <a href="#" className="hover:text-white transition-colors">Privacy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <a href="#" className="hover:text-white transition-colors">Contact</a>
+        <div className="relative z-20 flex items-center gap-8 text-sm text-neutral-500">
+          <a href="#" className="hover:text-[#14141A] transition-colors">Privacy</a>
+          <a href="#" className="hover:text-[#14141A] transition-colors">Terms</a>
+          <a href="#" className="hover:text-[#14141A] transition-colors">Contact</a>
         </div>
 
-        <div className="absolute top-1/4 right-1/4 size-64 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 size-96 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 right-1/4 size-64 rounded-full blur-3xl" style={{ background: "rgba(91,91,245,0.06)" }} />
+        <div className="absolute bottom-1/4 left-1/4 size-96 rounded-full blur-3xl" style={{ background: "rgba(168,85,247,0.05)" }} />
       </div>
 
       {/* Right login panel */}
