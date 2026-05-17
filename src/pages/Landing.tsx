@@ -698,14 +698,13 @@ function Problem() {
     <section style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 72px)", color: INK, margin: 0 }}>
-          You already know what you want to learn.
+          The internet gave you everything to learn.
         </h2>
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(36px, 5vw, 72px)", margin: "16px 0 0", fontStyle: "italic" }}>
-          You just never had a system that survived real life.
+          Scholify gives you the discipline to finish.
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 18, maxWidth: 620, margin: "32px auto 0", lineHeight: 1.65 }}>
-          <span className="font-mono-pro tabular" style={{ color: INK }}>92%</span> of online courses are never finished — not because
-          people are lazy, but because there was no daily system. Scholify is the system.
+          <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>92%</span> of online courses are abandoned within 30 days — not from lack of motivation, but lack of a daily rhythm. Scholify is the rhythm.
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
