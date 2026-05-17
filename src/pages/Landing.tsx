@@ -150,7 +150,7 @@ function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?
       {wordmark && (
         <span
           className="font-display"
-          style={{ color: INK, fontSize: Math.max(20, size * 0.75), lineHeight: 1, letterSpacing: "-0.02em" }}
+          style={{ color: INK, fontSize: Math.max(20, size * 0.75), lineHeight: 1, letterSpacing: "-0.02em", fontWeight: 700 }}
         >
           Scholify
         </span>
