@@ -29,7 +29,7 @@ import { StoreBadge } from "@/components/ui/store-badge"
 import { TestimonialsColumns } from "@/components/ui/testimonials-columns"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
-import { GooeyText } from "@/components/ui/gooey-text-morphing"
+import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import LazyOnView from "@/components/LazyOnView"
 
@@ -326,18 +326,17 @@ function HeroHeadline() {
       style={{
         marginTop: 32,
         width: "100%",
-        height: "clamp(82px, 12vw, 168px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <GooeyText
-        texts={["Learn anything.", "Stay consistent."]}
-        morphTime={1.4}
-        cooldownTime={2}
-        className="w-full h-full"
-        textClassName="font-display !text-[clamp(48px,8.2vw,128px)] !text-[#14141A] tracking-[-0.03em]"
+      <AnimatedText
+        text="Welcome to Scholify"
+        textClassName="font-display font-normal tracking-[-0.03em]"
+        gradientColors="linear-gradient(90deg, #14141A 0%, #5B5BF5 40%, #A855F7 50%, #5B5BF5 60%, #14141A 100%)"
+        gradientAnimationDuration={3.5}
+        className="!py-0"
       />
     </motion.div>
   )
