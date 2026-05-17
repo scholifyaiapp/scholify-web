@@ -27,6 +27,7 @@ import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { StoreBadge } from "@/components/ui/store-badge"
 import { TextRotate } from "@/components/ui/text-rotate"
+import { TestimonialsColumns } from "@/components/ui/testimonials-columns"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { GooeyText } from "@/components/ui/gooey-text-morphing"
@@ -1413,26 +1414,61 @@ function Identity() {
 
 type GlowTone = "blue" | "purple" | "green" | "red" | "orange"
 
-interface Story {
-  name: string
-  goal: string
-  quote: string
-  streak: number
-  color: string
-  initial: string
-  tone: GlowTone
-}
-
-const stories: Story[] = [
-  { name: "Dilnoza M.", goal: "IELTS 7.5",        quote: "I passed IELTS 7.5 in 52 days. I'd failed twice before.",                                          streak: 52,  color: BRAND_500, initial: "D", tone: "blue"   },
-  { name: "Marcus T.",  goal: "Python",           quote: "I tried 4 coding courses. Never finished one. With Scholify I actually completed Python.",         streak: 84,  color: SHIELD_500, initial: "M", tone: "green"  },
-  { name: "Aiko R.",    goal: "Figma",            quote: "The Life Shields feature is genius. Missing a day no longer means quitting.",                       streak: 121, color: PLUM_500, initial: "A", tone: "purple" },
-  { name: "Raj P.",     goal: "Spanish",          quote: "47-day Spanish streak. My plan survived two business trips.",                                       streak: 47,  color: FIRE_500, initial: "R", tone: "orange" },
-  { name: "Sarah K.",   goal: "AWS cert",         quote: "Got my AWS certification in 60 days. Daily tasks were always exactly right.",                        streak: 60,  color: BRAND_400, initial: "S", tone: "blue"   },
-  { name: "Omar F.",    goal: "Reading habit",    quote: "I read 18 books this year. Changed how I think about learning forever.",                            streak: 312, color: PLUM_500, initial: "O", tone: "purple" },
-  { name: "Lila K.",    goal: "UI/UX",            quote: "Built my portfolio in 90 days. Got my first design job last week.",                                  streak: 96,  color: PLUM_500, initial: "L", tone: "purple" },
-  { name: "Tom B.",     goal: "Marathon",         quote: "Trained for the Berlin marathon. Lara's plan worked around two injuries — I never restarted.",       streak: 142, color: FIRE_500, initial: "T", tone: "red"    },
-  { name: "Priya S.",   goal: "Conversational French", quote: "Conversational French in 6 months. Lara built the schedule. I just showed up daily.",          streak: 188, color: SHIELD_500, initial: "P", tone: "green"  },
+const learnerTestimonials: { name: string; role: string; text: string; image: string }[] = [
+  {
+    name: "Dilnoza M.",
+    role: "IELTS 7.5 · 52-day streak",
+    text: "I passed IELTS 7.5 in 52 days. I'd failed twice before.",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Marcus T.",
+    role: "Python · 84-day streak",
+    text: "I tried 4 coding courses. Never finished one. With Scholify I actually completed Python.",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Aiko R.",
+    role: "Figma · 121-day streak",
+    text: "The Life Shields feature is genius. Missing a day no longer means quitting.",
+    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Raj P.",
+    role: "Spanish · 47-day streak",
+    text: "47-day Spanish streak. My plan survived two business trips.",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Sarah K.",
+    role: "AWS cert · 60-day streak",
+    text: "Got my AWS certification in 60 days. Daily tasks were always exactly right.",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Omar F.",
+    role: "Reading habit · 312-day streak",
+    text: "I read 18 books this year. Changed how I think about learning forever.",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Lila K.",
+    role: "UI/UX · 96-day streak",
+    text: "Built my portfolio in 90 days. Got my first design job last week.",
+    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Tom B.",
+    role: "Marathon · 142-day streak",
+    text: "Trained for the Berlin marathon. Lara's plan worked around two injuries — I never restarted.",
+    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200&h=200",
+  },
+  {
+    name: "Priya S.",
+    role: "French · 188-day streak",
+    text: "Conversational French in 6 months. Lara built the schedule. I just showed up daily.",
+    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200",
+  },
 ]
 
 function Stories() {
@@ -1443,52 +1479,11 @@ function Stories() {
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
           Real goals. <em style={{ fontStyle: "italic" }}>Real results.</em>
         </h2>
+        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 540, margin: "16px auto 0", lineHeight: 1.65 }}>
+          Thousands of learners finish what they started — and they tell us why.
+        </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 22, marginTop: 56, textAlign: "left" }}>
-          {stories.map((s, i) => (
-            <motion.div
-              key={s.name}
-              initial={{ opacity: 0, y: 28 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, delay: (i % 3) * 0.08, ease: EASE_DECISIVE }}
-              whileHover={{ y: -4 }}
-              style={{ display: "flex" }}
-            >
-              <GlowCard customSize glowColor={s.tone} className="!w-full !h-full">
-                <article style={{ padding: 26, background: "rgba(255,255,255,0.92)", borderRadius: 14, height: "100%", display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          background: s.color,
-                          color: "white",
-                          display: "grid",
-                          placeItems: "center",
-                          fontWeight: 600,
-                          boxShadow: `0 8px 18px -6px ${s.color}80`,
-                        }}
-                      >
-                        {s.initial}
-                      </div>
-                      <div>
-                        <div style={{ color: INK, fontSize: 14.5, fontWeight: 600 }}>{s.name}</div>
-                        <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 12, letterSpacing: "0.06em" }}>{s.goal.toUpperCase()}</div>
-                      </div>
-                    </div>
-                    <div className="font-mono-pro tabular" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: FIRE_500, fontSize: 13, fontWeight: 500 }}>
-                      <Flame size={12} strokeWidth={2.4} /> {s.streak}
-                    </div>
-                  </div>
-                  <p style={{ color: INK, fontSize: 15, marginTop: 18, lineHeight: 1.6, flex: 1 }}>"{s.quote}"</p>
-                </article>
-              </GlowCard>
-            </motion.div>
-          ))}
-        </div>
+        <TestimonialsColumns testimonials={learnerTestimonials} />
       </div>
     </section>
   )
