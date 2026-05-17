@@ -637,8 +637,8 @@ function Hero() {
 
         <div style={{ marginTop: 48 }}>
           <HandWrittenTitle
-            title="Just show up."
-            subtitle="The rest is on Lara."
+            title="Just start today."
+            subtitle="The rest is on Scholify."
           />
         </div>
       </div>
