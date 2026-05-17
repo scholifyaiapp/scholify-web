@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   motion,
@@ -29,12 +29,17 @@ import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { StoreBadge } from "@/components/ui/store-badge"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
-import { SpiralAnimation } from "@/components/ui/spiral-animation"
-import { Entropy } from "@/components/ui/entropy"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { MagneticButton } from "@/components/ui/magnetic-button"
-import { HorizonScene } from "@/components/ui/horizon-hero-section"
 import { GooeyText } from "@/components/ui/gooey-text-morphing"
+import LazyOnView from "@/components/LazyOnView"
+
+const SpiralAnimation = lazy(() =>
+  import("@/components/ui/spiral-animation").then((m) => ({ default: m.SpiralAnimation }))
+)
+const Entropy = lazy(() =>
+  import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
+)
 
 /* ─────────────────────── TOKENS (mirror of CSS vars) ─────────────────────── */
 const BG_PRIMARY = "#FAFAF7"
@@ -994,7 +999,11 @@ function VisualShields() {
       }}
     >
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <Entropy size={360} className="rounded-xl overflow-hidden" />
+        <LazyOnView style={{ width: 360, height: 360 }}>
+          <Suspense fallback={null}>
+            <Entropy size={360} className="rounded-xl overflow-hidden" />
+          </Suspense>
+        </LazyOnView>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingInline: 6 }}>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(250,250,247,0.55)", fontWeight: 500 }}>
@@ -1365,7 +1374,11 @@ function Identity() {
     >
       {/* Spiral background */}
       <div style={{ position: "absolute", inset: 0, opacity: 0.55, pointerEvents: "none" }} aria-hidden>
-        <SpiralAnimation />
+        <LazyOnView style={{ width: "100%", height: "100%" }}>
+          <Suspense fallback={null}>
+            <SpiralAnimation />
+          </Suspense>
+        </LazyOnView>
       </div>
 
       {/* Soft vignette so text stays legible against the spiral's bright trail */}

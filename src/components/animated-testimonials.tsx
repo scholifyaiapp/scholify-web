@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Quote, Star } from "lucide-react"
-import { motion, useAnimation, useInView } from "framer-motion"
+import { motion, useAnimation, useInView } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 
 export interface Testimonial {

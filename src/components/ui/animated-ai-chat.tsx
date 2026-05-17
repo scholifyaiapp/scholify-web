@@ -19,7 +19,7 @@ import {
 const Figma = ImageIcon;
 const MonitorIcon = ImageIcon;
 const CircleUserRound = ImageIcon;
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import * as React from "react"
 
 interface UseAutoResizeTextareaProps {

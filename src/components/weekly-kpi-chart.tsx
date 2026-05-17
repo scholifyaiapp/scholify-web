@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export type DayPoint = {
   day: "S" | "M" | "T" | "W" | "T" | "F" | "S";
