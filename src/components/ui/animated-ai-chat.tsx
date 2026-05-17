@@ -6,9 +6,6 @@ import { cn } from "@/lib/utils";
 import {
     ImageIcon,
     FileUp,
-    Figma,
-    MonitorIcon,
-    CircleUserRound,
     ArrowUpIcon,
     Paperclip,
     PlusIcon,
@@ -18,6 +15,10 @@ import {
     Sparkles,
     Command,
 } from "lucide-react";
+// Shims for icons missing in this lucide-react version
+const Figma = ImageIcon;
+const MonitorIcon = ImageIcon;
+const CircleUserRound = ImageIcon;
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
 
