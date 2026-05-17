@@ -80,7 +80,6 @@ export function ImageComparison({
       <img
         src={beforeImage}
         alt={altBefore}
-        loading="lazy"
         decoding="async"
         draggable={false}
         className="absolute inset-0 h-full w-full object-cover"
