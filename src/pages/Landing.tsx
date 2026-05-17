@@ -132,19 +132,23 @@ function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?
           height: size,
           borderRadius: 10,
           overflow: "hidden",
+          background: "linear-gradient(135deg, #5B5BF5 0%, #A855F7 100%)",
           transition: "transform 0.2s ease",
         }}
         onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         aria-label="Scholify"
       >
-        <img
-          src="/logo.png"
-          alt="Scholify"
-          width={size}
-          height={size}
-          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-        />
+        <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M12 2 L1 8 L12 14 L23 8 L12 2 Z M5 11 V16 C5 17 8 19 12 19 C16 19 19 17 19 16 V11"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </svg>
       </span>
       {wordmark && (
         <span
@@ -629,7 +633,9 @@ function Hero() {
           </span>
         </motion.div>
 
-        <PhoneMockup />
+        <LazyOnView style={{ minHeight: 720, marginTop: 96 }} rootMargin="100px">
+          <PhoneMockup />
+        </LazyOnView>
       </div>
     </section>
   )

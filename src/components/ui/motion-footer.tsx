@@ -215,21 +215,23 @@ export function CinematicFooter({
               <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">Crafted with</span>
               <span className="animate-footer-heartbeat text-sm md:text-base text-destructive">❤</span>
               <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">for learners by</span>
-              <img
-                src="/logo.png"
-                alt=""
-                width={18}
-                height={18}
+              <span
                 style={{
+                  width: 18,
+                  height: 18,
                   borderRadius: 4,
                   marginLeft: 6,
-                  display: "inline-block",
+                  display: "inline-grid",
+                  placeItems: "center",
                   verticalAlign: "middle",
-                  background: "#FAFAF7",
-                  padding: 1,
+                  background: "linear-gradient(135deg, #5B5BF5 0%, #A855F7 100%)",
                 }}
-                loading="lazy"
-              />
+                aria-hidden
+              >
+                <svg width={11} height={11} viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2 L1 8 L12 14 L23 8 L12 2 Z M5 11 V16 C5 17 8 19 12 19 C16 19 19 17 19 16 V11" stroke="white" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" fill="none" />
+                </svg>
+              </span>
               <span className="text-foreground font-black text-xs md:text-sm tracking-normal ml-1">{brand}</span>
             </div>
             <MagneticButton
