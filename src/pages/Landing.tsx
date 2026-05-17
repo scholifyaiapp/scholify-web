@@ -1916,11 +1916,11 @@ export default function Landing() {
       <Nav />
       <Hero />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
-      <LazyOnView style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
-      <LazyOnView style={{ minHeight: 800 }}><Features /></LazyOnView>
+      <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
+      <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
-      <LazyOnView style={{ minHeight: 700 }}><Stories /></LazyOnView>
-      <LazyOnView style={{ minHeight: 900 }}><Pricing /></LazyOnView>
+      <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
+      <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 400 }}><Awards /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter /></LazyOnView>
     </div>

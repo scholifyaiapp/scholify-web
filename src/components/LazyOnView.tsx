@@ -5,6 +5,7 @@ type Props = {
   rootMargin?: string
   style?: CSSProperties
   className?: string
+  id?: string
 }
 
 export default function LazyOnView({
@@ -12,6 +13,7 @@ export default function LazyOnView({
   rootMargin = "200px",
   style,
   className,
+  id,
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [visible, setVisible] = useState(false)
@@ -35,9 +37,11 @@ export default function LazyOnView({
   return (
     <div
       ref={ref}
+      id={id}
       style={{
         contain: "layout style paint",
         contentVisibility: "auto",
+        scrollMarginTop: 96,
         ...style,
       } as CSSProperties}
       className={className}
