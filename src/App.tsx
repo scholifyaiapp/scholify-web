@@ -25,6 +25,7 @@ export default function App() {
       <Route path="/sign-in" element={<Page name="SignIn"><SignIn /></Page>} />
       <Route path="/signin" element={<Page name="SignIn"><SignIn /></Page>} />
       <Route path="/sign-up" element={<Page name="SignUp"><SignUp /></Page>} />
+      <Route path="/signup" element={<Page name="SignUp"><SignUp /></Page>} />
       <Route path="/onboarding" element={<Page name="Onboarding"><SignUp /></Page>} />
       <Route path="/dashboard" element={<Page name="Dashboard"><Dashboard /></Page>} />
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />

@@ -142,10 +142,13 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
   html {
     scroll-behavior: smooth;
     color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     color: var(--foreground);
@@ -154,6 +157,27 @@
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--background);
     min-height: 100vh;
+    overscroll-behavior-y: none;
+  }
+  a, button, [role="button"], input, label, select, textarea {
+    touch-action: manipulation;
+  }
+  /* Hover styles only on devices that actually support hover (skip touch) */
+  @media (hover: none) {
+    a:hover, button:hover {
+      transform: none !important;
+    }
+  }
+  /* Honor user's reduced-motion preference globally */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
   ::selection {
     background: var(--brand-100);
