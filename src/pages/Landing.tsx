@@ -601,30 +601,29 @@ function Hero() {
         >
           <div style={{ display: "flex" }}>
             {[
-              { letter: "N", bg: BRAND_500 },
-              { letter: "A", bg: PLUM_500 },
-              { letter: "M", bg: SHIELD_500 },
-              { letter: "D", bg: FIRE_500 },
+              { src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
+              { src: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
+              { src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
+              { src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
             ].map((a, i) => (
-              <div
-                key={a.letter}
+              <img
+                key={i}
+                src={a.src}
+                alt={a.alt}
+                width={32}
+                height={32}
+                decoding="async"
                 style={{
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  background: a.bg,
+                  objectFit: "cover",
                   border: `2px solid ${BG_PRIMARY}`,
                   marginLeft: i === 0 ? 0 : -10,
-                  display: "grid",
-                  placeItems: "center",
-                  color: "white",
-                  fontSize: 12,
-                  fontWeight: 600,
                   boxShadow: "0 4px 10px -2px rgba(20,20,26,0.15)",
+                  display: "block",
                 }}
-              >
-                {a.letter}
-              </div>
+              />
             ))}
           </div>
           <span style={{ color: INK_MUTED, fontSize: 13 }}>
