@@ -634,7 +634,10 @@ function Hero() {
         </motion.div>
 
         <div style={{ marginTop: 48 }}>
-          <HandWrittenTitle title="You just chose consistency." />
+          <HandWrittenTitle
+            title="Just start today."
+            subtitle="The rest is on Scholify."
+          />
         </div>
       </div>
     </section>
