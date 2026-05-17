@@ -28,7 +28,6 @@ import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glas
 import { StoreBadge } from "@/components/ui/store-badge"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
-import { MagneticButton } from "@/components/ui/magnetic-button"
 import LazyOnView from "@/components/LazyOnView"
 
 const SpiralAnimation = lazy(() =>
@@ -125,10 +124,7 @@ function useInViewOnce<T extends HTMLElement>(margin = "-80px") {
 function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?: boolean }) {
   return (
     <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-      <motion.span
-        animate={{ rotate: 360 }}
-        transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
-        whileHover={{ scale: 1.08 }}
+      <span
         style={{
           display: "inline-grid",
           placeItems: "center",
@@ -136,7 +132,10 @@ function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?
           height: size,
           borderRadius: 10,
           overflow: "hidden",
+          transition: "transform 0.2s ease",
         }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         aria-label="Scholify"
       >
         <img
@@ -146,7 +145,7 @@ function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?
           height={size}
           style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
         />
-      </motion.span>
+      </span>
       {wordmark && (
         <span
           className="font-display"
@@ -188,20 +187,23 @@ const MONO_WHITE = "#FFFFFF"
 
 function PrimaryCTA({ children, onClick, large = false }: { children: React.ReactNode; onClick?: () => void; large?: boolean }) {
   return (
-    <span style={{ perspective: 800, display: "inline-block" }}>
-      <MagneticButton
-        as="button"
+    <span style={{ display: "inline-block" }}>
+      <button
+        type="button"
         onClick={onClick}
-        strength={0.4}
         className="scholify-glass-pill-primary rounded-full font-bold"
         style={{
           padding: large ? "16px 32px" : "12px 24px",
           fontSize: large ? 17 : 15,
           gap: 10,
+          display: "inline-flex",
+          alignItems: "center",
+          border: "none",
+          cursor: "pointer",
         }}
       >
         {children}
-      </MagneticButton>
+      </button>
     </span>
   )
 }
@@ -284,32 +286,29 @@ function Nav() {
         />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, perspective: 800 }}>
-        <MagneticButton
-          as="a"
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <a
           href="/signin"
           onClick={(e) => {
             e.preventDefault()
             navigate("/signin")
           }}
-          strength={0.35}
           className="scholify-glass-pill rounded-full px-5 py-2 text-sm font-semibold"
-          style={{ color: "var(--foreground)" }}
+          style={{ color: "var(--foreground)", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
         >
           Sign in
-        </MagneticButton>
-        <MagneticButton
-          as="a"
+        </a>
+        <a
           href="/onboarding"
           onClick={(e) => {
             e.preventDefault()
             navigate("/onboarding")
           }}
-          strength={0.4}
           className="scholify-glass-pill-primary rounded-full px-5 py-2 text-sm font-bold"
+          style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
         >
           Start for free
-        </MagneticButton>
+        </a>
       </div>
     </motion.header>
   )
@@ -360,9 +359,8 @@ function FloatingParticle({ left, top, color, size = 12 }: { left: string; top: 
 function PhoneMockup() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const inView = useInView(containerRef, { once: true, margin: "-120px" })
-
-  const streak = useCountUp(14, 1200, inView)
-  const greeting = useTypewriter("Hey Nuriddin", 32, inView)
+  const streak = 14
+  const greeting = "Hey Nuriddin"
 
   const childStagger = (i: number) => ({
     initial: { opacity: 0, y: 16 },
@@ -411,19 +409,9 @@ function PhoneMockup() {
 
         <motion.div {...childStagger(0)} style={{ marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ color: INK_INVERSE, fontSize: 16, fontWeight: 600 }}>
-            {greeting}
-            <motion.span
-              animate={{ opacity: [1, 0, 1] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              style={{ display: "inline-block", marginLeft: 2, color: BRAND_400 }}
-            >
-              ▍
-            </motion.span>{" "}
-            <span aria-hidden>👋</span>
+            {greeting} <span aria-hidden>👋</span>
           </span>
-          <motion.span
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          <span
             className="font-mono-pro"
             style={{
               padding: "4px 10px",
@@ -439,8 +427,8 @@ function PhoneMockup() {
             }}
           >
             <Flame size={12} strokeWidth={2.4} />
-            <span className="tabular">{Math.round(streak)}</span>
-          </motion.span>
+            <span className="tabular">{streak}</span>
+          </span>
         </motion.div>
 
         <motion.div {...childStagger(1)} style={{ color: "rgba(250,250,247,0.45)", fontSize: 12, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
