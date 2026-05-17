@@ -29,11 +29,9 @@ import { StoreBadge } from "@/components/ui/store-badge"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { GooeyText } from "@/components/ui/gooey-text-morphing"
+import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import LazyOnView from "@/components/LazyOnView"
 
-const SpiralAnimation = lazy(() =>
-  import("@/components/ui/spiral-animation").then((m) => ({ default: m.SpiralAnimation }))
-)
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
 )
@@ -1332,89 +1330,40 @@ function Features() {
 
 /* ─────────────────────── IDENTITY (dark) ─────────────────────── */
 
-const identities: { quote: string; meta: string; color: string; tone: GlowTone }[] = [
-  { quote: "I am a learner.", meta: "47 days in", color: BRAND_400, tone: "purple" },
-  { quote: "I finish what I start.", meta: "3 goals completed", color: SHIELD_500, tone: "green" },
-  { quote: "I show up daily.", meta: "312-day streak", color: FIRE_500, tone: "orange" },
-]
-
 function Identity() {
   return (
     <section
       style={{
         position: "relative",
-        padding: "140px 24px",
-        minHeight: "100vh",
+        padding: "120px 24px",
         background: BG_DARK,
         color: INK_INVERSE,
         overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
       }}
     >
-      {/* Spiral background */}
-      <div style={{ position: "absolute", inset: 0, opacity: 0.55, pointerEvents: "none" }} aria-hidden>
-        <LazyOnView style={{ width: "100%", height: "100%" }}>
-          <Suspense fallback={null}>
-            <SpiralAnimation />
-          </Suspense>
-        </LazyOnView>
-      </div>
-
-      {/* Soft vignette so text stays legible against the spiral's bright trail */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse 60% 70% at 50% 50%, rgba(11,11,15,0.55) 0%, rgba(11,11,15,0.2) 50%, rgba(11,11,15,0.55) 100%)",
-          pointerEvents: "none",
-        }}
-        aria-hidden
-      />
-
-      <div style={{ position: "relative", maxWidth: 1080, margin: "0 auto", textAlign: "center", width: "100%", zIndex: 2 }}>
-        <SectionLabel tone="inverse">IDENTITY</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK_INVERSE, margin: "18px 0 0", textShadow: "0 2px 24px rgba(0,0,0,0.6)" }}>
+      <div style={{ position: "relative", maxWidth: 1180, margin: "0 auto", textAlign: "center", width: "100%", zIndex: 2 }}>
+        <SectionLabel tone="inverse">THE TRANSFORMATION</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK_INVERSE, margin: "18px 0 0" }}>
           You're not learning a skill.
         </h2>
-        <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(40px, 5vw, 80px)", margin: "16px 0 0", fontStyle: "italic", textShadow: "0 2px 24px rgba(0,0,0,0.4)" }}>
+        <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(40px, 5vw, 80px)", margin: "16px 0 0", fontStyle: "italic" }}>
           You're becoming someone who shows up.
         </h2>
+        <p style={{ color: "rgba(250,250,247,0.65)", fontSize: 18, maxWidth: 620, margin: "24px auto 0", lineHeight: 1.65 }}>
+          Drag the slider — see what 60 days of Scholify actually changes.
+        </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginTop: 64 }}>
-          {identities.map((it, i) => (
-            <motion.div
-              key={it.quote}
-              initial={{ opacity: 0, y: 28 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, delay: 0.1 + i * 0.12, ease: EASE_DECISIVE }}
-              style={{ display: "flex" }}
-            >
-              <GlowCard customSize glowColor={it.tone} className="!w-full !p-1 !gap-0 !rounded-3xl !shadow-none">
-                <div
-                  className="glass-dark"
-                  style={{
-                    padding: 28,
-                    textAlign: "left",
-                    borderRadius: 18,
-                    background: "rgba(11,11,15,0.7)",
-                    backdropFilter: "blur(18px)",
-                    WebkitBackdropFilter: "blur(18px)",
-                    height: "100%",
-                  }}
-                >
-                  <div className="font-mono-pro" style={{ fontSize: 11, color: it.color, letterSpacing: "0.12em", fontWeight: 500 }}>
-                    {it.meta.toUpperCase()}
-                  </div>
-                  <div className="font-display" style={{ marginTop: 14, fontSize: 32, lineHeight: 1.1, color: INK_INVERSE, letterSpacing: "-0.02em" }}>
-                    "{it.quote}"
-                  </div>
-                </div>
-              </GlowCard>
-            </motion.div>
-          ))}
+        <div style={{ marginTop: 56 }}>
+          <ImageComparison
+            beforeImage="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1600&q=80&auto=format&fit=crop"
+            afterImage="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1600&q=80&auto=format&fit=crop"
+            beforeLabel="BEFORE SCHOLIFY"
+            afterLabel="AFTER SCHOLIFY"
+            altBefore="A student before using Scholify — distracted, surrounded by unfinished courses and unused notebooks."
+            altAfter="A student after 60 days of Scholify — focused, organized, on a streak."
+            aspectRatio="3/2"
+            className="!max-w-5xl"
+          />
         </div>
       </div>
     </section>
