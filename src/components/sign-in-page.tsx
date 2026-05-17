@@ -10,28 +10,20 @@ const HAIR = "rgba(20,20,26,0.08)"
 
 function ScholifyMark({ size = 28 }: { size?: number }) {
   return (
-    <span
+    <img
+      src="/logo.png"
+      alt="Scholify"
+      width={size}
+      height={size}
+      decoding="async"
       style={{
-        display: "inline-grid",
-        placeItems: "center",
+        display: "inline-block",
         width: size,
         height: size,
+        objectFit: "contain",
         borderRadius: 8,
-        background: "linear-gradient(135deg, #5B5BF5 0%, #A855F7 100%)",
       }}
-      aria-hidden
-    >
-      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2 L1 8 L12 14 L23 8 L12 2 Z M5 11 V16 C5 17 8 19 12 19 C16 19 19 17 19 16 V11"
-          stroke="white"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          fill="none"
-        />
-      </svg>
-    </span>
+    />
   )
 }
 
