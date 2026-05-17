@@ -1,5 +1,5 @@
-import { LoginPage } from "@/components/sign-in-page"
+import { Component as AnimatedLogin } from "@/components/ui/animated-characters-login-page"
 
 export default function SignIn() {
-  return <LoginPage />
+  return <AnimatedLogin />
 }
