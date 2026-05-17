@@ -31,6 +31,7 @@ import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
+import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
 
 const Entropy = lazy(() =>
@@ -1329,6 +1330,62 @@ function Features() {
   )
 }
 
+/* ─────────────────────── FEATURE SWIPER ─────────────────────── */
+
+const featureCardImages = [
+  "/card-1.webp",
+  "/card-2.webp",
+  "/card-3.webp",
+  "/card-4.webp",
+  "/card-5.webp",
+  "/card-6.webp",
+].join(",")
+
+function FeatureSwiper() {
+  const [dims, setDims] = useState<{ w: number; h: number }>(() => {
+    if (typeof window === "undefined") return { w: 288, h: 396 }
+    const w = window.innerWidth
+    if (w < 380) return { w: 240, h: 336 }
+    if (w < 640) return { w: 260, h: 364 }
+    if (w < 1024) return { w: 288, h: 396 }
+    return { w: 320, h: 440 }
+  })
+
+  useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth
+      if (w < 380) setDims({ w: 240, h: 336 })
+      else if (w < 640) setDims({ w: 260, h: 364 })
+      else if (w < 1024) setDims({ w: 288, h: 396 })
+      else setDims({ w: 320, h: 440 })
+    }
+    window.addEventListener("resize", onResize, { passive: true })
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+
+  return (
+    <section style={{ padding: "96px 24px", background: BG_PRIMARY }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
+        <SectionLabel>BUILT FOR EVERY GOAL</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
+          Six ways Scholify <em style={{ fontStyle: "italic" }} className="grad-hero-text">shows up for you.</em>
+        </h2>
+        <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 560, margin: "20px auto 0", lineHeight: 1.65 }}>
+          Swipe through the deck — every card is a real piece of how the app works.
+        </p>
+
+        <div style={{ marginTop: 56, display: "flex", justifyContent: "center" }}>
+          <ImageSwiper images={featureCardImages} cardWidth={dims.w} cardHeight={dims.h} />
+        </div>
+
+        <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.16em", marginTop: 28 }}>
+          DRAG TO SWIPE · LEFT OR RIGHT
+        </p>
+      </div>
+    </section>
+  )
+}
+
 /* ─────────────────────── IDENTITY (dark) ─────────────────────── */
 
 function Identity() {
@@ -1859,6 +1916,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
+      <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
       <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
