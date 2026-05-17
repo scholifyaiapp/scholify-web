@@ -25,7 +25,7 @@ import { MovingBorder } from "@/components/ui/moving-border"
 import { GlowCard } from "@/components/ui/spotlight-card"
 import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
-import { StoreBadge } from "@/components/ui/store-badge"
+import { TextRotate } from "@/components/ui/text-rotate"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { GooeyText } from "@/components/ui/gooey-text-morphing"
@@ -1720,36 +1720,48 @@ function Pricing() {
 
 function Awards() {
   return (
-    <section style={{ padding: "80px 24px", textAlign: "center" }}>
+    <section style={{ padding: "96px 24px", textAlign: "center" }}>
       <div style={{ maxWidth: 960, margin: "0 auto" }}>
-        <SectionLabel>AWARDS</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(32px, 4vw, 56px)", color: INK, margin: "18px 0 0" }}>
-          Awarded on every store.
+        <SectionLabel>RECOGNITION</SectionLabel>
+        <h2
+          className="font-display text-pro-h"
+          style={{ fontSize: "clamp(36px, 4.5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.05 }}
+        >
+          Built for
         </h2>
-        <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 12, maxWidth: 540, marginInline: "auto" }}>
-          Editors' Choice. Year after year. The system learners actually finish with.
-        </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7, ease: EASE_DECISIVE }}
+        <div
           style={{
-            marginTop: 48,
+            marginTop: 16,
             display: "flex",
-            gap: 32,
-            flexWrap: "wrap",
             justifyContent: "center",
-            alignItems: "center",
+            fontSize: "clamp(36px, 4.5vw, 64px)",
+            lineHeight: 1.05,
           }}
         >
-          <StoreBadge store="app-store" award="Editors' Choice" caption="2026" />
-          <StoreBadge store="google-play" award="Editors' Choice" caption="2026" />
-        </motion.div>
+          <TextRotate
+            texts={[
+              "curious minds.",
+              "comeback stories.",
+              "future doctors.",
+              "indie hackers.",
+              "lifelong learners.",
+              "the consistent few.",
+            ]}
+            mainClassName="font-display italic text-white bg-[#5B5BF5] px-4 py-1 rounded-xl overflow-hidden"
+            splitLevelClassName="overflow-hidden pb-1"
+            staggerFrom="first"
+            staggerDuration={0.022}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "-120%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            rotationInterval={2400}
+          />
+        </div>
 
-        <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginTop: 28 }}>
-          HOVER TO TILT
+        <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 28, maxWidth: 560, marginInline: "auto", lineHeight: 1.65 }}>
+          The system learners actually finish with. Editors' Choice on App Store and Google Play, 2026.
         </p>
       </div>
     </section>
