@@ -1932,14 +1932,14 @@ export default function Landing() {
       <LiquidGlassFilterDefs />
       <Nav />
       <Hero />
-      <Problem />
-      <HowItWorks />
-      <Features />
-      <Identity />
-      <Stories />
-      <Pricing />
-      <Awards />
-      <CinematicFooter />
+      <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
+      <LazyOnView style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
+      <LazyOnView style={{ minHeight: 800 }}><Features /></LazyOnView>
+      <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
+      <LazyOnView style={{ minHeight: 700 }}><Stories /></LazyOnView>
+      <LazyOnView style={{ minHeight: 900 }}><Pricing /></LazyOnView>
+      <LazyOnView style={{ minHeight: 400 }}><Awards /></LazyOnView>
+      <LazyOnView style={{ minHeight: 500 }}><CinematicFooter /></LazyOnView>
     </div>
   )
 }
