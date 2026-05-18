@@ -1241,9 +1241,11 @@ function loadConvaiScript() {
 function VisualAIPartnerWidget() {
   const reduceMotion = useReducedMotion()
   const [started, setStarted] = useState(false)
+  const [micError, setMicError] = useState<string | null>(null)
   const [scriptReady, setScriptReady] = useState(
     typeof window !== "undefined" && typeof customElements !== "undefined" && !!customElements.get("elevenlabs-convai"),
   )
+  const micRequestedRef = useRef(false)
   const widgetSlotRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1271,8 +1273,33 @@ function VisualAIPartnerWidget() {
     ]
     eventNames.forEach((n) => el.addEventListener(n, hide))
 
+    const requestMic = async () => {
+      if (micRequestedRef.current) return
+      micRequestedRef.current = true
+      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        setMicError("This browser doesn't support microphone access. Try Safari or Chrome.")
+        return
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        stream.getTracks().forEach((t) => t.stop())
+        setMicError(null)
+      } catch (err) {
+        const name = (err as { name?: string })?.name ?? ""
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          setMicError("Microphone blocked. Tap the lock icon in your browser bar and allow microphone, then reload.")
+        } else if (name === "NotFoundError") {
+          setMicError("No microphone detected on this device.")
+        } else {
+          setMicError("Couldn't access the microphone. Reload and try again.")
+        }
+        micRequestedRef.current = false
+      }
+    }
+
     const onPointerDown = () => {
-      window.setTimeout(hide, 450)
+      requestMic()
+      window.setTimeout(() => setStarted(true), 450)
     }
     el.addEventListener("pointerdown", onPointerDown)
 
@@ -1351,6 +1378,28 @@ function VisualAIPartnerWidget() {
               ></elevenlabs-convai>
             )}
           </div>
+
+          {micError && (
+            <div
+              role="alert"
+              style={{
+                position: "relative",
+                zIndex: 3,
+                marginTop: 12,
+                padding: "10px 14px",
+                borderRadius: 12,
+                background: "#fff4f4",
+                border: "1px solid #f3c8c8",
+                color: "#7a1f1f",
+                fontSize: 12.5,
+                lineHeight: 1.4,
+                textAlign: "center",
+                maxWidth: 360,
+              }}
+            >
+              {micError}
+            </div>
+          )}
         </div>
       </GlowCard>
     </div>
