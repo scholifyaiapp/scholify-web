@@ -1139,30 +1139,49 @@ function VisualLara() {
 
 function VisualAIPartnerWidget() {
   return (
-    <GlowCard customSize glowColor="purple" className="!p-1 !gap-0 !rounded-3xl !shadow-none" width={460}>
-      <div
-        className="soft-card"
-        style={{
-          width: "100%",
-          maxWidth: "100%",
-          padding: 28,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 16,
-          borderRadius: 18,
-          minHeight: 420,
-        }}
-      >
-        <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", fontWeight: 500 }}>
-          TALK TO YOUR AI PARTNER · LIVE
+    <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", display: "flex", justifyContent: "center" }}>
+      <GlowCard customSize glowColor="purple" className="!p-1 !gap-0 !rounded-3xl !shadow-none" width="100%">
+        <div
+          className="soft-card"
+          style={{
+            width: "100%",
+            maxWidth: "100%",
+            padding: "clamp(16px, 4vw, 28px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 16,
+            borderRadius: 18,
+            minHeight: 360,
+            boxSizing: "border-box",
+            overflow: "hidden",
+          }}
+        >
+          <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", fontWeight: 500, textAlign: "center" }}>
+            TALK TO YOUR AI PARTNER · LIVE
+          </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+            }}
+          >
+            <elevenlabs-convai
+              agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                display: "block",
+              }}
+            ></elevenlabs-convai>
+          </div>
         </div>
-        <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-          <elevenlabs-convai agent-id="agent_1301krym07svfe3sbh7pt7y2428r"></elevenlabs-convai>
-        </div>
-      </div>
-    </GlowCard>
+      </GlowCard>
+    </div>
   )
 }
 
