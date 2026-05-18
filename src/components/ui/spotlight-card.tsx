@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 
 interface GlowCardProps {
   children: ReactNode
@@ -34,8 +34,19 @@ export function GlowCard({
   customSize = false,
 }: GlowCardProps) {
   const cardRef = useRef<HTMLDivElement | null>(null)
+  const [isTouch, setIsTouch] = useState(false)
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return
+    const mq = window.matchMedia("(hover: none), (pointer: coarse)")
+    const update = () => setIsTouch(mq.matches)
+    update()
+    mq.addEventListener?.("change", update)
+    return () => mq.removeEventListener?.("change", update)
+  }, [])
+
+  useEffect(() => {
+    if (isTouch) return
     const syncPointer = (e: PointerEvent) => {
       const { clientX: x, clientY: y } = e
       if (cardRef.current) {
@@ -45,9 +56,9 @@ export function GlowCard({
         cardRef.current.style.setProperty("--yp", (y / window.innerHeight).toFixed(2))
       }
     }
-    document.addEventListener("pointermove", syncPointer)
+    document.addEventListener("pointermove", syncPointer, { passive: true })
     return () => document.removeEventListener("pointermove", syncPointer)
-  }, [])
+  }, [isTouch])
 
   const { base, spread } = glowColorMap[glowColor]
 
@@ -78,7 +89,8 @@ export function GlowCard({
       backgroundAttachment: "fixed",
       border: "var(--border-size) solid var(--backup-border)",
       position: "relative",
-      touchAction: "none",
+      touchAction: "auto",
+      backgroundAttachment: isTouch ? "scroll" : "fixed",
     }
     if (width !== undefined) baseStyles.width = typeof width === "number" ? `${width}px` : width
     if (height !== undefined) baseStyles.height = typeof height === "number" ? `${height}px` : height
@@ -101,6 +113,11 @@ export function GlowCard({
       mask: linear-gradient(transparent, transparent), linear-gradient(white, white);
       mask-clip: padding-box, border-box;
       mask-composite: intersect;
+    }
+    [data-glow][data-no-glow]::before,
+    [data-glow][data-no-glow]::after,
+    [data-glow][data-no-glow] > [data-glow] {
+      display: none;
     }
     [data-glow]::before {
       background-image: radial-gradient(
@@ -143,13 +160,14 @@ export function GlowCard({
       <div
         ref={cardRef}
         data-glow
+        data-no-glow={isTouch ? "true" : undefined}
         style={getInlineStyles()}
         className={`
           ${getSizeClasses()}
           ${!customSize ? "aspect-[3/4]" : ""}
           rounded-2xl
           relative
-          backdrop-blur-[5px]
+          ${isTouch ? "" : "backdrop-blur-[5px]"}
           ${className}
         `}
       >
