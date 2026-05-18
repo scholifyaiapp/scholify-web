@@ -1141,22 +1141,20 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
   return (
     <div
       style={{
-        position: "absolute",
-        inset: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 16,
+        gap: 14,
+        width: "100%",
         pointerEvents: "none",
-        zIndex: 0,
       }}
     >
       <div
         style={{
           position: "relative",
-          width: 148,
-          height: 148,
+          width: 124,
+          height: 124,
           display: "grid",
           placeItems: "center",
         }}
@@ -1166,7 +1164,7 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
           className={animate ? "ap-pulse" : ""}
           style={{
             position: "absolute",
-            inset: -22,
+            inset: -18,
             borderRadius: "50%",
             border: `1px solid ${BRAND_500}66`,
             boxShadow: `0 0 32px ${BRAND_500}33`,
@@ -1175,8 +1173,8 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
         />
         <div
           style={{
-            width: 148,
-            height: 148,
+            width: 124,
+            height: 124,
             borderRadius: "50%",
             overflow: "hidden",
             background: "#FAF3E0",
@@ -1186,8 +1184,8 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
           <img
             src="https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
             alt="Your AI Partner"
-            width={148}
-            height={148}
+            width={124}
+            height={124}
             style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
             loading="lazy"
             decoding="async"
@@ -1198,7 +1196,7 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
         className="font-display"
         style={{
           color: INK,
-          fontSize: 22,
+          fontSize: 20,
           lineHeight: 1.1,
           letterSpacing: "-0.02em",
           textAlign: "center",
@@ -1289,16 +1287,15 @@ function VisualAIPartnerWidget() {
             position: "relative",
             width: "100%",
             maxWidth: "100%",
-            padding: "clamp(16px, 4vw, 28px)",
+            padding: "clamp(20px, 4vw, 28px)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "flex-end",
-            gap: 16,
+            justifyContent: "flex-start",
+            gap: 20,
             borderRadius: 18,
             minHeight: 420,
             boxSizing: "border-box",
-            overflow: "hidden",
           }}
         >
           <div
@@ -1306,22 +1303,26 @@ function VisualAIPartnerWidget() {
             style={{
               position: "absolute",
               inset: 0,
-              background: `radial-gradient(60% 60% at 50% 35%, ${BRAND_100}aa 0%, transparent 70%)`,
+              background: `radial-gradient(60% 60% at 50% 30%, ${BRAND_100}aa 0%, transparent 70%)`,
               opacity: started ? 0 : 1,
               transition: "opacity 500ms ease",
               pointerEvents: "none",
+              borderRadius: 18,
               zIndex: 0,
             }}
           />
+
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              opacity: started ? 0 : 1,
-              transform: started ? "scale(0.96)" : "scale(1)",
-              transition: "opacity 450ms ease, transform 450ms ease",
-              pointerEvents: "none",
+              position: "relative",
               zIndex: 1,
+              width: "100%",
+              maxHeight: started ? 0 : 320,
+              opacity: started ? 0 : 1,
+              transform: started ? "scale(0.95)" : "scale(1)",
+              transition:
+                "max-height 500ms ease, opacity 400ms ease, transform 450ms ease",
+              overflow: "hidden",
             }}
           >
             <AIPartnerBackdrop animate={!reduceMotion} />
@@ -1334,8 +1335,12 @@ function VisualAIPartnerWidget() {
               zIndex: 2,
               width: "100%",
               display: "flex",
+              flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
+              gap: 12,
+              marginTop: "auto",
+              minHeight: 96,
             }}
           >
             <elevenlabs-convai
@@ -1343,33 +1348,32 @@ function VisualAIPartnerWidget() {
               style={{
                 width: "100%",
                 maxWidth: "100%",
-                display: "block",
-                minHeight: 60,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 80,
               }}
             ></elevenlabs-convai>
-          </div>
 
-          {micError && (
-            <div
-              role="alert"
-              style={{
-                position: "relative",
-                zIndex: 3,
-                marginTop: 12,
-                padding: "10px 14px",
-                borderRadius: 12,
-                background: "#fff4f4",
-                border: "1px solid #f3c8c8",
-                color: "#7a1f1f",
-                fontSize: 12.5,
-                lineHeight: 1.4,
-                textAlign: "center",
-                maxWidth: 360,
-              }}
-            >
-              {micError}
-            </div>
-          )}
+            {micError && (
+              <div
+                role="alert"
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  background: "#fff4f4",
+                  border: "1px solid #f3c8c8",
+                  color: "#7a1f1f",
+                  fontSize: 12.5,
+                  lineHeight: 1.4,
+                  textAlign: "center",
+                }}
+              >
+                {micError}
+              </div>
+            )}
+          </div>
         </div>
       </GlowCard>
     </div>
