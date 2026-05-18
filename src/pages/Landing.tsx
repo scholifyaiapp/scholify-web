@@ -1137,7 +1137,7 @@ function VisualLara() {
   )
 }
 
-function AIPartnerBackdrop() {
+function AIPartnerBackdrop({ animate }: { animate: boolean }) {
   return (
     <div
       style={{
@@ -1147,36 +1147,52 @@ function AIPartnerBackdrop() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 18,
+        gap: 16,
         pointerEvents: "none",
         zIndex: 0,
       }}
     >
-      <div style={{ position: "relative", display: "grid", placeItems: "center" }}>
-        {[0, 1, 2].map((i) => (
-          <motion.span
-            key={i}
-            aria-hidden
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: [0, 0.35, 0], scale: [0.7, 1.6, 1.9] }}
-            transition={{ duration: 3.2, repeat: Infinity, ease: "easeOut", delay: i * 1.0 }}
-            style={{
-              position: "absolute",
-              width: 180,
-              height: 180,
-              borderRadius: "50%",
-              border: `1px solid ${BRAND_500}`,
-              boxShadow: `0 0 40px ${BRAND_500}33`,
-            }}
-          />
-        ))}
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-          style={{ position: "relative", zIndex: 1 }}
+      <div
+        style={{
+          position: "relative",
+          width: 148,
+          height: 148,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <span
+          aria-hidden
+          className={animate ? "ap-pulse" : ""}
+          style={{
+            position: "absolute",
+            inset: -22,
+            borderRadius: "50%",
+            border: `1px solid ${BRAND_500}66`,
+            boxShadow: `0 0 32px ${BRAND_500}33`,
+            willChange: "transform, opacity",
+          }}
+        />
+        <div
+          style={{
+            width: 148,
+            height: 148,
+            borderRadius: "50%",
+            overflow: "hidden",
+            background: "#FAF3E0",
+            boxShadow: `0 16px 40px -12px ${PLUM_500}55`,
+          }}
         >
-          <LaraPortrait size={148} />
-        </motion.div>
+          <img
+            src="https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
+            alt="Your AI Partner"
+            width={148}
+            height={148}
+            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
       <div
         className="font-display"
@@ -1206,9 +1222,39 @@ function AIPartnerBackdrop() {
   )
 }
 
+let convaiScriptPromise: Promise<void> | null = null
+function loadConvaiScript() {
+  if (typeof window === "undefined") return Promise.resolve()
+  if (customElements.get("elevenlabs-convai")) return Promise.resolve()
+  if (convaiScriptPromise) return convaiScriptPromise
+  convaiScriptPromise = new Promise<void>((resolve) => {
+    const s = document.createElement("script")
+    s.src = "https://unpkg.com/@elevenlabs/convai-widget-embed"
+    s.async = true
+    s.onload = () => resolve()
+    s.onerror = () => resolve()
+    document.head.appendChild(s)
+  })
+  return convaiScriptPromise
+}
+
 function VisualAIPartnerWidget() {
+  const reduceMotion = useReducedMotion()
   const [started, setStarted] = useState(false)
+  const [scriptReady, setScriptReady] = useState(
+    typeof window !== "undefined" && typeof customElements !== "undefined" && !!customElements.get("elevenlabs-convai"),
+  )
   const widgetSlotRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    loadConvaiScript().then(() => {
+      if (!cancelled) setScriptReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     const el = widgetSlotRef.current
@@ -1255,26 +1301,33 @@ function VisualAIPartnerWidget() {
             minHeight: 420,
             boxSizing: "border-box",
             overflow: "hidden",
-            background: started
-              ? undefined
-              : `radial-gradient(60% 60% at 50% 35%, ${BRAND_100}aa 0%, transparent 70%)`,
-            transition: "background 600ms ease",
           }}
         >
-          <AnimatePresence>
-            {!started && (
-              <motion.div
-                key="backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, scale: 0.94, filter: "blur(8px)" }}
-                transition={{ duration: 0.55, ease: "easeInOut" }}
-                style={{ position: "absolute", inset: 0 }}
-              >
-                <AIPartnerBackdrop />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `radial-gradient(60% 60% at 50% 35%, ${BRAND_100}aa 0%, transparent 70%)`,
+              opacity: started ? 0 : 1,
+              transition: "opacity 500ms ease",
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: started ? 0 : 1,
+              transform: started ? "scale(0.96)" : "scale(1)",
+              transition: "opacity 450ms ease, transform 450ms ease",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          >
+            <AIPartnerBackdrop animate={!reduceMotion} />
+          </div>
 
           <div
             ref={widgetSlotRef}
@@ -1287,14 +1340,16 @@ function VisualAIPartnerWidget() {
               alignItems: "center",
             }}
           >
-            <elevenlabs-convai
-              agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
-              style={{
-                width: "100%",
-                maxWidth: "100%",
-                display: "block",
-              }}
-            ></elevenlabs-convai>
+            {scriptReady && (
+              <elevenlabs-convai
+                agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
+                style={{
+                  width: "100%",
+                  maxWidth: "100%",
+                  display: "block",
+                }}
+              ></elevenlabs-convai>
+            )}
           </div>
         </div>
       </GlowCard>
