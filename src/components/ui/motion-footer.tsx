@@ -212,9 +212,7 @@ export function CinematicFooter({
               {copyright}
             </div>
             <div className="footer-glass-pill px-6 py-3 rounded-full flex items-center gap-2 order-1 md:order-2 cursor-default border-border/50">
-              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">Crafted with</span>
-              <span className="animate-footer-heartbeat text-sm md:text-base text-destructive">❤</span>
-              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">for learners by</span>
+              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">Crafted for learners by</span>
               <img
                 src="/logo.svg"
                 alt="Scholify"

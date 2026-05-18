@@ -1500,12 +1500,12 @@ function Features() {
           reverse={false}
           tag="AI BRAIN"
           title={<>Lara knows your goal <em style={{ fontStyle: "italic" }}>inside out</em>.</>}
-          desc="Claude AI powers Lara. She reads your goal, your deadline, and your daily time — then builds a specific, progressive plan that actually matches your life. Not a generic template."
+          desc="The Scholify AI engine reads your goal, your deadline, and your daily time — then builds a specific, progressive plan that actually matches your life. Not a generic template."
           bullets={[
             "Generates unique plans for any learning goal",
             "Progressive difficulty — starts easy, builds up",
             "Recalibrates automatically when you miss days",
-            "Powered by Claude AI (Anthropic)",
+            "Powered by the Scholify learning engine",
           ]}
           visual={<VisualPlanGen />}
         />
@@ -2090,7 +2090,7 @@ function Footer() {
         <div>
           <ScholifyLogo size={36} />
           <p style={{ color: INK_MUTED, fontSize: 13.5, lineHeight: 1.75, marginTop: 18, maxWidth: 280 }}>
-            The AI learning habit coach. Built on Atomic Habits. Powered by Claude AI.
+            The AI learning habit coach. Built on Atomic Habits. Powered by the Scholify learning engine.
           </p>
         </div>
         {footerCols.map((col) => (

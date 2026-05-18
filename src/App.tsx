@@ -11,7 +11,7 @@ const Chat = lazy(() => import("@/pages/Chat"))
 function Page({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <SectionBoundary name={name}>
-      <Suspense fallback={<div style={{ padding: 24, color: "#666" }}>Loading {name}…</div>}>
+      <Suspense fallback={null}>
         {children}
       </Suspense>
     </SectionBoundary>
