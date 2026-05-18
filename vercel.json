@@ -4,6 +4,17 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "microphone=(self \"https://elevenlabs.io\" \"https://*.elevenlabs.io\"), camera=(self \"https://elevenlabs.io\" \"https://*.elevenlabs.io\"), autoplay=*"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
