@@ -34,6 +34,16 @@ import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
 
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "elevenlabs-convai": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        "agent-id"?: string
+      }
+    }
+  }
+}
+
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
 )
@@ -1127,6 +1137,35 @@ function VisualLara() {
   )
 }
 
+function VisualAIPartnerWidget() {
+  return (
+    <GlowCard customSize glowColor="purple" className="!p-1 !gap-0 !rounded-3xl !shadow-none" width={460}>
+      <div
+        className="soft-card"
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          padding: 28,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+          borderRadius: 18,
+          minHeight: 420,
+        }}
+      >
+        <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", fontWeight: 500 }}>
+          TALK TO YOUR AI PARTNER · LIVE
+        </div>
+        <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <elevenlabs-convai agent-id="agent_1301krym07svfe3sbh7pt7y2428r"></elevenlabs-convai>
+        </div>
+      </div>
+    </GlowCard>
+  )
+}
+
 /* ── D — Progress heatmap + Share preview ── */
 
 function HeatmapCell({ delay, intensity }: { delay: number; intensity: number }) {
@@ -1307,7 +1346,7 @@ function Features() {
             "Speaking practice with AI scoring (Pro)",
             "Available in 29 languages",
           ]}
-          visual={<VisualLara />}
+          visual={<VisualAIPartnerWidget />}
         />
 
         <FeatureBlock
