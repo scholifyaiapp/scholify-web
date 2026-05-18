@@ -1299,7 +1299,7 @@ function Features() {
           index={2}
           reverse={false}
           tag="MEET YOUR AI PARTNER"
-          title={<>Your <em style={{ fontStyle: "italic" }}>AI Partner.</em> Not a chatbot.</>}
+          title={<>Your <em style={{ fontStyle: "italic" }}>AI Partner.</em></>}
           desc="Your AI Partner is built into Scholify. It knows your name, your streak, your goal, and today's task. Every message it sends is generated just for you — specific, real, and actually useful."
           bullets={[
             "Personalised messages using your real data",
