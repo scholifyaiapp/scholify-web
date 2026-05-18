@@ -1222,41 +1222,12 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
   )
 }
 
-let convaiScriptPromise: Promise<void> | null = null
-function loadConvaiScript() {
-  if (typeof window === "undefined") return Promise.resolve()
-  if (customElements.get("elevenlabs-convai")) return Promise.resolve()
-  if (convaiScriptPromise) return convaiScriptPromise
-  convaiScriptPromise = new Promise<void>((resolve) => {
-    const s = document.createElement("script")
-    s.src = "https://unpkg.com/@elevenlabs/convai-widget-embed"
-    s.async = true
-    s.onload = () => resolve()
-    s.onerror = () => resolve()
-    document.head.appendChild(s)
-  })
-  return convaiScriptPromise
-}
-
 function VisualAIPartnerWidget() {
   const reduceMotion = useReducedMotion()
   const [started, setStarted] = useState(false)
   const [micError, setMicError] = useState<string | null>(null)
-  const [scriptReady, setScriptReady] = useState(
-    typeof window !== "undefined" && typeof customElements !== "undefined" && !!customElements.get("elevenlabs-convai"),
-  )
   const micRequestedRef = useRef(false)
   const widgetSlotRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    loadConvaiScript().then(() => {
-      if (!cancelled) setScriptReady(true)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   useEffect(() => {
     const el = widgetSlotRef.current
@@ -1367,16 +1338,15 @@ function VisualAIPartnerWidget() {
               alignItems: "center",
             }}
           >
-            {scriptReady && (
-              <elevenlabs-convai
-                agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
-                style={{
-                  width: "100%",
-                  maxWidth: "100%",
-                  display: "block",
-                }}
-              ></elevenlabs-convai>
-            )}
+            <elevenlabs-convai
+              agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                display: "block",
+                minHeight: 60,
+              }}
+            ></elevenlabs-convai>
           </div>
 
           {micError && (
