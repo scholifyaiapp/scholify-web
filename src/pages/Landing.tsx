@@ -1137,37 +1137,154 @@ function VisualLara() {
   )
 }
 
+function AIPartnerBackdrop() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 18,
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    >
+      <div style={{ position: "relative", display: "grid", placeItems: "center" }}>
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            aria-hidden
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: [0, 0.35, 0], scale: [0.7, 1.6, 1.9] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeOut", delay: i * 1.0 }}
+            style={{
+              position: "absolute",
+              width: 180,
+              height: 180,
+              borderRadius: "50%",
+              border: `1px solid ${BRAND_500}`,
+              boxShadow: `0 0 40px ${BRAND_500}33`,
+            }}
+          />
+        ))}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: "relative", zIndex: 1 }}
+        >
+          <LaraPortrait size={148} />
+        </motion.div>
+      </div>
+      <div
+        className="font-display"
+        style={{
+          color: INK,
+          fontSize: 22,
+          lineHeight: 1.1,
+          letterSpacing: "-0.02em",
+          textAlign: "center",
+        }}
+      >
+        Hi, I'm your AI Partner.
+      </div>
+      <div
+        className="font-mono-pro"
+        style={{
+          color: INK_MUTED,
+          fontSize: 11,
+          letterSpacing: "0.14em",
+          fontWeight: 500,
+          textAlign: "center",
+        }}
+      >
+        TAP THE MIC TO START TALKING
+      </div>
+    </div>
+  )
+}
+
 function VisualAIPartnerWidget() {
+  const [started, setStarted] = useState(false)
+  const widgetSlotRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = widgetSlotRef.current
+    if (!el) return
+
+    const hide = () => setStarted(true)
+
+    const eventNames = [
+      "convai-call-start",
+      "convai-widget-call-start",
+      "elevenlabs-convai-call-start",
+      "call-started",
+      "callStart",
+    ]
+    eventNames.forEach((n) => el.addEventListener(n, hide))
+
+    const onPointerDown = () => {
+      window.setTimeout(hide, 450)
+    }
+    el.addEventListener("pointerdown", onPointerDown)
+
+    return () => {
+      eventNames.forEach((n) => el.removeEventListener(n, hide))
+      el.removeEventListener("pointerdown", onPointerDown)
+    }
+  }, [])
+
   return (
     <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", display: "flex", justifyContent: "center" }}>
       <GlowCard customSize glowColor="purple" className="!p-1 !gap-0 !rounded-3xl !shadow-none" width="100%">
         <div
           className="soft-card"
           style={{
+            position: "relative",
             width: "100%",
             maxWidth: "100%",
             padding: "clamp(16px, 4vw, 28px)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-end",
             gap: 16,
             borderRadius: 18,
-            minHeight: 360,
+            minHeight: 420,
             boxSizing: "border-box",
             overflow: "hidden",
+            background: started
+              ? undefined
+              : `radial-gradient(60% 60% at 50% 35%, ${BRAND_100}aa 0%, transparent 70%)`,
+            transition: "background 600ms ease",
           }}
         >
-          <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", fontWeight: 500, textAlign: "center" }}>
-            TALK TO YOUR AI PARTNER · LIVE
-          </div>
+          <AnimatePresence>
+            {!started && (
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.94, filter: "blur(8px)" }}
+                transition={{ duration: 0.55, ease: "easeInOut" }}
+                style={{ position: "absolute", inset: 0 }}
+              >
+                <AIPartnerBackdrop />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div
+            ref={widgetSlotRef}
             style={{
+              position: "relative",
+              zIndex: 2,
               width: "100%",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              flex: 1,
             }}
           >
             <elevenlabs-convai
