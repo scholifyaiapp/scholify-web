@@ -1083,7 +1083,7 @@ function LaraPortrait({ size = 132 }: { size?: number }) {
       >
         <img
           src="https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
-          alt="Lara — your AI coach"
+          alt="Your AI Partner"
           width={size}
           height={size}
           style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
@@ -1102,10 +1102,10 @@ function VisualLara() {
           <LaraPortrait size={108} />
         <div>
           <div className="font-display" style={{ color: INK, fontSize: 26, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-            Lara
+            AI Partner
           </div>
           <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", fontWeight: 500, marginTop: 6 }}>
-            YOUR AI COACH · ONLINE
+            YOUR AI PARTNER · ONLINE
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
             <motion.span
@@ -1298,12 +1298,12 @@ function Features() {
         <FeatureBlock
           index={2}
           reverse={false}
-          tag="MEET LARA"
-          title={<>Your <em style={{ fontStyle: "italic" }}>coach.</em> Not a chatbot.</>}
-          desc="Lara is Scholify's AI coach. She knows your name, your streak, your goal, and today's task. Every message she sends is generated just for you — specific, real, and actually useful."
+          tag="MEET YOUR AI PARTNER"
+          title={<>Your <em style={{ fontStyle: "italic" }}>AI Partner.</em> Not a chatbot.</>}
+          desc="Your AI Partner is built into Scholify. It knows your name, your streak, your goal, and today's task. Every message it sends is generated just for you — specific, real, and actually useful."
           bullets={[
             "Personalised messages using your real data",
-            "Voice mode — hear Lara speak (Pro)",
+            "Voice mode — hear your AI Partner speak (Pro)",
             "Speaking practice with AI scoring (Pro)",
             "Available in 29 languages",
           ]}
