@@ -1223,8 +1223,6 @@ function AIPartnerBackdrop({ animate }: { animate: boolean }) {
 function VisualAIPartnerWidget() {
   const reduceMotion = useReducedMotion()
   const [started, setStarted] = useState(false)
-  const [micError, setMicError] = useState<string | null>(null)
-  const micRequestedRef = useRef(false)
   const widgetSlotRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1242,39 +1240,17 @@ function VisualAIPartnerWidget() {
     ]
     eventNames.forEach((n) => el.addEventListener(n, hide))
 
-    const requestMic = async () => {
-      if (micRequestedRef.current) return
-      micRequestedRef.current = true
-      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        setMicError("This browser doesn't support microphone access. Try Safari or Chrome.")
-        return
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        stream.getTracks().forEach((t) => t.stop())
-        setMicError(null)
-      } catch (err) {
-        const name = (err as { name?: string })?.name ?? ""
-        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-          setMicError("Microphone blocked. Tap the lock icon in your browser bar and allow microphone, then reload.")
-        } else if (name === "NotFoundError") {
-          setMicError("No microphone detected on this device.")
-        } else {
-          setMicError("Couldn't access the microphone. Reload and try again.")
-        }
-        micRequestedRef.current = false
-      }
+    let fadeTimer: number | undefined
+    const onPointerUp = () => {
+      window.clearTimeout(fadeTimer)
+      fadeTimer = window.setTimeout(() => setStarted(true), 1200)
     }
-
-    const onPointerDown = () => {
-      requestMic()
-      window.setTimeout(() => setStarted(true), 450)
-    }
-    el.addEventListener("pointerdown", onPointerDown)
+    el.addEventListener("pointerup", onPointerUp)
 
     return () => {
       eventNames.forEach((n) => el.removeEventListener(n, hide))
-      el.removeEventListener("pointerdown", onPointerDown)
+      el.removeEventListener("pointerup", onPointerUp)
+      window.clearTimeout(fadeTimer)
     }
   }, [])
 
@@ -1354,25 +1330,6 @@ function VisualAIPartnerWidget() {
                 minHeight: 80,
               }}
             ></elevenlabs-convai>
-
-            {micError && (
-              <div
-                role="alert"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  background: "#fff4f4",
-                  border: "1px solid #f3c8c8",
-                  color: "#7a1f1f",
-                  fontSize: 12.5,
-                  lineHeight: 1.4,
-                  textAlign: "center",
-                }}
-              >
-                {micError}
-              </div>
-            )}
           </div>
         </div>
       </GlowCard>
