@@ -1186,7 +1186,7 @@ function VisualAIPartnerWidget() {
           textAlign: "center",
           background: `radial-gradient(70% 60% at 50% 25%, ${BRAND_100}aa 0%, transparent 70%), var(--card)`,
           boxShadow: `0 0 0 1px ${HAIR}, 0 24px 60px -24px rgba(91,91,245,0.35), 0 8px 24px -12px rgba(168,85,247,0.25)`,
-          overflow: "hidden",
+          isolation: "isolate",
         }}
       >
         <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.2em", fontWeight: 500 }}>
@@ -1208,22 +1208,24 @@ function VisualAIPartnerWidget() {
           One tap. Real conversation. Your AI Partner picks up right where you left off — voice in, voice out.
         </p>
         <div
+          className="convai-host"
           style={{
+            position: "relative",
+            transform: "translateZ(0)",
+            isolation: "isolate",
             width: "100%",
             maxWidth: "100%",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             marginTop: "auto",
-            minHeight: "clamp(120px, 28vw, 160px)",
+            minHeight: "clamp(160px, 36vw, 200px)",
             padding: "8px 0",
-            overflow: "hidden",
           }}
         >
           {ready ? (
             <elevenlabs-convai
               agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
-              variant="full"
               style={{ width: "100%", maxWidth: "100%" }}
             ></elevenlabs-convai>
           ) : (
