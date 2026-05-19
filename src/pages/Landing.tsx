@@ -34,16 +34,6 @@ import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "elevenlabs-convai": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        "agent-id"?: string
-      }
-    }
-  }
-}
-
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
 )
@@ -1137,36 +1127,9 @@ function VisualLara() {
   )
 }
 
-function useElevenLabsReady() {
-  const [ready, setReady] = useState(
-    typeof window !== "undefined" && !!customElements.get("elevenlabs-convai")
-  )
-  useEffect(() => {
-    if (ready) return
-    let cancelled = false
-    const SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed"
-    const existing = document.querySelector<HTMLScriptElement>(`script[src^="${SRC}"]`)
-    if (!existing) {
-      const s = document.createElement("script")
-      s.src = SRC
-      s.async = true
-      document.body.appendChild(s)
-    }
-    customElements
-      .whenDefined("elevenlabs-convai")
-      .then(() => {
-        if (!cancelled) setReady(true)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [ready])
-  return ready
-}
-
 function VisualAIPartnerWidget() {
-  const ready = useElevenLabsReady()
+  const prefersReduced = useReducedMotion()
+  const avatarSize = "clamp(150px, 32vw, 200px)"
   return (
     <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", display: "flex", justifyContent: "center" }}>
       <div
@@ -1181,16 +1144,16 @@ function VisualAIPartnerWidget() {
           alignItems: "center",
           gap: "clamp(14px, 3vw, 22px)",
           borderRadius: 24,
-          minHeight: "clamp(280px, 60vw, 360px)",
+          minHeight: "clamp(320px, 64vw, 400px)",
           boxSizing: "border-box",
           textAlign: "center",
           background: `radial-gradient(70% 60% at 50% 25%, ${BRAND_100}aa 0%, transparent 70%), var(--card)`,
           boxShadow: `0 0 0 1px ${HAIR}, 0 24px 60px -24px rgba(91,91,245,0.35), 0 8px 24px -12px rgba(168,85,247,0.25)`,
-          isolation: "isolate",
+          overflow: "hidden",
         }}
       >
         <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.2em", fontWeight: 500 }}>
-          VOICE · LIVE
+          YOUR AI PARTNER · ONLINE
         </div>
         <h3
           className="font-display"
@@ -1202,57 +1165,75 @@ function VisualAIPartnerWidget() {
             margin: 0,
           }}
         >
-          Start with <em style={{ fontStyle: "italic" }}>Lara.</em>
+          Meet <em style={{ fontStyle: "italic" }}>Lara.</em>
         </h3>
         <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
-          One tap. Real conversation. Your AI Partner picks up right where you left off — voice in, voice out.
+          Your AI coach. She knows your goal, your streak, and today's task — every message generated just for you.
         </p>
-        <div
-          className="convai-host"
+
+        <motion.div
+          animate={prefersReduced ? undefined : { y: [0, -6, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           style={{
             position: "relative",
-            transform: "translateZ(0)",
-            isolation: "isolate",
-            width: "100%",
-            maxWidth: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginTop: "auto",
-            minHeight: "clamp(160px, 36vw, 200px)",
-            padding: "8px 0",
+            width: avatarSize,
+            height: avatarSize,
+            margin: "auto 0",
+            display: "grid",
+            placeItems: "center",
           }}
         >
-          {ready ? (
-            <elevenlabs-convai
-              agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
-              style={{ width: "100%", maxWidth: "100%" }}
-            ></elevenlabs-convai>
-          ) : (
-            <div
-              style={{
-                color: INK_MUTED,
-                fontSize: 13,
-                opacity: 0.7,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: "50%",
-                  border: `2px solid ${BRAND_100}`,
-                  borderTopColor: BRAND_500,
-                }}
-              />
-              Loading voice…
-            </div>
-          )}
+          <motion.div
+            aria-hidden
+            animate={prefersReduced ? undefined : { scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              position: "absolute",
+              inset: "-12%",
+              borderRadius: "50%",
+              background: `radial-gradient(circle, ${BRAND_400}55 0%, transparent 70%)`,
+              filter: "blur(10px)",
+            }}
+          />
+          <motion.div
+            aria-hidden
+            animate={prefersReduced ? undefined : { scale: [1, 1.18, 1], opacity: [0.7, 0, 0.7] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+            style={{
+              position: "absolute",
+              inset: "-4%",
+              borderRadius: "50%",
+              border: `2px solid ${PLUM_500}66`,
+            }}
+          />
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              borderRadius: "50%",
+              overflow: "hidden",
+              background: "#FAF3E0",
+              boxShadow: `0 0 0 3px ${BRAND_400}, 0 12px 32px -8px rgba(91,91,245,0.45)`,
+              zIndex: 1,
+            }}
+          >
+            <img
+              src="https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
+              alt="Lara — your AI Partner"
+              style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+              loading="lazy"
+            />
+          </div>
+        </motion.div>
+
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <motion.span
+            animate={prefersReduced ? undefined : { scale: [1, 1.3, 1] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            style={{ width: 8, height: 8, borderRadius: "50%", background: SHIELD_500 }}
+          />
+          <span style={{ color: SHIELD_500, fontSize: 12, fontWeight: 600 }}>typing…</span>
         </div>
       </div>
     </div>
