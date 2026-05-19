@@ -353,18 +353,14 @@
 }
 
 elevenlabs-convai {
-  display: block !important;
-  width: 100% !important;
-  min-width: 240px;
+  display: block;
+  width: 100%;
+  max-width: 100%;
   min-height: 120px;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative;
-  z-index: 1;
 }
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   elevenlabs-convai {
-    min-height: 140px;
+    min-height: 96px;
   }
 }
 

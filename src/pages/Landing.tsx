@@ -1137,70 +1137,122 @@ function VisualLara() {
   )
 }
 
+function useElevenLabsReady() {
+  const [ready, setReady] = useState(
+    typeof window !== "undefined" && !!customElements.get("elevenlabs-convai")
+  )
+  useEffect(() => {
+    if (ready) return
+    let cancelled = false
+    const SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed"
+    const existing = document.querySelector<HTMLScriptElement>(`script[src^="${SRC}"]`)
+    if (!existing) {
+      const s = document.createElement("script")
+      s.src = SRC
+      s.async = true
+      document.body.appendChild(s)
+    }
+    customElements
+      .whenDefined("elevenlabs-convai")
+      .then(() => {
+        if (!cancelled) setReady(true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [ready])
+  return ready
+}
+
 function VisualAIPartnerWidget() {
+  const ready = useElevenLabsReady()
   return (
     <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", display: "flex", justifyContent: "center" }}>
-      <GlowCard customSize glowColor="purple" className="!p-1 !gap-0 !rounded-3xl !shadow-none" width="100%">
-        <div
-          className="soft-card"
+      <div
+        className="soft-card"
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "100%",
+          padding: "clamp(20px, 5vw, 36px)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "clamp(14px, 3vw, 22px)",
+          borderRadius: 24,
+          minHeight: "clamp(280px, 60vw, 360px)",
+          boxSizing: "border-box",
+          textAlign: "center",
+          background: `radial-gradient(70% 60% at 50% 25%, ${BRAND_100}aa 0%, transparent 70%), var(--card)`,
+          boxShadow: `0 0 0 1px ${HAIR}, 0 24px 60px -24px rgba(91,91,245,0.35), 0 8px 24px -12px rgba(168,85,247,0.25)`,
+          overflow: "hidden",
+        }}
+      >
+        <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.2em", fontWeight: 500 }}>
+          VOICE · LIVE
+        </div>
+        <h3
+          className="font-display"
           style={{
-            position: "relative",
-            width: "100%",
-            maxWidth: "100%",
-            padding: "clamp(24px, 5vw, 36px)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 22,
-            borderRadius: 18,
-            minHeight: 360,
-            boxSizing: "border-box",
-            textAlign: "center",
-            background: `radial-gradient(70% 60% at 50% 25%, ${BRAND_100}aa 0%, transparent 70%), var(--card)`,
+            color: INK,
+            fontSize: "clamp(26px, 4.2vw, 38px)",
+            lineHeight: 1.05,
+            letterSpacing: "-0.025em",
+            margin: 0,
           }}
         >
-          <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.2em", fontWeight: 500 }}>
-            VOICE · LIVE
-          </div>
-          <h3
-            className="font-display"
-            style={{
-              color: INK,
-              fontSize: "clamp(28px, 4.2vw, 38px)",
-              lineHeight: 1.05,
-              letterSpacing: "-0.025em",
-              margin: 0,
-            }}
-          >
-            Start with <em style={{ fontStyle: "italic" }}>Lara.</em>
-          </h3>
-          <p style={{ color: INK_MUTED, fontSize: 14.5, lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
-            One tap. Real conversation. Your AI Partner picks up right where you left off — voice in, voice out.
-          </p>
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginTop: "auto",
-              minHeight: 140,
-              padding: "8px 0",
-            }}
-          >
+          Start with <em style={{ fontStyle: "italic" }}>Lara.</em>
+        </h3>
+        <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
+          One tap. Real conversation. Your AI Partner picks up right where you left off — voice in, voice out.
+        </p>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop: "auto",
+            minHeight: "clamp(120px, 28vw, 160px)",
+            padding: "8px 0",
+            overflow: "hidden",
+          }}
+        >
+          {ready ? (
             <elevenlabs-convai
               agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
               variant="full"
-              style={{
-                display: "block",
-                width: "100%",
-                minWidth: 240,
-                minHeight: 120,
-              }}
+              style={{ width: "100%", maxWidth: "100%" }}
             ></elevenlabs-convai>
-          </div>
+          ) : (
+            <div
+              style={{
+                color: INK_MUTED,
+                fontSize: 13,
+                opacity: 0.7,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  border: `2px solid ${BRAND_100}`,
+                  borderTopColor: BRAND_500,
+                }}
+              />
+              Loading voice…
+            </div>
+          )}
         </div>
-      </GlowCard>
+      </div>
     </div>
   )
 }
