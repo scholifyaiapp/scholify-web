@@ -1168,7 +1168,7 @@ function VisualAIPartnerWidget() {
           Meet <em style={{ fontStyle: "italic" }}>Lara.</em>
         </h3>
         <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
-          Your AI coach. She knows your goal, your streak, and today's task — every message generated just for you.
+          Your AI Partner. She knows your goal, your streak, and today's task — every message generated just for you.
         </p>
 
         <motion.div
