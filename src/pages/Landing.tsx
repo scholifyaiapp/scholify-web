@@ -1184,10 +1184,20 @@ function VisualAIPartnerWidget() {
               justifyContent: "center",
               alignItems: "center",
               marginTop: "auto",
-              minHeight: 80,
+              minHeight: 140,
+              padding: "8px 0",
             }}
           >
-            <elevenlabs-convai agent-id="agent_1301krym07svfe3sbh7pt7y2428r"></elevenlabs-convai>
+            <elevenlabs-convai
+              agent-id="agent_1301krym07svfe3sbh7pt7y2428r"
+              variant="full"
+              style={{
+                display: "block",
+                width: "100%",
+                minWidth: 240,
+                minHeight: 120,
+              }}
+            ></elevenlabs-convai>
           </div>
         </div>
       </GlowCard>

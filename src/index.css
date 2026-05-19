@@ -352,6 +352,22 @@
   animation: border-rotate 8s linear infinite;
 }
 
+elevenlabs-convai {
+  display: block !important;
+  width: 100% !important;
+  min-width: 240px;
+  min-height: 120px;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 640px) {
+  elevenlabs-convai {
+    min-height: 140px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
