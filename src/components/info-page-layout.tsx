@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { useEffect } from "react"
+import LanguageToggle from "@/components/language-toggle"
+import { useT } from "@/i18n/LanguageProvider"
 
 /* ── Brand tokens (kept in sync with Landing.tsx / tutor-chat.tsx) ── */
 const INK = "#14141A"
@@ -28,6 +30,8 @@ interface InfoPageLayoutProps {
  * a centered text column, and a footer note.
  */
 export default function InfoPageLayout({ title, intro, updated, sections }: InfoPageLayoutProps) {
+  const t = useT()
+
   /* Static pages should open at the top, not wherever the user last scrolled. */
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -44,8 +48,11 @@ export default function InfoPageLayout({ title, intro, updated, sections }: Info
           className="inline-flex items-center gap-1 text-sm transition-colors hover:opacity-70"
           style={{ color: INK_MUTED }}
         >
-          <ArrowLeft className="size-4" /> Back to Scholify
+          <ArrowLeft className="size-4" /> {t("Back to Scholify")}
         </Link>
+        <div className="ml-auto">
+          <LanguageToggle />
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-2xl px-5 py-12 sm:py-16">
@@ -56,7 +63,7 @@ export default function InfoPageLayout({ title, intro, updated, sections }: Info
           {title}
         </h1>
         <p className="mt-2 text-xs uppercase tracking-widest" style={{ color: INK_MUTED }}>
-          Last updated {updated}
+          {t("Last updated")} {t(updated)}
         </p>
         <p className="mt-5 text-[15px] leading-relaxed" style={{ color: INK_MUTED }}>
           {intro}
@@ -86,7 +93,7 @@ export default function InfoPageLayout({ title, intro, updated, sections }: Info
           className="mt-14 border-t pt-6 text-sm"
           style={{ borderColor: BORDER, color: INK_MUTED }}
         >
-          Questions? Email us at{" "}
+          {t("Questions? Email us at")}{" "}
           <a href="mailto:support@scholify.app" style={{ color: BRAND_500, fontWeight: 600 }}>
             support@scholify.app
           </a>

@@ -350,4 +350,9 @@ export const ru: Record<string, string> = {
   "Confirm password": "Подтвердите пароль",
   "Toggle confirm password visibility": "Показать или скрыть подтверждение пароля",
   "Finish sign-up": "Завершить регистрацию",
+
+  /* ── Privacy / Terms / Support page frame ── */
+  "Back to Scholify": "Назад в Scholify",
+  "Last updated": "Обновлено",
+  "Questions? Email us at": "Вопросы? Напишите нам на",
 }
