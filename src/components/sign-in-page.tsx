@@ -355,8 +355,8 @@ export function LoginPage() {
 
               <p style={{ fontSize: 12, color: INK_MUTED, textAlign: "center", marginTop: 4 }}>
                 By signing in you agree to our{" "}
-                <a href="#" style={{ color: INK_MUTED, textDecoration: "underline" }}>Terms</a> &{" "}
-                <a href="#" style={{ color: INK_MUTED, textDecoration: "underline" }}>Privacy</a>.
+                <a href="/terms" style={{ color: INK_MUTED, textDecoration: "underline" }}>Terms</a> &{" "}
+                <a href="/privacy" style={{ color: INK_MUTED, textDecoration: "underline" }}>Privacy</a>.
               </p>
             </div>
           </form>

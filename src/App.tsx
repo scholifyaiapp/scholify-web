@@ -7,6 +7,9 @@ const SignIn = lazy(() => import("@/pages/SignIn"))
 const SignUp = lazy(() => import("@/pages/SignUp"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const Chat = lazy(() => import("@/pages/Chat"))
+const Privacy = lazy(() => import("@/pages/Privacy"))
+const Terms = lazy(() => import("@/pages/Terms"))
+const Support = lazy(() => import("@/pages/Support"))
 
 function Page({ name, children }: { name: string; children: React.ReactNode }) {
   return (
@@ -29,6 +32,9 @@ export default function App() {
       <Route path="/onboarding" element={<Page name="Onboarding"><SignUp /></Page>} />
       <Route path="/dashboard" element={<Page name="Dashboard"><Dashboard /></Page>} />
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
+      <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
+      <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
+      <Route path="/support" element={<Page name="Support"><Support /></Page>} />
       <Route
         path="*"
         element={

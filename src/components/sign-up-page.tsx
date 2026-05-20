@@ -300,8 +300,8 @@ export function SignupPage() {
                 />
                 <span>
                   I agree to the{" "}
-                  <a href="#" style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}>Terms</a> and{" "}
-                  <a href="#" style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}>Privacy Policy</a>.
+                  <a href="/terms" style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}>Terms</a> and{" "}
+                  <a href="/privacy" style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}>Privacy Policy</a>.
                 </span>
               </label>
 
