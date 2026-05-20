@@ -34,7 +34,7 @@ import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
 import LaraLandingWidget from "@/components/lara-landing-widget"
-import { AnimatedText } from "@/components/ui/animated-underline-text-one"
+import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
@@ -732,7 +732,7 @@ function HowItWorks() {
     <section id="how-it-works" style={{ padding: "96px 24px", textAlign: "center" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <SectionLabel>HOW IT WORKS</SectionLabel>
-        <AnimatedText
+        <AnimatedUnderlineText
           text="From goal to habit in 15 seconds"
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
