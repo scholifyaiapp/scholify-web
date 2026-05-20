@@ -26,6 +26,13 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
       const element = localRef.current
       if (!element) return
 
+      // The magnet is a desktop pointer nicety. On touch devices the
+      // synthetic mousemove fired on tap shifts the element out from
+      // under the finger before the click lands, so the tap misses the
+      // link entirely. Skip the effect when there's no fine pointer.
+      const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      if (!finePointer) return
+
       const ctx = gsap.context(() => {
         const handleMouseMove = (e: MouseEvent) => {
           const rect = element.getBoundingClientRect()
