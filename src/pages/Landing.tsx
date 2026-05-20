@@ -703,23 +703,25 @@ function StatCard({ value, label, source, delay, tone = "blue" }: { value: strin
 }
 
 function Problem() {
+  const t = useT()
   return (
     <section style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 72px)", color: INK, margin: 0 }}>
-          The internet gave you everything to learn.
+          {t("The internet gave you everything to learn.")}
         </h2>
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(36px, 5vw, 72px)", margin: "16px 0 0", fontStyle: "italic" }}>
-          Scholify gives you the discipline to finish.
+          {t("Scholify gives you the discipline to finish.")}
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 18, maxWidth: 620, margin: "32px auto 0", lineHeight: 1.65 }}>
-          <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>92%</span> of online courses are abandoned within 30 days — not from lack of motivation, but lack of a daily rhythm. Scholify is the rhythm.
+          <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>92%</span>{" "}
+          {t("of online courses are abandoned within 30 days — not from lack of motivation, but lack of a daily rhythm. Scholify is the rhythm.")}
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
-          <StatCard tone="blue" value="92%" label="of online courses never finished" source="Source: MIT research" delay={0.05} />
-          <StatCard tone="green" value="5 min" label="is all Scholify asks per day" source="Less than one TikTok scroll" delay={0.15} />
-          <StatCard tone="purple" value="14×" label="more consistent than self-study" source="Based on habit formation research" delay={0.25} />
+          <StatCard tone="blue" value="92%" label={t("of online courses never finished")} source={t("Source: MIT research")} delay={0.05} />
+          <StatCard tone="green" value="5 min" label={t("is all Scholify asks per day")} source={t("Less than one TikTok scroll")} delay={0.15} />
+          <StatCard tone="purple" value="14×" label={t("more consistent than self-study")} source={t("Based on habit formation research")} delay={0.25} />
         </div>
       </div>
     </section>
@@ -736,12 +738,13 @@ const steps = [
 
 function HowItWorks() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-120px")
+  const t = useT()
   return (
     <section id="how-it-works" style={{ padding: "96px 24px", textAlign: "center" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <SectionLabel>HOW IT WORKS</SectionLabel>
+        <SectionLabel>{t("HOW IT WORKS")}</SectionLabel>
         <AnimatedUnderlineText
-          text="From goal to habit in 15 seconds"
+          text={t("From goal to habit in 15 seconds")}
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
           underlineClassName="text-[#5B5BF5]"
@@ -810,13 +813,13 @@ function HowItWorks() {
                   <step.Icon size={22} color={step.accent} strokeWidth={2.2} />
                 </div>
                 <div className="font-mono-pro" style={{ marginTop: 12, fontSize: 10, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>
-                  {step.label}
+                  {t(step.label)}
                 </div>
                 <div className="font-display" style={{ color: INK, fontSize: 26, marginTop: 6, letterSpacing: "-0.02em" }}>
-                  {step.title}
+                  {t(step.title)}
                 </div>
                 <div style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.7, marginTop: 10, maxWidth: 260 }}>
-                  {step.desc}
+                  {t(step.desc)}
                 </div>
               </motion.div>
             ))}
@@ -852,7 +855,8 @@ function FeatureCheck({ children }: { children: React.ReactNode }) {
   )
 }
 
-function FeatureBlock({ tag, title, desc, bullets, visual, reverse, index }: { tag: string; title: React.ReactNode; desc: string; bullets: string[]; visual: React.ReactNode; reverse: boolean; index: number }) {
+function FeatureBlock({ tag, title, desc, bullets, visual, reverse, index }: { tag: string; title: string; desc: string; bullets: string[]; visual: React.ReactNode; reverse: boolean; index: number }) {
+  const t = useT()
   return (
     <div
       style={{
@@ -871,13 +875,13 @@ function FeatureBlock({ tag, title, desc, bullets, visual, reverse, index }: { t
         transition={{ duration: 0.9, ease: EASE_DECISIVE, delay: index * 0.04 }}
         style={{ flex: 1, minWidth: 280 }}
       >
-        <SectionLabel>{tag}</SectionLabel>
+        <SectionLabel>{t(tag)}</SectionLabel>
         <h3 className="font-display text-pro-h" style={{ color: INK, fontSize: "clamp(32px, 4vw, 56px)", margin: "16px 0 0" }}>
-          {title}
+          {t(title)}
         </h3>
-        <p style={{ color: INK_MUTED, fontSize: 17, lineHeight: 1.7, marginTop: 18 }}>{desc}</p>
+        <p style={{ color: INK_MUTED, fontSize: 17, lineHeight: 1.7, marginTop: 18 }}>{t(desc)}</p>
         <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 14 }}>
-          {bullets.map((b) => <FeatureCheck key={b}>{b}</FeatureCheck>)}
+          {bullets.map((b) => <FeatureCheck key={b}>{t(b)}</FeatureCheck>)}
         </div>
       </motion.div>
       <motion.div
@@ -897,6 +901,7 @@ function FeatureBlock({ tag, title, desc, bullets, visual, reverse, index }: { t
 
 function VisualPlanGen() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
+  const t = useT()
   const tasks = [
     "Day 1 · IELTS — Task 1 fundamentals",
     "Day 2 · Task 1 — line graphs",
@@ -905,9 +910,9 @@ function VisualPlanGen() {
   ]
   return (
     <div ref={ref} className="soft-card" style={{ width: 420, maxWidth: "100%", padding: 28 }}>
-      <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.12em", color: INK_MUTED, fontWeight: 500 }}>YOUR GOAL</div>
+      <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.12em", color: INK_MUTED, fontWeight: 500 }}>{t("YOUR GOAL")}</div>
       <div style={{ color: INK, fontSize: 16, marginTop: 8, fontWeight: 500 }}>
-        Pass IELTS 7.0 in <span className="font-mono-pro tabular">47</span> days · <span className="font-mono-pro tabular">25</span> min/day
+        {t("Pass IELTS 7.0 in")} <span className="font-mono-pro tabular">47</span> {t("days")} · <span className="font-mono-pro tabular">25</span> {t("min/day")}
       </div>
       <div style={{ height: 1, background: HAIR, margin: "18px 0" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -916,18 +921,18 @@ function VisualPlanGen() {
           transition={{ duration: 1.8, repeat: 1, ease: "linear" }}
           style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${BRAND_100}`, borderTopColor: BRAND_500 }}
         />
-        <span style={{ color: INK_MUTED, fontSize: 13 }}>Lara is generating your plan…</span>
+        <span style={{ color: INK_MUTED, fontSize: 13 }}>{t("Lara is generating your plan…")}</span>
       </div>
       <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-        {tasks.map((t, i) => (
+        {tasks.map((task, i) => (
           <motion.div
-            key={t}
+            key={task}
             initial={{ opacity: 0, x: -10 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.45, delay: 0.6 + i * 0.18, ease: EASE_DECISIVE }}
             style={{ display: "flex", gap: 10, alignItems: "center", color: INK, fontSize: 13.5, fontWeight: 500 }}
           >
-            <Check size={14} color={SHIELD_500} strokeWidth={3} /> {t}
+            <Check size={14} color={SHIELD_500} strokeWidth={3} /> {t(task)}
           </motion.div>
         ))}
         <motion.div
@@ -937,7 +942,7 @@ function VisualPlanGen() {
           className="font-mono-pro"
           style={{ marginTop: 8, fontSize: 11, letterSpacing: "0.14em", color: BRAND_500, fontWeight: 500 }}
         >
-          ⬤ PLAN READY
+          ⬤ {t("PLAN READY")}
         </motion.div>
       </div>
     </div>
@@ -980,6 +985,7 @@ function ShieldBurst({ show }: { show: boolean }) {
 }
 
 function VisualShields() {
+  const t = useT()
   return (
     <div
       style={{
@@ -1001,17 +1007,17 @@ function VisualShields() {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingInline: 6 }}>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(250,250,247,0.55)", fontWeight: 500 }}>
-          ORDER
+          {t("ORDER")}
         </span>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: SHIELD_500, fontWeight: 500 }}>
-          STREAK INTACT
+          {t("STREAK INTACT")}
         </span>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(250,250,247,0.55)", fontWeight: 500 }}>
-          CHAOS
+          {t("CHAOS")}
         </span>
       </div>
       <p style={{ marginTop: 12, color: "rgba(250,250,247,0.65)", fontSize: 13, lineHeight: 1.55, fontStyle: "italic", textAlign: "center" }}>
-        Life keeps happening. Your streak doesn't break.
+        {t("Life keeps happening. Your streak doesn't break.")}
       </p>
     </div>
   )
@@ -1143,6 +1149,7 @@ function VisualLara() {
 
 function VisualAIPartnerWidget() {
   const prefersReduced = useReducedMotion()
+  const t = useT()
   const avatarSize = "clamp(150px, 32vw, 200px)"
   return (
     <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", display: "flex", justifyContent: "center" }}>
@@ -1167,7 +1174,7 @@ function VisualAIPartnerWidget() {
         }}
       >
         <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.2em", fontWeight: 500 }}>
-          YOUR AI PARTNER · ONLINE
+          {t("YOUR AI PARTNER · ONLINE")}
         </div>
         <h3
           className="font-display"
@@ -1179,10 +1186,10 @@ function VisualAIPartnerWidget() {
             margin: 0,
           }}
         >
-          Meet <em style={{ fontStyle: "italic" }}>Lara.</em>
+          {t("Meet Lara.")}
         </h3>
         <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
-          Your AI Partner. She knows your goal, your streak, and today's task — every message generated just for you.
+          {t("Your AI Partner. She knows your goal, your streak, and today's task — every message generated just for you.")}
         </p>
 
         <motion.div
@@ -1247,7 +1254,7 @@ function VisualAIPartnerWidget() {
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
             style={{ width: 8, height: 8, borderRadius: "50%", background: SHIELD_500 }}
           />
-          <span style={{ color: SHIELD_500, fontSize: 12, fontWeight: 600 }}>typing…</span>
+          <span style={{ color: SHIELD_500, fontSize: 12, fontWeight: 600 }}>{t("typing…")}</span>
         </div>
       </div>
     </div>
@@ -1280,6 +1287,7 @@ function HeatmapCell({ delay, intensity }: { delay: number; intensity: number })
 
 function VisualProgress() {
   const [hovered, setHovered] = useState(false)
+  const t = useT()
   const cells = Array.from({ length: 30 }, (_, i) => {
     const seed = (i * 7 + 3) % 10
     return seed < 2 ? 0 : seed < 4 ? 1 : seed < 6 ? 2 : seed < 8 ? 3 : 4
@@ -1287,7 +1295,7 @@ function VisualProgress() {
   return (
     <div className="soft-card" style={{ width: 380, maxWidth: "100%", padding: 26, position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div className="font-display" style={{ color: INK, fontSize: 22, letterSpacing: "-0.02em" }}>Week <span className="font-mono-pro tabular" style={{ fontFamily: "Geist Mono" }}>14</span></div>
+        <div className="font-display" style={{ color: INK, fontSize: 22, letterSpacing: "-0.02em" }}>{t("Week")} <span className="font-mono-pro tabular" style={{ fontFamily: "Geist Mono" }}>14</span></div>
         <div className="font-mono-pro" style={{ fontSize: 11, color: INK_MUTED, letterSpacing: "0.1em", fontWeight: 500 }}>SCHOLIFY</div>
       </div>
 
@@ -1298,13 +1306,13 @@ function VisualProgress() {
           { label: "Progress", v: "48%" },
         ].map((m) => (
           <div key={m.label}>
-            <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", fontWeight: 500 }}>{m.label.toUpperCase()}</div>
+            <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", fontWeight: 500 }}>{t(m.label).toUpperCase()}</div>
             <div className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500, marginTop: 4, fontSize: 18 }}>{m.v}</div>
           </div>
         ))}
       </div>
 
-      <div className="font-mono-pro" style={{ marginTop: 22, color: INK_MUTED, fontSize: 10, letterSpacing: "0.12em", fontWeight: 500 }}>LAST 30 DAYS</div>
+      <div className="font-mono-pro" style={{ marginTop: 22, color: INK_MUTED, fontSize: 10, letterSpacing: "0.12em", fontWeight: 500 }}>{t("LAST 30 DAYS")}</div>
       <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gap: 4 }}>
         {cells.map((intensity, i) => (
           <HeatmapCell key={i} delay={i * 0.04} intensity={intensity} />
@@ -1332,7 +1340,7 @@ function VisualProgress() {
           justifyContent: "center",
         }}
       >
-        <Share2 size={14} strokeWidth={2.2} /> Share
+        <Share2 size={14} strokeWidth={2.2} /> {t("Share")}
       </motion.button>
 
       <AnimatePresence>
@@ -1356,11 +1364,11 @@ function VisualProgress() {
               transform: "rotate(6deg)",
             }}
           >
-            <div className="font-mono-pro" style={{ fontSize: 9, color: "rgba(250,250,247,0.6)", letterSpacing: "0.1em", fontWeight: 500 }}>STORY · 1080×1920</div>
+            <div className="font-mono-pro" style={{ fontSize: 9, color: "rgba(250,250,247,0.6)", letterSpacing: "0.1em", fontWeight: 500 }}>{t("STORY · 1080×1920")}</div>
             <div className="font-display" style={{ marginTop: 14, fontSize: 22, lineHeight: 1.05 }}>
-              Day <span className="font-mono-pro tabular">14</span>.
+              {t("Day")} <span className="font-mono-pro tabular">14</span>.
               <br />
-              Still here.
+              {t("Still here.")}
             </div>
             <div
               style={{
@@ -1382,13 +1390,14 @@ function VisualProgress() {
 }
 
 function Features() {
+  const t = useT()
   return (
     <section id="features" style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
-          <SectionLabel>FEATURES</SectionLabel>
+          <SectionLabel>{t("FEATURES")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK, margin: "18px 0 0" }}>
-            Everything you need to actually <em style={{ fontStyle: "italic" }}>finish</em>.
+            {t("Everything you need to actually finish.")}
           </h2>
         </div>
 
@@ -1396,7 +1405,7 @@ function Features() {
           index={0}
           reverse={false}
           tag="AI BRAIN"
-          title={<>Lara knows your goal <em style={{ fontStyle: "italic" }}>inside out</em>.</>}
+          title="Lara knows your goal inside out."
           desc="The Scholify AI engine reads your goal, your deadline, and your daily time — then builds a specific, progressive plan that actually matches your life. Not a generic template."
           bullets={[
             "Generates unique plans for any learning goal",
@@ -1411,7 +1420,7 @@ function Features() {
           index={1}
           reverse
           tag="LIFE SHIELDS"
-          title={<>Miss days. <em style={{ fontStyle: "italic" }}>Keep your streak.</em></>}
+          title="Miss days. Keep your streak."
           desc="The #1 reason people quit: they miss one day and feel like they've failed. Scholify's Life Shields protect your streak when life gets in the way. Two shields per week. Lara adjusts the plan. You never start over."
           bullets={[
             "2 Life Shields every week, reset on Monday",
@@ -1426,7 +1435,7 @@ function Features() {
           index={2}
           reverse={false}
           tag="MEET YOUR AI PARTNER"
-          title={<>Your <em style={{ fontStyle: "italic" }}>AI Partner.</em></>}
+          title="Your AI Partner."
           desc="Your AI Partner is built into Scholify. It knows your name, your streak, your goal, and today's task. Every message it sends is generated just for you — specific, real, and actually useful."
           bullets={[
             "Personalised messages using your real data",
@@ -1441,7 +1450,7 @@ function Features() {
           index={3}
           reverse
           tag="PROGRESS"
-          title={<>Progress you'll want to <em style={{ fontStyle: "italic" }}>show off</em>.</>}
+          title="Progress you'll want to show off."
           desc="Shareable weekly report cards. 30-day heatmaps. Goal completion certificates. A Year Rewind video on Annual Pro. Every milestone is designed to be shared."
           bullets={[
             "Weekly progress card for Instagram Stories",
@@ -1469,6 +1478,7 @@ const featureCardImages = [
 ].join(",")
 
 function FeatureSwiper() {
+  const t = useT()
   const [dims, setDims] = useState<{ w: number; h: number }>(() => {
     if (typeof window === "undefined") return { w: 288, h: 396 }
     const w = window.innerWidth
@@ -1493,12 +1503,13 @@ function FeatureSwiper() {
   return (
     <section style={{ padding: "96px 24px", background: BG_PRIMARY }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>BUILT FOR EVERY GOAL</SectionLabel>
+        <SectionLabel>{t("BUILT FOR EVERY GOAL")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
-          Six ways Scholify <em style={{ fontStyle: "italic" }} className="grad-hero-text">shows up for you.</em>
+          {t("Six ways Scholify")}{" "}
+          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("shows up for you.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 560, margin: "20px auto 0", lineHeight: 1.65 }}>
-          Swipe through the deck — every card is a real piece of how the app works.
+          {t("Swipe through the deck — every card is a real piece of how the app works.")}
         </p>
 
         <div style={{ marginTop: 56, display: "flex", justifyContent: "center" }}>
@@ -1506,7 +1517,7 @@ function FeatureSwiper() {
         </div>
 
         <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.16em", marginTop: 28 }}>
-          DRAG TO SWIPE · LEFT OR RIGHT
+          {t("DRAG TO SWIPE · LEFT OR RIGHT")}
         </p>
       </div>
     </section>
@@ -1516,6 +1527,7 @@ function FeatureSwiper() {
 /* ─────────────────────── IDENTITY (dark) ─────────────────────── */
 
 function Identity() {
+  const t = useT()
   return (
     <section
       style={{
@@ -1527,25 +1539,25 @@ function Identity() {
       }}
     >
       <div style={{ position: "relative", maxWidth: 1180, margin: "0 auto", textAlign: "center", width: "100%", zIndex: 2 }}>
-        <SectionLabel tone="inverse">THE TRANSFORMATION</SectionLabel>
+        <SectionLabel tone="inverse">{t("THE TRANSFORMATION")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK_INVERSE, margin: "18px 0 0" }}>
-          You're not learning a skill.
+          {t("You're not learning a skill.")}
         </h2>
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(40px, 5vw, 80px)", margin: "16px 0 0", fontStyle: "italic" }}>
-          You're becoming someone who shows up.
+          {t("You're becoming someone who shows up.")}
         </h2>
         <p style={{ color: "rgba(250,250,247,0.65)", fontSize: 18, maxWidth: 620, margin: "24px auto 0", lineHeight: 1.65 }}>
-          Drag the slider — see what 60 days of Scholify actually changes.
+          {t("Drag the slider — see what 60 days of Scholify actually changes.")}
         </p>
 
         <div style={{ marginTop: 56 }}>
           <ImageComparison
             beforeImage="/identity-before.webp"
             afterImage="/identity-after.webp"
-            beforeLabel="BEFORE SCHOLIFY"
-            afterLabel="AFTER SCHOLIFY"
-            altBefore="A student before using Scholify — distracted, surrounded by unfinished courses and unused notebooks."
-            altAfter="A student after 60 days of Scholify — focused, organized, on a streak."
+            beforeLabel={t("BEFORE SCHOLIFY")}
+            afterLabel={t("AFTER SCHOLIFY")}
+            altBefore={t("A student before using Scholify — distracted, surrounded by unfinished courses and unused notebooks.")}
+            altAfter={t("A student after 60 days of Scholify — focused, organized, on a streak.")}
             aspectRatio="3/2"
             className="!max-w-5xl"
           />
@@ -1617,18 +1629,21 @@ const learnerTestimonials: { name: string; role: string; text: string; image: st
 ]
 
 function Stories() {
+  const t = useT()
   return (
     <section id="stories" style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>LEARNER STORIES</SectionLabel>
+        <SectionLabel>{t("LEARNER STORIES")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
-          Real goals. <em style={{ fontStyle: "italic" }}>Real results.</em>
+          {t("Real goals.")} <em style={{ fontStyle: "italic" }}>{t("Real results.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 540, margin: "16px auto 0", lineHeight: 1.65 }}>
-          Thousands of learners finish what they started — and they tell us why.
+          {t("Thousands of learners finish what they started — and they tell us why.")}
         </p>
 
-        <TestimonialsColumns testimonials={learnerTestimonials} />
+        <TestimonialsColumns
+          testimonials={learnerTestimonials.map((x) => ({ ...x, text: t(x.text), role: t(x.role) }))}
+        />
       </div>
     </section>
   )
@@ -1789,15 +1804,16 @@ const scholifyFeatures: ScholifyFeature[] = [
 
 function Pricing() {
   const navigate = useNavigate()
+  const t = useT()
   return (
     <section id="pricing" style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>PRICING</SectionLabel>
+        <SectionLabel>{t("PRICING")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
-          Start free. <em style={{ fontStyle: "italic" }}>Upgrade when you're ready.</em>
+          {t("Start free.")} <em style={{ fontStyle: "italic" }}>{t("Upgrade when you're ready.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 14, maxWidth: 560, marginInline: "auto" }}>
-          7-day free trial — no credit card required. Annual saves 43%.
+          {t("7-day free trial — no credit card required. Annual saves 43%.")}
         </p>
 
         <div
@@ -1823,22 +1839,22 @@ function Pricing() {
               starterAnnual={3.99}
               proMonth={13.99}
               proAnnual={7.92}
-              starterLabel="Beginner"
-              proLabel="Pro"
-              ctaLabel="Start 7-day free trial"
+              starterLabel={t("Beginner")}
+              proLabel={t("Pro")}
+              ctaLabel={t("Start 7-day free trial")}
               onCta={() => navigate("/onboarding")}
             />
           </div>
 
           <div className="soft-card" style={{ padding: 32 }}>
             <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>
-              WHAT'S INCLUDED
+              {t("WHAT'S INCLUDED")}
             </div>
             <h3 className="font-display" style={{ color: INK, fontSize: 26, margin: "10px 0 4px", letterSpacing: "-0.02em" }}>
-              Every plan. Every day.
+              {t("Every plan. Every day.")}
             </h3>
             <p style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>
-              Beginner gets you the system. Pro adds Lara's voice and the share-worthy proof.
+              {t("Beginner gets you the system. Pro adds Lara's voice and the share-worthy proof.")}
             </p>
 
             <div style={{ height: 1, background: HAIR, margin: "22px 0" }} />
@@ -1863,7 +1879,7 @@ function Pricing() {
                     <Check size={12} strokeWidth={3} />
                   </div>
                   <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ color: INK, fontSize: 14.5, fontWeight: 500 }}>{f.label}</span>
+                    <span style={{ color: INK, fontSize: 14.5, fontWeight: 500 }}>{t(f.label)}</span>
                     {f.pro && (
                       <span
                         className="font-mono-pro"
@@ -1888,7 +1904,7 @@ function Pricing() {
         </div>
 
         <p style={{ color: INK_MUTED, fontSize: 13, marginTop: 28 }}>
-          No credit card to start the trial. Cancel anytime.
+          {t("No credit card to start the trial. Cancel anytime.")}
         </p>
       </div>
     </section>
@@ -1898,15 +1914,16 @@ function Pricing() {
 /* ─────────────────────── AWARDS ─────────────────────── */
 
 function Awards() {
+  const t = useT()
   return (
     <section style={{ padding: "80px 24px", textAlign: "center" }}>
       <div style={{ maxWidth: 960, margin: "0 auto" }}>
-        <SectionLabel>AWARDS</SectionLabel>
+        <SectionLabel>{t("AWARDS")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(32px, 4vw, 56px)", color: INK, margin: "18px 0 0" }}>
-          Awarded on every store.
+          {t("Awarded on every store.")}
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 12, maxWidth: 540, marginInline: "auto" }}>
-          Editors' Choice. Year after year. The system learners actually finish with.
+          {t("Editors' Choice. Year after year. The system learners actually finish with.")}
         </p>
 
         <motion.div
@@ -1923,12 +1940,12 @@ function Awards() {
             alignItems: "center",
           }}
         >
-          <StoreBadge store="app-store" award="Editors' Choice" caption="2026" />
-          <StoreBadge store="google-play" award="Editors' Choice" caption="2026" />
+          <StoreBadge store="app-store" award={t("Editors' Choice")} caption="2026" />
+          <StoreBadge store="google-play" award={t("Editors' Choice")} caption="2026" />
         </motion.div>
 
         <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginTop: 28 }}>
-          HOVER TO TILT
+          {t("HOVER TO TILT")}
         </p>
       </div>
     </section>
