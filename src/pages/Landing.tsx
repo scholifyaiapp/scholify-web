@@ -295,7 +295,7 @@ function Nav() {
         />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <LanguageToggle />
         <a
           href="/signin"
@@ -303,8 +303,8 @@ function Nav() {
             e.preventDefault()
             navigate("/signin")
           }}
-          className="scholify-glass-pill rounded-full px-5 py-2 text-sm font-semibold"
-          style={{ color: "var(--foreground)", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+          className="scholify-glass-pill hidden rounded-full px-5 py-2 text-sm font-semibold md:inline-flex"
+          style={{ color: "var(--foreground)", textDecoration: "none", alignItems: "center" }}
         >
           {t("Sign in")}
         </a>
@@ -314,7 +314,7 @@ function Nav() {
             e.preventDefault()
             navigate("/onboarding")
           }}
-          className="scholify-glass-pill-primary rounded-full px-5 py-2 text-sm font-bold"
+          className="scholify-glass-pill-primary rounded-full px-4 py-2 text-sm font-bold sm:px-5"
           style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
         >
           {t("Start for free")}

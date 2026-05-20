@@ -1,13 +1,13 @@
 import { useLanguage, type Lang } from "@/i18n/LanguageProvider"
 
-const OPTIONS: { code: Lang; label: string }[] = [
-  { code: "en", label: "ENG" },
-  { code: "ru", label: "RUS" },
+const OPTIONS: { code: Lang; label: string; aria: string }[] = [
+  { code: "en", label: "en", aria: "English" },
+  { code: "ru", label: "ru", aria: "Русский" },
 ]
 
 /**
- * ENG / RUS segmented language switch. Reads and writes the global
- * language via LanguageProvider; the choice persists in localStorage.
+ * Compact en / ru language switch. Kept deliberately small so it fits
+ * the nav on mobile without crowding the call-to-action buttons.
  */
 export default function LanguageToggle({ className = "" }: { className?: string }) {
   const { lang, setLang } = useLanguage()
@@ -16,10 +16,10 @@ export default function LanguageToggle({ className = "" }: { className?: string 
     <div
       role="group"
       aria-label="Language"
-      className={`inline-flex items-center rounded-full p-0.5 ${className}`}
+      className={`inline-flex shrink-0 items-center rounded-full p-[2px] ${className}`}
       style={{ background: "rgba(20,20,26,0.06)" }}
     >
-      {OPTIONS.map(({ code, label }) => {
+      {OPTIONS.map(({ code, label, aria }) => {
         const active = lang === code
         return (
           <button
@@ -27,7 +27,8 @@ export default function LanguageToggle({ className = "" }: { className?: string 
             type="button"
             onClick={() => setLang(code)}
             aria-pressed={active}
-            className="rounded-full px-2.5 py-1 text-xs font-bold transition-colors"
+            aria-label={aria}
+            className="rounded-full px-2 py-[3px] text-[11px] font-bold leading-none transition-colors"
             style={{
               background: active ? "#5B5BF5" : "transparent",
               color: active ? "#FAFAF7" : "#6B6B76",
