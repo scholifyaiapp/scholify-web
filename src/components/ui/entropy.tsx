@@ -5,16 +5,21 @@ interface EntropyProps {
   size?: number
 }
 
+const NEIGHBOR_RADIUS = 100
+
 export function Entropy({ className = "", size = 400 }: EntropyProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    const container = containerRef.current
+    if (!canvas || !container) return
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const dpr = window.devicePixelRatio || 1
+    // Cap DPR at 2 — beyond that the extra pixels cost more than they show.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
     canvas.width = size * dpr
     canvas.height = size * dpr
     canvas.style.width = `${size}px`
@@ -102,20 +107,51 @@ export function Entropy({ className = "", size = 400 }: EntropyProps) {
       }
     }
 
+    /*
+     * Neighbor search via a spatial hash grid — O(n) average.
+     * The original rebuilt this with an O(n²) filter (every particle
+     * tested against every other) every 30 frames, which produced a
+     * periodic main-thread stall. Buckets are sized to the search
+     * radius, so only the 3×3 cells around a particle need checking.
+     */
     function updateNeighbors() {
-      particles.forEach((particle) => {
-        particle.neighbors = particles.filter((other) => {
-          if (other === particle) return false
-          const distance = Math.hypot(particle.x - other.x, particle.y - other.y)
-          return distance < 100
-        })
-      })
+      const cell = NEIGHBOR_RADIUS
+      const cols = Math.floor(size / cell) + 2
+      const buckets = new Map<number, Particle[]>()
+      const keyFor = (x: number, y: number) =>
+        (Math.floor(y / cell) + 1) * cols + (Math.floor(x / cell) + 1)
+
+      for (const p of particles) {
+        const k = keyFor(p.x, p.y)
+        const bucket = buckets.get(k)
+        if (bucket) bucket.push(p)
+        else buckets.set(k, [p])
+      }
+
+      for (const p of particles) {
+        p.neighbors = []
+        const cx = Math.floor(p.x / cell) + 1
+        const cy = Math.floor(p.y / cell) + 1
+        for (let gx = cx - 1; gx <= cx + 1; gx++) {
+          for (let gy = cy - 1; gy <= cy + 1; gy++) {
+            const bucket = buckets.get(gy * cols + gx)
+            if (!bucket) continue
+            for (const other of bucket) {
+              if (other === p) continue
+              if (Math.hypot(p.x - other.x, p.y - other.y) < NEIGHBOR_RADIUS)
+                p.neighbors.push(other)
+            }
+          }
+        }
+      }
     }
 
     let time = 0
-    let animationId: number
+    let animationId = 0
+    let running = false
+    let onScreen = false
 
-    function animate() {
+    function frame() {
       if (!ctx) return
       ctx.clearRect(0, 0, size, size)
       if (time % 30 === 0) updateNeighbors()
@@ -144,18 +180,63 @@ export function Entropy({ className = "", size = 400 }: EntropyProps) {
       ctx.stroke()
 
       time++
-      animationId = requestAnimationFrame(animate)
     }
 
-    animate()
+    function loop() {
+      frame()
+      animationId = requestAnimationFrame(loop)
+    }
+
+    function start() {
+      if (running) return
+      running = true
+      animationId = requestAnimationFrame(loop)
+    }
+
+    function stop() {
+      running = false
+      if (animationId) cancelAnimationFrame(animationId)
+      animationId = 0
+    }
+
+    // Reduced-motion: draw a single static frame, never loop.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      updateNeighbors()
+      frame()
+      return
+    }
+
+    // Only burn frames while the canvas is actually on screen and the
+    // tab is visible — this is what stops it dragging on the rest of
+    // the page once the user scrolls past it.
+    const evaluate = () => {
+      if (onScreen && !document.hidden) start()
+      else stop()
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        onScreen = entries.some((e) => e.isIntersecting)
+        evaluate()
+      },
+      { threshold: 0 },
+    )
+    io.observe(container)
+    document.addEventListener("visibilitychange", evaluate)
 
     return () => {
-      if (animationId) cancelAnimationFrame(animationId)
+      stop()
+      io.disconnect()
+      document.removeEventListener("visibilitychange", evaluate)
     }
   }, [size])
 
   return (
-    <div className={`relative ${className}`} style={{ width: size, height: size, background: "#000" }}>
+    <div
+      ref={containerRef}
+      className={`relative ${className}`}
+      style={{ width: size, height: size, background: "#000" }}
+    >
       <canvas ref={canvasRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
     </div>
   )

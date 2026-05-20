@@ -116,9 +116,31 @@ export function MovingBorder({
       const resizeObserver = new ResizeObserver(() => updateAnimation())
       resizeObserver.observe(root)
 
+      // The border animation repeats forever; pause it whenever the
+      // element is off-screen so it stops competing with scrolling.
+      const st = ScrollTrigger.create({
+        trigger: root,
+        start: "top bottom",
+        end: "bottom top",
+        onToggle: (self) => {
+          if (self.isActive) {
+            pathTl?.play()
+            colorTl?.play()
+          } else {
+            pathTl?.pause()
+            colorTl?.pause()
+          }
+        },
+      })
+      if (!st.isActive) {
+        pathTl?.pause()
+        colorTl?.pause()
+      }
+
       return () => {
         if (pathTl) pathTl.kill()
         if (colorTl) colorTl.kill()
+        st.kill()
         resizeObserver.disconnect()
       }
     },
