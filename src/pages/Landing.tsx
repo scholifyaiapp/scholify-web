@@ -37,7 +37,6 @@ import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-
 import { ShiningText } from "@/components/ui/shining-text"
 import { Component as AiLoader } from "@/components/ui/ai-loader"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
-import { Component as GlowBackground } from "@/components/ui/background-components"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
@@ -2040,8 +2039,7 @@ function Footer() {
 
 export default function Landing() {
   return (
-    <div style={{ background: "transparent", color: INK, minHeight: "100vh", overflowX: "hidden" }}>
-      <GlowBackground />
+    <div style={{ background: BG_PRIMARY, color: INK, minHeight: "100vh", overflowX: "hidden" }}>
       <LiquidGlassFilterDefs />
       <Nav />
       <Hero />
