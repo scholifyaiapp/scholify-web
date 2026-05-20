@@ -37,6 +37,8 @@ import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { ShiningText } from "@/components/ui/shining-text"
 import { Component as AiLoader } from "@/components/ui/ai-loader"
+import LanguageToggle from "@/components/language-toggle"
+import { useT } from "@/i18n/LanguageProvider"
 
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
@@ -246,6 +248,7 @@ function GhostCTA({ children, onClick }: { children: React.ReactNode; onClick?: 
 
 function Nav() {
   const navigate = useNavigate()
+  const t = useT()
   return (
     <motion.header
       initial={{ y: -20, opacity: 0, x: "-50%" }}
@@ -284,15 +287,16 @@ function Nav() {
       >
         <NavHeader
           items={[
-            { label: "Features", href: "#features" },
-            { label: "How it works", href: "#how-it-works" },
-            { label: "Pricing", href: "#pricing" },
-            { label: "Stories", href: "#stories" },
+            { label: t("Features"), href: "#features" },
+            { label: t("How it works"), href: "#how-it-works" },
+            { label: t("Pricing"), href: "#pricing" },
+            { label: t("Stories"), href: "#stories" },
           ]}
         />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <LanguageToggle />
         <a
           href="/signin"
           onClick={(e) => {
@@ -302,7 +306,7 @@ function Nav() {
           className="scholify-glass-pill rounded-full px-5 py-2 text-sm font-semibold"
           style={{ color: "var(--foreground)", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
         >
-          Sign in
+          {t("Sign in")}
         </a>
         <a
           href="/onboarding"
@@ -313,7 +317,7 @@ function Nav() {
           className="scholify-glass-pill-primary rounded-full px-5 py-2 text-sm font-bold"
           style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
         >
-          Start for free
+          {t("Start for free")}
         </a>
       </div>
     </motion.header>
@@ -323,6 +327,7 @@ function Nav() {
 /* ─────────────────────── HERO ─────────────────────── */
 
 function HeroHeadline() {
+  const t = useT()
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -337,7 +342,7 @@ function HeroHeadline() {
       }}
     >
       <AnimatedText
-        text="Welcome to Scholify"
+        text={t("Welcome to Scholify")}
         textClassName="font-display font-normal tracking-[-0.03em]"
         gradientColors="linear-gradient(90deg, #14141A 0%, #5B5BF5 40%, #A855F7 50%, #5B5BF5 60%, #14141A 100%)"
         gradientAnimationDuration={3.5}
@@ -534,6 +539,7 @@ function PhoneMockup() {
 
 function Hero() {
   const navigate = useNavigate()
+  const t = useT()
   return (
     <section
       style={{
@@ -566,7 +572,7 @@ function Hero() {
           }}
         >
           <Sparkles size={14} color={BRAND_500} />
-          <span style={{ color: INK_MUTED }}>Lara just got 3× smarter — try it free</span>
+          <span style={{ color: INK_MUTED }}>{t("Lara just got 3× smarter — try it free")}</span>
         </motion.div>
 
         <HeroHeadline />
@@ -583,7 +589,7 @@ function Hero() {
             lineHeight: 1.55,
           }}
         >
-          Set your goal. Lara builds the plan. You just show up.
+          {t("Set your goal. Lara builds the plan. You just show up.")}
         </motion.p>
 
         <motion.div
@@ -593,7 +599,7 @@ function Hero() {
           style={{ marginTop: 40, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
         >
           <PrimaryCTA onClick={() => navigate("/onboarding")}>
-            Start for free <ArrowRight size={18} strokeWidth={2.4} />
+            {t("Start for free")} <ArrowRight size={18} strokeWidth={2.4} />
           </PrimaryCTA>
         </motion.div>
 
@@ -631,17 +637,17 @@ function Hero() {
             ))}
           </div>
           <span style={{ color: INK_MUTED, fontSize: 13 }}>
-            <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>2,400+</span> learners ·{" "}
+            <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>2,400+</span> {t("learners")} ·{" "}
             <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>4.9</span>
             <Star size={11} strokeWidth={0} fill={FIRE_500} style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 2, marginRight: 2 }} />
-            · Free to start
+            · {t("Free to start")}
           </span>
         </motion.div>
 
         <div style={{ marginTop: 48 }}>
           <HandWrittenTitle
-            title="Just start today."
-            subtitle="The rest is on Scholify."
+            title={t("Just start today.")}
+            subtitle={t("The rest is on Scholify.")}
           />
         </div>
       </div>
