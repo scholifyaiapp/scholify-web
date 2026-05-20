@@ -36,6 +36,7 @@ import LazyOnView from "@/components/LazyOnView"
 import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { ShiningText } from "@/components/ui/shining-text"
+import { Component as AiLoader } from "@/components/ui/ai-loader"
 
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
@@ -2035,7 +2036,8 @@ export default function Landing() {
       <Hero />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
-      <div className="flex justify-center pb-16">
+      <div className="flex flex-col items-center gap-6 pb-20">
+        <AiLoader size={150} text="Generating" fullScreen={false} />
         <ShiningText text="Scholify is generating..." />
       </div>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
