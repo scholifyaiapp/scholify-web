@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils"
+import LanguageToggle from "@/components/language-toggle"
+import { useT } from "@/i18n/LanguageProvider"
 import React, {
   useState,
   useRef,
@@ -294,6 +296,7 @@ interface AuthComponentProps {
 
 export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", onSuccess }: AuthComponentProps) => {
   const navigate = useNavigate()
+  const t = useT()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -326,7 +329,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
     if (modalStatus !== "closed" || authStep !== "confirmPassword") return
 
     if (password !== confirmPassword) {
-      setModalErrorMessage("Passwords do not match!")
+      setModalErrorMessage(t("Passwords do not match!"))
       setModalStatus("error")
     } else {
       setModalStatus("loading")
@@ -382,7 +385,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white border border-neutral-200 rounded-2xl p-8 w-full max-w-sm flex flex-col items-center gap-4 mx-2 shadow-xl">
             {(modalStatus === "error" || modalStatus === "success") && (
-              <button onClick={closeModal} aria-label="Close" className="absolute top-2 right-2 p-1 text-neutral-500 hover:text-neutral-900 transition-colors">
+              <button onClick={closeModal} aria-label={t("Close")} className="absolute top-2 right-2 p-1 text-neutral-500 hover:text-neutral-900 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             )}
@@ -390,7 +393,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
               <>
                 <AlertCircle className="w-12 h-12 text-red-500" />
                 <p className="text-lg font-medium text-neutral-900">{modalErrorMessage}</p>
-                <GlassButton onClick={closeModal} size="sm" className="mt-4">Try Again</GlassButton>
+                <GlassButton onClick={closeModal} size="sm" className="mt-4">{t("Try Again")}</GlassButton>
               </>
             )}
             {modalStatus === "loading" && (
@@ -398,7 +401,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                 {modalSteps.slice(0, -1).map((step, i) => (
                   <div key={i} className="flex flex-col items-center gap-4">
                     {step.icon}
-                    <p className="text-lg font-medium text-neutral-900">{step.message}</p>
+                    <p className="text-lg font-medium text-neutral-900">{t(step.message)}</p>
                   </div>
                 ))}
               </TextLoop>
@@ -406,7 +409,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
             {modalStatus === "success" && (
               <div className="flex flex-col items-center gap-4">
                 {modalSteps[modalSteps.length - 1].icon}
-                <p className="text-lg font-medium text-neutral-900">{modalSteps[modalSteps.length - 1].message}</p>
+                <p className="text-lg font-medium text-neutral-900">{t(modalSteps[modalSteps.length - 1].message)}</p>
               </div>
             )}
           </motion.div>
@@ -440,6 +443,10 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
         <h1 className="text-base font-bold text-[#14141A]">{brandName}</h1>
       </div>
 
+      <div className="fixed top-4 right-4 z-20">
+        <LanguageToggle />
+      </div>
+
       <div className={cn("flex w-full flex-1 h-full items-center justify-center", "relative overflow-hidden")}>
         <div className="absolute inset-0 z-0 opacity-50"><GradientBackground /></div>
         <fieldset disabled={modalStatus !== "closed"} className="relative z-10 flex flex-col items-center gap-8 w-[300px] mx-auto p-4">
@@ -448,11 +455,11 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
               <motion.div key="email-content" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center gap-4">
                 <BlurFade delay={0.25} className="w-full">
                   <div className="text-center">
-                    <p className="font-display font-normal text-4xl sm:text-5xl tracking-tight text-[#14141A] whitespace-nowrap">Start your streak</p>
+                    <p className="font-display font-normal text-4xl sm:text-5xl tracking-tight text-[#14141A] whitespace-nowrap">{t("Start your streak")}</p>
                   </div>
                 </BlurFade>
                 <BlurFade delay={0.5}>
-                  <p className="text-sm font-medium text-neutral-500">Continue with</p>
+                  <p className="text-sm font-medium text-neutral-500">{t("Continue with")}</p>
                 </BlurFade>
                 <BlurFade delay={0.75}>
                   <div className="flex items-center justify-center gap-4 w-full">
@@ -478,20 +485,20 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
             {authStep === "password" && (
               <motion.div key="password-title" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center text-center gap-4">
                 <BlurFade delay={0} className="w-full">
-                  <p className="font-display font-normal text-4xl sm:text-5xl tracking-tight text-[#14141A] whitespace-nowrap">Create a password</p>
+                  <p className="font-display font-normal text-4xl sm:text-5xl tracking-tight text-[#14141A] whitespace-nowrap">{t("Create a password")}</p>
                 </BlurFade>
                 <BlurFade delay={0.25}>
-                  <p className="text-sm font-medium text-neutral-500">At least 6 characters.</p>
+                  <p className="text-sm font-medium text-neutral-500">{t("At least 6 characters.")}</p>
                 </BlurFade>
               </motion.div>
             )}
             {authStep === "confirmPassword" && (
               <motion.div key="confirm-title" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center text-center gap-4">
                 <BlurFade delay={0} className="w-full">
-                  <p className="font-display font-normal text-4xl sm:text-5xl tracking-tight text-[#14141A] whitespace-nowrap">One last step</p>
+                  <p className="font-display font-normal text-4xl sm:text-5xl tracking-tight text-[#14141A] whitespace-nowrap">{t("One last step")}</p>
                 </BlurFade>
                 <BlurFade delay={0.25}>
-                  <p className="text-sm font-medium text-neutral-500">Confirm your password to continue.</p>
+                  <p className="text-sm font-medium text-neutral-500">{t("Confirm your password to continue.")}</p>
                 </BlurFade>
               </motion.div>
             )}
@@ -506,7 +513,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                       <AnimatePresence>
                         {authStep === "password" && (
                           <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3, delay: 0.4 }} className="absolute -top-6 left-4 z-10">
-                            <label className="text-xs text-neutral-500 font-semibold">Email</label>
+                            <label className="text-xs text-neutral-500 font-semibold">{t("Email")}</label>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -521,14 +528,14 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                             inputMode="email"
                             autoComplete="email"
                             autoFocus
-                            placeholder="Email"
+                            placeholder={t("Email")}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             onKeyDown={handleKeyDown}
                             className={cn("relative z-10 h-full w-0 flex-grow bg-transparent text-[#14141A] placeholder:text-neutral-400 focus:outline-none transition-[padding-right] duration-300 ease-in-out delay-300 text-base py-2", isEmailValid && authStep === "email" ? "pr-2" : "pr-0")}
                           />
                           <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isEmailValid && authStep === "email" ? "w-10 pr-1" : "w-0")}>
-                            <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with email">
+                            <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label={t("Continue with email")}>
                               <ArrowRight className="w-5 h-5" />
                             </GlassButton>
                           </div>
@@ -543,7 +550,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                           <AnimatePresence>
                             {password.length > 0 && (
                               <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10">
-                                <label className="text-xs text-neutral-500 font-semibold">Password</label>
+                                <label className="text-xs text-neutral-500 font-semibold">{t("Password")}</label>
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -552,7 +559,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                               <span className="glass-input-text-area"></span>
                               <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
                                 {isPasswordValid ? (
-                                  <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPassword(!showPassword)} className="text-neutral-500 hover:text-[#14141A] transition-colors p-2 rounded-full">
+                                  <button type="button" aria-label={t("Toggle password visibility")} onClick={() => setShowPassword(!showPassword)} className="text-neutral-500 hover:text-[#14141A] transition-colors p-2 rounded-full">
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                   </button>
                                 ) : (
@@ -563,14 +570,14 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                                 ref={passwordInputRef}
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
-                                placeholder="Password"
+                                placeholder={t("Password")}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 className="relative z-10 h-full w-0 flex-grow bg-transparent text-[#14141A] placeholder:text-neutral-400 focus:outline-none text-base py-2"
                               />
                               <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isPasswordValid ? "w-10 pr-1" : "w-0")}>
-                                <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Submit password">
+                                <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label={t("Submit password")}>
                                   <ArrowRight className="w-5 h-5" />
                                 </GlassButton>
                               </div>
@@ -579,7 +586,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                         </div>
                         <BlurFade inView delay={0.2}>
                           <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-neutral-500 hover:text-[#14141A] transition-colors">
-                            <ArrowLeft className="w-4 h-4" /> Go back
+                            <ArrowLeft className="w-4 h-4" /> {t("Go back")}
                           </button>
                         </BlurFade>
                       </BlurFade>
@@ -595,7 +602,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                     <AnimatePresence>
                       {confirmPassword.length > 0 && (
                         <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10">
-                          <label className="text-xs text-neutral-500 font-semibold">Confirm password</label>
+                          <label className="text-xs text-neutral-500 font-semibold">{t("Confirm password")}</label>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -604,7 +611,7 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                         <span className="glass-input-text-area"></span>
                         <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
                           {isConfirmPasswordValid ? (
-                            <button type="button" aria-label="Toggle confirm password visibility" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-neutral-500 hover:text-[#14141A] transition-colors p-2 rounded-full">
+                            <button type="button" aria-label={t("Toggle confirm password visibility")} onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-neutral-500 hover:text-[#14141A] transition-colors p-2 rounded-full">
                               {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                           ) : (
@@ -615,13 +622,13 @@ export const AuthComponent = ({ logo = <DefaultLogo />, brandName = "Scholify", 
                           ref={confirmPasswordInputRef}
                           type={showConfirmPassword ? "text" : "password"}
                           autoComplete="new-password"
-                          placeholder="Confirm password"
+                          placeholder={t("Confirm password")}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           className="relative z-10 h-full w-0 flex-grow bg-transparent text-[#14141A] placeholder:text-neutral-400 focus:outline-none text-base py-2"
                         />
                         <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isConfirmPasswordValid ? "w-10 pr-1" : "w-0")}>
-                          <GlassButton type="submit" size="icon" aria-label="Finish sign-up">
+                          <GlassButton type="submit" size="icon" aria-label={t("Finish sign-up")}>
                             <ArrowRight className="w-5 h-5" />
                           </GlassButton>
                         </div>

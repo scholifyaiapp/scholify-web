@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Mail } from "lucide-react"
+import LanguageToggle from "@/components/language-toggle"
+import { useT } from "@/i18n/LanguageProvider"
 
 interface PupilProps {
   size?: number
@@ -127,6 +129,7 @@ const EyeBall = ({ size = 48, pupilSize = 16, maxDistance = 10, eyeColor = "whit
 
 function LoginPage() {
   const navigate = useNavigate()
+  const t = useT()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -236,7 +239,7 @@ function LoginPage() {
     if (/\S+@\S+\.\S+/.test(email) && password.length >= 4) {
       navigate("/dashboard")
     } else {
-      setError("Please enter a valid email and a password of at least 4 characters.")
+      setError(t("Please enter a valid email and a password of at least 4 characters."))
       setIsLoading(false)
     }
   }
@@ -413,9 +416,9 @@ function LoginPage() {
         </div>
 
         <div className="relative z-20 hidden lg:flex items-center gap-8 text-sm text-neutral-500">
-          <a href="#" className="hover:text-[#14141A] transition-colors">Privacy</a>
-          <a href="#" className="hover:text-[#14141A] transition-colors">Terms</a>
-          <a href="#" className="hover:text-[#14141A] transition-colors">Contact</a>
+          <a href="/privacy" className="hover:text-[#14141A] transition-colors">{t("Privacy")}</a>
+          <a href="/terms" className="hover:text-[#14141A] transition-colors">{t("Terms")}</a>
+          <a href="/support" className="hover:text-[#14141A] transition-colors">{t("Contact")}</a>
         </div>
 
         <div className="absolute top-1/4 right-1/4 size-64 rounded-full blur-3xl" style={{ background: "rgba(91,91,245,0.06)" }} />
@@ -426,19 +429,23 @@ function LoginPage() {
       <div className="flex items-center justify-center p-6 sm:p-8 bg-[#FAFAF7]">
         <div className="w-full max-w-[420px]">
 
+          <div className="mb-6 flex justify-end">
+            <LanguageToggle />
+          </div>
+
           <div className="text-center mb-10">
-            <h1 className="font-display text-3xl sm:text-4xl font-normal tracking-tight mb-2 text-[#14141A]">Welcome back.</h1>
+            <h1 className="font-display text-3xl sm:text-4xl font-normal tracking-tight mb-2 text-[#14141A]">{t("Welcome back.")}</h1>
             <p className="text-neutral-500 text-sm">
-              New here?{" "}
+              {t("New here?")}{" "}
               <Link to="/sign-up" className="text-[#5B5BF5] font-semibold hover:underline">
-                Create an account
+                {t("Create an account")}
               </Link>
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">{t("Email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -455,7 +462,7 @@ function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">{t("Password")}</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -470,7 +477,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("Hide password") : t("Show password")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-[#14141A] transition-colors"
                 >
                   {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
@@ -482,11 +489,11 @@ function LoginPage() {
               <div className="flex items-center space-x-2">
                 <Checkbox id="remember" />
                 <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
-                  Remember for 30 days
+                  {t("Remember for 30 days")}
                 </Label>
               </div>
               <a href="#" className="text-sm text-[#5B5BF5] hover:underline font-medium">
-                Forgot password?
+                {t("Forgot password?")}
               </a>
             </div>
 
@@ -502,7 +509,7 @@ function LoginPage() {
               disabled={isLoading}
               className="w-full h-12 text-base font-medium bg-[#14141A] text-white hover:bg-[#3F3F46]"
             >
-              {isLoading ? "Signing in..." : "Log in"}
+              {isLoading ? t("Signing in...") : t("Log in")}
             </Button>
           </form>
 
@@ -513,14 +520,14 @@ function LoginPage() {
               type="button"
             >
               <Mail className="mr-2 size-5" />
-              Log in with Google
+              {t("Log in with Google")}
             </Button>
           </div>
 
           <div className="text-center text-sm text-neutral-500 mt-8">
-            Don't have an account?{" "}
+            {t("Don't have an account?")}{" "}
             <Link to="/sign-up" className="text-[#14141A] font-medium hover:underline">
-              Sign up
+              {t("Sign up")}
             </Link>
           </div>
         </div>
