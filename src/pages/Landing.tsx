@@ -16,7 +16,6 @@ import {
   ArrowRight,
   Check,
   X,
-  Sparkles,
   Play,
   Star,
 } from "lucide-react"
@@ -37,6 +36,7 @@ import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { ShiningText } from "@/components/ui/shining-text"
 import { Component as AiLoader } from "@/components/ui/ai-loader"
+import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
@@ -555,25 +555,11 @@ function Hero() {
       }}
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <motion.div
-          initial={{ y: -16, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.15, ease: EASE_DECISIVE }}
-          className="glass-light"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 14px 6px 8px",
-            borderRadius: 999,
-            fontSize: 13,
-            fontWeight: 500,
-            color: INK,
-          }}
-        >
-          <Sparkles size={14} color={BRAND_500} />
-          <span style={{ color: INK_MUTED }}>{t("Lara just got 3× smarter — try it free")}</span>
-        </motion.div>
+        <UpgradeBanner
+          buttonText={t("Lara just got 3× smarter")}
+          description={t("— try it free")}
+          onClick={() => navigate("/onboarding")}
+        />
 
         <HeroHeadline />
 

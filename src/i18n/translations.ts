@@ -24,7 +24,8 @@ export const ru: Record<string, string> = {
   "Start for free": "Начать бесплатно",
 
   /* ── Hero ── */
-  "Lara just got 3× smarter — try it free": "Лара стала в 3 раза умнее — попробуйте бесплатно",
+  "Lara just got 3× smarter": "Лара стала в 3 раза умнее",
+  "— try it free": "— попробуйте бесплатно",
   "Welcome to Scholify": "Добро пожаловать в Scholify",
   "Set your goal. Lara builds the plan. You just show up.":
     "Поставьте цель. Лара составит план. Вам остаётся только приходить.",
