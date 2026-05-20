@@ -33,6 +33,7 @@ import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
+import LaraLandingWidget from "@/components/lara-landing-widget"
 
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
@@ -2035,6 +2036,7 @@ export default function Landing() {
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 400 }}><Awards /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter /></LazyOnView>
+      <LaraLandingWidget />
     </div>
   )
 }
