@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, Target, Zap, Flame, ArrowUpIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/LanguageProvider";
 
 /* ── Brand tokens (kept in sync with Landing.tsx) ── */
 const INK = "#14141A";
@@ -30,31 +31,31 @@ function getLaraReply(raw: string): string {
   const t = raw.toLowerCase();
   const has = (...words: string[]) => words.some((w) => t.includes(w));
 
-  if (has("hello", "hey", "hi ", "good morning", "good evening") || t.trim() === "hi")
+  if (has("hello", "hey", "hi ", "good morning", "good evening", "привет", "здравств", "добрый") || t.trim() === "hi")
     return "Hey — good to see you here. I'm Lara, your learning partner. Tell me what you're working toward and I'll help you build the habit to actually get there. What are you learning right now?";
 
-  if (has("plan", "schedule", "roadmap"))
+  if (has("plan", "schedule", "roadmap", "план", "расписание"))
     return "Let's build it. I need three things from you: (1) what you want to learn, (2) your deadline, and (3) how many minutes a day you can realistically give me. Share those and I'll turn them into a day-by-day plan you can actually keep.";
 
-  if (has("explain", "what is", "how does", "understand", "concept", "teach me"))
+  if (has("explain", "what is", "how does", "understand", "concept", "teach me", "объясни", "что такое", "как работает", "научи"))
     return "Happy to teach it. Drop the exact topic or question, and tell me your level — total beginner or just rusty. I'll explain it in plain language, give you one concrete example, then check you got it with a quick question.";
 
-  if (has("quiz", "test me", "practice", "review", "flashcard"))
+  if (has("quiz", "test me", "practice", "review", "flashcard", "тест", "провер", "практик", "повтор"))
     return "Good instinct — recall is where real learning sticks. Tell me the subject and roughly what you've covered, and I'll fire off five short questions, one at a time. No grades, just reps. Ready?";
 
-  if (has("stuck", "hard", "difficult", "confus", "don't get", "dont get", "lost"))
+  if (has("stuck", "hard", "difficult", "confus", "don't get", "dont get", "lost", "застрял", "сложно", "трудно", "не понимаю"))
     return "That's a normal part of it — feeling stuck usually means you're right at the edge of learning something new. Tell me the exact spot you're stuck on and we'll break it into smaller pieces until one of them clicks.";
 
-  if (has("motivat", "give up", "quit", "tired", "burn out", "burnt", "lazy", "can't do", "cant do"))
+  if (has("motivat", "give up", "quit", "tired", "burn out", "burnt", "lazy", "can't do", "cant do", "мотивац", "сдат", "бросить", "устал", "лень"))
     return "I hear you. Here's the truth: most people quit by day 7 — if you're still showing up, you're already doing better than you think. You don't need motivation today, you need one small win. Give me 10 focused minutes on the tiniest task. What's the smallest next step you could take?";
 
-  if (has("streak"))
+  if (has("streak", "сери"))
     return "Streaks aren't about being perfect — they're about not letting one missed day become two. If you slip, your Life Shields protect the streak so you never start over. How's your streak looking today?";
 
-  if (has("thank", "appreciate", "helpful"))
+  if (has("thank", "appreciate", "helpful", "спасибо", "благодар"))
     return "Anytime — that's exactly what I'm here for. Showing up and asking is itself the habit. Come back tomorrow and we'll keep the momentum going.";
 
-  if (has("bye", "see you", "later", "good night", "goodnight"))
+  if (has("bye", "see you", "later", "good night", "goodnight", "пока", "до встречи", "увидимся", "спокойной ночи"))
     return "Go get some rest — you earned it. Same time tomorrow? Your future self is quietly counting on today's you.";
 
   return "Got it. Tell me a little more so I can genuinely help — what are you trying to learn, and what's getting in the way right now? The more specific you are, the more useful I can be.";
@@ -100,6 +101,7 @@ function ThinkingDots() {
 }
 
 export function TutorChat() {
+  const t = useT();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -133,7 +135,7 @@ export function TutorChat() {
   }, []);
 
   const respond = useCallback((userText: string) => {
-    const reply = getLaraReply(userText);
+    const reply = t(getLaraReply(userText));
     setThinking(true);
 
     const startDelay = window.setTimeout(() => {
@@ -159,7 +161,7 @@ export function TutorChat() {
       step();
     }, 620);
     timers.current.push(startDelay);
-  }, []);
+  }, [t]);
 
   const send = useCallback(
     (raw: string) => {
@@ -210,11 +212,10 @@ export function TutorChat() {
                 className="font-display mt-6 text-4xl"
                 style={{ color: INK, letterSpacing: "-0.03em" }}
               >
-                Hi — I'm Lara.
+                {t("Hi — I'm Lara.")}
               </h2>
               <p className="mt-2 max-w-sm text-[15px]" style={{ color: INK_MUTED }}>
-                Your AI learning partner. Ask me to explain something, build a plan,
-                or just talk through what's slowing you down.
+                {t("Your AI learning partner. Ask me to explain something, build a plan, or just talk through what's slowing you down.")}
               </p>
 
               <div className="mt-8 grid w-full gap-2.5 sm:grid-cols-2">
@@ -222,7 +223,7 @@ export function TutorChat() {
                   <motion.button
                     key={label}
                     type="button"
-                    onClick={() => send(prompt)}
+                    onClick={() => send(t(prompt))}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 + i * 0.07 }}
@@ -237,7 +238,7 @@ export function TutorChat() {
                     >
                       <Icon size={16} color={BRAND_500} />
                     </span>
-                    {label}
+                    {t(label)}
                   </motion.button>
                 ))}
               </div>
@@ -318,7 +319,7 @@ export function TutorChat() {
               onKeyDown={handleKeyDown}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="Ask Lara anything about your learning…"
+              placeholder={t("Ask Lara anything about your learning…")}
               className="max-h-40 flex-1 resize-none bg-transparent px-3 py-2 text-[15px] outline-none placeholder:text-[#9A9AA3]"
               style={{ color: INK }}
             />
@@ -332,13 +333,13 @@ export function TutorChat() {
                 background: `linear-gradient(135deg, ${BRAND_500}, ${PLUM_500})`,
                 color: CREAM,
               }}
-              aria-label="Send message"
+              aria-label={t("Send message")}
             >
               <ArrowUpIcon size={18} />
             </motion.button>
           </div>
           <p className="mt-2 text-center text-xs" style={{ color: INK_MUTED }}>
-            Lara is a demo tutor — responses are illustrative for now.
+            {t("Lara is a demo tutor — responses are illustrative for now.")}
           </p>
         </div>
       </div>

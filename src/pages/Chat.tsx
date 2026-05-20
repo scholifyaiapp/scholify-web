@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { TutorChat } from "@/components/ui/tutor-chat"
+import LanguageToggle from "@/components/language-toggle"
+import { useT } from "@/i18n/LanguageProvider"
 
 const LARA_AVATAR =
   "https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
 
 export default function Chat() {
+  const t = useT()
   return (
     <div className="flex h-screen flex-col" style={{ background: "#FAFAF7" }}>
       <header
@@ -17,7 +20,7 @@ export default function Chat() {
           className="inline-flex items-center gap-1 text-sm transition-colors"
           style={{ color: "#6B6B76" }}
         >
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" /> {t("Back")}
         </Link>
         <span className="mx-1 h-4 w-px" style={{ background: "#EAEAEF" }} />
         <img
@@ -30,11 +33,14 @@ export default function Chat() {
         />
         <div className="leading-tight">
           <h1 className="font-display text-lg" style={{ color: "#14141A" }}>
-            Lara
+            {t("Lara")}
           </h1>
           <p className="text-[11px]" style={{ color: "#6B6B76" }}>
-            Your AI learning partner
+            {t("Your AI learning partner")}
           </p>
+        </div>
+        <div className="ml-auto">
+          <LanguageToggle />
         </div>
       </header>
       <div className="min-h-0 flex-1">

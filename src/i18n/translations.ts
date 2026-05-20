@@ -247,4 +247,66 @@ export const ru: Record<string, string> = {
   "Privacy": "Конфиденциальность",
   "Terms": "Условия",
   "Support": "Поддержка",
+
+  /* ── Dashboard ── */
+  "Home": "Главная",
+  "Goals": "Цели",
+  "AI Tutor": "ИИ-репетитор",
+  "Settings": "Настройки",
+  "Workspace": "Рабочая область",
+  "v0.1 · learning never stops": "v0.1 · обучение не останавливается",
+  "Today": "Сегодня",
+  "Weekly focus minutes": "Минуты концентрации за неделю",
+  "Where your hours actually went.": "Куда на самом деле ушли ваши часы.",
+  "Math · Algebra II": "Математика · Алгебра II",
+  "Spanish · A2 → B1": "Испанский · A2 → B1",
+  "CS · Data structures": "Информатика · Структуры данных",
+  "Your streak": "Ваша серия",
+  "Every square is a day you studied.": "Каждый квадрат — день, когда вы учились.",
+  "Monthly recurring revenue": "Ежемесячный регулярный доход",
+  "Users": "Пользователи",
+  "User growth": "Рост числа пользователей",
+  "View more →": "Подробнее →",
+
+  /* ── Chat / Lara ── */
+  "Back": "Назад",
+  "Lara": "Лара",
+  "Your AI learning partner": "Ваш ИИ-партнёр по обучению",
+  "Build me a study plan": "Составь мне план обучения",
+  "Explain something I'm stuck on": "Объясни то, в чём я застрял",
+  "Quiz me on what I learned": "Проверь меня по пройденному",
+  "I'm losing motivation": "Я теряю мотивацию",
+  "Can you build me a study plan?": "Можешь составить мне план обучения?",
+  "Explain a concept I'm stuck on.": "Объясни концепцию, в которой я застрял.",
+  "Quiz me on what I learned today.": "Проверь меня по тому, что я изучил сегодня.",
+  "I'm losing motivation — help me stay on track.":
+    "Я теряю мотивацию — помоги не сбиться с пути.",
+  "Hi — I'm Lara.": "Привет — я Лара.",
+  "Your AI learning partner. Ask me to explain something, build a plan, or just talk through what's slowing you down.":
+    "Ваш ИИ-партнёр по обучению. Попросите меня что-нибудь объяснить, составить план или просто обсудите, что вам мешает.",
+  "Ask Lara anything about your learning…":
+    "Спросите Лару о чём угодно по вашему обучению…",
+  "Send message": "Отправить сообщение",
+  "Lara is a demo tutor — responses are illustrative for now.":
+    "Лара — демо-репетитор: ответы пока иллюстративные.",
+  "Hey — good to see you here. I'm Lara, your learning partner. Tell me what you're working toward and I'll help you build the habit to actually get there. What are you learning right now?":
+    "Привет — рада видеть вас здесь. Я Лара, ваш партнёр по обучению. Расскажите, к чему вы стремитесь, и я помогу выработать привычку, чтобы действительно этого достичь. Что вы изучаете сейчас?",
+  "Let's build it. I need three things from you: (1) what you want to learn, (2) your deadline, and (3) how many minutes a day you can realistically give me. Share those and I'll turn them into a day-by-day plan you can actually keep.":
+    "Давайте составим. Мне нужны три вещи: (1) что вы хотите изучить, (2) ваш срок и (3) сколько минут в день вы реально готовы уделять. Сообщите их — и я превращу это в план по дням, которого вы действительно сможете придерживаться.",
+  "Happy to teach it. Drop the exact topic or question, and tell me your level — total beginner or just rusty. I'll explain it in plain language, give you one concrete example, then check you got it with a quick question.":
+    "С радостью научу. Напишите точную тему или вопрос и укажите ваш уровень — полный новичок или просто подзабыли. Я объясню простым языком, приведу один конкретный пример, а затем проверю понимание коротким вопросом.",
+  "Good instinct — recall is where real learning sticks. Tell me the subject and roughly what you've covered, and I'll fire off five short questions, one at a time. No grades, just reps. Ready?":
+    "Верный настрой — настоящее обучение закрепляется именно через припоминание. Назовите предмет и примерно что вы прошли, и я задам пять коротких вопросов, по одному. Без оценок, просто повторение. Готовы?",
+  "That's a normal part of it — feeling stuck usually means you're right at the edge of learning something new. Tell me the exact spot you're stuck on and we'll break it into smaller pieces until one of them clicks.":
+    "Это нормальная часть процесса — ощущение тупика обычно значит, что вы на самом краю освоения нового. Скажите, на чём именно застряли, и мы разобьём это на части поменьше, пока одна из них не станет понятной.",
+  "I hear you. Here's the truth: most people quit by day 7 — if you're still showing up, you're already doing better than you think. You don't need motivation today, you need one small win. Give me 10 focused minutes on the tiniest task. What's the smallest next step you could take?":
+    "Я вас понимаю. Вот правда: большинство бросают к 7-му дню — если вы всё ещё здесь, вы уже справляетесь лучше, чем думаете. Сегодня вам нужна не мотивация, а одна маленькая победа. Уделите 10 сосредоточенных минут самой крошечной задаче. Какой самый маленький следующий шаг вы могли бы сделать?",
+  "Streaks aren't about being perfect — they're about not letting one missed day become two. If you slip, your Life Shields protect the streak so you never start over. How's your streak looking today?":
+    "Серии — это не про идеальность, а про то, чтобы один пропущенный день не превратился в два. Если вы оступитесь, щиты жизни защитят серию, и вам не придётся начинать заново. Как ваша серия сегодня?",
+  "Anytime — that's exactly what I'm here for. Showing up and asking is itself the habit. Come back tomorrow and we'll keep the momentum going.":
+    "В любое время — именно для этого я здесь. Приходить и спрашивать — это уже сама привычка. Возвращайтесь завтра, и мы сохраним набранный темп.",
+  "Go get some rest — you earned it. Same time tomorrow? Your future self is quietly counting on today's you.":
+    "Идите отдохните — вы это заслужили. Завтра в это же время? Ваше будущее «я» тихо рассчитывает на сегодняшнего вас.",
+  "Got it. Tell me a little more so I can genuinely help — what are you trying to learn, and what's getting in the way right now? The more specific you are, the more useful I can be.":
+    "Поняла. Расскажите чуть больше, чтобы я действительно помогла — что вы пытаетесь изучить и что сейчас мешает? Чем конкретнее, тем полезнее я буду.",
 }

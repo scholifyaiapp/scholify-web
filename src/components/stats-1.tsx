@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useT } from "@/i18n/LanguageProvider";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -134,6 +135,7 @@ const data = [
 ];
 
 export default function Stats05() {
+  const t = useT();
   return (
     <div className="flex items-center justify-center p-10 w-full">
       <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full">
@@ -142,7 +144,7 @@ export default function Stats05() {
             <CardContent className="p-6">
               <dd className="flex items-start justify-between space-x-2">
                 <span className="truncate text-sm text-muted-foreground">
-                  {item.name}
+                  {t(item.name)}
                 </span>
                 <span
                   className={cn(
@@ -164,7 +166,7 @@ export default function Stats05() {
                 href={item.href}
                 className="px-6 py-3 text-sm font-medium text-primary hover:text-primary/90"
               >
-                View more →
+                {t("View more →")}
               </a>
             </CardFooter>
           </Card>
