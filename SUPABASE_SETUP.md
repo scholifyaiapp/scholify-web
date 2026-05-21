@@ -5,10 +5,9 @@ The app code is already done — these are the dashboard settings only.
 
 - **Project:** `tljczfktrbknfftdgilz`
 - **Dashboard:** https://supabase.com/dashboard/project/tljczfktrbknfftdgilz
+- **Brand domain:** https://scholifyapp.com
+- **Vercel domain:** https://scholify-web.vercel.app
 - **Time needed:** ~5 minutes (Steps 1–3). Google login (Step 4) ~10 more.
-
-When you see `YOUR-APP.vercel.app` below, replace it with your real Vercel
-domain (find it in Vercel → your project → **Domains**).
 
 ---
 
@@ -32,19 +31,23 @@ immediately — no "check your email" step.
 Without this, login links and Google sign-in redirect to the wrong place.
 
 1. Dashboard → **Authentication** → **URL Configuration**.
-2. **Site URL** — set to your live app:
+2. **Site URL** — set to your brand domain:
    ```
-   https://YOUR-APP.vercel.app
+   https://scholifyapp.com
    ```
-3. **Redirect URLs** — click **Add URL** for each of these:
+3. **Redirect URLs** — click **Add URL** and paste these (one per line). The
+   `/**` wildcard covers every page, including `/dashboard`:
    ```
-   https://YOUR-APP.vercel.app
-   https://YOUR-APP.vercel.app/dashboard
-   http://localhost:5173
-   http://localhost:5173/dashboard
+   https://scholifyapp.com/**
+   https://www.scholifyapp.com/**
+   https://scholify-web.vercel.app/**
+   http://localhost:5173/**
    ```
-   (The `localhost` ones let login work while developing on your computer.)
+   (The `localhost` one lets login work while developing on your computer.)
 4. Click **Save**.
+
+> Both domains are listed so login works whether a visitor lands on
+> `scholifyapp.com` or `scholify-web.vercel.app`.
 
 ---
 
@@ -52,7 +55,7 @@ Without this, login links and Google sign-in redirect to the wrong place.
 
 At this point **email + password login fully works**.
 
-1. Open `https://YOUR-APP.vercel.app/sign-up`.
+1. Open https://scholifyapp.com/sign-up (or the `.vercel.app` URL).
 2. Create an account → you land on the onboarding screen. ✅
 3. Open `/sign-in` and log in with the same details. ✅
 
@@ -73,11 +76,16 @@ Email/password login is unaffected.
    fill in app name "Scholify", your support email → Save.
 3. **APIs & Services** → **Credentials** → **Create Credentials** →
    **OAuth client ID** → Application type **Web application**.
-4. Under **Authorized redirect URIs**, add this exact URL:
+4. Under **Authorized JavaScript origins**, add:
+   ```
+   https://scholifyapp.com
+   https://scholify-web.vercel.app
+   ```
+5. Under **Authorized redirect URIs**, add this exact URL:
    ```
    https://tljczfktrbknfftdgilz.supabase.co/auth/v1/callback
    ```
-5. Click **Create**. Copy the **Client ID** and **Client Secret**.
+6. Click **Create**. Copy the **Client ID** and **Client Secret**.
 
 ### 4b. Paste them into Supabase
 
@@ -140,8 +148,8 @@ create trigger on_auth_user_created
 | Setting | Where | Value |
 |---|---|---|
 | Confirm email | Auth → Providers → Email | **OFF** |
-| Site URL | Auth → URL Configuration | `https://YOUR-APP.vercel.app` |
-| Redirect URLs | Auth → URL Configuration | app + `/dashboard`, plus localhost |
+| Site URL | Auth → URL Configuration | `https://scholifyapp.com` |
+| Redirect URLs | Auth → URL Configuration | `scholifyapp.com/**`, `scholify-web.vercel.app/**`, `localhost:5173/**` |
 | Google redirect URI | Google Cloud Console | `https://tljczfktrbknfftdgilz.supabase.co/auth/v1/callback` |
 
 The app credentials (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) are
