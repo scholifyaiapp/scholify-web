@@ -30,6 +30,22 @@ export interface AuthResult {
   error: string | null
   /** True when this account was just created (used for onboarding redirect). */
   isNewUser?: boolean
+  /** True when sign-up succeeded but the email still needs confirming. */
+  needsEmailConfirmation?: boolean
+}
+
+/** Turn raw Supabase auth errors into friendly, human messages. */
+function friendlyError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes("invalid login credentials"))
+    return "Wrong email or password. Please try again."
+  if (m.includes("email not confirmed"))
+    return "Please confirm your email first — check your inbox for the link."
+  if (m.includes("already registered") || m.includes("already exists"))
+    return "An account with this email already exists. Try signing in instead."
+  if (m.includes("rate limit"))
+    return "Too many attempts. Please wait a moment and try again."
+  return message
 }
 
 interface AuthContextValue {
@@ -120,8 +136,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(demo)
       return { error: null, isNewUser: false }
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error?.message ?? null, isNewUser: false }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error: friendlyError(error.message), isNewUser: false }
+    // Update state immediately so route guards don't race the listener.
+    if (data.session) {
+      setSession(data.session)
+      setUser(data.user)
+    }
+    return { error: null, isNewUser: false }
   }, [])
 
   const signUp = useCallback(async (input: SignUpInput): Promise<AuthResult> => {
@@ -132,12 +154,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(demo)
       return { error: null, isNewUser: true }
     }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { first_name: firstName, last_name: lastName } },
     })
-    return { error: error?.message ?? null, isNewUser: true }
+    if (error) return { error: friendlyError(error.message), isNewUser: true }
+    // With email confirmation OFF, signUp returns a session and the user is
+    // logged in instantly. With it ON, session is null until they confirm.
+    if (data.session) {
+      setSession(data.session)
+      setUser(data.user)
+    }
+    return { error: null, isNewUser: true, needsEmailConfirmation: !data.session }
   }, [])
 
   const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {

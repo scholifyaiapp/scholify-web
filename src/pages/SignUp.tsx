@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
-import { Eye, EyeOff, Check } from "lucide-react"
+import { Eye, EyeOff, Check, Mail } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import {
   AuthSplitLayout,
@@ -205,6 +205,79 @@ function TermsCheckbox({
   )
 }
 
+/* ── "Check your inbox" panel ────────────────────────────────── */
+
+function ConfirmEmailPanel({ email }: { email: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      style={{ textAlign: "center" }}
+    >
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          width: 64,
+          height: 64,
+          margin: "0 auto",
+          borderRadius: "50%",
+          background: IRIDESCENT,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 0 40px rgba(139,92,246,0.4)",
+        }}
+      >
+        <Mail size={28} color="#fff" />
+      </motion.div>
+
+      <h1
+        style={{
+          fontSize: 26,
+          fontWeight: 800,
+          color: "#F0EEFF",
+          letterSpacing: "-0.5px",
+          marginTop: 24,
+        }}
+      >
+        Check your inbox
+      </h1>
+      <p
+        style={{
+          fontSize: 14,
+          color: "rgba(240,238,255,0.45)",
+          marginTop: 10,
+          lineHeight: 1.6,
+        }}
+      >
+        We sent a confirmation link to{" "}
+        <span style={{ color: "#F0EEFF", fontWeight: 600 }}>{email}</span>.
+        <br />
+        Click it to activate your account and start your 7-day trial.
+      </p>
+
+      <Link
+        to="/sign-in"
+        style={{
+          display: "inline-block",
+          marginTop: 28,
+          fontSize: 14,
+          fontWeight: 500,
+          color: "rgba(139,92,246,0.9)",
+          textDecoration: "none",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(139,92,246,1)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(139,92,246,0.9)")}
+      >
+        Back to sign in →
+      </Link>
+    </motion.div>
+  )
+}
+
 /* ── Page ────────────────────────────────────────────────────── */
 
 export default function SignUp() {
@@ -220,6 +293,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [confirmSent, setConfirmSent] = useState(false)
 
   const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
 
@@ -239,7 +313,7 @@ export default function SignUp() {
 
     setLoading(true)
     setFormError(null)
-    const { error } = await signUp({
+    const { error, needsEmailConfirmation } = await signUp({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
@@ -247,6 +321,13 @@ export default function SignUp() {
     })
     if (error) {
       setFormError(error)
+      setLoading(false)
+      return
+    }
+    // Frictionless path: with email confirmation OFF the user is already
+    // signed in — go straight to onboarding. Otherwise show the inbox panel.
+    if (needsEmailConfirmation) {
+      setConfirmSent(true)
       setLoading(false)
       return
     }
@@ -265,6 +346,15 @@ export default function SignUp() {
     }
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
     navigate("/onboarding")
+  }
+
+  // After sign-up with email confirmation ON, show the inbox panel instead.
+  if (confirmSent) {
+    return (
+      <AuthSplitLayout>
+        <ConfirmEmailPanel email={email.trim()} />
+      </AuthSplitLayout>
+    )
   }
 
   return (
