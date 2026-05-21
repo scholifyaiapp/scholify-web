@@ -1,7 +1,7 @@
 import { Routes, Route, Link } from "react-router-dom"
 import { Suspense, lazy } from "react"
 import SectionBoundary from "@/SectionBoundary"
-import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
+import { ProtectedRoute, RequireOnboarded, GuestRoute } from "@/components/route-guards"
 
 const Landing = lazy(() => import("@/pages/Landing"))
 const SignIn = lazy(() => import("@/pages/SignIn"))
@@ -42,7 +42,7 @@ export default function App() {
       {/* Auth-required */}
       <Route path="/onboarding" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
       <Route path="/loading" element={<ProtectedRoute><Page name="LoadingPlan"><LoadingPlan /></Page></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Page name="Dashboard"><Dashboard /></Page></ProtectedRoute>} />
+      <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
 
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
       <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { Navigate, useLocation } from "react-router-dom"
-import { useAuth } from "@/lib/auth"
+import { useAuth, isOnboarded } from "@/lib/auth"
 
 /** Full-screen loader shown while the auth session is being resolved. */
 function AuthLoading() {
@@ -33,6 +33,24 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   if (loading) return <AuthLoading />
   if (!user) {
     return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
+  }
+  return <>{children}</>
+}
+
+/**
+ * Wraps routes that need a fully onboarded user (e.g. /dashboard).
+ * Guests go to /sign-in; logged-in-but-not-onboarded users go to /onboarding.
+ */
+export function RequireOnboarded({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+
+  if (loading) return <AuthLoading />
+  if (!user) {
+    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
+  }
+  if (!isOnboarded(user)) {
+    return <Navigate to="/onboarding" replace />
   }
   return <>{children}</>
 }

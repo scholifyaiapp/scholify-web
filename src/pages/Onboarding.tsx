@@ -600,6 +600,9 @@ export default function Onboarding() {
         })
       }
       localStorage.setItem("scholify-onboarding", JSON.stringify(payload))
+      // Mark onboarding done immediately so the /dashboard guard lets the
+      // user through even before the Supabase metadata refresh lands.
+      localStorage.setItem("scholify-onboarded", "true")
     } catch {
       /* non-blocking — proceed with the data we already have */
     }
