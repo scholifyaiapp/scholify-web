@@ -143,6 +143,48 @@ create trigger on_auth_user_created
 
 ---
 
+## Step 6 — Store generated plans (optional, recommended)
+
+The onboarding loading screen generates a learning plan and tries to save it
+to a `plans` table. Without the table the app still works (the plan is kept in
+the browser), but to persist plans across devices, run this in **SQL Editor**:
+
+```sql
+create table if not exists public.plans (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users on delete cascade,
+  goal          text,
+  deadline      timestamptz,
+  daily_minutes int,
+  tasks         jsonb,
+  created_at    timestamptz default now()
+);
+
+alter table public.plans enable row level security;
+
+create policy "Users read own plans"
+  on public.plans for select using (auth.uid() = user_id);
+
+create policy "Users insert own plans"
+  on public.plans for insert with check (auth.uid() = user_id);
+```
+
+## Step 7 — Claude API key (optional — enables real AI plans)
+
+The plan generator (`/api/generate-plan`) calls Claude. Without a key it
+returns a sensible mock plan, so the flow works either way. To switch on real
+AI-generated plans, add this in **Vercel → Settings → Environment Variables**:
+
+```
+ANTHROPIC_API_KEY = sk-ant-...
+```
+
+> ⚠️ Unlike the Supabase anon key, the Anthropic key is a **real secret** —
+> it must only live in Vercel's environment variables, never in the code or
+> the repo. Get one at https://console.anthropic.com
+
+---
+
 ## Quick reference
 
 | Setting | Where | Value |
