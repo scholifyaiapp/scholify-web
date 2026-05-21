@@ -8,6 +8,7 @@ const SignIn = lazy(() => import("@/pages/SignIn"))
 const SignUp = lazy(() => import("@/pages/SignUp"))
 const Onboarding = lazy(() => import("@/pages/Onboarding"))
 const AuthCallback = lazy(() => import("@/pages/AuthCallback"))
+const LoadingPlan = lazy(() => import("@/pages/LoadingPlan"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const Chat = lazy(() => import("@/pages/Chat"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
@@ -40,6 +41,7 @@ export default function App() {
 
       {/* Auth-required */}
       <Route path="/onboarding" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
+      <Route path="/loading" element={<ProtectedRoute><Page name="LoadingPlan"><LoadingPlan /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Page name="Dashboard"><Dashboard /></Page></ProtectedRoute>} />
 
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
