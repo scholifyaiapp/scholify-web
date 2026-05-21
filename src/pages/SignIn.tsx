@@ -13,6 +13,7 @@ import {
   cardVariants,
   itemVariants,
 } from "@/components/auth/auth-ui"
+import { CharacterLeftPanel } from "@/components/auth/auth-characters"
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
@@ -23,6 +24,7 @@ export default function SignIn() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [emailFocused, setEmailFocused] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
@@ -66,7 +68,15 @@ export default function SignIn() {
   }
 
   return (
-    <AuthSplitLayout>
+    <AuthSplitLayout
+      leftPanel={
+        <CharacterLeftPanel
+          isTyping={emailFocused}
+          password={password}
+          showPassword={showPassword}
+        />
+      }
+    >
       <motion.div
         variants={cardVariants}
         initial="hidden"
@@ -107,6 +117,8 @@ export default function SignIn() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => setEmailFocused(false)}
               error={errors.email}
             />
           </motion.div>

@@ -164,7 +164,7 @@ interface AuthInputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
-  ({ label, error, rightSlot, id, ...props }, ref) => {
+  ({ label, error, rightSlot, id, onFocus, onBlur, ...props }, ref) => {
     const [focused, setFocused] = useState(false)
     const hasError = Boolean(error)
 
@@ -186,8 +186,14 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
           <input
             ref={ref}
             id={id}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onFocus={(e) => {
+              setFocused(true)
+              onFocus?.(e)
+            }}
+            onBlur={(e) => {
+              setFocused(false)
+              onBlur?.(e)
+            }}
             style={{
               width: "100%",
               height: 52,
@@ -391,17 +397,28 @@ function LeftPanel() {
 
 /* ── Split layout shell ──────────────────────────────────────── */
 
-export function AuthSplitLayout({ children }: { children: ReactNode }) {
+export function AuthSplitLayout({
+  children,
+  leftPanel,
+}: {
+  children: ReactNode
+  /** Optional custom left panel. Falls back to the brand panel. */
+  leftPanel?: ReactNode
+}) {
   return (
     <div className="sch-auth flex min-h-[100dvh] w-full" style={{ background: "#050508" }}>
       <style>{AUTH_CSS}</style>
 
       {/* LEFT — 40%, hidden on mobile */}
       <aside
-        className="hidden lg:flex lg:w-[40%] items-center justify-center"
-        style={{ background: "linear-gradient(135deg,#0D0015,#120820)", padding: "48px" }}
+        className="hidden lg:flex lg:flex-col lg:w-[40%] relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg,#0D0015,#120820)" }}
       >
-        <LeftPanel />
+        {leftPanel ?? (
+          <div className="flex flex-1 items-center justify-center" style={{ padding: 48 }}>
+            <LeftPanel />
+          </div>
+        )}
       </aside>
 
       {/* RIGHT — 60%, full width on mobile */}
