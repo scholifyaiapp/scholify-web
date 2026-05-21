@@ -1,7 +1,8 @@
-import { Routes, Route, Link } from "react-router-dom"
-import { Suspense, lazy } from "react"
+import { Routes, Route, Link, useNavigate } from "react-router-dom"
+import { Suspense, lazy, useEffect } from "react"
 import SectionBoundary from "@/SectionBoundary"
 import { ProtectedRoute, RequireOnboarded, GuestRoute } from "@/components/route-guards"
+import { useAuth } from "@/lib/auth"
 
 const Landing = lazy(() => import("@/pages/Landing"))
 const SignIn = lazy(() => import("@/pages/SignIn"))
@@ -25,9 +26,42 @@ function Page({ name, children }: { name: string; children: React.ReactNode }) {
   )
 }
 
+/**
+ * Catches the return from a Google OAuth sign-in. Supabase sometimes
+ * redirects to the site root instead of /auth/callback; this watches for
+ * a freshly-authenticated user after an OAuth attempt and routes them
+ * into the app no matter which page they landed on.
+ */
+function OAuthReturnHandler() {
+  const { user, loading } = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (loading) return
+    let pending: string | null = null
+    try {
+      pending = window.sessionStorage.getItem("scholify-oauth-pending")
+    } catch {
+      return
+    }
+    if (!pending) return
+    // Consume the flag — the OAuth round-trip has resolved.
+    try {
+      window.sessionStorage.removeItem("scholify-oauth-pending")
+    } catch {
+      /* ignore */
+    }
+    if (user) navigate("/dashboard", { replace: true })
+  }, [user, loading, navigate])
+
+  return null
+}
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      <OAuthReturnHandler />
+      <Routes>
       <Route path="/" element={<Page name="Landing"><Landing /></Page>} />
 
       {/* Guest-only — logged-in users are bounced to /dashboard */}
@@ -57,5 +91,6 @@ export default function App() {
         }
       />
     </Routes>
+    </>
   )
 }

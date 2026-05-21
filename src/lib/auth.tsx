@@ -176,6 +176,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(demo)
       return { error: null, isNewUser: false }
     }
+    // Mark that an OAuth round-trip is in progress. On return, the app
+    // routes the user into the app even if Supabase sent them to the
+    // site root instead of /auth/callback.
+    try {
+      window.sessionStorage.setItem("scholify-oauth-pending", "1")
+    } catch {
+      /* sessionStorage unavailable — /auth/callback still handles the happy path */
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
