@@ -1,14 +1,17 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
+import Anthropic from "@anthropic-ai/sdk"
 
 /*
  * POST /api/weekly-quiz — Vercel serverless function (Node runtime).
  *
  * Generates a 5-question multiple-choice quiz for a week of learning
- * via Gemini Flash. Falls back to a simple quiz when GEMINI_API_KEY is
+ * with Claude. Falls back to a simple quiz when ANTHROPIC_API_KEY is
  * absent or the call fails.
  */
 
 export const config = { maxDuration: 30 }
+
+const MODEL = "claude-haiku-4-5"
 
 interface QuizQuestion {
   question: string
@@ -16,6 +19,16 @@ interface QuizQuestion {
   correct: number
   explanation: string
 }
+
+const SYSTEM = `You write short multiple-choice quizzes that test what a
+learner actually studied. Return ONLY valid JSON, no markdown, no prose:
+{
+  "questions": [
+    { "question": "text", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct": 0, "explanation": "max 20 words" }
+  ]
+}
+Rules: exactly 5 questions, correct is the 0-3 index, not too easy and
+not impossible, no trick questions.`
 
 function fallbackQuiz(goal: string, weekNumber: number) {
   return {
@@ -37,21 +50,17 @@ function fallbackQuiz(goal: string, weekNumber: number) {
 }
 
 function parseQuiz(text: string): { questions: QuizQuestion[] } | null {
-  try {
-    const obj = JSON.parse(text)
-    if (Array.isArray(obj?.questions)) return obj
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (match) {
-      try {
-        const obj = JSON.parse(match[0])
-        if (Array.isArray(obj?.questions)) return obj
-      } catch {
-        /* fall through */
-      }
+  const tryParse = (s: string) => {
+    try {
+      const obj = JSON.parse(s)
+      if (Array.isArray(obj?.questions) && obj.questions.length > 0) return obj
+    } catch {
+      /* ignore */
     }
+    return null
   }
-  return null
+  const match = text.match(/\{[\s\S]*\}/)
+  return tryParse(text.trim()) ?? (match ? tryParse(match[0]) : null)
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -74,51 +83,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     ? (body.completedTasks as string[])
     : []
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     res.status(200).json(fallbackQuiz(goal, weekNumber))
     return
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Generate a 5-question multiple choice quiz for Week ${weekNumber} of learning: "${goal}".
+    const client = new Anthropic({ apiKey })
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1500,
+      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: `Generate a 5-question quiz for Week ${weekNumber} of learning: "${goal}".
 
-The user completed these tasks this week:
+The learner completed these tasks this week:
 ${completedTasks.map((t) => `- ${t}`).join("\n") || "- (foundational work)"}
 
-Return ONLY valid JSON in this exact format:
-{
-  "questions": [
-    { "question": "text", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct": 0, "explanation": "brief explanation max 20 words" }
-  ]
-}
+Test what they actually studied. Return only the JSON.`,
+        },
+      ],
+    })
 
-Rules: questions must test what they actually studied, not too easy, not impossible, correct index 0-3, no trick questions.`,
-                },
-              ],
-            },
-          ],
-          generationConfig: { maxOutputTokens: 800, temperature: 0.7 },
-        }),
-      },
-    )
-
-    const data = (await response.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
-    }
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ""
-    const quiz = parseQuiz(content)
-    if (!quiz || quiz.questions.length === 0) throw new Error("Invalid quiz response")
+    const text =
+      message.content[0]?.type === "text" ? message.content[0].text : ""
+    const quiz = parseQuiz(text)
+    if (!quiz) throw new Error("Invalid quiz response")
 
     res.status(200).json(quiz)
   } catch (err) {
