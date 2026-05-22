@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node"
 import Anthropic from "@anthropic-ai/sdk"
 
 /*
@@ -7,12 +8,15 @@ import Anthropic from "@anthropic-ai/sdk"
  * backend; Vercel deploys files under `/api` as serverless functions, so the
  * frontend reaches this at POST /api/generate-plan.
  *
+ * Runs on the Node.js runtime (not Edge) — the Anthropic SDK is too large to
+ * bundle into an Edge function, and Node is the SDK's native environment.
+ *
  * It calls Claude (via the official Anthropic SDK) to turn a learning goal
  * into a progressive day-by-day task list. If ANTHROPIC_API_KEY is not set,
  * it returns a small mock plan so the whole flow still works.
  */
 
-export const config = { runtime: "edge" }
+export const config = { maxDuration: 60 }
 
 const MODEL = "claude-sonnet-4-6"
 // Cap how many tasks we generate in one call — keeps latency and tokens sane
@@ -46,13 +50,6 @@ interface PlanRequest {
   goal?: string
   deadline?: string | null
   dailyMinutes?: number
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  })
 }
 
 /** Seven-task fallback used when no API key is configured. */
@@ -92,19 +89,27 @@ function parsePlan(text: string): PlanTask[] | null {
   }
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== "POST") return json({ error: "Method not allowed." }, 405)
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed." })
+    return
+  }
 
-  let body: PlanRequest
+  // Vercel parses JSON bodies automatically, but guard for a raw string too.
+  let body: PlanRequest = {}
   try {
-    body = (await req.json()) as PlanRequest
+    body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body ?? {})
   } catch {
-    return json({ error: "Invalid JSON body." }, 400)
+    res.status(400).json({ error: "Invalid JSON body." })
+    return
   }
 
   const goal = (body.goal || "").trim()
   const dailyMinutes = Math.max(5, Math.round(Number(body.dailyMinutes) || 20))
-  if (!goal) return json({ error: "A learning goal is required." }, 400)
+  if (!goal) {
+    res.status(400).json({ error: "A learning goal is required." })
+    return
+  }
 
   const today = new Date()
   const deadline = body.deadline ? new Date(body.deadline) : null
@@ -117,7 +122,8 @@ export default async function handler(req: Request): Promise<Response> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     // No key yet — return a mock plan so the product still works end-to-end.
-    return json({ plan: mockPlan(dailyMinutes), mock: true })
+    res.status(200).json({ plan: mockPlan(dailyMinutes), mock: true })
+    return
   }
 
   try {
@@ -152,11 +158,12 @@ export default async function handler(req: Request): Promise<Response> {
 
     const plan = parsePlan(text)
     if (!plan || plan.length === 0) {
-      return json({ error: "Lara returned an unreadable plan. Please retry." }, 502)
+      res.status(502).json({ error: "Lara returned an unreadable plan. Please retry." })
+      return
     }
-    return json({ plan })
+    res.status(200).json({ plan })
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Plan generation failed."
-    return json({ error: msg }, 500)
+    res.status(500).json({ error: msg })
   }
 }
