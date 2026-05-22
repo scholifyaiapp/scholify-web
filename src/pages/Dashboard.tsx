@@ -14,6 +14,8 @@ import {
 } from "@/lib/scholify-data"
 import { DashboardLayout, iriText, ProgressBar, Pill } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import { usePaywall } from "@/hooks/usePaywall"
+import PaywallModal from "@/components/PaywallModal"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify dashboard — the screen users see every day.
@@ -77,6 +79,14 @@ export default function Dashboard() {
   const plan = useMemo(readPlan, [])
   const [progress, setProgress] = useState<Progress>(readProgress)
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle")
+
+  const { showPaywall, paywallType, checkPaywallTrigger, triggerFeaturePaywall, closePaywall } =
+    usePaywall()
+
+  // Surface a streak-milestone paywall on load (7 / 14 / 21-day streaks).
+  useEffect(() => {
+    checkPaywallTrigger(user?.id)
+  }, [checkPaywallTrigger, user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const goal = plan.goal?.trim() || "Your learning goal"
@@ -155,7 +165,10 @@ export default function Dashboard() {
       origin: { y: 0.7 },
       colors: ["#8B5CF6", "#F472B6", "#38BDF8", "#34D399"],
     })
-  }, [status, progress, currentDay, todayStr, user])
+
+    // A new completion may cross a 7 / 14 / 21-day streak milestone.
+    checkPaywallTrigger(user?.id)
+  }, [status, progress, currentDay, todayStr, user, checkPaywallTrigger])
 
   const laraMessage = isDone
     ? `That's day ${currentDay} done — your streak is now ${progress.streak}. Showing up beats motivation every time. Rest well; tomorrow's task is ready when you are.`
@@ -421,6 +434,7 @@ export default function Dashboard() {
             </div>
             <button
               type="button"
+              onClick={triggerFeaturePaywall}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -431,7 +445,7 @@ export default function Dashboard() {
                 fontSize: 12,
                 color: "rgba(240,238,255,0.35)",
               }}
-              title="Voice playback coming soon"
+              title="Voice playback — a Pro feature"
             >
               ▶ Hear Lara
             </button>
@@ -469,6 +483,8 @@ export default function Dashboard() {
           <StatCard label="🎯 Goal Progress" value={`${goalPct}%`} />
         </div>
       </div>
+
+      <PaywallModal open={showPaywall} type={paywallType} onClose={closePaywall} />
     </DashboardLayout>
   )
 }

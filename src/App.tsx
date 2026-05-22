@@ -12,6 +12,7 @@ const AuthCallback = lazy(() => import("@/pages/AuthCallback"))
 const Loading = lazy(() => import("@/pages/Loading"))
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"))
 const Progress = lazy(() => import("@/pages/Progress"))
+const Pricing = lazy(() => import("@/pages/Pricing"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const Chat = lazy(() => import("@/pages/Chat"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
@@ -84,6 +85,7 @@ export default function App() {
       <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
       <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><ComingSoon /></Page></RequireOnboarded>} />
 
+      <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
       <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
       <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
