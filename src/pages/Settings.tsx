@@ -16,12 +16,13 @@ import { readPlan, readProgress, type Progress } from "@/lib/scholify-data"
 import { DashboardLayout, iriText, ProgressBar } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
+import { useTheme } from "@/lib/theme"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
  * ────────────────────────────────────────────────────────────── */
 
-const TEXT2 = "rgba(240,238,255,0.4)"
+const TEXT2 = "var(--sch-tx-2)"
 
 /* ── Settings persistence ────────────────────────────────────── */
 
@@ -74,8 +75,8 @@ function Section({
         marginTop: 16,
         padding: 24,
         borderRadius: 20,
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
         ...style,
       }}
     >
@@ -109,8 +110,8 @@ function Toggle({
         position: "relative",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
-        background: on ? IRIDESCENT : "rgba(255,255,255,0.1)",
-        border: `1px solid ${on ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.1)"}`,
+        background: on ? IRIDESCENT : "var(--sch-border-2)",
+        border: `1px solid ${on ? "rgba(139,92,246,0.5)" : "var(--sch-border-2)"}`,
         boxShadow: on ? "0 0 10px rgba(139,92,246,0.3)" : "none",
       }}
     >
@@ -150,11 +151,11 @@ function SettingRow({
         alignItems: "center",
         gap: 16,
         padding: "14px 0",
-        borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.04)",
+        borderBottom: last ? "none" : "1px solid var(--sch-card-2)",
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 14, color: "#F0EEFF" }}>{name}</div>
+        <div style={{ fontSize: 14, color: "var(--sch-text)" }}>{name}</div>
         <div style={{ fontSize: 12, color: TEXT2, marginTop: 2 }}>{desc}</div>
       </div>
       <div style={{ flexShrink: 0 }}>{children}</div>
@@ -189,9 +190,9 @@ function Dropdown<T extends string>({
           padding: "8px 14px",
           borderRadius: 10,
           fontSize: 14,
-          color: "#F0EEFF",
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          color: "var(--sch-text)",
+          background: "var(--sch-card)",
+          border: "1px solid var(--sch-border)",
           cursor: "pointer",
         }}
       >
@@ -217,8 +218,8 @@ function Dropdown<T extends string>({
                 zIndex: 41,
                 padding: 6,
                 borderRadius: 12,
-                background: "rgba(15,14,22,0.98)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--sch-bg-2)",
+                border: "1px solid var(--sch-border-2)",
                 boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
               }}
             >
@@ -244,7 +245,7 @@ function Dropdown<T extends string>({
                       cursor: "pointer",
                       fontSize: 14,
                       textAlign: "left",
-                      ...(active ? iriText : { color: "rgba(240,238,255,0.7)" }),
+                      ...(active ? iriText : { color: "var(--sch-tx-1)" }),
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.1)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -272,9 +273,9 @@ function TimeInput({ value, onChange }: { value: string; onChange: (v: string) =
         padding: "7px 12px",
         borderRadius: 10,
         fontSize: 14,
-        color: "#F0EEFF",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        color: "var(--sch-text)",
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
         colorScheme: "dark",
       }}
     />
@@ -337,12 +338,12 @@ function ConfirmDialog({
               maxWidth: 420,
               padding: 28,
               borderRadius: 24,
-              background: "#0A0A14",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "var(--sch-bg-2)",
+              border: "1px solid var(--sch-border-2)",
               boxShadow: "0 40px 120px rgba(0,0,0,0.8)",
             }}
           >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F0EEFF" }}>{title}</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--sch-text)" }}>{title}</h3>
             <p style={{ fontSize: 14, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>{body}</p>
 
             {requireText && (
@@ -357,9 +358,9 @@ function ConfirmDialog({
                   padding: "0 14px",
                   borderRadius: 10,
                   fontSize: 14,
-                  color: "#F0EEFF",
-                  background: "rgba(255,255,255,0.04)",
-                  border: `1px solid ${canConfirm ? "#FF453A" : "rgba(255,255,255,0.1)"}`,
+                  color: "var(--sch-text)",
+                  background: "var(--sch-card-2)",
+                  border: `1px solid ${canConfirm ? "#FF453A" : "var(--sch-border-2)"}`,
                   outline: "none",
                 }}
               />
@@ -376,9 +377,9 @@ function ConfirmDialog({
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: "pointer",
-                  color: "rgba(240,238,255,0.6)",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "var(--sch-tx-1)",
+                  background: "var(--sch-card)",
+                  border: "1px solid var(--sch-border-2)",
                 }}
               >
                 Cancel
@@ -422,9 +423,8 @@ const LANGUAGES = [
 ] as const
 
 const THEMES = [
-  { id: "dark", name: "Dark", bg: "#050508", accent: "#818CF8" },
-  { id: "darker", name: "Darker", bg: "#000000", accent: "#A78BFA" },
-  { id: "midnight", name: "Midnight", bg: "#0A0E27", accent: "#C084FC" },
+  { id: "light", name: "Light", bg: "#f3f3f7", accent: "#6d5bf5" },
+  { id: "dark", name: "Dark", bg: "#0b0b12", accent: "#818cf8" },
 ] as const
 
 export default function Settings() {
@@ -432,6 +432,7 @@ export default function Settings() {
   const { user, signOut } = useAuth()
   const { lang, setLang } = useLanguage()
   const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
 
   const plan = useMemo(readPlan, [])
   const [progress, setProgress] = useState<Progress>(readProgress)
@@ -569,9 +570,9 @@ export default function Settings() {
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
-    color: "rgba(240,238,255,0.6)",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.1)",
+    color: "var(--sch-tx-1)",
+    background: "var(--sch-card)",
+    border: "1px solid var(--sch-border-2)",
   }
   const redGhost: CSSProperties = {
     padding: "9px 18px",
@@ -583,7 +584,7 @@ export default function Settings() {
     background: "rgba(255,69,58,0.04)",
     border: "1px solid rgba(255,69,58,0.2)",
   }
-  const sectionHead: CSSProperties = { fontSize: 15, fontWeight: 600, color: "#F0EEFF" }
+  const sectionHead: CSSProperties = { fontSize: 15, fontWeight: 600, color: "var(--sch-text)" }
 
   return (
     <DashboardLayout>
@@ -594,10 +595,10 @@ export default function Settings() {
         style={{ maxWidth: 800, margin: "0 auto" }}
       >
         {/* Header */}
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#F0EEFF", letterSpacing: "-0.5px" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--sch-text)", letterSpacing: "-0.5px" }}>
           Settings
         </h1>
-        <p style={{ fontSize: 14, color: "rgba(240,238,255,0.35)", marginTop: 4 }}>
+        <p style={{ fontSize: 14, color: "var(--sch-tx-3)", marginTop: 4 }}>
           Manage your account and preferences.
         </p>
 
@@ -654,7 +655,7 @@ export default function Settings() {
             </div>
 
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#F0EEFF" }}>{fullName}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "var(--sch-text)" }}>{fullName}</div>
               <div style={{ fontSize: 14, color: TEXT2, marginTop: 4 }}>{user?.email}</div>
               <div style={{ marginTop: 10 }}>
                 <span
@@ -665,8 +666,8 @@ export default function Settings() {
                     ...(isPaid
                       ? { background: IRIDESCENT, color: "#fff" }
                       : {
-                          background: "rgba(255,255,255,0.05)",
-                          border: "1px solid rgba(255,255,255,0.08)",
+                          background: "var(--sch-hairline)",
+                          border: "1px solid var(--sch-border)",
                           color: TEXT2,
                         }),
                   }}
@@ -674,7 +675,7 @@ export default function Settings() {
                   {isPaid ? "✦ Pro" : "Free Trial"}
                 </span>
               </div>
-              <div style={{ fontSize: 12, color: "rgba(240,238,255,0.2)", marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--sch-tx-4)", marginTop: 6 }}>
                 Member since {memberSince}
               </div>
             </div>
@@ -703,7 +704,7 @@ export default function Settings() {
                   style={{
                     marginTop: 20,
                     paddingTop: 20,
-                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    borderTop: "1px solid var(--sch-border)",
                   }}
                 >
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -765,7 +766,7 @@ export default function Settings() {
               Change goal →
             </button>
           </div>
-          <div style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: "#F0EEFF" }}>
+          <div style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: "var(--sch-text)" }}>
             {goal}
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 12 }}>
@@ -809,7 +810,7 @@ export default function Settings() {
                     height: 4,
                     borderRadius: 2,
                     marginTop: 8,
-                    background: "rgba(255,255,255,0.06)",
+                    background: "var(--sch-border)",
                     overflow: "hidden",
                   }}
                 >
@@ -891,12 +892,15 @@ export default function Settings() {
           <span style={sectionHead}>🎨 Appearance</span>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             {THEMES.map((t) => {
-              const selected = settings.theme === t.id
+              const selected = theme === t.id
               return (
                 <motion.button
                   key={t.id}
                   type="button"
-                  onClick={() => update("theme", t.id)}
+                  onClick={() => {
+                    setTheme(t.id)
+                    toast.success("Theme updated")
+                  }}
                   whileHover={selected ? undefined : { scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   style={{
@@ -905,7 +909,7 @@ export default function Settings() {
                     padding: 16,
                     borderRadius: 14,
                     cursor: "pointer",
-                    background: "rgba(255,255,255,0.02)",
+                    background: "var(--sch-card)",
                     border: `2px solid ${selected ? "rgba(139,92,246,0.6)" : "transparent"}`,
                     boxShadow: selected ? "0 0 20px rgba(139,92,246,0.15)" : "none",
                   }}
@@ -936,7 +940,7 @@ export default function Settings() {
                       height: 24,
                       borderRadius: 6,
                       background: t.bg,
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      border: "1px solid var(--sch-border-2)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -946,7 +950,7 @@ export default function Settings() {
                       style={{ width: 8, height: 8, borderRadius: "50%", background: t.accent }}
                     />
                   </div>
-                  <div style={{ fontSize: 12, color: "#F0EEFF", marginTop: 8 }}>{t.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--sch-text)", marginTop: 8 }}>{t.name}</div>
                 </motion.button>
               )
             })}
@@ -959,7 +963,7 @@ export default function Settings() {
               marginTop: 20,
             }}
           >
-            <span style={{ fontSize: 14, color: "#F0EEFF" }}>Language</span>
+            <span style={{ fontSize: 14, color: "var(--sch-text)" }}>Language</span>
             <Dropdown
               value={lang === "ru" ? "ru" : "en"}
               options={LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
@@ -1121,9 +1125,9 @@ export default function Settings() {
             fontSize: 15,
             fontWeight: 500,
             cursor: "pointer",
-            color: "rgba(240,238,255,0.4)",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            color: "var(--sch-tx-2)",
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
             transition: "all 0.2s ease",
           }}
           onMouseEnter={(e) => {
@@ -1132,9 +1136,9 @@ export default function Settings() {
             e.currentTarget.style.background = "rgba(255,69,58,0.04)"
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"
-            e.currentTarget.style.color = "rgba(240,238,255,0.4)"
-            e.currentTarget.style.background = "rgba(255,255,255,0.02)"
+            e.currentTarget.style.borderColor = "var(--sch-border)"
+            e.currentTarget.style.color = "var(--sch-tx-2)"
+            e.currentTarget.style.background = "var(--sch-card)"
           }}
         >
           <span style={{ transform: "rotate(180deg)", display: "inline-block" }}>→</span>
@@ -1142,8 +1146,8 @@ export default function Settings() {
         </motion.button>
 
         <div style={{ textAlign: "center", marginTop: 16 }}>
-          <div style={{ fontSize: 12, color: "rgba(240,238,255,0.1)" }}>Scholify v1.0.0</div>
-          <div style={{ fontSize: 11, color: "rgba(240,238,255,0.07)" }}>
+          <div style={{ fontSize: 12, color: "var(--sch-tx-4)" }}>Scholify v1.0.0</div>
+          <div style={{ fontSize: 11, color: "var(--sch-tx-4)" }}>
             Built with ✦ for learners
           </div>
         </div>
@@ -1209,9 +1213,9 @@ function Field({
           padding: "0 14px",
           borderRadius: 10,
           fontSize: 14,
-          color: "#F0EEFF",
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          color: "var(--sch-text)",
+          background: "var(--sch-card-2)",
+          border: "1px solid var(--sch-border-2)",
           outline: "none",
         }}
       />

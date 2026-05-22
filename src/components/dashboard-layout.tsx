@@ -24,7 +24,7 @@ const LAYOUT_CSS = `
   @keyframes dash-spin { to { transform: rotate(360deg); } }
   @keyframes sch-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   .dash-scroll::-webkit-scrollbar { width: 7px; }
-  .dash-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 8px; }
+  .dash-scroll::-webkit-scrollbar-thumb { background: var(--sch-border); border-radius: 8px; }
 `
 
 export const NAV = [
@@ -44,7 +44,7 @@ export function ProgressBar({ pct, height = 6 }: { pct: number; height?: number 
         width: "100%",
         height,
         borderRadius: height / 2,
-        background: "rgba(255,255,255,0.05)",
+        background: "var(--sch-hairline)",
         overflow: "hidden",
       }}
     >
@@ -78,9 +78,9 @@ export function Pill({ children, style }: { children: ReactNode; style?: CSSProp
         padding: "4px 12px",
         borderRadius: 999,
         fontSize: 12,
-        border: "1px solid rgba(255,255,255,0.08)",
-        background: "rgba(255,255,255,0.03)",
-        color: "rgba(240,238,255,0.7)",
+        border: "1px solid var(--sch-border)",
+        background: "var(--sch-card)",
+        color: "var(--sch-tx-1)",
         ...style,
       }}
     >
@@ -128,18 +128,18 @@ function NavItem({ item, active }: { item: (typeof NAV)[number]; active: boolean
         transition: "all 0.2s ease",
         background: active ? "rgba(139,92,246,0.12)" : "transparent",
         border: `1px solid ${active ? "rgba(139,92,246,0.2)" : "transparent"}`,
-        color: active ? "#F0EEFF" : "rgba(240,238,255,0.4)",
+        color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
         fontWeight: active ? 600 : 400,
       }}
       onMouseEnter={(e) => {
         if (active) return
-        e.currentTarget.style.background = "rgba(255,255,255,0.04)"
-        e.currentTarget.style.color = "rgba(240,238,255,0.7)"
+        e.currentTarget.style.background = "var(--sch-card-2)"
+        e.currentTarget.style.color = "var(--sch-tx-1)"
       }}
       onMouseLeave={(e) => {
         if (active) return
         e.currentTarget.style.background = "transparent"
-        e.currentTarget.style.color = "rgba(240,238,255,0.4)"
+        e.currentTarget.style.color = "var(--sch-tx-2)"
       }}
     >
       {active && (
@@ -184,7 +184,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const goalPct = Math.round((completedCount / totalDays) * 100)
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#050508" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
       <style>{LAYOUT_CSS}</style>
 
       {/* ── Sidebar (desktop) ── */}
@@ -198,8 +198,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           width: 240,
           flexDirection: "column",
           padding: "24px 16px",
-          background: "rgba(255,255,255,0.02)",
-          borderRight: "1px solid rgba(255,255,255,0.05)",
+          background: "var(--sch-card)",
+          borderRight: "1px solid var(--sch-hairline)",
           overflowY: "auto",
           zIndex: 20,
         }}
@@ -212,7 +212,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: "#F0EEFF",
+                color: "var(--sch-text)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -244,8 +244,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             padding: "20px 16px",
             borderRadius: 16,
             textAlign: "center",
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
             boxShadow: "0 0 30px rgba(139,92,246,0.1)",
           }}
         >
@@ -253,7 +253,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <div style={{ fontSize: 28, fontWeight: 800, ...iriText, marginTop: 2 }}>
             {progress.streak}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(240,238,255,0.4)" }}>day streak</div>
+          <div style={{ fontSize: 11, color: "var(--sch-tx-2)" }}>day streak</div>
           <div style={{ fontSize: 12, color: "rgba(255,159,67,0.9)", marginTop: 4 }}>
             🛡 {progress.shields} shield{progress.shields === 1 ? "" : "s"}
           </div>
@@ -272,14 +272,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             style={{
               padding: 14,
               borderRadius: 12,
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--sch-card)",
+              border: "1px solid var(--sch-border)",
             }}
           >
             <div
               style={{
                 fontSize: 12,
-                color: "rgba(240,238,255,0.5)",
+                color: "var(--sch-tx-2)",
                 marginBottom: 8,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -289,7 +289,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               {goal}
             </div>
             <ProgressBar pct={goalPct} />
-            <div style={{ fontSize: 11, color: "rgba(240,238,255,0.35)", marginTop: 8 }}>
+            <div style={{ fontSize: 11, color: "var(--sch-tx-3)", marginTop: 8 }}>
               {goalPct}% · {daysRemaining} day{daysRemaining === 1 ? "" : "s"} left
             </div>
           </div>
@@ -315,10 +315,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           justifyContent: "space-around",
           padding: "8px 4px",
           paddingBottom: "max(8px, env(safe-area-inset-bottom))",
-          background: "rgba(5,5,8,0.9)",
+          background: "var(--sch-bg-blur)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
+          borderTop: "1px solid var(--sch-hairline)",
           zIndex: 30,
         }}
       >
@@ -336,7 +336,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 padding: "4px 8px",
                 textDecoration: "none",
                 fontSize: 10,
-                color: active ? "#F0EEFF" : "rgba(240,238,255,0.4)",
+                color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
                 fontWeight: active ? 600 : 400,
               }}
             >

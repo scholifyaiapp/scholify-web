@@ -78,10 +78,10 @@ export default function NotificationPrompt({
       }}
     >
       <div style={{ fontSize: 24 }}>🔔</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: "#F0EEFF", marginTop: 8 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--sch-text)", marginTop: 8 }}>
         Never miss a day
       </div>
-      <div style={{ fontSize: 13, color: "rgba(240,238,255,0.45)", marginTop: 4, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: "var(--sch-tx-2)", marginTop: 4, lineHeight: 1.5 }}>
         Let Lara send you a daily reminder so your streak stays alive.
       </div>
 
@@ -115,7 +115,7 @@ export default function NotificationPrompt({
           background: "transparent",
           border: "none",
           fontSize: 13,
-          color: "rgba(240,238,255,0.3)",
+          color: "var(--sch-tx-3)",
           cursor: "pointer",
         }}
       >

@@ -235,7 +235,7 @@ export default function Loading() {
     <div
       style={{
         minHeight: "100dvh",
-        background: "#050508",
+        background: "var(--sch-bg)",
         position: "relative",
         display: "flex",
         alignItems: "center",
@@ -268,13 +268,13 @@ export default function Loading() {
             >
               ⚠️
             </div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#F0EEFF", marginTop: 20 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--sch-text)", marginTop: 20 }}>
               Plan generation failed
             </h1>
             <p
               style={{
                 fontSize: 14,
-                color: "rgba(240,238,255,0.5)",
+                color: "var(--sch-tx-2)",
                 marginTop: 10,
                 lineHeight: 1.6,
               }}
@@ -316,7 +316,7 @@ export default function Loading() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  style={{ fontSize: 18, color: "rgba(240,238,255,0.6)" }}
+                  style={{ fontSize: 18, color: "var(--sch-tx-1)" }}
                 >
                   {MESSAGES[msgIndex]}
                 </motion.p>
@@ -329,7 +329,7 @@ export default function Loading() {
                 width: 280,
                 height: 3,
                 margin: "32px auto 0",
-                background: "rgba(255,255,255,0.05)",
+                background: "var(--sch-hairline)",
                 borderRadius: 2,
                 overflow: "hidden",
                 position: "relative",
@@ -364,9 +364,9 @@ export default function Loading() {
                   padding: "10px 20px",
                   borderRadius: 20,
                   fontSize: 14,
-                  color: "rgba(240,238,255,0.5)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  background: "rgba(255,255,255,0.02)",
+                  color: "var(--sch-tx-2)",
+                  border: "1px solid var(--sch-border)",
+                  background: "var(--sch-card)",
                 }}
               >
                 🎯 {goalShort}
@@ -374,7 +374,7 @@ export default function Loading() {
             )}
 
             {/* Reassurance */}
-            <p style={{ fontSize: 13, color: "rgba(240,238,255,0.2)", marginTop: 20 }}>
+            <p style={{ fontSize: 13, color: "var(--sch-tx-4)", marginTop: 20 }}>
               Lara is building your personalised plan.
             </p>
           </>

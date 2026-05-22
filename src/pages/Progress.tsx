@@ -29,16 +29,16 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
  *  plan + progress data (the same source the dashboard uses).
  * ────────────────────────────────────────────────────────────── */
 
-const TEXT2 = "rgba(240,238,255,0.45)"
+const TEXT2 = "var(--sch-tx-2)"
 
 const glassCard: CSSProperties = {
-  background: "rgba(255,255,255,0.025)",
-  border: "1px solid rgba(255,255,255,0.07)",
+  background: "var(--sch-card)",
+  border: "1px solid var(--sch-border)",
   borderRadius: 24,
   padding: 28,
 }
 
-const sectionTitle: CSSProperties = { fontSize: 16, fontWeight: 700, color: "#F0EEFF" }
+const sectionTitle: CSSProperties = { fontSize: 16, fontWeight: 700, color: "var(--sch-text)" }
 
 /* ── Count-up hook ───────────────────────────────────────────── */
 
@@ -112,7 +112,7 @@ function StatCard({
         {decimals > 0 ? value.toFixed(decimals) : value}
         {suffix}
       </div>
-      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: "rgba(240,238,255,0.4)" }}>
+      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: "var(--sch-tx-2)" }}>
         {label}
       </div>
       <span
@@ -154,16 +154,16 @@ function HeatCell({
     completed: IRIDESCENT,
     missed: "rgba(255,69,58,0.15)",
     shield: "rgba(255,159,10,0.15)",
-    future: "rgba(255,255,255,0.03)",
-    none: "rgba(255,255,255,0.03)",
+    future: "var(--sch-card)",
+    none: "var(--sch-card)",
     today: "rgba(139,92,246,0.1)",
   }
   const border: Record<CellState, string> = {
     completed: "1px solid transparent",
     missed: "1px solid rgba(255,69,58,0.2)",
     shield: "1px solid rgba(255,159,10,0.2)",
-    future: "1px solid rgba(255,255,255,0.04)",
-    none: "1px solid rgba(255,255,255,0.04)",
+    future: "1px solid var(--sch-card-2)",
+    none: "1px solid var(--sch-card-2)",
     today: "2px solid rgba(139,92,246,0.6)",
   }
   const label =
@@ -202,7 +202,7 @@ function HeatCell({
             top: 3,
             left: 4,
             fontSize: 9,
-            color: state === "completed" ? "rgba(255,255,255,0.8)" : "rgba(240,238,255,0.25)",
+            color: state === "completed" ? "rgba(255,255,255,0.8)" : "var(--sch-tx-3)",
           }}
         >
           {format(date, "d")}
@@ -238,8 +238,8 @@ function HeatCell({
               fontSize: 11,
               whiteSpace: "nowrap",
               background: "rgba(20,18,30,0.97)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#F0EEFF",
+              border: "1px solid var(--sch-border-2)",
+              color: "var(--sch-text)",
               pointerEvents: "none",
               zIndex: 10,
             }}
@@ -281,7 +281,7 @@ function Heatmap({ streak, dailyMinutes }: { streak: number; dailyMinutes: numbe
     ["Completed", IRIDESCENT],
     ["Missed", "rgba(255,69,58,0.4)"],
     ["Shield used", "rgba(255,159,10,0.4)"],
-    ["Upcoming", "rgba(255,255,255,0.06)"],
+    ["Upcoming", "var(--sch-border)"],
   ]
 
   return (
@@ -303,7 +303,7 @@ function Heatmap({ streak, dailyMinutes }: { streak: number; dailyMinutes: numbe
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div
             key={d}
-            style={{ fontSize: 10, color: "rgba(240,238,255,0.2)", textAlign: "center" }}
+            style={{ fontSize: 10, color: "var(--sch-tx-4)", textAlign: "center" }}
           >
             {d}
           </div>
@@ -364,12 +364,12 @@ function BarChart({ sessions }: { sessions: number }) {
                 left: -2,
                 top: -6,
                 fontSize: 10,
-                color: "rgba(240,238,255,0.25)",
+                color: "var(--sch-tx-3)",
               }}
             >
               {v}
             </span>
-            <div style={{ marginLeft: 18, height: 1, background: "rgba(255,255,255,0.04)" }} />
+            <div style={{ marginLeft: 18, height: 1, background: "var(--sch-card-2)" }} />
           </div>
         ))}
         {/* bars */}
@@ -449,8 +449,8 @@ function BarColumn({
               fontSize: 11,
               whiteSpace: "nowrap",
               background: "rgba(20,18,30,0.97)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#F0EEFF",
+              border: "1px solid var(--sch-border-2)",
+              color: "var(--sch-text)",
               pointerEvents: "none",
               zIndex: 10,
             }}
@@ -502,7 +502,7 @@ function Donut({
               <stop offset="100%" stopColor="#38BDF8" />
             </linearGradient>
           </defs>
-          <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+          <circle cx="70" cy="70" r={r} fill="none" stroke="var(--sch-hairline)" strokeWidth="12" />
           <motion.circle
             cx="70"
             cy="70"
@@ -548,7 +548,7 @@ function Donut({
             }}
           >
             <span style={{ color: TEXT2 }}>{label}</span>
-            <span style={{ color: "#F0EEFF", fontWeight: 600 }}>{val}</span>
+            <span style={{ color: "var(--sch-text)", fontWeight: 600 }}>{val}</span>
           </div>
         ))}
       </div>
@@ -587,8 +587,8 @@ function LineChart({
             fontWeight: 600,
             padding: "4px 12px",
             borderRadius: 999,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.03)",
+            border: "1px solid var(--sch-border)",
+            background: "var(--sch-card)",
             ...iriText,
           }}
         >
@@ -609,8 +609,8 @@ function LineChart({
             const y = H - pad - (v / maxY) * (H - pad * 2)
             return (
               <g key={v}>
-                <line x1={pad} y1={y} x2={W - pad} y2={y} stroke="rgba(255,255,255,0.04)" />
-                <text x={4} y={y + 3} fontSize="9" fill="rgba(240,238,255,0.3)">
+                <line x1={pad} y1={y} x2={W - pad} y2={y} stroke="var(--sch-card-2)" />
+                <text x={4} y={y + 3} fontSize="9" fill="var(--sch-tx-3)">
                   {v}
                 </text>
               </g>
@@ -661,7 +661,7 @@ function LineChart({
             marginTop: 4,
             padding: "0 20px",
             fontSize: 10,
-            color: "rgba(240,238,255,0.3)",
+            color: "var(--sch-tx-3)",
           }}
         >
           {pts.filter((_, i) => i % 3 === 0).map((p) => (
@@ -713,7 +713,7 @@ function ShareCard({
   const miniStat = (value: string, label: string) => (
     <div style={{ flex: 1, textAlign: "center" }}>
       <div style={{ fontSize: 20, fontWeight: 800, ...iriText }}>{value}</div>
-      <div style={{ fontSize: 11, color: "rgba(240,238,255,0.4)" }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--sch-tx-2)" }}>{label}</div>
     </div>
   )
 
@@ -748,7 +748,7 @@ function ShareCard({
           margin: "20px auto 0",
           padding: 28,
           borderRadius: 24,
-          background: "linear-gradient(135deg,#0D0015,#120820)",
+          background: "var(--sch-bg-grad)",
           border: "1px solid rgba(139,92,246,0.2)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
         }}
@@ -759,8 +759,8 @@ function ShareCard({
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#F0EEFF" }}>{name}'s</div>
-          <div style={{ fontSize: 16, color: "rgba(240,238,255,0.5)" }}>Learning Journey</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--sch-text)" }}>{name}'s</div>
+          <div style={{ fontSize: 16, color: "var(--sch-tx-2)" }}>Learning Journey</div>
         </div>
 
         <div style={{ marginTop: 12 }}>
@@ -772,7 +772,7 @@ function ShareCard({
               fontSize: 13,
               border: "1px solid rgba(139,92,246,0.35)",
               background: "rgba(139,92,246,0.08)",
-              color: "rgba(240,238,255,0.75)",
+              color: "var(--sch-tx-1)",
               maxWidth: "100%",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -785,9 +785,9 @@ function ShareCard({
 
         <div style={{ display: "flex", marginTop: 20 }}>
           {miniStat(`${weekSessions}`, "sessions")}
-          <div style={{ width: 1, background: "rgba(255,255,255,0.08)" }} />
+          <div style={{ width: 1, background: "var(--sch-border)" }} />
           {miniStat(weekHours, "studied")}
-          <div style={{ width: 1, background: "rgba(255,255,255,0.08)" }} />
+          <div style={{ width: 1, background: "var(--sch-border)" }} />
           {miniStat(`${pct}%`, "complete")}
         </div>
 
@@ -796,7 +796,7 @@ function ShareCard({
             height: 4,
             borderRadius: 2,
             marginTop: 16,
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--sch-border)",
             overflow: "hidden",
           }}
         >
@@ -859,15 +859,15 @@ function Achievements({ streak, sessions }: { streak: number; sessions: number }
               textAlign: "center",
               padding: 16,
               borderRadius: 16,
-              background: "rgba(255,255,255,0.025)",
-              border: `1px solid ${b.earned ? "rgba(139,92,246,0.3)" : "rgba(255,255,255,0.07)"}`,
+              background: "var(--sch-card)",
+              border: `1px solid ${b.earned ? "rgba(139,92,246,0.3)" : "var(--sch-border)"}`,
               boxShadow: b.earned ? "0 0 20px rgba(139,92,246,0.12)" : "none",
               opacity: b.earned ? 1 : 0.35,
               filter: b.earned ? "none" : "grayscale(1)",
             }}
           >
             <div style={{ fontSize: 40, lineHeight: 1 }}>{b.icon}</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#F0EEFF", marginTop: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--sch-text)", marginTop: 8 }}>
               {b.name}
             </div>
             <div style={{ fontSize: 10, color: TEXT2, lineHeight: 1.4, marginTop: 2 }}>
@@ -982,13 +982,13 @@ export default function Progress() {
               style={{
                 fontSize: 24,
                 fontWeight: 800,
-                color: "#F0EEFF",
+                color: "var(--sch-text)",
                 letterSpacing: "-0.5px",
               }}
             >
               Your Progress
             </h1>
-            <p style={{ fontSize: 14, color: "rgba(240,238,255,0.35)", marginTop: 4 }}>
+            <p style={{ fontSize: 14, color: "var(--sch-tx-3)", marginTop: 4 }}>
               Keep showing up. Every day compounds.
             </p>
           </div>
@@ -1006,9 +1006,9 @@ export default function Progress() {
                     borderRadius: 20,
                     fontSize: 13,
                     cursor: "pointer",
-                    border: `1px solid ${active ? "transparent" : "rgba(255,255,255,0.07)"}`,
-                    background: active ? IRIDESCENT : "rgba(255,255,255,0.03)",
-                    color: active ? "#fff" : "rgba(240,238,255,0.45)",
+                    border: `1px solid ${active ? "transparent" : "var(--sch-border)"}`,
+                    background: active ? IRIDESCENT : "var(--sch-card)",
+                    color: active ? "#fff" : "var(--sch-tx-2)",
                     fontWeight: active ? 600 : 400,
                   }}
                 >

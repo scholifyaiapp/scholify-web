@@ -29,7 +29,7 @@ export interface PricingCardProps {
   onCta: () => void
 }
 
-const TEXT2 = "rgba(240,238,255,0.4)"
+const TEXT2 = "var(--sch-tx-2)"
 
 export default function PricingCard({
   name,
@@ -55,8 +55,8 @@ export default function PricingCard({
         boxShadow: "0 0 80px rgba(139,92,246,0.15), 0 20px 60px rgba(0,0,0,0.4)",
       }
     : {
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
       }
 
   return (
@@ -129,7 +129,7 @@ export default function PricingCard({
             fontWeight: 900,
             letterSpacing: "-1.5px",
             lineHeight: 1,
-            ...(isPro ? iriText : { color: "#F0EEFF" }),
+            ...(isPro ? iriText : { color: "var(--sch-text)" }),
           }}
         >
           {price}
@@ -137,7 +137,7 @@ export default function PricingCard({
         <span style={{ display: "flex", flexDirection: "column", paddingBottom: 4, gap: 1 }}>
           {oldPrice && (
             <span
-              style={{ fontSize: 13, color: "rgba(240,238,255,0.3)", textDecoration: "line-through" }}
+              style={{ fontSize: 13, color: "var(--sch-tx-3)", textDecoration: "line-through" }}
             >
               {oldPrice}
             </span>
@@ -152,7 +152,7 @@ export default function PricingCard({
       {/* Description */}
       <div style={{ fontSize: 13, color: TEXT2, marginTop: 8 }}>{description}</div>
 
-      <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "20px 0" }} />
+      <div style={{ height: 1, background: "var(--sch-border)", margin: "20px 0" }} />
 
       {/* Features */}
       {featuresHeader && (
@@ -182,8 +182,8 @@ export default function PricingCard({
                 justifyContent: "center",
                 fontSize: 10,
                 fontWeight: 700,
-                background: variant === "free" ? "rgba(255,255,255,0.1)" : IRIDESCENT,
-                color: variant === "free" ? "rgba(240,238,255,0.4)" : "#fff",
+                background: variant === "free" ? "var(--sch-border-2)" : IRIDESCENT,
+                color: variant === "free" ? "var(--sch-tx-2)" : "#fff",
               }}
             >
               ✓
@@ -191,7 +191,7 @@ export default function PricingCard({
             <span
               style={{
                 fontSize: 14,
-                color: variant === "free" ? "rgba(240,238,255,0.5)" : "rgba(240,238,255,0.8)",
+                color: variant === "free" ? "var(--sch-tx-2)" : "var(--sch-tx-1)",
                 flex: 1,
               }}
             >
@@ -230,11 +230,11 @@ export default function PricingCard({
           fontSize: isPro ? 16 : 15,
           fontWeight: isPro ? 700 : 600,
           cursor: "pointer",
-          color: isPro ? "#fff" : "#F0EEFF",
-          background: isPro ? IRIDESCENT : "rgba(255,255,255,0.03)",
+          color: isPro ? "#fff" : "var(--sch-text)",
+          background: isPro ? IRIDESCENT : "var(--sch-card)",
           border: isPro
             ? "none"
-            : `1px solid ${variant === "beginner" ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.1)"}`,
+            : `1px solid ${variant === "beginner" ? "rgba(139,92,246,0.2)" : "var(--sch-border-2)"}`,
           boxShadow: isPro ? "0 0 40px rgba(139,92,246,0.3)" : "none",
         }}
       >

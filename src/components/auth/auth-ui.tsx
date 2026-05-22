@@ -12,18 +12,18 @@ export const IRIDESCENT = "linear-gradient(135deg,#A78BFA 0%,#818CF8 35%,#F0ABFC
 
 /** Scoped CSS — placeholder colour, spinner, autofill, scrollbar. */
 const AUTH_CSS = `
-  .sch-auth ::placeholder { color: rgba(240,238,255,0.2); }
+  .sch-auth ::placeholder { color: var(--sch-tx-4); }
   .sch-auth input:-webkit-autofill,
   .sch-auth input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #F0EEFF;
+    -webkit-text-fill-color: var(--sch-text);
     -webkit-box-shadow: 0 0 0 1000px rgba(139,92,246,0.06) inset;
-    caret-color: #F0EEFF;
+    caret-color: var(--sch-text);
     transition: background-color 9999s ease-in-out 0s;
   }
   @keyframes sch-spin { to { transform: rotate(360deg); } }
   .sch-auth ::-webkit-scrollbar { width: 8px; }
   .sch-auth ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.08); border-radius: 8px;
+    background: var(--sch-border); border-radius: 8px;
   }
 `
 
@@ -116,10 +116,10 @@ export function GoogleButton({
         alignItems: "center",
         justifyContent: "center",
         gap: 10,
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--sch-card-2)",
+        border: "1px solid var(--sch-border)",
         borderRadius: 12,
-        color: "#F0EEFF",
+        color: "var(--sch-text)",
         fontSize: 15,
         fontWeight: 500,
         cursor: disabled ? "not-allowed" : "pointer",
@@ -128,12 +128,12 @@ export function GoogleButton({
       }}
       onMouseEnter={(e) => {
         if (disabled) return
-        e.currentTarget.style.background = "rgba(255,255,255,0.07)"
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+        e.currentTarget.style.background = "var(--sch-border)"
+        e.currentTarget.style.borderColor = "var(--sch-border-2)"
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.04)"
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+        e.currentTarget.style.background = "var(--sch-card-2)"
+        e.currentTarget.style.borderColor = "var(--sch-border)"
       }}
     >
       <GoogleIcon />
@@ -147,9 +147,9 @@ export function GoogleButton({
 export function OrDivider() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <span style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-      <span style={{ fontSize: 12, color: "rgba(240,238,255,0.25)" }}>or</span>
-      <span style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+      <span style={{ flex: 1, height: 1, background: "var(--sch-border)" }} />
+      <span style={{ fontSize: 12, color: "var(--sch-tx-3)" }}>or</span>
+      <span style={{ flex: 1, height: 1, background: "var(--sch-border)" }} />
     </div>
   )
 }
@@ -175,7 +175,7 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
           style={{
             display: "block",
             fontSize: 13,
-            color: "rgba(240,238,255,0.5)",
+            color: "var(--sch-tx-2)",
             marginBottom: 8,
             fontWeight: 500,
           }}
@@ -201,17 +201,17 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
                 ? "rgba(255,69,58,0.06)"
                 : focused
                   ? "rgba(139,92,246,0.06)"
-                  : "rgba(255,255,255,0.04)",
+                  : "var(--sch-card-2)",
               border: `1px solid ${
                 hasError
                   ? "#FF453A"
                   : focused
                     ? "rgba(139,92,246,0.6)"
-                    : "rgba(255,255,255,0.08)"
+                    : "var(--sch-border)"
               }`,
               borderRadius: 12,
               padding: rightSlot ? "0 48px 0 16px" : "0 16px",
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               fontSize: 15,
               outline: "none",
               boxShadow: focused && !hasError ? "0 0 0 3px rgba(139,92,246,0.1)" : "none",
@@ -277,11 +277,11 @@ export function SubmitButton({
         justifyContent: "center",
         gap: 10,
         background: disabled
-          ? "rgba(255,255,255,0.06)"
+          ? "var(--sch-border)"
           : "linear-gradient(135deg,rgba(139,92,246,0.8),rgba(99,102,241,0.8))",
-        border: `1px solid ${disabled ? "rgba(255,255,255,0.08)" : "rgba(139,92,246,0.5)"}`,
+        border: `1px solid ${disabled ? "var(--sch-border)" : "rgba(139,92,246,0.5)"}`,
         borderRadius: 12,
-        color: disabled ? "rgba(240,238,255,0.35)" : "#fff",
+        color: disabled ? "var(--sch-tx-3)" : "#fff",
         fontSize: 16,
         fontWeight: 600,
         backdropFilter: "blur(20px)",
@@ -330,7 +330,7 @@ function LeftPanel() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-        style={{ fontSize: 32, fontWeight: 800, color: "#F0EEFF", marginTop: 16 }}
+        style={{ fontSize: 32, fontWeight: 800, color: "var(--sch-text)", marginTop: 16 }}
       >
         Scholify
       </motion.h1>
@@ -339,7 +339,7 @@ function LeftPanel() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
-        style={{ fontSize: 14, color: "rgba(240,238,255,0.4)", marginTop: 12 }}
+        style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 12 }}
       >
         Turn any goal into a daily habit.
       </motion.p>
@@ -364,15 +364,15 @@ function LeftPanel() {
                 justifyContent: "center",
                 fontSize: 15,
                 borderRadius: "50%",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--sch-border)",
+                border: "1px solid var(--sch-border-2)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
             >
               {item.icon}
             </span>
-            <span style={{ fontSize: 13, color: "rgba(240,238,255,0.5)" }}>{item.text}</span>
+            <span style={{ fontSize: 13, color: "var(--sch-tx-2)" }}>{item.text}</span>
           </motion.div>
         ))}
       </div>
@@ -384,10 +384,10 @@ function LeftPanel() {
         transition={{ duration: 0.6, delay: 0.6 }}
         style={{ marginTop: 56 }}
       >
-        <p style={{ fontStyle: "italic", fontSize: 13, color: "rgba(240,238,255,0.3)" }}>
+        <p style={{ fontStyle: "italic", fontSize: 13, color: "var(--sch-tx-3)" }}>
           “The only app that forgave my missed days.”
         </p>
-        <p style={{ fontSize: 11, color: "rgba(240,238,255,0.25)", marginTop: 6 }}>
+        <p style={{ fontSize: 11, color: "var(--sch-tx-3)", marginTop: 6 }}>
           — Dilnoza M., IELTS 7.0
         </p>
       </motion.div>
@@ -406,13 +406,13 @@ export function AuthSplitLayout({
   leftPanel?: ReactNode
 }) {
   return (
-    <div className="sch-auth flex min-h-[100dvh] w-full" style={{ background: "#050508" }}>
+    <div className="sch-auth flex min-h-[100dvh] w-full" style={{ background: "var(--sch-bg)" }}>
       <style>{AUTH_CSS}</style>
 
       {/* LEFT — 40%, hidden on mobile */}
       <aside
         className="hidden lg:flex lg:flex-col lg:w-[40%] relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg,#0D0015,#120820)" }}
+        style={{ background: "var(--sch-bg-grad)" }}
       >
         {leftPanel ?? (
           <div className="flex flex-1 items-center justify-center" style={{ padding: 48 }}>
@@ -424,7 +424,7 @@ export function AuthSplitLayout({
       {/* RIGHT — 60%, full width on mobile */}
       <main
         className="w-full lg:w-[60%] flex items-start sm:items-center justify-center overflow-y-auto"
-        style={{ background: "#050508" }}
+        style={{ background: "var(--sch-bg)" }}
       >
         <div
           className="w-full px-6 py-8 sm:px-10 sm:py-12"
@@ -446,14 +446,14 @@ export function BackToHome() {
       className="sch-back"
       style={{
         fontSize: 14,
-        color: "rgba(240,238,255,0.35)",
+        color: "var(--sch-tx-3)",
         textDecoration: "none",
         transition: "color 0.2s ease",
         width: "fit-content",
         display: "inline-block",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.7)")}
-      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.35)")}
+      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sch-tx-1)")}
+      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sch-tx-3)")}
     >
       ← Back to home
     </Link>

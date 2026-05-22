@@ -47,7 +47,7 @@ function PasswordStrength({ password }: { password: string }) {
           <motion.span
             key={i}
             animate={{
-              background: i < score ? meta.color : "rgba(255,255,255,0.06)",
+              background: i < score ? meta.color : "var(--sch-border)",
             }}
             transition={{ duration: 0.25 }}
             style={{ flex: 1, height: 4, borderRadius: 999 }}
@@ -93,7 +93,7 @@ function ProgressSteps({ active }: { active: number }) {
                 height: 10,
                 borderRadius: "50%",
                 flexShrink: 0,
-                background: i <= active ? IRIDESCENT : "rgba(255,255,255,0.1)",
+                background: i <= active ? IRIDESCENT : "var(--sch-border-2)",
                 boxShadow: i === active ? "0 0 10px rgba(139,92,246,0.6)" : "none",
               }}
             />
@@ -103,7 +103,7 @@ function ProgressSteps({ active }: { active: number }) {
                   flex: 1,
                   height: 1,
                   margin: "0 6px",
-                  background: "rgba(255,255,255,0.1)",
+                  background: "var(--sch-border-2)",
                 }}
               />
             )}
@@ -117,7 +117,7 @@ function ProgressSteps({ active }: { active: number }) {
             style={{
               fontSize: 12,
               fontWeight: i === active ? 700 : 400,
-              color: i === active ? "#F0EEFF" : "rgba(240,238,255,0.35)",
+              color: i === active ? "var(--sch-text)" : "var(--sch-tx-3)",
               textAlign: i === 0 ? "left" : i === STEPS.length - 1 ? "right" : "center",
             }}
           >
@@ -146,7 +146,7 @@ function TermsCheckbox({
         gap: 10,
         cursor: "pointer",
         fontSize: 13,
-        color: "rgba(240,238,255,0.5)",
+        color: "var(--sch-tx-2)",
       }}
     >
       <button
@@ -160,7 +160,7 @@ function TermsCheckbox({
           flexShrink: 0,
           marginTop: 1,
           borderRadius: 5,
-          border: checked ? "none" : "1px solid rgba(255,255,255,0.15)",
+          border: checked ? "none" : "1px solid var(--sch-border-2)",
           background: checked ? IRIDESCENT : "transparent",
           display: "flex",
           alignItems: "center",
@@ -238,7 +238,7 @@ function ConfirmEmailPanel({ email }: { email: string }) {
         style={{
           fontSize: 26,
           fontWeight: 800,
-          color: "#F0EEFF",
+          color: "var(--sch-text)",
           letterSpacing: "-0.5px",
           marginTop: 24,
         }}
@@ -248,13 +248,13 @@ function ConfirmEmailPanel({ email }: { email: string }) {
       <p
         style={{
           fontSize: 14,
-          color: "rgba(240,238,255,0.45)",
+          color: "var(--sch-tx-2)",
           marginTop: 10,
           lineHeight: 1.6,
         }}
       >
         We sent a confirmation link to{" "}
-        <span style={{ color: "#F0EEFF", fontWeight: 600 }}>{email}</span>.
+        <span style={{ color: "var(--sch-text)", fontWeight: 600 }}>{email}</span>.
         <br />
         Click it to activate your account and start your 7-day trial.
       </p>
@@ -376,13 +376,13 @@ export default function SignUp() {
             style={{
               fontSize: 28,
               fontWeight: 800,
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               letterSpacing: "-1px",
             }}
           >
             Start learning today
           </h1>
-          <p style={{ fontSize: 14, color: "rgba(240,238,255,0.4)", marginTop: 6 }}>
+          <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 6 }}>
             Free for 7 days. No credit card required.
           </p>
         </motion.div>
@@ -456,12 +456,12 @@ export default function SignUp() {
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    color: "rgba(240,238,255,0.3)",
+                    color: "var(--sch-tx-3)",
                     padding: 0,
                     transition: "color 0.2s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.6)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.3)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sch-tx-1)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sch-tx-3)")}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -522,7 +522,7 @@ export default function SignUp() {
             marginTop: 24,
             textAlign: "center",
             fontSize: 14,
-            color: "rgba(240,238,255,0.4)",
+            color: "var(--sch-tx-2)",
           }}
         >
           Already have an account?{" "}

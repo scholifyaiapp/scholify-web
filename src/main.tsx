@@ -6,20 +6,23 @@ import ErrorBoundary from "./ErrorBoundary"
 import { LanguageProvider } from "./i18n/LanguageProvider"
 import { AuthProvider } from "./lib/auth"
 import { ToastProvider } from "./components/Toast"
+import { ThemeProvider } from "./lib/theme"
 import "./index.css"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <ToastProvider>
-        <LanguageProvider>
-          <BrowserRouter>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          </BrowserRouter>
-        </LanguageProvider>
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <LanguageProvider>
+            <BrowserRouter>
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </BrowserRouter>
+          </LanguageProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

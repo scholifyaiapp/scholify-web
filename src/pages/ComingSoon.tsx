@@ -22,7 +22,7 @@ export default function ComingSoon() {
   return (
     <div
       className="min-h-[100dvh] w-full flex items-center justify-center px-6"
-      style={{ background: "#050508" }}
+      style={{ background: "var(--sch-bg)" }}
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -35,14 +35,14 @@ export default function ComingSoon() {
           style={{
             fontSize: 26,
             fontWeight: 800,
-            color: "#F0EEFF",
+            color: "var(--sch-text)",
             marginTop: 16,
             letterSpacing: "-0.5px",
           }}
         >
           {info.name}
         </h1>
-        <p style={{ fontSize: 14, color: "rgba(240,238,255,0.45)", marginTop: 8, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 8, lineHeight: 1.6 }}>
           {info.blurb}
         </p>
         <p style={{ fontSize: 12, color: "rgba(139,92,246,0.7)", marginTop: 14, fontWeight: 600 }}>

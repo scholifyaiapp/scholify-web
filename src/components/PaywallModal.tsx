@@ -154,11 +154,11 @@ export default function PaywallModal({
               maxWidth: 560,
               maxHeight: isMobile ? "92vh" : "90vh",
               overflowY: "auto",
-              background: "#0A0A14",
+              background: "var(--sch-bg-2)",
               border: "1px solid rgba(139,92,246,0.25)",
               borderRadius: isMobile ? "28px 28px 0 0" : 28,
               boxShadow:
-                "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), 0 0 80px rgba(139,92,246,0.1)",
+                "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px var(--sch-card-2), 0 0 80px rgba(139,92,246,0.1)",
             }}
           >
             {/* Close button */}
@@ -175,9 +175,9 @@ export default function PaywallModal({
                 width: 36,
                 height: 36,
                 borderRadius: "50%",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "rgba(240,238,255,0.4)",
+                background: "var(--sch-hairline)",
+                border: "1px solid var(--sch-border)",
+                color: "var(--sch-tx-2)",
                 fontSize: 18,
                 cursor: "pointer",
                 zIndex: 2,
@@ -230,7 +230,7 @@ export default function PaywallModal({
                 style={{
                   fontSize: 24,
                   fontWeight: 800,
-                  color: "#F0EEFF",
+                  color: "var(--sch-text)",
                   letterSpacing: "-0.5px",
                   marginTop: 16,
                 }}
@@ -240,7 +240,7 @@ export default function PaywallModal({
               <p
                 style={{
                   fontSize: 14,
-                  color: "rgba(240,238,255,0.45)",
+                  color: "var(--sch-tx-2)",
                   maxWidth: 380,
                   margin: "10px auto 0",
                   lineHeight: 1.6,
@@ -274,7 +274,7 @@ export default function PaywallModal({
                   >
                     ✓
                   </span>
-                  <span style={{ fontSize: 14, color: "#F0EEFF", flex: 1 }}>{f.text}</span>
+                  <span style={{ fontSize: 14, color: "var(--sch-text)", flex: 1 }}>{f.text}</span>
                   {f.badge && (
                     <span
                       style={{
@@ -335,17 +335,17 @@ export default function PaywallModal({
                   alignItems: "center",
                   padding: "14px 16px",
                   borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid var(--sch-border)",
+                  background: "var(--sch-card)",
                   cursor: "pointer",
                   textAlign: "left",
                 }}
               >
                 <span>
-                  <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#F0EEFF" }}>
+                  <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--sch-text)" }}>
                     Annual Pro
                   </span>
-                  <span style={{ fontSize: 12, color: "rgba(240,238,255,0.4)" }}>
+                  <span style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>
                     Billed annually · Best value
                   </span>
                 </span>
@@ -381,7 +381,7 @@ export default function PaywallModal({
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div style={{ fontSize: 12, color: "rgba(240,238,255,0.2)", lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 7-day free trial · No credit card required · Cancel anytime
               </div>
               {dismissible && (
@@ -393,11 +393,11 @@ export default function PaywallModal({
                     background: "transparent",
                     border: "none",
                     fontSize: 13,
-                    color: "rgba(240,238,255,0.2)",
+                    color: "var(--sch-tx-4)",
                     cursor: "pointer",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.4)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.2)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sch-tx-2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sch-tx-4)")}
                 >
                   Maybe later
                 </button>
@@ -435,7 +435,7 @@ function PlanMini({
         border: "1px solid rgba(139,92,246,0.4)",
         boxShadow: "0 0 40px rgba(139,92,246,0.12)",
       }
-    : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }
+    : { background: "var(--sch-card)", border: "1px solid var(--sch-border)" }
 
   return (
     <div style={{ position: "relative", borderRadius: 20, padding: 20, ...cardStyle }}>
@@ -464,7 +464,7 @@ function PlanMini({
           fontSize: 12,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: featured ? "rgba(192,132,252,0.8)" : "rgba(240,238,255,0.4)",
+          color: featured ? "rgba(192,132,252,0.8)" : "var(--sch-tx-2)",
         }}
       >
         {name}
@@ -476,16 +476,16 @@ function PlanMini({
             fontWeight: 800,
             letterSpacing: "-1px",
             lineHeight: 1,
-            ...(featured ? iriText : { color: "#F0EEFF" }),
+            ...(featured ? iriText : { color: "var(--sch-text)" }),
           }}
         >
           {price}
         </span>
-        <span style={{ fontSize: 14, color: "rgba(240,238,255,0.4)", paddingBottom: 4 }}>
+        <span style={{ fontSize: 14, color: "var(--sch-tx-2)", paddingBottom: 4 }}>
           {unit}
         </span>
       </div>
-      <div style={{ fontSize: 12, color: "rgba(240,238,255,0.4)", marginTop: 4 }}>
+      <div style={{ fontSize: 12, color: "var(--sch-tx-2)", marginTop: 4 }}>
         {description}
       </div>
       <motion.button
@@ -501,9 +501,9 @@ function PlanMini({
           fontSize: 14,
           fontWeight: featured ? 700 : 600,
           cursor: "pointer",
-          color: featured ? "#fff" : "rgba(240,238,255,0.7)",
-          background: featured ? IRIDESCENT : "rgba(255,255,255,0.02)",
-          border: featured ? "none" : "1px solid rgba(255,255,255,0.1)",
+          color: featured ? "#fff" : "var(--sch-tx-1)",
+          background: featured ? IRIDESCENT : "var(--sch-card)",
+          border: featured ? "none" : "1px solid var(--sch-border-2)",
           boxShadow: featured ? "0 0 30px rgba(139,92,246,0.3)" : "none",
         }}
       >

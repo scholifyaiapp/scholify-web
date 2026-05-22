@@ -56,7 +56,7 @@ export default function AuthCallback() {
   return (
     <div
       className="min-h-[100dvh] w-full flex items-center justify-center px-6"
-      style={{ background: "linear-gradient(135deg,#0D0015,#120820)" }}
+      style={{ background: "var(--sch-bg-grad)" }}
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -69,7 +69,7 @@ export default function AuthCallback() {
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Spinner size={32} />
             </div>
-            <p style={{ fontSize: 15, color: "rgba(240,238,255,0.55)", marginTop: 20 }}>
+            <p style={{ fontSize: 15, color: "var(--sch-tx-1)", marginTop: 20 }}>
               Finishing sign-in…
             </p>
           </>
@@ -94,7 +94,7 @@ export default function AuthCallback() {
               style={{
                 fontSize: 22,
                 fontWeight: 800,
-                color: "#F0EEFF",
+                color: "var(--sch-text)",
                 marginTop: 20,
               }}
             >
@@ -103,7 +103,7 @@ export default function AuthCallback() {
             <p
               style={{
                 fontSize: 14,
-                color: "rgba(240,238,255,0.5)",
+                color: "var(--sch-tx-2)",
                 marginTop: 10,
                 lineHeight: 1.6,
               }}

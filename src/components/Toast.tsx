@@ -82,14 +82,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   padding: "14px 18px",
                   borderRadius: 14,
                   background: "rgba(15,14,22,0.97)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid var(--sch-border)",
                   borderLeft: `3px solid ${meta.color}`,
                   boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
                   pointerEvents: "auto",
                 }}
               >
                 <span style={{ color: meta.color, fontSize: 18, flexShrink: 0 }}>{meta.icon}</span>
-                <span style={{ fontSize: 14, color: "#F0EEFF", flex: 1 }}>{t.message}</span>
+                <span style={{ fontSize: 14, color: "var(--sch-text)", flex: 1 }}>{t.message}</span>
                 <button
                   type="button"
                   onClick={() => remove(t.id)}
@@ -97,7 +97,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "rgba(240,238,255,0.3)",
+                    color: "var(--sch-tx-3)",
                     fontSize: 16,
                     cursor: "pointer",
                     lineHeight: 1,

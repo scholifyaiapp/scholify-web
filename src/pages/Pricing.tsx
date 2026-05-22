@@ -11,7 +11,7 @@ import PricingCard, { type PlanFeature } from "@/components/PricingCard"
  *  Public pricing page (/pricing) — plans, comparison table, FAQ.
  * ────────────────────────────────────────────────────────────── */
 
-const TEXT2 = "rgba(240,238,255,0.4)"
+const TEXT2 = "var(--sch-tx-2)"
 const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 
 const FREE_FEATURES: PlanFeature[] = [
@@ -87,8 +87,8 @@ function ComparisonCell({ value }: { value: string }) {
   if (value === "✓")
     return <span style={{ ...iriText, fontWeight: 800 }}>✓</span>
   if (value === "—")
-    return <span style={{ color: "rgba(240,238,255,0.2)" }}>—</span>
-  return <span style={{ color: "rgba(240,238,255,0.7)", fontSize: 13 }}>{value}</span>
+    return <span style={{ color: "var(--sch-tx-4)" }}>—</span>
+  return <span style={{ color: "var(--sch-tx-1)", fontSize: 13 }}>{value}</span>
 }
 
 /* ── FAQ item ────────────────────────────────────────────────── */
@@ -99,8 +99,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     <div
       onClick={() => setOpen((v) => !v)}
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
         borderRadius: 14,
         padding: 20,
         marginBottom: 8,
@@ -108,7 +108,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: "#F0EEFF" }}>{q}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: "var(--sch-text)" }}>{q}</span>
         <motion.span
           animate={{ rotate: open ? 45 : 0 }}
           style={{ fontSize: 20, color: TEXT2, flexShrink: 0, lineHeight: 1 }}
@@ -128,7 +128,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
             <p
               style={{
                 fontSize: 14,
-                color: "rgba(240,238,255,0.45)",
+                color: "var(--sch-tx-2)",
                 lineHeight: 1.7,
                 marginTop: 12,
               }}
@@ -181,7 +181,7 @@ export default function Pricing() {
   )
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#050508" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
       {/* Slim top bar */}
       <div
         style={{
@@ -198,7 +198,7 @@ export default function Pricing() {
         </Link>
         <Link
           to={user ? "/dashboard" : "/sign-in"}
-          style={{ fontSize: 14, color: "rgba(240,238,255,0.55)", textDecoration: "none" }}
+          style={{ fontSize: 14, color: "var(--sch-tx-1)", textDecoration: "none" }}
         >
           {user ? "Go to app →" : "Sign in"}
         </Link>
@@ -230,7 +230,7 @@ export default function Pricing() {
             style={{
               fontSize: "clamp(36px,4vw,56px)",
               fontWeight: 900,
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               letterSpacing: "-2px",
               marginTop: 20,
               lineHeight: 1.05,
@@ -238,7 +238,7 @@ export default function Pricing() {
           >
             Simple, honest pricing.
           </h1>
-          <p style={{ fontSize: 16, color: "rgba(240,238,255,0.4)", marginTop: 12 }}>
+          <p style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 12 }}>
             Start free for 7 days. Upgrade when you're ready.
           </p>
 
@@ -249,8 +249,8 @@ export default function Pricing() {
               marginTop: 32,
               padding: 4,
               borderRadius: 24,
-              border: "1px solid rgba(255,255,255,0.07)",
-              background: "rgba(255,255,255,0.02)",
+              border: "1px solid var(--sch-border)",
+              background: "var(--sch-card)",
             }}
           >
             {(["monthly", "annual"] as const).map((b) => {
@@ -389,7 +389,7 @@ export default function Pricing() {
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#F0EEFF" }}>Annual Pro</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "var(--sch-text)" }}>Annual Pro</span>
               <span
                 style={{
                   fontSize: 10,
@@ -436,9 +436,9 @@ export default function Pricing() {
                   fontSize: 12,
                   padding: "5px 12px",
                   borderRadius: 12,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  color: "rgba(240,238,255,0.5)",
+                  background: "var(--sch-card)",
+                  border: "1px solid var(--sch-border)",
+                  color: "var(--sch-tx-2)",
                 }}
               >
                 {p}
@@ -456,7 +456,7 @@ export default function Pricing() {
               borderRadius: 14,
               border: "none",
               background: GOLD,
-              color: "#0A0A14",
+              color: "var(--sch-bg-2)",
               fontWeight: 800,
               fontSize: 15,
               whiteSpace: "nowrap",
@@ -504,14 +504,14 @@ export default function Pricing() {
                 style={{
                   marginTop: 16,
                   borderRadius: 20,
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  border: "1px solid var(--sch-border)",
                   overflow: "hidden",
                 }}
               >
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
                     <thead>
-                      <tr style={{ background: "#0A0A0F" }}>
+                      <tr style={{ background: "var(--sch-bg-2)" }}>
                         {["Feature", "Free", "Beginner", "Pro", "Annual Pro"].map((h, i) => (
                           <th
                             key={h}
@@ -534,14 +534,14 @@ export default function Pricing() {
                         <tr
                           key={row[0]}
                           style={{
-                            background: ri % 2 === 0 ? "rgba(255,255,255,0.015)" : "transparent",
+                            background: ri % 2 === 0 ? "var(--sch-card)" : "transparent",
                           }}
                         >
                           <td
                             style={{
                               padding: "14px 20px",
                               fontSize: 14,
-                              color: "rgba(240,238,255,0.6)",
+                              color: "var(--sch-tx-1)",
                             }}
                           >
                             {row[0]}
@@ -566,7 +566,7 @@ export default function Pricing() {
           style={{
             fontSize: 16,
             fontWeight: 700,
-            color: "#F0EEFF",
+            color: "var(--sch-text)",
             textAlign: "center",
             marginTop: 56,
             marginBottom: 20,

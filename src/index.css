@@ -76,6 +76,45 @@
   --sidebar-primary-foreground: #ffe066;
 }
 
+/* ──────────────────────────────────────────────────────────────
+ *  Scholify app theme (sign-in onward). Dark is the default;
+ *  html[data-theme="light"] flips every token. The landing page
+ *  does not use these tokens.
+ * ────────────────────────────────────────────────────────────── */
+:root {
+  --sch-bg: #050508;
+  --sch-bg-2: #0a0a14;
+  --sch-bg-grad: linear-gradient(135deg, #0d0015, #120820);
+  --sch-bg-blur: rgba(5, 5, 8, 0.9);
+  --sch-card: rgba(255, 255, 255, 0.03);
+  --sch-card-2: rgba(255, 255, 255, 0.045);
+  --sch-hairline: rgba(255, 255, 255, 0.055);
+  --sch-border: rgba(255, 255, 255, 0.08);
+  --sch-border-2: rgba(255, 255, 255, 0.13);
+  --sch-text: #f0eeff;
+  --sch-tx-1: rgba(240, 238, 255, 0.72);
+  --sch-tx-2: rgba(240, 238, 255, 0.46);
+  --sch-tx-3: rgba(240, 238, 255, 0.3);
+  --sch-tx-4: rgba(240, 238, 255, 0.17);
+}
+
+html[data-theme="light"] {
+  --sch-bg: #f3f3f7;
+  --sch-bg-2: #ffffff;
+  --sch-bg-grad: linear-gradient(135deg, #edebf7, #f5f3fb);
+  --sch-bg-blur: rgba(255, 255, 255, 0.88);
+  --sch-card: #ffffff;
+  --sch-card-2: #ffffff;
+  --sch-hairline: rgba(20, 19, 38, 0.07);
+  --sch-border: rgba(20, 19, 38, 0.1);
+  --sch-border-2: rgba(20, 19, 38, 0.16);
+  --sch-text: #1a1925;
+  --sch-tx-1: rgba(26, 25, 37, 0.82);
+  --sch-tx-2: rgba(26, 25, 37, 0.62);
+  --sch-tx-3: rgba(26, 25, 37, 0.46);
+  --sch-tx-4: rgba(26, 25, 37, 0.34);
+}
+
 @theme {
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);

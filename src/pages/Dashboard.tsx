@@ -50,7 +50,7 @@ function TypingDots() {
             width: 7,
             height: 7,
             borderRadius: "50%",
-            background: "rgba(240,238,255,0.3)",
+            background: "var(--sch-tx-3)",
           }}
         />
       ))}
@@ -85,12 +85,12 @@ function StatCard({ label, value }: { label: string; value: string }) {
       style={{
         padding: "16px 20px",
         borderRadius: 16,
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
       }}
     >
       <div style={{ fontSize: 22, fontWeight: 800, ...iriText }}>{value}</div>
-      <div style={{ fontSize: 13, color: "rgba(240,238,255,0.4)", marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, color: "var(--sch-tx-2)", marginTop: 4 }}>{label}</div>
     </motion.div>
   )
 }
@@ -299,7 +299,7 @@ export default function Dashboard() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
 
   const cardStyle: CSSProperties = {
-    background: "rgba(255,255,255,0.025)",
+    background: "var(--sch-card)",
     border: "1px solid rgba(139,92,246,0.2)",
   }
 
@@ -316,10 +316,10 @@ export default function Dashboard() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#F0EEFF" }}>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--sch-text)" }}>
               {greeting}, {firstName} 👋
             </h1>
-            <div style={{ fontSize: 13, color: "rgba(240,238,255,0.4)", marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: "var(--sch-tx-2)", marginTop: 2 }}>
               {format(today, "EEEE, MMMM d")}
             </div>
           </div>
@@ -332,8 +332,8 @@ export default function Dashboard() {
                   width: 40,
                   height: 40,
                   borderRadius: "50%",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  background: "var(--sch-card)",
+                  border: "1px solid var(--sch-border)",
                   cursor: "pointer",
                   fontSize: 16,
                 }}
@@ -370,7 +370,7 @@ export default function Dashboard() {
               <Pill>
                 {resType.icon} {resType.label}
               </Pill>
-              <div style={{ fontSize: 12, color: "rgba(240,238,255,0.4)", marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--sch-tx-2)", marginTop: 6 }}>
                 Day {currentDay} of {totalDays}
               </div>
             </div>
@@ -383,7 +383,7 @@ export default function Dashboard() {
               marginTop: 20,
               fontSize: "clamp(20px,2.5vw,26px)",
               fontWeight: 800,
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               letterSpacing: "-0.5px",
               lineHeight: 1.2,
             }}
@@ -396,7 +396,7 @@ export default function Dashboard() {
             style={{
               marginTop: 12,
               fontSize: 15,
-              color: "rgba(240,238,255,0.5)",
+              color: "var(--sch-tx-2)",
               lineHeight: 1.7,
               maxWidth: 600,
             }}
@@ -404,7 +404,7 @@ export default function Dashboard() {
             {task.task_description}
           </p>
 
-          <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "20px 0" }} />
+          <div style={{ height: 1, background: "var(--sch-hairline)", margin: "20px 0" }} />
 
           {/* Progress row */}
           <div
@@ -412,7 +412,7 @@ export default function Dashboard() {
               display: "flex",
               justifyContent: "space-between",
               fontSize: 13,
-              color: "rgba(240,238,255,0.4)",
+              color: "var(--sch-tx-2)",
               marginBottom: 10,
             }}
           >
@@ -428,7 +428,7 @@ export default function Dashboard() {
             rel="noopener noreferrer"
             style={{ textDecoration: "none", display: "block", marginTop: 20 }}
           >
-            <div style={{ fontSize: 12, color: "rgba(240,238,255,0.4)", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: "var(--sch-tx-2)", marginBottom: 8 }}>
               📌 Best resource today
             </div>
             <motion.div
@@ -440,14 +440,14 @@ export default function Dashboard() {
                 gap: 12,
                 padding: "12px 16px",
                 borderRadius: 12,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "var(--sch-card)",
+                border: "1px solid var(--sch-border)",
                 fontSize: 13,
               }}
             >
               <span
                 style={{
-                  color: "rgba(240,238,255,0.75)",
+                  color: "var(--sch-tx-1)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -563,7 +563,7 @@ export default function Dashboard() {
                 border: "none",
                 cursor: "pointer",
                 fontSize: 12,
-                color: "rgba(240,238,255,0.35)",
+                color: "var(--sch-tx-3)",
               }}
               title="Voice playback — a Pro feature"
             >
@@ -574,7 +574,7 @@ export default function Dashboard() {
             style={{
               marginTop: 12,
               fontSize: 15,
-              color: "rgba(240,238,255,0.7)",
+              color: "var(--sch-tx-1)",
               lineHeight: 1.7,
               fontStyle: "italic",
               minHeight: 52,

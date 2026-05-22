@@ -36,9 +36,9 @@ const iriText: CSSProperties = {
 }
 
 const OB_CSS = `
-  .ob ::placeholder { color: rgba(240,238,255,0.15); }
+  .ob ::placeholder { color: var(--sch-tx-4); }
   .ob-pill { transition: color .2s ease, border-color .2s ease, background .2s ease; }
-  .ob-pill:hover { border-color: rgba(139,92,246,0.4) !important; color: rgba(240,238,255,0.9) !important; }
+  .ob-pill:hover { border-color: rgba(139,92,246,0.4) !important; color: var(--sch-tx-1) !important; }
   .ob-cal-day { transition: background .15s ease, border-color .15s ease; }
   .ob-cal-day:hover { background: rgba(139,92,246,0.2) !important; border-color: rgba(139,92,246,0.3) !important; }
   .ob-arrow { transition: background .15s ease; }
@@ -68,7 +68,7 @@ function ProgressBar({ step }: { step: number }) {
                   ? IRIDESCENT
                   : i < step
                     ? "rgba(139,92,246,0.4)"
-                    : "rgba(255,255,255,0.06)",
+                    : "var(--sch-border)",
             }}
           />
         ))}
@@ -83,10 +83,10 @@ function ProgressBar({ step }: { step: number }) {
               textAlign: "center",
               color:
                 i === step
-                  ? "rgba(240,238,255,0.8)"
+                  ? "var(--sch-tx-1)"
                   : i < step
-                    ? "rgba(240,238,255,0.45)"
-                    : "rgba(240,238,255,0.2)",
+                    ? "var(--sch-tx-2)"
+                    : "var(--sch-tx-4)",
             }}
           >
             {label}
@@ -127,7 +127,7 @@ function StepHeader({
           fontSize: 36,
           fontWeight: 800,
           letterSpacing: "-1.5px",
-          color: "#F0EEFF",
+          color: "var(--sch-text)",
           marginTop: 14,
           lineHeight: 1.12,
         }}
@@ -140,7 +140,7 @@ function StepHeader({
         <p
           style={{
             fontSize: 15,
-            color: "rgba(240,238,255,0.4)",
+            color: "var(--sch-tx-2)",
             marginTop: 12,
             lineHeight: 1.5,
           }}
@@ -174,9 +174,9 @@ function Pill({
         padding: "8px 16px",
         borderRadius: 20,
         fontSize: 13,
-        background: active ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.03)",
-        border: `1px solid ${active ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.07)"}`,
-        color: active ? "rgba(240,238,255,0.95)" : "rgba(240,238,255,0.5)",
+        background: active ? "rgba(139,92,246,0.15)" : "var(--sch-card)",
+        border: `1px solid ${active ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+        color: active ? "var(--sch-tx-1)" : "var(--sch-tx-2)",
         cursor: "pointer",
       }}
     >
@@ -213,9 +213,9 @@ function Calendar({
     width: 32,
     height: 32,
     borderRadius: "50%",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    color: "rgba(240,238,255,0.7)",
+    background: "var(--sch-card-2)",
+    border: "1px solid var(--sch-border)",
+    color: "var(--sch-tx-1)",
     fontSize: 16,
     display: "flex",
     alignItems: "center",
@@ -226,8 +226,8 @@ function Calendar({
     <div
       style={{
         width: "100%",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
         borderRadius: 20,
         padding: 24,
       }}
@@ -251,7 +251,7 @@ function Calendar({
         >
           ‹
         </button>
-        <span style={{ fontSize: 16, fontWeight: 600, color: "#F0EEFF" }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: "var(--sch-text)" }}>
           {format(month, "MMMM yyyy")}
         </span>
         <button
@@ -280,7 +280,7 @@ function Calendar({
             key={w}
             style={{
               fontSize: 11,
-              color: "rgba(240,238,255,0.25)",
+              color: "var(--sch-tx-3)",
               letterSpacing: "0.05em",
             }}
           >
@@ -321,10 +321,10 @@ function Calendar({
                 color: selected
                   ? "#fff"
                   : !inMonth
-                    ? "rgba(240,238,255,0.08)"
+                    ? "var(--sch-tx-4)"
                     : past
-                      ? "rgba(240,238,255,0.1)"
-                      : "rgba(240,238,255,0.6)",
+                      ? "var(--sch-tx-4)"
+                      : "var(--sch-tx-1)",
                 boxShadow: selected ? "0 0 20px rgba(139,92,246,0.4)" : "none",
                 cursor: disabled ? "default" : "pointer",
                 display: "flex",
@@ -379,7 +379,7 @@ function MinutesSlider({
             {value}
           </motion.div>
         </AnimatePresence>
-        <div style={{ fontSize: 16, color: "rgba(240,238,255,0.4)", marginTop: 4 }}>
+        <div style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 4 }}>
           minutes per day
         </div>
       </div>
@@ -396,7 +396,7 @@ function MinutesSlider({
             height: 8,
             transform: "translateY(-50%)",
             borderRadius: 4,
-            background: "rgba(255,255,255,0.05)",
+            background: "var(--sch-hairline)",
           }}
         />
         {/* Fill */}
@@ -459,7 +459,7 @@ function MinutesSlider({
               width: 3,
               height: 3,
               borderRadius: "50%",
-              background: "rgba(240,238,255,0.2)",
+              background: "var(--sch-tx-4)",
             }}
           />
         ))}
@@ -470,7 +470,7 @@ function MinutesSlider({
           justifyContent: "space-between",
           marginTop: 6,
           fontSize: 11,
-          color: "rgba(240,238,255,0.3)",
+          color: "var(--sch-tx-3)",
         }}
       >
         <span>5 min</span>
@@ -486,7 +486,7 @@ function MinutesSlider({
             <motion.div
               key={c.title}
               animate={{
-                borderColor: active ? "rgba(139,92,246,0.35)" : "rgba(255,255,255,0.07)",
+                borderColor: active ? "rgba(139,92,246,0.35)" : "var(--sch-border)",
               }}
               style={{
                 display: "flex",
@@ -494,9 +494,9 @@ function MinutesSlider({
                 gap: 14,
                 padding: "14px 16px",
                 borderRadius: 14,
-                background: active ? "rgba(139,92,246,0.07)" : "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                borderLeft: active ? "3px solid transparent" : "1px solid rgba(255,255,255,0.07)",
+                background: active ? "rgba(139,92,246,0.07)" : "var(--sch-card)",
+                border: "1px solid var(--sch-border)",
+                borderLeft: active ? "3px solid transparent" : "1px solid var(--sch-border)",
                 borderImage: active ? `${IRIDESCENT} 1` : undefined,
               }}
             >
@@ -506,12 +506,12 @@ function MinutesSlider({
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: active ? "#F0EEFF" : "rgba(240,238,255,0.55)",
+                    color: active ? "var(--sch-text)" : "var(--sch-tx-1)",
                   }}
                 >
                   {c.title}
                 </div>
-                <div style={{ fontSize: 12.5, color: "rgba(240,238,255,0.35)", marginTop: 2 }}>
+                <div style={{ fontSize: 12.5, color: "var(--sch-tx-3)", marginTop: 2 }}>
                   {c.desc}
                 </div>
               </div>
@@ -635,10 +635,10 @@ export default function Onboarding() {
             minHeight: 120,
             padding: 20,
             paddingBottom: 36,
-            background: goalFocus ? "rgba(139,92,246,0.06)" : "rgba(255,255,255,0.03)",
-            border: `1px solid ${goalFocus ? "rgba(139,92,246,0.6)" : "rgba(255,255,255,0.08)"}`,
+            background: goalFocus ? "rgba(139,92,246,0.06)" : "var(--sch-card)",
+            border: `1px solid ${goalFocus ? "rgba(139,92,246,0.6)" : "var(--sch-border)"}`,
             borderRadius: 16,
-            color: "#F0EEFF",
+            color: "var(--sch-text)",
             fontSize: 17,
             lineHeight: 1.5,
             resize: "none",
@@ -654,7 +654,7 @@ export default function Onboarding() {
             right: 16,
             bottom: 14,
             fontSize: 12,
-            color: "rgba(240,238,255,0.3)",
+            color: "var(--sch-tx-3)",
           }}
         >
           {goal.length} / 120
@@ -662,7 +662,7 @@ export default function Onboarding() {
       </div>
       {/* Suggestion pills */}
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 12, color: "rgba(240,238,255,0.3)", marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: "var(--sch-tx-3)", marginBottom: 10 }}>
           Popular goals
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -709,17 +709,17 @@ export default function Onboarding() {
           style={{
             marginTop: 20,
             padding: "16px 20px",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
             borderRadius: 14,
             textAlign: "center",
           }}
         >
-          <span style={{ fontSize: 14, color: "rgba(240,238,255,0.5)" }}>Your deadline: </span>
+          <span style={{ fontSize: 14, color: "var(--sch-tx-2)" }}>Your deadline: </span>
           <span style={{ fontSize: 15, fontWeight: 700, ...iriText }}>
             {format(deadline, "MMMM d, yyyy")}
           </span>
-          <div style={{ fontSize: 13, color: "rgba(240,238,255,0.35)", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "var(--sch-tx-3)", marginTop: 4 }}>
             That's {daysFromToday} days from today
           </div>
         </div>
@@ -763,20 +763,20 @@ export default function Onboarding() {
           boxShadow: "0 0 40px rgba(139,92,246,0.25)",
         }}
       >
-        <div style={{ background: "#0b0a12", borderRadius: 18.5, padding: 28 }}>
+        <div style={{ background: "var(--sch-bg-2)", borderRadius: 18.5, padding: 28 }}>
           {summaryRows.map((row, i) => (
             <div key={row.label}>
               {i > 0 && (
-                <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "16px 0" }} />
+                <div style={{ height: 1, background: "var(--sch-border)", margin: "16px 0" }} />
               )}
-              <div style={{ fontSize: 12, color: "rgba(240,238,255,0.4)" }}>
+              <div style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>
                 {row.icon} {row.label}
               </div>
               <div
                 style={{
                   fontSize: 15,
                   fontWeight: 600,
-                  color: "#F0EEFF",
+                  color: "var(--sch-text)",
                   marginTop: 5,
                   lineHeight: 1.5,
                 }}
@@ -784,7 +784,7 @@ export default function Onboarding() {
                 {row.value}
               </div>
               {row.sub && (
-                <div style={{ fontSize: 12, color: "rgba(240,238,255,0.3)", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: "var(--sch-tx-3)", marginTop: 2 }}>
                   {row.sub}
                 </div>
               )}
@@ -830,7 +830,7 @@ export default function Onboarding() {
   const stepBodies = [step1, step2, step3, step4]
 
   return (
-    <div className="ob" style={{ minHeight: "100dvh", background: "#050508" }}>
+    <div className="ob" style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
       <style>{OB_CSS}</style>
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "48px 24px" }}>
         <ProgressBar step={step} />
@@ -858,7 +858,7 @@ export default function Onboarding() {
               style={{
                 background: "transparent",
                 border: "none",
-                color: "rgba(240,238,255,0.4)",
+                color: "var(--sch-tx-2)",
                 fontSize: 15,
                 cursor: "pointer",
                 padding: "10px 4px",
@@ -882,9 +882,9 @@ export default function Onboarding() {
                 borderRadius: 12,
                 background: canContinue
                   ? "linear-gradient(135deg,rgba(139,92,246,0.85),rgba(99,102,241,0.85))"
-                  : "rgba(255,255,255,0.05)",
-                border: `1px solid ${canContinue ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.08)"}`,
-                color: canContinue ? "#fff" : "rgba(240,238,255,0.3)",
+                  : "var(--sch-hairline)",
+                border: `1px solid ${canContinue ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+                color: canContinue ? "#fff" : "var(--sch-tx-3)",
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: canContinue ? "pointer" : "not-allowed",

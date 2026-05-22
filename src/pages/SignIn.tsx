@@ -94,13 +94,13 @@ export default function SignIn() {
             style={{
               fontSize: 28,
               fontWeight: 800,
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               letterSpacing: "-1px",
             }}
           >
             Welcome back
           </h1>
-          <p style={{ fontSize: 14, color: "rgba(240,238,255,0.4)", marginTop: 6 }}>
+          <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 6 }}>
             Sign in to continue your learning streak.
           </p>
         </motion.div>
@@ -145,12 +145,12 @@ export default function SignIn() {
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    color: "rgba(240,238,255,0.3)",
+                    color: "var(--sch-tx-3)",
                     padding: 0,
                     transition: "color 0.2s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.6)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,238,255,0.3)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sch-tx-1)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sch-tx-3)")}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -221,7 +221,7 @@ export default function SignIn() {
             marginTop: 24,
             textAlign: "center",
             fontSize: 14,
-            color: "rgba(240,238,255,0.4)",
+            color: "var(--sch-tx-2)",
           }}
         >
           Don't have an account?{" "}
