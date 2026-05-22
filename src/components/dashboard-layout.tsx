@@ -1,0 +1,351 @@
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react"
+import { Link, useLocation } from "react-router-dom"
+import { motion } from "motion/react"
+import { differenceInCalendarDays } from "date-fns"
+import { useAuth } from "@/lib/auth"
+import { readPlan, readProgress } from "@/lib/scholify-data"
+import { IRIDESCENT } from "@/components/auth/auth-ui"
+
+/* ──────────────────────────────────────────────────────────────
+ *  Shared app shell for the signed-in screens (Dashboard, Progress…).
+ *  Renders the sidebar + mobile tab bar; pages supply their content.
+ * ────────────────────────────────────────────────────────────── */
+
+/** Iridescent gradient as text fill — the app-wide accent. */
+export const iriText: CSSProperties = {
+  background: IRIDESCENT,
+  WebkitBackgroundClip: "text",
+  backgroundClip: "text",
+  color: "transparent",
+  WebkitTextFillColor: "transparent",
+}
+
+const LAYOUT_CSS = `
+  @keyframes dash-spin { to { transform: rotate(360deg); } }
+  @keyframes sch-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  .dash-scroll::-webkit-scrollbar { width: 7px; }
+  .dash-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 8px; }
+`
+
+export const NAV = [
+  { icon: "🏠", label: "Today", to: "/dashboard" },
+  { icon: "📈", label: "Progress", to: "/progress" },
+  { icon: "🎯", label: "My Goals", to: "/goals" },
+  { icon: "🏆", label: "Achievements", to: "/achievements" },
+  { icon: "⚙️", label: "Settings", to: "/settings" },
+]
+
+/* ── Shared bits ─────────────────────────────────────────────── */
+
+export function ProgressBar({ pct, height = 6 }: { pct: number; height?: number }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height,
+        borderRadius: height / 2,
+        background: "rgba(255,255,255,0.05)",
+        overflow: "hidden",
+      }}
+    >
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+        style={{ height: "100%", background: IRIDESCENT, position: "relative" }}
+      >
+        <motion.div
+          animate={{ x: ["-100%", "200%"] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)",
+          }}
+        />
+      </motion.div>
+    </div>
+  )
+}
+
+export function Pill({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "4px 12px",
+        borderRadius: 999,
+        fontSize: 12,
+        border: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(255,255,255,0.03)",
+        color: "rgba(240,238,255,0.7)",
+        ...style,
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+function Avatar({ initial, size = 40 }: { initial: string; size?: number }) {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        borderRadius: "50%",
+        background: IRIDESCENT,
+        border: "2px solid rgba(139,92,246,0.3)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        fontWeight: 800,
+        fontSize: size * 0.42,
+      }}
+    >
+      {initial}
+    </div>
+  )
+}
+
+function NavItem({ item, active }: { item: (typeof NAV)[number]; active: boolean }) {
+  return (
+    <Link
+      to={item.to}
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 12px",
+        borderRadius: 10,
+        fontSize: 14,
+        textDecoration: "none",
+        transition: "all 0.2s ease",
+        background: active ? "rgba(139,92,246,0.12)" : "transparent",
+        border: `1px solid ${active ? "rgba(139,92,246,0.2)" : "transparent"}`,
+        color: active ? "#F0EEFF" : "rgba(240,238,255,0.4)",
+        fontWeight: active ? 600 : 400,
+      }}
+      onMouseEnter={(e) => {
+        if (active) return
+        e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+        e.currentTarget.style.color = "rgba(240,238,255,0.7)"
+      }}
+      onMouseLeave={(e) => {
+        if (active) return
+        e.currentTarget.style.background = "transparent"
+        e.currentTarget.style.color = "rgba(240,238,255,0.4)"
+      }}
+    >
+      {active && (
+        <span
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 8,
+            bottom: 8,
+            width: 3,
+            borderRadius: 3,
+            background: "rgba(99,102,241,0.9)",
+          }}
+        />
+      )}
+      <span style={{ fontSize: 16 }}>{item.icon}</span>
+      {item.label}
+    </Link>
+  )
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+
+export function DashboardLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+
+  const plan = useMemo(readPlan, [])
+  const [progress] = useState(readProgress)
+
+  const firstName = (user?.user_metadata?.first_name as string) || "there"
+  const goal = plan.goal?.trim() || "Your learning goal"
+  const tasks = Array.isArray(plan.tasks) ? plan.tasks : []
+  const completedCount = progress.completed.length
+
+  const deadline = plan.deadline ? new Date(plan.deadline) : null
+  const daysRemaining =
+    deadline && !Number.isNaN(deadline.getTime())
+      ? Math.max(0, differenceInCalendarDays(deadline, new Date()))
+      : Math.max(0, (tasks.length || 30) - completedCount)
+  const totalDays = Math.max(daysRemaining + completedCount, tasks.length, 1)
+  const goalPct = Math.round((completedCount / totalDays) * 100)
+
+  return (
+    <div style={{ minHeight: "100dvh", background: "#050508" }}>
+      <style>{LAYOUT_CSS}</style>
+
+      {/* ── Sidebar (desktop) ── */}
+      <aside
+        className="hidden lg:flex dash-scroll"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: 240,
+          flexDirection: "column",
+          padding: "24px 16px",
+          background: "rgba(255,255,255,0.02)",
+          borderRight: "1px solid rgba(255,255,255,0.05)",
+          overflowY: "auto",
+          zIndex: 20,
+        }}
+      >
+        {/* User */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar initial={firstName.charAt(0).toUpperCase()} />
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#F0EEFF",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {firstName}
+            </div>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "1px 7px",
+                borderRadius: 999,
+                background: "linear-gradient(135deg,#FFD66B,#F5A623)",
+                color: "#3A2A00",
+              }}
+            >
+              FREE
+            </span>
+          </div>
+        </div>
+
+        {/* Streak card */}
+        <motion.div
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            marginTop: 24,
+            padding: "20px 16px",
+            borderRadius: 16,
+            textAlign: "center",
+            background: "rgba(255,255,255,0.025)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 0 30px rgba(139,92,246,0.1)",
+          }}
+        >
+          <div style={{ fontSize: 24 }}>🔥</div>
+          <div style={{ fontSize: 28, fontWeight: 800, ...iriText, marginTop: 2 }}>
+            {progress.streak}
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(240,238,255,0.4)" }}>day streak</div>
+          <div style={{ fontSize: 12, color: "rgba(255,159,67,0.9)", marginTop: 4 }}>
+            🛡 {progress.shields} shield{progress.shields === 1 ? "" : "s"}
+          </div>
+        </motion.div>
+
+        {/* Nav */}
+        <nav style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 4 }}>
+          {NAV.map((item) => (
+            <NavItem key={item.to} item={item} active={location.pathname === item.to} />
+          ))}
+        </nav>
+
+        {/* Goal mini card */}
+        <div style={{ marginTop: "auto", paddingTop: 20 }}>
+          <div
+            style={{
+              padding: 14,
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                color: "rgba(240,238,255,0.5)",
+                marginBottom: 8,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {goal}
+            </div>
+            <ProgressBar pct={goalPct} />
+            <div style={{ fontSize: 11, color: "rgba(240,238,255,0.35)", marginTop: 8 }}>
+              {goalPct}% · {daysRemaining} day{daysRemaining === 1 ? "" : "s"} left
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main content ── */}
+      <main className="lg:pl-[240px]">
+        <div className="px-4 py-5 lg:px-10 lg:py-8" style={{ paddingBottom: 110 }}>
+          {children}
+        </div>
+      </main>
+
+      {/* ── Mobile tab bar ── */}
+      <nav
+        className="lg:hidden"
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          justifyContent: "space-around",
+          padding: "8px 4px",
+          paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+          background: "rgba(5,5,8,0.9)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          zIndex: 30,
+        }}
+      >
+        {NAV.map((item) => {
+          const active = location.pathname === item.to
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 3,
+                padding: "4px 8px",
+                textDecoration: "none",
+                fontSize: 10,
+                color: active ? "#F0EEFF" : "rgba(240,238,255,0.4)",
+                fontWeight: active ? 600 : 400,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{item.icon}</span>
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
