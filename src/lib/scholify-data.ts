@@ -16,6 +16,7 @@ export interface PlanTask {
   task_description: string
   estimated_minutes: number
   resource_type: ResourceType
+  difficulty?: string
 }
 
 export interface StoredPlan {

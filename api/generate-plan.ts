@@ -2,40 +2,18 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import Anthropic from "@anthropic-ai/sdk"
 
 /*
- * Scholify — plan generation endpoint (Vercel serverless function).
+ * POST /api/generate-plan — Vercel serverless function (Node runtime).
  *
- * NOTE: this lives in `/api` at the project root, not `src/`. Vite has no
- * backend; Vercel deploys files under `/api` as serverless functions, so the
- * frontend reaches this at POST /api/generate-plan.
- *
- * Runs on the Node.js runtime (not Edge) — the Anthropic SDK is too large to
- * bundle into an Edge function, and Node is the SDK's native environment.
- *
- * It calls Claude (via the official Anthropic SDK) to turn a learning goal
- * into a progressive day-by-day task list. If ANTHROPIC_API_KEY is not set,
- * it returns a small mock plan so the whole flow still works.
+ * Turns a learning goal into a progressive day-by-day task list with
+ * Claude. API keys live in Vercel env vars and never reach the browser.
+ * Supports week-by-week generation via `weekNumber`. Falls back to a
+ * mock plan when ANTHROPIC_API_KEY is absent or the call fails.
  */
 
 export const config = { maxDuration: 60 }
 
 const MODEL = "claude-sonnet-4-6"
-// Cap how many tasks we generate in one call — keeps latency and tokens sane
-// for long goals. The dashboard can extend the plan later.
-const MAX_TASKS = 14
-
-const SYSTEM_PROMPT = `You are Scholify's AI learning coach, Lara.
-Return ONLY a valid JSON array. No explanation, no markdown, no code blocks.
-Each array item must have exactly these fields:
-- day_number (integer, starting at 1)
-- week_number (integer, starting at 1)
-- task_title (string, max 8 words, action-oriented)
-- task_description (string, max 40 words, specific and concrete)
-- estimated_minutes (integer, equal to the user's stated daily minutes)
-- resource_type (one of: video, reading, practice, reflection, exercise)
-Make the tasks progressive: start easy and steadily increase difficulty.
-Be extremely specific to the user's exact goal — no generic filler.`
-
-type ResourceType = "video" | "reading" | "practice" | "reflection" | "exercise"
+const RESOURCE_TYPES = ["video", "reading", "practice", "reflection", "exercise"]
 
 interface PlanTask {
   day_number: number
@@ -43,49 +21,62 @@ interface PlanTask {
   task_title: string
   task_description: string
   estimated_minutes: number
-  resource_type: ResourceType
+  resource_type: string
+  difficulty: string
 }
 
-interface PlanRequest {
-  goal?: string
-  deadline?: string | null
-  dailyMinutes?: number
+function systemPrompt(dailyMinutes: number): string {
+  return `You are Lara, Scholify's expert AI learning coach. Your specialty is
+breaking any learning goal into the smallest possible daily actions that
+compound into real skill.
+
+CRITICAL RULES:
+1. Return ONLY a valid JSON array. Zero other text.
+2. No markdown. No code blocks. No explanation.
+3. Every task must be completable in exactly ${dailyMinutes} minutes.
+4. Tasks must be SPECIFIC to the exact goal stated.
+5. Progressive difficulty: week 1 is foundation, later weeks build on it.
+6. resource_type must be exactly one of: video, reading, practice, reflection, exercise
+7. task_title maximum 8 words, action-oriented verb first.
+8. task_description maximum 40 words, specific and practical.
+
+Each JSON object must have EXACTLY these keys:
+{
+  "day_number": integer,
+  "week_number": integer,
+  "task_title": "string max 8 words",
+  "task_description": "string max 40 words",
+  "estimated_minutes": ${dailyMinutes},
+  "resource_type": "video|reading|practice|reflection|exercise",
+  "difficulty": "beginner|intermediate|advanced"
+}`
 }
 
-/** Seven-task fallback used when no API key is configured. */
-function mockPlan(dailyMinutes: number): PlanTask[] {
-  const seed: Array<[string, string, ResourceType]> = [
-    ["Map where you're starting from", "Write down what you already know and the single outcome you want. Honest baseline beats a perfect plan.", "reflection"],
-    ["Watch one foundational overview", "Find a highly-rated intro video on your topic and watch it actively, pausing to note three key ideas.", "video"],
-    ["Read the core concepts", "Read a focused article or chapter on the fundamentals. Summarise it in five of your own bullet points.", "reading"],
-    ["Do a small hands-on warm-up", "Apply one concept in a tiny, low-stakes exercise. The goal is momentum, not perfection.", "practice"],
-    ["Practice the hardest basic skill", "Pick the fundamental that feels least comfortable and drill it deliberately for the full session.", "exercise"],
-    ["Build a mini end-to-end attempt", "Combine what you've learned into one small complete attempt, however rough. Notice what's still unclear.", "practice"],
-    ["Review and plan your next leap", "Look back at the week, list what stuck and what didn't, and set the focus for the days ahead.", "reflection"],
-  ]
-  return seed.map(([title, desc, type], i) => ({
-    day_number: i + 1,
-    week_number: 1,
-    task_title: title,
-    task_description: desc,
-    estimated_minutes: dailyMinutes,
-    resource_type: type,
+function mockTasks(start: number, count: number, minutes: number, goal: string): PlanTask[] {
+  return Array.from({ length: count }, (_, i) => ({
+    day_number: start + i,
+    week_number: Math.ceil((start + i) / 7),
+    task_title: `Study ${goal} — focused session`,
+    task_description: `Spend ${minutes} focused minutes on the core concepts for "${goal}". Take notes and review what you learned.`,
+    estimated_minutes: minutes,
+    resource_type: RESOURCE_TYPES[i % RESOURCE_TYPES.length],
+    difficulty: "intermediate",
   }))
 }
 
-/** Pull a JSON array out of the model's text, tolerating stray code fences. */
-function parsePlan(text: string): PlanTask[] | null {
-  let t = text.trim()
-  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (fence) t = fence[1].trim()
-  const start = t.indexOf("[")
-  const end = t.lastIndexOf("]")
-  if (start === -1 || end === -1 || end < start) return null
+function parseTasks(text: string): unknown[] | null {
   try {
-    const parsed: unknown = JSON.parse(t.slice(start, end + 1))
-    return Array.isArray(parsed) ? (parsed as PlanTask[]) : null
+    const parsed = JSON.parse(text)
+    return Array.isArray(parsed) ? parsed : null
   } catch {
-    return null
+    const match = text.match(/\[[\s\S]*\]/)
+    if (!match) return null
+    try {
+      const parsed = JSON.parse(match[0])
+      return Array.isArray(parsed) ? parsed : null
+    } catch {
+      return null
+    }
   }
 }
 
@@ -95,8 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
-  // Vercel parses JSON bodies automatically, but guard for a raw string too.
-  let body: PlanRequest = {}
+  let body: Record<string, unknown> = {}
   try {
     body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body ?? {})
   } catch {
@@ -104,66 +94,103 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
-  const goal = (body.goal || "").trim()
+  const goal = String(body.goal || "").trim()
+  const deadline = body.deadline ? String(body.deadline) : null
   const dailyMinutes = Math.max(5, Math.round(Number(body.dailyMinutes) || 20))
-  if (!goal) {
-    res.status(400).json({ error: "A learning goal is required." })
+  if (!goal || !dailyMinutes) {
+    res.status(400).json({ error: "Missing required fields." })
     return
   }
 
   const today = new Date()
-  const deadline = body.deadline ? new Date(body.deadline) : null
-  const totalDays =
-    deadline && !Number.isNaN(deadline.getTime())
-      ? Math.max(1, Math.round((deadline.getTime() - today.getTime()) / 86_400_000))
+  const deadlineDate = deadline ? new Date(deadline) : null
+  const daysCount =
+    deadlineDate && !Number.isNaN(deadlineDate.getTime())
+      ? Math.max(Math.ceil((deadlineDate.getTime() - today.getTime()) / 86_400_000), 7)
       : 30
-  const taskCount = Math.min(totalDays, MAX_TASKS)
+  const weeksCount = Math.ceil(daysCount / 7)
+
+  // Week 1 (onboarding) seeds up to 14 days of runway; later weeks are 7.
+  const weekNumber = Math.max(1, Math.round(Number(body.weekNumber) || 1))
+  const weekStart = weekNumber <= 1 ? 1 : (weekNumber - 1) * 7 + 1
+  const weekCap = weekNumber <= 1 ? 14 : 7
+  const tasksToGenerate = Math.max(1, Math.min(weekCap, daysCount - weekStart + 1))
+  const weekEnd = weekStart + tasksToGenerate - 1
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    // No key yet — return a mock plan so the product still works end-to-end.
-    res.status(200).json({ plan: mockPlan(dailyMinutes), mock: true })
+    res.status(200).json({
+      tasks: mockTasks(weekStart, tasksToGenerate, dailyMinutes, goal),
+      daysCount,
+      weeksCount,
+      isMock: true,
+    })
     return
   }
 
   try {
     const client = new Anthropic({ apiKey })
-    const userPrompt =
-      `Goal: ${goal}. ` +
-      `Deadline: ${deadline ? deadline.toDateString() : "open-ended"}. ` +
-      `Daily commitment: ${dailyMinutes} minutes. ` +
-      `Today: ${today.toDateString()}. Total days available: ${totalDays}. ` +
-      `Generate exactly ${taskCount} progressive daily tasks as a JSON array.`
+    const userPrompt = `Generate the learning plan tasks.
 
-    // Stream + finalMessage avoids SDK HTTP timeouts on longer generations.
+Goal: ${goal}
+Deadline: ${deadline ?? "open-ended"}
+Daily available time: ${dailyMinutes} minutes
+Today's date: ${today.toISOString().split("T")[0]}
+Total plan duration: ${daysCount} days (${weeksCount} weeks)
+This batch covers: Day ${weekStart} to Day ${weekEnd}
+Tasks needed: ${tasksToGenerate}
+
+Context: ${
+      weekNumber <= 1
+        ? "This is the start. Begin with absolute foundations. Build confidence. Nothing overwhelming."
+        : `This is Week ${weekNumber}. The learner has completed ${weekStart - 1} days. Build on those foundations.`
+    }
+
+Generate exactly ${tasksToGenerate} tasks for days ${weekStart} through ${weekEnd}.
+Be extremely specific to "${goal}". Generic study advice is unacceptable.`
+
     const stream = client.messages.stream({
       model: MODEL,
-      max_tokens: 8000,
+      max_tokens: 6000,
       system: [
-        {
-          type: "text",
-          text: SYSTEM_PROMPT,
-          // Shared across every user — cache the prefix.
-          cache_control: { type: "ephemeral" },
-        },
+        { type: "text", text: systemPrompt(dailyMinutes), cache_control: { type: "ephemeral" } },
       ],
       messages: [{ role: "user", content: userPrompt }],
     })
     const message = await stream.finalMessage()
-
     const text = message.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
       .join("")
 
-    const plan = parsePlan(text)
-    if (!plan || plan.length === 0) {
-      res.status(502).json({ error: "Lara returned an unreadable plan. Please retry." })
-      return
+    const raw = parseTasks(text)
+    if (!raw || raw.length === 0) {
+      throw new Error("Invalid JSON response from Claude")
     }
-    res.status(200).json({ plan })
+
+    const tasks: PlanTask[] = raw.map((t, i) => {
+      const task = t as Record<string, unknown>
+      const rt = String(task.resource_type ?? "")
+      return {
+        day_number: Number(task.day_number) || weekStart + i,
+        week_number: Number(task.week_number) || Math.ceil((weekStart + i) / 7),
+        task_title: String(task.task_title || `Day ${weekStart + i} task`),
+        task_description: String(task.task_description || ""),
+        estimated_minutes: Number(task.estimated_minutes) || dailyMinutes,
+        resource_type: RESOURCE_TYPES.includes(rt) ? rt : "practice",
+        difficulty: String(task.difficulty || "intermediate"),
+      }
+    })
+
+    res.status(200).json({ tasks, daysCount, weeksCount })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Plan generation failed."
-    res.status(500).json({ error: msg })
+    // Graceful fallback so onboarding never dead-ends.
+    console.error("Plan generation error:", err)
+    res.status(200).json({
+      tasks: mockTasks(weekStart, tasksToGenerate, dailyMinutes, goal),
+      daysCount,
+      weeksCount,
+      isMock: true,
+    })
   }
 }

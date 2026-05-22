@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { api } from "@/lib/api"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
 /*
@@ -181,23 +182,17 @@ export default function Loading() {
     }
 
     try {
-      const apiCall = fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goal,
-          deadline: inputs.deadline ?? null,
-          dailyMinutes: inputs.dailyMinutes ?? 20,
-        }),
-      }).then(async (res) => {
-        const payload = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(payload?.error || `Request failed (${res.status})`)
-        return payload as { plan: unknown[] }
+      // Real plan generation via Claude (server-side). Hold the screen for
+      // at least 4s so it never flashes by.
+      const apiCall = api.generatePlan({
+        goal,
+        deadline: inputs.deadline ?? null,
+        dailyMinutes: inputs.dailyMinutes ?? 20,
+        userId: user?.id,
+        weekNumber: 1,
       })
-
-      // Hold the screen for at least 4s so it never flashes by.
       const [data] = await Promise.all([apiCall, delay(4000)])
-      const tasks = Array.isArray(data.plan) ? data.plan : []
+      const tasks = Array.isArray(data.tasks) ? data.tasks : []
 
       // Persist the plan: localStorage always, Supabase best-effort.
       const record = {
