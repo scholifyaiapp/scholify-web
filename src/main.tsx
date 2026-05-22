@@ -5,18 +5,21 @@ import App from "./App"
 import ErrorBoundary from "./ErrorBoundary"
 import { LanguageProvider } from "./i18n/LanguageProvider"
 import { AuthProvider } from "./lib/auth"
+import { ToastProvider } from "./components/Toast"
 import "./index.css"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <LanguageProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </BrowserRouter>
-      </LanguageProvider>
+      <ToastProvider>
+        <LanguageProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </BrowserRouter>
+        </LanguageProvider>
+      </ToastProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

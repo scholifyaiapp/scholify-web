@@ -13,6 +13,7 @@ const Loading = lazy(() => import("@/pages/Loading"))
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"))
 const Progress = lazy(() => import("@/pages/Progress"))
 const Pricing = lazy(() => import("@/pages/Pricing"))
+const Settings = lazy(() => import("@/pages/Settings"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const Chat = lazy(() => import("@/pages/Chat"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
@@ -83,7 +84,7 @@ export default function App() {
       <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
       <Route path="/goals" element={<RequireOnboarded><Page name="Goals"><ComingSoon /></Page></RequireOnboarded>} />
       <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
-      <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><ComingSoon /></Page></RequireOnboarded>} />
+      <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><Settings /></Page></RequireOnboarded>} />
 
       <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
