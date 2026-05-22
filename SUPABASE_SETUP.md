@@ -183,6 +183,29 @@ ANTHROPIC_API_KEY = sk-ant-...
 > it must only live in Vercel's environment variables, never in the code or
 > the repo. Get one at https://console.anthropic.com
 
+## Step 8 — Push subscriptions table (for web push)
+
+Web push notifications store each device's subscription here. Run in
+the **SQL Editor**:
+
+```sql
+create table if not exists public.push_subscriptions (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users on delete cascade,
+  subscription jsonb not null,
+  created_at   timestamptz default now(),
+  unique (user_id)
+);
+```
+
+The `/api/save-push-subscription` function writes here using the
+service-role key — set `SUPABASE_SERVICE_ROLE_KEY` in Vercel env vars.
+
+> ⚠️ **Sending** scheduled reminders (email + background push) also needs
+> server-side records of each user's plan, streak and reminder time.
+> The app currently keeps that in the browser (localStorage), so the
+> sending side is not yet wired — see the notes from the build.
+
 ---
 
 ## Quick reference
