@@ -10,6 +10,7 @@ const SignUp = lazy(() => import("@/pages/SignUp"))
 const Onboarding = lazy(() => import("@/pages/Onboarding"))
 const AuthCallback = lazy(() => import("@/pages/AuthCallback"))
 const Loading = lazy(() => import("@/pages/Loading"))
+const ComingSoon = lazy(() => import("@/pages/ComingSoon"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
 const Chat = lazy(() => import("@/pages/Chat"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
@@ -77,6 +78,10 @@ export default function App() {
       <Route path="/onboarding" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
       <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
+      <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><ComingSoon /></Page></RequireOnboarded>} />
+      <Route path="/goals" element={<RequireOnboarded><Page name="Goals"><ComingSoon /></Page></RequireOnboarded>} />
+      <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
+      <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><ComingSoon /></Page></RequireOnboarded>} />
 
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
       <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
