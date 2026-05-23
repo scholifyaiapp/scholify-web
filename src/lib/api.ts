@@ -81,4 +81,35 @@ export const api = {
       "/api/skill-suggestions",
       params,
     ),
+
+  scoreSpeech: (params: {
+    audioBase64?: string
+    transcript?: string
+    taskTitle: string
+    goal?: string
+    userId?: string
+    durationSec?: number
+  }) =>
+    post<{
+      clarity: number
+      accuracy: number
+      fluency: number
+      overall: number
+      feedback: string
+      transcript: string
+      isFallback?: boolean
+    }>("/api/score-speech", params),
+
+  laraChat: (params: {
+    userName: string
+    goal: string
+    weekNumber: number
+    totalWeeks: number
+    taskTitle: string
+    streak: number
+    recentNotes: string[]
+    history: { role: "user" | "lara"; content: string }[]
+    message: string
+  }) =>
+    post<{ message: string; isFallback?: boolean }>("/api/lara-chat", params),
 }

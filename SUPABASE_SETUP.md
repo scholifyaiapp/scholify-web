@@ -234,6 +234,57 @@ alter table public.progress add column if not exists plan_id      uuid;
 The client only upserts these fields when the table exists — without
 them the note still saves to `localStorage`.
 
+### 6b-2 — Speaking practice scores (optional)
+
+The Speaking Practice modal records clarity / accuracy / fluency / overall
+scores and the transcript. Append to `progress`:
+
+```sql
+alter table public.progress add column if not exists speaking_clarity    numeric(3,1);
+alter table public.progress add column if not exists speaking_accuracy   numeric(3,1);
+alter table public.progress add column if not exists speaking_fluency    numeric(3,1);
+alter table public.progress add column if not exists speaking_overall    numeric(3,1);
+alter table public.progress add column if not exists speaking_transcript text;
+```
+
+Without these columns the modal still works — scores live in `localStorage`
+as `scholify-last-speaking-score`.
+
+To get real Whisper transcripts, add `OPENAI_API_KEY` to Vercel env vars
+(see `.env.example`). Without it the modal scores blind and shows a
+"no transcript" notice on the results screen.
+
+### 6d — Lara chat history (optional)
+
+For cross-device chat history at `/chat`, create:
+
+```sql
+create table if not exists public.chat_messages (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users on delete cascade,
+  role       text not null check (role in ('user','lara')),
+  content    text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.chat_messages enable row level security;
+
+create policy "Users read own chats"
+  on public.chat_messages for select using (auth.uid() = user_id);
+
+create policy "Users insert own chats"
+  on public.chat_messages for insert with check (auth.uid() = user_id);
+
+create policy "Users delete own chats"
+  on public.chat_messages for delete using (auth.uid() = user_id);
+
+create index if not exists chat_messages_user_created_idx
+  on public.chat_messages (user_id, created_at desc);
+```
+
+Without the table chat still works — history is held in browser
+`localStorage` as `scholify-chat-messages`.
+
 ### 6c — Resource library (optional)
 
 Lara's "Best resource today" picks are saved client-side automatically.

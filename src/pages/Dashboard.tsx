@@ -23,8 +23,10 @@ import DeadlineCountdown from "@/components/DeadlineCountdown"
 import { recalibratePlan, shouldAutoRecalibrate } from "@/lib/recalibration"
 import FocusTimer from "@/components/FocusTimer"
 import SessionNotes from "@/components/SessionNotes"
+import SpeakingPractice from "@/components/SpeakingPractice"
 import { addResource, readActivePlanId } from "@/lib/scholify-data"
 import type { ResourceType } from "@/lib/scholify-data"
+import { useNavigate } from "react-router-dom"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify dashboard — the screen users see every day.
@@ -106,6 +108,11 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const isPaid = Boolean(
+    user?.user_metadata?.plan && user.user_metadata.plan !== "free",
+  )
+  const [speakingOpen, setSpeakingOpen] = useState(false)
 
   const plan = useMemo(readPlan, [])
   const [progress, setProgress] = useState<Progress>(readProgress)
@@ -614,6 +621,53 @@ export default function Dashboard() {
             </motion.div>
           </a>
 
+          {/* Speaking practice — Pro feature */}
+          <motion.button
+            type="button"
+            onClick={() => {
+              if (isPaid) setSpeakingOpen(true)
+              else triggerFeaturePaywall()
+            }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            style={{
+              width: "100%",
+              marginTop: 16,
+              padding: "12px 16px",
+              borderRadius: 14,
+              border: "1px solid rgba(139,92,246,0.25)",
+              background: "rgba(139,92,246,0.06)",
+              color: "var(--sch-text)",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+              🎤 Speaking Practice
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: "2px 8px",
+                  borderRadius: 8,
+                  background: "rgba(139,92,246,0.18)",
+                  color: "#C084FC",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                PRO
+              </span>
+            </span>
+            <span style={{ fontSize: 13, color: "var(--sch-tx-3)" }}>
+              Explain it out loud →
+            </span>
+          </motion.button>
+
           {/* Mark complete */}
           <motion.button
             type="button"
@@ -789,6 +843,52 @@ export default function Dashboard() {
           <NotificationPrompt userId={user?.id} onClose={() => setShowNotifPrompt(false)} />
         )}
       </AnimatePresence>
+
+      <SpeakingPractice
+        open={speakingOpen}
+        onClose={() => setSpeakingOpen(false)}
+        taskTitle={task.task_title}
+        goal={goal}
+        dayNumber={currentDay}
+        planId={readActivePlanId()}
+      />
+
+      {/* Floating Lara chat button */}
+      <motion.button
+        type="button"
+        aria-label="Ask Lara"
+        onClick={() => navigate("/chat")}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        animate={{
+          boxShadow: [
+            "0 4px 20px rgba(139,92,246,0.35)",
+            "0 4px 30px rgba(139,92,246,0.55)",
+            "0 4px 20px rgba(139,92,246,0.35)",
+          ],
+        }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "fixed",
+          right: 20,
+          bottom: 90,
+          zIndex: 100,
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          border: "none",
+          background: IRIDESCENT,
+          color: "#fff",
+          fontSize: 20,
+          fontWeight: 800,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        L
+      </motion.button>
     </DashboardLayout>
   )
 }
