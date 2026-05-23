@@ -17,6 +17,7 @@ const Progress = lazy(() => import("@/pages/Progress"))
 const Pricing = lazy(() => import("@/pages/Pricing"))
 const Settings = lazy(() => import("@/pages/Settings"))
 const Dashboard = lazy(() => import("@/pages/Dashboard"))
+const Goals = lazy(() => import("@/pages/Goals"))
 const Chat = lazy(() => import("@/pages/Chat"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
 const Terms = lazy(() => import("@/pages/Terms"))
@@ -86,7 +87,7 @@ export default function App() {
       <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
       <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
-      <Route path="/goals" element={<RequireOnboarded><Page name="Goals"><ComingSoon /></Page></RequireOnboarded>} />
+      <Route path="/goals" element={<RequireOnboarded><Page name="Goals"><Goals /></Page></RequireOnboarded>} />
       <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
       <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><Settings /></Page></RequireOnboarded>} />
 

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { api } from "@/lib/api"
+import { addPlan, type PlanTask } from "@/lib/scholify-data"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
 /*
@@ -203,6 +204,14 @@ export default function Loading() {
       }
       try {
         localStorage.setItem("scholify-plan", JSON.stringify(record))
+        // Also register in the multi-plan list and set active.
+        addPlan({
+          goal: record.goal,
+          deadline: record.deadline,
+          daily_minutes: record.daily_minutes,
+          tasks: record.tasks as PlanTask[],
+          status: "active",
+        })
       } catch {
         /* storage unavailable — non-fatal */
       }

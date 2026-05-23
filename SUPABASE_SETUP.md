@@ -188,6 +188,23 @@ create policy "Users insert own plans"
   on public.plans for insert with check (auth.uid() = user_id);
 ```
 
+### 6a — Multi-goal columns (optional)
+
+To support multiple learning goals per user with switchable "active" state,
+extend the table:
+
+```sql
+alter table public.plans add column if not exists status        text default 'active'; -- active | paused | completed
+alter table public.plans add column if not exists paused_at     timestamptz;
+alter table public.plans add column if not exists completed_at  timestamptz;
+alter table public.plans add column if not exists cover_color   text;
+
+alter table public.profiles add column if not exists active_plan_id uuid references public.plans(id);
+```
+
+Without these columns the app still works — the multi-goal state is held
+in browser `localStorage` and the Goals page is fully functional offline.
+
 ## Step 7 — Claude API key (optional — enables real AI plans)
 
 The plan generator (`/api/generate-plan`) calls Claude. Without a key it

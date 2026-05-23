@@ -19,6 +19,8 @@ import PaywallModal from "@/components/PaywallModal"
 import { api } from "@/lib/api"
 import NotificationPrompt, { shouldShowNotificationPrompt } from "@/components/NotificationPrompt"
 import { loadCalendarAccount, syncSingleTask } from "@/lib/calendar"
+import DeadlineCountdown from "@/components/DeadlineCountdown"
+import { recalibratePlan, shouldAutoRecalibrate } from "@/lib/recalibration"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify dashboard — the screen users see every day.
@@ -113,6 +115,34 @@ export default function Dashboard() {
   useEffect(() => {
     checkPaywallTrigger(user?.id)
   }, [checkPaywallTrigger, user?.id])
+
+  // Auto-recalibrate when the user has missed 3+ days while their streak
+  // was still alive — keeps them on track without a manual fix.
+  const [recalBanner, setRecalBanner] = useState<{ deadline: string } | null>(null)
+  const [recalBannerHidden, setRecalBannerHidden] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    if (!shouldAutoRecalibrate()) return
+    try {
+      const flag = window.sessionStorage.getItem("scholify-auto-recal-done")
+      if (flag === "1") return
+    } catch {
+      /* ignore */
+    }
+    ;(async () => {
+      const result = await recalibratePlan({ reason: "missed_days" })
+      if (cancelled || !result) return
+      try {
+        window.sessionStorage.setItem("scholify-auto-recal-done", "1")
+      } catch {
+        /* ignore */
+      }
+      setRecalBanner({ deadline: result.plan.deadline ?? "" })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const goal = plan.goal?.trim() || "Your learning goal"
@@ -374,6 +404,69 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+
+        {/* Auto-recalibration banner */}
+        <AnimatePresence>
+          {recalBanner && !recalBannerHidden && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  background: "rgba(139,92,246,0.08)",
+                  border: "1px solid rgba(139,92,246,0.2)",
+                }}
+              >
+                <div style={{ fontSize: 13, color: "var(--sch-text)", lineHeight: 1.5 }}>
+                  ✨ Lara adjusted your plan to keep you on track
+                  {recalBanner.deadline
+                    ? ` for ${format(new Date(recalBanner.deadline), "MMM d, yyyy")}`
+                    : ""}
+                  .
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRecalBannerHidden(true)}
+                  aria-label="Dismiss"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--sch-tx-3)",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    lineHeight: 1,
+                    padding: 4,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Deadline countdown banner */}
+        {plan.deadline && (
+          <div style={{ marginTop: 16 }}>
+            <DeadlineCountdown
+              mode="compact"
+              deadline={plan.deadline}
+              goal={goal}
+              percent={goalPct}
+            />
+          </div>
+        )}
 
         {/* Today's task card */}
         <motion.div
