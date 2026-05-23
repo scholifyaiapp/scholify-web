@@ -59,6 +59,8 @@ export const api = {
     longestStreak: number
     daysRemaining: number
     userId?: string
+    yesterdayNote?: string
+    yesterdayMood?: string
   }) => post<{ message: string; isFallback?: boolean }>("/api/lara-message", params),
 
   getBestResource: (params: { taskTitle: string; goal: string; dayNumber: number }) =>

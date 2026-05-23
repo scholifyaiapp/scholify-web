@@ -46,6 +46,16 @@ export interface Progress {
   shields: number
   /** ISO yyyy-MM-dd of the last completion, so a refresh keeps "done today". */
   lastDate: string | null
+  /** Session reflection notes by day_number. */
+  notes?: Record<number, SessionNote>
+}
+
+export type SessionMood = "struggling" | "okay" | "good" | "great" | "amazing"
+
+export interface SessionNote {
+  text: string
+  mood?: SessionMood | null
+  updatedAt: string
 }
 
 export const RESOURCE: Record<ResourceType, { icon: string; label: string }> = {
@@ -89,13 +99,14 @@ export function readProgress(): Progress {
         streak: typeof p.streak === "number" ? p.streak : 0,
         shields: typeof p.shields === "number" ? p.shields : 2,
         lastDate: p.lastDate ?? null,
+        notes: typeof p.notes === "object" && p.notes !== null ? p.notes : {},
       }
     }
   } catch {
     /* ignore */
   }
   // Fresh start — 2 welcome shields to protect the first streak.
-  return { completed: [], streak: 0, shields: 2, lastDate: null }
+  return { completed: [], streak: 0, shields: 2, lastDate: null, notes: {} }
 }
 
 export function writeProgress(p: Progress) {
@@ -276,12 +287,105 @@ export function readProgressForPlan(id: string): Progress {
         streak: typeof p.streak === "number" ? p.streak : 0,
         shields: typeof p.shields === "number" ? p.shields : 2,
         lastDate: p.lastDate ?? null,
+        notes: typeof p.notes === "object" && p.notes !== null ? p.notes : {},
       }
     }
   } catch {
     /* ignore */
   }
-  return { completed: [], streak: 0, shields: 2, lastDate: null }
+  return { completed: [], streak: 0, shields: 2, lastDate: null, notes: {} }
+}
+
+/* ── Session notes ───────────────────────────────────────────── */
+
+export function readSessionNote(dayNumber: number): SessionNote | null {
+  const p = readProgress()
+  return p.notes?.[dayNumber] ?? null
+}
+
+export function writeSessionNote(
+  dayNumber: number,
+  text: string,
+  mood?: SessionMood | null,
+): void {
+  const p = readProgress()
+  const notes = { ...(p.notes ?? {}) }
+  notes[dayNumber] = {
+    text,
+    mood: mood ?? null,
+    updatedAt: new Date().toISOString(),
+  }
+  writeProgress({ ...p, notes })
+}
+
+/* ── Resource library ────────────────────────────────────────── */
+
+export interface LibraryResource {
+  id: string
+  plan_id: string | null
+  task_title: string
+  resource_title: string
+  resource_url: string
+  resource_type: ResourceType
+  bookmarked: boolean
+  created_at: string
+}
+
+const KEY_RESOURCES = "scholify-resources"
+
+export function readResources(): LibraryResource[] {
+  try {
+    const raw = window.localStorage.getItem(KEY_RESOURCES)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as LibraryResource[]
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function writeResources(list: LibraryResource[]): void {
+  try {
+    window.localStorage.setItem(KEY_RESOURCES, JSON.stringify(list))
+  } catch {
+    /* ignore */
+  }
+}
+
+export function addResource(
+  resource: Omit<LibraryResource, "id" | "created_at" | "bookmarked"> & {
+    bookmarked?: boolean
+  },
+): LibraryResource {
+  const list = readResources()
+  // De-dupe by URL so the same recommendation isn't logged twice.
+  const existing = list.find((r) => r.resource_url === resource.resource_url)
+  if (existing) return existing
+  const next: LibraryResource = {
+    id: genId(),
+    plan_id: resource.plan_id ?? null,
+    task_title: resource.task_title,
+    resource_title: resource.resource_title,
+    resource_url: resource.resource_url,
+    resource_type: resource.resource_type,
+    bookmarked: resource.bookmarked ?? false,
+    created_at: new Date().toISOString(),
+  }
+  writeResources([next, ...list])
+  return next
+}
+
+export function toggleResourceBookmark(id: string): LibraryResource | null {
+  const list = readResources()
+  const idx = list.findIndex((r) => r.id === id)
+  if (idx < 0) return null
+  list[idx] = { ...list[idx], bookmarked: !list[idx].bookmarked }
+  writeResources(list)
+  return list[idx]
+}
+
+export function deleteResource(id: string): void {
+  writeResources(readResources().filter((r) => r.id !== id))
 }
 
 function normalizePlan(p: StoredPlan): StoredPlan {

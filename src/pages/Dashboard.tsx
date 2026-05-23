@@ -21,6 +21,10 @@ import NotificationPrompt, { shouldShowNotificationPrompt } from "@/components/N
 import { loadCalendarAccount, syncSingleTask } from "@/lib/calendar"
 import DeadlineCountdown from "@/components/DeadlineCountdown"
 import { recalibratePlan, shouldAutoRecalibrate } from "@/lib/recalibration"
+import FocusTimer from "@/components/FocusTimer"
+import SessionNotes from "@/components/SessionNotes"
+import { addResource, readActivePlanId } from "@/lib/scholify-data"
+import type { ResourceType } from "@/lib/scholify-data"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify dashboard — the screen users see every day.
@@ -286,6 +290,8 @@ export default function Dashboard() {
       return
     }
     setLaraLoading(true)
+    const yesterdayNote =
+      currentDay > 1 ? progress.notes?.[currentDay - 1] : undefined
     api
       .getLaraMessage({
         userName: firstName,
@@ -299,6 +305,8 @@ export default function Dashboard() {
         longestStreak: progress.streak,
         daysRemaining,
         userId: user?.id,
+        yesterdayNote: yesterdayNote?.text,
+        yesterdayMood: yesterdayNote?.mood ?? undefined,
       })
       .then((r) => {
         if (cancelled) return
@@ -343,6 +351,18 @@ export default function Dashboard() {
         setResource(res)
         try {
           window.localStorage.setItem(cacheKey, JSON.stringify(res))
+        } catch {
+          /* ignore */
+        }
+        // Add to the user's resource library (de-duplicated by URL).
+        try {
+          addResource({
+            plan_id: readActivePlanId(),
+            task_title: task.task_title,
+            resource_title: r.title,
+            resource_url: r.url,
+            resource_type: (task.resource_type as ResourceType) ?? "practice",
+          })
         } catch {
           /* ignore */
         }
@@ -527,6 +547,15 @@ export default function Dashboard() {
           >
             {task.task_description}
           </p>
+
+          {!isDone && (
+            <FocusTimer
+              taskKey={`${todayStr}-${task.task_title}`}
+              onMarkComplete={() => {
+                void handleComplete()
+              }}
+            />
+          )}
 
           <div style={{ height: 1, background: "var(--sch-hairline)", margin: "20px 0" }} />
 
@@ -714,6 +743,25 @@ export default function Dashboard() {
             )}
           </p>
         </motion.div>
+
+        {/* Session notes — only after the user marks today complete */}
+        <AnimatePresence>
+          {isDone && (
+            <motion.div
+              key="session-notes"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              style={{ marginTop: 20 }}
+            >
+              <SessionNotes
+                dayNumber={currentDay}
+                planId={readActivePlanId()}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Stats row */}
         <div

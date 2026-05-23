@@ -58,6 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const totalMinutes = Number(body.totalMinutes) || 0
   const longestStreak = Number(body.longestStreak) || streak
   const daysRemaining = Number(body.daysRemaining) || 0
+  const yesterdayNote = String(body.yesterdayNote || "").trim()
+  const yesterdayMood = String(body.yesterdayMood || "").trim()
 
   const fallback = completedToday
     ? `${userName}, day ${streak} complete — "${taskTitle}" is done. Rest well; tomorrow's task is already waiting.`
@@ -99,6 +101,13 @@ User data:
 - Total minutes studied: ${totalMinutes}
 - Longest streak ever: ${longestStreak} days
 - Days remaining until deadline: ${daysRemaining}
+- Yesterday's session note: "${yesterdayNote || "none"}"
+- Yesterday's mood: "${yesterdayMood || "unknown"}"
+
+If a yesterday session note exists, acknowledge it briefly and connect
+it to today's task. If the mood was "struggling" or "okay", be a little
+more encouraging without being saccharine. If no note exists, do not
+mention it at all.
 
 Write Lara's message for today. Be specific. Reference their real numbers. Sound human.`,
         },

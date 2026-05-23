@@ -219,6 +219,59 @@ ANTHROPIC_API_KEY = sk-ant-...
 > it must only live in Vercel's environment variables, never in the code or
 > the repo. Get one at https://console.anthropic.com
 
+### 6b — Session notes (optional)
+
+The Dashboard collects a short reflection + mood after Mark Complete. To
+keep them server-side so Lara can read them from any device, extend
+`progress` (or create it if missing):
+
+```sql
+alter table public.progress add column if not exists session_note text;
+alter table public.progress add column if not exists session_mood text;
+alter table public.progress add column if not exists plan_id      uuid;
+```
+
+The client only upserts these fields when the table exists — without
+them the note still saves to `localStorage`.
+
+### 6c — Resource library (optional)
+
+Lara's "Best resource today" picks are saved client-side automatically.
+For a queryable server-side mirror, create:
+
+```sql
+create table if not exists public.resource_library (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users on delete cascade,
+  plan_id         uuid references public.plans(id),
+  task_title      text,
+  resource_title  text not null,
+  resource_url    text not null,
+  resource_type   text,
+  bookmarked      boolean not null default false,
+  created_at      timestamptz not null default now()
+);
+
+alter table public.resource_library enable row level security;
+
+create policy "Users read own resources"
+  on public.resource_library for select using (auth.uid() = user_id);
+
+create policy "Users insert own resources"
+  on public.resource_library for insert with check (auth.uid() = user_id);
+
+create policy "Users update own resources"
+  on public.resource_library for update using (auth.uid() = user_id);
+
+create policy "Users delete own resources"
+  on public.resource_library for delete using (auth.uid() = user_id);
+```
+
+Until this exists the Resource Library page still works from
+`localStorage` — the table is only required for cross-device sync.
+
+---
+
 ## Step 8 — Push subscriptions table (for web push)
 
 Web push notifications store each device's subscription here. Run in

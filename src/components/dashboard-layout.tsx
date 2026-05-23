@@ -32,6 +32,7 @@ export const NAV = [
   { icon: "🏠", label: "Today", to: "/dashboard" },
   { icon: "📈", label: "Progress", to: "/progress" },
   { icon: "🎯", label: "My Goals", to: "/goals" },
+  { icon: "📚", label: "Resources", to: "/resources" },
   { icon: "🏆", label: "Achievements", to: "/achievements" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
 ]
