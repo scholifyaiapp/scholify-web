@@ -17,6 +17,7 @@ import { DashboardLayout, iriText, ProgressBar } from "@/components/dashboard-la
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
+import CalendarSync from "@/components/CalendarSync"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -886,6 +887,9 @@ export default function Settings() {
             </SettingRow>
           </div>
         </Section>
+
+        {/* ── Calendar Sync ── */}
+        <CalendarSync />
 
         {/* ── Appearance ── */}
         <Section>

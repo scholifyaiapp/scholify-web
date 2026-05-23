@@ -206,6 +206,54 @@ service-role key — set `SUPABASE_SERVICE_ROLE_KEY` in Vercel env vars.
 > The app currently keeps that in the browser (localStorage), so the
 > sending side is not yet wired — see the notes from the build.
 
+## Step 9 — Calendar sync (optional)
+
+To let users push tasks into their Google Calendar or Cal.com, the app
+needs a small `calendar_accounts` table to persist OAuth tokens and
+per-user preferences. Run in **SQL Editor**:
+
+```sql
+create table if not exists public.calendar_accounts (
+  user_id                   uuid primary key references auth.users on delete cascade,
+  provider                  text not null default 'google',
+  google_access_token       text,
+  google_refresh_token      text,
+  google_token_expiry       timestamptz,
+  calcom_api_key            text,
+  calendar_sync_enabled     boolean not null default false,
+  calendar_reminder_minutes integer not null default 15,
+  auto_sync                 boolean not null default true,
+  updated_at                timestamptz not null default now()
+);
+
+alter table public.calendar_accounts enable row level security;
+
+create policy "Users read own calendar account"
+  on public.calendar_accounts for select using (auth.uid() = user_id);
+
+create policy "Users insert own calendar account"
+  on public.calendar_accounts for insert with check (auth.uid() = user_id);
+
+create policy "Users update own calendar account"
+  on public.calendar_accounts for update using (auth.uid() = user_id);
+```
+
+Then in **Vercel → Settings → Environment Variables** add:
+
+```
+VITE_GOOGLE_CLIENT_ID    = <from Google Cloud Console>
+GOOGLE_CLIENT_SECRET     = <from Google Cloud Console>
+VITE_GOOGLE_REDIRECT_URI = https://scholifyapp.com/auth/google/calendar
+```
+
+In **Google Cloud Console** → OAuth client → **Authorized redirect URIs**,
+add the same URL: `https://scholifyapp.com/auth/google/calendar` (and the
+Vercel preview URL if you use it). Enable the **Google Calendar API**
+under "APIs & Services → Library".
+
+Without these the app still loads — the Calendar Sync card just shows a
+"Not configured" state instead of letting users connect.
+
 ---
 
 ## Quick reference

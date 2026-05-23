@@ -9,6 +9,7 @@ const SignIn = lazy(() => import("@/pages/SignIn"))
 const SignUp = lazy(() => import("@/pages/SignUp"))
 const Onboarding = lazy(() => import("@/pages/Onboarding"))
 const AuthCallback = lazy(() => import("@/pages/AuthCallback"))
+const GoogleCalendarCallback = lazy(() => import("@/pages/GoogleCalendarCallback"))
 const Loading = lazy(() => import("@/pages/Loading"))
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"))
 const Progress = lazy(() => import("@/pages/Progress"))
@@ -76,6 +77,7 @@ export default function App() {
 
       {/* OAuth return handler — must stay public */}
       <Route path="/auth/callback" element={<Page name="AuthCallback"><AuthCallback /></Page>} />
+      <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
 
       {/* Auth-required */}
       <Route path="/onboarding" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />

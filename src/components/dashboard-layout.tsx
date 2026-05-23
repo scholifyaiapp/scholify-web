@@ -1,9 +1,10 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
 import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { readPlan, readProgress } from "@/lib/scholify-data"
+import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
 /* ──────────────────────────────────────────────────────────────
@@ -112,7 +113,15 @@ function Avatar({ initial, size = 40 }: { initial: string; size?: number }) {
   )
 }
 
-function NavItem({ item, active }: { item: (typeof NAV)[number]; active: boolean }) {
+function NavItem({
+  item,
+  active,
+  badge,
+}: {
+  item: (typeof NAV)[number]
+  active: boolean
+  badge?: boolean
+}) {
   return (
     <Link
       to={item.to}
@@ -155,7 +164,27 @@ function NavItem({ item, active }: { item: (typeof NAV)[number]; active: boolean
           }}
         />
       )}
-      <span style={{ fontSize: 16 }}>{item.icon}</span>
+      <span style={{ position: "relative", fontSize: 16 }}>
+        {item.icon}
+        {badge && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 360, damping: 22 }}
+            style={{
+              position: "absolute",
+              top: -2,
+              right: -4,
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "#34D399",
+              boxShadow: "0 0 8px rgba(52,211,153,0.7)",
+            }}
+            aria-label="calendar connected"
+          />
+        )}
+      </span>
       {item.label}
     </Link>
   )
@@ -169,6 +198,26 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
   const plan = useMemo(readPlan, [])
   const [progress] = useState(readProgress)
+  const [calendarConnected, setCalendarConnected] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      if (!user?.id) return
+      const acc = await loadCalendarAccount(user.id)
+      if (cancelled) return
+      setCalendarConnected(
+        Boolean(
+          (acc?.google_access_token && acc.calendar_sync_enabled) ||
+            acc?.calcom_api_key,
+        ),
+      )
+    }
+    check()
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const goal = plan.goal?.trim() || "Your learning goal"
@@ -262,7 +311,12 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Nav */}
         <nav style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 4 }}>
           {NAV.map((item) => (
-            <NavItem key={item.to} item={item} active={location.pathname === item.to} />
+            <NavItem
+              key={item.to}
+              item={item}
+              active={location.pathname === item.to}
+              badge={item.to === "/settings" && calendarConnected}
+            />
           ))}
         </nav>
 
@@ -324,6 +378,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       >
         {NAV.map((item) => {
           const active = location.pathname === item.to
+          const showBadge = item.to === "/settings" && calendarConnected
           return (
             <Link
               key={item.to}
@@ -340,7 +395,26 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 fontWeight: active ? 600 : 400,
               }}
             >
-              <span style={{ fontSize: 18 }}>{item.icon}</span>
+              <span style={{ position: "relative", fontSize: 18 }}>
+                {item.icon}
+                {showBadge && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 360, damping: 22 }}
+                    style={{
+                      position: "absolute",
+                      top: -1,
+                      right: -3,
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#34D399",
+                      boxShadow: "0 0 6px rgba(52,211,153,0.7)",
+                    }}
+                  />
+                )}
+              </span>
               {item.label}
             </Link>
           )
