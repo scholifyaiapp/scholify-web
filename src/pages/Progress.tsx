@@ -9,11 +9,13 @@ import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import {
   format,
+  parseISO,
   startOfMonth,
   endOfMonth,
   startOfWeek,
   endOfWeek,
   addDays,
+  subDays,
   isSameMonth,
   isSameDay,
   differenceInCalendarDays,
@@ -252,30 +254,52 @@ function HeatCell({
   )
 }
 
-function Heatmap({ streak, dailyMinutes }: { streak: number; dailyMinutes: number }) {
+function Heatmap({
+  streak,
+  lastDate,
+  dailyMinutes,
+}: {
+  streak: number
+  lastDate: string | null
+  dailyMinutes: number
+}) {
   const today = useMemo(() => new Date(), [])
   const cells = useMemo(() => {
     const gridStart = startOfWeek(startOfMonth(today), { weekStartsOn: 1 })
     const gridEnd = endOfWeek(endOfMonth(today), { weekStartsOn: 1 })
+
+    // Build the set of actually-completed dates from the streak window
+    // ending at lastDate. No fabricated "missed" / "shield" cells.
+    const completedSet = new Set<string>()
+    if (lastDate && streak > 0) {
+      let anchor: Date
+      try {
+        anchor = parseISO(lastDate)
+      } catch {
+        anchor = today
+      }
+      if (!Number.isNaN(anchor.getTime())) {
+        for (let i = 0; i < streak; i++) {
+          completedSet.add(format(subDays(anchor, i), "yyyy-MM-dd"))
+        }
+      }
+    }
+
     const out: { date: Date; state: CellState }[] = []
     for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) {
       const inMonth = isSameMonth(d, today)
+      const key = format(d, "yyyy-MM-dd")
+      const isCompleted = completedSet.has(key)
       let state: CellState
       if (!inMonth) state = "none"
+      else if (isCompleted) state = "completed"
       else if (isSameDay(d, today)) state = "today"
       else if (d > today) state = "future"
-      else {
-        const ago = differenceInCalendarDays(today, d)
-        if (ago <= streak) state = "completed"
-        else if (ago === streak + 1) state = "missed"
-        else if (ago === streak + 2) state = "shield"
-        else if (ago <= streak + 9) state = "completed"
-        else state = "none"
-      }
+      else state = "none"
       out.push({ date: new Date(d), state })
     }
     return out
-  }, [today, streak])
+  }, [today, streak, lastDate])
 
   const legend: Array<[string, string]> = [
     ["Completed", IRIDESCENT],
@@ -1035,7 +1059,7 @@ export default function Progress() {
         </div>
 
         {/* Section 2 — streak heatmap */}
-        <Heatmap streak={progress.streak} dailyMinutes={dailyMinutes} />
+        <Heatmap streak={progress.streak} lastDate={progress.lastDate} dailyMinutes={dailyMinutes} />
 
         {/* Section 3 — weekly activity + donut */}
         <div className="grid grid-cols-1 lg:grid-cols-5" style={{ gap: 20, marginTop: 20 }}>
