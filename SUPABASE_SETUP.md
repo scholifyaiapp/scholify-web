@@ -143,6 +143,25 @@ create trigger on_auth_user_created
 
 ---
 
+### 5a — Conversational onboarding fields (optional)
+
+The Lara chat onboarding (`/onboarding`) captures two extra fields beyond
+first/last name: the user's future-self vision and current skill level,
+plus a preferred notification time. To persist them alongside the profile,
+extend the table:
+
+```sql
+alter table public.profiles add column if not exists future_vision    text;
+alter table public.profiles add column if not exists current_level    text;
+alter table public.profiles add column if not exists notification_time text;
+```
+
+Without these columns the app still works — the values are kept in the
+Supabase user metadata (`auth.users.raw_user_meta_data`) and in
+`localStorage`. The table copy just makes them queryable.
+
+---
+
 ## Step 6 — Store generated plans (optional, recommended)
 
 The onboarding loading screen generates a learning plan and tries to save it

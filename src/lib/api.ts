@@ -73,4 +73,10 @@ export const api = {
         explanation: string
       }>
     }>("/api/weekly-quiz", params),
+
+  getSkillSuggestions: (params: { futureVision: string }) =>
+    post<{ suggestions: string[]; isFallback?: boolean }>(
+      "/api/skill-suggestions",
+      params,
+    ),
 }

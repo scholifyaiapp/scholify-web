@@ -8,6 +8,7 @@ const Landing = lazy(() => import("@/pages/Landing"))
 const SignIn = lazy(() => import("@/pages/SignIn"))
 const SignUp = lazy(() => import("@/pages/SignUp"))
 const Onboarding = lazy(() => import("@/pages/Onboarding"))
+const OnboardingChat = lazy(() => import("@/pages/OnboardingChat"))
 const AuthCallback = lazy(() => import("@/pages/AuthCallback"))
 const GoogleCalendarCallback = lazy(() => import("@/pages/GoogleCalendarCallback"))
 const Loading = lazy(() => import("@/pages/Loading"))
@@ -80,7 +81,8 @@ export default function App() {
       <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
 
       {/* Auth-required */}
-      <Route path="/onboarding" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute><Page name="OnboardingChat"><OnboardingChat /></Page></ProtectedRoute>} />
+      <Route path="/onboarding/classic" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
       <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
       <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
