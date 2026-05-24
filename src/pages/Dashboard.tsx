@@ -23,6 +23,13 @@ import DeadlineCountdown from "@/components/DeadlineCountdown"
 import { recalibratePlan, shouldAutoRecalibrate } from "@/lib/recalibration"
 import FocusTimer from "@/components/FocusTimer"
 import { WeeklyQuizBanner } from "@/components/WeeklyQuiz"
+import PartnerCard from "@/components/PartnerCard"
+import { useToast } from "@/components/Toast"
+import {
+  readPartnership,
+  readPartnerSnapshot,
+  writePartnerSnapshot,
+} from "@/lib/partner-storage"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
 import { addResource, readActivePlanId } from "@/lib/scholify-data"
@@ -127,6 +134,46 @@ export default function Dashboard() {
   useEffect(() => {
     checkPaywallTrigger(user?.id)
   }, [checkPaywallTrigger, user?.id])
+
+  // Real-time: when our accountability partner marks today complete,
+  // pulse their stats and drop a "your turn" toast.
+  const { toast } = useToast()
+  useEffect(() => {
+    const partnership = readPartnership()
+    if (!partnership || partnership.status !== "active") return
+    const snapshot = readPartnerSnapshot()
+    if (!snapshot) return
+    const partnerId = partnership.partnerId === user?.id ? partnership.requesterId : partnership.partnerId
+    if (!isSupabaseConfigured || !partnerId) return
+
+    const channel = supabase
+      .channel(`partner-activity-${partnerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "progress",
+          filter: `user_id=eq.${partnerId}`,
+        },
+        () => {
+          const current = readPartnerSnapshot()
+          if (!current) return
+          writePartnerSnapshot({
+            ...current,
+            doneToday: true,
+            streak: current.streak + 1,
+            lastActiveAt: new Date().toISOString(),
+          })
+          toast.info(`${current.name} just completed their task! Your turn 🔥`)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, toast])
 
   // Auto-recalibrate when the user has missed 3+ days while their streak
   // was still alive — keeps them on track without a manual fix.
@@ -801,6 +848,11 @@ export default function Dashboard() {
             )}
           </p>
         </motion.div>
+
+        {/* Accountability partner — only renders when a partnership is active */}
+        <div style={{ marginTop: 20 }}>
+          <PartnerCard variant="compact" />
+        </div>
 
         {/* Session notes — only after the user marks today complete */}
         <AnimatePresence>

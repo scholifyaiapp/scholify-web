@@ -112,4 +112,15 @@ export const api = {
     message: string
   }) =>
     post<{ message: string; isFallback?: boolean }>("/api/lara-chat", params),
+
+  partnerInvite: (params: {
+    email: string
+    inviteUrl: string
+    senderName: string
+    senderGoal?: string
+  }) =>
+    post<{ sent: boolean; isFallback?: boolean; reason?: string }>(
+      "/api/partner-invite",
+      params,
+    ),
 }

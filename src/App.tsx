@@ -21,6 +21,8 @@ const Goals = lazy(() => import("@/pages/Goals"))
 const ResourceLibrary = lazy(() => import("@/pages/ResourceLibrary"))
 const Chat = lazy(() => import("@/pages/Chat"))
 const Quiz = lazy(() => import("@/pages/Quiz"))
+const Partner = lazy(() => import("@/pages/Partner"))
+const PartnerJoin = lazy(() => import("@/pages/PartnerJoin"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
 const Terms = lazy(() => import("@/pages/Terms"))
 const Support = lazy(() => import("@/pages/Support"))
@@ -94,6 +96,8 @@ export default function App() {
       <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
       <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><Settings /></Page></RequireOnboarded>} />
       <Route path="/quiz" element={<RequireOnboarded><Page name="Quiz"><Quiz /></Page></RequireOnboarded>} />
+      <Route path="/partner" element={<RequireOnboarded><Page name="Partner"><Partner /></Page></RequireOnboarded>} />
+      <Route path="/partner/join/:code" element={<Page name="PartnerJoin"><PartnerJoin /></Page>} />
 
       <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
