@@ -61,7 +61,7 @@ export const api = {
     userId?: string
     yesterdayNote?: string
     yesterdayMood?: string
-  }) => post<{ message: string; isFallback?: boolean }>("/api/lara-message", params),
+  }) => post<{ message: string; isFallback?: boolean }>("/api/lara?action=message", params),
 
   getBestResource: (params: { taskTitle: string; goal: string; dayNumber: number }) =>
     post<{ title: string; url: string; isFallback?: boolean }>("/api/best-resource", params),
@@ -111,7 +111,7 @@ export const api = {
     history: { role: "user" | "lara"; content: string }[]
     message: string
   }) =>
-    post<{ message: string; isFallback?: boolean }>("/api/lara-chat", params),
+    post<{ message: string; isFallback?: boolean }>("/api/lara?action=chat", params),
 
   partnerInvite: (params: {
     email: string
@@ -138,6 +138,20 @@ export const api = {
       reason?: string
       failures?: { email: string; reason: string }[]
     }>("/api/social?action=team-invite", params),
+
+  analyzePatterns: (params: {
+    goal: string
+    dominantStyle: string
+    breakdown: { type: string; rate: number; completed: number; total: number; avgMinutes: number }[]
+    avgActualMinutes: number
+    plannedDailyMinutes: number
+    seedSuggestions: { id: string; type: string; text: string }[]
+  }) =>
+    post<{
+      suggestions: { id: string; text: string }[]
+      isFallback?: boolean
+      reason?: string
+    }>("/api/lara?action=analyze-patterns", params),
 
   getLeaderboard: async (params: { category: string; weekOffset?: number; userId?: string }) => {
     const qs = new URLSearchParams()

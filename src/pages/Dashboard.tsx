@@ -38,6 +38,7 @@ import {
 } from "@/lib/community-storage"
 import CommunityOptInCard, { shouldShowOptInPrompt } from "@/components/CommunityOptInCard"
 import IntegrationStrip from "@/components/IntegrationStrip"
+import SmartSuggestions from "@/components/SmartSuggestions"
 import WelcomeChecklist, { shouldShowWelcomeChecklist } from "@/components/WelcomeChecklist"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
@@ -904,6 +905,11 @@ export default function Dashboard() {
         {/* At-a-glance status across connected features */}
         <div style={{ marginTop: 20 }}>
           <IntegrationStrip />
+        </div>
+
+        {/* Smart plan suggestions — only renders after 14 completed sessions */}
+        <div style={{ marginTop: 20 }}>
+          <SmartSuggestions />
         </div>
 
         {/* Accountability partner — only renders when a partnership is active */}

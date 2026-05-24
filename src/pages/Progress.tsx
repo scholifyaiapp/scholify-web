@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/auth"
 import { readPlan, readProgress } from "@/lib/scholify-data"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import LearningStyleCard from "@/components/LearningStyleCard"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Progress screen. Stats, streak heatmap, charts,
@@ -1056,6 +1057,11 @@ export default function Progress() {
           <StatCard index={1} icon="✅" label="Total Sessions" target={sessions} decimals={0} suffix="" trend="this week" />
           <StatCard index={2} icon="⏱" label="Time Invested" target={Number(totalHours)} decimals={1} suffix=" hrs" trend="climbing" />
           <StatCard index={3} icon="🎯" label="Goal Progress" target={goalPct} decimals={0} suffix="%" trend="ahead of pace" />
+        </div>
+
+        {/* Section 1b — Learning style */}
+        <div style={{ marginTop: 24 }}>
+          <LearningStyleCard />
         </div>
 
         {/* Section 2 — streak heatmap */}
