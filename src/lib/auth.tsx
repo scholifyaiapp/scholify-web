@@ -184,9 +184,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* sessionStorage unavailable — /auth/callback still handles the happy path */
     }
+    // Pin the redirect to the canonical production domain so the session
+    // always lands on scholifyapp.com (not the scholify-web.vercel.app
+    // preview origin), and a single Supabase "Redirect URLs" entry covers
+    // every entry point. Override per-environment with VITE_PUBLIC_SITE_URL.
+    const siteUrl =
+      (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) ||
+      "https://scholifyapp.com"
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${siteUrl}/auth/callback` },
     })
     return { error: error?.message ?? null }
   }, [])

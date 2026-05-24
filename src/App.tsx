@@ -108,6 +108,14 @@ function ResourcesFallback() {
  * redirects to the site root instead of /auth/callback; this watches for
  * a freshly-authenticated user after an OAuth attempt and routes them
  * into the app no matter which page they landed on.
+ *
+ * Two triggers, since the user may arrive from a different origin (started
+ * on scholify-web.vercel.app, returned on scholifyapp.com) where the
+ * sessionStorage flag isn't visible:
+ *   1) Same-origin pending flag set by signInWithGoogle.
+ *   2) Auth-shaped URL hash on root (`#access_token=…` from implicit flow,
+ *      or `#error=…` if Google rejected) — Supabase consumes it into a
+ *      session, then we forward the user to the dashboard.
  */
 function OAuthReturnHandler() {
   const { user, loading } = useAuth()
@@ -115,20 +123,48 @@ function OAuthReturnHandler() {
 
   useEffect(() => {
     if (loading) return
+
+    const hash = window.location.hash || ""
+    const looksLikeAuthHash =
+      /access_token=|provider_token=|refresh_token=|error_description=|error=/.test(
+        hash,
+      )
+
     let pending: string | null = null
     try {
       pending = window.sessionStorage.getItem("scholify-oauth-pending")
     } catch {
-      return
+      /* sessionStorage unavailable — fall through to hash detection */
     }
-    if (!pending) return
-    // Consume the flag — the OAuth round-trip has resolved.
+
+    if (!pending && !looksLikeAuthHash) return
+
     try {
       window.sessionStorage.removeItem("scholify-oauth-pending")
     } catch {
       /* ignore */
     }
-    if (user) navigate("/dashboard", { replace: true })
+
+    // Strip the auth fragment so a refresh doesn't re-trigger the flow.
+    if (looksLikeAuthHash) {
+      try {
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        )
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (user) {
+      navigate("/dashboard", { replace: true })
+    } else if (looksLikeAuthHash) {
+      // Session is still landing via supabase detectSessionInUrl — let the
+      // dedicated callback page wait it out and surface any provider error.
+      navigate("/auth/callback", { replace: true })
+    }
   }, [user, loading, navigate])
 
   return null
