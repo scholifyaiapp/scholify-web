@@ -23,6 +23,9 @@ const Chat = lazy(() => import("@/pages/Chat"))
 const Quiz = lazy(() => import("@/pages/Quiz"))
 const Partner = lazy(() => import("@/pages/Partner"))
 const PartnerJoin = lazy(() => import("@/pages/PartnerJoin"))
+const Rooms = lazy(() => import("@/pages/Rooms"))
+const Room = lazy(() => import("@/pages/Room"))
+const RoomJoin = lazy(() => import("@/pages/RoomJoin"))
 const Privacy = lazy(() => import("@/pages/Privacy"))
 const Terms = lazy(() => import("@/pages/Terms"))
 const Support = lazy(() => import("@/pages/Support"))
@@ -98,6 +101,9 @@ export default function App() {
       <Route path="/quiz" element={<RequireOnboarded><Page name="Quiz"><Quiz /></Page></RequireOnboarded>} />
       <Route path="/partner" element={<RequireOnboarded><Page name="Partner"><Partner /></Page></RequireOnboarded>} />
       <Route path="/partner/join/:code" element={<Page name="PartnerJoin"><PartnerJoin /></Page>} />
+      <Route path="/rooms" element={<RequireOnboarded><Page name="Rooms"><Rooms /></Page></RequireOnboarded>} />
+      <Route path="/rooms/:id" element={<RequireOnboarded><Page name="Room"><Room /></Page></RequireOnboarded>} />
+      <Route path="/join/:code" element={<Page name="RoomJoin"><RoomJoin /></Page>} />
 
       <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
       <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />

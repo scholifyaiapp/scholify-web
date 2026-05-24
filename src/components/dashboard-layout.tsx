@@ -34,6 +34,7 @@ export const NAV = [
   { icon: "🎯", label: "My Goals", to: "/goals" },
   { icon: "📚", label: "Resources", to: "/resources" },
   { icon: "💬", label: "Ask Lara", to: "/chat" },
+  { icon: "🏫", label: "Rooms", to: "/rooms" },
   { icon: "👥", label: "Partner", to: "/partner" },
   { icon: "🏆", label: "Achievements", to: "/achievements" },
   { icon: "⚙️", label: "Settings", to: "/settings" },

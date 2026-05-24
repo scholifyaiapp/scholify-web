@@ -30,6 +30,7 @@ import {
   readPartnerSnapshot,
   writePartnerSnapshot,
 } from "@/lib/partner-storage"
+import { notifyRoomsOnCompletion } from "@/lib/rooms-storage"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
 import { addResource, readActivePlanId } from "@/lib/scholify-data"
@@ -283,6 +284,18 @@ export default function Dashboard() {
 
     // A new completion may cross a 7 / 14 / 21-day streak milestone.
     checkPaywallTrigger(user?.id)
+
+    // Broadcast the completion to every Study Room this user is part of.
+    {
+      const meta = (user?.user_metadata || {}) as { first_name?: string }
+      const name = (meta.first_name || "").trim() || user?.email?.split("@")[0] || "Someone"
+      notifyRoomsOnCompletion({
+        userId: user?.id || "demo-user",
+        userName: name,
+        dayNumber: currentDay,
+        streak: next.streak,
+      })
+    }
 
     // Invite the user to turn on daily reminders (once, after a completion).
     if (shouldShowNotificationPrompt()) {
