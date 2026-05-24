@@ -25,7 +25,37 @@ interface PlanTask {
   difficulty: string
 }
 
-function systemPrompt(dailyMinutes: number): string {
+type DifficultyLevel = "too_easy" | "realistic" | "ambitious" | "unrealistic"
+
+function difficultyGuidance(level: DifficultyLevel | null): string {
+  switch (level) {
+    case "ambitious":
+      return `Difficulty assessment: AMBITIOUS.
+The user picked a tight timeline. Every task must be maximally focused with
+zero filler. Cut anything that isn't strictly needed to hit the goal. Skip
+"exploration" tasks. Default resource_type heavily toward "practice" and
+"exercise" — they compound fastest.`
+    case "unrealistic":
+      return `Difficulty assessment: UNREALISTIC but the user chose this anyway.
+Make the plan aggressive but still achievable. No fluff, no nice-to-haves.
+Front-load the highest-leverage practice. Skip background reading unless
+it directly unblocks the next exercise. Tone of task_description stays
+honest and matter-of-fact, never alarming.`
+    case "too_easy":
+      return `Difficulty assessment: TOO EASY for the timeline.
+The user has plenty of time. Add depth and a small "bonus challenge" to
+each task_description ("Bonus: …"). Include some advanced tasks earlier
+than usual. It's OK to mix in reflection + creative tasks since the
+schedule has room.`
+    case "realistic":
+    default:
+      return `Difficulty assessment: REALISTIC.
+Pace the plan normally — week 1 foundation, weeks 2-3 build, later weeks
+synthesize. Mix resource_types evenly.`
+  }
+}
+
+function systemPrompt(dailyMinutes: number, difficulty: DifficultyLevel | null): string {
   return `You are Lara, Scholify's expert AI learning coach. Your specialty is
 breaking any learning goal into the smallest possible daily actions that
 compound into real skill.
@@ -40,6 +70,8 @@ CRITICAL RULES:
 7. task_title maximum 8 words, action-oriented verb first.
 8. task_description maximum 40 words, specific and practical.
 
+${difficultyGuidance(difficulty)}
+
 Each JSON object must have EXACTLY these keys:
 {
   "day_number": integer,
@@ -50,6 +82,12 @@ Each JSON object must have EXACTLY these keys:
   "resource_type": "video|reading|practice|reflection|exercise",
   "difficulty": "beginner|intermediate|advanced"
 }`
+}
+
+function normalizeDifficulty(v: unknown): DifficultyLevel | null {
+  const s = String(v || "").toLowerCase()
+  if (s === "too_easy" || s === "realistic" || s === "ambitious" || s === "unrealistic") return s
+  return null
 }
 
 function mockTasks(start: number, count: number, minutes: number, goal: string): PlanTask[] {
@@ -97,6 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const goal = String(body.goal || "").trim()
   const deadline = body.deadline ? String(body.deadline) : null
   const dailyMinutes = Math.max(5, Math.round(Number(body.dailyMinutes) || 20))
+  const difficultyLevel = normalizeDifficulty(body.difficultyLevel)
   if (!goal || !dailyMinutes) {
     res.status(400).json({ error: "Missing required fields." })
     return
@@ -153,7 +192,7 @@ Be extremely specific to "${goal}". Generic study advice is unacceptable.`
       model: MODEL,
       max_tokens: 6000,
       system: [
-        { type: "text", text: systemPrompt(dailyMinutes), cache_control: { type: "ephemeral" } },
+        { type: "text", text: systemPrompt(dailyMinutes, difficultyLevel), cache_control: { type: "ephemeral" } },
       ],
       messages: [{ role: "user", content: userPrompt }],
     })

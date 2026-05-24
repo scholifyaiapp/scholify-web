@@ -41,6 +41,7 @@ export const api = {
     dailyMinutes: number
     userId?: string
     weekNumber?: number
+    difficultyLevel?: "too_easy" | "realistic" | "ambitious" | "unrealistic" | null
   }) =>
     post<{ tasks: ApiPlanTask[]; daysCount: number; weeksCount: number; isMock?: boolean }>(
       "/api/generate-plan",
@@ -152,6 +153,24 @@ export const api = {
       isFallback?: boolean
       reason?: string
     }>("/api/lara?action=analyze-patterns", params),
+
+  analyzeDifficulty: (params: {
+    goal: string
+    deadline: string
+    dailyMinutes: number
+    daysAvailable: number
+  }) =>
+    post<{
+      level: "too_easy" | "realistic" | "ambitious" | "unrealistic"
+      score: number
+      message: string
+      suggestion: string
+      suggestedDeadline?: string
+      suggestedGoal?: string
+      confidence: number
+      isFallback?: boolean
+      reason?: string
+    }>("/api/lara?action=analyze-difficulty", params),
 
   getLeaderboard: async (params: { category: string; weekOffset?: number; userId?: string }) => {
     const qs = new URLSearchParams()

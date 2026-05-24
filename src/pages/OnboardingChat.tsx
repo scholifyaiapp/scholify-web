@@ -13,6 +13,8 @@ import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { api } from "@/lib/api"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import DifficultyAdvisor, { type AdvisorReply } from "@/components/DifficultyAdvisor"
+import { analyzeDifficulty, type DifficultyResult } from "@/lib/difficultyAnalysis"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Conversational onboarding with Lara.
@@ -38,6 +40,7 @@ type Stage =
   | "skill_level"
   | "deadline"
   | "daily_time"
+  | "advisor"
   | "notification_time"
   | "summary"
   | "submitting"
@@ -52,7 +55,7 @@ interface ChatMessage {
   quickReplies?: QuickReply[]
   /** When true, the reply buttons under this message are consumed. */
   repliesUsed?: boolean
-  custom?: "date_picker" | "time_picker"
+  custom?: "date_picker" | "time_picker" | "difficulty_advisor"
 }
 
 interface QuickReply {
@@ -71,6 +74,7 @@ interface Collected {
   deadlineLabel: string
   dailyMinutes: number
   notificationTime: string // HH:mm
+  difficulty: DifficultyResult["level"] | null
 }
 
 const initialCollected: Collected = {
@@ -83,6 +87,7 @@ const initialCollected: Collected = {
   deadlineLabel: "",
   dailyMinutes: 20,
   notificationTime: "08:00",
+  difficulty: null,
 }
 
 /* ── Typewriter hook ─────────────────────────────────────────── */
@@ -733,6 +738,107 @@ export default function OnboardingChat() {
     )
   }, [sayLara])
 
+  /* ── Difficulty advisor ── */
+  const [advisorResult, setAdvisorResult] = useState<DifficultyResult | null>(null)
+  const [advisorLoading, setAdvisorLoading] = useState(false)
+
+  const runAdvisor = useCallback(
+    async (next: Collected) => {
+      setStage("advisor")
+      setAdvisorResult(null)
+      setAdvisorLoading(true)
+      // Drop a "thinking" Lara bubble so the user sees motion immediately.
+      const advisorMsg: ChatMessage = {
+        id: nextId(),
+        role: "lara",
+        text: "",
+        custom: "difficulty_advisor",
+      }
+      setMessages((prev) => [...prev, advisorMsg])
+      try {
+        const result = await analyzeDifficulty(
+          next.primaryGoal,
+          next.deadline,
+          next.dailyMinutes,
+        )
+        setAdvisorResult(result)
+      } catch {
+        // Should never throw — analyzer has internal fallbacks — but
+        // be defensive so onboarding can't get stuck.
+        setAdvisorResult({
+          level: "realistic",
+          score: 60,
+          message: `${next.dailyMinutes} min/day looks workable for this goal.`,
+          suggestion: "Lara will scaffold each week so it builds on the last.",
+          confidence: 0.4,
+          source: "ai_fallback",
+        })
+      } finally {
+        setAdvisorLoading(false)
+      }
+    },
+    [],
+  )
+
+  const handleAdvisorReply = useCallback(
+    async (reply: AdvisorReply, result: DifficultyResult | undefined) => {
+      if (!result) return
+      // Consume the advisor card so it doesn't keep rendering buttons.
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.custom === "difficulty_advisor" ? { ...m, custom: undefined, repliesUsed: true } : m,
+        ),
+      )
+
+      if (reply === "use_suggested_deadline" && result.suggestedDeadline) {
+        const iso = result.suggestedDeadline
+        const label = format(new Date(iso), "MMM d, yyyy")
+        sayUser(`Use Lara's date — ${label}`)
+        setCollected((c) => {
+          const next: Collected = {
+            ...c,
+            deadline: iso,
+            deadlineLabel: label,
+            difficulty: "realistic",
+          }
+          return next
+        })
+        await askNotifTime()
+        return
+      }
+
+      if (reply === "use_stretch_goal" && result.suggestedGoal) {
+        const newGoal = result.suggestedGoal
+        sayUser(`Go bigger — ${newGoal}`)
+        setCollected((c) => ({ ...c, primaryGoal: newGoal, difficulty: "ambitious" }))
+        await askNotifTime()
+        return
+      }
+
+      if (reply === "show_safer_deadline") {
+        sayUser("Show me a safer deadline")
+        // Re-ask the deadline step — user picks again.
+        await askDeadline()
+        return
+      }
+
+      if (reply === "edit_goal") {
+        sayUser("Let me adjust my goal")
+        await sayLara(
+          "Totally — give me the new version of the goal and I'll re-check the timeline.",
+        )
+        setStage("skill_discovery")
+        return
+      }
+
+      // "proceed" | "keep_original_deadline" | "keep_current_goal"
+      sayUser(reply === "keep_original_deadline" ? "Keep my deadline" : "Let's go")
+      setCollected((c) => ({ ...c, difficulty: result.level }))
+      await askNotifTime()
+    },
+    [askDeadline, askNotifTime, sayLara, sayUser],
+  )
+
   const showSummary = useCallback(
     async (next: Collected) => {
       setStage("summary")
@@ -819,6 +925,7 @@ export default function OnboardingChat() {
           goal: final.primaryGoal,
           deadline: final.deadline,
           dailyMinutes: final.dailyMinutes,
+          difficultyLevel: final.difficulty,
         },
       })
     },
@@ -918,8 +1025,12 @@ export default function OnboardingChat() {
           consumeReplies(messageId)
           sayUser(reply.label)
           const minutes = Number(reply.value) || 20
-          setCollected((c) => ({ ...c, dailyMinutes: minutes }))
-          await askNotifTime()
+          setCollected((c) => {
+            const next: Collected = { ...c, dailyMinutes: minutes }
+            // Defer the advisor run so the user message lands first.
+            setTimeout(() => runAdvisor(next), 50)
+            return next
+          })
           return
         }
         case "notification_time": {
@@ -973,6 +1084,7 @@ export default function OnboardingChat() {
       showSummary,
       buildPlan,
       initialName,
+      runAdvisor,
     ],
   )
 
@@ -1168,24 +1280,37 @@ export default function OnboardingChat() {
                       marginBottom: 16,
                     }}
                   >
-                    <LaraAvatar />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <LaraBubble text={m.text} />
-                      <AnimatePresence>
-                        {m.quickReplies && (
-                          <QuickReplies
-                            replies={m.quickReplies}
-                            onPick={(r) => handleQuickReply(m.id, r)}
-                          />
-                        )}
-                        {m.custom === "date_picker" && (
-                          <InlineDatePicker onPick={handleDatePicked} />
-                        )}
-                        {m.custom === "time_picker" && (
-                          <InlineTimePicker onPick={handleTimePicked} />
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    {m.custom === "difficulty_advisor" ? (
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <DifficultyAdvisor
+                          loading={advisorLoading}
+                          result={advisorResult}
+                          onReply={handleAdvisorReply}
+                          showAvatar
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <LaraAvatar />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <LaraBubble text={m.text} />
+                          <AnimatePresence>
+                            {m.quickReplies && (
+                              <QuickReplies
+                                replies={m.quickReplies}
+                                onPick={(r) => handleQuickReply(m.id, r)}
+                              />
+                            )}
+                            {m.custom === "date_picker" && (
+                              <InlineDatePicker onPick={handleDatePicked} />
+                            )}
+                            {m.custom === "time_picker" && (
+                              <InlineTimePicker onPick={handleTimePicked} />
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 )
               }

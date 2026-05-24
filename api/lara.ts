@@ -42,7 +42,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "message") return handleMessage(body, res)
   if (action === "chat") return handleChat(body, res)
   if (action === "analyze-patterns") return handleAnalyze(body, res)
-  res.status(400).json({ error: "Unknown action. Use ?action=message | chat | analyze-patterns." })
+  if (action === "analyze-difficulty") return handleDifficulty(body, res)
+  res.status(400).json({
+    error: "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty.",
+  })
 }
 
 /* ── Daily coach message (Haiku) ─────────────────────────────────────── */
@@ -368,4 +371,159 @@ function safeParse(s: string): { suggestions?: Array<{ id?: string; text?: strin
   } catch {
     return null
   }
+}
+
+/* ── Goal difficulty advisor ─────────────────────────────────────────── */
+
+const DIFFICULTY_SYSTEM = `You are Lara, a learning advisor. Decide whether a
+learning goal is realistic given the deadline and daily-minutes budget.
+
+Rules:
+1. Return ONLY a single JSON object. No prose, no markdown.
+2. Shape: { "level": "too_easy"|"realistic"|"ambitious"|"unrealistic",
+            "score": 0-100,
+            "message": "1-2 sentence honest assessment",
+            "suggestion": "1-2 sentence next step",
+            "suggestedDeadline": "YYYY-MM-DD or null",
+            "suggestedGoal": "string or null",
+            "confidence": 0-1 }
+3. Be honest but kind. Never harsh. Never use "amazing", "you got this".
+4. score: ~50 means "right on the edge"; <30 unrealistic; >80 too easy.
+5. If unrealistic, suggestedDeadline MUST be a real ISO date in the
+   future that gives the user enough time.
+6. If too_easy, suggestedGoal MUST be a slightly more ambitious version
+   of the original goal.
+7. Otherwise leave suggestedDeadline and suggestedGoal null.`
+
+interface DifficultyJSON {
+  level?: string
+  score?: number
+  message?: string
+  suggestion?: string
+  suggestedDeadline?: string | null
+  suggestedGoal?: string | null
+  confidence?: number
+}
+
+function neutralDifficulty(daysAvailable: number, dailyMinutes: number): DifficultyJSON {
+  if (daysAvailable < 7) {
+    return {
+      level: "unrealistic",
+      score: 22,
+      message: `${daysAvailable} day${daysAvailable === 1 ? "" : "s"} is very tight for a real learning goal.`,
+      suggestion: "Consider at least 3–4 weeks so Lara can scaffold the plan properly.",
+      suggestedDeadline: new Date(Date.now() + 28 * 86_400_000).toISOString().slice(0, 10),
+      suggestedGoal: null,
+      confidence: 0.6,
+    }
+  }
+  if (daysAvailable >= 365) {
+    return {
+      level: "too_easy",
+      score: 78,
+      message: `A full year is plenty — you could compound this into a much bigger outcome.`,
+      suggestion: "Stack a second related skill or aim for a higher-level outcome.",
+      suggestedDeadline: null,
+      suggestedGoal: null,
+      confidence: 0.55,
+    }
+  }
+  return {
+    level: "realistic",
+    score: 65,
+    message: `${daysAvailable} days at ${dailyMinutes} min/day looks workable.`,
+    suggestion: "Lara will scaffold each week so it builds on the last.",
+    suggestedDeadline: null,
+    suggestedGoal: null,
+    confidence: 0.5,
+  }
+}
+
+async function handleDifficulty(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const goal = String(body.goal || "").trim()
+  const deadline = String(body.deadline || "").trim()
+  const dailyMinutes = Math.max(5, Math.round(Number(body.dailyMinutes) || 20))
+  const daysAvailable = Math.max(1, Math.round(Number(body.daysAvailable) || 0))
+
+  if (!goal || !deadline) {
+    res.status(400).json({ error: "Missing goal or deadline." })
+    return
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.status(200).json({ ...neutralDifficulty(daysAvailable, dailyMinutes), isFallback: true, reason: "missing_anthropic_key" })
+    return
+  }
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: HAIKU,
+      max_tokens: 500,
+      system: [{ type: "text", text: DIFFICULTY_SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: `Goal: ${goal}
+Deadline: ${deadline}
+Days available: ${daysAvailable}
+Daily minutes: ${dailyMinutes}
+
+Return ONLY the JSON object.`,
+        },
+      ],
+    })
+
+    const text =
+      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
+    const match = text.match(/\{[\s\S]*\}/)
+    const parsed = (match ? safeJSON<DifficultyJSON>(match[0]) : safeJSON<DifficultyJSON>(text)) ?? null
+
+    if (!parsed || !parsed.level) {
+      res.status(200).json({ ...neutralDifficulty(daysAvailable, dailyMinutes), isFallback: true, reason: "parse_failed" })
+      return
+    }
+
+    // Normalize: clamp score, coerce types, accept either ISO date or null.
+    const clean = {
+      level: normalizeLevel(parsed.level),
+      score: clampNumber(parsed.score, 0, 100, 50),
+      message: typeof parsed.message === "string" ? parsed.message.trim() : "",
+      suggestion: typeof parsed.suggestion === "string" ? parsed.suggestion.trim() : "",
+      suggestedDeadline:
+        typeof parsed.suggestedDeadline === "string" && parsed.suggestedDeadline.length >= 10
+          ? new Date(parsed.suggestedDeadline).toISOString()
+          : undefined,
+      suggestedGoal:
+        typeof parsed.suggestedGoal === "string" && parsed.suggestedGoal.length > 0
+          ? parsed.suggestedGoal.trim()
+          : undefined,
+      confidence: clampNumber(parsed.confidence, 0, 1, 0.6),
+    }
+    res.status(200).json(clean)
+  } catch (err) {
+    console.error("lara analyze-difficulty:", err)
+    res.status(200).json({ ...neutralDifficulty(daysAvailable, dailyMinutes), isFallback: true, reason: "request_failed" })
+  }
+}
+
+function safeJSON<T>(s: string): T | null {
+  try {
+    return JSON.parse(s) as T
+  } catch {
+    return null
+  }
+}
+
+function clampNumber(n: unknown, min: number, max: number, fallback: number): number {
+  const v = typeof n === "number" ? n : Number(n)
+  if (!Number.isFinite(v)) return fallback
+  return Math.max(min, Math.min(max, v))
+}
+
+function normalizeLevel(v: unknown): "too_easy" | "realistic" | "ambitious" | "unrealistic" {
+  const s = String(v || "").toLowerCase()
+  if (s === "too_easy" || s === "realistic" || s === "ambitious" || s === "unrealistic") return s
+  return "realistic"
 }

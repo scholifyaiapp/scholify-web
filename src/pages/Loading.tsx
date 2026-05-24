@@ -17,6 +17,7 @@ interface PlanState {
   goal?: string
   deadline?: string | null
   dailyMinutes?: number
+  difficultyLevel?: "too_easy" | "realistic" | "ambitious" | "unrealistic" | null
 }
 
 const MESSAGES = [
@@ -191,6 +192,7 @@ export default function Loading() {
         dailyMinutes: inputs.dailyMinutes ?? 20,
         userId: user?.id,
         weekNumber: 1,
+        difficultyLevel: inputs.difficultyLevel ?? null,
       })
       const [data] = await Promise.all([apiCall, delay(4000)])
       const tasks = Array.isArray(data.tasks) ? data.tasks : []
