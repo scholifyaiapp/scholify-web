@@ -40,6 +40,7 @@ import CommunityOptInCard, { shouldShowOptInPrompt } from "@/components/Communit
 import IntegrationStrip from "@/components/IntegrationStrip"
 import SmartSuggestions from "@/components/SmartSuggestions"
 import { ChallengeWidget } from "@/components/WeeklyChallenge"
+import PhotoEvidence from "@/components/PhotoEvidence"
 import { LevelUpOverlay } from "@/components/XPBar"
 import { applyEvent, recordTaskCompletionTime, type LevelDef } from "@/lib/challenges-storage"
 import WelcomeChecklist, { shouldShowWelcomeChecklist } from "@/components/WelcomeChecklist"
@@ -852,6 +853,16 @@ export default function Dashboard() {
             {status === "done" && "✅ Done for today!"}
           </motion.button>
         </motion.div>
+
+          {/* Optional photo evidence — pill below the Mark Complete button */}
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
+            <PhotoEvidence
+              alwaysShow
+              dayNumber={currentDay}
+              taskTitle={task.task_title}
+              goal={goal}
+            />
+          </div>
 
         {/* Lara message card */}
         <motion.div

@@ -177,6 +177,18 @@ export const api = {
       reason?: string
     }>("/api/challenges?action=generate", params),
 
+  analyzePhoto: (params: {
+    goal: string
+    taskTitle: string
+    caption: string
+    imageBase64: string
+    mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif"
+  }) =>
+    post<{ comment: string; isFallback?: boolean; reason?: string }>(
+      "/api/lara?action=analyze-photo",
+      params,
+    ),
+
   analyzeDifficulty: (params: {
     goal: string
     deadline: string

@@ -25,6 +25,7 @@ import { readPlan, readProgress } from "@/lib/scholify-data"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LearningStyleCard from "@/components/LearningStyleCard"
+import PhotoGallery from "@/components/PhotoGallery"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Progress screen. Stats, streak heatmap, charts,
@@ -1090,6 +1091,11 @@ export default function Progress() {
           pct={goalPct}
           streak={progress.streak}
         />
+
+        {/* Section 5b — photo journal */}
+        <div style={{ marginTop: 24 }}>
+          <PhotoGallery />
+        </div>
 
         {/* Section 6 — achievements */}
         <Achievements streak={progress.streak} sessions={sessions} />

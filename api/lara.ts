@@ -43,8 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "chat") return handleChat(body, res)
   if (action === "analyze-patterns") return handleAnalyze(body, res)
   if (action === "analyze-difficulty") return handleDifficulty(body, res)
+  if (action === "analyze-photo") return handlePhoto(body, res)
   res.status(400).json({
-    error: "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty.",
+    error:
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo.",
   })
 }
 
@@ -526,4 +528,117 @@ function normalizeLevel(v: unknown): "too_easy" | "realistic" | "ambitious" | "u
   const s = String(v || "").toLowerCase()
   if (s === "too_easy" || s === "realistic" || s === "ambitious" || s === "unrealistic") return s
   return "realistic"
+}
+
+/* ── Photo evidence analyzer ─────────────────────────────────────────── */
+
+const PHOTO_SYSTEM = `You are Lara, an honest, warm learning coach reviewing
+a photo a learner uploaded as proof of their daily practice.
+
+Rules:
+1. Reply with 1–2 sentences. Never longer.
+2. Reference one *specific* thing you can see in the photo when possible
+   (the page, the hands, the line of text, the dish, the posture). If
+   the image is unclear, say what you can tell and what you would notice
+   next time.
+3. Connect what you see to the goal and today's task — but only if it
+   honestly matches the photo.
+4. Never use "amazing", "incredible", "you got this", "keep it up".
+5. Sound like a coach who cares about results, not a cheerleader.`
+
+type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif"
+
+function normalizeMedia(v: unknown): ImageMediaType {
+  const s = String(v || "").toLowerCase().trim()
+  if (s === "image/jpeg" || s === "image/jpg") return "image/jpeg"
+  if (s === "image/png") return "image/png"
+  if (s === "image/webp") return "image/webp"
+  if (s === "image/gif") return "image/gif"
+  return "image/jpeg"
+}
+
+function fallbackPhotoComment(goal: string, taskTitle: string, caption: string): string {
+  const cap = caption.trim()
+  if (cap) {
+    return `Logged: "${cap}". The proof matters — showing up beats explaining. Tomorrow's task is already lined up.`
+  }
+  return `Evidence saved for "${taskTitle}". Concrete proof of "${goal}" is the only thing that compounds.`
+}
+
+async function handlePhoto(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const goal = String(body.goal || "your goal")
+  const taskTitle = String(body.taskTitle || "today's task")
+  const caption = String(body.caption || "").slice(0, 400)
+  const imageBase64Raw = String(body.imageBase64 || "")
+  const mediaType = normalizeMedia(body.mediaType)
+
+  // Strip a "data:image/...;base64," prefix if the client sent one.
+  const imageBase64 = imageBase64Raw.includes(",")
+    ? imageBase64Raw.split(",", 2)[1] || ""
+    : imageBase64Raw
+
+  if (!imageBase64) {
+    res.status(400).json({ error: "Missing imageBase64." })
+    return
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.status(200).json({
+      comment: fallbackPhotoComment(goal, taskTitle, caption),
+      isFallback: true,
+      reason: "missing_anthropic_key",
+    })
+    return
+  }
+
+  // Cheap size guard — the SDK will reject huge payloads anyway.
+  if (imageBase64.length > 6_500_000) {
+    res.status(200).json({
+      comment: fallbackPhotoComment(goal, taskTitle, caption),
+      isFallback: true,
+      reason: "image_too_large",
+    })
+    return
+  }
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: SONNET,
+      max_tokens: 180,
+      system: [{ type: "text", text: PHOTO_SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: imageBase64 },
+            },
+            {
+              type: "text",
+              text: `Goal: ${goal}
+Today's task: ${taskTitle}
+Learner's caption: "${caption || "(none)"}"
+
+Give your comment now. 1–2 sentences. Specific.`,
+            },
+          ],
+        },
+      ],
+    })
+    const text =
+      completion.content[0]?.type === "text"
+        ? completion.content[0].text.trim()
+        : fallbackPhotoComment(goal, taskTitle, caption)
+    res.status(200).json({ comment: text })
+  } catch (err) {
+    console.error("lara analyze-photo:", err)
+    res.status(200).json({
+      comment: fallbackPhotoComment(goal, taskTitle, caption),
+      isFallback: true,
+      reason: "request_failed",
+    })
+  }
 }
