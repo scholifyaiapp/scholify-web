@@ -154,6 +154,29 @@ export const api = {
       reason?: string
     }>("/api/lara?action=analyze-patterns", params),
 
+  refineChallenges: (params: {
+    goal: string
+    weekNumber: number
+    year: number
+    dailyMinutes: number
+    streak?: number
+    seeds: {
+      id: string
+      type: string
+      title: string
+      description: string
+      targetValue: number
+      unit: string
+      xpReward: number
+      difficulty: string
+    }[]
+  }) =>
+    post<{
+      challenges: { id: string; title: string; description: string }[]
+      isFallback?: boolean
+      reason?: string
+    }>("/api/challenges?action=generate", params),
+
   analyzeDifficulty: (params: {
     goal: string
     deadline: string

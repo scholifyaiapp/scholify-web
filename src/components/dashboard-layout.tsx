@@ -8,6 +8,7 @@ import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import NotificationBell from "@/components/NotificationBell"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
+import XPBar from "@/components/XPBar"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in screens (Dashboard, Progress…).
@@ -49,6 +50,7 @@ export const NAV: NavItemDef[] = [
   { icon: "🌍", label: "Community", to: "/community", notifyKinds: ["community"] },
   { icon: "🏢", label: "Teams", to: "/teams" },
   { icon: "🏆", label: "Achievements", to: "/achievements", notifyKinds: ["quiz"] },
+  { icon: "⚔️", label: "Challenges", to: "/challenges" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
 ]
 
@@ -371,6 +373,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             🛡 {progress.shields} shield{progress.shields === 1 ? "" : "s"}
           </div>
         </motion.div>
+
+        {/* XP + level */}
+        <XPBar variant="sidebar" />
 
         {/* Nav */}
         <nav style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 4 }}>

@@ -39,6 +39,9 @@ import {
 import CommunityOptInCard, { shouldShowOptInPrompt } from "@/components/CommunityOptInCard"
 import IntegrationStrip from "@/components/IntegrationStrip"
 import SmartSuggestions from "@/components/SmartSuggestions"
+import { ChallengeWidget } from "@/components/WeeklyChallenge"
+import { LevelUpOverlay } from "@/components/XPBar"
+import { applyEvent, recordTaskCompletionTime, type LevelDef } from "@/lib/challenges-storage"
 import WelcomeChecklist, { shouldShowWelcomeChecklist } from "@/components/WelcomeChecklist"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
@@ -141,6 +144,7 @@ export default function Dashboard() {
   const [showNotifPrompt, setShowNotifPrompt] = useState(false)
   const [showCommunityOptIn, setShowCommunityOptIn] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [levelUp, setLevelUp] = useState<LevelDef | null>(null)
 
   useEffect(() => {
     if (shouldShowWelcomeChecklist()) setShowWelcome(true)
@@ -335,6 +339,28 @@ export default function Dashboard() {
     // paywall modal — if any — closes first).
     if (shouldShowOptInPrompt(next.streak) && !hasShownOptInPrompt()) {
       window.setTimeout(() => setShowCommunityOptIn(true), 1800)
+    }
+
+    // XP + challenge progress.
+    {
+      const completionMeta = recordTaskCompletionTime(new Date())
+      const result = applyEvent({
+        kind: "task_complete",
+        minutes: task.estimated_minutes || dailyMinutes,
+        sameTime: completionMeta.sameTime,
+        morning: completionMeta.morning,
+        newStreak: next.streak,
+      })
+      if (result.xpGained > 0) {
+        toast.success(`+${result.xpGained} XP ⚡`)
+      }
+      for (const c of result.completedChallenges) {
+        toast.success(`Challenge complete! +${c.xpReward} XP ⚡`)
+      }
+      if (result.leveledUp && result.newLevel) {
+        // Defer so the existing celebrations don't fight for the screen.
+        window.setTimeout(() => setLevelUp(result.newLevel ?? null), 1200)
+      }
     }
 
     // Invite the user to turn on daily reminders (once, after a completion).
@@ -912,6 +938,11 @@ export default function Dashboard() {
           <SmartSuggestions />
         </div>
 
+        {/* This week's challenges (compact) */}
+        <div style={{ marginTop: 20 }}>
+          <ChallengeWidget />
+        </div>
+
         {/* Accountability partner — only renders when a partnership is active */}
         <div style={{ marginTop: 20 }}>
           <PartnerCard variant="compact" />
@@ -964,6 +995,8 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {showWelcome && <WelcomeChecklist onDismiss={() => setShowWelcome(false)} />}
+
+      {levelUp && <LevelUpOverlay newLevel={levelUp} onClose={() => setLevelUp(null)} />}
 
       <AnimatePresence>
         {showCommunityOptIn && (

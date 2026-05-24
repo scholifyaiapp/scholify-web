@@ -33,6 +33,7 @@ const Rooms = lazy(() => import("@/pages/Rooms"))
 const Room = lazy(() => import("@/pages/Room"))
 const RoomJoin = lazy(() => import("@/pages/RoomJoin"))
 const Community = lazy(() => import("@/pages/Community"))
+const Challenges = lazy(() => import("@/pages/Challenges"))
 const Teams = lazy(() => import("@/pages/Teams"))
 const TeamDashboard = lazy(() => import("@/pages/TeamDashboard"))
 const TeamAdmin = lazy(() => import("@/pages/TeamAdmin"))
@@ -165,6 +166,7 @@ export default function App() {
       <Route path="/rooms/:id" element={<RequireOnboarded><Page name="Room"><Room /></Page></RequireOnboarded>} />
       <Route path="/join/:code" element={<Page name="RoomJoin"><RoomJoin /></Page>} />
       <Route path="/community" element={<RequireOnboarded><Page name="Community" fallback={<CommunityFallback />}><Community /></Page></RequireOnboarded>} />
+      <Route path="/challenges" element={<RequireOnboarded><Page name="Challenges"><Challenges /></Page></RequireOnboarded>} />
       <Route path="/teams" element={<RequireOnboarded><Page name="Teams"><Teams /></Page></RequireOnboarded>} />
       <Route path="/teams/:id" element={<RequireOnboarded><Page name="TeamDashboard"><TeamDashboard /></Page></RequireOnboarded>} />
       <Route path="/teams/:id/admin" element={<RequireOnboarded><Page name="TeamAdmin"><TeamAdmin /></Page></RequireOnboarded>} />
