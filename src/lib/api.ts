@@ -177,6 +177,30 @@ export const api = {
       reason?: string
     }>("/api/challenges?action=generate", params),
 
+  generateTree: (params: {
+    milestone: number
+    stage:
+      | "seedling"
+      | "sapling"
+      | "young_tree"
+      | "growing"
+      | "blooming"
+      | "mature"
+      | "ancient"
+      | "legendary"
+      | "mythic"
+    userName: string
+    goal: string
+  }) =>
+    post<{
+      url: string | null
+      milestone?: number
+      stage?: string
+      isFallback?: boolean
+      reason?: string
+      detail?: string
+    }>("/api/lara?action=generate-tree", params),
+
   analyzePhoto: (params: {
     goal: string
     taskTitle: string

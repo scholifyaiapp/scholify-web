@@ -44,9 +44,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "analyze-patterns") return handleAnalyze(body, res)
   if (action === "analyze-difficulty") return handleDifficulty(body, res)
   if (action === "analyze-photo") return handlePhoto(body, res)
+  if (action === "generate-tree") return handleTree(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree.",
   })
 }
 
@@ -528,6 +529,114 @@ function normalizeLevel(v: unknown): "too_easy" | "realistic" | "ambitious" | "u
   const s = String(v || "").toLowerCase()
   if (s === "too_easy" || s === "realistic" || s === "ambitious" || s === "unrealistic") return s
   return "realistic"
+}
+
+/* ── Streak tree generation (Fal.ai FLUX schnell, optional) ──────────── */
+
+type TreeStageKey =
+  | "seedling"
+  | "sapling"
+  | "young_tree"
+  | "growing"
+  | "blooming"
+  | "mature"
+  | "ancient"
+  | "legendary"
+  | "mythic"
+
+const TREE_PROMPTS: Record<TreeStageKey, string> = {
+  seedling: `Minimalist illustration of a tiny green seedling sprouting from dark soil. Single stem, two small leaves. Clean dark navy background, soft glow. Flat design, gentle colors. Hopeful and small. App icon quality illustration.`,
+  sapling: `Minimalist illustration of a young sapling tree. Small trunk, 6-8 bright green leaves. Visible small roots. Clean dark navy background. Flat design, vibrant greens and earth tones. Growing and promising.`,
+  young_tree: `Minimalist illustration of a young tree, knee-height. Defined trunk with bark texture. Full leafy crown, 15-20 leaves. Deep roots visible. Clean dark navy background. Flat design style. Strong and growing.`,
+  growing: `Minimalist illustration of a growing tree, waist-height. Round full canopy with dozens of leaves. Small flower buds beginning to appear. Clean dark navy background. Flat design, lush greens.`,
+  blooming: `Beautiful minimalist illustration of a full tree in full bloom. Round lush canopy, pink and white flowers mixed with green leaves. Wide trunk, visible root system. Clean dark navy background. Flat design. Joyful and full.`,
+  mature: `Minimalist illustration of a strong mature tree. Thick trunk, wide spread canopy. Deep green leaves, a few fruits beginning. Ancient look but vigorous. Clean dark navy background. Flat design, authoritative.`,
+  ancient: `Minimalist illustration of an ancient oak tree. Massive trunk with character, enormous canopy. Multiple fruit clusters. Deep extensive root system. Clean dark navy background. Flat design. Majestic and wise.`,
+  legendary: `Minimalist illustration of a legendary ancient tree. Enormous gnarled trunk, sky-wide canopy. Golden fruits hanging heavy. Roots spanning wide. Fireflies around the tree. Clean dark navy background. Magical flat design. Extraordinary and mythical.`,
+  mythic: `Minimalist illustration of a mythic world tree. Trunk so wide it fills the frame. Canopy touching clouds. Stars visible through branches. Golden glowing fruits. Clean deep night-sky background. Epic flat design. Once-in-a-lifetime beauty.`,
+}
+
+function normalizeStage(v: unknown): TreeStageKey {
+  const s = String(v || "").toLowerCase()
+  if (
+    s === "seedling" ||
+    s === "sapling" ||
+    s === "young_tree" ||
+    s === "growing" ||
+    s === "blooming" ||
+    s === "mature" ||
+    s === "ancient" ||
+    s === "legendary" ||
+    s === "mythic"
+  )
+    return s
+  return "seedling"
+}
+
+function goalContext(goal: string): string {
+  const g = goal.toLowerCase()
+  if (/ielts|toefl|exam|cefr/.test(g)) return "Academic, studious atmosphere. A faint open book glowing nearby."
+  if (/python|javascript|coding|programming|leetcode/.test(g))
+    return "Subtle circuit patterns etched into the bark. Tech-inspired sparkle."
+  if (/design|figma|ui|ux/.test(g)) return "Geometric perfect symmetry. Designer aesthetic, balanced composition."
+  if (/spanish|french|german|japanese|korean|language/.test(g))
+    return "A trail of small written letters drifting across the wind near the canopy."
+  if (/music|piano|guitar/.test(g)) return "Faint musical notes drifting through the leaves."
+  if (/fitness|run|workout|yoga/.test(g)) return "A path winding past the trunk into the distance."
+  return ""
+}
+
+async function handleTree(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const milestone = Math.max(1, Math.round(Number(body.milestone) || 1))
+  const stage = normalizeStage(body.stage)
+  const userName = String(body.userName || "").trim().slice(0, 40)
+  const goal = String(body.goal || "your goal").slice(0, 200)
+
+  const falKey = process.env.FAL_KEY || process.env.FAL_API_KEY
+  if (!falKey) {
+    res.status(200).json({ url: null, isFallback: true, reason: "missing_fal_key" })
+    return
+  }
+
+  const context = goalContext(goal)
+  const namePlaque =
+    stage === "mythic" && userName
+      ? ` A small name plaque at the base of the trunk reads "${userName}".`
+      : ""
+  const prompt = `${TREE_PROMPTS[stage]}${namePlaque ? namePlaque : ""} ${context} Style: flat design illustration, clean edges, minimal, app icon quality, single subject centered, no text${stage === "mythic" && userName ? ` except the name plaque` : ""}.`
+
+  try {
+    // Direct Fal API call — avoids adding the SDK as a runtime dep.
+    const r = await fetch("https://fal.run/fal-ai/flux/schnell", {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${falKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        image_size: "square_hd",
+        num_inference_steps: 4,
+        num_images: 1,
+        enable_safety_checker: true,
+      }),
+    })
+    if (!r.ok) {
+      const detail = await r.text().catch(() => "")
+      res.status(200).json({ url: null, isFallback: true, reason: `fal_${r.status}`, detail: detail.slice(0, 200) })
+      return
+    }
+    const data = (await r.json().catch(() => null)) as { images?: Array<{ url?: string }> } | null
+    const url = data?.images?.[0]?.url
+    if (!url) {
+      res.status(200).json({ url: null, isFallback: true, reason: "no_image_in_response" })
+      return
+    }
+    res.status(200).json({ url, milestone, stage })
+  } catch (err) {
+    console.error("lara generate-tree:", err)
+    res.status(200).json({ url: null, isFallback: true, reason: "request_failed" })
+  }
 }
 
 /* ── Photo evidence analyzer ─────────────────────────────────────────── */

@@ -43,6 +43,12 @@ import { ChallengeWidget } from "@/components/WeeklyChallenge"
 import PhotoEvidence from "@/components/PhotoEvidence"
 import { LevelUpOverlay } from "@/components/XPBar"
 import { applyEvent, recordTaskCompletionTime, type LevelDef } from "@/lib/challenges-storage"
+import TreeGrowthOverlay from "@/components/TreeGrowthOverlay"
+import {
+  ensureTreeForMilestone,
+  MILESTONES as TREE_MILESTONES,
+  milestoneHit as treeMilestoneHit,
+} from "@/lib/streak-tree-storage"
 import WelcomeChecklist, { shouldShowWelcomeChecklist } from "@/components/WelcomeChecklist"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
@@ -146,6 +152,7 @@ export default function Dashboard() {
   const [showCommunityOptIn, setShowCommunityOptIn] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
   const [levelUp, setLevelUp] = useState<LevelDef | null>(null)
+  const [treeMilestone, setTreeMilestone] = useState<number | null>(null)
 
   useEffect(() => {
     if (shouldShowWelcomeChecklist()) setShowWelcome(true)
@@ -340,6 +347,26 @@ export default function Dashboard() {
     // paywall modal — if any — closes first).
     if (shouldShowOptInPrompt(next.streak) && !hasShownOptInPrompt()) {
       window.setTimeout(() => setShowCommunityOptIn(true), 1800)
+    }
+
+    // Streak tree milestone — fire-and-forget Fal generation, show
+    // the growth overlay regardless (SVG fallback if no key).
+    {
+      const hit = treeMilestoneHit(progress.streak, next.streak)
+      if (hit) {
+        const meta = (user?.user_metadata || {}) as { first_name?: string; last_name?: string }
+        const name = (meta.first_name || "").trim() || user?.email?.split("@")[0] || "Learner"
+        ensureTreeForMilestone({
+          milestone: hit,
+          userName: name,
+          goal,
+        }).then(() => {
+          window.setTimeout(() => setTreeMilestone(hit), 1600)
+        })
+        // Light a toast immediately so the user knows something is coming.
+        toast.success("Your streak tree grew 🌳")
+      }
+      void TREE_MILESTONES // reference so import isn't unused
     }
 
     // XP + challenge progress.
@@ -1008,6 +1035,10 @@ export default function Dashboard() {
       {showWelcome && <WelcomeChecklist onDismiss={() => setShowWelcome(false)} />}
 
       {levelUp && <LevelUpOverlay newLevel={levelUp} onClose={() => setLevelUp(null)} />}
+
+      {treeMilestone !== null && (
+        <TreeGrowthOverlay milestone={treeMilestone} onClose={() => setTreeMilestone(null)} />
+      )}
 
       <AnimatePresence>
         {showCommunityOptIn && (

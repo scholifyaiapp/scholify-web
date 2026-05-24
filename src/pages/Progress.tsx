@@ -26,6 +26,7 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LearningStyleCard from "@/components/LearningStyleCard"
 import PhotoGallery from "@/components/PhotoGallery"
+import StreakTree from "@/components/StreakTree"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Progress screen. Stats, streak heatmap, charts,
@@ -1091,6 +1092,34 @@ export default function Progress() {
           pct={goalPct}
           streak={progress.streak}
         />
+
+        {/* Section 5a — living streak tree */}
+        <div
+          style={{
+            marginTop: 24,
+            padding: 20,
+            borderRadius: 18,
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <StreakTree variant="compact" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12, color: "var(--sch-tx-3)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+              Living streak tree
+            </p>
+            <p style={{ marginTop: 4, fontSize: 16, fontWeight: 700, color: "var(--sch-text)" }}>
+              Your tree grows with every day you show up.
+            </p>
+            <p style={{ marginTop: 4, fontSize: 13, color: "var(--sch-tx-2)" }}>
+              Tap the tree to view the full timeline and share your stage.
+            </p>
+          </div>
+        </div>
 
         {/* Section 5b — photo journal */}
         <div style={{ marginTop: 24 }}>

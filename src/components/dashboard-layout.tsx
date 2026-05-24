@@ -9,6 +9,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import NotificationBell from "@/components/NotificationBell"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
 import XPBar from "@/components/XPBar"
+import StreakTree from "@/components/StreakTree"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in screens (Dashboard, Progress…).
@@ -42,6 +43,7 @@ type NavItemDef = {
 export const NAV: NavItemDef[] = [
   { icon: "🏠", label: "Today", to: "/dashboard" },
   { icon: "🗺️", label: "Roadmap", to: "/roadmap" },
+  { icon: "🌳", label: "Streak Tree", to: "/tree" },
   { icon: "📈", label: "Progress", to: "/progress" },
   { icon: "🎯", label: "My Goals", to: "/goals" },
   { icon: "📚", label: "Resources", to: "/resources" },
@@ -374,6 +376,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             🛡 {progress.shields} shield{progress.shields === 1 ? "" : "s"}
           </div>
         </motion.div>
+
+        {/* Living streak tree */}
+        <StreakTree variant="sidebar" />
 
         {/* XP + level */}
         <XPBar variant="sidebar" />
