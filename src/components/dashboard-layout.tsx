@@ -41,6 +41,7 @@ type NavItemDef = {
 
 export const NAV: NavItemDef[] = [
   { icon: "🏠", label: "Today", to: "/dashboard" },
+  { icon: "🗺️", label: "Roadmap", to: "/roadmap" },
   { icon: "📈", label: "Progress", to: "/progress" },
   { icon: "🎯", label: "My Goals", to: "/goals" },
   { icon: "📚", label: "Resources", to: "/resources" },
