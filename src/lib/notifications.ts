@@ -6,7 +6,7 @@
  *
  * Sending pushes requires VAPID keys + a server. This file handles the
  * client half: permission, subscribe, unsubscribe. The subscription is
- * posted to /api/save-push-subscription for the server to use later.
+ * posted to /api/push-subscription?action=save for the server to use later.
  */
 
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
@@ -56,7 +56,7 @@ export async function subscribeToPush(userId?: string): Promise<boolean> {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
       }))
 
-    await fetch("/api/save-push-subscription", {
+    await fetch("/api/push-subscription?action=save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, subscription: subscription.toJSON() }),
@@ -77,7 +77,7 @@ export async function unsubscribeFromPush(userId?: string): Promise<void> {
     const subscription = await registration.pushManager.getSubscription()
     if (subscription) {
       await subscription.unsubscribe()
-      await fetch("/api/remove-push-subscription", {
+      await fetch("/api/push-subscription?action=remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
