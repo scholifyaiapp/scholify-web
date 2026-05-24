@@ -274,10 +274,9 @@ function PhotoModal({ onClose, dayNumber, taskTitle, goal }: PhotoModalProps) {
             ref={fileRef}
             type="file"
             accept="image/*"
-            // The capture attribute hints mobile browsers to open the camera
-            // first. Falls back to standard file picker on desktop / when
-            // no camera is available.
-            // @ts-expect-error capture is non-standard on React's typings
+            // `capture` hints mobile browsers to open the camera first;
+            // desktop falls back to the file picker. React's typings now
+            // include this attribute on input, so no @ts-expect-error.
             capture="environment"
             style={{ display: "none" }}
             onChange={onFilePicked}

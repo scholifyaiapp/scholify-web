@@ -251,7 +251,7 @@ function DesktopRoadmap({
 }) {
   return (
     <div
-      ref={scrollerRef}
+      ref={scrollerRef as React.RefObject<HTMLDivElement>}
       className="dash-scroll"
       style={{
         overflowX: "auto",
