@@ -138,4 +138,22 @@ export const api = {
       reason?: string
       failures?: { email: string; reason: string }[]
     }>("/api/team-invite", params),
+
+  getLeaderboard: async (params: { category: string; weekOffset?: number; userId?: string }) => {
+    const qs = new URLSearchParams()
+    qs.set("category", params.category)
+    if (params.weekOffset != null) qs.set("weekOffset", String(params.weekOffset))
+    if (params.userId) qs.set("userId", params.userId)
+    const r = await fetch(`${API_BASE}/api/leaderboard?${qs.toString()}`)
+    if (!r.ok) throw new Error(`Leaderboard request failed (${r.status})`)
+    return r.json() as Promise<{
+      top10: { user_id: string; display_name: string | null; sessions: number; streak: number }[]
+      yourRank: { rank: number; sessions: number } | null
+      category: string
+      weekStart: string
+      weekEnd: string
+      isFallback?: boolean
+      reason?: string
+    }>
+  },
 }

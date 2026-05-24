@@ -31,6 +31,12 @@ import {
   writePartnerSnapshot,
 } from "@/lib/partner-storage"
 import { notifyRoomsOnCompletion } from "@/lib/rooms-storage"
+import {
+  displayNameFromAuth,
+  hasShownOptInPrompt,
+  maybeAutoPost,
+} from "@/lib/community-storage"
+import CommunityOptInCard, { shouldShowOptInPrompt } from "@/components/CommunityOptInCard"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
 import { addResource, readActivePlanId } from "@/lib/scholify-data"
@@ -130,6 +136,7 @@ export default function Dashboard() {
   const { showPaywall, paywallType, checkPaywallTrigger, triggerFeaturePaywall, closePaywall } =
     usePaywall()
   const [showNotifPrompt, setShowNotifPrompt] = useState(false)
+  const [showCommunityOptIn, setShowCommunityOptIn] = useState(false)
 
   // Surface a streak-milestone paywall on load (7 / 14 / 21-day streaks).
   useEffect(() => {
@@ -285,9 +292,10 @@ export default function Dashboard() {
     // A new completion may cross a 7 / 14 / 21-day streak milestone.
     checkPaywallTrigger(user?.id)
 
-    // Broadcast the completion to every Study Room this user is part of.
+    // Broadcast the completion to every Study Room this user is part of,
+    // and to the Community feed when the user has opted in.
     {
-      const meta = (user?.user_metadata || {}) as { first_name?: string }
+      const meta = (user?.user_metadata || {}) as { first_name?: string; last_name?: string }
       const name = (meta.first_name || "").trim() || user?.email?.split("@")[0] || "Someone"
       notifyRoomsOnCompletion({
         userId: user?.id || "demo-user",
@@ -295,6 +303,30 @@ export default function Dashboard() {
         dayNumber: currentDay,
         streak: next.streak,
       })
+
+      // Compute whether this completion closes a 7-day week (any "Day N
+      // where N % 7 === 0" or the last day of the plan).
+      const weekJustCompleted =
+        currentDay > 0 && currentDay % 7 === 0 ? Math.ceil(currentDay / 7) : undefined
+      maybeAutoPost({
+        userId: user?.id || "demo-user",
+        authorName: displayNameFromAuth({
+          firstName: meta.first_name,
+          lastName: meta.last_name,
+          email: user?.email || undefined,
+        }),
+        goal,
+        newStreak: next.streak,
+        completedDay: currentDay,
+        totalDays: totalDays,
+        weekJustCompleted,
+      })
+    }
+
+    // After Day 7+, one-time community opt-in prompt (deferred so the
+    // paywall modal — if any — closes first).
+    if (shouldShowOptInPrompt(next.streak) && !hasShownOptInPrompt()) {
+      window.setTimeout(() => setShowCommunityOptIn(true), 1800)
     }
 
     // Invite the user to turn on daily reminders (once, after a completion).
@@ -910,6 +942,33 @@ export default function Dashboard() {
       <AnimatePresence>
         {showNotifPrompt && (
           <NotificationPrompt userId={user?.id} onClose={() => setShowNotifPrompt(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCommunityOptIn && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(5,5,8,0.7)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              zIndex: 100,
+              display: "grid",
+              placeItems: "center",
+              padding: 16,
+            }}
+            onClick={() => setShowCommunityOptIn(false)}
+          >
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 520 }}>
+              <CommunityOptInCard onChange={() => setShowCommunityOptIn(false)} />
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
