@@ -22,6 +22,7 @@ import { loadCalendarAccount, syncSingleTask } from "@/lib/calendar"
 import DeadlineCountdown from "@/components/DeadlineCountdown"
 import { recalibratePlan, shouldAutoRecalibrate } from "@/lib/recalibration"
 import FocusTimer from "@/components/FocusTimer"
+import { WeeklyQuizBanner } from "@/components/WeeklyQuiz"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
 import { addResource, readActivePlanId } from "@/lib/scholify-data"
@@ -494,6 +495,9 @@ export default function Dashboard() {
             />
           </div>
         )}
+
+        {/* Weekly challenge banner — shows on Sundays when this week's quiz is unfinished */}
+        <WeeklyQuizBanner />
 
         {/* Today's task card */}
         <motion.div

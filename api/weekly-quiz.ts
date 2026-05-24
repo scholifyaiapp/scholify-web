@@ -20,15 +20,19 @@ interface QuizQuestion {
   explanation: string
 }
 
-const SYSTEM = `You write short multiple-choice quizzes that test what a
-learner actually studied. Return ONLY valid JSON, no markdown, no prose:
+const SYSTEM = `Generate a quiz ONLY about what the user specifically
+studied this week. Questions must test recall of actual concepts from
+their completed tasks — not general knowledge. Include exactly one
+"application" question where the user must apply what they learned to
+a new situation. Mix recall, understanding, and that one application
+question. Difficulty should be moderate — not too easy (boring), not too
+hard (discouraging). Return ONLY valid JSON, no markdown, no prose:
 {
   "questions": [
-    { "question": "text", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct": 0, "explanation": "max 20 words" }
+    { "question": "text", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct": 0, "explanation": "brief, max 20 words" }
   ]
 }
-Rules: exactly 5 questions, correct is the 0-3 index, not too easy and
-not impossible, no trick questions.`
+Rules: exactly 5 questions, correct is the 0-3 index, no trick questions.`
 
 function fallbackQuiz(goal: string, weekNumber: number) {
   return {
