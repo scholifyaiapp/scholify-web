@@ -123,4 +123,19 @@ export const api = {
       "/api/partner-invite",
       params,
     ),
+
+  teamInvite: (params: {
+    teamName: string
+    primaryColor?: string
+    logoUrl?: string
+    senderName: string
+    invites: { email: string; joinUrl: string }[]
+  }) =>
+    post<{
+      sent: number
+      total: number
+      isFallback?: boolean
+      reason?: string
+      failures?: { email: string; reason: string }[]
+    }>("/api/team-invite", params),
 }
