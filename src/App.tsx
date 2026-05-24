@@ -3,6 +3,12 @@ import { Suspense, lazy, useEffect } from "react"
 import SectionBoundary from "@/SectionBoundary"
 import { ProtectedRoute, RequireOnboarded, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
+import {
+  RoomCardSkeleton,
+  CommunityPostSkeleton,
+  GoalCardSkeleton,
+  ResourceCardSkeleton,
+} from "@/components/Skeleton"
 
 const Landing = lazy(() => import("@/pages/Landing"))
 const SignIn = lazy(() => import("@/pages/SignIn"))
@@ -35,13 +41,62 @@ const Privacy = lazy(() => import("@/pages/Privacy"))
 const Terms = lazy(() => import("@/pages/Terms"))
 const Support = lazy(() => import("@/pages/Support"))
 
-function Page({ name, children }: { name: string; children: React.ReactNode }) {
+function Page({
+  name,
+  children,
+  fallback = null,
+}: {
+  name: string
+  children: React.ReactNode
+  fallback?: React.ReactNode
+}) {
   return (
     <SectionBoundary name={name}>
-      <Suspense fallback={null}>
-        {children}
-      </Suspense>
+      <Suspense fallback={fallback}>{children}</Suspense>
     </SectionBoundary>
+  )
+}
+
+// Lightweight per-page skeleton fallbacks for the chunk-fetch window.
+function RoomsFallback() {
+  return (
+    <div style={{ padding: 24, display: "grid", gap: 16 }}>
+      <div style={{ height: 22, width: 180, background: "rgba(255,255,255,0.06)", borderRadius: 6 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+        <RoomCardSkeleton />
+        <RoomCardSkeleton />
+      </div>
+    </div>
+  )
+}
+
+function CommunityFallback() {
+  return (
+    <div style={{ padding: 24, display: "grid", gap: 12 }}>
+      <CommunityPostSkeleton />
+      <CommunityPostSkeleton />
+      <CommunityPostSkeleton />
+    </div>
+  )
+}
+
+function GoalsFallback() {
+  return (
+    <div style={{ padding: 24, display: "grid", gap: 14 }}>
+      <GoalCardSkeleton />
+      <GoalCardSkeleton />
+    </div>
+  )
+}
+
+function ResourcesFallback() {
+  return (
+    <div style={{ padding: 24, display: "grid", gap: 10 }}>
+      <ResourceCardSkeleton />
+      <ResourceCardSkeleton />
+      <ResourceCardSkeleton />
+      <ResourceCardSkeleton />
+    </div>
   )
 }
 
@@ -99,17 +154,17 @@ export default function App() {
       <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
       <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
-      <Route path="/goals" element={<RequireOnboarded><Page name="Goals"><Goals /></Page></RequireOnboarded>} />
-      <Route path="/resources" element={<RequireOnboarded><Page name="ResourceLibrary"><ResourceLibrary /></Page></RequireOnboarded>} />
+      <Route path="/goals" element={<RequireOnboarded><Page name="Goals" fallback={<GoalsFallback />}><Goals /></Page></RequireOnboarded>} />
+      <Route path="/resources" element={<RequireOnboarded><Page name="ResourceLibrary" fallback={<ResourcesFallback />}><ResourceLibrary /></Page></RequireOnboarded>} />
       <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
       <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><Settings /></Page></RequireOnboarded>} />
       <Route path="/quiz" element={<RequireOnboarded><Page name="Quiz"><Quiz /></Page></RequireOnboarded>} />
       <Route path="/partner" element={<RequireOnboarded><Page name="Partner"><Partner /></Page></RequireOnboarded>} />
       <Route path="/partner/join/:code" element={<Page name="PartnerJoin"><PartnerJoin /></Page>} />
-      <Route path="/rooms" element={<RequireOnboarded><Page name="Rooms"><Rooms /></Page></RequireOnboarded>} />
+      <Route path="/rooms" element={<RequireOnboarded><Page name="Rooms" fallback={<RoomsFallback />}><Rooms /></Page></RequireOnboarded>} />
       <Route path="/rooms/:id" element={<RequireOnboarded><Page name="Room"><Room /></Page></RequireOnboarded>} />
       <Route path="/join/:code" element={<Page name="RoomJoin"><RoomJoin /></Page>} />
-      <Route path="/community" element={<RequireOnboarded><Page name="Community"><Community /></Page></RequireOnboarded>} />
+      <Route path="/community" element={<RequireOnboarded><Page name="Community" fallback={<CommunityFallback />}><Community /></Page></RequireOnboarded>} />
       <Route path="/teams" element={<RequireOnboarded><Page name="Teams"><Teams /></Page></RequireOnboarded>} />
       <Route path="/teams/:id" element={<RequireOnboarded><Page name="TeamDashboard"><TeamDashboard /></Page></RequireOnboarded>} />
       <Route path="/teams/:id/admin" element={<RequireOnboarded><Page name="TeamAdmin"><TeamAdmin /></Page></RequireOnboarded>} />

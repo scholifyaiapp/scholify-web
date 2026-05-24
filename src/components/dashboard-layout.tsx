@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth"
 import { readPlan, readProgress } from "@/lib/scholify-data"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import NotificationBell from "@/components/NotificationBell"
+import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in screens (Dashboard, Progress…).
@@ -28,18 +30,37 @@ const LAYOUT_CSS = `
   .dash-scroll::-webkit-scrollbar-thumb { background: var(--sch-border); border-radius: 8px; }
 `
 
-export const NAV = [
+type NavItemDef = {
+  icon: string
+  label: string
+  to: string
+  /** Which notification source(s) light up the red dot on this item. */
+  notifyKinds?: NotificationKind[]
+}
+
+export const NAV: NavItemDef[] = [
   { icon: "🏠", label: "Today", to: "/dashboard" },
   { icon: "📈", label: "Progress", to: "/progress" },
   { icon: "🎯", label: "My Goals", to: "/goals" },
   { icon: "📚", label: "Resources", to: "/resources" },
   { icon: "💬", label: "Ask Lara", to: "/chat" },
-  { icon: "🏫", label: "Rooms", to: "/rooms" },
-  { icon: "👥", label: "Partner", to: "/partner" },
-  { icon: "🌍", label: "Community", to: "/community" },
+  { icon: "🏫", label: "Rooms", to: "/rooms", notifyKinds: ["room"] },
+  { icon: "👥", label: "Partner", to: "/partner", notifyKinds: ["partner"] },
+  { icon: "🌍", label: "Community", to: "/community", notifyKinds: ["community"] },
   { icon: "🏢", label: "Teams", to: "/teams" },
-  { icon: "🏆", label: "Achievements", to: "/achievements" },
+  { icon: "🏆", label: "Achievements", to: "/achievements", notifyKinds: ["quiz"] },
   { icon: "⚙️", label: "Settings", to: "/settings" },
+]
+
+// Mobile bottom bar — pick the 5 most important. "Social" merges Rooms +
+// Partner + Community by routing to /community (which links out to all
+// social surfaces from its filter pills + the notification bell).
+const MOBILE_NAV: NavItemDef[] = [
+  { icon: "🏠", label: "Today", to: "/dashboard" },
+  { icon: "🎯", label: "Goals", to: "/goals" },
+  { icon: "💬", label: "Lara", to: "/chat" },
+  { icon: "🌍", label: "Social", to: "/community", notifyKinds: ["partner", "room", "community"] },
+  { icon: "📈", label: "Progress", to: "/progress" },
 ]
 
 /* ── Shared bits ─────────────────────────────────────────────── */
@@ -123,10 +144,12 @@ function NavItem({
   item,
   active,
   badge,
+  unread,
 }: {
-  item: (typeof NAV)[number]
+  item: NavItemDef
   active: boolean
   badge?: boolean
+  unread?: number
 }) {
   return (
     <Link
@@ -190,6 +213,33 @@ function NavItem({
             aria-label="calendar connected"
           />
         )}
+        {unread != null && unread > 0 && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 360, damping: 22 }}
+            style={{
+              position: "absolute",
+              top: -4,
+              right: -8,
+              minWidth: 16,
+              height: 16,
+              padding: "0 4px",
+              borderRadius: 8,
+              background: IRIDESCENT,
+              color: "#fff",
+              fontSize: 9,
+              fontWeight: 700,
+              display: "grid",
+              placeItems: "center",
+              lineHeight: 1,
+              boxShadow: "0 4px 12px rgba(167,139,250,0.5)",
+            }}
+            aria-label={`${unread} unread`}
+          >
+            {unread > 9 ? "9+" : unread}
+          </motion.span>
+        )}
       </span>
       {item.label}
     </Link>
@@ -205,6 +255,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const plan = useMemo(readPlan, [])
   const [progress] = useState(readProgress)
   const [calendarConnected, setCalendarConnected] = useState(false)
+  const [notifTick, setNotifTick] = useState(0)
+  useEffect(() => subscribeNotifications(() => setNotifTick((t) => t + 1)), [])
+  const notif = useMemo(() => deriveNotifications(user?.id || "demo-user"), [user?.id, notifTick])
+
+  const unreadFor = (kinds?: NotificationKind[]): number => {
+    if (!kinds || kinds.length === 0) return 0
+    return kinds.reduce((sum, k) => sum + (notif.counts[k] || 0), 0)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -322,6 +380,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               item={item}
               active={location.pathname === item.to}
               badge={item.to === "/settings" && calendarConnected}
+              unread={unreadFor(item.notifyKinds)}
             />
           ))}
         </nav>
@@ -358,6 +417,41 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* ── Main content ── */}
       <main className="lg:pl-[240px]">
+        {/* Top bar — notification bell + (hidden on desktop) brand */}
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 25,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px clamp(16px, 4vw, 40px)",
+            background: "var(--sch-bg-blur, rgba(10,10,20,0.6))",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            borderBottom: "1px solid var(--sch-hairline, rgba(255,255,255,0.04))",
+          }}
+        >
+          <Link
+            to="/dashboard"
+            className="lg:invisible"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              textDecoration: "none",
+              color: "var(--sch-text)",
+              fontWeight: 700,
+              fontSize: 15,
+            }}
+          >
+            <span aria-hidden>✦</span>
+            Scholify
+          </Link>
+          <NotificationBell />
+        </div>
+
         <div className="px-4 py-5 lg:px-10 lg:py-8" style={{ paddingBottom: 110 }}>
           {children}
         </div>
@@ -382,9 +476,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           zIndex: 30,
         }}
       >
-        {NAV.map((item) => {
+        {MOBILE_NAV.map((item) => {
           const active = location.pathname === item.to
-          const showBadge = item.to === "/settings" && calendarConnected
+          const unread = unreadFor(item.notifyKinds)
           return (
             <Link
               key={item.to}
@@ -394,31 +488,43 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 3,
-                padding: "4px 8px",
+                padding: "6px 8px",
+                minHeight: 44, // tap target
+                minWidth: 56,
                 textDecoration: "none",
-                fontSize: 10,
+                fontSize: 11,
                 color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
                 fontWeight: active ? 600 : 400,
               }}
             >
-              <span style={{ position: "relative", fontSize: 18 }}>
+              <span style={{ position: "relative", fontSize: 20 }}>
                 {item.icon}
-                {showBadge && (
+                {unread > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 360, damping: 22 }}
                     style={{
                       position: "absolute",
-                      top: -1,
-                      right: -3,
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: "#34D399",
-                      boxShadow: "0 0 6px rgba(52,211,153,0.7)",
+                      top: -3,
+                      right: -7,
+                      minWidth: 14,
+                      height: 14,
+                      padding: "0 4px",
+                      borderRadius: 7,
+                      background: IRIDESCENT,
+                      color: "#fff",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      display: "grid",
+                      placeItems: "center",
+                      lineHeight: 1,
+                      boxShadow: "0 4px 10px rgba(167,139,250,0.45)",
                     }}
-                  />
+                    aria-label={`${unread} unread`}
+                  >
+                    {unread > 9 ? "9+" : unread}
+                  </motion.span>
                 )}
               </span>
               {item.label}

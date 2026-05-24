@@ -37,6 +37,8 @@ import {
   maybeAutoPost,
 } from "@/lib/community-storage"
 import CommunityOptInCard, { shouldShowOptInPrompt } from "@/components/CommunityOptInCard"
+import IntegrationStrip from "@/components/IntegrationStrip"
+import WelcomeChecklist, { shouldShowWelcomeChecklist } from "@/components/WelcomeChecklist"
 import SessionNotes from "@/components/SessionNotes"
 import SpeakingPractice from "@/components/SpeakingPractice"
 import { addResource, readActivePlanId } from "@/lib/scholify-data"
@@ -137,6 +139,11 @@ export default function Dashboard() {
     usePaywall()
   const [showNotifPrompt, setShowNotifPrompt] = useState(false)
   const [showCommunityOptIn, setShowCommunityOptIn] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  useEffect(() => {
+    if (shouldShowWelcomeChecklist()) setShowWelcome(true)
+  }, [])
 
   // Surface a streak-milestone paywall on load (7 / 14 / 21-day streaks).
   useEffect(() => {
@@ -894,6 +901,11 @@ export default function Dashboard() {
           </p>
         </motion.div>
 
+        {/* At-a-glance status across connected features */}
+        <div style={{ marginTop: 20 }}>
+          <IntegrationStrip />
+        </div>
+
         {/* Accountability partner — only renders when a partnership is active */}
         <div style={{ marginTop: 20 }}>
           <PartnerCard variant="compact" />
@@ -944,6 +956,8 @@ export default function Dashboard() {
           <NotificationPrompt userId={user?.id} onClose={() => setShowNotifPrompt(false)} />
         )}
       </AnimatePresence>
+
+      {showWelcome && <WelcomeChecklist onDismiss={() => setShowWelcome(false)} />}
 
       <AnimatePresence>
         {showCommunityOptIn && (

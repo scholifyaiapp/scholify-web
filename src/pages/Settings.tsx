@@ -18,6 +18,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
 import CalendarSync from "@/components/CalendarSync"
+import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -438,6 +439,7 @@ export default function Settings() {
   const plan = useMemo(readPlan, [])
   const [progress, setProgress] = useState<Progress>(readProgress)
   const [settings, setSettings] = useState<AppSettings>(readSettings)
+  const [communityOptIn, setCommunityOptIn] = useState(readCommunityOptIn)
 
   const [editingProfile, setEditingProfile] = useState(false)
   const [firstName, setFirstName] = useState((user?.user_metadata?.first_name as string) || "")
@@ -890,6 +892,59 @@ export default function Settings() {
 
         {/* ── Calendar Sync ── */}
         <CalendarSync />
+
+        {/* ── Privacy ── */}
+        <Section>
+          <span style={sectionHead}>🌍 Privacy</span>
+          <div style={{ marginTop: 8 }}>
+            <SettingRow
+              name="Share completions to community feed"
+              desc="Auto-post your week completions and streak milestones to other learners with the same goal. Only your first name + last initial are shown."
+            >
+              <Toggle
+                on={communityOptIn.optedIn && communityOptIn.shareCompletions}
+                onChange={(v) =>
+                  setCommunityOptIn((prev) => {
+                    const next = { ...prev, shareCompletions: v, optedIn: v ? true : prev.optedIn }
+                    writeCommunityOptIn({ shareCompletions: v, optedIn: next.optedIn }, user?.id)
+                    return next
+                  })
+                }
+              />
+            </SettingRow>
+            <SettingRow
+              name="Share streak milestones"
+              desc="Celebrate 7 / 14 / 30 / 60 / 90-day streaks in the community feed."
+            >
+              <Toggle
+                on={communityOptIn.optedIn && communityOptIn.shareMilestones}
+                onChange={(v) =>
+                  setCommunityOptIn((prev) => {
+                    const next = { ...prev, shareMilestones: v, optedIn: v ? true : prev.optedIn }
+                    writeCommunityOptIn({ shareMilestones: v, optedIn: next.optedIn }, user?.id)
+                    return next
+                  })
+                }
+              />
+            </SettingRow>
+            <SettingRow
+              name="Appear in leaderboards"
+              desc="Show your rank in the per-category weekly leaderboard. Opting out fully also removes you from the feed."
+              last
+            >
+              <Toggle
+                on={communityOptIn.optedIn}
+                onChange={(v) => {
+                  setCommunityOptIn((prev) => {
+                    const next = { ...prev, optedIn: v }
+                    writeCommunityOptIn({ optedIn: v }, user?.id)
+                    return next
+                  })
+                }}
+              />
+            </SettingRow>
+          </div>
+        </Section>
 
         {/* ── Appearance ── */}
         <Section>
