@@ -153,25 +153,52 @@ export default function DifficultyAdvisor({
 /* ── Sub-components ──────────────────────────────────────────────────── */
 
 function LaraAvatar() {
+  const ringWidth = 2
   return (
     <div
       aria-hidden
       style={{
+        position: "relative",
         width: LARA_AVATAR_SIZE,
         height: LARA_AVATAR_SIZE,
-        borderRadius: "50%",
-        background: IRIDESCENT,
-        display: "grid",
-        placeItems: "center",
-        color: "#fff",
-        fontWeight: 800,
-        fontSize: 12,
         flexShrink: 0,
         marginTop: 2,
-        boxShadow: "0 6px 18px rgba(167,139,250,0.4)",
       }}
     >
-      L
+      <div
+        style={{
+          position: "absolute",
+          inset: -ringWidth,
+          borderRadius: "50%",
+          background: IRIDESCENT,
+          filter: "blur(6px)",
+          opacity: 0.5,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          padding: ringWidth,
+          background: IRIDESCENT,
+          boxShadow: "0 4px 14px rgba(167,139,250,0.45)",
+        }}
+      >
+        <img
+          src="/lara-avatar.png"
+          alt="Lara"
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "50%",
+            objectFit: "cover",
+            display: "block",
+            background: "#1a1326",
+          }}
+        />
+      </div>
     </div>
   )
 }

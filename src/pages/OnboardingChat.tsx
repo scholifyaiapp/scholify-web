@@ -8,19 +8,20 @@ import {
 } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
-import { addDays, addMonths, format } from "date-fns"
+import { addMonths, format } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { api } from "@/lib/api"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
-import DifficultyAdvisor, { type AdvisorReply } from "@/components/DifficultyAdvisor"
-import { analyzeDifficulty, type DifficultyResult } from "@/lib/difficultyAnalysis"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Conversational onboarding with Lara.
  *
- *  Replaces the legacy 4-step wizard at /onboarding. The wizard
- *  is still reachable at /onboarding/classic via "Skip setup".
+ *  Short flow (post sign-in): greet → name (if missing) → skill
+ *  → level → daily-time → build. Deadline & notification time
+ *  use sensible defaults the user can change in Settings later.
+ *
+ *  Long wizard still available at /onboarding/classic via "Skip setup".
  * ────────────────────────────────────────────────────────────── */
 
 const BG = "#050508"
@@ -35,17 +36,11 @@ const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]
 type Stage =
   | "greeting"
   | "name"
-  | "future_self"
   | "skill_discovery"
   | "skill_level"
-  | "deadline"
   | "daily_time"
-  | "advisor"
-  | "notification_time"
   | "summary"
   | "submitting"
-
-type FutureCategory = "professional" | "exam" | "career_change" | "other"
 
 interface ChatMessage {
   id: string
@@ -55,44 +50,43 @@ interface ChatMessage {
   quickReplies?: QuickReply[]
   /** When true, the reply buttons under this message are consumed. */
   repliesUsed?: boolean
-  custom?: "date_picker" | "time_picker" | "difficulty_advisor"
 }
 
 interface QuickReply {
   label: string
   value: string
-  category?: FutureCategory
 }
 
 interface Collected {
   name: string
-  futureVision: string
-  futureCategory: FutureCategory
   primaryGoal: string
   currentLevel: string
-  deadline: string | null // ISO yyyy-MM-dd
-  deadlineLabel: string
   dailyMinutes: number
-  notificationTime: string // HH:mm
-  difficulty: DifficultyResult["level"] | null
+  /** Fixed default — 3 months from sign-up. User can change in Settings. */
+  deadline: string | null
+  deadlineLabel: string
+  /** Fixed default — 08:00. User can change in Settings. */
+  notificationTime: string
 }
 
-const initialCollected: Collected = {
-  name: "",
-  futureVision: "",
-  futureCategory: "other",
-  primaryGoal: "",
-  currentLevel: "",
-  deadline: null,
-  deadlineLabel: "",
-  dailyMinutes: 20,
-  notificationTime: "08:00",
-  difficulty: null,
+const DEFAULT_NOTIF_TIME = "08:00"
+
+function buildInitial(): Collected {
+  const d = addMonths(new Date(), 3)
+  return {
+    name: "",
+    primaryGoal: "",
+    currentLevel: "",
+    dailyMinutes: 20,
+    deadline: d.toISOString(),
+    deadlineLabel: format(d, "MMM d, yyyy"),
+    notificationTime: DEFAULT_NOTIF_TIME,
+  }
 }
 
 /* ── Typewriter hook ─────────────────────────────────────────── */
 
-function useTypewriter(text: string, speed = 25, enabled = true): {
+function useTypewriter(text: string, speed = 22, enabled = true): {
   visible: string
   done: boolean
 } {
@@ -126,28 +120,84 @@ function useTypewriter(text: string, speed = 25, enabled = true): {
   return { visible, done }
 }
 
-/* ── Avatar ──────────────────────────────────────────────────── */
+/* ── Avatar (ElevenLabs-style: photo + iridescent ring + pulse) ── */
 
-function LaraAvatar({ size = 32 }: { size?: number }) {
+function LaraAvatar({ size = 32, speaking = false }: { size?: number; speaking?: boolean }) {
+  const ringWidth = Math.max(2, Math.round(size * 0.06))
   return (
-    <div
+    <motion.div
       style={{
+        position: "relative",
         width: size,
         height: size,
-        borderRadius: "50%",
-        background: IRIDESCENT,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontSize: size * 0.45,
-        fontWeight: 800,
         flexShrink: 0,
-        boxShadow: "0 0 20px rgba(139,92,246,0.25)",
       }}
+      animate={
+        speaking
+          ? { scale: [1, 1.04, 1] }
+          : { scale: 1 }
+      }
+      transition={
+        speaking
+          ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+          : { duration: 0.3 }
+      }
     >
-      L
-    </div>
+      {/* outer iridescent glow ring */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: -ringWidth,
+          borderRadius: "50%",
+          background: IRIDESCENT,
+          filter: `blur(${size * 0.18}px)`,
+          opacity: speaking ? 0.7 : 0.45,
+          transition: "opacity 0.3s ease",
+        }}
+      />
+      {/* solid gradient ring */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          padding: ringWidth,
+          background: IRIDESCENT,
+          boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
+        }}
+      >
+        <img
+          src="/lara-avatar.png"
+          alt="Lara"
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "50%",
+            objectFit: "cover",
+            display: "block",
+            background: "#1a1326",
+          }}
+        />
+      </div>
+      {/* speaking ripple */}
+      {speaking && (
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0.6, scale: 1 }}
+          animate={{ opacity: 0, scale: 1.45 }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            border: "2px solid rgba(167,139,250,0.55)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </motion.div>
   )
 }
 
@@ -155,7 +205,7 @@ function LaraAvatar({ size = 32 }: { size?: number }) {
 
 function LaraBubble({
   text,
-  speed = 25,
+  speed = 22,
   onDone,
 }: {
   text: string
@@ -272,143 +322,6 @@ function QuickReplies({
   )
 }
 
-/* ── Inline date picker (for "exact date") ───────────────────── */
-
-function InlineDatePicker({
-  onPick,
-}: {
-  onPick: (iso: string, label: string) => void
-}) {
-  const today = useMemo(() => new Date(), [])
-  const min = format(today, "yyyy-MM-dd")
-  const [value, setValue] = useState(format(addMonths(today, 3), "yyyy-MM-dd"))
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: EASE }}
-      style={{
-        marginLeft: 42,
-        marginTop: 8,
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-    >
-      <input
-        type="date"
-        min={min}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        style={{
-          height: 40,
-          padding: "0 14px",
-          borderRadius: 12,
-          fontSize: 14,
-          color: TEXT,
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          outline: "none",
-          colorScheme: "dark",
-        }}
-      />
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.04 }}
-        whileTap={{ scale: 0.96 }}
-        onClick={() => {
-          if (!value) return
-          const d = new Date(value)
-          onPick(d.toISOString(), format(d, "MMM d, yyyy"))
-        }}
-        style={{
-          padding: "9px 18px",
-          borderRadius: 12,
-          border: "none",
-          background: IRIDESCENT,
-          color: "#fff",
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: "pointer",
-          boxShadow: "0 0 18px rgba(139,92,246,0.3)",
-        }}
-      >
-        Set date
-      </motion.button>
-    </motion.div>
-  )
-}
-
-/* ── Inline time picker (for notification time) ──────────────── */
-
-function InlineTimePicker({
-  onPick,
-}: {
-  onPick: (hhmm: string, label: string) => void
-}) {
-  const [value, setValue] = useState("08:00")
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: EASE }}
-      style={{
-        marginLeft: 42,
-        marginTop: 8,
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-    >
-      <input
-        type="time"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        style={{
-          height: 40,
-          padding: "0 14px",
-          borderRadius: 12,
-          fontSize: 14,
-          color: TEXT,
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          outline: "none",
-          colorScheme: "dark",
-        }}
-      />
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.04 }}
-        whileTap={{ scale: 0.96 }}
-        onClick={() => {
-          if (!value) return
-          const [h, m] = value.split(":")
-          const hour = Number(h)
-          const min = m
-          const suffix = hour >= 12 ? "PM" : "AM"
-          const display = `${((hour + 11) % 12) + 1}:${min} ${suffix}`
-          onPick(value, display)
-        }}
-        style={{
-          padding: "9px 18px",
-          borderRadius: 12,
-          border: "none",
-          background: IRIDESCENT,
-          color: "#fff",
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: "pointer",
-          boxShadow: "0 0 18px rgba(139,92,246,0.3)",
-        }}
-      >
-        Set time
-      </motion.button>
-    </motion.div>
-  )
-}
-
 /* ── Typing indicator (when Lara is "thinking") ──────────────── */
 
 function TypingIndicator() {
@@ -425,7 +338,7 @@ function TypingIndicator() {
         marginBottom: 16,
       }}
     >
-      <LaraAvatar />
+      <LaraAvatar speaking />
       <div
         style={{
           background: BUBBLE_BG,
@@ -463,69 +376,33 @@ function TypingIndicator() {
 
 /* ── Quick-reply catalogue ───────────────────────────────────── */
 
-const FUTURE_REPLIES: QuickReply[] = [
-  { label: "A skilled professional", value: "A skilled professional", category: "professional" },
-  { label: "Someone who passed my exam", value: "Someone who passed my exam", category: "exam" },
-  { label: "A career changer", value: "A career changer", category: "career_change" },
-  { label: "More confident in my field", value: "More confident in my field", category: "professional" },
-  { label: "I'll type my own answer", value: "__custom__" },
+const FALLBACK_SKILLS: string[] = [
+  "Coding / Programming",
+  "Design (Figma / UX)",
+  "Languages",
+  "Public speaking",
 ]
 
-const SKILL_REPLIES: Record<FutureCategory, string[]> = {
-  professional: [
-    "Python / Data Science",
-    "Figma / Design",
-    "Public Speaking",
-    "A specific certification",
-  ],
-  exam: ["IELTS / TOEFL", "Bar exam", "AWS / Cloud", "MBA entrance", "Something else"],
-  career_change: [
-    "Coding / Programming",
-    "UX Design",
-    "Digital Marketing",
-    "Product Management",
-  ],
-  other: ["Coding / Programming", "Design", "Languages", "Business skills"],
-}
-
 const LEVEL_REPLIES: QuickReply[] = [
-  { label: "Complete beginner — starting from zero", value: "beginner" },
+  { label: "Beginner — starting from zero", value: "beginner" },
   { label: "Some basics — I've tried before", value: "basics" },
   { label: "Intermediate — want to go deeper", value: "intermediate" },
   { label: "Advanced — want to master it", value: "advanced" },
 ]
 
-const DEADLINE_REPLIES: QuickReply[] = [
-  { label: "Yes, I have an exact date", value: "exact" },
-  { label: "In about 1 month", value: "1m" },
-  { label: "In about 3 months", value: "3m" },
-  { label: "In about 6 months", value: "6m" },
-  { label: "No deadline — ongoing", value: "none" },
-]
-
 const TIME_REPLIES: QuickReply[] = [
-  { label: "5-10 minutes — very limited", value: "10" },
-  { label: "15-20 minutes — manageable", value: "20" },
-  { label: "25-30 minutes — committed", value: "30" },
-  { label: "45-60 minutes — serious mode", value: "60" },
-]
-
-const NOTIF_REPLIES: QuickReply[] = [
-  { label: "7:00 AM", value: "07:00" },
-  { label: "8:00 AM", value: "08:00" },
-  { label: "9:00 AM", value: "09:00" },
-  { label: "After work (6 PM)", value: "18:00" },
-  { label: "Pick a time", value: "__custom__" },
+  { label: "10 minutes", value: "10" },
+  { label: "20 minutes", value: "20" },
+  { label: "30 minutes", value: "30" },
+  { label: "60 minutes", value: "60" },
 ]
 
 const READY_REPLIES: QuickReply[] = [
   { label: "Let's go 🚀", value: "ready" },
-  { label: "Yes, I'm ready!", value: "ready" },
 ]
 
 const FINAL_REPLIES: QuickReply[] = [
   { label: "Build my plan ⚡", value: "build" },
-  { label: "Looks good!", value: "build" },
 ]
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -533,23 +410,6 @@ const FINAL_REPLIES: QuickReply[] = [
 function levelLabel(value: string): string {
   const m = LEVEL_REPLIES.find((r) => r.value === value)
   return m?.label.split(" — ")[0] ?? value
-}
-
-function formatDeadline(iso: string | null, fallback: string): string {
-  if (!iso) return fallback
-  try {
-    return format(new Date(iso), "MMM d, yyyy")
-  } catch {
-    return fallback
-  }
-}
-
-function formatTime(hhmm: string): string {
-  const [h, m] = hhmm.split(":")
-  const hour = Number(h)
-  const suffix = hour >= 12 ? "PM" : "AM"
-  const display = `${((hour + 11) % 12) + 1}:${m} ${suffix}`
-  return display
 }
 
 let _idSeq = 0
@@ -568,10 +428,9 @@ export default function OnboardingChat() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [stage, setStage] = useState<Stage>("greeting")
-  const [collected, setCollected] = useState<Collected>(initialCollected)
+  const [collected, setCollected] = useState<Collected>(buildInitial)
   const [input, setInput] = useState("")
   const [laraTyping, setLaraTyping] = useState(false)
-  const [skillSuggestions, setSkillSuggestions] = useState<string[] | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
   /* Scroll to bottom on every message / state change. */
@@ -585,7 +444,7 @@ export default function OnboardingChat() {
   const sayLara = useCallback(
     async (text: string, opts?: Partial<ChatMessage> & { delay?: number }) => {
       setLaraTyping(true)
-      await new Promise((r) => setTimeout(r, opts?.delay ?? 700))
+      await new Promise((r) => setTimeout(r, opts?.delay ?? 600))
       setLaraTyping(false)
       const msg: ChatMessage = {
         id: nextId(),
@@ -607,21 +466,21 @@ export default function OnboardingChat() {
   const consumeReplies = useCallback((id: string) => {
     setMessages((prev) =>
       prev.map((m) =>
-        m.id === id ? { ...m, quickReplies: undefined, custom: undefined, repliesUsed: true } : m,
+        m.id === id ? { ...m, quickReplies: undefined, repliesUsed: true } : m,
       ),
     )
   }, [])
 
-  /* ── Stage 1 — greeting (auto on mount, 1s delay) ── */
+  /* ── Stage 1 — greeting (auto on mount) ── */
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      await new Promise((r) => setTimeout(r, 1000))
+      await new Promise((r) => setTimeout(r, 700))
       if (!mounted) return
-      await sayLara(
-        "Welcome to Scholify. ✦ I'm Lara, your AI learning coach.\n\nI'm going to ask you a few quick questions so I can build your personalised plan. Ready?",
-        { quickReplies: READY_REPLIES },
-      )
+      const opener = initialName
+        ? `Hi ${initialName}! I'm Lara, your AI learning coach. ✦\n\nQuick setup — two questions and I'll build your plan. Ready?`
+        : "Welcome to Scholify. ✦ I'm Lara, your AI learning coach.\n\nQuick setup — three questions and I'll build your plan. Ready?"
+      await sayLara(opener, { quickReplies: READY_REPLIES })
     })()
     return () => {
       mounted = false
@@ -629,75 +488,50 @@ export default function OnboardingChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  /* Stage transitions are driven by `runUserResponse`. */
+  /* Stage transitions. */
   const askName = useCallback(async () => {
     setStage("name")
-    await sayLara("What's your name?")
+    await sayLara("First — what's your name?")
   }, [sayLara])
 
-  const askFutureSelf = useCallback(
-    async (name: string) => {
-      setStage("future_self")
-      await sayLara(
-        `Nice to meet you, ${name}! 👋\n\nI love that you're here. Most people talk about learning — you're actually doing something about it.`,
-      )
-      await sayLara(
-        "Before we get to skills, I want to understand what you're really after.\n\nWho do you want to become? What does the future version of " +
-          name +
-          " look like in 1–2 years?",
-        { quickReplies: FUTURE_REPLIES, delay: 900 },
-      )
-    },
-    [sayLara],
-  )
-
   const askSkill = useCallback(
-    async (vision: string, category: FutureCategory) => {
+    async (name: string) => {
       setStage("skill_discovery")
       await sayLara(
-        `I love that. To become "${vision}", what specific skill do you most want to build right now?\n\nDon't overthink it — what's the one thing that would move you closest to that future?`,
+        `Nice to meet you, ${name}. What skill do you want to build right now?`,
       )
 
       // Fetch dynamic skill suggestions from Claude Haiku in the background.
-      const fallback = SKILL_REPLIES[category].map((label) => ({
+      const fallback: QuickReply[] = FALLBACK_SKILLS.map((label) => ({
         label,
         value: label,
       }))
       const customReply: QuickReply = {
-        label: "I'll describe my own",
+        label: "I'll type my own",
         value: "__custom__",
       }
-      // Place placeholders immediately so the UI never blocks.
-      setSkillSuggestions(null)
 
-      // Push the message that owns the quick replies once we have them.
+      const attachReplies = (replies: QuickReply[]) => {
+        setMessages((prev) => {
+          const idx = [...prev].reverse().findIndex((m) => m.role === "lara")
+          if (idx === -1) return prev
+          const realIdx = prev.length - 1 - idx
+          const updated = [...prev]
+          updated[realIdx] = { ...updated[realIdx], quickReplies: replies }
+          return updated
+        })
+      }
+
       try {
-        const res = await api.getSkillSuggestions({ futureVision: vision })
+        const res = await api.getSkillSuggestions({ futureVision: name })
         const fresh = (res.suggestions || []).slice(0, 4).filter(Boolean)
-        const replies: QuickReply[] =
+        attachReplies(
           fresh.length > 0
             ? [...fresh.map((label) => ({ label, value: label })), customReply]
-            : [...fallback, customReply]
-        setSkillSuggestions(fresh.length > 0 ? fresh : null)
-        // Attach replies to the last Lara message
-        setMessages((prev) => {
-          const idx = [...prev].reverse().findIndex((m) => m.role === "lara")
-          if (idx === -1) return prev
-          const realIdx = prev.length - 1 - idx
-          const updated = [...prev]
-          updated[realIdx] = { ...updated[realIdx], quickReplies: replies }
-          return updated
-        })
+            : [...fallback, customReply],
+        )
       } catch {
-        const replies: QuickReply[] = [...fallback, customReply]
-        setMessages((prev) => {
-          const idx = [...prev].reverse().findIndex((m) => m.role === "lara")
-          if (idx === -1) return prev
-          const realIdx = prev.length - 1 - idx
-          const updated = [...prev]
-          updated[realIdx] = { ...updated[realIdx], quickReplies: replies }
-          return updated
-        })
+        attachReplies([...fallback, customReply])
       }
     },
     [sayLara],
@@ -707,149 +541,30 @@ export default function OnboardingChat() {
     async (skill: string) => {
       setStage("skill_level")
       await sayLara(
-        `Great choice. On "${skill}", where would you say you are right now?`,
+        `Great choice. On "${skill}", where are you right now?`,
         { quickReplies: LEVEL_REPLIES },
       )
     },
     [sayLara],
   )
 
-  const askDeadline = useCallback(async () => {
-    setStage("deadline")
-    await sayLara(
-      "Do you have a specific deadline? An exam date, a job interview, a goal you want to hit by a certain date?",
-      { quickReplies: DEADLINE_REPLIES },
-    )
-  }, [sayLara])
-
   const askDailyTime = useCallback(async () => {
     setStage("daily_time")
     await sayLara(
-      "Honest question: on a normal weekday, how many minutes could you realistically give to this — even when life gets busy?",
+      "Last one — how many minutes a day can you realistically give to this?",
       { quickReplies: TIME_REPLIES },
     )
   }, [sayLara])
-
-  const askNotifTime = useCallback(async () => {
-    setStage("notification_time")
-    await sayLara(
-      "Perfect. I'll send you a daily task and a personal message from me.\n\nWhat time works best for your morning reminder?",
-      { quickReplies: NOTIF_REPLIES },
-    )
-  }, [sayLara])
-
-  /* ── Difficulty advisor ── */
-  const [advisorResult, setAdvisorResult] = useState<DifficultyResult | null>(null)
-  const [advisorLoading, setAdvisorLoading] = useState(false)
-
-  const runAdvisor = useCallback(
-    async (next: Collected) => {
-      setStage("advisor")
-      setAdvisorResult(null)
-      setAdvisorLoading(true)
-      // Drop a "thinking" Lara bubble so the user sees motion immediately.
-      const advisorMsg: ChatMessage = {
-        id: nextId(),
-        role: "lara",
-        text: "",
-        custom: "difficulty_advisor",
-      }
-      setMessages((prev) => [...prev, advisorMsg])
-      try {
-        const result = await analyzeDifficulty(
-          next.primaryGoal,
-          next.deadline,
-          next.dailyMinutes,
-        )
-        setAdvisorResult(result)
-      } catch {
-        // Should never throw — analyzer has internal fallbacks — but
-        // be defensive so onboarding can't get stuck.
-        setAdvisorResult({
-          level: "realistic",
-          score: 60,
-          message: `${next.dailyMinutes} min/day looks workable for this goal.`,
-          suggestion: "Lara will scaffold each week so it builds on the last.",
-          confidence: 0.4,
-          source: "ai_fallback",
-        })
-      } finally {
-        setAdvisorLoading(false)
-      }
-    },
-    [],
-  )
-
-  const handleAdvisorReply = useCallback(
-    async (reply: AdvisorReply, result: DifficultyResult | undefined) => {
-      if (!result) return
-      // Consume the advisor card so it doesn't keep rendering buttons.
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.custom === "difficulty_advisor" ? { ...m, custom: undefined, repliesUsed: true } : m,
-        ),
-      )
-
-      if (reply === "use_suggested_deadline" && result.suggestedDeadline) {
-        const iso = result.suggestedDeadline
-        const label = format(new Date(iso), "MMM d, yyyy")
-        sayUser(`Use Lara's date — ${label}`)
-        setCollected((c) => {
-          const next: Collected = {
-            ...c,
-            deadline: iso,
-            deadlineLabel: label,
-            difficulty: "realistic",
-          }
-          return next
-        })
-        await askNotifTime()
-        return
-      }
-
-      if (reply === "use_stretch_goal" && result.suggestedGoal) {
-        const newGoal = result.suggestedGoal
-        sayUser(`Go bigger — ${newGoal}`)
-        setCollected((c) => ({ ...c, primaryGoal: newGoal, difficulty: "ambitious" }))
-        await askNotifTime()
-        return
-      }
-
-      if (reply === "show_safer_deadline") {
-        sayUser("Show me a safer deadline")
-        // Re-ask the deadline step — user picks again.
-        await askDeadline()
-        return
-      }
-
-      if (reply === "edit_goal") {
-        sayUser("Let me adjust my goal")
-        await sayLara(
-          "Totally — give me the new version of the goal and I'll re-check the timeline.",
-        )
-        setStage("skill_discovery")
-        return
-      }
-
-      // "proceed" | "keep_original_deadline" | "keep_current_goal"
-      sayUser(reply === "keep_original_deadline" ? "Keep my deadline" : "Let's go")
-      setCollected((c) => ({ ...c, difficulty: result.level }))
-      await askNotifTime()
-    },
-    [askDeadline, askNotifTime, sayLara, sayUser],
-  )
 
   const showSummary = useCallback(
     async (next: Collected) => {
       setStage("summary")
       const summary =
-        `Okay ${next.name}, here's what I know about you:\n\n` +
-        `🎯 Goal: ${next.primaryGoal}\n` +
-        `📊 Level: ${levelLabel(next.currentLevel)}\n` +
-        `📅 Deadline: ${next.deadlineLabel || "Ongoing"}\n` +
-        `⏱ Daily time: ${next.dailyMinutes} minutes\n` +
-        `🔔 Reminder: ${formatTime(next.notificationTime)}\n\n` +
-        "I'm going to build your personalised plan right now. It'll take about 15 seconds. Ready?"
+        `Perfect. Here's what I'll plan around:\n\n` +
+        `🎯 ${next.primaryGoal}\n` +
+        `📊 ${levelLabel(next.currentLevel)}\n` +
+        `⏱ ${next.dailyMinutes} min/day\n\n` +
+        "Ready to build your personalised plan?"
       await sayLara(summary, { quickReplies: FINAL_REPLIES })
     },
     [sayLara],
@@ -859,13 +574,11 @@ export default function OnboardingChat() {
   const buildPlan = useCallback(
     async (final: Collected) => {
       setStage("submitting")
-      // Persist to Supabase user metadata + profile + settings (best-effort).
       try {
         if (isSupabaseConfigured && user) {
           await supabase.auth.updateUser({
             data: {
               first_name: final.name || user?.user_metadata?.first_name,
-              future_vision: final.futureVision,
               current_level: final.currentLevel,
               notification_time: final.notificationTime,
               goal: final.primaryGoal,
@@ -874,14 +587,12 @@ export default function OnboardingChat() {
               onboarded: true,
             },
           })
-          // Best-effort write to profiles — column may not exist yet.
           await supabase
             .from("profiles")
             .upsert(
               {
                 id: user.id,
                 first_name: final.name,
-                future_vision: final.futureVision,
                 current_level: final.currentLevel,
                 notification_time: final.notificationTime,
               },
@@ -905,7 +616,6 @@ export default function OnboardingChat() {
         window.localStorage.setItem("scholify-onboarding", JSON.stringify(payload))
         window.localStorage.setItem("scholify-onboarded", "true")
 
-        // Merge notification time into shared settings.
         const settingsRaw = window.localStorage.getItem("scholify-settings")
         const settings = settingsRaw ? JSON.parse(settingsRaw) : {}
         window.localStorage.setItem(
@@ -925,7 +635,6 @@ export default function OnboardingChat() {
           goal: final.primaryGoal,
           deadline: final.deadline,
           dailyMinutes: final.dailyMinutes,
-          difficultyLevel: final.difficulty,
         },
       })
     },
@@ -940,28 +649,11 @@ export default function OnboardingChat() {
           consumeReplies(messageId)
           sayUser(reply.label)
           if (initialName) {
-            // Skip the name question — we already have it.
             setCollected((c) => ({ ...c, name: initialName }))
-            await askFutureSelf(initialName)
+            await askSkill(initialName)
           } else {
             await askName()
           }
-          return
-        }
-        case "future_self": {
-          consumeReplies(messageId)
-          if (reply.value === "__custom__") {
-            // Just dismiss — user will type.
-            return
-          }
-          sayUser(reply.label)
-          const cat: FutureCategory = reply.category ?? "other"
-          setCollected((c) => ({
-            ...c,
-            futureVision: reply.value,
-            futureCategory: cat,
-          }))
-          await askSkill(reply.value, cat)
           return
         }
         case "skill_discovery": {
@@ -976,48 +668,6 @@ export default function OnboardingChat() {
           consumeReplies(messageId)
           sayUser(reply.label)
           setCollected((c) => ({ ...c, currentLevel: reply.value }))
-          await askDeadline()
-          return
-        }
-        case "deadline": {
-          consumeReplies(messageId)
-          if (reply.value === "exact") {
-            sayUser(reply.label)
-            // Insert a date-picker message under Lara.
-            const pickerMsg: ChatMessage = {
-              id: nextId(),
-              role: "lara",
-              text: "Pick the exact date:",
-              typewriter: true,
-              custom: "date_picker",
-            }
-            setLaraTyping(true)
-            await new Promise((r) => setTimeout(r, 500))
-            setLaraTyping(false)
-            setMessages((prev) => [...prev, pickerMsg])
-            return
-          }
-          sayUser(reply.label)
-          const today = new Date()
-          let deadlineDate: Date | null = null
-          let deadlineLabel = reply.label
-          if (reply.value === "1m") deadlineDate = addMonths(today, 1)
-          else if (reply.value === "3m") deadlineDate = addMonths(today, 3)
-          else if (reply.value === "6m") deadlineDate = addMonths(today, 6)
-          else if (reply.value === "none") {
-            deadlineDate = addDays(today, 90)
-            deadlineLabel = "Ongoing"
-          }
-          setCollected((c) => ({
-            ...c,
-            deadline: deadlineDate ? deadlineDate.toISOString() : null,
-            deadlineLabel:
-              reply.value === "none"
-                ? "Ongoing"
-                : deadlineDate
-                  ? format(deadlineDate, "MMM d, yyyy")
-                  : "",
-          }))
           await askDailyTime()
           return
         }
@@ -1027,32 +677,6 @@ export default function OnboardingChat() {
           const minutes = Number(reply.value) || 20
           setCollected((c) => {
             const next: Collected = { ...c, dailyMinutes: minutes }
-            // Defer the advisor run so the user message lands first.
-            setTimeout(() => runAdvisor(next), 50)
-            return next
-          })
-          return
-        }
-        case "notification_time": {
-          consumeReplies(messageId)
-          if (reply.value === "__custom__") {
-            const pickerMsg: ChatMessage = {
-              id: nextId(),
-              role: "lara",
-              text: "Pick the time:",
-              typewriter: true,
-              custom: "time_picker",
-            }
-            setLaraTyping(true)
-            await new Promise((r) => setTimeout(r, 500))
-            setLaraTyping(false)
-            setMessages((prev) => [...prev, pickerMsg])
-            return
-          }
-          sayUser(reply.label)
-          setCollected((c) => {
-            const next: Collected = { ...c, notificationTime: reply.value }
-            // Show summary on next tick so collected is up-to-date.
             setTimeout(() => showSummary(next), 50)
             return next
           })
@@ -1075,48 +699,13 @@ export default function OnboardingChat() {
       sayUser,
       consumeReplies,
       askName,
-      askFutureSelf,
       askSkill,
       askLevel,
-      askDeadline,
       askDailyTime,
-      askNotifTime,
       showSummary,
       buildPlan,
       initialName,
-      runAdvisor,
     ],
-  )
-
-  /* ── Date picker submit ── */
-  const handleDatePicked = useCallback(
-    async (iso: string, label: string) => {
-      sayUser(label)
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.custom === "date_picker" ? { ...m, custom: undefined, repliesUsed: true } : m,
-        ),
-      )
-      setCollected((c) => ({ ...c, deadline: iso, deadlineLabel: label }))
-      await askDailyTime()
-    },
-    [askDailyTime, sayUser],
-  )
-
-  /* ── Time picker submit ── */
-  const handleTimePicked = useCallback(
-    async (hhmm: string, label: string) => {
-      sayUser(label)
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.custom === "time_picker" ? { ...m, custom: undefined, repliesUsed: true } : m,
-        ),
-      )
-      const next: Collected = { ...collected, notificationTime: hhmm }
-      setCollected(next)
-      setTimeout(() => showSummary(next), 50)
-    },
-    [collected, sayUser, showSummary],
   )
 
   /* ── Free-text submit ── */
@@ -1127,11 +716,9 @@ export default function OnboardingChat() {
 
     if (stage === "greeting") {
       sayUser(text)
-      // Treat any text in greeting as "I'm ready"
-      // Trigger the same path as a quick reply.
       if (initialName) {
         setCollected((c) => ({ ...c, name: initialName }))
-        await askFutureSelf(initialName)
+        await askSkill(initialName)
       } else {
         await askName()
       }
@@ -1142,19 +729,7 @@ export default function OnboardingChat() {
       sayUser(text)
       const name = text.slice(0, 40)
       setCollected((c) => ({ ...c, name }))
-      await askFutureSelf(name)
-      return
-    }
-
-    if (stage === "future_self") {
-      sayUser(text)
-      const cat: FutureCategory = "other"
-      setCollected((c) => ({
-        ...c,
-        futureVision: text,
-        futureCategory: cat,
-      }))
-      await askSkill(text, cat)
+      await askSkill(name)
       return
     }
 
@@ -1165,14 +740,12 @@ export default function OnboardingChat() {
       return
     }
 
-    // Fallback: treat any other text as a no-op nudge.
     sayUser(text)
   }, [
     input,
     stage,
     sayUser,
     askName,
-    askFutureSelf,
     askSkill,
     askLevel,
     initialName,
@@ -1215,7 +788,7 @@ export default function OnboardingChat() {
             position: "sticky",
             top: 0,
             zIndex: 30,
-            height: 60,
+            height: 64,
             padding: "0 20px",
             display: "flex",
             alignItems: "center",
@@ -1226,13 +799,15 @@ export default function OnboardingChat() {
             borderBottom: "1px solid rgba(255,255,255,0.05)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <LaraAvatar />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LaraAvatar size={40} speaking={laraTyping} />
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, lineHeight: 1.1 }}>
                 Lara
               </div>
-              <div style={{ fontSize: 12, color: TEXT_MUTED }}>AI Learning Coach</div>
+              <div style={{ fontSize: 12, color: TEXT_MUTED }}>
+                {laraTyping ? "typing…" : "AI Learning Coach"}
+              </div>
             </div>
           </div>
           <motion.button
@@ -1280,37 +855,18 @@ export default function OnboardingChat() {
                       marginBottom: 16,
                     }}
                   >
-                    {m.custom === "difficulty_advisor" ? (
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <DifficultyAdvisor
-                          loading={advisorLoading}
-                          result={advisorResult}
-                          onReply={handleAdvisorReply}
-                          showAvatar
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <LaraAvatar />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <LaraBubble text={m.text} />
-                          <AnimatePresence>
-                            {m.quickReplies && (
-                              <QuickReplies
-                                replies={m.quickReplies}
-                                onPick={(r) => handleQuickReply(m.id, r)}
-                              />
-                            )}
-                            {m.custom === "date_picker" && (
-                              <InlineDatePicker onPick={handleDatePicked} />
-                            )}
-                            {m.custom === "time_picker" && (
-                              <InlineTimePicker onPick={handleTimePicked} />
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </>
-                    )}
+                    <LaraAvatar />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <LaraBubble text={m.text} />
+                      <AnimatePresence>
+                        {m.quickReplies && (
+                          <QuickReplies
+                            replies={m.quickReplies}
+                            onPick={(r) => handleQuickReply(m.id, r)}
+                          />
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </motion.div>
                 )
               }

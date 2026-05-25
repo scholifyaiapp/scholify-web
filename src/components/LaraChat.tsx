@@ -117,28 +117,72 @@ function recentNotesFromProgress(): string[] {
   }
 }
 
-/* ── Avatar ──────────────────────────────────────────────────── */
+/* ── Avatar (ElevenLabs-style: photo + iridescent ring + pulse) ── */
 
-function LaraAvatar({ size = 32 }: { size?: number }) {
+function LaraAvatar({ size = 32, speaking = false }: { size?: number; speaking?: boolean }) {
+  const ringWidth = Math.max(2, Math.round(size * 0.06))
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: IRIDESCENT,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontSize: size * 0.45,
-        fontWeight: 800,
-        flexShrink: 0,
-        boxShadow: "0 0 20px rgba(139,92,246,0.25)",
-      }}
+    <motion.div
+      style={{ position: "relative", width: size, height: size, flexShrink: 0 }}
+      animate={speaking ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+      transition={
+        speaking
+          ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+          : { duration: 0.3 }
+      }
     >
-      L
-    </div>
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: -ringWidth,
+          borderRadius: "50%",
+          background: IRIDESCENT,
+          filter: `blur(${size * 0.18}px)`,
+          opacity: speaking ? 0.7 : 0.45,
+          transition: "opacity 0.3s ease",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          padding: ringWidth,
+          background: IRIDESCENT,
+          boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
+        }}
+      >
+        <img
+          src="/lara-avatar.png"
+          alt="Lara"
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "50%",
+            objectFit: "cover",
+            display: "block",
+            background: "#1a1326",
+          }}
+        />
+      </div>
+      {speaking && (
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0.6, scale: 1 }}
+          animate={{ opacity: 0, scale: 1.45 }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            border: "2px solid rgba(167,139,250,0.55)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </motion.div>
   )
 }
 
@@ -158,7 +202,7 @@ function TypingIndicator() {
         marginBottom: 16,
       }}
     >
-      <LaraAvatar />
+      <LaraAvatar speaking />
       <div
         style={{
           background: BUBBLE_BG,
