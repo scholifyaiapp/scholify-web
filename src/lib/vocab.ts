@@ -1,0 +1,320 @@
+/*
+ * Scholify — vocabulary deck + spaced-repetition (SRS) engine.
+ *
+ * This is the heart of the language-learning product: every word carries its
+ * own memory state and is resurfaced right before the learner would forget it.
+ * A daily session = a few NEW words + every REVIEW that's due today.
+ *
+ * Design notes:
+ *  - localStorage-first (matches scholify-data.ts). No backend dependency.
+ *  - Language-agnostic: a deck has a target language + a native language, so the
+ *    same engine teaches Italian→English or Korean→Russian. Launch positioning
+ *    is focused, but the engine is not.
+ *  - SRS is a pragmatic SM-2 variant with an Anki-style 4-grade input
+ *    (again / hard / good / easy). Dates are compared by calendar day.
+ */
+
+import { addDays, differenceInCalendarDays, format } from "date-fns"
+
+/* ── Types ───────────────────────────────────────────────────── */
+
+export type WordStatus = "new" | "learning" | "review" | "mastered"
+
+/** Learner's self-assessed recall on a review. */
+export type ReviewGrade = "again" | "hard" | "good" | "easy"
+
+export interface VocabWord {
+  id: string
+  /** The word/phrase in the target language. */
+  term: string
+  /** Its meaning in the learner's native language. */
+  translation: string
+  /** Example sentence in the target language (optional). */
+  example?: string
+  /** Translation of the example (optional). */
+  exampleTranslation?: string
+  theme?: string
+  partOfSpeech?: string
+
+  /* ── SRS memory state ── */
+  status: WordStatus
+  /** SM-2 ease factor (min 1.3). Higher = the word is "easy" for this learner. */
+  ease: number
+  /** Current spacing in days until the next review. */
+  intervalDays: number
+  /** Consecutive successful reviews. */
+  reps: number
+  /** Times the word was forgotten (graded "again"). */
+  lapses: number
+  /** yyyy-MM-dd the word is next due. */
+  dueDate: string
+  addedAt: string
+  lastReviewedAt?: string
+}
+
+export interface VocabDeck {
+  id: string
+  /** ISO 639-1 code, e.g. "it". */
+  targetLanguage: string
+  /** Human label, e.g. "Italian". */
+  targetLanguageLabel: string
+  /** Native language code for explanations, e.g. "en". */
+  nativeLanguage: string
+  goal?: string
+  deadline?: string | null
+  /** How many brand-new words to introduce per day. */
+  dailyNewWords: number
+  words: VocabWord[]
+  createdAt: string
+}
+
+export interface DeckStats {
+  total: number
+  newCount: number
+  learning: number
+  review: number
+  mastered: number
+  dueToday: number
+}
+
+export interface TodaySession {
+  /** Brand-new words to introduce today (capped at dailyNewWords). */
+  newWords: VocabWord[]
+  /** Previously-seen words whose review is due today or overdue. */
+  dueWords: VocabWord[]
+}
+
+/* ── Constants ───────────────────────────────────────────────── */
+
+const KEY_DECK = "scholify-vocab-deck"
+const DEFAULT_EASE = 2.5
+const MIN_EASE = 1.3
+/** A word is considered "mastered" once its interval reaches this many days. */
+const MASTERED_INTERVAL = 21
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+
+function genId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID()
+    }
+  } catch {
+    /* ignore */
+  }
+  return `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function todayStr(): string {
+  return format(new Date(), "yyyy-MM-dd")
+}
+
+/** True when the word is due for review on or before `onDate` (default today). */
+export function isDue(word: VocabWord, onDate: string = todayStr()): boolean {
+  if (word.status === "new") return false
+  try {
+    return differenceInCalendarDays(new Date(word.dueDate), new Date(onDate)) <= 0
+  } catch {
+    return true
+  }
+}
+
+/* ── Word creation ───────────────────────────────────────────── */
+
+export interface NewWordInput {
+  term: string
+  translation: string
+  example?: string
+  exampleTranslation?: string
+  theme?: string
+  partOfSpeech?: string
+}
+
+/** Build a fresh, unseen word with default SRS state (due today as "new"). */
+export function makeWord(input: NewWordInput): VocabWord {
+  const now = new Date().toISOString()
+  return {
+    id: genId(),
+    term: input.term.trim(),
+    translation: input.translation.trim(),
+    example: input.example?.trim() || undefined,
+    exampleTranslation: input.exampleTranslation?.trim() || undefined,
+    theme: input.theme,
+    partOfSpeech: input.partOfSpeech,
+    status: "new",
+    ease: DEFAULT_EASE,
+    intervalDays: 0,
+    reps: 0,
+    lapses: 0,
+    dueDate: format(new Date(), "yyyy-MM-dd"),
+    addedAt: now,
+  }
+}
+
+/* ── SRS scheduling ──────────────────────────────────────────── */
+
+/**
+ * Apply a review grade to a word and return the updated copy (pure — does not
+ * persist). SM-2 variant:
+ *  - "again": forgot it → reset reps, see it again tomorrow, ease drops.
+ *  - "hard":  recalled with effort → small interval bump, ease drops a little.
+ *  - "good":  recalled → standard SM-2 growth (1d → 3d → interval*ease).
+ *  - "easy":  trivial → larger growth + ease bump.
+ */
+export function reviewWord(word: VocabWord, grade: ReviewGrade): VocabWord {
+  let { ease, intervalDays, reps, lapses } = word
+
+  if (grade === "again") {
+    reps = 0
+    lapses += 1
+    ease = Math.max(MIN_EASE, ease - 0.2)
+    intervalDays = 1
+  } else if (grade === "hard") {
+    ease = Math.max(MIN_EASE, ease - 0.15)
+    intervalDays = reps === 0 ? 1 : Math.max(1, Math.round(intervalDays * 1.2))
+    reps += 1
+  } else if (grade === "good") {
+    if (reps === 0) intervalDays = 1
+    else if (reps === 1) intervalDays = 3
+    else intervalDays = Math.max(1, Math.round(intervalDays * ease))
+    reps += 1
+  } else {
+    // easy
+    ease = ease + 0.15
+    if (reps === 0) intervalDays = 2
+    else intervalDays = Math.max(1, Math.round(intervalDays * ease * 1.3))
+    reps += 1
+  }
+
+  const status: WordStatus =
+    grade === "again"
+      ? "learning"
+      : intervalDays >= MASTERED_INTERVAL
+        ? "mastered"
+        : "review"
+
+  return {
+    ...word,
+    ease,
+    intervalDays,
+    reps,
+    lapses,
+    status,
+    dueDate: format(addDays(new Date(), intervalDays), "yyyy-MM-dd"),
+    lastReviewedAt: new Date().toISOString(),
+  }
+}
+
+/* ── Session selection ───────────────────────────────────────── */
+
+/** New words still waiting to be introduced, capped at `limit`. */
+export function getNewWords(deck: VocabDeck, limit: number = deck.dailyNewWords): VocabWord[] {
+  return deck.words.filter((w) => w.status === "new").slice(0, Math.max(0, limit))
+}
+
+/** Words whose review is due today (or overdue), soonest first. */
+export function getDueWords(deck: VocabDeck, onDate: string = todayStr()): VocabWord[] {
+  return deck.words
+    .filter((w) => w.status !== "new" && isDue(w, onDate))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+}
+
+/** Everything the learner should do today: new words + due reviews. */
+export function getTodaySession(deck: VocabDeck): TodaySession {
+  return {
+    newWords: getNewWords(deck),
+    dueWords: getDueWords(deck),
+  }
+}
+
+export function getDeckStats(deck: VocabDeck): DeckStats {
+  const today = todayStr()
+  let newCount = 0
+  let learning = 0
+  let review = 0
+  let mastered = 0
+  let dueToday = 0
+  for (const w of deck.words) {
+    if (w.status === "new") newCount += 1
+    else if (w.status === "learning") learning += 1
+    else if (w.status === "mastered") mastered += 1
+    else review += 1
+    if (w.status !== "new" && isDue(w, today)) dueToday += 1
+  }
+  return { total: deck.words.length, newCount, learning, review, mastered, dueToday }
+}
+
+/* ── Deck construction + persistence (localStorage-first) ─────── */
+
+export interface CreateDeckInput {
+  targetLanguage: string
+  targetLanguageLabel: string
+  nativeLanguage: string
+  goal?: string
+  deadline?: string | null
+  dailyNewWords?: number
+  words?: NewWordInput[]
+}
+
+export function createDeck(input: CreateDeckInput): VocabDeck {
+  return {
+    id: genId(),
+    targetLanguage: input.targetLanguage,
+    targetLanguageLabel: input.targetLanguageLabel,
+    nativeLanguage: input.nativeLanguage,
+    goal: input.goal,
+    deadline: input.deadline ?? null,
+    dailyNewWords: Math.max(1, input.dailyNewWords ?? 8),
+    words: (input.words ?? []).map(makeWord),
+    createdAt: new Date().toISOString(),
+  }
+}
+
+export function readDeck(): VocabDeck | null {
+  try {
+    const raw = window.localStorage.getItem(KEY_DECK)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as VocabDeck
+    if (!parsed || !Array.isArray(parsed.words)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export function writeDeck(deck: VocabDeck): void {
+  try {
+    window.localStorage.setItem(KEY_DECK, JSON.stringify(deck))
+  } catch {
+    /* storage unavailable — non-fatal */
+  }
+}
+
+export function clearDeck(): void {
+  try {
+    window.localStorage.removeItem(KEY_DECK)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Append new words to the active deck (de-duplicated by term) and persist. */
+export function addWordsToDeck(deck: VocabDeck, words: NewWordInput[]): VocabDeck {
+  const existing = new Set(deck.words.map((w) => w.term.trim().toLowerCase()))
+  const fresh = words
+    .filter((w) => w.term && !existing.has(w.term.trim().toLowerCase()))
+    .map(makeWord)
+  const next: VocabDeck = { ...deck, words: [...deck.words, ...fresh] }
+  writeDeck(next)
+  return next
+}
+
+/** Grade a word in the active deck and persist the new SRS state. */
+export function gradeWordInDeck(deck: VocabDeck, wordId: string, grade: ReviewGrade): VocabDeck {
+  const next: VocabDeck = {
+    ...deck,
+    words: deck.words.map((w) => (w.id === wordId ? reviewWord(w, grade) : w)),
+  }
+  writeDeck(next)
+  return next
+}
