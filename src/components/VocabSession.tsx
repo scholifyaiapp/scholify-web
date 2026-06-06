@@ -8,10 +8,12 @@ import {
   getTodaySession,
   gradeWordInDeck,
   recordSession,
+  readVocabProgress,
   type ReviewGrade,
   type VocabDeck,
   type VocabWord,
 } from "@/lib/vocab"
+import { coachAfterSession } from "@/lib/lara-vocab"
 
 /*
  * The daily vocabulary session — the core of the product.
@@ -45,10 +47,12 @@ export default function VocabSession({
   deck,
   onClose,
   onFinished,
+  userName,
 }: {
   deck: VocabDeck
   onClose: () => void
   onFinished: () => void
+  userName?: string
 }) {
   // Snapshot today's words once so the session set is stable while we grade.
   const session = useMemo(() => getTodaySession(deck), [deck])
@@ -63,6 +67,7 @@ export default function VocabSession({
   const [quizIdx, setQuizIdx] = useState(0)
   const [quizPicked, setQuizPicked] = useState<string | null>(null)
   const [quizCorrect, setQuizCorrect] = useState(0)
+  const [results, setResults] = useState<{ term: string; grade: ReviewGrade }[]>([])
 
   const lang = workingDeck.targetLanguage
   const pronounce = (t: string) => speak(t, lang)
@@ -85,6 +90,7 @@ export default function VocabSession({
   /* ── Handlers ── */
   const grade = (word: VocabWord, g: ReviewGrade) => {
     setWorkingDeck((d) => gradeWordInDeck(d, word.id, g))
+    setResults((r) => [...r, { term: word.term, grade: g }])
     setRevealed(false)
     if (reviewIdx + 1 < reviewQueue.length) {
       setReviewIdx((i) => i + 1)
@@ -280,12 +286,18 @@ export default function VocabSession({
               <h2 style={{ fontSize: 24, fontWeight: 800, color: TEXT }}>
                 {nothingToDo ? "All caught up! 🎉" : "Session complete! 🎉"}
               </h2>
-              <p style={{ fontSize: 15, color: MUTED, marginTop: 10, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 15, color: MUTED, marginTop: 10, lineHeight: 1.6, fontStyle: "italic" }}>
                 {nothingToDo
                   ? "No words are due right now. Come back later or add new words."
-                  : `You reviewed ${reviewQueue.length} word${reviewQueue.length === 1 ? "" : "s"}${
-                      quiz.length > 0 ? ` and scored ${quizCorrect}/${quiz.length} on the quiz` : ""
-                    }. Your streak is safe today.`}
+                  : coachAfterSession(userName ?? "", deck.targetLanguageLabel, {
+                      reviewed: reviewQueue.length,
+                      weakWords: results
+                        .filter((r) => r.grade === "again" || r.grade === "hard")
+                        .map((r) => r.term),
+                      quizCorrect,
+                      quizTotal: quiz.length,
+                      streak: readVocabProgress().streak,
+                    })}
               </p>
               <PrimaryButton label="Done" onClick={onFinished} />
             </motion.div>

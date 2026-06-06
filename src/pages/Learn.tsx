@@ -4,7 +4,10 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { useToast } from "@/components/Toast"
+import { useAuth } from "@/lib/auth"
 import VocabSession from "@/components/VocabSession"
+import VocabMatchGame from "@/components/VocabMatchGame"
+import { coachOnHome } from "@/lib/lara-vocab"
 import {
   createDeck,
   readDeck,
@@ -43,8 +46,11 @@ const DAILY_OPTIONS = [5, 8, 12, 20]
 
 export default function Learn() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  const firstName = (user?.user_metadata?.first_name as string) || ""
   const [deck, setDeck] = useState<VocabDeck | null>(() => readDeck())
   const [inSession, setInSession] = useState(false)
+  const [inGame, setInGame] = useState(false)
   const [tick, setTick] = useState(0) // refresh stats after a session
 
   const refresh = useCallback(() => {
@@ -56,12 +62,25 @@ export default function Learn() {
     return (
       <VocabSession
         deck={deck}
+        userName={firstName}
         onClose={() => {
           setInSession(false)
           refresh()
         }}
         onFinished={() => {
           setInSession(false)
+          refresh()
+        }}
+      />
+    )
+  }
+
+  if (inGame && deck) {
+    return (
+      <VocabMatchGame
+        deck={deck}
+        onClose={() => {
+          setInGame(false)
           refresh()
         }}
       />
@@ -75,7 +94,9 @@ export default function Learn() {
           <DeckHome
             key={tick}
             deck={deck}
+            name={firstName}
             onStart={() => setInSession(true)}
+            onPlayGame={() => setInGame(true)}
             onAddWords={async () => {
               const more = await generateVocab({
                 target: deck.targetLanguage,
@@ -116,18 +137,23 @@ export default function Learn() {
 
 function DeckHome({
   deck,
+  name,
   onStart,
+  onPlayGame,
   onAddWords,
   onReset,
 }: {
   deck: VocabDeck
+  name: string
   onStart: () => void
+  onPlayGame: () => void
   onAddWords: () => Promise<void>
   onReset: () => void
 }) {
   const stats = useMemo(() => getDeckStats(deck), [deck])
   const session = useMemo(() => getTodaySession(deck), [deck])
   const progress = useMemo(() => readVocabProgress(), [])
+  const coaching = useMemo(() => coachOnHome(name, deck), [name, deck])
   const [adding, setAdding] = useState(false)
 
   const todayCount = session.newWords.length + session.dueWords.length
@@ -155,6 +181,25 @@ function DeckHome({
           <div style={{ fontSize: 26, fontWeight: 900, ...iriText }}>🔥 {progress.streak}</div>
           <div style={{ fontSize: 11, color: DIM }}>day streak</div>
         </div>
+      </div>
+
+      {/* Lara coaching */}
+      <div
+        style={{
+          marginTop: 20,
+          display: "flex",
+          gap: 12,
+          alignItems: "flex-start",
+          padding: 16,
+          borderRadius: 18,
+          background: "rgba(139,92,246,0.06)",
+          border: "1px solid rgba(139,92,246,0.15)",
+        }}
+      >
+        <LaraAvatar size={34} />
+        <p style={{ fontSize: 14, color: "var(--sch-tx-1)", lineHeight: 1.6, fontStyle: "italic", margin: 0 }}>
+          {coaching}
+        </p>
       </div>
 
       {/* Today card */}
@@ -249,6 +294,11 @@ function DeckHome({
 
       {/* Footer actions */}
       <div style={{ marginTop: 24, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        {deck.words.length >= 4 && (
+          <button type="button" onClick={onPlayGame} style={ghostBtn}>
+            ⚡ Quick match game
+          </button>
+        )}
         {todayCount > 0 && (
           <button
             type="button"
