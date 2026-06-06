@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
-import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
-import { readPlan, readProgress } from "@/lib/scholify-data"
+import { readVocabProgress, readDeck, getDeckStats } from "@/lib/vocab"
+import { languageFlag } from "@/lib/vocab-content"
 import { getFeatureFlags, type FeatureFlags } from "@/lib/featureFlags"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import NotificationBell from "@/components/NotificationBell"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
-import XPBar from "@/components/XPBar"
-import StreakTree from "@/components/StreakTree"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in screens (Dashboard, Progress…).
@@ -43,19 +41,8 @@ type NavItemDef = {
 
 export const NAV: NavItemDef[] = [
   { icon: "📚", label: "Learn", to: "/learn" },
-  { icon: "🏠", label: "Today", to: "/dashboard" },
-  { icon: "🗺️", label: "Roadmap", to: "/roadmap" },
-  { icon: "🌳", label: "Streak Tree", to: "/tree" },
-  { icon: "📈", label: "Progress", to: "/progress" },
-  { icon: "🎯", label: "My Goals", to: "/goals" },
-  { icon: "📚", label: "Resources", to: "/resources" },
+  { icon: "📈", label: "Progress", to: "/learn/progress" },
   { icon: "💬", label: "Ask Lara", to: "/chat" },
-  { icon: "🏫", label: "Rooms", to: "/rooms", notifyKinds: ["room"] },
-  { icon: "👥", label: "Partner", to: "/partner", notifyKinds: ["partner"] },
-  { icon: "🌍", label: "Community", to: "/community", notifyKinds: ["community"] },
-  { icon: "🏢", label: "Teams", to: "/teams" },
-  { icon: "🏆", label: "Achievements", to: "/achievements", notifyKinds: ["quiz"] },
-  { icon: "⚔️", label: "Challenges", to: "/challenges" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
 ]
 
@@ -64,10 +51,9 @@ export const NAV: NavItemDef[] = [
 // social surfaces from its filter pills + the notification bell).
 const MOBILE_NAV: NavItemDef[] = [
   { icon: "📚", label: "Learn", to: "/learn" },
-  { icon: "🏠", label: "Today", to: "/dashboard" },
-  { icon: "🎯", label: "Goals", to: "/goals" },
+  { icon: "📈", label: "Progress", to: "/learn/progress" },
   { icon: "💬", label: "Lara", to: "/chat" },
-  { icon: "📈", label: "Progress", to: "/progress" },
+  { icon: "⚙️", label: "Settings", to: "/settings" },
 ]
 
 /*
@@ -285,8 +271,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const location = useLocation()
 
-  const plan = useMemo(readPlan, [])
-  const [progress] = useState(readProgress)
+  const vocabProgress = useMemo(() => readVocabProgress(), [])
+  const vocabDeck = useMemo(() => readDeck(), [])
+  const vocabStats = useMemo(() => (vocabDeck ? getDeckStats(vocabDeck) : null), [vocabDeck])
   const [calendarConnected, setCalendarConnected] = useState(false)
   const [notifTick, setNotifTick] = useState(0)
   useEffect(() => subscribeNotifications(() => setNotifTick((t) => t + 1)), [])
@@ -317,16 +304,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
-  const goal = plan.goal?.trim() || "Your learning goal"
-  const tasks = Array.isArray(plan.tasks) ? plan.tasks : []
-  const completedCount = progress.completed.length
-
-  // Progressive disclosure — reveal advanced surfaces as the user invests.
   const isPro = Boolean(
     user?.user_metadata?.plan && user.user_metadata.plan !== "free",
   )
-  const flags = useMemo(() => getFeatureFlags(completedCount, isPro), [completedCount, isPro])
-  const isEarlyUser = completedCount < 20
+  const sessions = vocabProgress.sessionsCompleted
+
+  // Progressive disclosure — reveal advanced surfaces as the user invests.
+  const flags = useMemo(() => getFeatureFlags(sessions, isPro), [sessions, isPro])
+  const isEarlyUser = sessions < 20
   const visibleNav = useMemo(
     () => NAV.filter((item) => isNavVisible(item.to, flags, isEarlyUser)),
     [flags, isEarlyUser],
@@ -336,13 +321,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     [flags, isEarlyUser],
   )
 
-  const deadline = plan.deadline ? new Date(plan.deadline) : null
-  const daysRemaining =
-    deadline && !Number.isNaN(deadline.getTime())
-      ? Math.max(0, differenceInCalendarDays(deadline, new Date()))
-      : Math.max(0, (tasks.length || 30) - completedCount)
-  const totalDays = Math.max(daysRemaining + completedCount, tasks.length, 1)
-  const goalPct = Math.round((completedCount / totalDays) * 100)
+  const masteryPct =
+    vocabStats && vocabStats.total > 0
+      ? Math.round((vocabStats.mastered / vocabStats.total) * 100)
+      : 0
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
@@ -387,11 +369,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 fontWeight: 700,
                 padding: "1px 7px",
                 borderRadius: 999,
-                background: "linear-gradient(135deg,#FFD66B,#F5A623)",
-                color: "#3A2A00",
+                background: isPro ? IRIDESCENT : "linear-gradient(135deg,#FFD66B,#F5A623)",
+                color: isPro ? "#fff" : "#3A2A00",
               }}
             >
-              FREE
+              {isPro ? "PRO" : "FREE"}
             </span>
           </div>
         </div>
@@ -412,19 +394,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         >
           <div style={{ fontSize: 24 }}>🔥</div>
           <div style={{ fontSize: 28, fontWeight: 800, ...iriText, marginTop: 2 }}>
-            {progress.streak}
+            {vocabProgress.streak}
           </div>
           <div style={{ fontSize: 11, color: "var(--sch-tx-2)" }}>day streak</div>
           <div style={{ fontSize: 12, color: "rgba(255,159,67,0.9)", marginTop: 4 }}>
-            🛡 {progress.shields} shield{progress.shields === 1 ? "" : "s"}
+            🏆 best {vocabProgress.longestStreak}
           </div>
         </motion.div>
-
-        {/* Living streak tree */}
-        <StreakTree variant="sidebar" />
-
-        {/* XP + level */}
-        <XPBar variant="sidebar" />
 
         {/* Nav */}
         <nav style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -439,34 +415,40 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* Goal mini card */}
-        <div style={{ marginTop: "auto", paddingTop: 20 }}>
-          <div
-            style={{
-              padding: 14,
-              borderRadius: 12,
-              background: "var(--sch-card)",
-              border: "1px solid var(--sch-border)",
-            }}
-          >
+        {/* Current language card */}
+        {vocabDeck && (
+          <div style={{ marginTop: "auto", paddingTop: 20 }}>
             <div
               style={{
-                fontSize: 12,
-                color: "var(--sch-tx-2)",
-                marginBottom: 8,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
+                padding: 14,
+                borderRadius: 12,
+                background: "var(--sch-card)",
+                border: "1px solid var(--sch-border)",
               }}
             >
-              {goal}
-            </div>
-            <ProgressBar pct={goalPct} />
-            <div style={{ fontSize: 11, color: "var(--sch-tx-3)", marginTop: 8 }}>
-              {goalPct}% · {daysRemaining} day{daysRemaining === 1 ? "" : "s"} left
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--sch-tx-2)",
+                  marginBottom: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>{languageFlag(vocabDeck.targetLanguage)}</span>
+                {vocabDeck.targetLanguageLabel}
+              </div>
+              <ProgressBar pct={masteryPct} />
+              <div style={{ fontSize: 11, color: "var(--sch-tx-3)", marginTop: 8 }}>
+                {masteryPct}% mastered · {vocabStats?.total ?? 0} words
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* ── Main content ── */}
