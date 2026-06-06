@@ -28,8 +28,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "partner-invite") return partnerInvite(req, res)
   if (action === "team-invite") return teamInvite(req, res)
   if (action === "leaderboard") return leaderboard(req, res)
+  if (action === "health") return health(req, res)
+  if (action === "security") return securityCheck(req, res)
 
-  res.status(400).json({ error: "Unknown action. Use ?action=partner-invite | team-invite | leaderboard." })
+  res.status(400).json({
+    error:
+      "Unknown action. Use ?action=partner-invite | team-invite | leaderboard | health | security.",
+  })
+}
+
+/* ── Health check ────────────────────────────────────────────────────────
+ * Reachable at /api/health via a vercel.json rewrite. Reports which env keys
+ * are configured server-side — values are NEVER returned, only booleans.
+ * 503 when a critical key is missing so uptime monitors can alert.
+ */
+function health(_req: VercelRequest, res: VercelResponse): void {
+  res.setHeader("Cache-Control", "no-store")
+  const keys = {
+    anthropic: !!process.env.ANTHROPIC_API_KEY,
+    supabase_url: !!(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
+    supabase_anon: !!(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY),
+    supabase_service: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    openai: !!process.env.OPENAI_API_KEY,
+    perplexity: !!process.env.PERPLEXITY_API_KEY,
+    gemini: !!process.env.GEMINI_API_KEY,
+    resend: !!process.env.RESEND_API_KEY,
+    fal: !!process.env.FAL_KEY,
+    vapid: !!process.env.VAPID_PRIVATE_KEY,
+    paddle: !!process.env.VITE_PADDLE_TOKEN,
+  }
+  const allCriticalPresent =
+    keys.anthropic && keys.supabase_url && keys.supabase_anon && keys.supabase_service
+  res.status(allCriticalPresent ? 200 : 503).json({
+    status: allCriticalPresent ? "ok" : "degraded",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    keys,
+  })
+}
+
+/* ── Security check ──────────────────────────────────────────────────────
+ * Reachable at /api/security-check via a vercel.json rewrite. Confirms the
+ * secret keys live server-side. Booleans only — never the key values.
+ */
+function securityCheck(_req: VercelRequest, res: VercelResponse): void {
+  res.setHeader("Cache-Control", "no-store")
+  res.status(200).json({
+    anthropic_configured: !!process.env.ANTHROPIC_API_KEY,
+    supabase_configured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  })
 }
 
 /* ── Partner invite ──────────────────────────────────────────────────── */

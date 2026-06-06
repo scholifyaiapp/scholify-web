@@ -1,6 +1,6 @@
 import { Routes, Route, Link, useNavigate } from "react-router-dom"
 import { Suspense, lazy, useEffect } from "react"
-import SectionBoundary from "@/SectionBoundary"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, RequireOnboarded, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
 import {
@@ -54,9 +54,9 @@ function Page({
   fallback?: React.ReactNode
 }) {
   return (
-    <SectionBoundary name={name}>
+    <ErrorBoundary pageName={name}>
       <Suspense fallback={fallback}>{children}</Suspense>
-    </SectionBoundary>
+    </ErrorBoundary>
   )
 }
 

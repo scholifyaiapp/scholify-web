@@ -16,6 +16,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/health", "destination": "/api/social?action=health" },
+    { "source": "/api/security-check", "destination": "/api/social?action=security" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
