@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, type CSSProperties } from "react"
+import { Link } from "react-router-dom"
 import { motion } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
@@ -360,6 +361,9 @@ function DeckHome({
 
       {/* Footer actions */}
       <div style={{ marginTop: 20, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <Link to="/learn/progress" style={{ ...ghostBtn, textDecoration: "none" }}>
+          📊 View progress
+        </Link>
         {todayCount > 0 && (
           <button
             type="button"

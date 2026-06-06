@@ -329,6 +329,8 @@ export interface VocabProgress {
   lastSessionDate: string | null
   sessionsCompleted: number
   wordsReviewed: number
+  /** yyyy-MM-dd of each day a session was completed (last ~120, for the heatmap). */
+  history: string[]
 }
 
 const EMPTY_PROGRESS: VocabProgress = {
@@ -337,6 +339,7 @@ const EMPTY_PROGRESS: VocabProgress = {
   lastSessionDate: null,
   sessionsCompleted: 0,
   wordsReviewed: 0,
+  history: [],
 }
 
 export function readVocabProgress(): VocabProgress {
@@ -361,8 +364,16 @@ export function isSessionDoneToday(p: VocabProgress = readVocabProgress()): bool
 export function recordSession(wordsReviewed: number): VocabProgress {
   const prev = readVocabProgress()
   const today = todayStr()
+  const history = prev.history.includes(today)
+    ? prev.history
+    : [...prev.history, today].slice(-120)
+
   if (prev.lastSessionDate === today) {
-    const same: VocabProgress = { ...prev, wordsReviewed: prev.wordsReviewed + wordsReviewed }
+    const same: VocabProgress = {
+      ...prev,
+      history,
+      wordsReviewed: prev.wordsReviewed + wordsReviewed,
+    }
     persistProgress(same)
     return same
   }
@@ -378,6 +389,7 @@ export function recordSession(wordsReviewed: number): VocabProgress {
     lastSessionDate: today,
     sessionsCompleted: prev.sessionsCompleted + 1,
     wordsReviewed: prev.wordsReviewed + wordsReviewed,
+    history,
   }
   persistProgress(next)
   return next

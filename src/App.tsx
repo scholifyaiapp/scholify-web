@@ -66,6 +66,7 @@ const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
 const Dashboard = lazyWithReload(() => import("@/pages/Dashboard"))
 const Learn = lazyWithReload(() => import("@/pages/Learn"))
+const LearnProgress = lazyWithReload(() => import("@/pages/LearnProgress"))
 const Goals = lazyWithReload(() => import("@/pages/Goals"))
 const ResourceLibrary = lazyWithReload(() => import("@/pages/ResourceLibrary"))
 const Chat = lazyWithReload(() => import("@/pages/Chat"))
@@ -235,6 +236,7 @@ export default function App() {
       <Route path="/onboarding/classic" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
       <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
       <Route path="/learn" element={<ProtectedRoute><Page name="Learn"><Learn /></Page></ProtectedRoute>} />
+      <Route path="/learn/progress" element={<ProtectedRoute><Page name="LearnProgress"><LearnProgress /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
       <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
       <Route path="/goals" element={<RequireOnboarded><Page name="Goals" fallback={<GoalsFallback />}><Goals /></Page></RequireOnboarded>} />
