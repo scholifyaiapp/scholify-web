@@ -19,8 +19,8 @@ import {
  *  • Continue → close. Share → Web Share API / clipboard fallback.
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
 
 interface TreeGrowthOverlayProps {
   milestone: number
@@ -194,7 +194,7 @@ export default function TreeGrowthOverlay({ milestone, onClose }: TreeGrowthOver
             style={{
               marginTop: 10,
               fontSize: 14,
-              color: "rgba(240,238,255,0.55)",
+              color: "var(--sch-tx-2)",
               lineHeight: 1.65,
               maxWidth: 360,
             }}

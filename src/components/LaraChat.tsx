@@ -28,8 +28,8 @@ import {
  *  per UTC date.
  * ────────────────────────────────────────────────────────────── */
 
-const TEXT = "#F0EEFF"
-const TEXT_MUTED = "rgba(240,238,255,0.55)"
+const TEXT = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
 const BUBBLE_BG = "rgba(139,92,246,0.08)"
 const BUBBLE_BORDER = "rgba(139,92,246,0.15)"
 const USER_BG = "rgba(139,92,246,0.25)"

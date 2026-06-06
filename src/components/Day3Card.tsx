@@ -52,7 +52,7 @@ export default function Day3Card({ open, onClose }: { open: boolean; onClose: ()
               style={{
                 fontSize: 18,
                 fontWeight: 700,
-                color: "#F0EEFF",
+                color: "var(--sch-text)",
                 marginTop: 16,
               }}
             >
@@ -61,7 +61,7 @@ export default function Day3Card({ open, onClose }: { open: boolean; onClose: ()
             <p
               style={{
                 fontSize: 14,
-                color: "rgba(240,238,255,0.45)",
+                color: "var(--sch-tx-2)",
                 lineHeight: 1.6,
                 marginTop: 8,
               }}
@@ -71,7 +71,7 @@ export default function Day3Card({ open, onClose }: { open: boolean; onClose: ()
             <p
               style={{
                 fontSize: 14,
-                color: "rgba(240,238,255,0.45)",
+                color: "var(--sch-tx-2)",
                 lineHeight: 1.6,
                 marginTop: 6,
               }}

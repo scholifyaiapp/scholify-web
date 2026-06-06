@@ -1075,7 +1075,7 @@ export default function Progress() {
               marginTop: 8,
               fontSize: 18,
               fontWeight: 700,
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
             }}
           >
             No data yet.
@@ -1083,7 +1083,7 @@ export default function Progress() {
           <p
             style={{
               fontSize: 14,
-              color: "rgba(240,238,255,0.4)",
+              color: "var(--sch-tx-3)",
               marginTop: 6,
               maxWidth: 300,
               lineHeight: 1.6,

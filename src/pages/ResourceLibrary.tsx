@@ -164,7 +164,7 @@ function ResourceCard({
           marginTop: 8,
           fontSize: 14,
           fontWeight: 600,
-          color: "#F0EEFF",
+          color: "var(--sch-text)",
           lineHeight: 1.4,
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -181,7 +181,7 @@ function ResourceCard({
           style={{
             marginTop: 6,
             fontSize: 12,
-            color: "rgba(240,238,255,0.35)",
+            color: "var(--sch-tx-3)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -302,7 +302,7 @@ export default function ResourceLibrary() {
           style={{
             fontSize: 22,
             fontWeight: 800,
-            color: "#F0EEFF",
+            color: "var(--sch-text)",
             letterSpacing: "-0.4px",
           }}
         >
@@ -450,7 +450,7 @@ function EmptyState({
           marginTop: 8,
           fontSize: 17,
           fontWeight: 700,
-          color: "#F0EEFF",
+          color: "var(--sch-text)",
         }}
       >
         {kind === "filter" ? "No matches." : "No resources yet."}

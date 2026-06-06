@@ -20,8 +20,8 @@ import {
  *  • Signed-in: show a preview card, then "Join this room →".
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
 
 const card: CSSProperties = {
   borderRadius: 24,

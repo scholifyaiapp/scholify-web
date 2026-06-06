@@ -16,9 +16,9 @@ import { readPartnership } from "@/lib/partner-storage"
 
 const KEY_SHOWN = "scholify-welcome-shown"
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 export function shouldShowWelcomeChecklist(): boolean {
   if (typeof window === "undefined") return false

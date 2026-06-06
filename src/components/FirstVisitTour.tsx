@@ -136,13 +136,13 @@ export default function FirstVisitTour({
             zIndex: 301,
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#F0EEFF", lineHeight: 1.4 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--sch-text)", lineHeight: 1.4 }}>
             {step.title}
           </div>
           <div
             style={{
               fontSize: 13,
-              color: "rgba(240,238,255,0.6)",
+              color: "var(--sch-tx-2)",
               lineHeight: 1.55,
               marginTop: 6,
             }}
@@ -163,7 +163,7 @@ export default function FirstVisitTour({
               style={{
                 background: "transparent",
                 border: "none",
-                color: "var(--sch-tx-3, rgba(240,238,255,0.4))",
+                color: "var(--sch-tx-3)",
                 fontSize: 12,
                 cursor: "pointer",
                 padding: 0,
@@ -172,7 +172,7 @@ export default function FirstVisitTour({
               Skip tour
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, color: "rgba(240,238,255,0.4)" }}>
+              <span style={{ fontSize: 11, color: "var(--sch-tx-3)" }}>
                 {index + 1}/{steps.length}
               </span>
               <motion.button

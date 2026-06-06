@@ -605,7 +605,7 @@ export default function SpeakingPractice({
                     style={{
                       fontSize: 20,
                       fontWeight: 800,
-                      color: "#F0EEFF",
+                      color: "var(--sch-text)",
                       letterSpacing: "-0.3px",
                     }}
                   >
@@ -631,7 +631,7 @@ export default function SpeakingPractice({
                       style={{
                         fontSize: 15,
                         fontWeight: 700,
-                        color: "#F0EEFF",
+                        color: "var(--sch-text)",
                         lineHeight: 1.4,
                       }}
                     >
@@ -700,7 +700,7 @@ export default function SpeakingPractice({
                     style={{
                       fontSize: 20,
                       fontWeight: 800,
-                      color: "#F0EEFF",
+                      color: "var(--sch-text)",
                       letterSpacing: "-0.3px",
                     }}
                   >
@@ -812,7 +812,7 @@ export default function SpeakingPractice({
                       marginTop: 18,
                       fontSize: 15,
                       fontWeight: 700,
-                      color: "#F0EEFF",
+                      color: "var(--sch-text)",
                     }}
                   >
                     Lara is listening…
@@ -843,7 +843,7 @@ export default function SpeakingPractice({
                     style={{
                       fontSize: 20,
                       fontWeight: 800,
-                      color: "#F0EEFF",
+                      color: "var(--sch-text)",
                       letterSpacing: "-0.3px",
                     }}
                   >
@@ -868,7 +868,7 @@ export default function SpeakingPractice({
                       textAlign: "center",
                       fontSize: 20,
                       fontWeight: 800,
-                      color: "#F0EEFF",
+                      color: "var(--sch-text)",
                     }}
                   >
                     Overall:{" "}
@@ -1006,7 +1006,7 @@ export default function SpeakingPractice({
                     style={{
                       fontSize: 18,
                       fontWeight: 800,
-                      color: "#F0EEFF",
+                      color: "var(--sch-text)",
                     }}
                   >
                     Something went wrong

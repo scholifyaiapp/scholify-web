@@ -24,9 +24,9 @@ import { readPlan, readActivePlanId } from "@/lib/scholify-data"
  * cooking, art, reading, music, crafts). Pass `alwaysShow` to override.
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 interface PhotoEvidenceProps {
   /** Override goal-relevance detection. */
@@ -86,7 +86,7 @@ const pillStyle: CSSProperties = {
   borderRadius: 999,
   background: "transparent",
   border: "1px solid rgba(255,255,255,0.08)",
-  color: "rgba(240,238,255,0.5)",
+  color: "var(--sch-tx-2)",
   fontSize: 13,
   cursor: "pointer",
   transition: "color 0.2s ease, border-color 0.2s ease",
@@ -244,7 +244,7 @@ function PhotoModal({ onClose, dayNumber, taskTitle, goal }: PhotoModalProps) {
         <div style={cameraAreaStyle}>
           {!dataUrl ? (
             <button onClick={() => fileRef.current?.click()} style={dropTargetStyle} type="button">
-              <span style={{ fontSize: 48, color: "rgba(240,238,255,0.18)" }} aria-hidden>
+              <span style={{ fontSize: 48, color: "var(--sch-tx-4)" }} aria-hidden>
                 📷
               </span>
               <p style={{ marginTop: 12, fontSize: 15, color: TEXT_MUTED }}>Tap to take photo</p>
@@ -491,7 +491,7 @@ const headerStyle: CSSProperties = {
 const closeBtnStyle: CSSProperties = {
   background: "transparent",
   border: "none",
-  color: "rgba(240,238,255,0.55)",
+  color: "var(--sch-tx-2)",
   fontSize: 22,
   cursor: "pointer",
   lineHeight: 1,

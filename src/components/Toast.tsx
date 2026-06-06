@@ -90,7 +90,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   maxWidth: 360,
                   padding: "14px 18px",
                   borderRadius: 14,
-                  background: "rgba(15,14,22,0.97)",
+                  background: "var(--sch-bg-2)",
                   border: "1px solid var(--sch-border)",
                   borderLeft: `3px solid ${meta.color}`,
                   boxShadow: "0 16px 40px rgba(0,0,0,0.5)",

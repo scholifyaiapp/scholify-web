@@ -31,9 +31,9 @@ interface PhaseCardProps {
   compact?: boolean
 }
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 export default function PhaseCard({ phase, isCurrent = false, compact = false }: PhaseCardProps) {
   const weekLabel =
@@ -91,7 +91,7 @@ export default function PhaseCard({ phase, isCurrent = false, compact = false }:
         <p
           style={{
             fontSize: 13,
-            color: "rgba(240,238,255,0.5)",
+            color: "var(--sch-tx-2)",
             fontWeight: 500,
             display: "flex",
             alignItems: "center",

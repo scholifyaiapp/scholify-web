@@ -8,9 +8,9 @@ import { computeWeeklyLeaderboard, type LeaderboardRow } from "@/lib/rooms-stora
  * is always highlighted with an iridescent left-bar.
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 const MEDALS = ["🥇", "🥈", "🥉"]
 const MEDAL_COLORS = ["#FFD24A", "#C9D1DA", "#D89A6B"]

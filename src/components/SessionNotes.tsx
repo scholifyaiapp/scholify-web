@@ -152,7 +152,7 @@ export default function SessionNotes({
       }}
     >
       <div>
-        <h3 style={{ fontSize: 15, fontWeight: 600, color: "#F0EEFF" }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--sch-text)" }}>
           📝 What did you learn today?
         </h3>
         <div
@@ -277,7 +277,7 @@ export default function SessionNotes({
             borderRadius: 12,
             border: `1px solid ${saved ? "rgba(52,211,153,0.4)" : "rgba(139,92,246,0.4)"}`,
             background: saved ? "rgba(52,211,153,0.08)" : "rgba(139,92,246,0.08)",
-            color: saved ? "#34D399" : "#F0EEFF",
+            color: saved ? "#34D399" : "var(--sch-text)",
             fontSize: 13,
             fontWeight: 700,
             cursor: saved ? "default" : "pointer",
@@ -301,7 +301,7 @@ const textareaStyle: CSSProperties = {
   paddingBottom: 28,
   borderRadius: 14,
   fontSize: 14,
-  color: "#F0EEFF",
+  color: "var(--sch-text)",
   background: "rgba(255,255,255,0.03)",
   border: "1px solid rgba(255,255,255,0.08)",
   outline: "none",

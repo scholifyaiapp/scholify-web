@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
             style={{
               fontSize: "18px",
               fontWeight: 700,
-              color: "var(--sch-text, #F0EEFF)",
+              color: "var(--sch-text)",
               marginBottom: "8px",
             }}
           >
@@ -63,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <p
             style={{
               fontSize: "14px",
-              color: "rgba(240,238,255,0.45)",
+              color: "var(--sch-tx-2)",
               marginBottom: "24px",
               maxWidth: 320,
               lineHeight: 1.6,

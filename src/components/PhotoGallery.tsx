@@ -13,9 +13,9 @@ import { readPhotos, subscribePhotos, type StudyPhoto } from "@/lib/photos-stora
  * caption, and Lara's comment.
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 export default function PhotoGallery() {
   const [tick, setTick] = useState(0)
@@ -55,7 +55,7 @@ export default function PhotoGallery() {
   if (photos.length === 0) {
     return (
       <div style={emptyStyle}>
-        <span style={{ fontSize: 36, color: "rgba(240,238,255,0.16)" }} aria-hidden>
+        <span style={{ fontSize: 36, color: "var(--sch-tx-4)" }} aria-hidden>
           📷
         </span>
         <p style={{ marginTop: 12, fontSize: 15, color: TEXT_PRIMARY, fontWeight: 600 }}>No photos yet.</p>

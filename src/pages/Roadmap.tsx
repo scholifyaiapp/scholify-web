@@ -13,9 +13,9 @@ import RoadmapView from "@/components/RoadmapView"
  * timeline rendering.
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 export default function Roadmap() {
   // Re-read on a custom event so a Dashboard task-complete updates the
@@ -106,7 +106,7 @@ export default function Roadmap() {
               textAlign: "center",
             }}
           >
-            <p style={{ fontSize: 38, color: "rgba(240,238,255,0.18)" }} aria-hidden>
+            <p style={{ fontSize: 38, color: "var(--sch-tx-4)" }} aria-hidden>
               🗺️
             </p>
             <p style={{ marginTop: 10, fontSize: 15, color: TEXT_PRIMARY, fontWeight: 600 }}>

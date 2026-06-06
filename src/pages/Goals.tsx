@@ -611,7 +611,7 @@ function RecalibrateModal({
               style={{
                 fontSize: 18,
                 fontWeight: 700,
-                color: "#F0EEFF",
+                color: "var(--sch-text)",
               }}
             >
               Recalibrate Your Plan
@@ -756,7 +756,7 @@ function SwitchModal({
               boxShadow: "0 40px 120px rgba(0,0,0,0.7)",
             }}
           >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F0EEFF" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--sch-text)" }}>
               Switch to "{(target.goal || "this goal").slice(0, 60)}"?
             </h3>
             <p style={{ fontSize: 14, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>
@@ -834,7 +834,7 @@ function ConfirmDelete({
               boxShadow: "0 40px 120px rgba(0,0,0,0.7)",
             }}
           >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F0EEFF" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--sch-text)" }}>
               Delete this goal?
             </h3>
             <p style={{ fontSize: 14, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>
@@ -1005,7 +1005,7 @@ export default function Goals() {
             style={{
               fontSize: 22,
               fontWeight: 800,
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               letterSpacing: "-0.4px",
             }}
           >
@@ -1123,7 +1123,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
           marginTop: 8,
           fontSize: 18,
           fontWeight: 700,
-          color: "#F0EEFF",
+          color: "var(--sch-text)",
         }}
       >
         No goals yet.

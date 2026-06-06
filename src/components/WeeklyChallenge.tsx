@@ -19,9 +19,9 @@ import {
  *   WeeklyChallengeCard   — full card used on /challenges
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 const DIFFICULTY_STYLE: Record<
   ChallengeDifficulty,
@@ -81,7 +81,7 @@ export function ChallengeWidget() {
                   flex: 1,
                   minWidth: 0,
                   fontSize: 13,
-                  color: completed ? TEXT_DIM : "rgba(240,238,255,0.78)",
+                  color: completed ? TEXT_DIM : "var(--sch-tx-1)",
                   textDecoration: completed ? "line-through" : "none",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -210,7 +210,7 @@ export function WeeklyChallengeCard({ challenge }: { challenge: Challenge }) {
         style={{
           marginTop: 6,
           fontSize: 13,
-          color: "rgba(240,238,255,0.55)",
+          color: "var(--sch-tx-2)",
           lineHeight: 1.6,
         }}
       >

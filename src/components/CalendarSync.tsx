@@ -561,7 +561,7 @@ export default function CalendarSync() {
         }}
       >
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#F0EEFF" }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--sch-text)" }}>
             📅 Calendar Sync
           </h3>
           <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>

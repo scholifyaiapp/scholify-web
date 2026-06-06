@@ -18,9 +18,9 @@ import {
  * Dashboard hands out XP for a task completion.
  */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 interface XPBarProps {
   variant?: "sidebar" | "compact"
@@ -139,7 +139,7 @@ const wrapCompact: CSSProperties = {
 
 /* ── Level-up overlay ────────────────────────────────────────────────── */
 
-const TEXT_OVERLAY_PRIMARY = "#F0EEFF"
+const TEXT_OVERLAY_PRIMARY = "var(--sch-text)"
 
 export function LevelUpOverlay({
   newLevel,
@@ -246,7 +246,7 @@ export function LevelUpOverlay({
                 boxShadow: "inset 0 0 32px rgba(167,139,250,0.35)",
               }}
             >
-              <span style={{ fontSize: 36, fontWeight: 900, color: "#F0EEFF" }}>{newLevel.level}</span>
+              <span style={{ fontSize: 36, fontWeight: 900, color: "var(--sch-text)" }}>{newLevel.level}</span>
             </div>
           </div>
 
@@ -266,7 +266,7 @@ export function LevelUpOverlay({
           >
             {newLevel.name}
           </p>
-          <p style={{ marginTop: 4, fontSize: 20, color: "rgba(240,238,255,0.7)" }}>
+          <p style={{ marginTop: 4, fontSize: 20, color: "var(--sch-tx-1)" }}>
             Level {newLevel.level} reached! 🎉
           </p>
           <button

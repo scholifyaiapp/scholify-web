@@ -737,7 +737,7 @@ export default function FocusTimer({
                   fontSize: phase === "done" ? 36 : 20,
                   fontWeight: 800,
                   letterSpacing: "-0.5px",
-                  color: phase === "done" ? "#34D399" : lowTime ? "#FF9F0A" : "#F0EEFF",
+                  color: phase === "done" ? "#34D399" : lowTime ? "#FF9F0A" : "var(--sch-text)",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
@@ -957,7 +957,7 @@ export default function FocusTimer({
                   marginTop: 8,
                   fontSize: 15,
                   fontWeight: 700,
-                  color: "#F0EEFF",
+                  color: "var(--sch-text)",
                 }}
               >
                 Full focus session complete!

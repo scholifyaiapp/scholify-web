@@ -34,9 +34,9 @@ interface QuickReply {
   primary?: boolean
 }
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 const LARA_AVATAR_SIZE = 28
 
@@ -215,7 +215,7 @@ function TypingDots() {
             width: 7,
             height: 7,
             borderRadius: "50%",
-            background: "rgba(240,238,255,0.45)",
+            background: "var(--sch-tx-2)",
           }}
         />
       ))}

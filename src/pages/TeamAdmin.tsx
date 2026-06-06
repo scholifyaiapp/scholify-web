@@ -30,9 +30,9 @@ import {
 
 type AdminTab = "overview" | "members" | "invite" | "analytics" | "broadcast" | "settings"
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 const card: CSSProperties = {
   borderRadius: 18,
@@ -872,7 +872,7 @@ function InviteTab({
               padding: "10px 12px",
               borderRadius: 10,
               background: "rgba(0,0,0,0.25)",
-              color: "#F0EEFF",
+              color: "var(--sch-text)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               wordBreak: "break-all",
@@ -1079,7 +1079,7 @@ function LineChart({ data, color }: { data: { day: string; pct: number }[]; colo
           return (
             <g key={g}>
               <line x1={padL} x2={w - 8} y1={y} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="2 4" />
-              <text x={4} y={y + 3} fontSize={9} fill="rgba(240,238,255,0.45)">{g}%</text>
+              <text x={4} y={y + 3} fontSize={9} fill="var(--sch-tx-2)">{g}%</text>
             </g>
           )
         })}
@@ -1090,7 +1090,7 @@ function LineChart({ data, color }: { data: { day: string; pct: number }[]; colo
         {/* X labels (every 5th) */}
         {data.map((d, i) =>
           i % 5 === 0 || i === data.length - 1 ? (
-            <text key={`x-${i}`} x={padL + i * stepX} y={h - 6} fontSize={9} fill="rgba(240,238,255,0.45)" textAnchor="middle">
+            <text key={`x-${i}`} x={padL + i * stepX} y={h - 6} fontSize={9} fill="var(--sch-tx-2)" textAnchor="middle">
               {d.day}
             </text>
           ) : null,

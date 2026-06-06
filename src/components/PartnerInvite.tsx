@@ -30,9 +30,9 @@ import {
  *   • Otherwise → email + link invite form
  * ────────────────────────────────────────────────────────────────────── */
 
-const TEXT_PRIMARY = "#F0EEFF"
-const TEXT_MUTED = "rgba(240,238,255,0.6)"
-const TEXT_DIM = "rgba(240,238,255,0.45)"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-2)"
 
 const cardBase: CSSProperties = {
   borderRadius: 20,

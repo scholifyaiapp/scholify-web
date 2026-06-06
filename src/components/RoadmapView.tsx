@@ -16,9 +16,9 @@ import PhaseCard, { type Phase, type PhaseNumber } from "@/components/PhaseCard"
  *  Horizontal-scroll on desktop, accordion vertical-stack on mobile.
  * ────────────────────────────────────────────────────────────────────── */
 
-const TEXT_PRIMARY = "var(--sch-text, #F0EEFF)"
-const TEXT_MUTED = "var(--sch-tx-2, rgba(240,238,255,0.6))"
-const TEXT_DIM = "var(--sch-tx-3, rgba(240,238,255,0.45))"
+const TEXT_PRIMARY = "var(--sch-text)"
+const TEXT_MUTED = "var(--sch-tx-2)"
+const TEXT_DIM = "var(--sch-tx-3)"
 
 /* ── Types + grouping ────────────────────────────────────────────────── */
 
@@ -406,7 +406,7 @@ function TaskNode({ task }: { task: AugmentedTask }) {
             borderRadius: 999,
             background: "rgba(10,10,20,0.85)",
             border: "1px solid rgba(167,139,250,0.45)",
-            color: "#F0EEFF",
+            color: "var(--sch-text)",
             fontSize: 10.5,
             fontWeight: 700,
             whiteSpace: "nowrap",
@@ -428,7 +428,7 @@ function TaskNode({ task }: { task: AugmentedTask }) {
         <p
           style={{
             fontSize: 12,
-            color: isCompleted || isCurrent ? TEXT_PRIMARY : isMissed ? "rgba(255,107,107,0.65)" : "rgba(240,238,255,0.3)",
+            color: isCompleted || isCurrent ? TEXT_PRIMARY : isMissed ? "rgba(255,107,107,0.65)" : "var(--sch-tx-3)",
             fontWeight: isCurrent ? 700 : 500,
             lineHeight: 1.35,
             overflow: "hidden",

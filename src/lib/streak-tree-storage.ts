@@ -102,7 +102,7 @@ export const STAGES: TreeStage[] = [
     key: "mythic",
     name: "Mythic World Tree",
     description: "This tree represents months of showing up. That is extraordinary.",
-    hue: { ring: "#F0EEFF", glow: "rgba(240,238,255,0.55)" },
+    hue: { ring: "var(--sch-text)", glow: "var(--sch-tx-2)" },
   },
 ]
 
@@ -228,7 +228,7 @@ export function svgForStage(stage: StageKey): string {
       `)
     case "mythic":
       return wrap(`
-        <defs>${defs("#0F0A1F", "#040208")}<radialGradient id="mythCanopy" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="#F0EEFF"/><stop offset="40%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#1E1B4B"/></radialGradient></defs>
+        <defs>${defs("#0F0A1F", "#040208")}<radialGradient id="mythCanopy" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="var(--sch-text)"/><stop offset="40%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#1E1B4B"/></radialGradient></defs>
         ${earth("#0E0A20")}
         ${stars()}
         ${fireflies()}
@@ -359,7 +359,7 @@ function stars(): string {
     [285, 150, 0.5],
   ]
   for (const [x, y, op] of positions) {
-    out.push(`<circle cx="${x}" cy="${y}" r="1.2" fill="#F0EEFF" opacity="${op}"/>`)
+    out.push(`<circle cx="${x}" cy="${y}" r="1.2" fill="var(--sch-text)" opacity="${op}"/>`)
   }
   return out.join("")
 }
