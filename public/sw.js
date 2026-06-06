@@ -8,7 +8,7 @@
  * - Web Push: receives notifications and handles clicks.
  */
 
-const CACHE = "scholify-v2"
+const CACHE = "scholify-v3"
 const PRECACHE = ["/"]
 
 self.addEventListener("install", (event) => {

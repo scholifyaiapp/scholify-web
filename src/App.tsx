@@ -1,5 +1,5 @@
 import { Routes, Route, Link, useNavigate } from "react-router-dom"
-import { Suspense, lazy, useEffect } from "react"
+import { Suspense, lazy, useEffect, type ComponentType } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, RequireOnboarded, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
@@ -10,39 +10,81 @@ import {
   ResourceCardSkeleton,
 } from "@/components/Skeleton"
 
-const Landing = lazy(() => import("@/pages/Landing"))
-const SignIn = lazy(() => import("@/pages/SignIn"))
-const SignUp = lazy(() => import("@/pages/SignUp"))
-const Onboarding = lazy(() => import("@/pages/Onboarding"))
-const OnboardingChat = lazy(() => import("@/pages/OnboardingChat"))
-const AuthCallback = lazy(() => import("@/pages/AuthCallback"))
-const GoogleCalendarCallback = lazy(() => import("@/pages/GoogleCalendarCallback"))
-const Loading = lazy(() => import("@/pages/Loading"))
-const ComingSoon = lazy(() => import("@/pages/ComingSoon"))
-const Progress = lazy(() => import("@/pages/Progress"))
-const Pricing = lazy(() => import("@/pages/Pricing"))
-const Settings = lazy(() => import("@/pages/Settings"))
-const Dashboard = lazy(() => import("@/pages/Dashboard"))
-const Goals = lazy(() => import("@/pages/Goals"))
-const ResourceLibrary = lazy(() => import("@/pages/ResourceLibrary"))
-const Chat = lazy(() => import("@/pages/Chat"))
-const Quiz = lazy(() => import("@/pages/Quiz"))
-const Partner = lazy(() => import("@/pages/Partner"))
-const PartnerJoin = lazy(() => import("@/pages/PartnerJoin"))
-const Rooms = lazy(() => import("@/pages/Rooms"))
-const Room = lazy(() => import("@/pages/Room"))
-const RoomJoin = lazy(() => import("@/pages/RoomJoin"))
-const Community = lazy(() => import("@/pages/Community"))
-const Challenges = lazy(() => import("@/pages/Challenges"))
-const Roadmap = lazy(() => import("@/pages/Roadmap"))
-const StreakTreeFullscreen = lazy(() => import("@/components/StreakTreeFullscreen"))
-const Teams = lazy(() => import("@/pages/Teams"))
-const TeamDashboard = lazy(() => import("@/pages/TeamDashboard"))
-const TeamAdmin = lazy(() => import("@/pages/TeamAdmin"))
-const TeamJoin = lazy(() => import("@/pages/TeamJoin"))
-const Privacy = lazy(() => import("@/pages/Privacy"))
-const Terms = lazy(() => import("@/pages/Terms"))
-const Support = lazy(() => import("@/pages/Support"))
+/*
+ * Lazy import that self-heals after a deploy. A route chunk can fail to load
+ * when the browser (or a service worker) holds a stale index.html that points
+ * at an old, now-deleted chunk hash — the "importing a module script failed"
+ * error. Instead of crashing the section, reload once to pull the fresh
+ * index + chunk map. A sessionStorage guard prevents a reload loop.
+ */
+function lazyWithReload<T extends ComponentType<unknown>>(
+  factory: () => Promise<{ default: T }>,
+) {
+  const KEY = "scholify-chunk-reloaded"
+  return lazy(async () => {
+    try {
+      const mod = await factory()
+      try {
+        sessionStorage.removeItem(KEY)
+      } catch {
+        /* ignore */
+      }
+      return mod
+    } catch (err) {
+      let reloaded = false
+      try {
+        reloaded = sessionStorage.getItem(KEY) === "1"
+      } catch {
+        /* ignore */
+      }
+      if (!reloaded) {
+        try {
+          sessionStorage.setItem(KEY, "1")
+        } catch {
+          /* ignore */
+        }
+        window.location.reload()
+        // The reload takes over — never resolve this import.
+        return new Promise<{ default: T }>(() => {})
+      }
+      throw err
+    }
+  })
+}
+
+const Landing = lazyWithReload(() => import("@/pages/Landing"))
+const SignIn = lazyWithReload(() => import("@/pages/SignIn"))
+const SignUp = lazyWithReload(() => import("@/pages/SignUp"))
+const Onboarding = lazyWithReload(() => import("@/pages/Onboarding"))
+const OnboardingChat = lazyWithReload(() => import("@/pages/OnboardingChat"))
+const AuthCallback = lazyWithReload(() => import("@/pages/AuthCallback"))
+const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalendarCallback"))
+const Loading = lazyWithReload(() => import("@/pages/Loading"))
+const ComingSoon = lazyWithReload(() => import("@/pages/ComingSoon"))
+const Progress = lazyWithReload(() => import("@/pages/Progress"))
+const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
+const Settings = lazyWithReload(() => import("@/pages/Settings"))
+const Dashboard = lazyWithReload(() => import("@/pages/Dashboard"))
+const Goals = lazyWithReload(() => import("@/pages/Goals"))
+const ResourceLibrary = lazyWithReload(() => import("@/pages/ResourceLibrary"))
+const Chat = lazyWithReload(() => import("@/pages/Chat"))
+const Quiz = lazyWithReload(() => import("@/pages/Quiz"))
+const Partner = lazyWithReload(() => import("@/pages/Partner"))
+const PartnerJoin = lazyWithReload(() => import("@/pages/PartnerJoin"))
+const Rooms = lazyWithReload(() => import("@/pages/Rooms"))
+const Room = lazyWithReload(() => import("@/pages/Room"))
+const RoomJoin = lazyWithReload(() => import("@/pages/RoomJoin"))
+const Community = lazyWithReload(() => import("@/pages/Community"))
+const Challenges = lazyWithReload(() => import("@/pages/Challenges"))
+const Roadmap = lazyWithReload(() => import("@/pages/Roadmap"))
+const StreakTreeFullscreen = lazyWithReload(() => import("@/components/StreakTreeFullscreen"))
+const Teams = lazyWithReload(() => import("@/pages/Teams"))
+const TeamDashboard = lazyWithReload(() => import("@/pages/TeamDashboard"))
+const TeamAdmin = lazyWithReload(() => import("@/pages/TeamAdmin"))
+const TeamJoin = lazyWithReload(() => import("@/pages/TeamJoin"))
+const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
+const Terms = lazyWithReload(() => import("@/pages/Terms"))
+const Support = lazyWithReload(() => import("@/pages/Support"))
 
 function Page({
   name,
