@@ -84,6 +84,48 @@ function buildInitial(): Collected {
   }
 }
 
+/* ── Onboarding progress persistence ──────────────────────────────
+ *  Saves each answer as the user gives it so a mid-flow browser refresh
+ *  doesn't lose progress. Kept in its own key — NOT `scholify-onboarding`
+ *  (the committed plan-input contract read by Loading/scholify-data) nor
+ *  `scholify-onboarded` (the completed flag) — so a partial answer can
+ *  never be mistaken for a finished plan.
+ * ──────────────────────────────────────────────────────────────── */
+
+const PROGRESS_KEY = "scholify-onboarding-progress"
+
+function saveOnboardingProgress(patch: Partial<Collected>) {
+  try {
+    const existing = JSON.parse(
+      window.localStorage.getItem(PROGRESS_KEY) || "{}",
+    ) as Partial<Collected>
+    window.localStorage.setItem(
+      PROGRESS_KEY,
+      JSON.stringify({ ...existing, ...patch, savedAt: Date.now() }),
+    )
+  } catch {
+    /* storage unavailable — non-fatal */
+  }
+}
+
+function readOnboardingProgress(): Partial<Collected> {
+  try {
+    return JSON.parse(
+      window.localStorage.getItem(PROGRESS_KEY) || "{}",
+    ) as Partial<Collected>
+  } catch {
+    return {}
+  }
+}
+
+function clearOnboardingProgress() {
+  try {
+    window.localStorage.removeItem(PROGRESS_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ── Typewriter hook ─────────────────────────────────────────── */
 
 function useTypewriter(text: string, speed = 22, enabled = true): {
@@ -471,12 +513,37 @@ export default function OnboardingChat() {
     )
   }, [])
 
-  /* ── Stage 1 — greeting (auto on mount) ── */
+  /* ── Stage 1 — greeting, or resume from saved progress (auto on mount) ── */
   useEffect(() => {
     let mounted = true
     ;(async () => {
       await new Promise((r) => setTimeout(r, 700))
       if (!mounted) return
+
+      // Resume: if the user answered some questions then refreshed, pick up
+      // where they left off instead of restarting the whole conversation.
+      const saved = readOnboardingProgress()
+      const resumeName = saved.name || initialName
+      const hasProgress = Boolean(
+        saved.name || saved.primaryGoal || saved.currentLevel || saved.dailyMinutes,
+      )
+      if (hasProgress) {
+        setCollected((c) => ({ ...c, ...saved, name: resumeName || c.name }))
+        await sayLara("Welcome back 👋 Let's pick up right where we left off.")
+        if (saved.dailyMinutes) {
+          await showSummary({ ...buildInitial(), ...saved, name: resumeName })
+        } else if (saved.currentLevel) {
+          await askDailyTime()
+        } else if (saved.primaryGoal) {
+          await askLevel(saved.primaryGoal)
+        } else if (resumeName) {
+          await askSkill(resumeName)
+        } else {
+          await askName()
+        }
+        return
+      }
+
       const opener = initialName
         ? `Hi ${initialName}! I'm Lara, your AI learning coach. ✦\n\nQuick setup — two questions and I'll build your plan. Ready?`
         : "Welcome to Scholify. ✦ I'm Lara, your AI learning coach.\n\nQuick setup — three questions and I'll build your plan. Ready?"
@@ -630,6 +697,10 @@ export default function OnboardingChat() {
         /* ignore */
       }
 
+      // Answers are now committed to the plan-input contract — clear the
+      // mid-flow resume cache so a later visit starts fresh.
+      clearOnboardingProgress()
+
       navigate("/loading", {
         state: {
           goal: final.primaryGoal,
@@ -650,6 +721,7 @@ export default function OnboardingChat() {
           sayUser(reply.label)
           if (initialName) {
             setCollected((c) => ({ ...c, name: initialName }))
+            saveOnboardingProgress({ name: initialName })
             await askSkill(initialName)
           } else {
             await askName()
@@ -661,6 +733,7 @@ export default function OnboardingChat() {
           if (reply.value === "__custom__") return
           sayUser(reply.label)
           setCollected((c) => ({ ...c, primaryGoal: reply.value }))
+          saveOnboardingProgress({ primaryGoal: reply.value })
           await askLevel(reply.value)
           return
         }
@@ -668,6 +741,7 @@ export default function OnboardingChat() {
           consumeReplies(messageId)
           sayUser(reply.label)
           setCollected((c) => ({ ...c, currentLevel: reply.value }))
+          saveOnboardingProgress({ currentLevel: reply.value })
           await askDailyTime()
           return
         }
@@ -675,6 +749,7 @@ export default function OnboardingChat() {
           consumeReplies(messageId)
           sayUser(reply.label)
           const minutes = Number(reply.value) || 20
+          saveOnboardingProgress({ dailyMinutes: minutes })
           setCollected((c) => {
             const next: Collected = { ...c, dailyMinutes: minutes }
             setTimeout(() => showSummary(next), 50)
@@ -718,6 +793,7 @@ export default function OnboardingChat() {
       sayUser(text)
       if (initialName) {
         setCollected((c) => ({ ...c, name: initialName }))
+        saveOnboardingProgress({ name: initialName })
         await askSkill(initialName)
       } else {
         await askName()
@@ -729,6 +805,7 @@ export default function OnboardingChat() {
       sayUser(text)
       const name = text.slice(0, 40)
       setCollected((c) => ({ ...c, name }))
+      saveOnboardingProgress({ name })
       await askSkill(name)
       return
     }
@@ -736,6 +813,7 @@ export default function OnboardingChat() {
     if (stage === "skill_discovery") {
       sayUser(text)
       setCollected((c) => ({ ...c, primaryGoal: text }))
+      saveOnboardingProgress({ primaryGoal: text })
       await askLevel(text)
       return
     }

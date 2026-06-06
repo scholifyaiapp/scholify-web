@@ -302,12 +302,18 @@ export default function Dashboard() {
     setProgress(next)
     setStatus("done")
 
-    confetti({
-      particleCount: 80,
-      spread: 60,
-      origin: { y: 0.7 },
-      colors: ["#8B5CF6", "#F472B6", "#38BDF8", "#34D399"],
-    })
+    // Decorative — never let a confetti failure surface after the day is
+    // already saved.
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ["#8B5CF6", "#F472B6", "#38BDF8", "#34D399"],
+      })
+    } catch {
+      /* canvas-confetti unsupported in this environment — non-fatal */
+    }
 
     // A new completion may cross a 7 / 14 / 21-day streak milestone.
     checkPaywallTrigger(user?.id)
