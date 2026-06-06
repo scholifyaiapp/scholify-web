@@ -1,5 +1,7 @@
-import { useState, type CSSProperties } from "react"
+import { useEffect, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
+import confetti from "canvas-confetti"
+import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { openCheckout, PADDLE_PRICES } from "@/lib/paddle"
@@ -107,10 +109,38 @@ export default function PaywallModal({
   const { user } = useAuth()
   const isMobile = useIsMobile()
   const [notice, setNotice] = useState<string | null>(null)
+  const [celebrating, setCelebrating] = useState(false)
 
   const dismissible = type !== "streak7"
   const header = HEADERS[type]
   const email = user?.email
+
+  // Days left in the 7-day free trial (from signup), for the urgency line.
+  const trialDaysLeft = (() => {
+    if (!user?.created_at) return 7
+    const since = Math.max(0, differenceInCalendarDays(new Date(), new Date(user.created_at)))
+    return Math.max(0, 7 - since)
+  })()
+
+  // Day-7 paywall opens with a 3-second celebration, then reveals the offer.
+  useEffect(() => {
+    if (open && type === "streak7") {
+      setCelebrating(true)
+      try {
+        confetti({
+          particleCount: 140,
+          spread: 90,
+          origin: { y: 0.5 },
+          colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"],
+        })
+      } catch {
+        /* confetti is decorative */
+      }
+      const t = window.setTimeout(() => setCelebrating(false), 3000)
+      return () => window.clearTimeout(t)
+    }
+    setCelebrating(false)
+  }, [open, type])
 
   const planFor = (priceId: string | undefined): string => {
     if (priceId === PADDLE_PRICES.beginnerMonthly) return "beginner"
@@ -259,6 +289,29 @@ export default function PaywallModal({
               </p>
             </div>
 
+            {/* ── 7-day streak visual (Day-7 paywall only) ── */}
+            {type === "streak7" && (
+              <div style={{ padding: "20px 32px 0", textAlign: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        background: IRIDESCENT,
+                        boxShadow: "0 0 10px rgba(139,92,246,0.5)",
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--sch-tx-2)", marginTop: 8 }}>
+                  7-day streak
+                </div>
+              </div>
+            )}
+
             {/* ── Feature list ── */}
             <div style={{ padding: sectionPad, marginTop: 24 }}>
               {FEATURES.map((f) => (
@@ -302,6 +355,20 @@ export default function PaywallModal({
                 </div>
               ))}
             </div>
+
+            {/* ── Trial urgency (Day-7 paywall only) ── */}
+            {type === "streak7" && (
+              <div
+                style={{
+                  padding: "16px 32px 0",
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "rgba(255,159,10,0.7)",
+                }}
+              >
+                Your free trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}.
+              </div>
+            )}
 
             {/* ── Plan cards ── */}
             <div
@@ -413,6 +480,78 @@ export default function PaywallModal({
               )}
             </div>
           </motion.div>
+
+          {/* Day-7 celebration — covers the modal for 3s, then reveals it */}
+          <AnimatePresence>
+            {celebrating && (
+              <motion.div
+                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 5,
+                  background: "linear-gradient(135deg, #0D0015, #1A0828)",
+                  borderRadius: isMobile ? "28px 28px 0 0" : 28,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  padding: 24,
+                }}
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.3, 1] }}
+                  transition={{ duration: 0.5, times: [0, 0.6, 1], ease: "easeOut" }}
+                  style={{ fontSize: 60, lineHeight: 1 }}
+                >
+                  🏆
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.4 }}
+                  style={{ fontSize: 80, fontWeight: 900, lineHeight: 1, marginTop: 8, ...iriText }}
+                >
+                  7
+                </motion.div>
+                <motion.h2
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.4 }}
+                  style={{ fontSize: 28, fontWeight: 800, color: "#F0EEFF", marginTop: 12 }}
+                >
+                  Seven days straight.
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.9, duration: 0.4 }}
+                  style={{ fontSize: 16, color: "rgba(240,238,255,0.5)", marginTop: 8 }}
+                >
+                  Most people never make it this far.
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.5, duration: 0.4 }}
+                  style={{
+                    fontSize: 14,
+                    color: "rgba(192,132,252,0.8)",
+                    fontStyle: "italic",
+                    marginTop: 12,
+                  }}
+                >
+                  You're in the top 3% of learners.
+                </motion.p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

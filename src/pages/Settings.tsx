@@ -466,6 +466,41 @@ export default function Settings() {
     }
   }, [referralLink, toast])
 
+  /* Admin retention view — owner only. */
+  const isAdmin = user?.email === "scholifyaiapp@gmail.com"
+  const [retention, setRetention] = useState<{
+    total: number
+    day3: number
+    day7: number
+    converted: number
+    limited: boolean
+  } | null>(null)
+  useEffect(() => {
+    if (!isAdmin || !isSupabaseConfigured) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("day3_retained, day7_retained, converted_to_paid")
+        if (error || !data || cancelled) return
+        const total = data.length
+        setRetention({
+          total,
+          day3: data.filter((r) => r.day3_retained).length,
+          day7: data.filter((r) => r.day7_retained).length,
+          converted: data.filter((r) => r.converted_to_paid).length,
+          limited: total <= 1,
+        })
+      } catch {
+        /* ignore — falls back to the PostHog note */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin])
+
   /* Goal stats */
   const goal = plan.goal?.trim() || "Your learning goal"
   const dailyMinutes = Math.max(5, Number(plan.daily_minutes) || 20)
@@ -977,6 +1012,70 @@ export default function Settings() {
             You earn: 1 extra Life Shield per referral who completes 7 days.
           </p>
         </Section>
+
+        {/* ── Retention (admin only) ── */}
+        {isAdmin && (
+          <Section>
+            <span style={sectionHead}>📊 Retention (admin)</span>
+            {retention ? (
+              <>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {([
+                    ["Signups", retention.total],
+                    ["Day-3 retained", retention.day3],
+                    ["Day-7 retained", retention.day7],
+                    ["Converted", retention.converted],
+                  ] as const).map(([label, val]) => (
+                    <div
+                      key={label}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 12,
+                        background: "var(--sch-card-2)",
+                        border: "1px solid var(--sch-border)",
+                      }}
+                    >
+                      <div style={{ fontSize: 20, fontWeight: 800, ...iriText }}>{val}</div>
+                      <div style={{ fontSize: 12, color: TEXT2, marginTop: 2 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontSize: 12, color: TEXT2, marginTop: 10 }}>
+                  Day-3 rate:{" "}
+                  {retention.total
+                    ? Math.round((retention.day3 / retention.total) * 100)
+                    : 0}
+                  %
+                </p>
+                {retention.limited && (
+                  <p
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(255,159,10,0.7)",
+                      marginTop: 6,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Client reads are limited by row-level security — full cross-user totals
+                    come from PostHog (where the retention events fire) or a service-role query.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: TEXT2, marginTop: 10, lineHeight: 1.6 }}>
+                Retention events (first_task_completed, day3_retained, day7_retained) stream to
+                PostHog. Apply migration 0011 + connect Supabase to populate this in-app table.
+              </p>
+            )}
+          </Section>
+        )}
 
         {/* ── Calendar Sync ── */}
         <CalendarSync />
