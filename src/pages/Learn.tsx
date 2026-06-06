@@ -11,6 +11,7 @@ import PaywallModal from "@/components/PaywallModal"
 import VocabSession from "@/components/VocabSession"
 import VocabMatchGame from "@/components/VocabMatchGame"
 import VocabTypeGame from "@/components/VocabTypeGame"
+import VocabSpeakGame from "@/components/VocabSpeakGame"
 import { coachOnHome } from "@/lib/lara-vocab"
 import {
   createDeck,
@@ -56,6 +57,7 @@ export default function Learn() {
   const [inSession, setInSession] = useState(false)
   const [inGame, setInGame] = useState(false)
   const [inTypeGame, setInTypeGame] = useState(false)
+  const [inSpeakGame, setInSpeakGame] = useState(false)
   const [tick, setTick] = useState(0) // refresh stats after a session
   const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
@@ -106,6 +108,18 @@ export default function Learn() {
     )
   }
 
+  if (inSpeakGame && deck) {
+    return (
+      <VocabSpeakGame
+        deck={deck}
+        onClose={() => {
+          setInSpeakGame(false)
+          refresh()
+        }}
+      />
+    )
+  }
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
@@ -118,6 +132,7 @@ export default function Learn() {
             onStart={() => setInSession(true)}
             onPlayGame={() => setInGame(true)}
             onPlayType={() => (isPro ? setInTypeGame(true) : triggerFeaturePaywall())}
+            onPlaySpeak={() => (isPro ? setInSpeakGame(true) : triggerFeaturePaywall())}
             onAddWords={async () => {
               const more = await generateVocab({
                 target: deck.targetLanguage,
@@ -165,6 +180,7 @@ function DeckHome({
   onStart,
   onPlayGame,
   onPlayType,
+  onPlaySpeak,
   onAddWords,
   onReset,
 }: {
@@ -174,6 +190,7 @@ function DeckHome({
   onStart: () => void
   onPlayGame: () => void
   onPlayType: () => void
+  onPlaySpeak: () => void
   onAddWords: () => Promise<void>
   onReset: () => void
 }) {
@@ -325,9 +342,10 @@ function DeckHome({
           <div style={{ marginTop: 28, fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: DIM }}>
             Practice
           </div>
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
             <GameCard icon="⚡" title="Match" subtitle="Pair words & meanings" onClick={onPlayGame} />
             <GameCard icon="🎧" title="Listen & Type" subtitle="Hear it, spell it" pro={!isPro} onClick={onPlayType} />
+            <GameCard icon="🎙️" title="Speak" subtitle="Say it out loud" pro={!isPro} onClick={onPlaySpeak} />
           </div>
         </>
       )}

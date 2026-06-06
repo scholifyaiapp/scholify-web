@@ -42,23 +42,23 @@ const HEADERS: Record<
     kind: "lock",
     emoji: "🔒",
     title: "This is a Pro feature",
-    sub: "Upgrade to unlock voice coaching, achievement videos, and much more.",
+    sub: "Upgrade to unlock speaking practice, Listen & Type, premium voice, and unlimited words.",
   },
   general: {
     kind: "lara",
     emoji: "L",
     title: "Unlock the full Scholify",
-    sub: "Voice coaching, certificates, and everything Lara can do.",
+    sub: "Speaking practice, premium voice, unlimited words — everything Lara can do.",
   },
 }
 
 const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
-  { text: "Unlimited learning goals — switch anytime" },
-  { text: "Daily voice coach Lara (ElevenLabs AI)", badge: "PRO" },
-  { text: "Speaking practice with AI scoring", badge: "PRO" },
-  { text: "Milestone achievement videos (Higgsfield)", badge: "NEW" },
-  { text: "Goal completion certificate", badge: "PRO" },
-  { text: "Life Shields — 5 per week (vs 2 on free)", badge: "PRO" },
+  { text: "Unlimited new words every day" },
+  { text: "Speaking practice — say it, get scored", badge: "PRO" },
+  { text: "Listen & Type spelling drills", badge: "PRO" },
+  { text: "Premium, natural pronunciation voice", badge: "PRO" },
+  { text: "Every language — switch anytime" },
+  { text: "Spaced repetition tuned to your memory" },
 ]
 
 /* ── Celebration particles ───────────────────────────────────── */
