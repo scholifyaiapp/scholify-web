@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import LaraAvatar from "@/components/LaraAvatar"
 import { useToast } from "@/components/Toast"
 import { readActivePlanId, readPlan } from "@/lib/scholify-data"
 import {
@@ -143,21 +144,7 @@ export default function SmartSuggestions() {
 
       {/* Header */}
       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10 }}>
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: "50%",
-            background: IRIDESCENT,
-            display: "grid",
-            placeItems: "center",
-            fontSize: 13,
-            color: "#fff",
-            fontWeight: 800,
-          }}
-        >
-          L
-        </div>
+        <LaraAvatar size={26} />
         <p
           style={{
             fontSize: 12,

@@ -4,7 +4,7 @@ import { motion } from "motion/react"
 import LaraChat from "@/components/LaraChat"
 import { useAuth } from "@/lib/auth"
 import { readActivePlan } from "@/lib/scholify-data"
-import { IRIDESCENT } from "@/components/auth/auth-ui"
+import LaraAvatar from "@/components/LaraAvatar"
 
 /* ──────────────────────────────────────────────────────────────
  *  /chat — Ask Lara anything page.
@@ -90,22 +90,13 @@ export default function Chat() {
             </motion.button>
             <div
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: IRIDESCENT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontSize: 16,
-                fontWeight: 800,
                 position: "relative",
                 flexShrink: 0,
+                borderRadius: "50%",
                 boxShadow: "0 0 20px rgba(139,92,246,0.3)",
               }}
             >
-              L
+              <LaraAvatar size={38} />
               <span
                 aria-hidden
                 style={{

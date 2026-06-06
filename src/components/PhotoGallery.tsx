@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { format } from "date-fns"
-import { IRIDESCENT } from "@/components/auth/auth-ui"
+import LaraAvatar from "@/components/LaraAvatar"
 import { readPhotos, subscribePhotos, type StudyPhoto } from "@/lib/photos-storage"
 
 /*
@@ -245,9 +245,7 @@ function Lightbox({
           )}
           {photo.laraComment && (
             <div style={laraBlockStyle}>
-              <div style={laraAvatarStyle} aria-hidden>
-                L
-              </div>
+              <LaraAvatar size={24} />
               <p style={{ fontSize: 13, color: TEXT_PRIMARY, lineHeight: 1.55 }}>{photo.laraComment}</p>
             </div>
           )}
@@ -419,16 +417,3 @@ const laraBlockStyle: CSSProperties = {
   borderLeft: "3px solid #A78BFA",
 }
 
-const laraAvatarStyle: CSSProperties = {
-  width: 24,
-  height: 24,
-  borderRadius: "50%",
-  background: IRIDESCENT,
-  color: "#fff",
-  fontSize: 11,
-  fontWeight: 800,
-  display: "grid",
-  placeItems: "center",
-  flexShrink: 0,
-  marginTop: 1,
-}

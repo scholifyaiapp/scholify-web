@@ -18,6 +18,7 @@ import { usePaywall } from "@/hooks/usePaywall"
 import PaywallModal from "@/components/PaywallModal"
 import Day3Card from "@/components/Day3Card"
 import FirstVisitTour, { type TourStep } from "@/components/FirstVisitTour"
+import LaraAvatar from "@/components/LaraAvatar"
 import { api } from "@/lib/api"
 import { trackEvent } from "@/lib/analytics"
 import { getLaraFallback } from "@/lib/laraFallbacks"
@@ -1067,23 +1068,7 @@ export default function Dashboard() {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: IRIDESCENT,
-                  border: "2px solid rgba(139,92,246,0.4)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  fontWeight: 800,
-                  fontSize: 14,
-                }}
-              >
-                L
-              </div>
+              <LaraAvatar size={32} />
               <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(192,132,252,0.7)" }}>
                 Lara · Your coach
               </span>
@@ -1261,17 +1246,15 @@ export default function Dashboard() {
           height: 52,
           borderRadius: "50%",
           border: "none",
-          background: IRIDESCENT,
-          color: "#fff",
-          fontSize: 20,
-          fontWeight: 800,
+          background: "transparent",
+          padding: 0,
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        L
+        <LaraAvatar size={52} />
       </motion.button>
 
       {/* Day-3 retention card */}

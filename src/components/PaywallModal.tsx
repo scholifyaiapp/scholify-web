@@ -8,6 +8,7 @@ import { openCheckout, PADDLE_PRICES } from "@/lib/paddle"
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
+import LaraAvatar from "@/components/LaraAvatar"
 import type { PaywallType } from "@/hooks/usePaywall"
 
 /* ──────────────────────────────────────────────────────────────
@@ -240,23 +241,8 @@ export default function PaywallModal({
               >
                 {header.kind === "celebrate" && <Particles />}
                 {header.kind === "lara" ? (
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: "50%",
-                      background: IRIDESCENT,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 800,
-                      fontSize: 20,
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    L
+                  <div style={{ position: "relative", zIndex: 1 }}>
+                    <LaraAvatar size={48} />
                   </div>
                 ) : (
                   <span style={{ fontSize: 48, position: "relative", zIndex: 1 }}>

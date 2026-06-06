@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { useToast } from "@/components/Toast"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import LaraAvatar from "@/components/LaraAvatar"
 import { api } from "@/lib/api"
 import {
   dataUrlToBase64,
@@ -342,9 +343,7 @@ function PhotoModal({ onClose, dayNumber, taskTitle, goal }: PhotoModalProps) {
               style={{ padding: "0 24px 8px" }}
             >
               <div style={laraBubbleStyle}>
-                <div style={laraAvatarStyle} aria-hidden>
-                  L
-                </div>
+                <LaraAvatar size={24} />
                 <p style={{ fontSize: 13.5, color: TEXT_PRIMARY, lineHeight: 1.55 }}>{typed || "…"}</p>
               </div>
             </motion.div>
@@ -590,17 +589,3 @@ const laraBubbleStyle: CSSProperties = {
   borderLeft: "3px solid #A78BFA",
 }
 
-const laraAvatarStyle: CSSProperties = {
-  width: 24,
-  height: 24,
-  borderRadius: "50%",
-  background: IRIDESCENT,
-  color: "#fff",
-  fontSize: 11,
-  fontWeight: 800,
-  display: "grid",
-  placeItems: "center",
-  flexShrink: 0,
-  marginTop: 1,
-  boxShadow: "0 4px 14px rgba(167,139,250,0.4)",
-}
