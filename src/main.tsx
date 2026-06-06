@@ -30,11 +30,20 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 )
 
-// Register the service worker (PWA install, offline shell, web push).
+// Remove any previously-installed service worker. An earlier SW cached the app
+// shell and caused stale-chunk crashes after deploys ("importing a module
+// script failed"). Unregister it and clear its caches so the app always loads
+// fresh from the network. (The self-destructing /sw.js handles devices that are
+// still controlled by the old worker.)
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => {
-      console.error("SW registration failed:", err)
-    })
-  })
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => regs.forEach((r) => r.unregister()))
+    .catch(() => {})
+  if ("caches" in window) {
+    caches
+      .keys()
+      .then((keys) => keys.forEach((k) => caches.delete(k)))
+      .catch(() => {})
+  }
 }
