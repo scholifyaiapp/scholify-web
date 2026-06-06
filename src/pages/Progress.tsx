@@ -962,25 +962,52 @@ export default function Progress() {
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 52, ...iriText }}>✦</div>
-          <p style={{ fontSize: 14, color: TEXT2, marginTop: 16, maxWidth: 280 }}>
-            Complete your first task to see your progress come to life.
-          </p>
-          <Link
-            to="/dashboard"
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+            style={{ fontSize: 64, opacity: 0.85 }}
+          >
+            📊
+          </motion.div>
+          <div
             style={{
-              marginTop: 20,
-              padding: "12px 24px",
-              borderRadius: 12,
-              background: IRIDESCENT,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              textDecoration: "none",
+              marginTop: 8,
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#F0EEFF",
             }}
           >
-            Go to Today →
-          </Link>
+            No data yet.
+          </div>
+          <p
+            style={{
+              fontSize: 14,
+              color: "rgba(240,238,255,0.4)",
+              marginTop: 6,
+              maxWidth: 300,
+              lineHeight: 1.6,
+            }}
+          >
+            Complete your first task to start tracking your progress.
+          </p>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} style={{ marginTop: 20 }}>
+            <Link
+              to="/dashboard"
+              style={{
+                display: "inline-block",
+                padding: "12px 24px",
+                borderRadius: 12,
+                background: IRIDESCENT,
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: "none",
+                boxShadow: "0 0 24px rgba(139,92,246,0.3)",
+              }}
+            >
+              Go to Today →
+            </Link>
+          </motion.div>
         </div>
       </DashboardLayout>
     )

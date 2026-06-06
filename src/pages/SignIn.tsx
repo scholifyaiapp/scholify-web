@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Eye, EyeOff } from "lucide-react"
@@ -29,10 +29,31 @@ export default function SignIn() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [formError, setFormError] = useState<string | null>(null)
+  const [attempts, setAttempts] = useState(0)
+  const [lockSeconds, setLockSeconds] = useState(0)
+
+  // Brute-force guard: after 5 failed attempts, lock the form for 60s and
+  // count down. Clears the attempt counter when the lock expires.
+  useEffect(() => {
+    if (lockSeconds <= 0) return
+    const id = window.setInterval(() => {
+      setLockSeconds((s) => {
+        if (s <= 1) {
+          setAttempts(0)
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [lockSeconds])
+
+  const locked = lockSeconds > 0
+  const canSubmit = email.trim().length > 0 && password.length > 0 && !locked
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (loading) return
+    if (loading || locked) return
 
     const nextErrors: { email?: string; password?: string } = {}
     if (!email.trim()) nextErrors.email = "Email is required."
@@ -46,10 +67,19 @@ export default function SignIn() {
     setLoading(true)
     const { error } = await signIn(email.trim(), password)
     if (error) {
-      setFormError(error)
+      const n = attempts + 1
+      setAttempts(n)
+      if (n >= 5) {
+        setLockSeconds(60)
+        setFormError(null)
+      } else {
+        // Never reveal which field was wrong.
+        setFormError("Wrong email or password. Try again.")
+      }
       setLoading(false)
       return
     }
+    setAttempts(0)
     navigate("/dashboard")
   }
 
@@ -174,9 +204,9 @@ export default function SignIn() {
             </div>
           </motion.div>
 
-          {/* Form-level error */}
+          {/* Form-level error / lockout countdown */}
           <AnimatePresence>
-            {formError && (
+            {(formError || locked) && (
               <motion.p
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -188,14 +218,19 @@ export default function SignIn() {
                   overflow: "hidden",
                 }}
               >
-                {formError}
+                {locked ? `Too many attempts. Wait ${lockSeconds} seconds.` : formError}
               </motion.p>
             )}
           </AnimatePresence>
 
           {/* Submit */}
           <motion.div variants={itemVariants} custom={4} style={{ marginTop: 24 }}>
-            <SubmitButton label="Sign in →" loadingLabel="Signing in..." loading={loading} />
+            <SubmitButton
+              label={locked ? `Try again in ${lockSeconds}s` : "Sign in →"}
+              loadingLabel="Signing in..."
+              loading={loading}
+              disabled={!canSubmit}
+            />
           </motion.div>
         </form>
 

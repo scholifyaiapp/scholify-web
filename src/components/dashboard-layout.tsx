@@ -4,6 +4,7 @@ import { motion } from "motion/react"
 import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { readPlan, readProgress } from "@/lib/scholify-data"
+import { getFeatureFlags, type FeatureFlags } from "@/lib/featureFlags"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import NotificationBell from "@/components/NotificationBell"
@@ -67,6 +68,32 @@ const MOBILE_NAV: NavItemDef[] = [
   { icon: "🌍", label: "Social", to: "/community", notifyKinds: ["partner", "room", "community"] },
   { icon: "📈", label: "Progress", to: "/progress" },
 ]
+
+/*
+ * Per-route visibility. Routes absent from this map are always shown (the
+ * core loop: Today, Progress, Goals, Resources, Ask Lara, Settings). A value
+ * keyed to a FeatureFlags field shows only when that flag is on. The "early"
+ * sentinel hides advanced-but-flagless surfaces until the user is past the
+ * early stage — together this yields the clean 6-item sidebar for new users.
+ */
+type NavRule = keyof FeatureFlags | "early"
+const NAV_VISIBILITY: Record<string, NavRule> = {
+  "/roadmap": "early",
+  "/tree": "early",
+  "/rooms": "studyRooms",
+  "/partner": "accountabilityPartner",
+  "/community": "community",
+  "/teams": "teams",
+  "/achievements": "early",
+  "/challenges": "early",
+}
+
+function isNavVisible(to: string, flags: FeatureFlags, isEarlyUser: boolean): boolean {
+  const rule = NAV_VISIBILITY[to]
+  if (!rule) return true
+  if (rule === "early") return !isEarlyUser
+  return flags[rule]
+}
 
 /* ── Shared bits ─────────────────────────────────────────────── */
 
@@ -293,6 +320,21 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const tasks = Array.isArray(plan.tasks) ? plan.tasks : []
   const completedCount = progress.completed.length
 
+  // Progressive disclosure — reveal advanced surfaces as the user invests.
+  const isPro = Boolean(
+    user?.user_metadata?.plan && user.user_metadata.plan !== "free",
+  )
+  const flags = useMemo(() => getFeatureFlags(completedCount, isPro), [completedCount, isPro])
+  const isEarlyUser = completedCount < 20
+  const visibleNav = useMemo(
+    () => NAV.filter((item) => isNavVisible(item.to, flags, isEarlyUser)),
+    [flags, isEarlyUser],
+  )
+  const visibleMobileNav = useMemo(
+    () => MOBILE_NAV.filter((item) => isNavVisible(item.to, flags, isEarlyUser)),
+    [flags, isEarlyUser],
+  )
+
   const deadline = plan.deadline ? new Date(plan.deadline) : null
   const daysRemaining =
     deadline && !Number.isNaN(deadline.getTime())
@@ -385,7 +427,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* Nav */}
         <nav style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV.map((item) => (
+          {visibleNav.map((item) => (
             <NavItem
               key={item.to}
               item={item}
@@ -487,7 +529,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           zIndex: 30,
         }}
       >
-        {MOBILE_NAV.map((item) => {
+        {visibleMobileNav.map((item) => {
           const active = location.pathname === item.to
           const unread = unreadFor(item.notifyKinds)
           return (

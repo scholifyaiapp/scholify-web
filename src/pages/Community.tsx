@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react"
+import { useNavigate } from "react-router-dom"
 import { motion } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { useAuth } from "@/lib/auth"
-import { readPlan } from "@/lib/scholify-data"
+import { readPlan, readProgress } from "@/lib/scholify-data"
+import { getFeatureFlags } from "@/lib/featureFlags"
 import CommunityFeed, { type CommunityFilter } from "@/components/CommunityFeed"
 import CategoryLeaderboard from "@/components/CategoryLeaderboard"
 import CommunityOptInCard from "@/components/CommunityOptInCard"
@@ -37,10 +39,24 @@ const FEED_FILTERS: Array<{ key: CommunityFilter; label: string }> = [
 
 export default function Community() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const myCategory: GoalCategory = useMemo(() => {
     const goal = (readPlan().goal || "").trim()
     return detectGoalCategory(goal)
   }, [])
+
+  // Hidden until the user base reaches critical mass — bounce anyone who
+  // reaches the URL directly back to their dashboard.
+  const communityEnabled = useMemo(() => {
+    const sessions = readProgress().completed.length
+    const isPro = Boolean(
+      user?.user_metadata?.plan && user.user_metadata.plan !== "free",
+    )
+    return getFeatureFlags(sessions, isPro).community
+  }, [user])
+  useEffect(() => {
+    if (!communityEnabled) navigate("/dashboard", { replace: true })
+  }, [communityEnabled, navigate])
 
   // Seed once for demo mode.
   useEffect(() => ensureSeeded(), [])
@@ -49,6 +65,9 @@ export default function Community() {
   useEffect(() => subscribeOptInLocal(() => setOptedIn(readOptIn().optedIn)), [])
 
   const [filter, setFilter] = useState<CommunityFilter>("all")
+
+  // While hidden, render nothing (the effect above redirects to /dashboard).
+  if (!communityEnabled) return null
 
   return (
     <DashboardLayout>

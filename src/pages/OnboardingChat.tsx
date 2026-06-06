@@ -8,10 +8,9 @@ import {
 } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
-import { addMonths, format } from "date-fns"
+import { addDays, addMonths, differenceInCalendarDays, format } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { api } from "@/lib/api"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
 /* ──────────────────────────────────────────────────────────────
@@ -34,10 +33,9 @@ const USER_BORDER = "rgba(139,92,246,0.3)"
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]
 
 type Stage =
-  | "greeting"
   | "name"
-  | "skill_discovery"
-  | "skill_level"
+  | "goal"
+  | "deadline"
   | "daily_time"
   | "summary"
   | "submitting"
@@ -418,18 +416,20 @@ function TypingIndicator() {
 
 /* ── Quick-reply catalogue ───────────────────────────────────── */
 
-const FALLBACK_SKILLS: string[] = [
-  "Coding / Programming",
-  "Design (Figma / UX)",
-  "Languages",
-  "Public speaking",
+const GOAL_REPLIES: QuickReply[] = [
+  { label: "IELTS Band 7+", value: "IELTS Band 7+" },
+  { label: "Learn Python", value: "Learn Python" },
+  { label: "Master Figma", value: "Master Figma" },
+  { label: "Spanish B2", value: "Spanish B2" },
+  { label: "AWS Certified", value: "AWS Certified" },
+  { label: "I'll describe mine", value: "__custom__" },
 ]
 
-const LEVEL_REPLIES: QuickReply[] = [
-  { label: "Beginner — starting from zero", value: "beginner" },
-  { label: "Some basics — I've tried before", value: "basics" },
-  { label: "Intermediate — want to go deeper", value: "intermediate" },
-  { label: "Advanced — want to master it", value: "advanced" },
+const DEADLINE_REPLIES: QuickReply[] = [
+  { label: "In 1 month", value: "1" },
+  { label: "In 3 months", value: "3" },
+  { label: "In 6 months", value: "6" },
+  { label: "In 1 year", value: "12" },
 ]
 
 const TIME_REPLIES: QuickReply[] = [
@@ -439,20 +439,16 @@ const TIME_REPLIES: QuickReply[] = [
   { label: "60 minutes", value: "60" },
 ]
 
-const READY_REPLIES: QuickReply[] = [
-  { label: "Let's go 🚀", value: "ready" },
-]
-
 const FINAL_REPLIES: QuickReply[] = [
   { label: "Build my plan ⚡", value: "build" },
 ]
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
-function levelLabel(value: string): string {
-  const m = LEVEL_REPLIES.find((r) => r.value === value)
-  return m?.label.split(" — ")[0] ?? value
-}
+/** Minimum free-text goal length — enough detail for a real plan. */
+const GOAL_MIN_LEN = 10
+/** A plan needs at least a week of runway. */
+const MIN_DEADLINE_DAYS = 7
 
 let _idSeq = 0
 const nextId = () => `m-${++_idSeq}-${Date.now()}`
@@ -469,11 +465,17 @@ export default function OnboardingChat() {
   }, [user])
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [stage, setStage] = useState<Stage>("greeting")
+  const [stage, setStage] = useState<Stage>("name")
   const [collected, setCollected] = useState<Collected>(buildInitial)
   const [input, setInput] = useState("")
   const [laraTyping, setLaraTyping] = useState(false)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+
+  /** Earliest selectable deadline — today + 7 days (yyyy-MM-dd). */
+  const minDeadlineStr = useMemo(
+    () => format(addDays(new Date(), MIN_DEADLINE_DAYS), "yyyy-MM-dd"),
+    [],
+  )
 
   /* Scroll to bottom on every message / state change. */
   useEffect(() => {
@@ -513,7 +515,7 @@ export default function OnboardingChat() {
     )
   }, [])
 
-  /* ── Stage 1 — greeting, or resume from saved progress (auto on mount) ── */
+  /* ── Stage 1 — greeting → name, or resume from saved progress (on mount) ── */
   useEffect(() => {
     let mounted = true
     ;(async () => {
@@ -525,29 +527,34 @@ export default function OnboardingChat() {
       const saved = readOnboardingProgress()
       const resumeName = saved.name || initialName
       const hasProgress = Boolean(
-        saved.name || saved.primaryGoal || saved.currentLevel || saved.dailyMinutes,
+        saved.name || saved.primaryGoal || saved.deadline || saved.dailyMinutes,
       )
       if (hasProgress) {
         setCollected((c) => ({ ...c, ...saved, name: resumeName || c.name }))
         await sayLara("Welcome back 👋 Let's pick up right where we left off.")
         if (saved.dailyMinutes) {
           await showSummary({ ...buildInitial(), ...saved, name: resumeName })
-        } else if (saved.currentLevel) {
+        } else if (saved.deadline) {
           await askDailyTime()
         } else if (saved.primaryGoal) {
-          await askLevel(saved.primaryGoal)
+          await askDeadline()
         } else if (resumeName) {
-          await askSkill(resumeName)
+          await askGoal(resumeName)
         } else {
           await askName()
         }
         return
       }
 
-      const opener = initialName
-        ? `Hi ${initialName}! I'm Lara, your AI learning coach. ✦\n\nQuick setup — two questions and I'll build your plan. Ready?`
-        : "Welcome to Scholify. ✦ I'm Lara, your AI learning coach.\n\nQuick setup — three questions and I'll build your plan. Ready?"
-      await sayLara(opener, { quickReplies: READY_REPLIES })
+      // Fresh start. If we already know their name (from sign-up), skip
+      // straight to the goal; otherwise ask their name first.
+      if (initialName) {
+        setCollected((c) => ({ ...c, name: initialName }))
+        await sayLara(`Hi ${initialName}! I'm Lara, your AI learning coach. ✦`)
+        await askGoal(initialName)
+      } else {
+        await askName()
+      }
     })()
     return () => {
       mounted = false
@@ -558,67 +565,34 @@ export default function OnboardingChat() {
   /* Stage transitions. */
   const askName = useCallback(async () => {
     setStage("name")
-    await sayLara("First — what's your name?")
+    await sayLara(
+      "Welcome to Scholify — I'm Lara, your AI learning coach. ✦\n\nWhat's your name?",
+    )
   }, [sayLara])
 
-  const askSkill = useCallback(
+  const askGoal = useCallback(
     async (name: string) => {
-      setStage("skill_discovery")
+      setStage("goal")
       await sayLara(
-        `Nice to meet you, ${name}. What skill do you want to build right now?`,
-      )
-
-      // Fetch dynamic skill suggestions from Claude Haiku in the background.
-      const fallback: QuickReply[] = FALLBACK_SKILLS.map((label) => ({
-        label,
-        value: label,
-      }))
-      const customReply: QuickReply = {
-        label: "I'll type my own",
-        value: "__custom__",
-      }
-
-      const attachReplies = (replies: QuickReply[]) => {
-        setMessages((prev) => {
-          const idx = [...prev].reverse().findIndex((m) => m.role === "lara")
-          if (idx === -1) return prev
-          const realIdx = prev.length - 1 - idx
-          const updated = [...prev]
-          updated[realIdx] = { ...updated[realIdx], quickReplies: replies }
-          return updated
-        })
-      }
-
-      try {
-        const res = await api.getSkillSuggestions({ futureVision: name })
-        const fresh = (res.suggestions || []).slice(0, 4).filter(Boolean)
-        attachReplies(
-          fresh.length > 0
-            ? [...fresh.map((label) => ({ label, value: label })), customReply]
-            : [...fallback, customReply],
-        )
-      } catch {
-        attachReplies([...fallback, customReply])
-      }
-    },
-    [sayLara],
-  )
-
-  const askLevel = useCallback(
-    async (skill: string) => {
-      setStage("skill_level")
-      await sayLara(
-        `Great choice. On "${skill}", where are you right now?`,
-        { quickReplies: LEVEL_REPLIES },
+        `Nice to meet you, ${name}! What do you want to learn or achieve?\n\nBe specific — the more detail you give me, the better your plan.`,
+        { quickReplies: GOAL_REPLIES },
       )
     },
     [sayLara],
   )
+
+  const askDeadline = useCallback(async () => {
+    setStage("deadline")
+    await sayLara(
+      "When do you need to achieve this by?\n\nPick a timeframe below, or choose your own date.",
+      { quickReplies: DEADLINE_REPLIES },
+    )
+  }, [sayLara])
 
   const askDailyTime = useCallback(async () => {
     setStage("daily_time")
     await sayLara(
-      "Last one — how many minutes a day can you realistically give to this?",
+      "How many minutes a day can you realistically give to this?",
       { quickReplies: TIME_REPLIES },
     )
   }, [sayLara])
@@ -629,7 +603,7 @@ export default function OnboardingChat() {
       const summary =
         `Perfect. Here's what I'll plan around:\n\n` +
         `🎯 ${next.primaryGoal}\n` +
-        `📊 ${levelLabel(next.currentLevel)}\n` +
+        `📅 ${next.deadlineLabel}\n` +
         `⏱ ${next.dailyMinutes} min/day\n\n` +
         "Ready to build your personalised plan?"
       await sayLara(summary, { quickReplies: FINAL_REPLIES })
@@ -716,32 +690,25 @@ export default function OnboardingChat() {
   const handleQuickReply = useCallback(
     async (messageId: string, reply: QuickReply) => {
       switch (stage) {
-        case "greeting": {
-          consumeReplies(messageId)
-          sayUser(reply.label)
-          if (initialName) {
-            setCollected((c) => ({ ...c, name: initialName }))
-            saveOnboardingProgress({ name: initialName })
-            await askSkill(initialName)
-          } else {
-            await askName()
-          }
-          return
-        }
-        case "skill_discovery": {
-          consumeReplies(messageId)
+        case "goal": {
+          // "I'll describe mine" — keep the chips, wait for free text.
           if (reply.value === "__custom__") return
+          consumeReplies(messageId)
           sayUser(reply.label)
           setCollected((c) => ({ ...c, primaryGoal: reply.value }))
           saveOnboardingProgress({ primaryGoal: reply.value })
-          await askLevel(reply.value)
+          await askDeadline()
           return
         }
-        case "skill_level": {
+        case "deadline": {
           consumeReplies(messageId)
           sayUser(reply.label)
-          setCollected((c) => ({ ...c, currentLevel: reply.value }))
-          saveOnboardingProgress({ currentLevel: reply.value })
+          const months = Number(reply.value) || 3
+          const d = addMonths(new Date(), months)
+          const iso = d.toISOString()
+          const label = format(d, "MMM d, yyyy")
+          setCollected((c) => ({ ...c, deadline: iso, deadlineLabel: label }))
+          saveOnboardingProgress({ deadline: iso, deadlineLabel: label })
           await askDailyTime()
           return
         }
@@ -773,13 +740,10 @@ export default function OnboardingChat() {
       collected,
       sayUser,
       consumeReplies,
-      askName,
-      askSkill,
-      askLevel,
+      askDeadline,
       askDailyTime,
       showSummary,
       buildPlan,
-      initialName,
     ],
   )
 
@@ -787,46 +751,62 @@ export default function OnboardingChat() {
   const handleSend = useCallback(async () => {
     const text = input.trim()
     if (!text) return
-    setInput("")
-
-    if (stage === "greeting") {
-      sayUser(text)
-      if (initialName) {
-        setCollected((c) => ({ ...c, name: initialName }))
-        saveOnboardingProgress({ name: initialName })
-        await askSkill(initialName)
-      } else {
-        await askName()
-      }
-      return
-    }
 
     if (stage === "name") {
+      setInput("")
       sayUser(text)
       const name = text.slice(0, 40)
       setCollected((c) => ({ ...c, name }))
       saveOnboardingProgress({ name })
-      await askSkill(name)
+      await askGoal(name)
       return
     }
 
-    if (stage === "skill_discovery") {
+    if (stage === "goal") {
+      // Need enough detail for Lara to build a real plan.
+      if (text.length < GOAL_MIN_LEN) {
+        setInput("")
+        sayUser(text)
+        await sayLara(
+          "Can you be a bit more specific? The more detail you give me, the better your plan will be.",
+        )
+        return
+      }
+      setInput("")
       sayUser(text)
       setCollected((c) => ({ ...c, primaryGoal: text }))
       saveOnboardingProgress({ primaryGoal: text })
-      await askLevel(text)
+      await askDeadline()
       return
     }
 
-    sayUser(text)
+    if (stage === "deadline") {
+      // `input` holds a yyyy-MM-dd value from the date picker.
+      const picked = new Date(text)
+      if (Number.isNaN(picked.getTime())) return
+      if (differenceInCalendarDays(picked, new Date()) < MIN_DEADLINE_DAYS) {
+        await sayLara(
+          "That's very soon! I need at least 7 days to build a proper plan. Can we set a date at least a week away?",
+        )
+        return
+      }
+      setInput("")
+      const iso = picked.toISOString()
+      const label = format(picked, "MMM d, yyyy")
+      sayUser(`By ${label}`)
+      setCollected((c) => ({ ...c, deadline: iso, deadlineLabel: label }))
+      saveOnboardingProgress({ deadline: iso, deadlineLabel: label })
+      await askDailyTime()
+      return
+    }
   }, [
     input,
     stage,
     sayUser,
-    askName,
-    askSkill,
-    askLevel,
-    initialName,
+    sayLara,
+    askGoal,
+    askDeadline,
+    askDailyTime,
   ])
 
   /* ── Keyboard ── */
@@ -1001,13 +981,14 @@ export default function OnboardingChat() {
           }}
         >
           <input
-            type="text"
+            type={stage === "deadline" ? "date" : "text"}
             value={input}
+            min={stage === "deadline" ? minDeadlineStr : undefined}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Type your message..."
+            placeholder={stage === "deadline" ? "Pick your own date" : "Type your message..."}
             disabled={stage === "submitting"}
-            style={inputStyle}
+            style={{ ...inputStyle, colorScheme: "dark" }}
           />
           <motion.button
             type="button"

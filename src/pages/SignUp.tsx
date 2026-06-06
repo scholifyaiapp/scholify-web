@@ -296,13 +296,14 @@ export default function SignUp() {
   const [confirmSent, setConfirmSent] = useState(false)
 
   const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
+  const passwordInvalid = password.length > 0 && password.length < 8
 
   const isValid = useMemo(
     () =>
       firstName.trim().length > 0 &&
       lastName.trim().length > 0 &&
       EMAIL_RE.test(email) &&
-      password.length >= 6 &&
+      password.length >= 8 &&
       agreed,
     [firstName, lastName, email, password, agreed],
   )
@@ -443,9 +444,10 @@ export default function SignUp() {
               label="Password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              error={passwordInvalid ? "Password must be at least 8 characters." : undefined}
               rightSlot={
                 <button
                   type="button"

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
+import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { api } from "@/lib/api"
@@ -20,17 +21,18 @@ interface PlanState {
   difficultyLevel?: "too_easy" | "realistic" | "ambitious" | "unrealistic" | null
 }
 
-const MESSAGES = [
-  "Analyzing your goal...",
-  "Understanding your deadline...",
-  "Calculating your daily plan...",
-  "Building progressive tasks...",
-  "Personalizing for your schedule...",
-  "Adding best resources...",
-  "Almost ready...",
-]
-
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/* Map genuine progress (0–100) → which status message is showing. */
+function messageIndexForPct(pct: number): number {
+  if (pct < 15) return 0
+  if (pct < 30) return 1
+  if (pct < 45) return 2
+  if (pct < 65) return 3
+  if (pct < 80) return 4
+  if (pct < 95) return 5
+  return 6
+}
 
 /* ── Ambient background orbs ─────────────────────────────────── */
 
@@ -156,26 +158,44 @@ export default function Loading() {
   const stateData = (location.state as PlanState | null) ?? null
   const inputs: PlanState = stateData ?? readStoredOnboarding()
 
-  const [msgIndex, setMsgIndex] = useState(0)
+  const [pct, setPct] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const startedRef = useRef(false)
+  const tickerRef = useRef<number | null>(null)
 
   const goal = (inputs.goal || "").trim()
   const goalShort = goal.length > 40 ? `${goal.slice(0, 40)}…` : goal
 
-  // Cycle the status messages every 2s.
-  useEffect(() => {
-    if (error) return
-    const id = setInterval(() => {
-      setMsgIndex((i) => (i < MESSAGES.length - 1 ? i + 1 : i))
-    }, 2000)
-    return () => clearInterval(id)
-  }, [error, attempt])
+  // Length of the roadmap, for the personalised status copy.
+  const daysCount = useMemo(() => {
+    const d = inputs.deadline ? new Date(inputs.deadline) : null
+    if (d && !Number.isNaN(d.getTime())) {
+      return Math.max(7, differenceInCalendarDays(d, new Date()))
+    }
+    return 30
+  }, [inputs.deadline])
+
+  // Messages reference the user's actual goal + plan length so the wait
+  // feels intentional, not like a spinner.
+  const messages = useMemo(
+    () => [
+      `Analyzing your goal: ${goalShort}...`,
+      `Researching the fastest path to ${goalShort}...`,
+      `Calculating your ${daysCount}-day roadmap...`,
+      `Building ${daysCount} personalized daily tasks...`,
+      `Adding your best resources...`,
+      `Lara is reviewing your plan...`,
+      `Almost done — this is going to be good.`,
+    ],
+    [goalShort, daysCount],
+  )
+
+  const msgIndex = messageIndexForPct(pct)
 
   const generate = useCallback(async () => {
     setError(null)
-    setMsgIndex(0)
+    setPct(0)
 
     // No onboarding data at all — send the user back to fill it in.
     if (!goal) {
@@ -183,10 +203,17 @@ export default function Loading() {
       return
     }
 
+    const startedAt = Date.now()
+    // Creep the bar upward while we wait — but cap it at 90% until the plan
+    // is genuinely built + saved. The final 10% only lands once the real
+    // work is done, so the fill reflects progress, not just a timer.
+    if (tickerRef.current) window.clearInterval(tickerRef.current)
+    tickerRef.current = window.setInterval(() => {
+      setPct((p) => Math.min(90, p + (p < 55 ? 2 : 1)))
+    }, 130)
+
     try {
-      // Real plan generation via Claude (server-side). Hold the screen for
-      // at least 4s so it never flashes by.
-      const apiCall = api.generatePlan({
+      const data = await api.generatePlan({
         goal,
         deadline: inputs.deadline ?? null,
         dailyMinutes: inputs.dailyMinutes ?? 20,
@@ -194,7 +221,6 @@ export default function Loading() {
         weekNumber: 1,
         difficultyLevel: inputs.difficultyLevel ?? null,
       })
-      const [data] = await Promise.all([apiCall, delay(4000)])
       const tasks = Array.isArray(data.tasks) ? data.tasks : []
 
       // Persist the plan: localStorage always, Supabase best-effort.
@@ -228,11 +254,26 @@ export default function Loading() {
           )
       }
 
+      // Hold the screen for at least 4s so it never flashes by.
+      const elapsed = Date.now() - startedAt
+      if (elapsed < 4000) await delay(4000 - elapsed)
+
+      // Plan built + saved — complete the bar, then move on.
+      if (tickerRef.current) {
+        window.clearInterval(tickerRef.current)
+        tickerRef.current = null
+      }
+      setPct(100)
+      await delay(550)
       navigate("/dashboard", { replace: true })
     } catch (e) {
+      if (tickerRef.current) {
+        window.clearInterval(tickerRef.current)
+        tickerRef.current = null
+      }
       setError(e instanceof Error ? e.message : "Something went wrong while building your plan.")
     }
-  }, [goal, inputs.deadline, inputs.dailyMinutes, user, navigate])
+  }, [goal, inputs.deadline, inputs.dailyMinutes, inputs.difficultyLevel, user, navigate])
 
   // Run once on mount, and again on each retry.
   useEffect(() => {
@@ -241,6 +282,13 @@ export default function Loading() {
     generate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt])
+
+  // Stop the ticker if the user leaves mid-flight.
+  useEffect(() => {
+    return () => {
+      if (tickerRef.current) window.clearInterval(tickerRef.current)
+    }
+  }, [])
 
   return (
     <div
@@ -329,7 +377,7 @@ export default function Loading() {
                   transition={{ duration: 0.3 }}
                   style={{ fontSize: 18, color: "var(--sch-tx-1)" }}
                 >
-                  {MESSAGES[msgIndex]}
+                  {messages[msgIndex]}
                 </motion.p>
               </AnimatePresence>
             </div>
@@ -348,8 +396,8 @@ export default function Loading() {
             >
               <motion.div
                 initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 8, ease: "linear" }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
                 style={{ height: "100%", background: IRIDESCENT, position: "relative" }}
               >
                 {/* Shimmer */}
