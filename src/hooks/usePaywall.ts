@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react"
 import { readProgress } from "@/lib/scholify-data"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { trackEvent } from "@/lib/analytics"
 
 /*
  * Paywall trigger logic.
@@ -60,18 +61,21 @@ export function usePaywall() {
       setPaywallType("streak21")
       setShowPaywall(true)
       markShown(21, userId)
+      trackEvent("paywall_shown", { trigger: "streak_21" })
       return
     }
     if (streak >= 14 && !wasShown(14)) {
       setPaywallType("streak14")
       setShowPaywall(true)
       markShown(14, userId)
+      trackEvent("paywall_shown", { trigger: "streak_14" })
       return
     }
     if (streak >= 7 && !wasShown(7)) {
       setPaywallType("streak7")
       setShowPaywall(true)
       markShown(7, userId)
+      trackEvent("paywall_shown", { trigger: "streak_7" })
     }
   }, [])
 
@@ -79,16 +83,19 @@ export function usePaywall() {
   const triggerFeaturePaywall = useCallback(() => {
     setPaywallType("feature")
     setShowPaywall(true)
+    trackEvent("paywall_shown", { trigger: "feature" })
   }, [])
 
   /** Open the generic "upgrade" paywall. */
   const triggerUpgrade = useCallback(() => {
     setPaywallType("general")
     setShowPaywall(true)
+    trackEvent("paywall_shown", { trigger: "general" })
   }, [])
 
   const closePaywall = useCallback(() => {
     setShowPaywall(false)
+    trackEvent("paywall_dismissed")
     try {
       window.localStorage.setItem("scholify-paywall-dismissed-at", String(Date.now()))
     } catch {

@@ -1,12 +1,14 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
+import html2canvas from "html2canvas"
 import {
   format,
   parseISO,
@@ -706,41 +708,72 @@ function ShareCard({
   name,
   goal,
   weekNum,
-  weekSessions,
-  weekHours,
+  sessions,
+  hours,
   pct,
   streak,
 }: {
   name: string
   goal: string
   weekNum: number
-  weekSessions: number
-  weekHours: string
+  sessions: number
+  hours: string
   pct: number
   streak: number
 }) {
-  const [copied, setCopied] = useState(false)
+  const cardRef = useRef<HTMLDivElement | null>(null)
+  const [busy, setBusy] = useState(false)
+  const todayLabel = useMemo(() => format(new Date(), "MMM d, yyyy"), [])
 
-  const onShare = async () => {
-    const text = `I'm ${pct}% toward "${goal}" on Scholify — ${streak}-day streak 🔥`
-    const url = window.location.origin
+  // Render the card to a PNG and hand it to the OS share sheet (mobile) or
+  // download it (desktop). Scale 3 → ~1080×1920, Instagram-Stories ready.
+  const captureCard = async () => {
+    const el = cardRef.current
+    if (!el || busy) return
+    setBusy(true)
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "My Scholify progress", text, url })
-      } else {
-        await navigator.clipboard.writeText(`${text} ${url}`)
-      }
+      const canvas = await html2canvas(el, {
+        scale: 3,
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+      })
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return
+          const file = new File([blob], "scholify-progress.png", { type: "image/png" })
+          const text = `I'm on a ${streak}-day learning streak studying ${goal}! 🔥`
+          if (
+            typeof navigator.share === "function" &&
+            typeof navigator.canShare === "function" &&
+            navigator.canShare({ files: [file] })
+          ) {
+            navigator
+              .share({ title: "My Scholify Progress", text, files: [file] })
+              .catch(() => {})
+          } else {
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = `scholify-day-${streak}.png`
+            a.click()
+            URL.revokeObjectURL(url)
+          }
+        },
+        "image/png",
+        0.95,
+      )
     } catch {
-      /* user cancelled or clipboard blocked — non-fatal */
+      /* capture failed (rare) — non-fatal */
+    } finally {
+      setBusy(false)
     }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
-  const miniStat = (value: string, label: string) => (
+  const stat = (value: string, label: string) => (
     <div style={{ flex: 1, textAlign: "center" }}>
-      <div style={{ fontSize: 20, fontWeight: 800, ...iriText }}>{value}</div>
-      <div style={{ fontSize: 11, color: "var(--sch-tx-2)" }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, color: "#F0EEFF" }}>{value}</div>
+      <div style={{ fontSize: 11, color: "rgba(240,238,255,0.5)", marginTop: 2 }}>{label}</div>
     </div>
   )
 
@@ -750,9 +783,10 @@ function ShareCard({
         <h2 style={sectionTitle}>Share Your Progress</h2>
         <motion.button
           type="button"
-          onClick={onShare}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
+          onClick={captureCard}
+          disabled={busy}
+          whileHover={busy ? undefined : { scale: 1.04 }}
+          whileTap={busy ? undefined : { scale: 0.97 }}
           style={{
             padding: "8px 20px",
             borderRadius: 20,
@@ -761,85 +795,148 @@ function ShareCard({
             color: "#fff",
             fontSize: 13,
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: busy ? "wait" : "pointer",
+            opacity: busy ? 0.7 : 1,
           }}
         >
-          {copied ? "Copied!" : "Share →"}
+          {busy ? "Creating…" : "Share story →"}
         </motion.button>
       </div>
 
-      {/* Preview card */}
-      <div
-        style={{
-          maxWidth: 360,
-          margin: "20px auto 0",
-          padding: 28,
-          borderRadius: 24,
-          background: "var(--sch-bg-grad)",
-          border: "1px solid rgba(139,92,246,0.2)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 15, fontWeight: 800, ...iriText }}>✦ Scholify</span>
-          <span style={{ fontSize: 12, color: TEXT2 }}>Week {weekNum}</span>
-        </div>
+      {/* 9:16 Instagram-Stories card — this exact element is captured. */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+        <div
+          ref={cardRef}
+          style={{
+            width: 360,
+            height: 640,
+            flexShrink: 0,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 24,
+            background: "linear-gradient(135deg, #0D0015, #120820, #0A1520)",
+            border: "1px solid rgba(139,92,246,0.25)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            padding: 32,
+            display: "flex",
+            flexDirection: "column",
+            color: "#F0EEFF",
+          }}
+        >
+          {/* Top */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#C084FC" }}>✦ Scholify</span>
+            <span style={{ fontSize: 12, color: "rgba(240,238,255,0.5)" }}>
+              Week {weekNum} · {todayLabel}
+            </span>
+          </div>
 
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--sch-text)" }}>{name}'s</div>
-          <div style={{ fontSize: 16, color: "var(--sch-tx-2)" }}>Learning Journey</div>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <span
+          {/* Hero streak */}
+          <div
             style={{
-              display: "inline-block",
-              padding: "5px 12px",
-              borderRadius: 999,
-              fontSize: 13,
-              border: "1px solid rgba(139,92,246,0.35)",
-              background: "rgba(139,92,246,0.08)",
-              color: "var(--sch-tx-1)",
-              maxWidth: "100%",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
             }}
           >
-            🎯 {goal}
-          </span>
-        </div>
+            {/* iridescent glow behind the number */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                width: 260,
+                height: 260,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(139,92,246,0.35), rgba(139,92,246,0) 70%)",
+              }}
+            />
+            <div
+              style={{
+                position: "relative",
+                fontSize: 96,
+                fontWeight: 900,
+                lineHeight: 1,
+                color: "#F0EEFF",
+              }}
+            >
+              {streak}
+            </div>
+            <div
+              style={{
+                position: "relative",
+                fontSize: 18,
+                color: "rgba(240,238,255,0.6)",
+                marginTop: 6,
+              }}
+            >
+              day streak 🔥
+            </div>
 
-        <div style={{ display: "flex", marginTop: 20 }}>
-          {miniStat(`${weekSessions}`, "sessions")}
-          <div style={{ width: 1, background: "var(--sch-border)" }} />
-          {miniStat(weekHours, "studied")}
-          <div style={{ width: 1, background: "var(--sch-border)" }} />
-          {miniStat(`${pct}%`, "complete")}
-        </div>
+            {/* Goal pill */}
+            <div
+              style={{
+                position: "relative",
+                marginTop: 20,
+                maxWidth: "100%",
+                padding: "7px 16px",
+                borderRadius: 999,
+                fontSize: 13,
+                color: "#F0EEFF",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(139,92,246,0.45)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              🎯 {goal}
+            </div>
+          </div>
 
-        <div
-          style={{
-            height: 4,
-            borderRadius: 2,
-            marginTop: 16,
-            background: "var(--sch-border)",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ height: "100%", width: `${pct}%`, background: IRIDESCENT }} />
-        </div>
+          {/* Stats row */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {stat(`${sessions}`, "Sessions")}
+            <div style={{ width: 1, height: 32, background: "rgba(255,255,255,0.1)" }} />
+            {stat(hours, "Hours")}
+            <div style={{ width: 1, height: 32, background: "rgba(255,255,255,0.1)" }} />
+            {stat(`${pct}%`, "Progress")}
+          </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: 16,
-          }}
-        >
-          <span style={{ fontSize: 12, color: "rgba(255,159,67,0.9)" }}>🔥 {streak} day streak</span>
-          <span style={{ fontSize: 11, color: TEXT2 }}>Powered by Scholify ✦</span>
+          {/* Progress bar */}
+          <div
+            style={{
+              height: 6,
+              borderRadius: 3,
+              marginTop: 18,
+              background: "rgba(255,255,255,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.min(100, Math.max(0, pct))}%`,
+                background: IRIDESCENT,
+              }}
+            />
+          </div>
+
+          {/* Bottom */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: 18,
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#F0EEFF" }}>{name}</span>
+            <span style={{ fontSize: 11, color: "rgba(240,238,255,0.5)" }}>scholifyapp.com</span>
+          </div>
         </div>
       </div>
     </div>
@@ -918,6 +1015,10 @@ export default function Progress() {
   const [range, setRange] = useState<(typeof RANGES)[number]>("30 days")
 
   const firstName = (user?.user_metadata?.first_name as string) || "Learner"
+  const lastName = (user?.user_metadata?.last_name as string) || ""
+  const shareName = lastName
+    ? `${firstName} ${lastName.charAt(0).toUpperCase()}.`
+    : firstName
   const goal = plan.goal?.trim() || "Your learning goal"
   const dailyMinutes = Math.max(5, Number(plan.daily_minutes) || 20)
   const tasks = Array.isArray(plan.tasks) ? plan.tasks : []
@@ -1111,11 +1212,11 @@ export default function Progress() {
 
         {/* Section 5 — shareable card */}
         <ShareCard
-          name={firstName}
+          name={shareName}
           goal={goal}
           weekNum={weekNum}
-          weekSessions={Math.min(7, Math.max(1, Math.round(sessions * 0.28)))}
-          weekHours={`${((Math.min(7, Math.max(1, Math.round(sessions * 0.28))) * dailyMinutes) / 60).toFixed(1)} hrs`}
+          sessions={sessions}
+          hours={totalHours}
           pct={goalPct}
           streak={progress.streak}
         />

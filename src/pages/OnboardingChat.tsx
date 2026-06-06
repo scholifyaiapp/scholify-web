@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "motion/react"
 import { addDays, addMonths, differenceInCalendarDays, format } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { trackEvent, identifyUser } from "@/lib/analytics"
+import { detectGoalCategory } from "@/lib/community-storage"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
 /* ──────────────────────────────────────────────────────────────
@@ -675,6 +677,18 @@ export default function OnboardingChat() {
       // mid-flow resume cache so a later visit starts fresh.
       clearOnboardingProgress()
 
+      trackEvent("onboarding_completed")
+      if (user?.id) {
+        const planDays = final.deadline
+          ? Math.max(7, differenceInCalendarDays(new Date(final.deadline), new Date()))
+          : 30
+        identifyUser(user.id, {
+          goal_category: detectGoalCategory(final.primaryGoal),
+          plan_days: planDays,
+          daily_minutes: final.dailyMinutes,
+        })
+      }
+
       navigate("/loading", {
         state: {
           goal: final.primaryGoal,
@@ -697,6 +711,10 @@ export default function OnboardingChat() {
           sayUser(reply.label)
           setCollected((c) => ({ ...c, primaryGoal: reply.value }))
           saveOnboardingProgress({ primaryGoal: reply.value })
+          trackEvent("onboarding_step_completed", { step: 2 })
+          trackEvent("onboarding_goal_set", {
+            goal_category: detectGoalCategory(reply.value),
+          })
           await askDeadline()
           return
         }
@@ -709,6 +727,7 @@ export default function OnboardingChat() {
           const label = format(d, "MMM d, yyyy")
           setCollected((c) => ({ ...c, deadline: iso, deadlineLabel: label }))
           saveOnboardingProgress({ deadline: iso, deadlineLabel: label })
+          trackEvent("onboarding_step_completed", { step: 3 })
           await askDailyTime()
           return
         }
@@ -717,6 +736,7 @@ export default function OnboardingChat() {
           sayUser(reply.label)
           const minutes = Number(reply.value) || 20
           saveOnboardingProgress({ dailyMinutes: minutes })
+          trackEvent("onboarding_step_completed", { step: 4 })
           setCollected((c) => {
             const next: Collected = { ...c, dailyMinutes: minutes }
             setTimeout(() => showSummary(next), 50)
@@ -758,6 +778,7 @@ export default function OnboardingChat() {
       const name = text.slice(0, 40)
       setCollected((c) => ({ ...c, name }))
       saveOnboardingProgress({ name })
+      trackEvent("onboarding_step_completed", { step: 1 })
       await askGoal(name)
       return
     }
@@ -776,6 +797,8 @@ export default function OnboardingChat() {
       sayUser(text)
       setCollected((c) => ({ ...c, primaryGoal: text }))
       saveOnboardingProgress({ primaryGoal: text })
+      trackEvent("onboarding_step_completed", { step: 2 })
+      trackEvent("onboarding_goal_set", { goal_category: detectGoalCategory(text) })
       await askDeadline()
       return
     }
@@ -796,6 +819,7 @@ export default function OnboardingChat() {
       sayUser(`By ${label}`)
       setCollected((c) => ({ ...c, deadline: iso, deadlineLabel: label }))
       saveOnboardingProgress({ deadline: iso, deadlineLabel: label })
+      trackEvent("onboarding_step_completed", { step: 3 })
       await askDailyTime()
       return
     }

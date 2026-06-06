@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { format, differenceInCalendarDays } from "date-fns"
@@ -17,6 +17,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { usePaywall } from "@/hooks/usePaywall"
 import PaywallModal from "@/components/PaywallModal"
 import { api } from "@/lib/api"
+import { trackEvent } from "@/lib/analytics"
 import NotificationPrompt, { shouldShowNotificationPrompt } from "@/components/NotificationPrompt"
 import { loadCalendarAccount, syncSingleTask } from "@/lib/calendar"
 import DeadlineCountdown from "@/components/DeadlineCountdown"
@@ -255,6 +256,14 @@ export default function Dashboard() {
     if (doneToday) setStatus("done")
   }, [doneToday])
 
+  // Fire once per visit — powers Day-N retention analysis.
+  const viewTrackedRef = useRef(false)
+  useEffect(() => {
+    if (viewTrackedRef.current) return
+    viewTrackedRef.current = true
+    trackEvent("dashboard_viewed", { day_number: currentDay })
+  }, [currentDay])
+
   const fallbackTask: PlanTask = {
     day_number: currentDay,
     week_number: Math.floor((currentDay - 1) / 7) + 1,
@@ -314,6 +323,15 @@ export default function Dashboard() {
     } catch {
       /* canvas-confetti unsupported in this environment — non-fatal */
     }
+
+    trackEvent("task_completed", { day_number: currentDay, streak: next.streak })
+
+    // Nudge the user to share their streak (capture the moment of pride).
+    toast.action(
+      `Day ${currentDay} complete! 🔥`,
+      "Share your streak →",
+      () => navigate("/progress"),
+    )
 
     // A new completion may cross a 7 / 14 / 21-day streak milestone.
     checkPaywallTrigger(user?.id)
@@ -442,6 +460,14 @@ export default function Dashboard() {
   const [laraLoading, setLaraLoading] = useState(true)
   const [resource, setResource] = useState<{ title: string; url: string } | null>(null)
   const typed = useTypewriter(laraMessage, 30)
+
+  // Fire once when Lara's coaching message becomes visible.
+  const laraViewedRef = useRef(false)
+  useEffect(() => {
+    if (laraViewedRef.current || laraLoading || !laraMessage) return
+    laraViewedRef.current = true
+    trackEvent("lara_message_viewed")
+  }, [laraLoading, laraMessage])
 
   useEffect(() => {
     let cancelled = false
@@ -750,6 +776,7 @@ export default function Dashboard() {
             href={resource?.url ?? resourceUrl(task)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("resource_link_clicked")}
             style={{ textDecoration: "none", display: "block", marginTop: 20 }}
           >
             <div style={{ fontSize: 12, color: "var(--sch-tx-2)", marginBottom: 8 }}>

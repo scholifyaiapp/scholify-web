@@ -5,6 +5,7 @@ import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { api } from "@/lib/api"
+import { trackEvent } from "@/lib/analytics"
 import { addPlan, type PlanTask } from "@/lib/scholify-data"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
@@ -203,6 +204,7 @@ export default function Loading() {
       return
     }
 
+    trackEvent("plan_generation_started")
     const startedAt = Date.now()
     // Creep the bar upward while we wait — but cap it at 90% until the plan
     // is genuinely built + saved. The final 10% only lands once the real
@@ -254,6 +256,8 @@ export default function Loading() {
           )
       }
 
+      trackEvent("plan_generation_completed", { days_count: daysCount })
+
       // Hold the screen for at least 4s so it never flashes by.
       const elapsed = Date.now() - startedAt
       if (elapsed < 4000) await delay(4000 - elapsed)
@@ -271,9 +275,12 @@ export default function Loading() {
         window.clearInterval(tickerRef.current)
         tickerRef.current = null
       }
-      setError(e instanceof Error ? e.message : "Something went wrong while building your plan.")
+      const message =
+        e instanceof Error ? e.message : "Something went wrong while building your plan."
+      trackEvent("plan_generation_failed", { error: message })
+      setError(message)
     }
-  }, [goal, inputs.deadline, inputs.dailyMinutes, inputs.difficultyLevel, user, navigate])
+  }, [goal, inputs.deadline, inputs.dailyMinutes, inputs.difficultyLevel, daysCount, user, navigate])
 
   // Run once on mount, and again on each retry.
   useEffect(() => {

@@ -1,8 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Eye, EyeOff, Check, Mail } from "lucide-react"
 import { useAuth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
+import { trackEvent, identifyUser } from "@/lib/analytics"
+import { captureRefFromUrl, applyReferralOnSignup } from "@/lib/referral"
 import {
   AuthSplitLayout,
   BackToHome,
@@ -295,6 +298,12 @@ export default function SignUp() {
   const [formError, setFormError] = useState<string | null>(null)
   const [confirmSent, setConfirmSent] = useState(false)
 
+  // Capture any inbound ?ref= and mark the start of the funnel.
+  useEffect(() => {
+    captureRefFromUrl()
+    trackEvent("signup_started")
+  }, [])
+
   const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
   const passwordInvalid = password.length > 0 && password.length < 8
 
@@ -325,12 +334,23 @@ export default function SignUp() {
       setLoading(false)
       return
     }
+    trackEvent("signup_completed", { method: "email" })
     // Frictionless path: with email confirmation OFF the user is already
     // signed in — go straight to onboarding. Otherwise show the inbox panel.
     if (needsEmailConfirmation) {
       setConfirmSent(true)
       setLoading(false)
       return
+    }
+    // Identify + credit any referrer now that there's a session.
+    try {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) {
+        identifyUser(data.user.id, { name: firstName.trim(), method: "email" })
+        await applyReferralOnSignup(data.user)
+      }
+    } catch {
+      /* analytics/referral are best-effort */
     }
     navigate("/onboarding")
   }
@@ -345,6 +365,7 @@ export default function SignUp() {
       setGoogleLoading(false)
       return
     }
+    trackEvent("signup_completed", { method: "google" })
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
     navigate("/onboarding")
   }

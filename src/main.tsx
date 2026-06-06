@@ -7,7 +7,10 @@ import { LanguageProvider } from "./i18n/LanguageProvider"
 import { AuthProvider } from "./lib/auth"
 import { ToastProvider } from "./components/Toast"
 import { ThemeProvider } from "./lib/theme"
+import { initAnalytics } from "./lib/analytics"
 import "./index.css"
+
+initAnalytics()
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

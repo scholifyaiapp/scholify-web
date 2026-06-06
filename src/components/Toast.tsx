@@ -17,10 +17,16 @@ import { motion, AnimatePresence } from "motion/react"
 
 type ToastType = "success" | "error" | "info" | "warning"
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastItem {
   id: number
   type: ToastType
   message: string
+  action?: ToastAction
 }
 
 const META: Record<ToastType, { color: string; icon: string }> = {
@@ -30,7 +36,9 @@ const META: Record<ToastType, { color: string; icon: string }> = {
   warning: { color: "#FF9F0A", icon: "⚠" },
 }
 
-const ToastContext = createContext<((type: ToastType, message: string) => void) | null>(null)
+const ToastContext = createContext<
+  ((type: ToastType, message: string, action?: ToastAction) => void) | null
+>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
@@ -40,10 +48,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const show = useCallback(
-    (type: ToastType, message: string) => {
+    (type: ToastType, message: string, action?: ToastAction) => {
       const id = Date.now() + Math.random()
-      setToasts((list) => [...list, { id, type, message }])
-      setTimeout(() => remove(id), 3000)
+      setToasts((list) => [...list, { id, type, message, action }])
+      // Action toasts linger a little longer so they can be tapped.
+      setTimeout(() => remove(id), action ? 6000 : 3000)
     },
     [remove],
   )
@@ -90,6 +99,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               >
                 <span style={{ color: meta.color, fontSize: 18, flexShrink: 0 }}>{meta.icon}</span>
                 <span style={{ fontSize: 14, color: "var(--sch-text)", flex: 1 }}>{t.message}</span>
+                {t.action && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      t.action?.onClick()
+                      remove(t.id)
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: meta.color,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                      padding: 0,
+                    }}
+                  >
+                    {t.action.label}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => remove(t.id)}
@@ -123,6 +154,9 @@ export function useToast() {
         error: (m: string) => show?.("error", m),
         info: (m: string) => show?.("info", m),
         warning: (m: string) => show?.("warning", m),
+        /** A toast with a tappable action (e.g. "Share your streak →"). */
+        action: (m: string, label: string, onClick: () => void, type: ToastType = "success") =>
+          show?.(type, m, { label, onClick }),
       },
     }),
     [show],

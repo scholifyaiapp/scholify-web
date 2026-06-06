@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { openCheckout, PADDLE_PRICES } from "@/lib/paddle"
+import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import type { PaywallType } from "@/hooks/usePaywall"
@@ -111,7 +112,15 @@ export default function PaywallModal({
   const header = HEADERS[type]
   const email = user?.email
 
+  const planFor = (priceId: string | undefined): string => {
+    if (priceId === PADDLE_PRICES.beginnerMonthly) return "beginner"
+    if (priceId === PADDLE_PRICES.proMonthly) return "pro"
+    if (priceId === PADDLE_PRICES.annualPro) return "annual_pro"
+    return "unknown"
+  }
+
   const handleCheckout = (priceId: string | undefined) => {
+    trackEvent("upgrade_started", { plan: planFor(priceId) })
     const ok = openCheckout(priceId, email)
     if (!ok) {
       setNotice("Checkout is being set up — coming soon ✦")

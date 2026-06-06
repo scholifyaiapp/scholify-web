@@ -19,6 +19,7 @@ import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
 import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
+import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -452,6 +453,18 @@ export default function Settings() {
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Learner"
   const isPaid = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "2026"
+
+  /* Referrals */
+  const referralLink = useMemo(() => referralUrl(getReferralCode(user)), [user])
+  const referralStats = useMemo(() => getReferralStats(user), [user])
+  const copyReferral = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink)
+      toast.success("Link copied!")
+    } catch {
+      toast.error("Couldn't copy — select the link and copy it manually.")
+    }
+  }, [referralLink, toast])
 
   /* Goal stats */
   const goal = plan.goal?.trim() || "Your learning goal"
@@ -888,6 +901,81 @@ export default function Settings() {
               <Toggle on={settings.newFeatures} onChange={(v) => update("newFeatures", v)} />
             </SettingRow>
           </div>
+        </Section>
+
+        {/* ── Invite friends (referrals) ── */}
+        <Section>
+          <span style={sectionHead}>🎁 Invite Friends</span>
+          <p style={{ fontSize: 13, color: TEXT2, marginTop: 6, lineHeight: 1.6 }}>
+            Share your link and earn rewards when friends build their habits.
+          </p>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>
+            <input
+              readOnly
+              value={referralLink}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="Your referral link"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                height: 44,
+                padding: "0 14px",
+                borderRadius: 12,
+                fontSize: 13,
+                color: "var(--sch-text)",
+                background: "var(--sch-card-2)",
+                border: "1px solid var(--sch-border)",
+                outline: "none",
+              }}
+            />
+            <motion.button
+              type="button"
+              onClick={copyReferral}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              style={{
+                height: 44,
+                padding: "0 18px",
+                borderRadius: 12,
+                border: "none",
+                background: IRIDESCENT,
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                flexShrink: 0,
+                boxShadow: "0 0 18px rgba(139,92,246,0.25)",
+              }}
+            >
+              Copy
+            </motion.button>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+            {[
+              `${referralStats.invited} friends invited`,
+              `${referralStats.joined} joined`,
+            ].map((label) => (
+              <span
+                key={label}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  color: TEXT2,
+                  background: "var(--sch-card-2)",
+                  border: "1px solid var(--sch-border)",
+                }}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <p style={{ fontSize: 12, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>
+            You earn: 1 extra Life Shield per referral who completes 7 days.
+          </p>
         </Section>
 
         {/* ── Calendar Sync ── */}
