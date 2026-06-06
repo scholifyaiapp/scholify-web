@@ -5,8 +5,11 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
+import { usePaywall } from "@/hooks/usePaywall"
+import PaywallModal from "@/components/PaywallModal"
 import VocabSession from "@/components/VocabSession"
 import VocabMatchGame from "@/components/VocabMatchGame"
+import VocabTypeGame from "@/components/VocabTypeGame"
 import { coachOnHome } from "@/lib/lara-vocab"
 import {
   createDeck,
@@ -51,7 +54,10 @@ export default function Learn() {
   const [deck, setDeck] = useState<VocabDeck | null>(() => readDeck())
   const [inSession, setInSession] = useState(false)
   const [inGame, setInGame] = useState(false)
+  const [inTypeGame, setInTypeGame] = useState(false)
   const [tick, setTick] = useState(0) // refresh stats after a session
+  const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
+  const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
 
   const refresh = useCallback(() => {
     setDeck(readDeck())
@@ -87,6 +93,18 @@ export default function Learn() {
     )
   }
 
+  if (inTypeGame && deck) {
+    return (
+      <VocabTypeGame
+        deck={deck}
+        onClose={() => {
+          setInTypeGame(false)
+          refresh()
+        }}
+      />
+    )
+  }
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
@@ -95,8 +113,10 @@ export default function Learn() {
             key={tick}
             deck={deck}
             name={firstName}
+            isPro={isPro}
             onStart={() => setInSession(true)}
             onPlayGame={() => setInGame(true)}
+            onPlayType={() => (isPro ? setInTypeGame(true) : triggerFeaturePaywall())}
             onAddWords={async () => {
               const more = await generateVocab({
                 target: deck.targetLanguage,
@@ -129,6 +149,8 @@ export default function Learn() {
           />
         )}
       </div>
+
+      <PaywallModal open={showPaywall} type={paywallType} onClose={closePaywall} />
     </DashboardLayout>
   )
 }
@@ -138,15 +160,19 @@ export default function Learn() {
 function DeckHome({
   deck,
   name,
+  isPro,
   onStart,
   onPlayGame,
+  onPlayType,
   onAddWords,
   onReset,
 }: {
   deck: VocabDeck
   name: string
+  isPro: boolean
   onStart: () => void
   onPlayGame: () => void
+  onPlayType: () => void
   onAddWords: () => Promise<void>
   onReset: () => void
 }) {
@@ -292,13 +318,48 @@ function DeckHome({
         </div>
       </div>
 
-      {/* Footer actions */}
-      <div style={{ marginTop: 24, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        {deck.words.length >= 4 && (
-          <button type="button" onClick={onPlayGame} style={ghostBtn}>
-            ⚡ Quick match game
+      {/* Practice */}
+      {deck.words.length >= 4 && (
+        <>
+          <div style={{ marginTop: 28, fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: DIM }}>
+            Practice
+          </div>
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <GameCard icon="⚡" title="Match" subtitle="Pair words & meanings" onClick={onPlayGame} />
+            <GameCard icon="🎧" title="Listen & Type" subtitle="Hear it, spell it" pro={!isPro} onClick={onPlayType} />
+          </div>
+        </>
+      )}
+
+      {/* Pro upsell */}
+      {!isPro && (
+        <div
+          style={{
+            marginTop: 20,
+            padding: 18,
+            borderRadius: 18,
+            background: "rgba(139,92,246,0.06)",
+            border: "1px solid rgba(139,92,246,0.25)",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div style={{ fontSize: 26 }}>✦</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Unlock Scholify Pro</div>
+            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2, lineHeight: 1.5 }}>
+              Listen &amp; Type, unlimited words, and premium pronunciation.
+            </div>
+          </div>
+          <button type="button" onClick={onPlayType} style={primaryBtnSmall}>
+            Go Pro
           </button>
-        )}
+        </div>
+      )}
+
+      {/* Footer actions */}
+      <div style={{ marginTop: 20, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
         {todayCount > 0 && (
           <button
             type="button"
@@ -318,6 +379,43 @@ function DeckHome({
         </button>
       </div>
     </motion.div>
+  )
+}
+
+function GameCard({
+  icon,
+  title,
+  subtitle,
+  onClick,
+  pro,
+}: {
+  icon: string
+  title: string
+  subtitle: string
+  onClick: () => void
+  pro?: boolean
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      style={{
+        position: "relative",
+        padding: 18,
+        borderRadius: 18,
+        background: "var(--sch-card)",
+        border: "1px solid var(--sch-border)",
+        textAlign: "left",
+        cursor: "pointer",
+      }}
+    >
+      {pro && <span style={proChip}>PRO</span>}
+      <div style={{ fontSize: 26 }}>{icon}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginTop: 8 }}>{title}</div>
+      <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>{subtitle}</div>
+    </motion.button>
   )
 }
 
@@ -513,4 +611,27 @@ const ghostBtn: CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   cursor: "pointer",
+}
+const primaryBtnSmall: CSSProperties = {
+  padding: "9px 16px",
+  borderRadius: 12,
+  border: "none",
+  background: IRIDESCENT,
+  color: "#fff",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+  flexShrink: 0,
+}
+const proChip: CSSProperties = {
+  position: "absolute",
+  top: 12,
+  right: 12,
+  fontSize: 10,
+  fontWeight: 800,
+  padding: "2px 8px",
+  borderRadius: 8,
+  background: "rgba(139,92,246,0.18)",
+  color: "#C084FC",
+  letterSpacing: "0.04em",
 }
