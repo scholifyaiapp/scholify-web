@@ -65,6 +65,7 @@ const Progress = lazyWithReload(() => import("@/pages/Progress"))
 const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
 const Dashboard = lazyWithReload(() => import("@/pages/Dashboard"))
+const Learn = lazyWithReload(() => import("@/pages/Learn"))
 const Goals = lazyWithReload(() => import("@/pages/Goals"))
 const ResourceLibrary = lazyWithReload(() => import("@/pages/ResourceLibrary"))
 const Chat = lazyWithReload(() => import("@/pages/Chat"))
@@ -201,7 +202,7 @@ function OAuthReturnHandler() {
     }
 
     if (user) {
-      navigate("/dashboard", { replace: true })
+      navigate("/learn", { replace: true })
     } else if (looksLikeAuthHash) {
       // Session is still landing via supabase detectSessionInUrl — let the
       // dedicated callback page wait it out and surface any provider error.
@@ -233,6 +234,7 @@ export default function App() {
       <Route path="/onboarding" element={<ProtectedRoute><Page name="OnboardingChat"><OnboardingChat /></Page></ProtectedRoute>} />
       <Route path="/onboarding/classic" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
       <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
+      <Route path="/learn" element={<ProtectedRoute><Page name="Learn"><Learn /></Page></ProtectedRoute>} />
       <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
       <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
       <Route path="/goals" element={<RequireOnboarded><Page name="Goals" fallback={<GoalsFallback />}><Goals /></Page></RequireOnboarded>} />

@@ -60,6 +60,6 @@ export function GuestRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
 
   if (loading) return <AuthLoading />
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to="/learn" replace />
   return <>{children}</>
 }

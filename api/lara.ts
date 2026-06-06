@@ -45,10 +45,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "analyze-difficulty") return handleDifficulty(body, res)
   if (action === "analyze-photo") return handlePhoto(body, res)
   if (action === "generate-tree") return handleTree(body, res)
+  if (action === "vocab") return handleVocab(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab.",
   })
+}
+
+/* ── Vocabulary word generation (Haiku) ──────────────────────────────── */
+
+const VOCAB_SYSTEM = `You are Lara, a language tutor who builds vocabulary lists. Output STRICTLY valid JSON only — a single array of word objects, no markdown, no commentary. Each word must be genuinely useful, correctly translated, and level-appropriate. Keep example sentences short and natural.`
+
+function parseVocabJson(text: string): unknown[] {
+  try {
+    const start = text.indexOf("[")
+    const end = text.lastIndexOf("]")
+    if (start === -1 || end === -1) return []
+    const arr = JSON.parse(text.slice(start, end + 1))
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+async function handleVocab(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const target = String(body.target || "").trim()
+  const targetLabel = String(body.targetLabel || target || "the target language").trim()
+  const native = String(body.native || "en").trim()
+  const nativeLabel = String(body.nativeLabel || native || "English").trim()
+  const goal = String(body.goal || "").trim()
+  const theme = String(body.theme || "").trim()
+  const level = String(body.level || "beginner").trim()
+  const count = Math.max(1, Math.min(20, Number(body.count) || 12))
+  const exclude = Array.isArray(body.exclude)
+    ? (body.exclude as unknown[]).map(String).slice(0, 200)
+    : []
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  // No key (or missing target) → let the client fall back to its seed bank.
+  if (!apiKey || !target) {
+    res.status(200).json({ words: [], isFallback: true })
+    return
+  }
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: HAIKU,
+      max_tokens: 1400,
+      system: [{ type: "text", text: VOCAB_SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: `Generate ${count} ${level} ${targetLabel} vocabulary words for a ${nativeLabel} speaker.
+Goal: ${goal || "general everyday fluency"}.
+Theme: ${theme || "mixed everyday topics"}.
+Exclude these already-known words: ${exclude.join(", ") || "(none)"}.
+
+Return ONLY a JSON array in exactly this shape:
+[{"term":"<word in ${targetLabel}>","translation":"<meaning in ${nativeLabel}>","example":"<short sentence in ${targetLabel}>","exampleTranslation":"<that sentence in ${nativeLabel}>","theme":"<one or two word topic>"}]`,
+        },
+      ],
+    })
+    const text = completion.content[0]?.type === "text" ? completion.content[0].text : "[]"
+    res.status(200).json({ words: parseVocabJson(text) })
+  } catch (err) {
+    console.error("lara vocab:", err)
+    res.status(200).json({ words: [], isFallback: true })
+  }
 }
 
 /* ── Daily coach message (Haiku) ─────────────────────────────────────── */

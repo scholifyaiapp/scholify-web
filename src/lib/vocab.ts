@@ -318,3 +318,75 @@ export function gradeWordInDeck(deck: VocabDeck, wordId: string, grade: ReviewGr
   writeDeck(next)
   return next
 }
+
+/* ── Daily streak / progress ─────────────────────────────────── */
+
+const KEY_PROGRESS = "scholify-vocab-progress"
+
+export interface VocabProgress {
+  streak: number
+  longestStreak: number
+  lastSessionDate: string | null
+  sessionsCompleted: number
+  wordsReviewed: number
+}
+
+const EMPTY_PROGRESS: VocabProgress = {
+  streak: 0,
+  longestStreak: 0,
+  lastSessionDate: null,
+  sessionsCompleted: 0,
+  wordsReviewed: 0,
+}
+
+export function readVocabProgress(): VocabProgress {
+  try {
+    const raw = window.localStorage.getItem(KEY_PROGRESS)
+    if (raw) return { ...EMPTY_PROGRESS, ...(JSON.parse(raw) as Partial<VocabProgress>) }
+  } catch {
+    /* ignore */
+  }
+  return { ...EMPTY_PROGRESS }
+}
+
+/** Has today's session already been completed? */
+export function isSessionDoneToday(p: VocabProgress = readVocabProgress()): boolean {
+  return p.lastSessionDate === todayStr()
+}
+
+/**
+ * Record a completed session. Extends the streak on consecutive days, resets it
+ * after a gap, and is idempotent within the same day (only counts once).
+ */
+export function recordSession(wordsReviewed: number): VocabProgress {
+  const prev = readVocabProgress()
+  const today = todayStr()
+  if (prev.lastSessionDate === today) {
+    const same: VocabProgress = { ...prev, wordsReviewed: prev.wordsReviewed + wordsReviewed }
+    persistProgress(same)
+    return same
+  }
+
+  let streak = 1
+  if (prev.lastSessionDate) {
+    const gap = differenceInCalendarDays(new Date(today), new Date(prev.lastSessionDate))
+    streak = gap === 1 ? prev.streak + 1 : 1
+  }
+  const next: VocabProgress = {
+    streak,
+    longestStreak: Math.max(streak, prev.longestStreak),
+    lastSessionDate: today,
+    sessionsCompleted: prev.sessionsCompleted + 1,
+    wordsReviewed: prev.wordsReviewed + wordsReviewed,
+  }
+  persistProgress(next)
+  return next
+}
+
+function persistProgress(p: VocabProgress): void {
+  try {
+    window.localStorage.setItem(KEY_PROGRESS, JSON.stringify(p))
+  } catch {
+    /* ignore */
+  }
+}
