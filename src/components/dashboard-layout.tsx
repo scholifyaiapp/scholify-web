@@ -42,7 +42,6 @@ type NavItemDef = {
 export const NAV: NavItemDef[] = [
   { icon: "📚", label: "Learn", to: "/learn" },
   { icon: "📈", label: "Progress", to: "/learn/progress" },
-  { icon: "💬", label: "Ask Lara", to: "/chat" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
 ]
 
@@ -52,7 +51,6 @@ export const NAV: NavItemDef[] = [
 const MOBILE_NAV: NavItemDef[] = [
   { icon: "📚", label: "Learn", to: "/learn" },
   { icon: "📈", label: "Progress", to: "/learn/progress" },
-  { icon: "💬", label: "Lara", to: "/chat" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
 ]
 

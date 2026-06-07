@@ -1,21 +1,15 @@
-import { Routes, Route, Link, useNavigate } from "react-router-dom"
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { Suspense, lazy, useEffect, type ComponentType } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
-import { ProtectedRoute, RequireOnboarded, GuestRoute } from "@/components/route-guards"
+import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
-import {
-  RoomCardSkeleton,
-  CommunityPostSkeleton,
-  GoalCardSkeleton,
-  ResourceCardSkeleton,
-} from "@/components/Skeleton"
 
 /*
  * Lazy import that self-heals after a deploy. A route chunk can fail to load
- * when the browser (or a service worker) holds a stale index.html that points
- * at an old, now-deleted chunk hash — the "importing a module script failed"
- * error. Instead of crashing the section, reload once to pull the fresh
- * index + chunk map. A sessionStorage guard prevents a reload loop.
+ * when the browser holds a stale index.html that points at an old, now-deleted
+ * chunk hash — the "importing a module script failed" error. Instead of
+ * crashing the section, reload once to pull the fresh index + chunk map. A
+ * sessionStorage guard prevents a reload loop.
  */
 function lazyWithReload<T extends ComponentType<unknown>>(
   factory: () => Promise<{ default: T }>,
@@ -44,7 +38,6 @@ function lazyWithReload<T extends ComponentType<unknown>>(
           /* ignore */
         }
         window.location.reload()
-        // The reload takes over — never resolve this import.
         return new Promise<{ default: T }>(() => {})
       }
       throw err
@@ -52,38 +45,17 @@ function lazyWithReload<T extends ComponentType<unknown>>(
   })
 }
 
+/* ── MVP pages only. Legacy plan pages still exist in the repo but are not
+ *    routed — any old URL redirects to /learn (see the catch-all below). ── */
 const Landing = lazyWithReload(() => import("@/pages/Landing"))
 const SignIn = lazyWithReload(() => import("@/pages/SignIn"))
 const SignUp = lazyWithReload(() => import("@/pages/SignUp"))
-const Onboarding = lazyWithReload(() => import("@/pages/Onboarding"))
-const OnboardingChat = lazyWithReload(() => import("@/pages/OnboardingChat"))
 const AuthCallback = lazyWithReload(() => import("@/pages/AuthCallback"))
 const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalendarCallback"))
-const Loading = lazyWithReload(() => import("@/pages/Loading"))
-const ComingSoon = lazyWithReload(() => import("@/pages/ComingSoon"))
-const Progress = lazyWithReload(() => import("@/pages/Progress"))
-const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
-const Settings = lazyWithReload(() => import("@/pages/Settings"))
-const Dashboard = lazyWithReload(() => import("@/pages/Dashboard"))
 const Learn = lazyWithReload(() => import("@/pages/Learn"))
 const LearnProgress = lazyWithReload(() => import("@/pages/LearnProgress"))
-const Goals = lazyWithReload(() => import("@/pages/Goals"))
-const ResourceLibrary = lazyWithReload(() => import("@/pages/ResourceLibrary"))
-const Chat = lazyWithReload(() => import("@/pages/Chat"))
-const Quiz = lazyWithReload(() => import("@/pages/Quiz"))
-const Partner = lazyWithReload(() => import("@/pages/Partner"))
-const PartnerJoin = lazyWithReload(() => import("@/pages/PartnerJoin"))
-const Rooms = lazyWithReload(() => import("@/pages/Rooms"))
-const Room = lazyWithReload(() => import("@/pages/Room"))
-const RoomJoin = lazyWithReload(() => import("@/pages/RoomJoin"))
-const Community = lazyWithReload(() => import("@/pages/Community"))
-const Challenges = lazyWithReload(() => import("@/pages/Challenges"))
-const Roadmap = lazyWithReload(() => import("@/pages/Roadmap"))
-const StreakTreeFullscreen = lazyWithReload(() => import("@/components/StreakTreeFullscreen"))
-const Teams = lazyWithReload(() => import("@/pages/Teams"))
-const TeamDashboard = lazyWithReload(() => import("@/pages/TeamDashboard"))
-const TeamAdmin = lazyWithReload(() => import("@/pages/TeamAdmin"))
-const TeamJoin = lazyWithReload(() => import("@/pages/TeamJoin"))
+const Settings = lazyWithReload(() => import("@/pages/Settings"))
+const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
 const Terms = lazyWithReload(() => import("@/pages/Terms"))
 const Support = lazyWithReload(() => import("@/pages/Support"))
@@ -104,62 +76,11 @@ function Page({
   )
 }
 
-// Lightweight per-page skeleton fallbacks for the chunk-fetch window.
-function RoomsFallback() {
-  return (
-    <div style={{ padding: 24, display: "grid", gap: 16 }}>
-      <div style={{ height: 22, width: 180, background: "rgba(255,255,255,0.06)", borderRadius: 6 }} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-        <RoomCardSkeleton />
-        <RoomCardSkeleton />
-      </div>
-    </div>
-  )
-}
-
-function CommunityFallback() {
-  return (
-    <div style={{ padding: 24, display: "grid", gap: 12 }}>
-      <CommunityPostSkeleton />
-      <CommunityPostSkeleton />
-      <CommunityPostSkeleton />
-    </div>
-  )
-}
-
-function GoalsFallback() {
-  return (
-    <div style={{ padding: 24, display: "grid", gap: 14 }}>
-      <GoalCardSkeleton />
-      <GoalCardSkeleton />
-    </div>
-  )
-}
-
-function ResourcesFallback() {
-  return (
-    <div style={{ padding: 24, display: "grid", gap: 10 }}>
-      <ResourceCardSkeleton />
-      <ResourceCardSkeleton />
-      <ResourceCardSkeleton />
-      <ResourceCardSkeleton />
-    </div>
-  )
-}
-
 /**
- * Catches the return from a Google OAuth sign-in. Supabase sometimes
- * redirects to the site root instead of /auth/callback; this watches for
- * a freshly-authenticated user after an OAuth attempt and routes them
- * into the app no matter which page they landed on.
- *
- * Two triggers, since the user may arrive from a different origin (started
- * on scholify-web.vercel.app, returned on scholifyapp.com) where the
- * sessionStorage flag isn't visible:
- *   1) Same-origin pending flag set by signInWithGoogle.
- *   2) Auth-shaped URL hash on root (`#access_token=…` from implicit flow,
- *      or `#error=…` if Google rejected) — Supabase consumes it into a
- *      session, then we forward the user to the dashboard.
+ * Catches the return from a Google OAuth sign-in. Supabase sometimes redirects
+ * to the site root instead of /auth/callback; this watches for a freshly
+ * authenticated user after an OAuth attempt and routes them into the app no
+ * matter which page they landed on.
  */
 function OAuthReturnHandler() {
   const { user, loading } = useAuth()
@@ -170,9 +91,7 @@ function OAuthReturnHandler() {
 
     const hash = window.location.hash || ""
     const looksLikeAuthHash =
-      /access_token=|provider_token=|refresh_token=|error_description=|error=/.test(
-        hash,
-      )
+      /access_token=|provider_token=|refresh_token=|error_description=|error=/.test(hash)
 
     let pending: string | null = null
     try {
@@ -189,14 +108,9 @@ function OAuthReturnHandler() {
       /* ignore */
     }
 
-    // Strip the auth fragment so a refresh doesn't re-trigger the flow.
     if (looksLikeAuthHash) {
       try {
-        window.history.replaceState(
-          null,
-          "",
-          window.location.pathname + window.location.search,
-        )
+        window.history.replaceState(null, "", window.location.pathname + window.location.search)
       } catch {
         /* ignore */
       }
@@ -205,8 +119,6 @@ function OAuthReturnHandler() {
     if (user) {
       navigate("/learn", { replace: true })
     } else if (looksLikeAuthHash) {
-      // Session is still landing via supabase detectSessionInUrl — let the
-      // dedicated callback page wait it out and surface any provider error.
       navigate("/auth/callback", { replace: true })
     }
   }, [user, loading, navigate])
@@ -219,59 +131,32 @@ export default function App() {
     <>
       <OAuthReturnHandler />
       <Routes>
-      <Route path="/" element={<Page name="Landing"><Landing /></Page>} />
+        <Route path="/" element={<Page name="Landing"><Landing /></Page>} />
 
-      {/* Guest-only — logged-in users are bounced to /dashboard */}
-      <Route path="/sign-in" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
-      <Route path="/signin" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
-      <Route path="/sign-up" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
-      <Route path="/signup" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
+        {/* Guest-only — logged-in users are bounced to /learn */}
+        <Route path="/sign-in" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
+        <Route path="/signin" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
+        <Route path="/sign-up" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
+        <Route path="/signup" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
 
-      {/* OAuth return handler — must stay public */}
-      <Route path="/auth/callback" element={<Page name="AuthCallback"><AuthCallback /></Page>} />
-      <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
+        {/* OAuth return — must stay public */}
+        <Route path="/auth/callback" element={<Page name="AuthCallback"><AuthCallback /></Page>} />
+        <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
 
-      {/* Auth-required */}
-      <Route path="/onboarding" element={<ProtectedRoute><Page name="OnboardingChat"><OnboardingChat /></Page></ProtectedRoute>} />
-      <Route path="/onboarding/classic" element={<ProtectedRoute><Page name="Onboarding"><Onboarding /></Page></ProtectedRoute>} />
-      <Route path="/loading" element={<ProtectedRoute><Page name="Loading"><Loading /></Page></ProtectedRoute>} />
-      <Route path="/learn" element={<ProtectedRoute><Page name="Learn"><Learn /></Page></ProtectedRoute>} />
-      <Route path="/learn/progress" element={<ProtectedRoute><Page name="LearnProgress"><LearnProgress /></Page></ProtectedRoute>} />
-      <Route path="/dashboard" element={<RequireOnboarded><Page name="Dashboard"><Dashboard /></Page></RequireOnboarded>} />
-      <Route path="/progress" element={<RequireOnboarded><Page name="Progress"><Progress /></Page></RequireOnboarded>} />
-      <Route path="/goals" element={<RequireOnboarded><Page name="Goals" fallback={<GoalsFallback />}><Goals /></Page></RequireOnboarded>} />
-      <Route path="/resources" element={<RequireOnboarded><Page name="ResourceLibrary" fallback={<ResourcesFallback />}><ResourceLibrary /></Page></RequireOnboarded>} />
-      <Route path="/achievements" element={<RequireOnboarded><Page name="Achievements"><ComingSoon /></Page></RequireOnboarded>} />
-      <Route path="/settings" element={<RequireOnboarded><Page name="Settings"><Settings /></Page></RequireOnboarded>} />
-      <Route path="/quiz" element={<RequireOnboarded><Page name="Quiz"><Quiz /></Page></RequireOnboarded>} />
-      <Route path="/partner" element={<RequireOnboarded><Page name="Partner"><Partner /></Page></RequireOnboarded>} />
-      <Route path="/partner/join/:code" element={<Page name="PartnerJoin"><PartnerJoin /></Page>} />
-      <Route path="/rooms" element={<RequireOnboarded><Page name="Rooms" fallback={<RoomsFallback />}><Rooms /></Page></RequireOnboarded>} />
-      <Route path="/rooms/:id" element={<RequireOnboarded><Page name="Room"><Room /></Page></RequireOnboarded>} />
-      <Route path="/join/:code" element={<Page name="RoomJoin"><RoomJoin /></Page>} />
-      <Route path="/community" element={<RequireOnboarded><Page name="Community" fallback={<CommunityFallback />}><Community /></Page></RequireOnboarded>} />
-      <Route path="/challenges" element={<RequireOnboarded><Page name="Challenges"><Challenges /></Page></RequireOnboarded>} />
-      <Route path="/roadmap" element={<RequireOnboarded><Page name="Roadmap"><Roadmap /></Page></RequireOnboarded>} />
-      <Route path="/tree" element={<RequireOnboarded><Page name="StreakTree"><StreakTreeFullscreen /></Page></RequireOnboarded>} />
-      <Route path="/teams" element={<RequireOnboarded><Page name="Teams"><Teams /></Page></RequireOnboarded>} />
-      <Route path="/teams/:id" element={<RequireOnboarded><Page name="TeamDashboard"><TeamDashboard /></Page></RequireOnboarded>} />
-      <Route path="/teams/:id/admin" element={<RequireOnboarded><Page name="TeamAdmin"><TeamAdmin /></Page></RequireOnboarded>} />
-      <Route path="/join-team/:token" element={<Page name="TeamJoin"><TeamJoin /></Page>} />
+        {/* The product */}
+        <Route path="/learn" element={<ProtectedRoute><Page name="Learn"><Learn /></Page></ProtectedRoute>} />
+        <Route path="/learn/progress" element={<ProtectedRoute><Page name="LearnProgress"><LearnProgress /></Page></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />
 
-      <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
-      <Route path="/chat" element={<Page name="Chat"><Chat /></Page>} />
-      <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
-      <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
-      <Route path="/support" element={<Page name="Support"><Support /></Page>} />
-      <Route
-        path="*"
-        element={
-          <div className="min-h-screen grid place-items-center">
-            <Link to="/" className="underline">Go home</Link>
-          </div>
-        }
-      />
-    </Routes>
+        {/* Public info */}
+        <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
+        <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
+        <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
+        <Route path="/support" element={<Page name="Support"><Support /></Page>} />
+
+        {/* Everything else (legacy plan routes, unknown paths) → the product */}
+        <Route path="*" element={<Navigate to="/learn" replace />} />
+      </Routes>
     </>
   )
 }
