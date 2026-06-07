@@ -46,10 +46,100 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "analyze-photo") return handlePhoto(body, res)
   if (action === "generate-tree") return handleTree(body, res)
   if (action === "vocab") return handleVocab(body, res)
+  if (action === "extract") return handleExtract(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract.",
   })
+}
+
+/* ── Bring-Your-Own-Content vocabulary extraction (Haiku) ─────────────── */
+
+const EXTRACT_SYSTEM = `You extract the vocabulary a learner needs from text THEY provide. Output STRICTLY valid JSON only — a single array of word objects, no markdown, no commentary. Translations must be accurate; example sentences short and natural.`
+
+/* Small per-language stoplists so mock mode can skip obvious common words. */
+const STOPWORDS: Record<string, string[]> = {
+  en: ["the","a","an","and","or","but","is","are","was","were","be","been","to","of","in","on","at","for","with","as","by","it","this","that","you","i","he","she","we","they","my","your","his","her","our","their","not","no","yes","do","does","did","have","has","had","will","would","can","could","what","when","where","who","how","there","here","from","about","into","than","then"],
+  ru: ["и","в","во","не","на","что","он","с","со","как","а","то","все","она","так","его","но","да","ты","к","у","же","вы","за","бы","по","ее","мне","было","вот","от","меня","еще","нет","о","из","ему","когда","даже","ну","вдруг","ли","если","или","быть","был","него","до","вас"],
+  es: ["el","la","los","las","un","una","y","o","de","que","en","a","por","con","para","es","son","no","sí","se","su","sus","lo","le","me","te","mi","tu","como","más","pero","muy","ya","esta","este"],
+  it: ["il","lo","la","i","gli","le","un","una","e","o","di","che","in","a","da","per","con","è","sono","non","sì","si","su","mi","ti","ci","come","più","ma","molto","questo","questa"],
+  fr: ["le","la","les","un","une","des","et","ou","de","que","en","à","pour","avec","est","sont","ne","pas","oui","se","sa","son","ses","me","te","mon","ton","comme","plus","mais","très","ce","cette"],
+  de: ["der","die","das","ein","eine","und","oder","von","zu","in","im","an","auf","für","mit","ist","sind","nicht","ja","sich","sein","seine","mein","dein","wie","mehr","aber","sehr","dieser","diese"],
+}
+
+function mockExtract(text: string, lang: string): unknown[] {
+  const stop = new Set(STOPWORDS[lang] || [])
+  const minLen = STOPWORDS[lang] ? 4 : 6
+  const sentences = text
+    .split(/(?<=[.!?\n])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const seen = new Set<string>()
+  const tokens: string[] = []
+  const matches = text.toLowerCase().match(/[\p{L}'-]{2,}/gu) || []
+  for (const tok of matches) {
+    if (stop.has(tok) || tok.length < minLen || seen.has(tok)) continue
+    seen.add(tok)
+    tokens.push(tok)
+  }
+  const picked = tokens.sort((a, b) => b.length - a.length).slice(0, 10)
+  return picked.map((tok) => ({
+    term: tok,
+    translation: "(translation)",
+    example: sentences.find((s) => s.toLowerCase().includes(tok)) || "",
+    exampleTranslation: "",
+    theme: "Your text",
+  }))
+}
+
+async function handleExtract(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const text = String(body.text || "").slice(0, 4000)
+  const target = String(body.targetLanguage || body.target || "").trim()
+  const targetLabel = String(body.targetLabel || target || "the target language").trim()
+  const native = String(body.nativeLanguage || body.native || "en").trim()
+  const nativeLabel = String(body.nativeLabel || native || "English").trim()
+  const knownLevel = String(body.knownLevel || body.level || "A2").trim()
+
+  if (!text.trim()) {
+    res.status(200).json({ words: [], isMock: false })
+    return
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.status(200).json({ words: mockExtract(text, target), isMock: true })
+    return
+  }
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: HAIKU,
+      max_tokens: 3000,
+      system: [{ type: "text", text: EXTRACT_SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: `The learner studies ${targetLabel} (native ${nativeLabel}), level ${knownLevel}.
+From the text below, extract 15-30 useful words/phrases AT OR ABOVE their level — skip very common words below their level that they already know. Prefer recurring, useful words and important multi-word phrases/collocations. If the text is in ${nativeLabel} (not ${targetLabel}), translate the KEY CONCEPTS into the ${targetLabel} words they would need.
+
+Return ONLY a JSON array in exactly this shape:
+[{"term":"<word/phrase in ${targetLabel}>","translation":"<meaning in ${nativeLabel}>","example":"<a natural sentence in ${targetLabel}, you may adapt the source>","exampleTranslation":"<that sentence in ${nativeLabel}>","theme":"<short source label>"}]
+
+TEXT:
+"""
+${text}
+"""`,
+        },
+      ],
+    })
+    const out = completion.content[0]?.type === "text" ? completion.content[0].text : "[]"
+    const words = parseVocabJson(out)
+    res.status(200).json({ words: words.length > 0 ? words : mockExtract(text, target), isMock: false })
+  } catch (err) {
+    console.error("lara extract:", err)
+    res.status(200).json({ words: mockExtract(text, target), isMock: true })
+  }
 }
 
 /* ── Vocabulary word generation (Haiku) ──────────────────────────────── */

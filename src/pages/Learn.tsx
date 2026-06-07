@@ -6,12 +6,14 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
+import { useLanguage } from "@/i18n/LanguageProvider"
 import { usePaywall } from "@/hooks/usePaywall"
 import PaywallModal from "@/components/PaywallModal"
 import VocabSession from "@/components/VocabSession"
 import VocabMatchGame from "@/components/VocabMatchGame"
 import VocabTypeGame from "@/components/VocabTypeGame"
 import VocabSpeakGame from "@/components/VocabSpeakGame"
+import BringYourOwnContent from "@/components/BringYourOwnContent"
 import { coachOnHome } from "@/lib/lara-vocab"
 import {
   createDeck,
@@ -23,6 +25,7 @@ import {
   getTodaySession,
   readVocabProgress,
   type VocabDeck,
+  type NewWordInput,
 } from "@/lib/vocab"
 import {
   TARGET_LANGUAGES,
@@ -58,6 +61,7 @@ export default function Learn() {
   const [inGame, setInGame] = useState(false)
   const [inTypeGame, setInTypeGame] = useState(false)
   const [inSpeakGame, setInSpeakGame] = useState(false)
+  const [inByo, setInByo] = useState(false)
   const [tick, setTick] = useState(0) // refresh stats after a session
   const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
@@ -120,6 +124,25 @@ export default function Learn() {
     )
   }
 
+  if (inByo && deck) {
+    return (
+      <BringYourOwnContent
+        targetLanguage={deck.targetLanguage}
+        targetLabel={deck.targetLanguageLabel}
+        nativeLanguage={deck.nativeLanguage}
+        existingTerms={deck.words.map((w) => w.term)}
+        onAdded={(words: NewWordInput[]) => {
+          addWordsToDeck(deck, words)
+          toast.success(`${words.length} words added! They're in today's session.`)
+        }}
+        onClose={() => {
+          setInByo(false)
+          refresh()
+        }}
+      />
+    )
+  }
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
@@ -133,6 +156,7 @@ export default function Learn() {
             onPlayGame={() => setInGame(true)}
             onPlayType={() => (isPro ? setInTypeGame(true) : triggerFeaturePaywall())}
             onPlaySpeak={() => (isPro ? setInSpeakGame(true) : triggerFeaturePaywall())}
+            onExtract={() => setInByo(true)}
             onAddWords={async () => {
               const more = await generateVocab({
                 target: deck.targetLanguage,
@@ -181,6 +205,7 @@ function DeckHome({
   onPlayGame,
   onPlayType,
   onPlaySpeak,
+  onExtract,
   onAddWords,
   onReset,
 }: {
@@ -191,9 +216,11 @@ function DeckHome({
   onPlayGame: () => void
   onPlayType: () => void
   onPlaySpeak: () => void
+  onExtract: () => void
   onAddWords: () => Promise<void>
   onReset: () => void
 }) {
+  const { t } = useLanguage()
   const stats = useMemo(() => getDeckStats(deck), [deck])
   const session = useMemo(() => getTodaySession(deck), [deck])
   const progress = useMemo(() => readVocabProgress(), [])
@@ -382,6 +409,9 @@ function DeckHome({
         <Link to="/learn/progress" style={{ ...ghostBtn, textDecoration: "none" }}>
           📊 View progress
         </Link>
+        <button type="button" onClick={onExtract} style={ghostBtn}>
+          📄 {t("Extract from text")}
+        </button>
         {todayCount > 0 && (
           <button
             type="button"
@@ -454,11 +484,21 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
   const { toast } = useToast()
+  const { t } = useLanguage()
   const [target, setTarget] = useState<string>("en")
   const [native, setNative] = useState<string>("ru")
   const [goal, setGoal] = useState<string>("career")
   const [daily, setDaily] = useState<number>(8)
   const [building, setBuilding] = useState(false)
+  const [byoOpen, setByoOpen] = useState(false)
+
+  const openByo = () => {
+    if (target === native) {
+      toast.error("Pick two different languages.")
+      return
+    }
+    setByoOpen(true)
+  }
 
   const build = async () => {
     if (target === native) {
@@ -529,7 +569,42 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
         ))}
       </div>
 
+      {/* Bring your own content — the front door / Aha moment */}
+      <SectionLabel>{t("Start with your own words")}</SectionLabel>
+      <motion.button
+        type="button"
+        onClick={openByo}
+        whileHover={{ scale: 1.01, y: -2 }}
+        whileTap={{ scale: 0.99 }}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          textAlign: "left",
+          padding: 18,
+          borderRadius: 16,
+          cursor: "pointer",
+          background: "rgba(139,92,246,0.06)",
+          border: "1px solid rgba(139,92,246,0.4)",
+          boxShadow: "0 0 24px rgba(139,92,246,0.12)",
+        }}
+      >
+        <span style={{ fontSize: 26 }}>📄</span>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: TEXT }}>
+            {t("Paste your own text")}
+          </span>
+          <span style={{ display: "block", fontSize: 12.5, color: MUTED, marginTop: 2, lineHeight: 1.5 }}>
+            {t("A job post, an email, lyrics — I'll extract the words you need.")}
+          </span>
+        </span>
+      </motion.button>
+
       {/* Goal */}
+      <div style={{ textAlign: "center", fontSize: 12.5, color: DIM, margin: "20px 0 0" }}>
+        {t("…or pick a focus and I'll choose words for you.")}
+      </div>
       <SectionLabel>My focus</SectionLabel>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>
         {GOALS.map((g) => (
@@ -559,6 +634,27 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
       >
         {building ? "Building your plan…" : "Build my plan ⚡"}
       </motion.button>
+
+      {byoOpen && (
+        <BringYourOwnContent
+          targetLanguage={target}
+          targetLabel={languageLabel(target)}
+          nativeLanguage={native}
+          onAdded={(words) => {
+            const goalLabel = GOALS.find((g) => g.id === goal)?.label
+            const deck = createDeck({
+              targetLanguage: target,
+              targetLanguageLabel: languageLabel(target),
+              nativeLanguage: native,
+              goal: goalLabel,
+              dailyNewWords: daily,
+              words,
+            })
+            onDone(deck)
+          }}
+          onClose={() => setByoOpen(false)}
+        />
+      )}
     </motion.div>
   )
 }

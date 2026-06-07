@@ -356,4 +356,41 @@ export const ru: Record<string, string> = {
   "Back to Scholify": "Назад в Scholify",
   "Last updated": "Обновлено",
   "Questions? Email us at": "Вопросы? Напишите нам на",
+
+  /* ── Bring Your Own Content (vocabulary extraction) ── */
+  "Paste anything — I'll find the words you need.":
+    "Вставьте что угодно — я найду нужные слова.",
+  "A job post, an email, lyrics, an article. I'll pull out the words worth learning and add them to your deck.":
+    "Вакансия, письмо, текст песни, статья. Я выберу слова, которые стоит выучить, и добавлю их в вашу колоду.",
+  "Paste a job description…": "Вставьте описание вакансии…",
+  "Paste an email you didn't fully understand…": "Вставьте письмо, которое не до конца поняли…",
+  "Paste song lyrics…": "Вставьте текст песни…",
+  "Paste an article…": "Вставьте статью…",
+  "Your level": "Ваш уровень",
+  "Extract my words →": "Извлечь мои слова →",
+  "Reading your text…": "Читаю ваш текст…",
+  "Finding words you need…": "Ищу нужные вам слова…",
+  "Skipping words you already know…": "Пропускаю слова, которые вы уже знаете…",
+  "Building your deck…": "Собираю вашу колоду…",
+  "I found": "Я нашла",
+  "words worth learning from your text.": "слов, которые стоит выучить из вашего текста.",
+  "Demo words — connect a real API key for full extraction.":
+    "Демо-слова — подключите API-ключ для полного извлечения.",
+  "Add": "Добавить",
+  "words to my deck →": "слов в мою колоду →",
+  "Cancel": "Отмена",
+  "I couldn't find new words above your level in that text — try pasting something more advanced, or paste more.":
+    "Не нашла новых слов выше вашего уровня — попробуйте текст посложнее или вставьте больше.",
+  "Try again": "Попробовать снова",
+  "Skip": "Пропустить",
+  "Include": "Добавить",
+  "Pronounce": "Произнести",
+  "Trimmed to 4000 characters": "Обрезано до 4000 символов",
+  "Start with your own words": "Начните со своих слов",
+  "Paste your own text": "Вставьте свой текст",
+  "A job post, an email, lyrics — I'll extract the words you need.":
+    "Вакансия, письмо, песня — я извлеку нужные слова.",
+  "…or pick a focus and I'll choose words for you.":
+    "…или выберите тему, и я подберу слова за вас.",
+  "Extract from text": "Извлечь из текста",
 }
