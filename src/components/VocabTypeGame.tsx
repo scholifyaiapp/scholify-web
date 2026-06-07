@@ -221,7 +221,7 @@ const shell: CSSProperties = {
   display: "flex",
   flexDirection: "column",
 }
-const topBar: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "16px 20px" }
+const topBar: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 20px 14px" }
 const iconBtn: CSSProperties = {
   width: 36,
   height: 36,

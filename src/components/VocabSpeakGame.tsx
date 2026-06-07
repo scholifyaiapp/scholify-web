@@ -180,7 +180,9 @@ export default function VocabSpeakGame({ deck, onClose }: { deck: VocabDeck; onC
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 18 }}>
-                  <span style={{ fontSize: 34, fontWeight: 900, color: TEXT }}>{current.term}</span>
+                  <span style={{ fontSize: "clamp(22px, 7vw, 34px)", fontWeight: 900, color: TEXT, overflowWrap: "break-word", minWidth: 0 }}>
+                    {current.term}
+                  </span>
                   <button type="button" aria-label="Hear it" onClick={() => speak(current.term, deck.targetLanguage)} style={speakChip}>
                     🔊
                   </button>
@@ -254,7 +256,7 @@ export default function VocabSpeakGame({ deck, onClose }: { deck: VocabDeck; onC
 /* ── styles ── */
 
 const shell: CSSProperties = { position: "fixed", inset: 0, zIndex: 200, background: "var(--sch-bg)", display: "flex", flexDirection: "column" }
-const topBar: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "16px 20px" }
+const topBar: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 20px 14px" }
 const iconBtn: CSSProperties = { width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: MUTED, fontSize: 14, cursor: "pointer", flexShrink: 0 }
 const progressTrack: CSSProperties = { flex: 1, height: 8, borderRadius: 4, background: "var(--sch-hairline)", overflow: "hidden" }
 const stage: CSSProperties = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 24px 60px" }

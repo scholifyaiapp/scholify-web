@@ -234,7 +234,7 @@ export default function VocabSession({
             >
               <div style={kicker}>Quiz · {quizIdx + 1}/{quiz.length}</div>
               <div style={{ textAlign: "center", marginTop: 12 }}>
-                <div style={{ fontSize: 32, fontWeight: 900, color: TEXT }}>
+                <div style={{ fontSize: "clamp(22px, 7vw, 32px)", fontWeight: 900, color: TEXT, overflowWrap: "break-word" }}>
                   {quiz[quizIdx].word.term}
                 </div>
                 <div style={{ fontSize: 13, color: DIM, marginTop: 6 }}>Choose the meaning</div>
@@ -324,7 +324,16 @@ function WordFace({
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-        <span style={{ fontSize: 34, fontWeight: 900, color: TEXT, letterSpacing: "-0.5px" }}>
+        <span
+          style={{
+            fontSize: "clamp(22px, 7vw, 34px)",
+            fontWeight: 900,
+            color: TEXT,
+            letterSpacing: "-0.5px",
+            overflowWrap: "break-word",
+            minWidth: 0,
+          }}
+        >
           {word.term}
         </span>
         {canSpeak() && (
@@ -412,7 +421,7 @@ const topBar: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
-  padding: "16px 20px",
+  padding: "max(14px, env(safe-area-inset-top)) 20px 14px",
 }
 const iconBtn: CSSProperties = {
   width: 36,

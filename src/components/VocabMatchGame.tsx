@@ -201,6 +201,8 @@ function tile(borderColor: string, bg: string, matched: boolean): CSSProperties 
     border: `1px solid ${borderColor}`,
     cursor: matched ? "default" : "pointer",
     textAlign: "center",
+    overflowWrap: "break-word",
+    minWidth: 0,
   }
 }
 
@@ -216,7 +218,7 @@ const topBar: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: "16px 20px",
+  padding: "max(14px, env(safe-area-inset-top)) 20px 14px",
 }
 const iconBtn: CSSProperties = {
   width: 36,
