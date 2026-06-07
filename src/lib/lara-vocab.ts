@@ -1,4 +1,13 @@
-import { getDeckStats, getTodaySession, type VocabDeck } from "@/lib/vocab"
+import { differenceInCalendarDays } from "date-fns"
+import {
+  getDeckStats,
+  getHardWords,
+  getTodaySession,
+  daysUntilDeadline,
+  type VocabDeck,
+  type VocabProgress,
+  type VocabWord,
+} from "@/lib/vocab"
 
 /*
  * Lara's vocabulary coaching — specific, result-aware, local-first.
@@ -54,12 +63,61 @@ export function coachOnHome(name: string, deck: VocabDeck): string {
   const session = getTodaySession(deck)
   const due = session.newWords.length + session.dueWords.length
   const sample = session.dueWords[0]?.term || session.newWords[0]?.term
+  const daysLeft = daysUntilDeadline(deck)
+  const deadlineBit = daysLeft != null ? ` ${daysLeft} day${daysLeft === 1 ? "" : "s"} to your goal.` : ""
 
   if (due === 0) {
-    return `${who}, you're all caught up in ${deck.targetLanguageLabel}. Spacing is part of learning — add new words when you're ready.`
+    return `${who}, you're all caught up in ${deck.targetLanguageLabel}.${deadlineBit} Spacing is part of learning — add new words when you're ready.`
   }
   if (stats.mastered >= 10) {
-    return `${who}, ${due} words for today${sample ? `, including ${sample}` : ""}. You've mastered ${stats.mastered} so far — keep the chain going.`
+    return `${who}, ${due} words for today${sample ? `, including ${sample}` : ""}. You've mastered ${stats.mastered} so far.${deadlineBit} Keep the chain going.`
   }
-  return `${who}, ${due} word${due === 1 ? "" : "s"} ready today${sample ? ` — ${sample} is one of them` : ""}. ${deck.dailyNewWords} new plus your due reviews. Let's go.`
+  return `${who}, ${due} word${due === 1 ? "" : "s"} ready today${sample ? ` — ${sample} is one of them` : ""}.${deadlineBit} Let's go.`
+}
+
+/* ── Weekly report ───────────────────────────────────────────── */
+
+export interface WeeklyReport {
+  sessionsThisWeek: number
+  mastered: number
+  learning: number
+  hardWords: VocabWord[]
+  message: string
+}
+
+/** Lara's once-a-week analysis: progress + the words still giving trouble. */
+export function getWeeklyReport(name: string, deck: VocabDeck, progress: VocabProgress): WeeklyReport {
+  const who = (name || "").trim() || "Here's your week"
+  const stats = getDeckStats(deck)
+  const hardWords = getHardWords(deck, 8)
+  const today = new Date()
+  const sessionsThisWeek = progress.history.filter((d) => {
+    try {
+      return differenceInCalendarDays(today, new Date(d)) < 7
+    } catch {
+      return false
+    }
+  }).length
+
+  const parts: string[] = [
+    `${who}: ${sessionsThisWeek} session${sessionsThisWeek === 1 ? "" : "s"} this week, ${stats.mastered} word${stats.mastered === 1 ? "" : "s"} mastered so far.`,
+  ]
+  if (hardWords.length > 0) {
+    parts.push(
+      `${hardWords.length} word${hardWords.length === 1 ? "" : "s"} are still tricky (${hardWords
+        .slice(0, 3)
+        .map((w) => w.term)
+        .join(", ")}…) — let's drill them today.`,
+    )
+  } else {
+    parts.push("No stubborn words right now — your recall is solid. Keep showing up.")
+  }
+
+  return {
+    sessionsThisWeek,
+    mastered: stats.mastered,
+    learning: stats.learning + stats.newCount,
+    hardWords,
+    message: parts.join(" "),
+  }
 }

@@ -227,6 +227,14 @@ export function getTodaySession(deck: VocabDeck): TodaySession {
   }
 }
 
+/** The words giving the learner the most trouble (lapses / still learning). */
+export function getHardWords(deck: VocabDeck, limit = 10): VocabWord[] {
+  return deck.words
+    .filter((w) => w.status !== "new" && (w.lapses > 0 || w.status === "learning"))
+    .sort((a, b) => b.lapses - a.lapses || a.ease - b.ease)
+    .slice(0, limit)
+}
+
 export function getDeckStats(deck: VocabDeck): DeckStats {
   const today = todayStr()
   let newCount = 0
@@ -400,5 +408,41 @@ function persistProgress(p: VocabProgress): void {
     window.localStorage.setItem(KEY_PROGRESS, JSON.stringify(p))
   } catch {
     /* ignore */
+  }
+}
+
+/* ── Weekly report cadence ───────────────────────────────────── */
+
+const KEY_REPORT = "scholify-vocab-last-report"
+
+/** Show Lara's weekly report once a week, after there's enough to report. */
+export function isWeeklyReportDue(p: VocabProgress = readVocabProgress()): boolean {
+  if (p.sessionsCompleted < 3) return false
+  try {
+    const last = window.localStorage.getItem(KEY_REPORT)
+    if (!last) return true
+    return differenceInCalendarDays(new Date(todayStr()), new Date(last)) >= 7
+  } catch {
+    return false
+  }
+}
+
+export function markWeeklyReportSeen(): void {
+  try {
+    window.localStorage.setItem(KEY_REPORT, todayStr())
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Whole days left until the deck deadline (null when none / passed). */
+export function daysUntilDeadline(deck: VocabDeck): number | null {
+  if (!deck.deadline) return null
+  try {
+    const d = new Date(deck.deadline)
+    if (Number.isNaN(d.getTime())) return null
+    return Math.max(0, differenceInCalendarDays(d, new Date()))
+  } catch {
+    return null
   }
 }

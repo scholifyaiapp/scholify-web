@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
+import { addDays } from "date-fns"
 import { motion } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
@@ -14,7 +15,7 @@ import VocabMatchGame from "@/components/VocabMatchGame"
 import VocabTypeGame from "@/components/VocabTypeGame"
 import VocabSpeakGame from "@/components/VocabSpeakGame"
 import BringYourOwnContent from "@/components/BringYourOwnContent"
-import { coachOnHome } from "@/lib/lara-vocab"
+import { coachOnHome, getWeeklyReport } from "@/lib/lara-vocab"
 import {
   createDeck,
   readDeck,
@@ -24,8 +25,12 @@ import {
   getDeckStats,
   getTodaySession,
   readVocabProgress,
+  daysUntilDeadline,
+  isWeeklyReportDue,
+  markWeeklyReportSeen,
   type VocabDeck,
   type NewWordInput,
+  type VocabWord,
 } from "@/lib/vocab"
 import {
   TARGET_LANGUAGES,
@@ -51,6 +56,12 @@ const GOALS = [
   { id: "exam", label: "Exam prep", icon: "🎓" },
 ]
 const DAILY_OPTIONS = [5, 8, 12, 20]
+const DEADLINE_OPTIONS = [
+  { label: "1 month", days: 30 },
+  { label: "3 months", days: 90 },
+  { label: "6 months", days: 180 },
+  { label: "No deadline", days: 0 },
+]
 
 export default function Learn() {
   const { toast } = useToast()
@@ -62,6 +73,7 @@ export default function Learn() {
   const [inTypeGame, setInTypeGame] = useState(false)
   const [inSpeakGame, setInSpeakGame] = useState(false)
   const [inByo, setInByo] = useState(false)
+  const [drillWords, setDrillWords] = useState<VocabWord[] | null>(null)
   const [tick, setTick] = useState(0) // refresh stats after a session
   const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
@@ -76,12 +88,15 @@ export default function Learn() {
       <VocabSession
         deck={deck}
         userName={firstName}
+        drillWords={drillWords ?? undefined}
         onClose={() => {
           setInSession(false)
+          setDrillWords(null)
           refresh()
         }}
         onFinished={() => {
           setInSession(false)
+          setDrillWords(null)
           refresh()
         }}
       />
@@ -157,6 +172,11 @@ export default function Learn() {
             onPlayType={() => (isPro ? setInTypeGame(true) : triggerFeaturePaywall())}
             onPlaySpeak={() => (isPro ? setInSpeakGame(true) : triggerFeaturePaywall())}
             onExtract={() => setInByo(true)}
+            onDrill={(words) => {
+              markWeeklyReportSeen()
+              setDrillWords(words)
+              setInSession(true)
+            }}
             onAddWords={async () => {
               const more = await generateVocab({
                 target: deck.targetLanguage,
@@ -206,6 +226,7 @@ function DeckHome({
   onPlayType,
   onPlaySpeak,
   onExtract,
+  onDrill,
   onAddWords,
   onReset,
 }: {
@@ -217,6 +238,7 @@ function DeckHome({
   onPlayType: () => void
   onPlaySpeak: () => void
   onExtract: () => void
+  onDrill: (words: VocabWord[]) => void
   onAddWords: () => Promise<void>
   onReset: () => void
 }) {
@@ -225,6 +247,9 @@ function DeckHome({
   const session = useMemo(() => getTodaySession(deck), [deck])
   const progress = useMemo(() => readVocabProgress(), [])
   const coaching = useMemo(() => coachOnHome(name, deck), [name, deck])
+  const daysLeft = daysUntilDeadline(deck)
+  const [reportOpen, setReportOpen] = useState(() => isWeeklyReportDue(progress))
+  const report = useMemo(() => getWeeklyReport(name, deck, progress), [name, deck, progress])
   const [adding, setAdding] = useState(false)
 
   const todayCount = session.newWords.length + session.dueWords.length
@@ -253,6 +278,92 @@ function DeckHome({
           <div style={{ fontSize: 11, color: DIM }}>day streak</div>
         </div>
       </div>
+
+      {/* Weekly report (once a week) */}
+      {reportOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            marginTop: 20,
+            padding: 18,
+            borderRadius: 18,
+            background: "rgba(139,92,246,0.08)",
+            border: "1px solid rgba(139,92,246,0.35)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LaraAvatar size={32} />
+            <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Your week with Lara</div>
+          </div>
+          <p style={{ fontSize: 13.5, color: "var(--sch-tx-1)", lineHeight: 1.6, marginTop: 10 }}>
+            {report.message}
+          </p>
+          {report.hardWords.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+              {report.hardWords.slice(0, 6).map((w) => (
+                <span
+                  key={w.id}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    color: MUTED,
+                    background: "var(--sch-card)",
+                    border: "1px solid var(--sch-border)",
+                  }}
+                >
+                  {w.term}
+                </span>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+            {report.hardWords.length > 0 && (
+              <motion.button
+                type="button"
+                onClick={() => onDrill(report.hardWords)}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                style={primaryBtnSmall}
+              >
+                Drill hard words →
+              </motion.button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                markWeeklyReportSeen()
+                setReportOpen(false)
+              }}
+              style={ghostBtn}
+            >
+              Dismiss
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Deadline countdown */}
+      {daysLeft != null && (
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderRadius: 14,
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
+          }}
+        >
+          <span style={{ fontSize: 13, color: MUTED }}>🎯 Goal deadline</span>
+          <span style={{ fontSize: 14, fontWeight: 800, ...iriText }}>
+            {daysLeft} day{daysLeft === 1 ? "" : "s"} left
+          </span>
+        </div>
+      )}
 
       {/* Lara coaching */}
       <div
@@ -489,8 +600,11 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
   const [native, setNative] = useState<string>("ru")
   const [goal, setGoal] = useState<string>("career")
   const [daily, setDaily] = useState<number>(8)
+  const [deadlineDays, setDeadlineDays] = useState<number>(90)
   const [building, setBuilding] = useState(false)
   const [byoOpen, setByoOpen] = useState(false)
+
+  const deadlineIso = deadlineDays > 0 ? addDays(new Date(), deadlineDays).toISOString() : null
 
   const openByo = () => {
     if (target === native) {
@@ -522,6 +636,7 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
         targetLanguageLabel: targetLabel,
         nativeLanguage: native,
         goal: goalLabel,
+        deadline: deadlineIso,
         dailyNewWords: daily,
         words,
       })
@@ -624,6 +739,16 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
         ))}
       </div>
 
+      {/* Deadline */}
+      <SectionLabel>My deadline</SectionLabel>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {DEADLINE_OPTIONS.map((d) => (
+          <Choice key={d.days} active={deadlineDays === d.days} onClick={() => setDeadlineDays(d.days)} compact>
+            {d.label}
+          </Choice>
+        ))}
+      </div>
+
       <motion.button
         type="button"
         onClick={build}
@@ -647,6 +772,7 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
               targetLanguageLabel: languageLabel(target),
               nativeLanguage: native,
               goal: goalLabel,
+              deadline: deadlineIso,
               dailyNewWords: daily,
               words,
             })

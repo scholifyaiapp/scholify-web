@@ -48,16 +48,23 @@ export default function VocabSession({
   onClose,
   onFinished,
   userName,
+  drillWords,
 }: {
   deck: VocabDeck
   onClose: () => void
   onFinished: () => void
   userName?: string
+  /** When provided, run a focused drill over these words instead of today's set. */
+  drillWords?: VocabWord[]
 }) {
+  const isDrill = Boolean(drillWords && drillWords.length > 0)
   // Snapshot today's words once so the session set is stable while we grade.
   const session = useMemo(() => getTodaySession(deck), [deck])
-  const newWords = session.newWords
-  const reviewQueue = useMemo(() => [...session.newWords, ...session.dueWords], [session])
+  const newWords = isDrill ? [] : session.newWords
+  const reviewQueue = useMemo(
+    () => (isDrill ? (drillWords as VocabWord[]) : [...session.newWords, ...session.dueWords]),
+    [session, isDrill, drillWords],
+  )
 
   const [workingDeck, setWorkingDeck] = useState(deck)
   const [phase, setPhase] = useState<Phase>(newWords.length > 0 ? "learn" : "review")
