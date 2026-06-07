@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react"
+import { useMemo, useRef, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
@@ -34,6 +34,10 @@ const GRADES: { grade: ReviewGrade; label: string; color: string }[] = [
   { grade: "easy", label: "Easy", color: "#38BDF8" },
 ]
 
+const XP_BY_GRADE: Record<ReviewGrade, number> = { again: 2, hard: 5, good: 10, easy: 12 }
+const QUIZ_XP = 8
+const FINISH_BONUS = 5
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -47,12 +51,15 @@ export default function VocabSession({
   deck,
   onClose,
   onFinished,
+  onPlayGame,
   userName,
   drillWords,
 }: {
   deck: VocabDeck
   onClose: () => void
   onFinished: () => void
+  /** Optional "lightning round" — chains the finished session into a game. */
+  onPlayGame?: () => void
   userName?: string
   /** When provided, run a focused drill over these words instead of today's set. */
   drillWords?: VocabWord[]
@@ -75,6 +82,8 @@ export default function VocabSession({
   const [quizPicked, setQuizPicked] = useState<string | null>(null)
   const [quizCorrect, setQuizCorrect] = useState(0)
   const [results, setResults] = useState<{ term: string; grade: ReviewGrade }[]>([])
+  const [earnedXp, setEarnedXp] = useState(0)
+  const xpRef = useRef(0)
 
   const lang = workingDeck.targetLanguage
   const pronounce = (t: string) => speak(t, lang)
@@ -98,6 +107,7 @@ export default function VocabSession({
   const grade = (word: VocabWord, g: ReviewGrade) => {
     setWorkingDeck((d) => gradeWordInDeck(d, word.id, g))
     setResults((r) => [...r, { term: word.term, grade: g }])
+    xpRef.current += XP_BY_GRADE[g]
     setRevealed(false)
     if (reviewIdx + 1 < reviewQueue.length) {
       setReviewIdx((i) => i + 1)
@@ -116,7 +126,10 @@ export default function VocabSession({
     if (quizPicked) return
     setQuizPicked(option)
     const correct = option === quiz[quizIdx].word.translation
-    if (correct) setQuizCorrect((c) => c + 1)
+    if (correct) {
+      setQuizCorrect((c) => c + 1)
+      xpRef.current += QUIZ_XP
+    }
     window.setTimeout(() => {
       if (quizIdx + 1 < quiz.length) {
         setQuizIdx((i) => i + 1)
@@ -128,7 +141,9 @@ export default function VocabSession({
   }
 
   const finish = (finalCorrect: number) => {
-    recordSession(reviewQueue.length)
+    const earned = reviewQueue.length > 0 ? xpRef.current + FINISH_BONUS : 0
+    setEarnedXp(earned)
+    recordSession(reviewQueue.length, earned)
     setPhase("done")
     try {
       confetti({
@@ -293,7 +308,27 @@ export default function VocabSession({
               <h2 style={{ fontSize: 24, fontWeight: 800, color: TEXT }}>
                 {nothingToDo ? "All caught up! 🎉" : "Session complete! 🎉"}
               </h2>
-              <p style={{ fontSize: 15, color: MUTED, marginTop: 10, lineHeight: 1.6, fontStyle: "italic" }}>
+              {!nothingToDo && earnedXp > 0 && (
+                <motion.div
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.15 }}
+                  style={{
+                    display: "inline-block",
+                    marginTop: 12,
+                    padding: "6px 16px",
+                    borderRadius: 999,
+                    background: "rgba(139,92,246,0.14)",
+                    border: "1px solid rgba(139,92,246,0.4)",
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: "#C084FC",
+                  }}
+                >
+                  +{earnedXp} XP ⚡
+                </motion.div>
+              )}
+              <p style={{ fontSize: 15, color: MUTED, marginTop: 12, lineHeight: 1.6, fontStyle: "italic" }}>
                 {nothingToDo
                   ? "No words are due right now. Come back later or add new words."
                   : coachAfterSession(userName ?? "", deck.targetLanguageLabel, {
@@ -306,7 +341,27 @@ export default function VocabSession({
                       streak: readVocabProgress().streak,
                     })}
               </p>
-              <PrimaryButton label="Done" onClick={onFinished} />
+              {onPlayGame && !nothingToDo && deck.words.length >= 4 && (
+                <PrimaryButton label="⚡ Lightning round" onClick={onPlayGame} />
+              )}
+              <button
+                type="button"
+                onClick={onFinished}
+                style={{
+                  width: "100%",
+                  height: 48,
+                  marginTop: 10,
+                  borderRadius: 14,
+                  border: "1px solid var(--sch-border)",
+                  background: "transparent",
+                  color: MUTED,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Done
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

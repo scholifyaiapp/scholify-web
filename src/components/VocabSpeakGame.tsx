@@ -4,7 +4,7 @@ import confetti from "canvas-confetti"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { speak, canSpeak } from "@/lib/tts"
-import type { VocabDeck } from "@/lib/vocab"
+import { awardXp, type VocabDeck } from "@/lib/vocab"
 
 /*
  * Speaking practice (Pro) — say the word, we check your pronunciation using the
@@ -121,6 +121,7 @@ export default function VocabSpeakGame({ deck, onClose }: { deck: VocabDeck; onC
       setState("idle")
       setHeard("")
     } else {
+      awardXp(correct * 6)
       setDone(true)
       try {
         confetti({

@@ -80,6 +80,7 @@ export default function LearnProgress() {
         {/* Streak row */}
         <div style={{ marginTop: 22, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
           <BigStat icon="🔥" value={`${progress.streak}`} label="Day streak" />
+          <BigStat icon="⚡" value={`${progress.totalXp}`} label="XP earned" />
           <BigStat icon="🏆" value={`${progress.longestStreak}`} label="Longest streak" />
           <BigStat icon="✅" value={`${progress.sessionsCompleted}`} label="Sessions" />
           <BigStat icon="⏱" value={`${totalHours}h`} label="Time invested" />

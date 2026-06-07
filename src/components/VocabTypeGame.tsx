@@ -4,7 +4,7 @@ import confetti from "canvas-confetti"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { speak, canSpeak } from "@/lib/tts"
-import type { VocabDeck } from "@/lib/vocab"
+import { awardXp, type VocabDeck } from "@/lib/vocab"
 
 /*
  * Listen & Type — the production/spelling drill (a Pro mode).
@@ -66,6 +66,7 @@ export default function VocabTypeGame({ deck, onClose }: { deck: VocabDeck; onCl
       setInput("")
       setState("typing")
     } else {
+      awardXp(correct * 6)
       setDone(true)
       try {
         confetti({

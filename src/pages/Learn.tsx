@@ -89,6 +89,11 @@ export default function Learn() {
         deck={deck}
         userName={firstName}
         drillWords={drillWords ?? undefined}
+        onPlayGame={() => {
+          setInSession(false)
+          setDrillWords(null)
+          setInGame(true)
+        }}
         onClose={() => {
           setInSession(false)
           setDrillWords(null)

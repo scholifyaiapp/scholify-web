@@ -4,7 +4,7 @@ import confetti from "canvas-confetti"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { speak, canSpeak } from "@/lib/tts"
-import type { VocabDeck } from "@/lib/vocab"
+import { awardXp, type VocabDeck } from "@/lib/vocab"
 
 /*
  * Match game — fast recognition practice. Tap a word, then its meaning.
@@ -43,6 +43,7 @@ export default function VocabMatchGame({ deck, onClose }: { deck: VocabDeck; onC
   const done = pairs.length > 0 && matched.size === pairs.length
 
   const finish = () => {
+    awardXp(pairs.length * 5)
     setElapsed(Math.round((Date.now() - startRef.current) / 1000))
     try {
       confetti({

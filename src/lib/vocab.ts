@@ -337,6 +337,8 @@ export interface VocabProgress {
   lastSessionDate: string | null
   sessionsCompleted: number
   wordsReviewed: number
+  /** Lifetime XP earned across sessions + games. */
+  totalXp: number
   /** yyyy-MM-dd of each day a session was completed (last ~120, for the heatmap). */
   history: string[]
 }
@@ -347,6 +349,7 @@ const EMPTY_PROGRESS: VocabProgress = {
   lastSessionDate: null,
   sessionsCompleted: 0,
   wordsReviewed: 0,
+  totalXp: 0,
   history: [],
 }
 
@@ -369,7 +372,7 @@ export function isSessionDoneToday(p: VocabProgress = readVocabProgress()): bool
  * Record a completed session. Extends the streak on consecutive days, resets it
  * after a gap, and is idempotent within the same day (only counts once).
  */
-export function recordSession(wordsReviewed: number): VocabProgress {
+export function recordSession(wordsReviewed: number, xp = 0): VocabProgress {
   const prev = readVocabProgress()
   const today = todayStr()
   const history = prev.history.includes(today)
@@ -381,6 +384,7 @@ export function recordSession(wordsReviewed: number): VocabProgress {
       ...prev,
       history,
       wordsReviewed: prev.wordsReviewed + wordsReviewed,
+      totalXp: prev.totalXp + xp,
     }
     persistProgress(same)
     return same
@@ -397,10 +401,17 @@ export function recordSession(wordsReviewed: number): VocabProgress {
     lastSessionDate: today,
     sessionsCompleted: prev.sessionsCompleted + 1,
     wordsReviewed: prev.wordsReviewed + wordsReviewed,
+    totalXp: prev.totalXp + xp,
     history,
   }
   persistProgress(next)
   return next
+}
+
+/** Award XP outside a full session (e.g. a quick game). */
+export function awardXp(xp: number): void {
+  const prev = readVocabProgress()
+  persistProgress({ ...prev, totalXp: prev.totalXp + Math.max(0, xp) })
 }
 
 function persistProgress(p: VocabProgress): void {
