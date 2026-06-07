@@ -68,6 +68,24 @@ export async function generateVocab(params: GenerateVocabParams): Promise<NewWor
     .slice(0, count)
 }
 
+/** Fetch readable text from a URL via the server (avoids browser CORS). */
+export async function fetchUrlText(url: string): Promise<{ text: string; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/lara?action=fetch-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    })
+    if (res.ok) {
+      const data = (await res.json()) as { text?: string; error?: string }
+      return { text: String(data.text || ""), error: data.error }
+    }
+    return { text: "", error: "request_failed" }
+  } catch {
+    return { text: "", error: "network_error" }
+  }
+}
+
 /* ── Bring Your Own Content — extract vocabulary from pasted text ─────── */
 
 export interface ExtractParams {

@@ -393,4 +393,14 @@ export const ru: Record<string, string> = {
   "…or pick a focus and I'll choose words for you.":
     "…или выберите тему, и я подберу слова за вас.",
   "Extract from text": "Извлечь из текста",
+  "Text": "Текст",
+  "Link": "Ссылка",
+  "File": "Файл",
+  "Fetch": "Загрузить",
+  "Reading…": "Читаю…",
+  "Choose a text file (.txt, .md, .srt…)": "Выберите текстовый файл (.txt, .md, .srt…)",
+  "Couldn't read that link — paste the text instead.": "Не удалось открыть ссылку — вставьте текст вручную.",
+  "Loaded from link ✓": "Загружено по ссылке ✓",
+  "File is over 2MB — paste a section instead.": "Файл больше 2 МБ — вставьте часть текста.",
+  "Couldn't read that file.": "Не удалось прочитать файл.",
 }

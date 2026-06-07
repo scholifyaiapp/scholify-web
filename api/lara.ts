@@ -47,10 +47,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "generate-tree") return handleTree(body, res)
   if (action === "vocab") return handleVocab(body, res)
   if (action === "extract") return handleExtract(body, res)
+  if (action === "fetch-url") return handleFetchUrl(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url.",
   })
+}
+
+/* ── Fetch readable text from a URL (for Bring Your Own Content) ──────── */
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+async function handleFetchUrl(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const url = String(body.url || "").trim()
+  if (!/^https?:\/\/.+/i.test(url)) {
+    res.status(200).json({ text: "", error: "invalid_url" })
+    return
+  }
+  try {
+    const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; ScholifyBot)" } })
+    if (!r.ok) {
+      res.status(200).json({ text: "", error: `status_${r.status}` })
+      return
+    }
+    const html = await r.text()
+    res.status(200).json({ text: htmlToText(html).slice(0, 8000) })
+  } catch {
+    res.status(200).json({ text: "", error: "fetch_failed" })
+  }
 }
 
 /* ── Bring-Your-Own-Content vocabulary extraction (Haiku) ─────────────── */

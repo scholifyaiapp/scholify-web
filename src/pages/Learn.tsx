@@ -55,7 +55,8 @@ const GOALS = [
   { id: "conversation", label: "Conversation", icon: "💬" },
   { id: "exam", label: "Exam prep", icon: "🎓" },
 ]
-const DAILY_OPTIONS = [5, 8, 12, 20]
+const DAILY_OPTIONS = [5, 10, 15]
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"]
 const DEADLINE_OPTIONS = [
   { label: "1 month", days: 30 },
   { label: "3 months", days: 90 },
@@ -603,16 +604,23 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
   const { t } = useLanguage()
   const [target, setTarget] = useState<string>("en")
   const [native, setNative] = useState<string>("ru")
+  const [customTarget, setCustomTarget] = useState("")
+  const [customNative, setCustomNative] = useState("")
   const [goal, setGoal] = useState<string>("career")
-  const [daily, setDaily] = useState<number>(8)
+  const [daily, setDaily] = useState<number>(10)
+  const [level, setLevel] = useState<string>("A2")
   const [deadlineDays, setDeadlineDays] = useState<number>(90)
   const [building, setBuilding] = useState(false)
   const [byoOpen, setByoOpen] = useState(false)
 
+  // A typed custom language overrides the picked one.
+  const effTarget = customTarget.trim() ? customTarget.trim().toLowerCase().slice(0, 24) : target
+  const effTargetLabel = customTarget.trim() ? customTarget.trim().slice(0, 24) : languageLabel(target)
+  const effNative = customNative.trim() ? customNative.trim().toLowerCase().slice(0, 24) : native
   const deadlineIso = deadlineDays > 0 ? addDays(new Date(), deadlineDays).toISOString() : null
 
   const openByo = () => {
-    if (target === native) {
+    if (effTarget === effNative) {
       toast.error("Pick two different languages.")
       return
     }
@@ -620,28 +628,29 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
   }
 
   const build = async () => {
-    if (target === native) {
+    if (effTarget === effNative) {
       toast.error("Pick two different languages.")
       return
     }
     setBuilding(true)
     try {
-      const targetLabel = languageLabel(target)
       const goalLabel = GOALS.find((g) => g.id === goal)?.label
       const words = await generateVocab({
-        target,
-        targetLabel,
-        native,
-        nativeLabel: languageLabel(native),
+        target: effTarget,
+        targetLabel: effTargetLabel,
+        native: effNative,
+        nativeLabel: languageLabel(effNative),
         goal: goalLabel,
+        level,
         count: 24,
       })
       const deck = createDeck({
-        targetLanguage: target,
-        targetLanguageLabel: targetLabel,
-        nativeLanguage: native,
+        targetLanguage: effTarget,
+        targetLanguageLabel: effTargetLabel,
+        nativeLanguage: effNative,
         goal: goalLabel,
         deadline: deadlineIso,
+        level,
         dailyNewWords: daily,
         words,
       })
@@ -671,20 +680,56 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
 
       {/* Target language */}
       <SectionLabel>I want to learn</SectionLabel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 10 }}>
         {TARGET_LANGUAGES.map((l) => (
-          <Choice key={l.code} active={target === l.code} onClick={() => setTarget(l.code)}>
+          <Choice
+            key={l.code}
+            active={!customTarget.trim() && target === l.code}
+            onClick={() => {
+              setTarget(l.code)
+              setCustomTarget("")
+            }}
+          >
             <span style={{ fontSize: 22 }}>{l.flag}</span> {l.label}
           </Choice>
         ))}
       </div>
+      <input
+        value={customTarget}
+        onChange={(e) => setCustomTarget(e.target.value)}
+        placeholder="Or type another language…"
+        style={langInput}
+      />
 
       {/* Native language */}
       <SectionLabel>Explain it to me in</SectionLabel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 10 }}>
         {NATIVE_LANGUAGES.map((l) => (
-          <Choice key={l.code} active={native === l.code} onClick={() => setNative(l.code)}>
+          <Choice
+            key={l.code}
+            active={!customNative.trim() && native === l.code}
+            onClick={() => {
+              setNative(l.code)
+              setCustomNative("")
+            }}
+          >
             <span style={{ fontSize: 22 }}>{l.flag}</span> {l.label}
+          </Choice>
+        ))}
+      </div>
+      <input
+        value={customNative}
+        onChange={(e) => setCustomNative(e.target.value)}
+        placeholder="Or type another language…"
+        style={langInput}
+      />
+
+      {/* Level */}
+      <SectionLabel>My level</SectionLabel>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {LEVELS.map((lv) => (
+          <Choice key={lv} active={level === lv} onClick={() => setLevel(lv)} compact>
+            {lv}
           </Choice>
         ))}
       </div>
@@ -736,12 +781,21 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
 
       {/* Daily words */}
       <SectionLabel>New words per day</SectionLabel>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         {DAILY_OPTIONS.map((n) => (
           <Choice key={n} active={daily === n} onClick={() => setDaily(n)} compact>
             {n}
           </Choice>
         ))}
+        <input
+          type="number"
+          min={1}
+          max={50}
+          value={daily}
+          onChange={(e) => setDaily(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+          aria-label="Custom words per day"
+          style={{ ...langInput, width: 90, marginTop: 0, textAlign: "center" }}
+        />
       </div>
 
       {/* Deadline */}
@@ -767,17 +821,19 @@ function Setup({ onDone }: { onDone: (deck: VocabDeck) => void }) {
 
       {byoOpen && (
         <BringYourOwnContent
-          targetLanguage={target}
-          targetLabel={languageLabel(target)}
-          nativeLanguage={native}
+          targetLanguage={effTarget}
+          targetLabel={effTargetLabel}
+          nativeLanguage={effNative}
+          defaultLevel={level}
           onAdded={(words) => {
             const goalLabel = GOALS.find((g) => g.id === goal)?.label
             const deck = createDeck({
-              targetLanguage: target,
-              targetLanguageLabel: languageLabel(target),
-              nativeLanguage: native,
+              targetLanguage: effTarget,
+              targetLanguageLabel: effTargetLabel,
+              nativeLanguage: effNative,
               goal: goalLabel,
               deadline: deadlineIso,
+              level,
               dailyNewWords: daily,
               words,
             })
@@ -871,6 +927,18 @@ const primaryBtnSmall: CSSProperties = {
   fontWeight: 700,
   cursor: "pointer",
   flexShrink: 0,
+}
+const langInput: CSSProperties = {
+  width: "100%",
+  height: 44,
+  marginTop: 10,
+  padding: "0 14px",
+  borderRadius: 12,
+  fontSize: 14,
+  color: "var(--sch-text)",
+  background: "var(--sch-card)",
+  border: "1px solid var(--sch-border)",
+  outline: "none",
 }
 const proChip: CSSProperties = {
   position: "absolute",

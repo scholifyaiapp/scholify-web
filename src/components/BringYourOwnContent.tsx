@@ -4,7 +4,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
 import { useLanguage } from "@/i18n/LanguageProvider"
 import { speak, canSpeak } from "@/lib/tts"
-import { extractFromText } from "@/lib/vocab-api"
+import { extractFromText, fetchUrlText } from "@/lib/vocab-api"
 import { languageLabel } from "@/lib/vocab-content"
 import type { NewWordInput } from "@/lib/vocab"
 
@@ -18,7 +18,7 @@ const TEXT = "var(--sch-text)"
 const MUTED = "var(--sch-tx-2)"
 const DIM = "var(--sch-tx-3)"
 const MAX_CHARS = 4000
-const LEVELS = ["A1", "A2", "B1", "B2", "C1"]
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"]
 
 type Phase = "input" | "loading" | "results" | "empty"
 
@@ -42,6 +42,10 @@ export default function BringYourOwnContent({
   const { t } = useLanguage()
   const [text, setText] = useState("")
   const [trimmed, setTrimmed] = useState(false)
+  const [mode, setMode] = useState<"text" | "url" | "file">("text")
+  const [url, setUrl] = useState("")
+  const [busyUrl, setBusyUrl] = useState(false)
+  const [note, setNote] = useState("")
   const [level, setLevel] = useState(defaultLevel)
   const [phase, setPhase] = useState<Phase>("input")
   const [rows, setRows] = useState<{ word: NewWordInput; include: boolean }[]>([])
@@ -91,6 +95,37 @@ export default function BringYourOwnContent({
       setText(v)
       setTrimmed(false)
     }
+  }
+
+  const onFetchUrl = async () => {
+    if (!url.trim()) return
+    setBusyUrl(true)
+    setNote("")
+    const { text: fetched, error } = await fetchUrlText(url.trim())
+    setBusyUrl(false)
+    if (error || !fetched) {
+      setNote(t("Couldn't read that link — paste the text instead."))
+      return
+    }
+    onChangeText(fetched)
+    setMode("text")
+    setNote(t("Loaded from link ✓"))
+  }
+
+  const onFile = (file?: File | null) => {
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setNote(t("File is over 2MB — paste a section instead."))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      onChangeText(String(reader.result || ""))
+      setMode("text")
+      setNote(`✓ ${file.name}`)
+    }
+    reader.onerror = () => setNote(t("Couldn't read that file."))
+    reader.readAsText(file)
   }
 
   const run = async () => {
@@ -153,16 +188,75 @@ export default function BringYourOwnContent({
           {/* ── INPUT ── */}
           {phase === "input" && (
             <motion.div key="input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {/* Source: paste text, a link, or a file */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {([
+                  ["text", "✍️", t("Text")],
+                  ["url", "🔗", t("Link")],
+                  ["file", "📁", t("File")],
+                ] as const).map(([m, icon, label]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    style={{
+                      ...tab,
+                      color: mode === m ? TEXT : MUTED,
+                      background: mode === m ? "rgba(139,92,246,0.14)" : "var(--sch-card)",
+                      border: `1px solid ${mode === m ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+                    }}
+                  >
+                    {icon} {label}
+                  </button>
+                ))}
+              </div>
+
+              {mode === "url" && (
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  <input
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://…"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    style={urlInput}
+                  />
+                  <button
+                    type="button"
+                    onClick={onFetchUrl}
+                    disabled={busyUrl || !url.trim()}
+                    style={{ ...fetchBtn, opacity: busyUrl || !url.trim() ? 0.5 : 1 }}
+                  >
+                    {busyUrl ? t("Reading…") : t("Fetch")}
+                  </button>
+                </div>
+              )}
+
+              {mode === "file" && (
+                <label style={fileDrop}>
+                  <input
+                    type="file"
+                    accept=".txt,.md,.csv,.srt,text/*"
+                    onChange={(e) => onFile(e.target.files?.[0])}
+                    style={{ display: "none" }}
+                  />
+                  📁 {t("Choose a text file (.txt, .md, .srt…)")}
+                </label>
+              )}
+
               <textarea
                 value={text}
                 onChange={(e) => onChangeText(e.target.value)}
                 placeholder={placeholders[phIdx]}
                 style={textarea}
               />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, gap: 10 }}>
                 <span style={{ fontSize: 12, color: trimmed ? "#FF9F0A" : DIM }}>
                   {trimmed ? t("Trimmed to 4000 characters") : `${text.length}/${MAX_CHARS}`}
                 </span>
+                {note && <span style={{ fontSize: 12, color: MUTED, textAlign: "right" }}>{note}</span>}
               </div>
 
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: DIM, margin: "20px 0 10px" }}>
@@ -343,7 +437,11 @@ const shell: CSSProperties = { position: "fixed", inset: 0, zIndex: 220, backgro
 const header: CSSProperties = { display: "flex", justifyContent: "flex-start", padding: "max(16px, env(safe-area-inset-top)) 20px 0" }
 const body: CSSProperties = { flex: 1, overflowY: "auto", padding: "12px 20px 60px", width: "100%", maxWidth: 560, margin: "0 auto" }
 const iconBtn: CSSProperties = { width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: MUTED, fontSize: 14, cursor: "pointer" }
-const textarea: CSSProperties = { width: "100%", minHeight: 160, marginTop: 20, padding: 16, borderRadius: 16, fontSize: 16, lineHeight: 1.5, color: TEXT, background: "var(--sch-card)", border: "1px solid var(--sch-border)", outline: "none", resize: "vertical", fontFamily: "inherit" }
+const textarea: CSSProperties = { width: "100%", minHeight: 160, marginTop: 0, padding: 16, borderRadius: 16, fontSize: 16, lineHeight: 1.5, color: TEXT, background: "var(--sch-card)", border: "1px solid var(--sch-border)", outline: "none", resize: "vertical", fontFamily: "inherit" }
+const tab: CSSProperties = { flex: 1, height: 40, borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer" }
+const urlInput: CSSProperties = { flex: 1, minWidth: 0, height: 44, padding: "0 14px", borderRadius: 12, fontSize: 14, color: TEXT, background: "var(--sch-card)", border: "1px solid var(--sch-border)", outline: "none" }
+const fetchBtn: CSSProperties = { height: 44, padding: "0 18px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }
+const fileDrop: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 56, marginBottom: 12, borderRadius: 14, border: "1px dashed var(--sch-border-2)", background: "var(--sch-card)", color: MUTED, fontSize: 14, fontWeight: 600, cursor: "pointer" }
 const levelPill: CSSProperties = { padding: "8px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer" }
 const primaryBtn: CSSProperties = { width: "100%", height: 52, marginTop: 22, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 30px rgba(139,92,246,0.3)" }
 const ghostBtn: CSSProperties = { width: "100%", height: 44, marginTop: 10, borderRadius: 12, border: "none", background: "transparent", color: MUTED, fontSize: 14, fontWeight: 600, cursor: "pointer" }

@@ -62,6 +62,8 @@ export interface VocabDeck {
   nativeLanguage: string
   goal?: string
   deadline?: string | null
+  /** CEFR level the learner is studying at (A1–C2). */
+  level?: string
   /** How many brand-new words to introduce per day. */
   dailyNewWords: number
   words: VocabWord[]
@@ -260,6 +262,7 @@ export interface CreateDeckInput {
   nativeLanguage: string
   goal?: string
   deadline?: string | null
+  level?: string
   dailyNewWords?: number
   words?: NewWordInput[]
 }
@@ -272,6 +275,7 @@ export function createDeck(input: CreateDeckInput): VocabDeck {
     nativeLanguage: input.nativeLanguage,
     goal: input.goal,
     deadline: input.deadline ?? null,
+    level: input.level,
     dailyNewWords: Math.max(1, input.dailyNewWords ?? 8),
     words: (input.words ?? []).map(makeWord),
     createdAt: new Date().toISOString(),
