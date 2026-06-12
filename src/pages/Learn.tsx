@@ -34,6 +34,7 @@ import {
 } from "@/lib/vocab"
 import { TARGET_LANGUAGES, languageLabel, languageFlag } from "@/lib/vocab-content"
 import { generateVocab } from "@/lib/vocab-api"
+import { FLUENCY_WORDS, wordsLearned, fluencyPercent, dayNumber } from "@/lib/fluency"
 
 /* ──────────────────────────────────────────────────────────────
  *  /learn — the home of Scholify (AI vocabulary coach).
@@ -259,7 +260,9 @@ function DeckHome({
   const [adding, setAdding] = useState(false)
 
   const todayCount = session.newWords.length + session.dueWords.length
-  const goalPct = stats.total > 0 ? Math.round((stats.mastered / stats.total) * 100) : 0
+  const learned = wordsLearned(deck)
+  const fluencyPct = fluencyPercent(deck)
+  const day = dayNumber(deck)
 
   return (
     <motion.div
@@ -476,29 +479,37 @@ function DeckHome({
         <Stat label="Mastered" value={`${stats.mastered}`} />
       </div>
 
-      {/* Mastery bar */}
-      <div
-        style={{
-          marginTop: 12,
-          padding: 18,
-          borderRadius: 16,
-          background: "var(--sch-card)",
-          border: "1px solid var(--sch-border)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: MUTED, marginBottom: 8 }}>
-          <span>Mastery</span>
-          <span>{goalPct}%</span>
-        </div>
-        <div style={{ height: 8, borderRadius: 4, background: "var(--sch-hairline)", overflow: "hidden" }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${goalPct}%` }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            style={{ height: "100%", background: IRIDESCENT }}
-          />
-        </div>
-      </div>
+      {/* Path to fluency — the 1%-a-day promise, in one line */}
+      <Link to="/learn/progress" style={{ textDecoration: "none", display: "block" }}>
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          style={{
+            marginTop: 12,
+            padding: 18,
+            borderRadius: 16,
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: MUTED, marginBottom: 8, gap: 10, flexWrap: "wrap" }}>
+            <span>
+              <strong style={{ color: "#C084FC" }}>Day {day}</strong>
+              {" · "}
+              <strong style={{ color: TEXT }}>{learned}</strong> / {FLUENCY_WORDS.toLocaleString()} words to fluency
+            </span>
+            <span style={{ fontWeight: 800, color: TEXT }}>{fluencyPct}%</span>
+          </div>
+          <div style={{ height: 8, borderRadius: 4, background: "var(--sch-hairline)", overflow: "hidden" }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(fluencyPct, 1)}%` }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              style={{ height: "100%", background: IRIDESCENT }}
+            />
+          </div>
+        </motion.div>
+      </Link>
 
       {/* Practice — secondary */}
       {deck.words.length >= 4 && (

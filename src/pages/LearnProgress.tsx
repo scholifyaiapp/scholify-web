@@ -6,6 +6,15 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { readDeck, getDeckStats, readVocabProgress } from "@/lib/vocab"
 import { languageFlag } from "@/lib/vocab-content"
+import {
+  FLUENCY_WORDS,
+  wordsLearned,
+  fluencyPercent,
+  dayNumber,
+  growthMultiple,
+  projectedFluencyDate,
+  compoundCurvePoints,
+} from "@/lib/fluency"
 
 /* /learn/progress — motivation: streak, activity heatmap, mastery, totals. */
 
@@ -77,8 +86,11 @@ export default function LearnProgress() {
           </div>
         </div>
 
+        {/* The 1% compound curve — the brand promise, made visible */}
+        <CompoundCard deck={deck} />
+
         {/* Streak row */}
-        <div style={{ marginTop: 22, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+        <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
           <BigStat icon="🔥" value={`${progress.streak}`} label="Day streak" />
           <BigStat icon="⚡" value={`${progress.totalXp}`} label="XP earned" />
           <BigStat icon="🏆" value={`${progress.longestStreak}`} label="Longest streak" />
@@ -161,6 +173,93 @@ export default function LearnProgress() {
         </Link>
       </motion.div>
     </DashboardLayout>
+  )
+}
+
+function CompoundCard({ deck }: { deck: NonNullable<ReturnType<typeof readDeck>> }) {
+  const day = dayNumber(deck)
+  const mult = growthMultiple(day)
+  const learned = wordsLearned(deck)
+  const pct = fluencyPercent(deck)
+  const eta = projectedFluencyDate(deck)
+
+  // Curve geometry: 300×130 box, 10px side padding, baseline y=112, 96px of rise.
+  const pts = useMemo(() => compoundCurvePoints(), [])
+  const px = (p: { x: number; y: number }) => `${10 + p.x * 280},${112 - p.y * 96}`
+  const path = `M ${pts.map(px).join(" L ")}`
+  const youX = Math.min(day, 365) / 365
+  const you = { x: youX, y: (growthMultiple(Math.min(day, 365)) - 1) / (growthMultiple(365) - 1) }
+  const [youCx, youCy] = px(you).split(",").map(Number)
+
+  return (
+    <div style={{ ...card, marginTop: 22, border: "1px solid rgba(139,92,246,0.3)", boxShadow: "0 0 50px rgba(139,92,246,0.08)" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <h2 style={sectionTitle}>1% better, every day</h2>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "#C084FC" }}>Day {day}</span>
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 900, ...iriText, marginTop: 8 }}>
+        ×{mult < 10 ? mult.toFixed(2) : mult.toFixed(1)}
+        <span style={{ fontSize: 14, fontWeight: 600, color: MUTED, marginLeft: 8 }}>the day-one you</span>
+      </div>
+
+      <svg viewBox="0 0 300 130" style={{ width: "100%", height: "auto", marginTop: 10, display: "block" }} aria-hidden>
+        <line x1="10" y1="112" x2="290" y2="112" stroke="var(--sch-hairline)" strokeWidth="1" />
+        <motion.path
+          d={path}
+          fill="none"
+          stroke="url(#sch-compound)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+        />
+        <defs>
+          <linearGradient id="sch-compound" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#818CF8" />
+            <stop offset="60%" stopColor="#A78BFA" />
+            <stop offset="100%" stopColor="#38BDF8" />
+          </linearGradient>
+        </defs>
+        <motion.circle
+          cx={youCx}
+          cy={youCy}
+          r="5"
+          fill="#C084FC"
+          stroke="var(--sch-card)"
+          strokeWidth="2"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1.2, type: "spring", stiffness: 300, damping: 15 }}
+        />
+        <text x="10" y="126" fontSize="9" fill="var(--sch-tx-3)">day 1</text>
+        <text x="290" y="126" fontSize="9" fill="var(--sch-tx-3)" textAnchor="end">day 365</text>
+        <text x="290" y="14" fontSize="9" fontWeight="700" fill="var(--sch-tx-3)" textAnchor="end">×37.8</text>
+      </svg>
+
+      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--sch-hairline)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: MUTED, marginBottom: 8 }}>
+          <span>
+            <strong style={{ color: TEXT }}>{learned}</strong> / {FLUENCY_WORDS.toLocaleString()} words to conversational fluency
+          </span>
+          <span style={{ fontWeight: 800, color: TEXT }}>{pct}%</span>
+        </div>
+        <div style={{ height: 8, borderRadius: 4, background: "var(--sch-hairline)", overflow: "hidden" }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.max(pct, 1)}%` }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            style={{ height: "100%", background: IRIDESCENT }}
+          />
+        </div>
+        {eta && (
+          <div style={{ fontSize: 12.5, color: DIM, marginTop: 10 }}>
+            At {deck.dailyNewWords} words/day, you're on pace for fluency by{" "}
+            <strong style={{ color: "#C084FC" }}>{format(eta, "MMMM yyyy")}</strong>.
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
