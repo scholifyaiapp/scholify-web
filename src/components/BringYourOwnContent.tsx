@@ -331,7 +331,7 @@ export default function BringYourOwnContent({
               </div>
               {isMock && (
                 <div style={{ fontSize: 12, color: DIM, marginBottom: 10 }}>
-                  {t("Demo words — connect a real API key for full extraction.")}
+                  {t("Sample preview — Lara picked these from your text.")}
                 </div>
               )}
 
@@ -439,7 +439,7 @@ const body: CSSProperties = { flex: 1, overflowY: "auto", padding: "12px 20px 60
 const iconBtn: CSSProperties = { width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: MUTED, fontSize: 14, cursor: "pointer" }
 const textarea: CSSProperties = { width: "100%", minHeight: 160, marginTop: 0, padding: 16, borderRadius: 16, fontSize: 16, lineHeight: 1.5, color: TEXT, background: "var(--sch-card)", border: "1px solid var(--sch-border)", outline: "none", resize: "vertical", fontFamily: "inherit" }
 const tab: CSSProperties = { flex: 1, height: 40, borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer" }
-const urlInput: CSSProperties = { flex: 1, minWidth: 0, height: 44, padding: "0 14px", borderRadius: 12, fontSize: 14, color: TEXT, background: "var(--sch-card)", border: "1px solid var(--sch-border)", outline: "none" }
+const urlInput: CSSProperties = { flex: 1, minWidth: 0, height: 44, padding: "0 14px", borderRadius: 12, fontSize: 16, color: TEXT, background: "var(--sch-card)", border: "1px solid var(--sch-border)", outline: "none" }
 const fetchBtn: CSSProperties = { height: 44, padding: "0 18px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }
 const fileDrop: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 56, marginBottom: 12, borderRadius: 14, border: "1px dashed var(--sch-border-2)", background: "var(--sch-card)", color: MUTED, fontSize: 14, fontWeight: 600, cursor: "pointer" }
 const levelPill: CSSProperties = { padding: "8px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer" }

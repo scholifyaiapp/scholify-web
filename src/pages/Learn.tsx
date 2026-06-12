@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type CSSProperties } from "react"
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import { addDays } from "date-fns"
 import { motion, AnimatePresence } from "motion/react"
@@ -92,35 +92,53 @@ export default function Learn() {
    * at "0 new words" while the user still has quota left today.
    */
   const [preparing, setPreparing] = useState(false)
+  const preparingRef = useRef(false)
   const startSession = useCallback(async () => {
-    const current = readDeck()
-    if (!current) return
-    const quota = remainingNewQuota(current)
-    const stock = current.words.filter((w) => w.status === "new").length
-    if (quota > 0 && stock < quota) {
-      setPreparing(true)
-      try {
-        const more = await generateVocab({
-          target: current.targetLanguage,
-          targetLabel: current.targetLanguageLabel,
-          native: current.nativeLanguage,
-          nativeLabel: languageLabel(current.nativeLanguage),
-          goal: current.goal,
-          level: current.level,
-          count: Math.max(12, quota - stock),
-          exclude: current.words.map((w) => w.term),
-        })
-        if (more.length > 0) {
-          addWordsToDeck(current, more)
-          setDeck(readDeck())
+    if (preparingRef.current) return
+    preparingRef.current = true
+    try {
+      const current = readDeck()
+      if (!current) return
+      const quota = remainingNewQuota(current)
+      const stock = current.words.filter((w) => w.status === "new").length
+      if (quota > 0 && stock < quota) {
+        setPreparing(true)
+        try {
+          const more = await generateVocab({
+            target: current.targetLanguage,
+            targetLabel: current.targetLanguageLabel,
+            native: current.nativeLanguage,
+            nativeLabel: languageLabel(current.nativeLanguage),
+            goal: current.goal,
+            level: current.level,
+            count: Math.max(12, quota - stock),
+            exclude: current.words.map((w) => w.term),
+          })
+          if (more.length > 0) {
+            // Re-read: the deck may have changed while the API call was in flight.
+            const latest = readDeck()
+            addWordsToDeck(latest ?? current, more)
+            setDeck(readDeck())
+          }
+        } catch {
+          /* offline / API down — start with whatever stock we have */
         }
-      } catch {
-        /* offline / API down — start with whatever stock we have */
+        setPreparing(false)
+        // Be honest: if the top-up failed and there's quota but no stock, say so.
+        const after = readDeck()
+        if (
+          after &&
+          remainingNewQuota(after) > 0 &&
+          after.words.filter((w) => w.status === "new").length === 0
+        ) {
+          toast.info("Couldn't fetch new words — reviews only this session.")
+        }
       }
-      setPreparing(false)
+      setInSession(true)
+    } finally {
+      preparingRef.current = false
     }
-    setInSession(true)
-  }, [])
+  }, [toast])
 
   if (inSession && deck) {
     return (
@@ -192,7 +210,11 @@ export default function Learn() {
         existingTerms={deck.words.map((w) => w.term)}
         onAdded={(words: NewWordInput[]) => {
           addWordsToDeck(deck, words)
-          toast.success(`${words.length} words added! They're in today's session.`)
+          if (remainingNewQuota(readDeck()!) > 0) {
+            toast.success(`${words.length} words added! They're in today's session.`)
+          } else {
+            toast.success(`${words.length} words added — they'll start tomorrow (today's goal is done).`)
+          }
         }}
         onClose={() => {
           setInByo(false)
@@ -207,7 +229,6 @@ export default function Learn() {
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         {deck ? (
           <DeckHome
-            key={tick}
             deck={deck}
             name={firstName}
             isPro={isPro}
@@ -227,22 +248,26 @@ export default function Learn() {
               setInSession(true)
             }}
             onAddWords={async () => {
-              const more = await generateVocab({
-                target: deck.targetLanguage,
-                targetLabel: deck.targetLanguageLabel,
-                native: deck.nativeLanguage,
-                nativeLabel: languageLabel(deck.nativeLanguage),
-                goal: deck.goal,
-                count: 12,
-                exclude: deck.words.map((w) => w.term),
-              })
-              if (more.length === 0) {
-                toast.info("No new words to add right now.")
-                return
+              try {
+                const more = await generateVocab({
+                  target: deck.targetLanguage,
+                  targetLabel: deck.targetLanguageLabel,
+                  native: deck.nativeLanguage,
+                  nativeLabel: languageLabel(deck.nativeLanguage),
+                  goal: deck.goal,
+                  count: 12,
+                  exclude: deck.words.map((w) => w.term),
+                })
+                if (more.length === 0) {
+                  toast.info("No new words to add right now.")
+                  return
+                }
+                addWordsToDeck(deck, more)
+                refresh()
+                toast.success(`Added ${more.length} new words ✨`)
+              } catch {
+                toast.error("Couldn't fetch new words. Try again.")
               }
-              addWordsToDeck(deck, more)
-              refresh()
-              toast.success(`Added ${more.length} new words ✨`)
             }}
             onReset={() => {
               clearDeck()
@@ -299,12 +324,15 @@ function DeckHome({
   const { t } = useLanguage()
   const stats = useMemo(() => getDeckStats(deck), [deck])
   const session = useMemo(() => getTodaySession(deck), [deck])
-  const progress = useMemo(() => readVocabProgress(), [])
+  // Re-read whenever the deck object changes (refresh() produces a new one).
+  const progress = useMemo(() => readVocabProgress(), [deck])
   const coaching = useMemo(() => coachOnHome(name, deck), [name, deck])
   const daysLeft = daysUntilDeadline(deck)
   const [reportOpen, setReportOpen] = useState(() => isWeeklyReportDue(progress))
   const report = useMemo(() => getWeeklyReport(name, deck, progress), [name, deck, progress])
   const [adding, setAdding] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const resetTimerRef = useRef<number | null>(null)
   const [editGoal, setEditGoal] = useState(false)
   const [customDaily, setCustomDaily] = useState(`${deck.dailyNewWords}`)
 
@@ -553,8 +581,11 @@ function DeckHome({
               disabled={adding}
               onClick={async () => {
                 setAdding(true)
-                await onAddWords()
-                setAdding(false)
+                try {
+                  await onAddWords()
+                } finally {
+                  setAdding(false)
+                }
               }}
               whileHover={adding ? undefined : { scale: 1.02 }}
               whileTap={adding ? undefined : { scale: 0.98 }}
@@ -584,7 +615,6 @@ function DeckHome({
           cursor: "pointer",
           background: "rgba(139,92,246,0.07)",
           border: "1px solid rgba(139,92,246,0.4)",
-          boxShadow: "0 0 24px rgba(139,92,246,0.1)",
         }}
       >
         <span style={{ fontSize: 26 }}>📄</span>
@@ -680,8 +710,26 @@ function DeckHome({
         <Link to="/learn/progress" style={{ ...ghostBtn, textDecoration: "none" }}>
           📊 View progress
         </Link>
-        <button type="button" onClick={onReset} style={{ ...ghostBtn, color: "rgba(255,107,94,0.8)" }}>
-          Change language
+        <button
+          type="button"
+          onClick={() => {
+            if (confirmReset) {
+              if (resetTimerRef.current != null) window.clearTimeout(resetTimerRef.current)
+              onReset()
+            } else {
+              setConfirmReset(true)
+              // Auto-reset the armed state — a stray tap shouldn't stay loaded.
+              resetTimerRef.current = window.setTimeout(() => setConfirmReset(false), 3000)
+            }
+          }}
+          style={{
+            ...ghostBtn,
+            color: confirmReset ? "#FF6B5E" : "rgba(255,107,94,0.8)",
+            border: confirmReset ? "1px solid rgba(255,107,94,0.5)" : ghostBtn.border,
+            fontWeight: confirmReset ? 700 : 600,
+          }}
+        >
+          {confirmReset ? "Delete deck & progress? Tap to confirm" : "Change language"}
         </button>
       </div>
     </motion.div>
@@ -1178,7 +1226,7 @@ const langInput: CSSProperties = {
   marginTop: 10,
   padding: "0 14px",
   borderRadius: 12,
-  fontSize: 14,
+  fontSize: 16, // ≥16px prevents iOS Safari from zooming the page on focus
   color: "var(--sch-text)",
   background: "var(--sch-card)",
   border: "1px solid var(--sch-border)",

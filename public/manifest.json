@@ -1,7 +1,7 @@
 {
   "name": "Scholify",
   "short_name": "Scholify",
-  "description": "Turn any learning goal into a daily habit. Lara builds your AI plan. You just show up.",
+  "description": "Get 1% better every day. Lara turns any text into your personal vocabulary plan and coaches you to fluency.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -24,14 +24,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Today's Task",
-      "url": "/dashboard",
-      "description": "View today's learning task"
+      "name": "Today's Session",
+      "url": "/learn",
+      "description": "Start today's vocabulary session"
     },
     {
       "name": "My Progress",
-      "url": "/progress",
-      "description": "See your learning progress"
+      "url": "/learn/progress",
+      "description": "See your path to fluency"
     }
   ]
 }

@@ -21,18 +21,18 @@ export function wordsLearned(deck: VocabDeck): number {
 
 /** Percent of the conversational-fluency benchmark reached (0–100, one decimal under 10%). */
 export function fluencyPercent(deck: VocabDeck): number {
-  const pct = (wordsLearned(deck) / FLUENCY_WORDS) * 100
-  if (pct >= 100) return 100
-  return pct < 10 ? Math.round(pct * 10) / 10 : Math.round(pct)
+  const learned = wordsLearned(deck)
+  const pct = (learned / FLUENCY_WORDS) * 100
+  if (learned >= FLUENCY_WORDS) return 100
+  // Never show 100% until the bar is actually reached (rounding can lie).
+  return Math.min(99, pct < 10 ? Math.round(pct * 10) / 10 : Math.round(pct))
 }
 
 /** 1-based day of the journey (day 1 = the day the deck was created). */
 export function dayNumber(deck: VocabDeck): number {
-  try {
-    return Math.max(1, differenceInCalendarDays(new Date(), new Date(deck.createdAt)) + 1)
-  } catch {
-    return 1
-  }
+  if (Number.isNaN(new Date(deck.createdAt).getTime())) return 1
+  const day = Math.max(1, differenceInCalendarDays(new Date(), new Date(deck.createdAt)) + 1)
+  return Number.isNaN(day) ? 1 : day
 }
 
 /** The Atomic Habits multiple: 1.01^day ("×1.6 the day-one you"). */

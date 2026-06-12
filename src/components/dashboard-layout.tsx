@@ -29,6 +29,8 @@ const LAYOUT_CSS = `
   @keyframes sch-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   .dash-scroll::-webkit-scrollbar { width: 7px; }
   .dash-scroll::-webkit-scrollbar-thumb { background: var(--sch-border); border-radius: 8px; }
+  *:focus-visible { outline: 2px solid #A78BFA !important; outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 `
 
 type NavItemDef = {

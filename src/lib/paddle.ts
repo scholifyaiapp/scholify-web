@@ -67,7 +67,7 @@ export function openCheckout(priceId: string | undefined, email?: string): boole
         displayMode: "overlay",
         theme: "dark",
         frameStyle: "background-color: #050508",
-        successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+        successUrl: `${window.location.origin}/learn?upgraded=true`,
       },
     })
     return true

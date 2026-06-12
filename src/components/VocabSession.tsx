@@ -8,6 +8,7 @@ import {
   getTodaySession,
   gradeWordInDeck,
   recordSession,
+  awardXp,
   readVocabProgress,
   reviewWord,
   type ReviewGrade,
@@ -96,6 +97,10 @@ export default function VocabSession({
   const [finalStreak, setFinalStreak] = useState(0)
   const [xpFloat, setXpFloat] = useState(0) // transient +XP pop on a correct quiz answer
   const xpRef = useRef(0)
+  // Synchronous idempotency guards — keydown + click can fire in the same tick.
+  const gradedRef = useRef(-1)
+  const answeredRef = useRef(-1)
+  const finishedRef = useRef(false)
 
   const lang = workingDeck.targetLanguage
   const pronounce = (t: string) => speak(t, lang)
@@ -117,7 +122,13 @@ export default function VocabSession({
 
   /* ── Handlers ── */
   const grade = (word: VocabWord, g: ReviewGrade) => {
-    setWorkingDeck((d) => gradeWordInDeck(d, word.id, g))
+    if (gradedRef.current === reviewIdx) return
+    gradedRef.current = reviewIdx
+    // Drill = extra practice, not a scheduled spaced recall — only a lapse
+    // ("again") should touch the SRS schedule.
+    if (!isDrill || g === "again") {
+      setWorkingDeck((d) => gradeWordInDeck(d, word.id, g))
+    }
     setResults((r) => [...r, { term: word.term, grade: g }])
     xpRef.current += XP_BY_GRADE[g]
     setRevealed(false)
@@ -135,7 +146,8 @@ export default function VocabSession({
   }
 
   const pickQuiz = (option: string) => {
-    if (quizPicked) return
+    if (quizPicked || answeredRef.current === quizIdx) return
+    answeredRef.current = quizIdx
     setQuizPicked(option)
     const correct = option === quiz[quizIdx].word.translation
     if (correct) {
@@ -143,6 +155,7 @@ export default function VocabSession({
       xpRef.current += QUIZ_XP
       setXpFloat(QUIZ_XP)
     }
+    // Wrong answers get a longer beat so the learner can read the correct one.
     window.setTimeout(() => {
       if (quizIdx + 1 < quiz.length) {
         setQuizIdx((i) => i + 1)
@@ -151,14 +164,21 @@ export default function VocabSession({
       } else {
         finish(correct ? quizCorrect + 1 : quizCorrect)
       }
-    }, 850)
+    }, correct ? 850 : 1600)
   }
 
   const finish = (finalCorrect: number) => {
+    if (finishedRef.current) return
+    finishedRef.current = true
     const earned = reviewQueue.length > 0 ? xpRef.current + FINISH_BONUS : 0
     setEarnedXp(earned)
-    const saved = recordSession(reviewQueue.length, earned)
-    setFinalStreak(saved.streak)
+    if (isDrill) {
+      // Drills earn XP but never count as the daily session (no streak inflation).
+      awardXp(earned)
+    } else {
+      const saved = recordSession(reviewQueue.length, earned)
+      setFinalStreak(saved.streak)
+    }
     setPhase("done")
     try {
       confetti({
@@ -184,6 +204,7 @@ export default function VocabSession({
   /* ── Keyboard shortcuts: Space/Enter to advance·reveal, 1–4 to grade/answer ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return // a held key must not double-fire grades/answers
       const num = ["1", "2", "3", "4"].indexOf(e.key)
       if (phase === "learn" && newWords[learnIdx]) {
         if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
@@ -232,7 +253,13 @@ export default function VocabSession({
         <button type="button" onClick={onClose} aria-label="Close" style={iconBtn}>
           ✕
         </button>
-        <div style={progressTrack}>
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+          style={progressTrack}
+        >
           <motion.div
             animate={{ width: `${phase === "done" ? 100 : pct}%` }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -375,6 +402,7 @@ export default function VocabSession({
                     >
                       {opt}
                       {reveal && isAnswer && <span style={{ marginLeft: 8 }}>✓</span>}
+                      {reveal && picked && !isAnswer && <span style={{ marginLeft: 8 }}>✗</span>}
                     </motion.button>
                   )
                 })}
@@ -398,8 +426,8 @@ export default function VocabSession({
                 {nothingToDo ? "All caught up! 🎉" : "Session complete! 🎉"}
               </h2>
 
-              {/* Streak — the retention hook, made the hero */}
-              {!nothingToDo && (
+              {/* Streak — the retention hook, made the hero (sessions only; drills don't count) */}
+              {!nothingToDo && !isDrill && (
                 <motion.div
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}

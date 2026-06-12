@@ -116,11 +116,10 @@ function todayStr(): string {
 /** True when the word is due for review on or before `onDate` (default today). */
 export function isDue(word: VocabWord, onDate: string = todayStr()): boolean {
   if (word.status === "new") return false
-  try {
-    return differenceInCalendarDays(new Date(word.dueDate), new Date(onDate)) <= 0
-  } catch {
-    return true
-  }
+  // new Date("garbage") yields Invalid Date (no throw) — NaN means "treat as due".
+  const d = differenceInCalendarDays(new Date(word.dueDate), new Date(onDate))
+  if (Number.isNaN(d)) return true
+  return d <= 0
 }
 
 /* ── Word creation ───────────────────────────────────────────── */
@@ -242,7 +241,7 @@ export function setDailyGoal(deck: VocabDeck, n: number): VocabDeck {
 export function getDueWords(deck: VocabDeck, onDate: string = todayStr()): VocabWord[] {
   return deck.words
     .filter((w) => w.status !== "new" && isDue(w, onDate))
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
 }
 
 /** Everything the learner should do today: new words + due reviews. */
@@ -312,7 +311,17 @@ export function readDeck(): VocabDeck | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as VocabDeck
     if (!parsed || !Array.isArray(parsed.words)) return null
-    return parsed
+    // Normalize: corrupted/legacy data must never break the SRS math.
+    const statuses: WordStatus[] = ["new", "learning", "review", "mastered"]
+    return {
+      ...parsed,
+      dailyNewWords: Math.max(1, Math.min(50, Number(parsed.dailyNewWords) || 8)),
+      words: parsed.words.map((w) => ({
+        ...w,
+        dueDate: typeof w.dueDate === "string" && w.dueDate ? w.dueDate : todayStr(),
+        status: statuses.includes(w.status) ? w.status : "new",
+      })),
+    }
   } catch {
     return null
   }
@@ -421,7 +430,8 @@ export function recordSession(wordsReviewed: number, xp = 0): VocabProgress {
   let streak = 1
   if (prev.lastSessionDate) {
     const gap = differenceInCalendarDays(new Date(today), new Date(prev.lastSessionDate))
-    streak = gap === 1 ? prev.streak + 1 : 1
+    // gap <= 0 = clock change / timezone travel — never punish with a reset.
+    streak = gap === 1 ? prev.streak + 1 : gap <= 0 ? prev.streak : 1
   }
   const next: VocabProgress = {
     streak,

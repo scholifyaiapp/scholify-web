@@ -123,6 +123,21 @@ export default function PaywallModal({
     return Math.max(0, 7 - since)
   })()
 
+  // Dialog behavior: Escape closes (when dismissible) + lock body scroll while open.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && dismissible) onClose()
+    }
+    window.addEventListener("keydown", onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open, dismissible, onClose])
+
   // Day-7 paywall opens with a 3-second celebration, then reveals the offer.
   useEffect(() => {
     if (open && type === "streak7") {
@@ -154,7 +169,7 @@ export default function PaywallModal({
     trackEvent("upgrade_started", { plan: planFor(priceId) })
     const ok = openCheckout(priceId, email)
     if (!ok) {
-      setNotice("Checkout is being set up — coming soon ✦")
+      setNotice("Couldn't open checkout. Please try again.")
       setTimeout(() => setNotice(null), 2800)
     }
   }
@@ -183,6 +198,8 @@ export default function PaywallModal({
           }}
         >
           <motion.div
+            role="dialog"
+            aria-modal="true"
             onClick={(e) => e.stopPropagation()}
             initial={{ y: isMobile ? "100%" : 40, opacity: isMobile ? 1 : 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -201,7 +218,8 @@ export default function PaywallModal({
                 "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px var(--sch-card-2), 0 0 80px rgba(139,92,246,0.1)",
             }}
           >
-            {/* Close button */}
+            {/* Close button — only when the paywall can actually be dismissed */}
+            {dismissible && (
             <motion.button
               type="button"
               onClick={onClose}
@@ -225,6 +243,7 @@ export default function PaywallModal({
             >
               ×
             </motion.button>
+            )}
 
             {/* ── Top section ── */}
             <div style={{ padding: "32px 32px 0", textAlign: "center" }}>
@@ -352,7 +371,9 @@ export default function PaywallModal({
                   color: "rgba(255,159,10,0.7)",
                 }}
               >
-                Your free trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}.
+                {trialDaysLeft === 0
+                  ? "Your free trial ends today."
+                  : `Your free trial ends in ${trialDaysLeft} ${trialDaysLeft === 1 ? "day" : "days"}.`}
               </div>
             )}
 
