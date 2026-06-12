@@ -50,6 +50,8 @@ export interface VocabWord {
   dueDate: string
   addedAt: string
   lastReviewedAt?: string
+  /** yyyy-MM-dd (local) the word was first studied — counts against that day's new-word quota. */
+  introducedOn?: string
 }
 
 export interface VocabDeck {
@@ -164,6 +166,7 @@ export function makeWord(input: NewWordInput): VocabWord {
  *  - "easy":  trivial → larger growth + ease bump.
  */
 export function reviewWord(word: VocabWord, grade: ReviewGrade): VocabWord {
+  const introducedOn = word.status === "new" ? word.introducedOn ?? todayStr() : word.introducedOn
   let { ease, intervalDays, reps, lapses } = word
 
   if (grade === "again") {
@@ -202,6 +205,7 @@ export function reviewWord(word: VocabWord, grade: ReviewGrade): VocabWord {
     reps,
     lapses,
     status,
+    introducedOn,
     dueDate: format(addDays(new Date(), intervalDays), "yyyy-MM-dd"),
     lastReviewedAt: new Date().toISOString(),
   }
@@ -209,9 +213,29 @@ export function reviewWord(word: VocabWord, grade: ReviewGrade): VocabWord {
 
 /* ── Session selection ───────────────────────────────────────── */
 
-/** New words still waiting to be introduced, capped at `limit`. */
-export function getNewWords(deck: VocabDeck, limit: number = deck.dailyNewWords): VocabWord[] {
+/** New words first studied today — what's already been used of today's quota. */
+export function introducedToday(deck: VocabDeck, onDate: string = todayStr()): number {
+  return deck.words.filter((w) => w.introducedOn === onDate).length
+}
+
+/** How many new words may still be introduced today (exact daily quota). */
+export function remainingNewQuota(deck: VocabDeck): number {
+  return Math.max(0, deck.dailyNewWords - introducedToday(deck))
+}
+
+/**
+ * New words still waiting to be introduced, capped at what's left of TODAY's
+ * quota — a second session on the same day never overshoots the daily goal.
+ */
+export function getNewWords(deck: VocabDeck, limit: number = remainingNewQuota(deck)): VocabWord[] {
   return deck.words.filter((w) => w.status === "new").slice(0, Math.max(0, limit))
+}
+
+/** Update the learner's daily new-word goal (5/10/15/custom) and persist. */
+export function setDailyGoal(deck: VocabDeck, n: number): VocabDeck {
+  const next: VocabDeck = { ...deck, dailyNewWords: Math.max(1, Math.min(50, Math.round(n) || 1)) }
+  writeDeck(next)
+  return next
 }
 
 /** Words whose review is due today (or overdue), soonest first. */

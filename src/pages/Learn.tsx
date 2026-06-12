@@ -28,6 +28,8 @@ import {
   daysUntilDeadline,
   isWeeklyReportDue,
   markWeeklyReportSeen,
+  remainingNewQuota,
+  setDailyGoal,
   type VocabDeck,
   type NewWordInput,
   type VocabWord,
@@ -82,6 +84,42 @@ export default function Learn() {
   const refresh = useCallback(() => {
     setDeck(readDeck())
     setTick((t) => t + 1)
+  }, [])
+
+  /*
+   * Start today's session, topping up the new-word stock first so the chosen
+   * daily pace (5/10/15/custom) is always deliverable — the deck never stalls
+   * at "0 new words" while the user still has quota left today.
+   */
+  const [preparing, setPreparing] = useState(false)
+  const startSession = useCallback(async () => {
+    const current = readDeck()
+    if (!current) return
+    const quota = remainingNewQuota(current)
+    const stock = current.words.filter((w) => w.status === "new").length
+    if (quota > 0 && stock < quota) {
+      setPreparing(true)
+      try {
+        const more = await generateVocab({
+          target: current.targetLanguage,
+          targetLabel: current.targetLanguageLabel,
+          native: current.nativeLanguage,
+          nativeLabel: languageLabel(current.nativeLanguage),
+          goal: current.goal,
+          level: current.level,
+          count: Math.max(12, quota - stock),
+          exclude: current.words.map((w) => w.term),
+        })
+        if (more.length > 0) {
+          addWordsToDeck(current, more)
+          setDeck(readDeck())
+        }
+      } catch {
+        /* offline / API down — start with whatever stock we have */
+      }
+      setPreparing(false)
+    }
+    setInSession(true)
   }, [])
 
   if (inSession && deck) {
@@ -173,7 +211,12 @@ export default function Learn() {
             deck={deck}
             name={firstName}
             isPro={isPro}
-            onStart={() => setInSession(true)}
+            preparing={preparing}
+            onStart={() => void startSession()}
+            onSetDaily={(n) => {
+              setDailyGoal(deck, n)
+              refresh()
+            }}
             onPlayGame={() => setInGame(true)}
             onPlayType={() => (isPro ? setInTypeGame(true) : triggerFeaturePaywall())}
             onPlaySpeak={() => (isPro ? setInSpeakGame(true) : triggerFeaturePaywall())}
@@ -228,7 +271,9 @@ function DeckHome({
   deck,
   name,
   isPro,
+  preparing,
   onStart,
+  onSetDaily,
   onPlayGame,
   onPlayType,
   onPlaySpeak,
@@ -240,7 +285,9 @@ function DeckHome({
   deck: VocabDeck
   name: string
   isPro: boolean
+  preparing: boolean
   onStart: () => void
+  onSetDaily: (n: number) => void
   onPlayGame: () => void
   onPlayType: () => void
   onPlaySpeak: () => void
@@ -258,8 +305,12 @@ function DeckHome({
   const [reportOpen, setReportOpen] = useState(() => isWeeklyReportDue(progress))
   const report = useMemo(() => getWeeklyReport(name, deck, progress), [name, deck, progress])
   const [adding, setAdding] = useState(false)
+  const [editGoal, setEditGoal] = useState(false)
+  const [customDaily, setCustomDaily] = useState(`${deck.dailyNewWords}`)
 
-  const todayCount = session.newWords.length + session.dueWords.length
+  // Today = what's left of the daily new-word quota (auto-topped-up on start) + due reviews.
+  const quotaLeft = remainingNewQuota(deck)
+  const todayCount = quotaLeft + session.dueWords.length
   const learned = wordsLearned(deck)
   const fluencyPct = fluencyPercent(deck)
   const day = dayNumber(deck)
@@ -277,16 +328,98 @@ function DeckHome({
           <h1 style={{ fontSize: 24, fontWeight: 800, color: TEXT, letterSpacing: "-0.5px" }}>
             {deck.targetLanguageLabel}
           </h1>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>
-            {deck.dailyNewWords} new words/day
+          <button
+            type="button"
+            onClick={() => setEditGoal((v) => !v)}
+            style={{
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              marginTop: 2,
+              fontSize: 13,
+              color: MUTED,
+              cursor: "pointer",
+              textDecoration: "underline dotted",
+              textUnderlineOffset: 3,
+            }}
+          >
+            {deck.dailyNewWords} new words/day ✎
             {daysLeft != null ? ` · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : ""}
-          </div>
+          </button>
         </div>
         <div style={{ marginLeft: "auto", textAlign: "center" }}>
           <div style={{ fontSize: 26, fontWeight: 900, ...iriText }}>🔥 {progress.streak}</div>
           <div style={{ fontSize: 11, color: DIM }}>day streak</div>
         </div>
       </div>
+
+      {/* Daily goal editor — the pace drives the whole fluency projection */}
+      <AnimatePresence initial={false}>
+        {editGoal && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div
+              style={{
+                marginTop: 14,
+                padding: 16,
+                borderRadius: 16,
+                background: "var(--sch-card)",
+                border: "1px solid rgba(139,92,246,0.3)",
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>New words per day:</span>
+              {DAILY_OPTIONS.map((n) => (
+                <Choice
+                  key={n}
+                  active={deck.dailyNewWords === n}
+                  onClick={() => {
+                    setCustomDaily(`${n}`)
+                    onSetDaily(n)
+                    setEditGoal(false)
+                  }}
+                  compact
+                >
+                  {n}
+                </Choice>
+              ))}
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={customDaily}
+                onChange={(e) => setCustomDaily(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    onSetDaily(Number(customDaily) || deck.dailyNewWords)
+                    setEditGoal(false)
+                  }
+                }}
+                aria-label="Custom words per day"
+                style={{ ...langInput, width: 80, marginTop: 0, textAlign: "center" }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  onSetDaily(Number(customDaily) || deck.dailyNewWords)
+                  setEditGoal(false)
+                }}
+                style={primaryBtnSmall}
+              >
+                Save
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Weekly report (once a week, conditional) */}
       {reportOpen && (
@@ -396,16 +529,17 @@ function DeckHome({
               {todayCount} word{todayCount === 1 ? "" : "s"} ready for today
             </div>
             <div style={{ fontSize: 13, color: MUTED, marginTop: 6 }}>
-              {session.newWords.length} new · {session.dueWords.length} to review
+              {quotaLeft} new · {session.dueWords.length} to review
             </div>
             <motion.button
               type="button"
+              disabled={preparing}
               onClick={onStart}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={primaryBtn}
+              whileHover={preparing ? undefined : { scale: 1.02 }}
+              whileTap={preparing ? undefined : { scale: 0.98 }}
+              style={{ ...primaryBtn, opacity: preparing ? 0.75 : 1 }}
             >
-              Start today's session →
+              {preparing ? "Picking your words…" : "Start today's session →"}
             </motion.button>
           </>
         ) : (
