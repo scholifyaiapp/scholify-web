@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
@@ -9,6 +9,7 @@ import {
   gradeWordInDeck,
   recordSession,
   readVocabProgress,
+  reviewWord,
   type ReviewGrade,
   type VocabDeck,
   type VocabWord,
@@ -47,6 +48,15 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+/** Human-friendly "next review in" label for the SM-2 interval. */
+function formatInterval(days: number): string {
+  if (days < 1) return "<1d"
+  if (days < 7) return `${days}d`
+  if (days < 30) return `${Math.round(days / 7)}wk`
+  if (days < 365) return `${Math.round(days / 30)}mo`
+  return `${Math.round(days / 365)}y`
+}
+
 export default function VocabSession({
   deck,
   onClose,
@@ -83,6 +93,8 @@ export default function VocabSession({
   const [quizCorrect, setQuizCorrect] = useState(0)
   const [results, setResults] = useState<{ term: string; grade: ReviewGrade }[]>([])
   const [earnedXp, setEarnedXp] = useState(0)
+  const [finalStreak, setFinalStreak] = useState(0)
+  const [xpFloat, setXpFloat] = useState(0) // transient +XP pop on a correct quiz answer
   const xpRef = useRef(0)
 
   const lang = workingDeck.targetLanguage
@@ -129,11 +141,13 @@ export default function VocabSession({
     if (correct) {
       setQuizCorrect((c) => c + 1)
       xpRef.current += QUIZ_XP
+      setXpFloat(QUIZ_XP)
     }
     window.setTimeout(() => {
       if (quizIdx + 1 < quiz.length) {
         setQuizIdx((i) => i + 1)
         setQuizPicked(null)
+        setXpFloat(0)
       } else {
         finish(correct ? quizCorrect + 1 : quizCorrect)
       }
@@ -143,7 +157,8 @@ export default function VocabSession({
   const finish = (finalCorrect: number) => {
     const earned = reviewQueue.length > 0 ? xpRef.current + FINISH_BONUS : 0
     setEarnedXp(earned)
-    recordSession(reviewQueue.length, earned)
+    const saved = recordSession(reviewQueue.length, earned)
+    setFinalStreak(saved.streak)
     setPhase("done")
     try {
       confetti({
@@ -157,6 +172,50 @@ export default function VocabSession({
     }
     void finalCorrect
   }
+
+  /* ── Hear new words on first exposure (aids encoding) ── */
+  useEffect(() => {
+    if (phase === "learn" && newWords[learnIdx] && canSpeak()) {
+      pronounce(newWords[learnIdx].term)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, learnIdx])
+
+  /* ── Keyboard shortcuts: Space/Enter to advance·reveal, 1–4 to grade/answer ── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const num = ["1", "2", "3", "4"].indexOf(e.key)
+      if (phase === "learn" && newWords[learnIdx]) {
+        if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
+          e.preventDefault()
+          advanceLearn()
+        }
+      } else if (phase === "review" && reviewQueue[reviewIdx]) {
+        if (!revealed) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            setRevealed(true)
+          }
+        } else if (num >= 0) {
+          e.preventDefault()
+          grade(reviewQueue[reviewIdx], GRADES[num].grade)
+        }
+      } else if (phase === "quiz" && quiz[quizIdx] && !quizPicked) {
+        if (num >= 0 && quiz[quizIdx].options[num]) {
+          e.preventDefault()
+          pickQuiz(quiz[quizIdx].options[num])
+        }
+      } else if (phase === "done") {
+        if (e.key === "Enter") {
+          e.preventDefault()
+          onFinished()
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, learnIdx, reviewIdx, revealed, quizIdx, quizPicked])
 
   /* ── Progress for the top bar ── */
   const totalSteps = newWords.length + reviewQueue.length + quiz.length
@@ -222,23 +281,30 @@ export default function VocabSession({
                 <PrimaryButton label="Show answer" onClick={() => setRevealed(true)} />
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 20 }}>
-                  {GRADES.map((g) => (
-                    <motion.button
-                      key={g.grade}
-                      type="button"
-                      onClick={() => grade(reviewQueue[reviewIdx], g.grade)}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      style={{
-                        ...gradeBtn,
-                        color: g.color,
-                        border: `1px solid ${g.color}55`,
-                        background: `${g.color}14`,
-                      }}
-                    >
-                      {g.label}
-                    </motion.button>
-                  ))}
+                  {GRADES.map((g, i) => {
+                    const nextIn = reviewWord(reviewQueue[reviewIdx], g.grade).intervalDays
+                    return (
+                      <motion.button
+                        key={g.grade}
+                        type="button"
+                        onClick={() => grade(reviewQueue[reviewIdx], g.grade)}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        style={{
+                          ...gradeBtn,
+                          color: g.color,
+                          border: `1px solid ${g.color}55`,
+                          background: `${g.color}14`,
+                        }}
+                      >
+                        <span style={kbdHint}>{i + 1}</span>
+                        <span style={{ fontSize: 15, fontWeight: 800 }}>{g.label}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginTop: 2 }}>
+                          {formatInterval(nextIn)}
+                        </span>
+                      </motion.button>
+                    )
+                  })}
                 </div>
               )}
             </motion.div>
@@ -252,7 +318,7 @@ export default function VocabSession({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              style={{ width: "100%", maxWidth: 440 }}
+              style={{ width: "100%", maxWidth: 440, position: "relative" }}
             >
               <div style={kicker}>Quiz · {quizIdx + 1}/{quiz.length}</div>
               <div style={{ textAlign: "center", marginTop: 12 }}>
@@ -261,6 +327,29 @@ export default function VocabSession({
                 </div>
                 <div style={{ fontSize: 13, color: DIM, marginTop: 6 }}>Choose the meaning</div>
               </div>
+              <AnimatePresence>
+                {xpFloat > 0 && (
+                  <motion.div
+                    key="xpfloat"
+                    initial={{ opacity: 0, y: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, y: -28, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                    style={{
+                      position: "absolute",
+                      top: 44,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      fontSize: 16,
+                      fontWeight: 800,
+                      color: "#34D399",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    +{xpFloat} ⚡
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div style={{ display: "grid", gap: 10, marginTop: 24 }}>
                 {quiz[quizIdx].options.map((opt) => {
                   const isAnswer = opt === quiz[quizIdx].word.translation
@@ -308,27 +397,51 @@ export default function VocabSession({
               <h2 style={{ fontSize: 24, fontWeight: 800, color: TEXT }}>
                 {nothingToDo ? "All caught up! 🎉" : "Session complete! 🎉"}
               </h2>
-              {!nothingToDo && earnedXp > 0 && (
+
+              {/* Streak — the retention hook, made the hero */}
+              {!nothingToDo && (
                 <motion.div
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.15 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
                   style={{
-                    display: "inline-block",
-                    marginTop: 12,
-                    padding: "6px 16px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: 16,
+                    padding: "10px 20px",
                     borderRadius: 999,
-                    background: "rgba(139,92,246,0.14)",
-                    border: "1px solid rgba(139,92,246,0.4)",
-                    fontSize: 16,
-                    fontWeight: 800,
-                    color: "#C084FC",
+                    background: "rgba(251,146,60,0.12)",
+                    border: "1px solid rgba(251,146,60,0.4)",
                   }}
                 >
-                  +{earnedXp} XP ⚡
+                  <motion.span
+                    animate={{ scale: [1, 1.25, 1], rotate: [0, -8, 8, 0] }}
+                    transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 0.6 }}
+                    style={{ fontSize: 24 }}
+                  >
+                    🔥
+                  </motion.span>
+                  <span style={{ fontSize: 20, fontWeight: 900, color: "#FB923C" }}>
+                    {finalStreak} day{finalStreak === 1 ? "" : "s"}
+                  </span>
                 </motion.div>
               )}
-              <p style={{ fontSize: 15, color: MUTED, marginTop: 12, lineHeight: 1.6, fontStyle: "italic" }}>
+
+              {/* XP + recap */}
+              {!nothingToDo && (
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+                  {earnedXp > 0 && (
+                    <span style={recapPill}>+{earnedXp} XP ⚡</span>
+                  )}
+                  <span style={recapPill}>{reviewQueue.length} reviewed</span>
+                  {quiz.length > 0 && (
+                    <span style={recapPill}>Quiz {quizCorrect}/{quiz.length}</span>
+                  )}
+                </div>
+              )}
+
+              <p style={{ fontSize: 15, color: MUTED, marginTop: 16, lineHeight: 1.6, fontStyle: "italic" }}>
                 {nothingToDo
                   ? "No words are due right now. Come back later or add new words."
                   : coachAfterSession(userName ?? "", deck.targetLanguageLabel, {
@@ -529,11 +642,32 @@ const kicker: CSSProperties = {
   marginBottom: 12,
 }
 const gradeBtn: CSSProperties = {
-  height: 48,
+  position: "relative",
+  minHeight: 58,
   borderRadius: 12,
-  fontSize: 14,
-  fontWeight: 700,
   cursor: "pointer",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "8px 6px",
+}
+const kbdHint: CSSProperties = {
+  position: "absolute",
+  top: 6,
+  left: 8,
+  fontSize: 10,
+  fontWeight: 700,
+  opacity: 0.45,
+}
+const recapPill: CSSProperties = {
+  padding: "6px 14px",
+  borderRadius: 999,
+  background: "rgba(139,92,246,0.12)",
+  border: "1px solid rgba(139,92,246,0.32)",
+  fontSize: 13,
+  fontWeight: 800,
+  color: "#C084FC",
 }
 const quizOpt: CSSProperties = {
   width: "100%",
