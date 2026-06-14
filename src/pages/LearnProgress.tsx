@@ -4,7 +4,7 @@ import { motion } from "motion/react"
 import { format, subDays } from "date-fns"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
-import { readDeck, getDeckStats, readVocabProgress } from "@/lib/vocab"
+import { readDeck, getDeckStats, readVocabProgress, type VocabDeck } from "@/lib/vocab"
 import { languageFlag } from "@/lib/vocab-content"
 import {
   FLUENCY_WORDS,
@@ -15,6 +15,13 @@ import {
   projectedFluencyDate,
   compoundCurvePoints,
 } from "@/lib/fluency"
+import {
+  wordsPerDay,
+  recallAccuracy,
+  intervalBuckets,
+  hardestWords,
+  getRecommendations,
+} from "@/lib/vocab-analytics"
 
 /* /learn/progress — motivation: streak, activity heatmap, mastery, totals. */
 
@@ -167,12 +174,211 @@ export default function LearnProgress() {
           </div>
         </div>
 
+        {/* Lara recommendations */}
+        <Recommendations deck={deck} progress={progress} dueToday={stats.dueToday} />
+
+        {/* Words learned per day */}
+        <WordsPerDayChart deck={deck} />
+
+        {/* Recall + retention */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 20, marginTop: 20 }}>
+          <RecallCard deck={deck} />
+          <RetentionCard deck={deck} />
+        </div>
+
+        {/* Hardest words */}
+        <HardestWords deck={deck} />
+
         {/* CTA */}
         <Link to="/learn" style={{ ...linkBtn, display: "block", textAlign: "center", marginTop: 24 }}>
           Back to today's session →
         </Link>
       </motion.div>
     </DashboardLayout>
+  )
+}
+
+/* ── Analytics sections ──────────────────────────────────────── */
+
+function Recommendations({
+  deck,
+  progress,
+  dueToday,
+}: {
+  deck: VocabDeck
+  progress: ReturnType<typeof readVocabProgress>
+  dueToday: number
+}) {
+  const recs = useMemo(() => getRecommendations(deck, progress, dueToday, 3), [deck, progress, dueToday])
+  if (recs.length === 0) return null
+  return (
+    <div style={{ ...card, border: "1px solid rgba(139,92,246,0.25)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <div
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "radial-gradient(circle at 32% 28%,#fff,#C084FC 40%,#7C3AED 92%)",
+            boxShadow: "0 3px 12px rgba(124,58,237,0.35)",
+            flexShrink: 0,
+          }}
+        />
+        <h2 style={sectionTitle}>Lara recommends</h2>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {recs.map((r, i) => (
+          <motion.div
+            key={r.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.06 }}
+            style={{ display: "flex", gap: 12, alignItems: "flex-start" }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "var(--sch-card-2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 17,
+                flexShrink: 0,
+              }}
+            >
+              {r.icon}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{r.title}</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2, lineHeight: 1.5 }}>{r.body}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function WordsPerDayChart({ deck }: { deck: VocabDeck }) {
+  const data = useMemo(() => wordsPerDay(deck, 14), [deck])
+  const max = Math.max(1, ...data.map((d) => d.count))
+  const total = data.reduce((s, d) => s + d.count, 0)
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <h2 style={sectionTitle}>Words learned</h2>
+        <span style={{ fontSize: 13, color: MUTED }}>{total} in 14 days</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 120, marginTop: 18 }}>
+        {data.map((d) => (
+          <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${(d.count / max) * 100}%` }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                title={`${d.count} on ${d.date}`}
+                style={{
+                  width: "100%",
+                  minHeight: d.count > 0 ? 4 : 0,
+                  borderRadius: 6,
+                  background: d.count > 0 ? IRIDESCENT : "transparent",
+                }}
+              />
+            </div>
+            <span style={{ fontSize: 9.5, color: DIM, fontWeight: 600 }}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RecallCard({ deck }: { deck: VocabDeck }) {
+  const acc = useMemo(() => recallAccuracy(deck), [deck])
+  return (
+    <div style={card}>
+      <h2 style={sectionTitle}>Recall accuracy</h2>
+      {acc.totalRecalls > 0 ? (
+        <>
+          <div style={{ fontSize: 44, fontWeight: 900, ...iriText, marginTop: 10, lineHeight: 1 }}>{acc.pct}%</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 6 }}>
+            {acc.reps} remembered · {acc.lapses} forgotten across {acc.totalRecalls} reviews
+          </div>
+          <div style={{ height: 8, borderRadius: 4, background: "var(--sch-hairline)", overflow: "hidden", marginTop: 14 }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${acc.pct}%` }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              style={{ height: "100%", background: IRIDESCENT }}
+            />
+          </div>
+        </>
+      ) : (
+        <p style={{ fontSize: 13.5, color: DIM, marginTop: 10 }}>Review some words to see your recall rate.</p>
+      )}
+    </div>
+  )
+}
+
+function RetentionCard({ deck }: { deck: VocabDeck }) {
+  const buckets = useMemo(() => intervalBuckets(deck), [deck])
+  const max = Math.max(1, ...buckets.map((b) => b.count))
+  return (
+    <div style={card}>
+      <h2 style={sectionTitle}>Memory strength</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+        {buckets.map((b) => (
+          <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 78, fontSize: 12, color: MUTED, fontWeight: 600, flexShrink: 0 }}>{b.label}</span>
+            <div style={{ flex: 1, height: 10, borderRadius: 999, background: "var(--sch-hairline)", overflow: "hidden" }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(b.count / max) * 100}%` }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                style={{ height: "100%", background: b.color, minWidth: b.count > 0 ? 6 : 0 }}
+              />
+            </div>
+            <span style={{ width: 28, textAlign: "right", fontSize: 12.5, fontWeight: 700, color: TEXT }}>{b.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HardestWords({ deck }: { deck: VocabDeck }) {
+  const hard = useMemo(() => hardestWords(deck, 6), [deck])
+  if (hard.length === 0) return null
+  return (
+    <div style={card}>
+      <h2 style={sectionTitle}>Words to watch</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+        {hard.map((w) => (
+          <div
+            key={w.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "10px 14px",
+              borderRadius: 12,
+              background: "var(--sch-card-2)",
+            }}
+          >
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: TEXT, flex: 1, minWidth: 0 }}>{w.term}</span>
+            <span style={{ fontSize: 13, color: MUTED }}>{w.translation}</span>
+            {w.lapses > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#FF6B5E", background: "rgba(255,107,94,0.12)", padding: "3px 9px", borderRadius: 999, flexShrink: 0 }}>
+                forgotten ×{w.lapses}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
