@@ -15,6 +15,7 @@ import VocabMatchGame from "@/components/VocabMatchGame"
 import VocabTypeGame from "@/components/VocabTypeGame"
 import VocabSpeakGame from "@/components/VocabSpeakGame"
 import BringYourOwnContent from "@/components/BringYourOwnContent"
+import VocabOnboarding from "@/components/VocabOnboarding"
 import { coachOnHome, getWeeklyReport } from "@/lib/lara-vocab"
 import {
   createDeck,
@@ -35,7 +36,7 @@ import {
   type NewWordInput,
   type VocabWord,
 } from "@/lib/vocab"
-import { TARGET_LANGUAGES, languageLabel, languageFlag } from "@/lib/vocab-content"
+import { languageLabel, languageFlag } from "@/lib/vocab-content"
 import { generateVocab } from "@/lib/vocab-api"
 import { FLUENCY_WORDS, wordsLearned, fluencyPercent, dayNumber } from "@/lib/fluency"
 
@@ -52,24 +53,12 @@ const TEXT = "var(--sch-text)"
 const MUTED = "var(--sch-tx-2)"
 const DIM = "var(--sch-tx-3)"
 
-const GOALS = [
-  { id: "career", label: "Career / Work", icon: "💼" },
-  { id: "travel", label: "Travel", icon: "✈️" },
-  { id: "conversation", label: "Conversation", icon: "💬" },
-  { id: "exam", label: "Exam prep", icon: "🎓" },
-]
 const DAILY_OPTIONS = [5, 10, 15]
-const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"]
-const DEADLINE_OPTIONS = [
-  { label: "No deadline", days: 0 },
-  { label: "1 month", days: 30 },
-  { label: "3 months", days: 90 },
-  { label: "6 months", days: 180 },
-]
 
 export default function Learn() {
   const { toast } = useToast()
   const { user } = useAuth()
+  const { lang } = useLanguage()
   const firstName = (user?.user_metadata?.first_name as string) || ""
   const [deck, setDeck] = useState<VocabDeck | null>(() => readDeck())
   const [inSession, setInSession] = useState(false)
@@ -276,8 +265,9 @@ export default function Learn() {
             }}
           />
         ) : (
-          <Setup
-            onStart={(d) => {
+          <VocabOnboarding
+            appLang={lang}
+            onComplete={(d) => {
               writeDeck(d)
               setDeck(d)
               setInSession(true) // straight into the first session — the payoff
@@ -991,369 +981,6 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-/* ── Setup — one tap to your first word ──────────────────────── */
-
-function Setup({ onStart }: { onStart: (deck: VocabDeck) => void }) {
-  const { toast } = useToast()
-  const { t, lang } = useLanguage()
-  const [building, setBuilding] = useState<string | null>(null) // label being built
-  const [byoTarget, setByoTarget] = useState<{ code: string; label: string; native: string } | null>(null)
-  const [byoMode, setByoMode] = useState(false)
-  const [customTarget, setCustomTarget] = useState("")
-
-  // Optional fine-tune (smart defaults so the common path is a single tap).
-  const [showTune, setShowTune] = useState(false)
-  const [goal, setGoal] = useState<string>("career")
-  const [daily, setDaily] = useState<number>(10)
-  const [level, setLevel] = useState<string>("A2")
-  const [deadlineDays, setDeadlineDays] = useState<number>(0)
-
-  /** Native language for explanations — auto from the app locale. */
-  const nativeFor = useCallback(
-    (target: string): string => {
-      let n = lang === "ru" ? "ru" : "en"
-      if (target === n) n = n === "en" ? "ru" : "en"
-      return n
-    },
-    [lang],
-  )
-
-  const buildAndStart = useCallback(
-    async (code: string, label: string) => {
-      const native = nativeFor(code)
-      const goalLabel = showTune ? GOALS.find((g) => g.id === goal)?.label : undefined
-      const deadline = deadlineDays > 0 ? addDays(new Date(), deadlineDays).toISOString() : null
-      setBuilding(label)
-      try {
-        const words = await generateVocab({
-          target: code,
-          targetLabel: label,
-          native,
-          nativeLabel: languageLabel(native),
-          goal: goalLabel,
-          level,
-          count: 24,
-        })
-        const deck = createDeck({
-          targetLanguage: code,
-          targetLanguageLabel: label,
-          nativeLanguage: native,
-          goal: goalLabel,
-          deadline,
-          level,
-          dailyNewWords: daily,
-          words,
-        })
-        onStart(deck)
-      } catch {
-        toast.error("Couldn't build your plan. Try again.")
-        setBuilding(null)
-      }
-    },
-    [nativeFor, showTune, goal, deadlineDays, level, daily, onStart, toast],
-  )
-
-  /** Tapping a language: either build instantly, or open BYO for that language. */
-  const pickLanguage = useCallback(
-    (code: string, label: string) => {
-      if (byoMode) {
-        setByoTarget({ code, label, native: nativeFor(code) })
-      } else {
-        void buildAndStart(code, label)
-      }
-    },
-    [byoMode, nativeFor, buildAndStart],
-  )
-
-  const customCode = customTarget.trim().toLowerCase().slice(0, 24)
-  const customLabel = customTarget.trim().slice(0, 24)
-
-  /* ── Building state — the anticipation moment ── */
-  if (building) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        style={{ textAlign: "center", paddingTop: 80 }}
-      >
-        <motion.div
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-          style={{ display: "inline-block" }}
-        >
-          <LaraAvatar size={72} />
-        </motion.div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: TEXT, marginTop: 24, letterSpacing: "-0.4px" }}>
-          Building your {building} plan…
-        </h2>
-        <p style={{ fontSize: 14, color: MUTED, marginTop: 8 }}>
-          Picking the words that matter most for you.
-        </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 28 }}>
-          {[0, 1, 2].map((i) => (
-            <motion.span
-              key={i}
-              animate={{ opacity: [0.25, 1, 0.25], y: [0, -5, 0] }}
-              transition={{ duration: 1, repeat: Infinity, delay: i * 0.18 }}
-              style={{ width: 9, height: 9, borderRadius: 999, background: "#A78BFA" }}
-            />
-          ))}
-        </div>
-      </motion.div>
-    )
-  }
-
-  /* ── BYO from text (chosen language) ── */
-  if (byoTarget) {
-    const deadline = deadlineDays > 0 ? addDays(new Date(), deadlineDays).toISOString() : null
-    return (
-      <BringYourOwnContent
-        targetLanguage={byoTarget.code}
-        targetLabel={byoTarget.label}
-        nativeLanguage={byoTarget.native}
-        defaultLevel={level}
-        onAdded={(words) => {
-          const goalLabel = showTune ? GOALS.find((g) => g.id === goal)?.label : undefined
-          const deck = createDeck({
-            targetLanguage: byoTarget.code,
-            targetLanguageLabel: byoTarget.label,
-            nativeLanguage: byoTarget.native,
-            goal: goalLabel,
-            deadline,
-            level,
-            dailyNewWords: daily,
-            words,
-          })
-          onStart(deck)
-        }}
-        onClose={() => setByoTarget(null)}
-      />
-    )
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-    >
-      <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <LaraAvatar size={60} />
-        </motion.div>
-      </div>
-      <h1
-        style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: TEXT,
-          textAlign: "center",
-          marginTop: 18,
-          letterSpacing: "-0.6px",
-          lineHeight: 1.2,
-        }}
-      >
-        {t("Learn the words you'll actually use")}
-      </h1>
-      <p style={{ fontSize: 14.5, color: MUTED, textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>
-        {byoMode
-          ? t("Pick the language of your text — then paste it in.")
-          : t("Pick a language and I'll have you learning in seconds.")}
-      </p>
-
-      {/* Language tiles — the single primary action (2-up, per design) */}
-      <div
-        style={{
-          marginTop: 26,
-          display: "grid",
-          gridTemplateColumns: "repeat(2,1fr)",
-          gap: 12,
-        }}
-      >
-        {TARGET_LANGUAGES.map((l, i) => (
-          <motion.button
-            key={l.code}
-            type="button"
-            onClick={() => pickLanguage(l.code, l.label)}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.03 * i, duration: 0.35 }}
-            whileHover={{ scale: 1.03, y: -3 }}
-            whileTap={{ scale: 0.97 }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "18px 16px",
-              borderRadius: 18,
-              cursor: "pointer",
-              background: "var(--sch-card)",
-              border: "1px solid var(--sch-border)",
-              textAlign: "left",
-            }}
-          >
-            <span style={{ fontSize: 30 }}>{l.flag}</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{l.label}</span>
-          </motion.button>
-        ))}
-      </div>
-
-      {/* Custom language */}
-      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        <input
-          value={customTarget}
-          onChange={(e) => setCustomTarget(e.target.value)}
-          placeholder={t("Or type another language…")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && customCode) pickLanguage(customCode, customLabel)
-          }}
-          style={{ ...langInput, marginTop: 0, flex: 1 }}
-        />
-        {customCode && (
-          <motion.button
-            type="button"
-            onClick={() => pickLanguage(customCode, customLabel)}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            style={{ ...primaryBtnSmall, height: 44, padding: "0 18px" }}
-          >
-            {byoMode ? t("Use this") : t("Start")} →
-          </motion.button>
-        )}
-      </div>
-
-      {/* The wedge toggle — learn from your own text */}
-      <button
-        type="button"
-        onClick={() => setByoMode((v) => !v)}
-        style={{
-          width: "100%",
-          marginTop: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          textAlign: "left",
-          padding: 16,
-          borderRadius: 16,
-          cursor: "pointer",
-          background: byoMode ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.05)",
-          border: `1px solid ${byoMode ? "rgba(139,92,246,0.55)" : "rgba(139,92,246,0.3)"}`,
-        }}
-      >
-        <span style={{ fontSize: 22 }}>📄</span>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: TEXT }}>
-            {t("Learn from your own text")}
-          </span>
-          <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 2 }}>
-            {byoMode ? t("On — now pick the language above.") : t("A job post, an email, lyrics — your words.")}
-          </span>
-        </span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: byoMode ? "#C084FC" : MUTED }}>
-          {byoMode ? "✓" : t("Switch")}
-        </span>
-      </button>
-
-      {/* Fine-tune — optional, collapsed by default */}
-      <button
-        type="button"
-        onClick={() => setShowTune((v) => !v)}
-        style={{
-          marginTop: 18,
-          background: "transparent",
-          border: "none",
-          color: DIM,
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          marginInline: "auto",
-        }}
-      >
-        ⚙ {t("Fine-tune level & goal")} {showTune ? "▲" : "▼"}
-      </button>
-
-      <AnimatePresence initial={false}>
-        {showTune && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ overflow: "hidden" }}
-          >
-            <SectionLabel>{t("My level")}</SectionLabel>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {LEVELS.map((lv) => (
-                <Choice key={lv} active={level === lv} onClick={() => setLevel(lv)} compact>
-                  {lv}
-                </Choice>
-              ))}
-            </div>
-
-            <SectionLabel>{t("My focus")}</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>
-              {GOALS.map((g) => (
-                <Choice key={g.id} active={goal === g.id} onClick={() => setGoal(g.id)}>
-                  <span style={{ fontSize: 18 }}>{g.icon}</span> {g.label}
-                </Choice>
-              ))}
-            </div>
-
-            <SectionLabel>{t("New words per day")}</SectionLabel>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              {DAILY_OPTIONS.map((n) => (
-                <Choice key={n} active={daily === n} onClick={() => setDaily(n)} compact>
-                  {n}
-                </Choice>
-              ))}
-              <input
-                type="number"
-                min={1}
-                max={50}
-                value={daily}
-                onChange={(e) => setDaily(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
-                aria-label="Custom words per day"
-                style={{ ...langInput, width: 90, marginTop: 0, textAlign: "center" }}
-              />
-            </div>
-
-            <SectionLabel>{t("My deadline")}</SectionLabel>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {DEADLINE_OPTIONS.map((d) => (
-                <Choice key={d.days} active={deadlineDays === d.days} onClick={() => setDeadlineDays(d.days)} compact>
-                  {d.label}
-                </Choice>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        fontSize: 12,
-        fontWeight: 700,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-        color: DIM,
-        margin: "26px 0 12px",
-      }}
-    >
-      {children}
-    </div>
-  )
-}
 
 function Choice({
   active,

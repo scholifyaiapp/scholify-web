@@ -46,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "analyze-photo") return handlePhoto(body, res)
   if (action === "generate-tree") return handleTree(body, res)
   if (action === "vocab") return handleVocab(body, res)
+  if (action === "placement") return handlePlacement(body, res)
   if (action === "extract") return handleExtract(body, res)
   if (action === "fetch-url") return handleFetchUrl(body, res)
   res.status(400).json({
@@ -239,6 +240,46 @@ Return ONLY a JSON array in exactly this shape:
   } catch (err) {
     console.error("lara vocab:", err)
     res.status(200).json({ words: [], isFallback: true })
+  }
+}
+
+/* ── Placement test (Haiku) ──────────────────────────────────────────── */
+
+const PLACEMENT_SYSTEM = `You are Lara, a language-placement examiner. Output STRICTLY valid JSON only — a single array, no markdown, no commentary. Produce a CEFR-graded recognition test: words a learner either knows or doesn't, spanning the full range. Translations and distractors must be accurate and plausible.`
+
+async function handlePlacement(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const target = String(body.target || "").trim()
+  const targetLabel = String(body.targetLabel || target || "the target language").trim()
+  const nativeLabel = String(body.nativeLabel || "English").trim()
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  // No key (or missing target) → client falls back to manual level selection.
+  if (!apiKey || !target) {
+    res.status(200).json({ items: [], isFallback: true })
+    return
+  }
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: HAIKU,
+      max_tokens: 1500,
+      system: [{ type: "text", text: PLACEMENT_SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: `Build a 12-item ${targetLabel} placement test for a ${nativeLabel} speaker — exactly 2 words at each CEFR level (A1, A2, B1, B2, C1, C2), ordered easiest first. For each word give its ${nativeLabel} meaning plus 3 plausible but wrong ${nativeLabel} meanings (distractors).
+
+Return ONLY a JSON array in exactly this shape:
+[{"term":"<word in ${targetLabel}>","translation":"<correct meaning in ${nativeLabel}>","level":"<A1|A2|B1|B2|C1|C2>","distractors":["<wrong1>","<wrong2>","<wrong3>"]}]`,
+        },
+      ],
+    })
+    const text = completion.content[0]?.type === "text" ? completion.content[0].text : "[]"
+    res.status(200).json({ items: parseVocabJson(text) })
+  } catch (err) {
+    console.error("lara placement:", err)
+    res.status(200).json({ items: [], isFallback: true })
   }
 }
 
