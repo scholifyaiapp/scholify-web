@@ -14,6 +14,8 @@ import VocabSession from "@/components/VocabSession"
 import VocabMatchGame from "@/components/VocabMatchGame"
 import VocabTypeGame from "@/components/VocabTypeGame"
 import VocabSpeakGame from "@/components/VocabSpeakGame"
+import VocabReels from "@/components/VocabReels"
+import VocabGuessGame from "@/components/VocabGuessGame"
 import BringYourOwnContent from "@/components/BringYourOwnContent"
 import VocabOnboarding from "@/components/VocabOnboarding"
 import { coachOnHome, getWeeklyReport } from "@/lib/lara-vocab"
@@ -65,6 +67,8 @@ export default function Learn() {
   const [inGame, setInGame] = useState(false)
   const [inTypeGame, setInTypeGame] = useState(false)
   const [inSpeakGame, setInSpeakGame] = useState(false)
+  const [inReels, setInReels] = useState(false)
+  const [inGuess, setInGuess] = useState(false)
   const [inByo, setInByo] = useState(false)
   const [drillWords, setDrillWords] = useState<VocabWord[] | null>(null)
   const [tick, setTick] = useState(0) // refresh stats after a session
@@ -191,6 +195,30 @@ export default function Learn() {
     )
   }
 
+  if (inReels && deck) {
+    return (
+      <VocabReels
+        deck={deck}
+        onClose={() => {
+          setInReels(false)
+          refresh()
+        }}
+      />
+    )
+  }
+
+  if (inGuess && deck) {
+    return (
+      <VocabGuessGame
+        deck={deck}
+        onClose={() => {
+          setInGuess(false)
+          refresh()
+        }}
+      />
+    )
+  }
+
   if (inByo && deck) {
     return (
       <BringYourOwnContent
@@ -231,6 +259,8 @@ export default function Learn() {
             onPlayGame={() => setInGame(true)}
             onPlayType={() => (isPro ? setInTypeGame(true) : triggerFeaturePaywall())}
             onPlaySpeak={() => (isPro ? setInSpeakGame(true) : triggerFeaturePaywall())}
+            onPlayReels={() => setInReels(true)}
+            onPlayGuess={() => setInGuess(true)}
             onExtract={() => setInByo(true)}
             onDrill={(words) => {
               markWeeklyReportSeen()
@@ -293,6 +323,8 @@ function DeckHome({
   onPlayGame,
   onPlayType,
   onPlaySpeak,
+  onPlayReels,
+  onPlayGuess,
   onExtract,
   onDrill,
   onAddWords,
@@ -307,6 +339,8 @@ function DeckHome({
   onPlayGame: () => void
   onPlayType: () => void
   onPlaySpeak: () => void
+  onPlayReels: () => void
+  onPlayGuess: () => void
   onExtract: () => void
   onDrill: (words: VocabWord[]) => void
   onAddWords: () => Promise<void>
@@ -591,6 +625,53 @@ function DeckHome({
         )}
       </motion.div>
 
+      {/* Swipe to learn — reels-style browsing of your words */}
+      {deck.words.length >= 1 && (
+        <motion.button
+          type="button"
+          onClick={onPlayReels}
+          whileHover={{ scale: 1.01, y: -2 }}
+          whileTap={{ scale: 0.99 }}
+          style={{
+            width: "100%",
+            marginTop: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            textAlign: "left",
+            padding: 18,
+            borderRadius: 18,
+            cursor: "pointer",
+            background: "var(--sch-card)",
+            border: "1px solid var(--sch-border)",
+            boxShadow: "0 1px 2px rgba(59,47,68,0.04)",
+          }}
+        >
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 13,
+              background: "linear-gradient(135deg,#EDE4FB,#E4F2FB)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+              flexShrink: 0,
+            }}
+          >
+            ▶️
+          </div>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: TEXT }}>Swipe to learn</span>
+            <span style={{ display: "block", fontSize: 12.5, color: MUTED, marginTop: 2 }}>
+              Flick through your words like reels — meaning, example, audio.
+            </span>
+          </span>
+          <span style={{ fontSize: 18, color: "#7C3AED" }}>→</span>
+        </motion.button>
+      )}
+
       {/* The wedge — learn from your own text. Scholify's real differentiator. */}
       <motion.button
         type="button"
@@ -693,6 +774,7 @@ function DeckHome({
             }}
           >
             <GameCard icon="⚡" title="Match" subtitle="Pair words & meanings" onClick={onPlayGame} />
+            <GameCard icon="🧠" title="Guess" subtitle="Beat the clock" onClick={onPlayGuess} />
             <GameCard icon="🎧" title="Listen & Type" subtitle="Hear it, spell it" pro={!isPro} onClick={onPlayType} />
             <GameCard icon="🎙️" title="Speak" subtitle="Say it out loud" pro={!isPro} onClick={onPlaySpeak} />
           </div>
