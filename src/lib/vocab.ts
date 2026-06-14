@@ -376,6 +376,10 @@ export interface VocabProgress {
   wordsReviewed: number
   /** Lifetime XP earned across sessions + games. */
   totalXp: number
+  /** XP earned in the current ISO week (for the weekly leaderboard). */
+  weeklyXp?: number
+  /** yyyy-MM-dd (Monday) the weeklyXp counter belongs to. */
+  weekStart?: string
   /** yyyy-MM-dd of each day a session was completed (last ~120, for the heatmap). */
   history: string[]
 }
@@ -387,7 +391,28 @@ const EMPTY_PROGRESS: VocabProgress = {
   sessionsCompleted: 0,
   wordsReviewed: 0,
   totalXp: 0,
+  weeklyXp: 0,
+  weekStart: "",
   history: [],
+}
+
+/** yyyy-MM-dd of the current week's Monday (local). */
+export function weekStartStr(): string {
+  const d = new Date()
+  const dow = (d.getDay() + 6) % 7 // Monday = 0
+  return format(addDays(d, -dow), "yyyy-MM-dd")
+}
+
+/** Roll the weekly XP counter forward, resetting it when a new week starts. */
+function rollWeekly(prev: VocabProgress, xp: number): { weeklyXp: number; weekStart: string } {
+  const ws = weekStartStr()
+  const base = prev.weekStart === ws ? prev.weeklyXp ?? 0 : 0
+  return { weeklyXp: base + Math.max(0, xp), weekStart: ws }
+}
+
+/** XP earned so far this week (0 once the week rolls over). */
+export function currentWeeklyXp(p: VocabProgress = readVocabProgress()): number {
+  return p.weekStart === weekStartStr() ? p.weeklyXp ?? 0 : 0
 }
 
 export function readVocabProgress(): VocabProgress {
@@ -422,6 +447,7 @@ export function recordSession(wordsReviewed: number, xp = 0): VocabProgress {
       history,
       wordsReviewed: prev.wordsReviewed + wordsReviewed,
       totalXp: prev.totalXp + xp,
+      ...rollWeekly(prev, xp),
     }
     persistProgress(same)
     return same
@@ -440,6 +466,7 @@ export function recordSession(wordsReviewed: number, xp = 0): VocabProgress {
     sessionsCompleted: prev.sessionsCompleted + 1,
     wordsReviewed: prev.wordsReviewed + wordsReviewed,
     totalXp: prev.totalXp + xp,
+    ...rollWeekly(prev, xp),
     history,
   }
   persistProgress(next)
@@ -449,7 +476,7 @@ export function recordSession(wordsReviewed: number, xp = 0): VocabProgress {
 /** Award XP outside a full session (e.g. a quick game). */
 export function awardXp(xp: number): void {
   const prev = readVocabProgress()
-  persistProgress({ ...prev, totalXp: prev.totalXp + Math.max(0, xp) })
+  persistProgress({ ...prev, totalXp: prev.totalXp + Math.max(0, xp), ...rollWeekly(prev, xp) })
 }
 
 function persistProgress(p: VocabProgress): void {

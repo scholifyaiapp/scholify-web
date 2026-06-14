@@ -1,9 +1,16 @@
-import { useMemo, type CSSProperties } from "react"
+import { useEffect, useMemo, useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import { motion } from "motion/react"
 import { format, subDays } from "date-fns"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import { useAuth } from "@/lib/auth"
+import {
+  fetchLeaderboard,
+  leaderboardName,
+  setLeaderboardName,
+  type LeaderboardResult,
+} from "@/lib/leaderboard"
 import { readDeck, getDeckStats, readVocabProgress, type VocabDeck } from "@/lib/vocab"
 import { languageFlag } from "@/lib/vocab-content"
 import {
@@ -177,6 +184,9 @@ export default function LearnProgress() {
         {/* Lara recommendations */}
         <Recommendations deck={deck} progress={progress} dueToday={stats.dueToday} />
 
+        {/* Weekly leaderboard */}
+        <Leaderboard />
+
         {/* Words learned per day */}
         <WordsPerDayChart deck={deck} />
 
@@ -345,6 +355,114 @@ function RetentionCard({ deck }: { deck: VocabDeck }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function Leaderboard() {
+  const { user } = useAuth()
+  const firstName = (user?.user_metadata?.first_name as string) || ""
+  const [result, setResult] = useState<LeaderboardResult | null>(null)
+  const [joined, setJoined] = useState(() => Boolean(leaderboardName()))
+  const [name, setName] = useState(firstName || "")
+  const [busy, setBusy] = useState(false)
+
+  const load = () => {
+    fetchLeaderboard().then(setResult)
+  }
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joined])
+
+  const join = async () => {
+    const n = (name.trim() || firstName || "Learner").slice(0, 24)
+    setBusy(true)
+    setLeaderboardName(n)
+    setJoined(true)
+    setBusy(false)
+  }
+
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <h2 style={sectionTitle}>🏆 This week's leaderboard</h2>
+        {result && !result.disabled && <span style={{ fontSize: 12.5, color: MUTED }}>resets Monday</span>}
+      </div>
+
+      {/* Not joined → opt-in */}
+      {!joined ? (
+        <div style={{ marginTop: 16 }}>
+          <p style={{ fontSize: 13.5, color: MUTED, lineHeight: 1.5, marginBottom: 12 }}>
+            Compete on weekly XP with other learners. Pick a display name — you can change or leave anytime.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Display name"
+              maxLength={24}
+              style={{
+                flex: 1,
+                minWidth: 160,
+                height: 46,
+                padding: "0 14px",
+                borderRadius: 12,
+                fontSize: 16,
+                color: "var(--sch-text)",
+                background: "var(--sch-card-2)",
+                border: "1px solid var(--sch-border)",
+                outline: "none",
+              }}
+            />
+            <button type="button" onClick={join} disabled={busy} style={{ ...linkBtn, border: "none", cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
+              Join →
+            </button>
+          </div>
+        </div>
+      ) : !result ? (
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ height: 44, borderRadius: 12, background: "var(--sch-card-2)" }} />
+          ))}
+        </div>
+      ) : result.disabled ? (
+        <p style={{ fontSize: 13.5, color: DIM, marginTop: 14, lineHeight: 1.5 }}>
+          The leaderboard is warming up — finish a session to put yourself on the board, then check back here.
+        </p>
+      ) : result.entries.length === 0 ? (
+        <p style={{ fontSize: 13.5, color: DIM, marginTop: 14 }}>Be the first — earn XP this week and claim the top spot.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 16 }}>
+          {result.entries.map((e) => {
+            const me = e.userId === result.meId
+            const medal = e.rank === 1 ? "🥇" : e.rank === 2 ? "🥈" : e.rank === 3 ? "🥉" : null
+            return (
+              <div
+                key={e.userId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  background: me ? "rgba(139,92,246,0.1)" : "var(--sch-card-2)",
+                  border: me ? "1px solid rgba(139,92,246,0.4)" : "1px solid transparent",
+                }}
+              >
+                <span style={{ width: 26, textAlign: "center", fontSize: medal ? 16 : 13, fontWeight: 800, color: MUTED, flexShrink: 0 }}>
+                  {medal || e.rank}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {e.name} {me && <span style={{ fontSize: 11, color: "#7C3AED", fontWeight: 700 }}>· you</span>}
+                </span>
+                {e.streak > 0 && <span style={{ fontSize: 12, color: DIM, fontWeight: 600, flexShrink: 0 }}>🔥 {e.streak}</span>}
+                <span style={{ fontSize: 14, fontWeight: 800, ...iriText, flexShrink: 0 }}>{e.weeklyXp} XP</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
