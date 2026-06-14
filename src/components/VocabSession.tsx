@@ -619,6 +619,8 @@ const shell: CSSProperties = {
   background: "var(--sch-bg)",
   display: "flex",
   flexDirection: "column",
+  fontFamily: "var(--sch-font)",
+  color: "var(--sch-text)",
 }
 const topBar: CSSProperties = {
   display: "flex",

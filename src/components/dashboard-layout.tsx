@@ -327,7 +327,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       : 0
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>
       <style>{LAYOUT_CSS}</style>
 
       {/* ── Sidebar (desktop) ── */}

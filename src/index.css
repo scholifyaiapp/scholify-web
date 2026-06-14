@@ -81,7 +81,34 @@
  *  html[data-theme="light"] flips every token. The landing page
  *  does not use these tokens.
  * ────────────────────────────────────────────────────────────── */
+/* Scholify design font (Plus Jakarta Sans) — theme-independent. */
 :root {
+  --sch-font: "Plus Jakarta Sans", "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+/*
+ * LIGHT is the default theme — the Scholify design: soft cream surfaces,
+ * lavender accents, warm-plum ink. Tokens match the design export 1:1.
+ */
+:root {
+  --sch-bg: #f4eff1;
+  --sch-bg-2: #ffffff;
+  --sch-bg-grad: linear-gradient(140deg, #efe7fb, #f4eff1 55%);
+  --sch-bg-blur: rgba(244, 239, 241, 0.85);
+  --sch-card: #ffffff;
+  --sch-card-2: #f4eff1;
+  --sch-hairline: rgba(59, 47, 68, 0.06);
+  --sch-border: rgba(59, 47, 68, 0.08);
+  --sch-border-2: rgba(59, 47, 68, 0.14);
+  --sch-text: #3b2f45;
+  --sch-tx-1: #5b4d68;
+  --sch-tx-2: #897e94;
+  --sch-tx-3: #9a8fa3;
+  --sch-tx-4: #b1a6b9;
+}
+
+/* Dark theme stays available via the Settings toggle. */
+html[data-theme="dark"] {
   --sch-bg: #050508;
   --sch-bg-2: #0a0a14;
   --sch-bg-grad: linear-gradient(135deg, #0d0015, #120820);
@@ -98,21 +125,22 @@
   --sch-tx-4: rgba(240, 238, 255, 0.17);
 }
 
+/* Keep light tokens when explicitly selected, too. */
 html[data-theme="light"] {
-  --sch-bg: #f3f3f7;
+  --sch-bg: #f4eff1;
   --sch-bg-2: #ffffff;
-  --sch-bg-grad: linear-gradient(135deg, #edebf7, #f5f3fb);
-  --sch-bg-blur: rgba(255, 255, 255, 0.88);
+  --sch-bg-grad: linear-gradient(140deg, #efe7fb, #f4eff1 55%);
+  --sch-bg-blur: rgba(244, 239, 241, 0.85);
   --sch-card: #ffffff;
-  --sch-card-2: #ffffff;
-  --sch-hairline: rgba(20, 19, 38, 0.07);
-  --sch-border: rgba(20, 19, 38, 0.1);
-  --sch-border-2: rgba(20, 19, 38, 0.16);
-  --sch-text: #1a1925;
-  --sch-tx-1: rgba(26, 25, 37, 0.82);
-  --sch-tx-2: rgba(26, 25, 37, 0.62);
-  --sch-tx-3: rgba(26, 25, 37, 0.46);
-  --sch-tx-4: rgba(26, 25, 37, 0.34);
+  --sch-card-2: #f4eff1;
+  --sch-hairline: rgba(59, 47, 68, 0.06);
+  --sch-border: rgba(59, 47, 68, 0.08);
+  --sch-border-2: rgba(59, 47, 68, 0.14);
+  --sch-text: #3b2f45;
+  --sch-tx-1: #5b4d68;
+  --sch-tx-2: #897e94;
+  --sch-tx-3: #9a8fa3;
+  --sch-tx-4: #b1a6b9;
 }
 
 @theme {

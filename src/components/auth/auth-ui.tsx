@@ -7,8 +7,8 @@ import { motion, type Variants } from "motion/react"
  *  Dark, glassy, iridescent — matches the Scholify auth design.
  * ────────────────────────────────────────────────────────────── */
 
-/** Iridescent gradient reused for the ✦ mark, checkbox tick, accents. */
-export const IRIDESCENT = "linear-gradient(135deg,#A78BFA 0%,#818CF8 35%,#F0ABFC 70%,#FBBF24 100%)"
+/** Brand gradient (Scholify design): violet → indigo → sky. Reused for CTAs, the ✦ mark, accents. */
+export const IRIDESCENT = "linear-gradient(135deg,#8B5CF6 0%,#818CF8 48%,#38BDF8 100%)"
 
 /** Scoped CSS — placeholder colour, spinner, autofill, scrollbar. */
 const AUTH_CSS = `

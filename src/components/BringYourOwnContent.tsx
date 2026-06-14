@@ -433,7 +433,7 @@ export default function BringYourOwnContent({
 
 /* ── styles ── */
 
-const shell: CSSProperties = { position: "fixed", inset: 0, zIndex: 220, background: "var(--sch-bg)", display: "flex", flexDirection: "column" }
+const shell: CSSProperties = { position: "fixed", inset: 0, zIndex: 220, background: "var(--sch-bg)", display: "flex", flexDirection: "column", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }
 const header: CSSProperties = { display: "flex", justifyContent: "flex-start", padding: "max(16px, env(safe-area-inset-top)) 20px 0" }
 const body: CSSProperties = { flex: 1, overflowY: "auto", padding: "12px 20px 60px", width: "100%", maxWidth: 560, margin: "0 auto" }
 const iconBtn: CSSProperties = { width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: MUTED, fontSize: 14, cursor: "pointer" }

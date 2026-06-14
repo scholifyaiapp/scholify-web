@@ -23,9 +23,10 @@ const STORAGE_KEY = "scholify-theme"
 
 function readTheme(): Theme {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark"
+    // Light is the default (the Scholify design); dark only when explicitly chosen.
+    return window.localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light"
   } catch {
-    return "dark"
+    return "light"
   }
 }
 
