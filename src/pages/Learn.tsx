@@ -29,6 +29,7 @@ import {
   isWeeklyReportDue,
   markWeeklyReportSeen,
   remainingNewQuota,
+  introducedToday,
   setDailyGoal,
   type VocabDeck,
   type NewWordInput,
@@ -226,7 +227,7 @@ export default function Learn() {
 
   return (
     <DashboardLayout>
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
+      <div style={{ maxWidth: deck ? 1080 : 600, margin: "0 auto" }}>
         {deck ? (
           <DeckHome
             deck={deck}
@@ -348,7 +349,10 @@ function DeckHome({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      style={{ display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap" }}
     >
+      {/* Main column */}
+      <div style={{ flex: "999 1 440px", minWidth: 0 }}>
       {/* Header — language + streak, nothing else competing */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span style={{ fontSize: 40 }}>{languageFlag(deck.targetLanguage)}</span>
@@ -732,7 +736,212 @@ function DeckHome({
           {confirmReset ? "Delete deck & progress? Tap to confirm" : "Change language"}
         </button>
       </div>
+      </div>
+
+      {/* Right rail — progress rings + this week */}
+      <RightRail deck={deck} streak={progress.streak} fluencyPct={fluencyPct} learned={learned} />
     </motion.div>
+  )
+}
+
+/* ── Right rail (rings + this week) ──────────────────────────── */
+
+function Ring({ pct, from, to, label, sub }: { pct: number; from: string; to: string; label: string; sub: string }) {
+  const id = `ring-${label.replace(/\s/g, "")}`
+  const r = 27
+  const circ = 2 * Math.PI * r
+  const offset = circ * (1 - Math.max(0, Math.min(100, pct)) / 100)
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ position: "relative", width: 68, height: 68, flexShrink: 0 }}>
+        <svg width={68} height={68} viewBox="0 0 68 68">
+          <defs>
+            <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor={from} />
+              <stop offset="1" stopColor={to} />
+            </linearGradient>
+          </defs>
+          <circle cx="34" cy="34" r={r} fill="none" stroke="var(--sch-hairline)" strokeWidth="7" />
+          <motion.circle
+            cx="34"
+            cy="34"
+            r={r}
+            fill="none"
+            stroke={`url(#${id})`}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            initial={{ strokeDashoffset: circ }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            transform="rotate(-90 34 34)"
+          />
+        </svg>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 15,
+            fontWeight: 800,
+            color: TEXT,
+          }}
+        >
+          {Math.round(pct)}%
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{label}</div>
+        <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, marginTop: 2 }}>{sub}</div>
+      </div>
+    </div>
+  )
+}
+
+function RightRail({
+  deck,
+  streak,
+  fluencyPct,
+  learned,
+}: {
+  deck: VocabDeck
+  streak: number
+  fluencyPct: number
+  learned: number
+}) {
+  const introduced = introducedToday(deck)
+  const goalPct = deck.dailyNewWords > 0 ? Math.min(100, Math.round((introduced / deck.dailyNewWords) * 100)) : 0
+
+  // Recall accuracy ≈ successful reps over all graded recalls (reps + lapses).
+  let reps = 0
+  let lapses = 0
+  for (const w of deck.words) {
+    reps += w.reps
+    lapses += w.lapses
+  }
+  const recallPct = reps + lapses > 0 ? Math.round((reps / (reps + lapses)) * 100) : 0
+
+  const newQueued = deck.words.filter((w) => w.status === "new").length
+  const nextMilestone = [7, 14, 21, 30, 60, 100, 180, 365].find((m) => m > streak) ?? streak + 30
+  const toGo = nextMilestone - streak
+
+  const divider = <div style={{ height: 1, background: "var(--sch-hairline)" }} />
+
+  return (
+    <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div
+        style={{
+          background: "var(--sch-card)",
+          border: "1px solid var(--sch-border)",
+          borderRadius: 20,
+          padding: "18px 20px",
+          boxShadow: "0 1px 2px rgba(59,47,68,0.04)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <Ring
+          pct={goalPct}
+          from="#F472B6"
+          to="#8B5CF6"
+          label="Daily goal"
+          sub={`${introduced} of ${deck.dailyNewWords} words today`}
+        />
+        {divider}
+        <Ring
+          pct={recallPct}
+          from="#8B5CF6"
+          to="#38BDF8"
+          label="Recall accuracy"
+          sub={reps + lapses > 0 ? "all reviews so far" : "no reviews yet"}
+        />
+        {divider}
+        <Ring
+          pct={fluencyPct}
+          from="#FBBF24"
+          to="#FB923C"
+          label="Fluency"
+          sub={`${learned.toLocaleString()} / ${FLUENCY_WORDS.toLocaleString()} words`}
+        />
+        <Link
+          to="/learn/progress"
+          style={{
+            marginTop: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 7,
+            width: "100%",
+            background: "var(--sch-card-2)",
+            border: "1px solid var(--sch-border)",
+            borderRadius: 12,
+            padding: 11,
+            fontSize: 13.5,
+            fontWeight: 700,
+            color: "var(--sch-tx-1)",
+            textDecoration: "none",
+          }}
+        >
+          See full progress <span style={{ color: "#7C3AED" }}>→</span>
+        </Link>
+      </div>
+
+      <div
+        style={{
+          background: "var(--sch-card)",
+          border: "1px solid var(--sch-border)",
+          borderRadius: 20,
+          padding: "18px 20px",
+          boxShadow: "0 1px 2px rgba(59,47,68,0.04)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: DIM,
+            marginBottom: 12,
+          }}
+        >
+          This week
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <RailItem icon="🎯" tint="rgba(139,92,246,0.1)" title={`Hit a ${nextMilestone}-day streak`} sub={`${toGo} day${toGo === 1 ? "" : "s"} to go`} />
+          <RailItem icon="📚" tint="rgba(56,189,248,0.12)" title="Words queued" sub={`${newQueued} ready to learn`} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RailItem({ icon, tint, title, sub }: { icon: string; tint: string; title: string; sub: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: tint,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 16,
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT }}>{title}</div>
+        <div style={{ fontSize: 11.5, color: MUTED, fontWeight: 600 }}>{sub}</div>
+      </div>
+    </div>
   )
 }
 
@@ -955,12 +1164,12 @@ function Setup({ onStart }: { onStart: (deck: VocabDeck) => void }) {
           : t("Pick a language and I'll have you learning in seconds.")}
       </p>
 
-      {/* Language tiles — the single primary action */}
+      {/* Language tiles — the single primary action (2-up, per design) */}
       <div
         style={{
           marginTop: 26,
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
+          gridTemplateColumns: "repeat(2,1fr)",
           gap: 12,
         }}
       >

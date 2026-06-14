@@ -525,14 +525,14 @@ function WordFace({
   showAll: boolean
 }) {
   return (
-    <div style={card}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+    <div style={{ ...card, textAlign: "left" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span
           style={{
-            fontSize: "clamp(22px, 7vw, 34px)",
-            fontWeight: 900,
+            fontSize: "clamp(26px, 7vw, 38px)",
+            fontWeight: 800,
             color: TEXT,
-            letterSpacing: "-0.5px",
+            letterSpacing: "-1px",
             overflowWrap: "break-word",
             minWidth: 0,
           }}
@@ -544,14 +544,24 @@ function WordFace({
             type="button"
             aria-label="Pronounce"
             onClick={() => onSpeak(word.term)}
-            style={speakBtn}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              border: "none",
+              background: "rgba(139,92,246,0.12)",
+              color: "#7C3AED",
+              fontSize: 18,
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
           >
             🔊
           </button>
         )}
       </div>
       {word.partOfSpeech && (
-        <div style={{ fontSize: 12, color: DIM, marginTop: 4, fontStyle: "italic" }}>
+        <div style={{ fontSize: 14, color: DIM, marginTop: 6, fontStyle: "italic" }}>
           {word.partOfSpeech}
         </div>
       )}
@@ -563,15 +573,44 @@ function WordFace({
             animate={{ opacity: 1, height: "auto" }}
             style={{ overflow: "hidden" }}
           >
-            <div style={{ height: 1, background: "var(--sch-hairline)", margin: "18px 0" }} />
-            <div style={{ fontSize: 20, fontWeight: 700, color: TEXT }}>{word.translation}</div>
+            {/* Meaning */}
+            <div
+              style={{
+                background: "var(--sch-card-2)",
+                borderRadius: 14,
+                padding: 16,
+                marginTop: 18,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: DIM,
+                  marginBottom: 5,
+                }}
+              >
+                Meaning
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>{word.translation}</div>
+            </div>
+            {/* Example */}
             {word.example && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 15, color: "var(--sch-tx-1)", fontStyle: "italic", lineHeight: 1.5 }}>
+              <div
+                style={{
+                  border: "1px solid var(--sch-border)",
+                  borderRadius: 14,
+                  padding: 16,
+                  marginTop: 14,
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--sch-tx-1)", lineHeight: 1.5 }}>
                   “{word.example}”
                 </div>
                 {word.exampleTranslation && (
-                  <div style={{ fontSize: 13, color: DIM, marginTop: 4 }}>
+                  <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6 }}>
                     {word.exampleTranslation}
                   </div>
                 )}
