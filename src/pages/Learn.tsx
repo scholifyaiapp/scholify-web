@@ -42,6 +42,7 @@ import {
 import { languageLabel, languageFlag } from "@/lib/vocab-content"
 import { generateVocab } from "@/lib/vocab-api"
 import { FLUENCY_WORDS, wordsLearned, fluencyPercent, dayNumber } from "@/lib/fluency"
+import { maybeSyncReminder } from "@/lib/reminders"
 
 /* ──────────────────────────────────────────────────────────────
  *  /learn — the home of Scholify (AI vocabulary coach).
@@ -79,6 +80,8 @@ export default function Learn() {
   const refresh = useCallback(() => {
     setDeck(readDeck())
     setTick((t) => t + 1)
+    // Keep the reminder service's "last studied" date fresh (no-op if opted out).
+    maybeSyncReminder()
   }, [])
 
   /*

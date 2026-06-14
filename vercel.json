@@ -19,5 +19,6 @@
     { "source": "/api/health", "destination": "/api/social?action=health" },
     { "source": "/api/security-check", "destination": "/api/social?action=security" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "crons": [{ "path": "/api/reminders?action=send", "schedule": "0 8 * * *" }]
 }

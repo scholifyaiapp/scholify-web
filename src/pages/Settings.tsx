@@ -17,6 +17,7 @@ import { DashboardLayout, iriText, ProgressBar } from "@/components/dashboard-la
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
+import { syncReminder } from "@/lib/reminders"
 import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
@@ -912,14 +913,23 @@ export default function Settings() {
         <Section>
           <span style={sectionHead}>🔔 Notifications</span>
           <div style={{ marginTop: 8 }}>
-            <SettingRow name="Daily reminder" desc="Get notified at your chosen time each day">
-              <Toggle on={settings.notifyDaily} onChange={(v) => update("notifyDaily", v)} />
+            <SettingRow name="Daily email reminder" desc="A nudge to study on days you haven't yet">
+              <Toggle
+                on={settings.notifyDaily}
+                onChange={(v) => {
+                  update("notifyDaily", v)
+                  void syncReminder(v, settings.reminderTime)
+                }}
+              />
             </SettingRow>
             {settings.notifyDaily && (
               <SettingRow name="Reminder time" desc="Send your daily reminder at">
                 <TimeInput
                   value={settings.reminderTime}
-                  onChange={(v) => update("reminderTime", v)}
+                  onChange={(v) => {
+                    update("reminderTime", v)
+                    void syncReminder(true, v)
+                  }}
                 />
               </SettingRow>
             )}
