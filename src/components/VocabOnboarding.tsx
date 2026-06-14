@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { addDays, format } from "date-fns"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
+import LaraOrb from "@/components/LaraOrb"
 import { useToast } from "@/components/Toast"
 import {
   createDeck,
@@ -432,13 +433,9 @@ export default function VocabOnboarding({
         {/* ── STEP: building ── */}
         {step === "building" && (
           <StepWrap key="building" center>
-            <motion.div
-              animate={{ scale: [1, 1.08, 1] }}
-              transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-              style={{ display: "inline-block" }}
-            >
-              <LaraAvatar size={84} />
-            </motion.div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <LaraOrb size={104} />
+            </div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: TEXT, marginTop: 24, letterSpacing: "-0.4px" }}>
               Building your {target?.label} plan…
             </h2>
@@ -494,7 +491,7 @@ function PlanReveal({
       style={{ textAlign: "center", paddingTop: 8 }}
     >
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <LaraAvatar size={56} />
+        <LaraOrb size={72} />
       </div>
 
       <motion.div

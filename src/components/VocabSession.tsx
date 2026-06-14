@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
+import LaraOrb from "@/components/LaraOrb"
 import { speak, canSpeak } from "@/lib/tts"
 import {
   getTodaySession,
@@ -420,7 +421,7 @@ export default function VocabSession({
               style={{ width: "100%", maxWidth: 420, textAlign: "center" }}
             >
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                <LaraAvatar size={64} />
+                <LaraOrb size={84} />
               </div>
               <h2 style={{ fontSize: 24, fontWeight: 800, color: TEXT }}>
                 {nothingToDo ? "All caught up! 🎉" : "Session complete! 🎉"}

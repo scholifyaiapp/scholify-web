@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import LaraAvatar from "@/components/LaraAvatar"
+import LaraOrb from "@/components/LaraOrb"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
 import { useLanguage } from "@/i18n/LanguageProvider"
@@ -577,7 +578,7 @@ function DeckHome({
         }}
       >
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <LaraAvatar size={48} />
+          <LaraOrb size={64} />
         </div>
         {todayCount > 0 ? (
           <>
