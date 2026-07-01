@@ -42,6 +42,21 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "FA-FC-10", paper: "FA", area: "D", front: "Reducing-balance depreciation", back: "Charge a fixed % on the carrying amount (cost less accumulated depreciation) each year." },
   { id: "FA-FC-11", paper: "FA", area: "E", front: "Errors NOT shown by the trial balance", back: "Errors of omission, commission, principle, original entry, compensating errors, and complete reversal — all keep debits = credits." },
   { id: "FA-FC-12", paper: "FA", area: "D", front: "Profit / loss on disposal", back: "Sale proceeds − carrying amount at disposal. Positive = profit, negative = loss." },
+
+  /* MA */
+  { id: "MA-FC-1", paper: "MA", area: "A", front: "High-low method", back: "Variable cost/unit = (cost at high − cost at low) ÷ (units high − units low). Then find fixed cost by substitution." },
+  { id: "MA-FC-2", paper: "MA", area: "C", front: "Contribution per unit", back: "Selling price per unit − variable cost per unit." },
+  { id: "MA-FC-3", paper: "MA", area: "C", front: "Breakeven point (units)", back: "Fixed costs ÷ contribution per unit." },
+  { id: "MA-FC-4", paper: "MA", area: "B", front: "Absorption vs marginal costing", back: "Absorption puts fixed production overhead into unit cost; marginal treats it as a period cost." },
+  { id: "MA-FC-5", paper: "MA", area: "B", front: "Overhead absorption rate (OAR)", back: "Budgeted overheads ÷ budgeted activity level (e.g. labour or machine hours)." },
+  { id: "MA-FC-6", paper: "MA", area: "E", front: "Return on investment (ROI)", back: "(Operating profit ÷ capital employed) × 100%." },
+
+  /* AA */
+  { id: "AA-FC-1", paper: "AA", area: "B", front: "Audit risk model", back: "Audit risk = inherent risk × control risk × detection risk. The auditor controls detection risk." },
+  { id: "AA-FC-2", paper: "AA", area: "D", front: "Sufficient vs appropriate evidence", back: "Sufficient = quantity. Appropriate = quality (relevance + reliability)." },
+  { id: "AA-FC-3", paper: "AA", area: "E", front: "Modified opinions", back: "Material but not pervasive → qualified ('except for'). Material & pervasive misstatement → adverse. Pervasive scope limitation → disclaimer." },
+  { id: "AA-FC-4", paper: "AA", area: "A", front: "Level of assurance in an audit", back: "Reasonable (high, not absolute) assurance. A review engagement gives limited assurance." },
+  { id: "AA-FC-5", paper: "AA", area: "C", front: "Tests of controls vs substantive procedures", back: "Tests of controls check controls operate effectively; substantive procedures test the figures for misstatement." },
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {

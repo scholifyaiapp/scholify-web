@@ -18,6 +18,15 @@ import {
   setPassedPapers,
   getCurrentPaper,
 } from "@/lib/acca-qualification"
+import {
+  getJourney,
+  setJourney,
+  perComplete,
+  EPSM_LABEL,
+  PER_TARGET_MONTHS,
+  PER_TARGET_OBJECTIVES,
+  type EpsmStatus,
+} from "@/lib/acca-journey"
 
 /* /study/progress — ACCA progress: activity, readiness per paper, mastery. */
 
@@ -39,7 +48,12 @@ export default function AccaProgress() {
   const activity = getDailyActivity(HEATMAP_DAYS)
   const [goal, setGoal] = useState(getDailyGoal())
   const [passed, setPassed] = useState<Set<string>>(() => new Set(getPassedPapers()))
+  const [journey, setJourneyState] = useState(() => getJourney())
   const current = getCurrentPaper()
+
+  function updateJourney(patch: Parameters<typeof setJourney>[0]) {
+    setJourneyState(setJourney(patch))
+  }
   const levels = paperLevels()
   const qual = qualificationProgress([...passed])
 
@@ -184,12 +198,86 @@ export default function AccaProgress() {
             ))}
           </div>
 
+          {/* membership requirements (EPSM + PER) */}
+          <h3 style={sectionH}>MEMBERSHIP REQUIREMENTS</h3>
+          <p style={{ fontSize: 12.5, color: DIM, margin: "0 0 12px", lineHeight: 1.5 }}>
+            Beyond the exams, ACCA membership needs the Ethics module and practical experience.
+          </p>
+
+          {/* EPSM */}
+          <div style={card({ marginBottom: 10 })}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 10 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>🧭 Ethics & Professional Skills (EPSM)</div>
+                <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{EPSM_LABEL[journey.epsm]}</div>
+              </div>
+              {journey.epsm === "complete" && <span style={{ fontSize: 20 }}>✅</span>}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(["not_started", "in_progress", "complete"] as EpsmStatus[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => updateJourney({ epsm: s })}
+                  style={{ flex: 1, padding: "9px 0", borderRadius: 10, border: `1.5px solid ${journey.epsm === s ? "#A78BFA" : BORDER}`, background: journey.epsm === s ? "rgba(167,139,250,0.1)" : CARD, color: journey.epsm === s ? "#A78BFA" : TEXT, fontWeight: 650, fontSize: 12.5, cursor: "pointer" }}
+                >
+                  {EPSM_LABEL[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* PER */}
+          <div style={card({ marginBottom: 20 })}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>💼 Practical Experience (PER)</div>
+              {perComplete(journey) && <span style={{ fontSize: 20 }}>✅</span>}
+            </div>
+            <Stepper
+              label="Months of experience"
+              value={journey.perMonths}
+              max={PER_TARGET_MONTHS}
+              step={1}
+              onChange={(v) => updateJourney({ perMonths: v })}
+            />
+            <div style={{ height: 10 }} />
+            <Stepper
+              label="Performance objectives"
+              value={journey.perObjectives}
+              max={PER_TARGET_OBJECTIVES}
+              step={1}
+              onChange={(v) => updateJourney({ perObjectives: v })}
+            />
+            <div style={{ fontSize: 11.5, color: DIM, marginTop: 10, lineHeight: 1.5 }}>
+              9 objectives to achieve (5 Essentials + 4 Technical), verified by a workplace mentor.
+            </div>
+          </div>
+
           <Link to="/study" style={{ display: "block", textAlign: "center", padding: 15, borderRadius: 14, border: `1px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 650, fontSize: 15, textDecoration: "none" }}>
             ← Back to study
           </Link>
         </motion.div>
       </div>
     </DashboardLayout>
+  )
+}
+
+function Stepper({ label, value, max, step, onChange }: { label: string; value: number; max: number; step: number; onChange: (v: number) => void }) {
+  const pct = Math.min(100, Math.round((value / max) * 100))
+  const btn: CSSProperties = { width: 34, height: 34, borderRadius: 9, border: `1px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 800, fontSize: 18, cursor: "pointer", flexShrink: 0, lineHeight: 1 }
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: 13, color: TEXT }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: pct >= 100 ? "#10B981" : MUTED }}>{value} / {max}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button onClick={() => onChange(Math.max(0, value - step))} style={btn} aria-label="decrease">−</button>
+        <div style={{ flex: 1, height: 8, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "#10B981" : "#A78BFA", borderRadius: 999 }} />
+        </div>
+        <button onClick={() => onChange(Math.min(max, value + step))} style={btn} aria-label="increase">+</button>
+      </div>
+    </div>
   )
 }
 

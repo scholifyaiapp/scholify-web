@@ -27,7 +27,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "MA", code: "MA (F2)", name: "Management Accounting", level: "Applied Knowledge",
+    id: "MA", code: "MA (F2)", name: "Management Accounting", level: "Applied Knowledge", hasCuratedContent: true,
     blurb: "Costing, budgeting, variances and performance measurement to support decisions.",
     areas: [
       { code: "A", label: "Cost accounting & classification" },
@@ -70,7 +70,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "AA", code: "AA (F8)", name: "Audit and Assurance", level: "Applied Skills",
+    id: "AA", code: "AA (F8)", name: "Audit and Assurance", level: "Applied Skills", hasCuratedContent: true,
     blurb: "The audit process end to end: planning, risk, evidence, review and reporting.",
     areas: [
       { code: "A", label: "Audit framework & regulation" },
