@@ -9,6 +9,7 @@ import PaywallModal from "@/components/PaywallModal"
 import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
 import FlashcardsView from "@/components/acca/FlashcardsView"
+import AccaOnboarding from "@/components/acca/AccaOnboarding"
 import {
   getPapers,
   getPaper,
@@ -16,7 +17,7 @@ import {
   gradeQuestion,
   recordAnswer,
   getPaperStats,
-  getOverallProgress,
+  getTodayStats,
   type AccaPaper,
   type AccaQuestion,
 } from "@/lib/acca"
@@ -47,11 +48,20 @@ const BORDER = "var(--sch-border)"
 const GREEN = "#10B981"
 const RED = "#EF4444"
 
-type Mode = "picker" | "overview" | "session" | "examiner" | "flashcards" | "results"
+type Mode = "onboarding" | "picker" | "overview" | "session" | "examiner" | "flashcards" | "results"
 
 const SESSION_SIZE = 8
 const MOCK_SIZE = 12
 const MOCK_SECONDS_PER_Q = 90
+const ONBOARDED_KEY = "scholify-acca-onboarded"
+
+function wasOnboarded(): boolean {
+  try {
+    return window.localStorage.getItem(ONBOARDED_KEY) === "1"
+  } catch {
+    return false
+  }
+}
 
 function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
@@ -65,7 +75,7 @@ export default function AccaStudy() {
   const papers = getPapers()
 
   const [paperId, setPaperId] = useState<string | null>(null)
-  const [mode, setMode] = useState<Mode>("picker")
+  const [mode, setMode] = useState<Mode>(() => (wasOnboarded() ? "picker" : "onboarding"))
   const [tick, setTick] = useState(0) // force stats refresh after a session
 
   // session state
@@ -104,6 +114,17 @@ export default function AccaStudy() {
 
   function openPaper(id: string) {
     setPaperId(id)
+    setMode("overview")
+  }
+
+  function finishOnboarding(pid: string, examDate: string | null) {
+    try {
+      window.localStorage.setItem(ONBOARDED_KEY, "1")
+    } catch {
+      /* ignore */
+    }
+    if (examDate) setPlan(pid, { examDate })
+    setPaperId(pid)
     setMode("overview")
   }
 
@@ -198,6 +219,8 @@ export default function AccaStudy() {
     <DashboardLayout>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 0 40px" }} key={tick}>
         <AnimatePresence mode="wait">
+          {mode === "onboarding" && <AccaOnboarding key="onboarding" onDone={finishOnboarding} />}
+
           {mode === "picker" && <Picker key="picker" papers={papers} onPick={openPaper} />}
 
           {mode === "overview" && paper && (
@@ -266,8 +289,44 @@ export default function AccaStudy() {
 
 /* ── Paper picker ─────────────────────────────────────────────── */
 
+function TodayCard() {
+  const t = getTodayStats()
+  const r = 26
+  const circ = 2 * Math.PI * r
+  const dash = circ * t.progress
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{ ...card({ padding: 16, marginBottom: 20 }), display: "flex", alignItems: "center", gap: 16 }}
+    >
+      {/* progress ring */}
+      <div style={{ position: "relative", width: 64, height: 64, flexShrink: 0 }}>
+        <svg width="64" height="64" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx="32" cy="32" r={r} fill="none" stroke="var(--sch-card-2)" strokeWidth="6" />
+          <circle cx="32" cy="32" r={r} fill="none" stroke="#A78BFA" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+          {t.goalMet ? "✅" : "🎯"}
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 750, fontSize: 15, color: TEXT }}>
+          {t.goalMet ? "Daily goal complete!" : `${t.answered} / ${t.goal} questions today`}
+        </div>
+        <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>
+          {t.goalMet ? "Come back tomorrow to keep the streak alive." : "Keep going to hit today's goal."}
+        </div>
+      </div>
+      <div style={{ textAlign: "center", flexShrink: 0 }}>
+        <div style={{ fontWeight: 800, fontSize: 22 }}>🔥 {t.streak}</div>
+        <div style={{ color: DIM, fontSize: 11 }}>day streak</div>
+      </div>
+    </motion.div>
+  )
+}
+
 function Picker({ papers, onPick }: { papers: AccaPaper[]; onPick: (id: string) => void }) {
-  const overall = getOverallProgress()
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <p style={{ color: DIM, fontSize: 13, fontWeight: 600, letterSpacing: 0.4, margin: "0 0 6px" }}>
@@ -276,10 +335,11 @@ function Picker({ papers, onPick }: { papers: AccaPaper[]; onPick: (id: string) 
       <h1 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 6px", color: TEXT }}>
         Choose your <span style={iriText}>paper</span>
       </h1>
-      <p style={{ color: MUTED, margin: "0 0 24px", fontSize: 15 }}>
+      <p style={{ color: MUTED, margin: "0 0 20px", fontSize: 15 }}>
         Practise exam-style questions with instant AI marking, mock exams and flashcards.
-        {overall.streak > 0 && (<> 🔥 <strong style={{ color: TEXT }}>{overall.streak}-day streak</strong>.</>)}
       </p>
+
+      <TodayCard />
 
       <div style={{ display: "grid", gap: 14 }}>
         {papers.map((p, i) => {

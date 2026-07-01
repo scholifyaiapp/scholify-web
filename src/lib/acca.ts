@@ -161,6 +161,8 @@ interface RawProgress {
   /** yyyy-MM-dd list of days a session was completed (last ~120). */
   history: string[]
   streak: number
+  /** yyyy-MM-dd → questions answered that day. */
+  daily: Record<string, number>
 }
 
 const EMPTY: RawProgress = {
@@ -171,6 +173,7 @@ const EMPTY: RawProgress = {
   lastStudied: null,
   history: [],
   streak: 0,
+  daily: {},
 }
 
 function readRaw(): RawProgress {
@@ -220,6 +223,13 @@ export function recordAnswer(paperId: string, q: AccaQuestion, correct: boolean)
   if (correct) p.totalCorrect += 1
 
   const today = todayStr()
+  if (!p.daily) p.daily = {}
+  p.daily[today] = (p.daily[today] ?? 0) + 1
+  // keep the map small — drop entries older than ~120 days
+  const keys = Object.keys(p.daily)
+  if (keys.length > 140) {
+    for (const k of keys.sort().slice(0, keys.length - 120)) delete p.daily[k]
+  }
   if (p.lastStudied !== today) {
     if (!p.history.includes(today)) p.history = [...p.history, today].slice(-120)
     // streak: consecutive calendar days
@@ -300,5 +310,51 @@ export function clearAccaProgress(): void {
     window.localStorage.removeItem(KEY_PROGRESS)
   } catch {
     /* ignore */
+  }
+}
+
+/* ── Daily goal + today ───────────────────────────────────────── */
+
+const KEY_DAILY_GOAL = "scholify-acca-daily-goal"
+const DEFAULT_DAILY_GOAL = 15
+
+export function getDailyGoal(): number {
+  try {
+    const raw = window.localStorage.getItem(KEY_DAILY_GOAL)
+    const n = raw ? parseInt(raw, 10) : NaN
+    if (!Number.isNaN(n) && n > 0) return n
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_DAILY_GOAL
+}
+
+export function setDailyGoal(n: number): void {
+  try {
+    window.localStorage.setItem(KEY_DAILY_GOAL, String(Math.max(1, Math.min(100, Math.round(n) || DEFAULT_DAILY_GOAL))))
+  } catch {
+    /* ignore */
+  }
+}
+
+export interface TodayStats {
+  answered: number
+  goal: number
+  /** 0–1 progress toward the daily goal. */
+  progress: number
+  streak: number
+  goalMet: boolean
+}
+
+export function getTodayStats(): TodayStats {
+  const p = readRaw()
+  const answered = p.daily?.[todayStr()] ?? 0
+  const goal = getDailyGoal()
+  return {
+    answered,
+    goal,
+    progress: Math.min(1, goal > 0 ? answered / goal : 0),
+    streak: p.streak,
+    goalMet: answered >= goal,
   }
 }
