@@ -49,10 +49,171 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "placement") return handlePlacement(body, res)
   if (action === "extract") return handleExtract(body, res)
   if (action === "fetch-url") return handleFetchUrl(body, res)
+  if (action === "acca-tutor") return handleAccaTutor(body, res)
+  if (action === "acca-examiner") return handleAccaExaminer(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner.",
   })
+}
+
+/* ── ACCA AI Tutor — explain a question / concept (Sonnet) ────────────── */
+
+async function handleAccaTutor(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const paper = String(body.paper || "ACCA")
+  const area = String(body.area || "")
+  const stem = String(body.stem || "").slice(0, 1200)
+  const options = Array.isArray(body.options) ? (body.options as unknown[]).map((o) => String(o)) : []
+  const correctText = String(body.correctText || "")
+  const baseExplanation = String(body.explanation || "").slice(0, 1200)
+  const question = String(body.question || "").slice(0, 500) // the learner's follow-up ("why is B wrong?")
+
+  const fallback =
+    baseExplanation ||
+    "Focus on the underlying rule being tested here, then re-read the question to see which figures it gives you."
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.status(200).json({ answer: fallback, isFallback: true })
+    return
+  }
+
+  const system = `You are Lara, a warm, sharp ACCA tutor. You are helping a student
+with paper ${paper}. Explain clearly and correctly using the ACCA syllabus and
+IFRS Accounting Standards. Be concise (max ~150 words), use plain language, and
+where useful show the calculation step by step. Never invent standards or figures.`
+
+  const optionsText = options.length
+    ? `\nOptions:\n${options.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join("\n")}`
+    : ""
+  const prompt = `Syllabus area: ${area}
+Question: ${stem}${optionsText}
+Correct answer: ${correctText}
+Model explanation: ${baseExplanation}
+
+Student asks: ${question || "Explain this in a simpler way."}`
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: SONNET,
+      max_tokens: 400,
+      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: prompt }],
+    })
+    const text =
+      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : fallback
+    res.status(200).json({ answer: text })
+  } catch (err) {
+    console.error("lara acca-tutor:", err)
+    res.status(200).json({ answer: fallback, isFallback: true })
+  }
+}
+
+/* ── ACCA AI Examiner — mark a written answer vs a rubric (Sonnet) ─────── */
+
+async function handleAccaExaminer(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const paper = String(body.paper || "ACCA")
+  const stem = String(body.stem || "").slice(0, 2000)
+  const maxMarks = Math.max(1, Math.round(Number(body.maxMarks) || 10))
+  const rubric = Array.isArray(body.rubric) ? (body.rubric as unknown[]).map((r) => String(r)) : []
+  const answer = String(body.answer || "").slice(0, 4000)
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    const local = localExaminer(answer, rubric, maxMarks)
+    res.status(200).json({ ...local, isFallback: true })
+    return
+  }
+
+  const system = `You are an experienced ACCA examiner marking paper ${paper}.
+Mark the student's answer against the provided marking points, awarding marks
+generously where the student demonstrates the point in their own words (ACCA
+awards marks per valid point, not per exact wording). Be fair but rigorous.
+
+Return ONLY valid JSON, no prose, in exactly this shape:
+{"marks": <integer 0..${maxMarks}>, "hit": ["point covered", ...], "missed": ["point not covered", ...], "feedback": "2-4 sentences of constructive, specific feedback"}`
+
+  const prompt = `Question (max ${maxMarks} marks): ${stem}
+
+Marking points (one mark each unless obvious):
+${rubric.map((r, i) => `${i + 1}. ${r}`).join("\n")}
+
+Student's answer:
+${answer || "(no answer given)"}`
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: SONNET,
+      max_tokens: 700,
+      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: prompt }],
+    })
+    const raw =
+      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
+    const parsed = safeExaminerJson(raw, maxMarks)
+    if (parsed) {
+      res.status(200).json(parsed)
+      return
+    }
+    res.status(200).json({ ...localExaminer(answer, rubric, maxMarks), isFallback: true })
+  } catch (err) {
+    console.error("lara acca-examiner:", err)
+    res.status(200).json({ ...localExaminer(answer, rubric, maxMarks), isFallback: true })
+  }
+}
+
+function safeExaminerJson(
+  s: string,
+  maxMarks: number,
+): { marks: number; hit: string[]; missed: string[]; feedback: string } | null {
+  try {
+    const start = s.indexOf("{")
+    const end = s.lastIndexOf("}")
+    if (start === -1 || end === -1) return null
+    const o = JSON.parse(s.slice(start, end + 1)) as Record<string, unknown>
+    const marks = Math.max(0, Math.min(maxMarks, Math.round(Number(o.marks) || 0)))
+    return {
+      marks,
+      hit: Array.isArray(o.hit) ? o.hit.map((x) => String(x)) : [],
+      missed: Array.isArray(o.missed) ? o.missed.map((x) => String(x)) : [],
+      feedback: String(o.feedback || ""),
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * No-key fallback marker: award a mark for each rubric point whose distinctive
+ * keywords appear in the answer. Rough, but gives instant, useful signal in
+ * demo mode without an API key.
+ */
+function localExaminer(
+  answer: string,
+  rubric: string[],
+  maxMarks: number,
+): { marks: number; hit: string[]; missed: string[]; feedback: string } {
+  const text = answer.toLowerCase()
+  const hit: string[] = []
+  const missed: string[] = []
+  for (const point of rubric) {
+    const keywords = point
+      .toLowerCase()
+      .match(/[a-z][a-z0-9-]{3,}/g)
+      ?.filter((w) => !["with","that","this","from","which","when","must","have","been","should","under","point","marks"].includes(w))
+      ?.slice(0, 4) ?? []
+    const covered = keywords.length > 0 && keywords.some((k) => text.includes(k))
+    if (covered) hit.push(point)
+    else missed.push(point)
+  }
+  const perPoint = rubric.length > 0 ? maxMarks / rubric.length : 0
+  const marks = Math.round(hit.length * perPoint)
+  const feedback = answer.trim()
+    ? `Demo marking (no AI key): you appear to cover ${hit.length} of ${rubric.length} key points. Add the missing points to raise your mark. Connect a live key for full examiner feedback.`
+    : "No answer was submitted. Write your response addressing each marking point."
+  return { marks: Math.min(maxMarks, marks), hit, missed, feedback }
 }
 
 /* ── Fetch readable text from a URL (for Bring Your Own Content) ──────── */
