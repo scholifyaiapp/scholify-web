@@ -53,6 +53,7 @@ const SignUp = lazyWithReload(() => import("@/pages/SignUp"))
 const AuthCallback = lazyWithReload(() => import("@/pages/AuthCallback"))
 const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalendarCallback"))
 const Learn = lazyWithReload(() => import("@/pages/Learn"))
+const AccaStudy = lazyWithReload(() => import("@/pages/AccaStudy"))
 const LearnProgress = lazyWithReload(() => import("@/pages/LearnProgress"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
 const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
@@ -144,6 +145,7 @@ export default function App() {
         <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
 
         {/* The product */}
+        <Route path="/study" element={<ProtectedRoute><Page name="AccaStudy"><AccaStudy /></Page></ProtectedRoute>} />
         <Route path="/learn" element={<ProtectedRoute><Page name="Learn"><Learn /></Page></ProtectedRoute>} />
         <Route path="/learn/progress" element={<ProtectedRoute><Page name="LearnProgress"><LearnProgress /></Page></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />

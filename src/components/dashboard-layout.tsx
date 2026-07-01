@@ -42,6 +42,7 @@ type NavItemDef = {
 }
 
 export const NAV: NavItemDef[] = [
+  { icon: "🎓", label: "Study", to: "/study" },
   { icon: "📚", label: "Learn", to: "/learn" },
   { icon: "📈", label: "Progress", to: "/learn/progress" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
@@ -51,6 +52,7 @@ export const NAV: NavItemDef[] = [
 // Partner + Community by routing to /community (which links out to all
 // social surfaces from its filter pills + the notification bell).
 const MOBILE_NAV: NavItemDef[] = [
+  { icon: "🎓", label: "Study", to: "/study" },
   { icon: "📚", label: "Learn", to: "/learn" },
   { icon: "📈", label: "Progress", to: "/learn/progress" },
   { icon: "⚙️", label: "Settings", to: "/settings" },
