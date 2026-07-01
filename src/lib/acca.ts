@@ -16,18 +16,25 @@
  */
 
 import type { AccaPaper, AccaQuestion } from "@/lib/acca-content"
-import { PAPERS, QUESTIONS } from "@/lib/acca-content"
+import { QUESTIONS } from "@/lib/acca-content"
+import { ALL_PAPERS } from "@/lib/acca-qualification"
 
 export type { AccaPaper, AccaQuestion } from "@/lib/acca-content"
 
 /* ── Content lookup ───────────────────────────────────────────── */
 
+/** Every ACCA paper (full qualification), in official order. */
 export function getPapers(): AccaPaper[] {
-  return PAPERS
+  return ALL_PAPERS
 }
 
 export function getPaper(paperId: string): AccaPaper | undefined {
-  return PAPERS.find((p) => p.id === paperId)
+  return ALL_PAPERS.find((p) => p.id === paperId)
+}
+
+/** True when the paper has a curated seed question bank (vs AI-generated only). */
+export function hasCuratedContent(paperId: string): boolean {
+  return getQuestions(paperId).length > 0
 }
 
 export function getQuestions(paperId: string): AccaQuestion[] {

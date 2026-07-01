@@ -30,6 +30,10 @@ export interface AccaPaper {
   level: "Applied Knowledge" | "Applied Skills" | "Strategic Professional"
   blurb: string
   areas: SyllabusArea[]
+  /** Strategic Professional Options paper (student picks 2 of 4). */
+  isOption?: boolean
+  /** True once a curated question bank exists (vs AI-generated practice only). */
+  hasCuratedContent?: boolean
 }
 
 export interface AccaQuestion {
@@ -66,6 +70,7 @@ export const PAPERS: AccaPaper[] = [
     code: "FA (F3)",
     name: "Financial Accounting",
     level: "Applied Knowledge",
+    hasCuratedContent: true,
     blurb:
       "The foundations: double-entry, recording transactions, trial balance, and preparing basic financial statements.",
     areas: [
@@ -84,6 +89,7 @@ export const PAPERS: AccaPaper[] = [
     code: "FR (F7)",
     name: "Financial Reporting",
     level: "Applied Skills",
+    hasCuratedContent: true,
     blurb:
       "Applying IFRS Accounting Standards to transactions, and preparing & interpreting financial statements including groups.",
     areas: [

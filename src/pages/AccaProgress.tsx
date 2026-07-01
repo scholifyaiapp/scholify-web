@@ -2,8 +2,8 @@ import { useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import { motion } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
+import { IRIDESCENT } from "@/components/auth/auth-ui"
 import {
-  getPapers,
   getPaperStats,
   getOverallProgress,
   getTodayStats,
@@ -11,8 +11,13 @@ import {
   getDailyGoal,
   setDailyGoal,
 } from "@/lib/acca"
-import { readinessBand } from "@/lib/acca-plan"
-import { flashcardStats } from "@/lib/acca-flashcards"
+import {
+  paperLevels,
+  qualificationProgress,
+  getPassedPapers,
+  setPassedPapers,
+  getCurrentPaper,
+} from "@/lib/acca-qualification"
 
 /* /study/progress — ACCA progress: activity, readiness per paper, mastery. */
 
@@ -29,11 +34,24 @@ function card(extra?: CSSProperties): CSSProperties {
 const HEATMAP_DAYS = 35
 
 export default function AccaProgress() {
-  const papers = getPapers()
   const overall = getOverallProgress()
   const today = getTodayStats()
   const activity = getDailyActivity(HEATMAP_DAYS)
   const [goal, setGoal] = useState(getDailyGoal())
+  const [passed, setPassed] = useState<Set<string>>(() => new Set(getPassedPapers()))
+  const current = getCurrentPaper()
+  const levels = paperLevels()
+  const qual = qualificationProgress([...passed])
+
+  function togglePassed(id: string) {
+    setPassed((prev) => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      setPassedPapers([...n])
+      return n
+    })
+  }
 
   const maxCount = Math.max(1, ...activity.map((a) => a.count))
 
@@ -111,38 +129,59 @@ export default function AccaProgress() {
             </div>
           </div>
 
-          {/* per-paper readiness */}
-          <h3 style={sectionH}>PAPERS</h3>
-          <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-            {papers.map((p) => {
-              const s = getPaperStats(p.id)
-              const band = readinessBand(s.readiness)
-              const fc = flashcardStats(p.id)
-              return (
-                <Link key={p.id} to="/study" style={{ textDecoration: "none" }}>
-                  <motion.div whileHover={{ y: -2 }} style={card({ cursor: "pointer" })}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <div>
-                        <div style={{ fontWeight: 750, fontSize: 15, color: TEXT }}>{p.name}</div>
-                        <div style={{ fontSize: 12, color: DIM }}>{p.code}</div>
+          {/* qualification progress */}
+          <div style={card({ marginBottom: 16 })}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>Qualification progress</span>
+              <span style={{ fontSize: 13, color: MUTED }}>
+                <strong style={{ ...iriText }}>{qual.passedCount}</strong> / {qual.totalExams} exams · {qual.percent}%
+              </span>
+            </div>
+            <div style={{ height: 10, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden" }}>
+              <motion.div initial={{ width: 0 }} animate={{ width: `${qual.percent}%` }} style={{ height: "100%", background: IRIDESCENT, borderRadius: 999 }} />
+            </div>
+            <div style={{ fontSize: 12, color: DIM, marginTop: 8, lineHeight: 1.5 }}>
+              Plus the Ethics & Professional Skills Module (EPSM) and 36 months' Practical Experience (PER) to qualify as an ACCA member.
+            </div>
+          </div>
+
+          {/* qualification roadmap */}
+          <h3 style={sectionH}>YOUR ACCA ROADMAP</h3>
+          <p style={{ fontSize: 12.5, color: DIM, margin: "0 0 12px", lineHeight: 1.5 }}>Tap a paper to mark it passed (your ACCA record).</p>
+          <div style={{ display: "grid", gap: 18, marginBottom: 20 }}>
+            {levels.map((g) => (
+              <div key={g.key}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 750, color: TEXT }}>{g.label}</span>
+                  {g.note && <span style={{ fontSize: 11, color: DIM }}>· {g.note}</span>}
+                </div>
+                <div style={{ display: "grid", gap: 6 }}>
+                  {g.papers.map((p) => {
+                    const on = passed.has(p.id)
+                    const isCurrent = current === p.id
+                    const s = getPaperStats(p.id)
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => togglePassed(p.id)}
+                        style={{ ...card({ padding: "11px 14px", cursor: "pointer", border: `1px solid ${isCurrent ? "#A78BFA" : BORDER}` }), display: "flex", alignItems: "center", gap: 12 }}
+                      >
+                        <span style={{ width: 26, height: 26, borderRadius: 8, background: on ? "rgba(16,185,129,0.15)" : "var(--sch-card-2)", color: on ? "#10B981" : DIM, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+                          {on ? "✓" : p.id.slice(0, 2)}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 650, fontSize: 13.5, color: TEXT }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: DIM }}>{p.code}</div>
+                        </div>
+                        {isCurrent && !on && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(167,139,250,0.15)", color: "#A78BFA", fontWeight: 700 }}>STUDYING</span>}
+                        {!on && !isCurrent && s.answered > 0 && <span style={{ fontSize: 12, fontWeight: 700, ...iriText }}>{s.readiness}%</span>}
+                        {on && <span style={{ fontSize: 12, color: "#10B981", fontWeight: 700 }}>Passed</span>}
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: 800, fontSize: 20, ...iriText }}>{s.readiness}%</div>
-                        <div style={{ fontSize: 11, color: band.color, fontWeight: 600 }}>{band.label}</div>
-                      </div>
-                    </div>
-                    <div style={{ height: 8, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${s.readiness}%`, background: band.color, borderRadius: 999 }} />
-                    </div>
-                    <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 12, color: MUTED }}>
-                      <span>{s.answered} answered</span>
-                      <span>{s.answered ? Math.round(s.accuracy * 100) : 0}% accuracy</span>
-                      <span>🧠 {fc.mastered}/{fc.total} cards</span>
-                    </div>
-                  </motion.div>
-                </Link>
-              )
-            })}
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           <Link to="/study" style={{ display: "block", textAlign: "center", padding: 15, borderRadius: 14, border: `1px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 650, fontSize: 15, textDecoration: "none" }}>

@@ -12,13 +12,13 @@ import FlashcardsView from "@/components/acca/FlashcardsView"
 import GenerateView from "@/components/acca/GenerateView"
 import AccaOnboarding from "@/components/acca/AccaOnboarding"
 import {
-  getPapers,
   getPaper,
   buildSession,
   gradeQuestion,
   recordAnswer,
   getPaperStats,
   getTodayStats,
+  hasCuratedContent,
   type AccaPaper,
   type AccaQuestion,
 } from "@/lib/acca"
@@ -28,7 +28,9 @@ import {
   daysUntilExam,
   getRecommendations,
   readinessBand,
+  generateStudyPlan,
 } from "@/lib/acca-plan"
+import { paperLevels, getPassedPapers, getCurrentPaper } from "@/lib/acca-qualification"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 
@@ -73,7 +75,6 @@ export default function AccaStudy() {
   const { user } = useAuth()
   const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
-  const papers = getPapers()
 
   const [paperId, setPaperId] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>(() => (wasOnboarded() ? "picker" : "onboarding"))
@@ -242,7 +243,7 @@ export default function AccaStudy() {
         <AnimatePresence mode="wait">
           {mode === "onboarding" && <AccaOnboarding key="onboarding" onDone={finishOnboarding} />}
 
-          {mode === "picker" && <Picker key="picker" papers={papers} onPick={openPaper} />}
+          {mode === "picker" && <Picker key="picker" onPick={openPaper} />}
 
           {mode === "overview" && paper && (
             <Overview
@@ -352,53 +353,70 @@ function TodayCard() {
   )
 }
 
-function Picker({ papers, onPick }: { papers: AccaPaper[]; onPick: (id: string) => void }) {
+function Picker({ onPick }: { onPick: (id: string) => void }) {
+  const levels = paperLevels()
+  const passed = new Set(getPassedPapers())
+  const current = getCurrentPaper()
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <p style={{ color: DIM, fontSize: 13, fontWeight: 600, letterSpacing: 0.4, margin: "0 0 6px" }}>
-        ACCA EXAM PREP
+        ACCA QUALIFICATION
       </p>
       <h1 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 6px", color: TEXT }}>
-        Choose your <span style={iriText}>paper</span>
+        Your <span style={iriText}>journey</span>
       </h1>
       <p style={{ color: MUTED, margin: "0 0 20px", fontSize: 15 }}>
-        Practise exam-style questions with instant AI marking, mock exams and flashcards.
+        Pick any paper to practise. Curated banks for FA & FR; every other paper is fully practisable with AI-generated questions.
       </p>
 
       <TodayCard />
 
-      <div style={{ display: "grid", gap: 14 }}>
-        {papers.map((p, i) => {
-          const stats = getPaperStats(p.id)
-          const band = readinessBand(stats.readiness)
-          return (
-            <motion.button
-              key={p.id}
-              onClick={() => onPick(p.id)}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i }}
-              whileHover={{ y: -3 }}
-              whileTap={{ scale: 0.99 }}
-              style={{ ...card({ textAlign: "left", cursor: "pointer" }), display: "flex", alignItems: "center", gap: 16 }}
-            >
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: IRIDESCENT, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 17, color: "#fff", flexShrink: 0 }}>
-                {p.id}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontWeight: 750, fontSize: 16, color: TEXT }}>{p.name}</span>
-                  <span style={{ fontSize: 12, color: DIM }}>{p.code}</span>
-                </div>
-                <div style={{ color: MUTED, fontSize: 13, marginTop: 3, lineHeight: 1.45 }}>{p.blurb}</div>
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: 18, ...iriText }}>{stats.readiness}%</div>
-                <div style={{ color: band.color, fontSize: 11, fontWeight: 600 }}>{band.label}</div>
-              </div>
-            </motion.button>
-          )
-        })}
+      <div style={{ display: "grid", gap: 20 }}>
+        {levels.map((g) => (
+          <div key={g.key}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
+              <h3 style={{ ...sectionH, margin: 0 }}>{g.label.toUpperCase()}</h3>
+              {g.note && <span style={{ fontSize: 11, color: DIM }}>· {g.note}</span>}
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {g.papers.map((p) => {
+                const stats = getPaperStats(p.id)
+                const isPassed = passed.has(p.id)
+                const isCurrent = current === p.id
+                return (
+                  <motion.button
+                    key={p.id}
+                    onClick={() => onPick(p.id)}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.99 }}
+                    style={{ ...card({ textAlign: "left", cursor: "pointer", padding: 14, border: `1px solid ${isCurrent ? "#A78BFA" : BORDER}` }), display: "flex", alignItems: "center", gap: 13 }}
+                  >
+                    <div style={{ width: 42, height: 42, borderRadius: 11, background: isPassed ? "var(--sch-card-2)" : IRIDESCENT, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: isPassed ? "#10B981" : "#fff", flexShrink: 0 }}>
+                      {isPassed ? "✓" : p.id}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, fontSize: 14.5, color: TEXT }}>{p.name}</span>
+                        {isCurrent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "rgba(167,139,250,0.15)", color: "#A78BFA", fontWeight: 700 }}>STUDYING</span>}
+                        {p.hasCuratedContent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED, fontWeight: 700 }}>BANK</span>}
+                      </div>
+                      <div style={{ color: DIM, fontSize: 11.5, marginTop: 1 }}>{p.code}</div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      {isPassed ? (
+                        <span style={{ fontSize: 12, color: "#10B981", fontWeight: 700 }}>Passed</span>
+                      ) : stats.answered > 0 ? (
+                        <span style={{ fontSize: 14, fontWeight: 800, ...iriText }}>{stats.readiness}%</span>
+                      ) : (
+                        <span style={{ fontSize: 16, color: DIM }}>›</span>
+                      )}
+                    </div>
+                  </motion.button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </motion.div>
   )
@@ -430,11 +448,13 @@ function Overview({
   const stats = getPaperStats(paper.id)
   const band = readinessBand(stats.readiness)
   const hasHistory = stats.answered > 0
+  const curated = hasCuratedContent(paper.id)
   const recs = getRecommendations(paper.id)
   const fcStats = flashcardStats(paper.id)
   const writtenCount = getWrittenQuestions(paper.id).length
   const [plan, setPlanState] = useState(() => getPlan(paper.id))
   const days = daysUntilExam(paper.id)
+  const studyPlan = generateStudyPlan(paper.id)
 
   function updateExamDate(date: string) {
     setPlanState(setPlan(paper.id, { examDate: date || null }))
@@ -471,6 +491,27 @@ function Overview({
         </div>
       </div>
 
+      {/* personalised plan */}
+      {studyPlan.phases.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h3 style={sectionH}>YOUR PLAN{studyPlan.daysLeft ? ` · ${studyPlan.daysLeft} DAYS · ~${studyPlan.dailyTarget}/DAY` : ""}</h3>
+          <div style={{ display: "grid", gap: 8 }}>
+            {studyPlan.phases.map((ph) => (
+              <div key={ph.label} style={{ ...card({ padding: 14 }), display: "flex", gap: 12 }}>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{ph.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{ph.label}</span>
+                    <span style={{ fontSize: 11.5, color: "#A78BFA", whiteSpace: "nowrap" }}>{ph.range}</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{ph.focus}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* recommendations */}
       {recs.length > 0 && (
         <div style={{ marginBottom: 20 }}>
@@ -489,12 +530,23 @@ function Overview({
       {/* modes */}
       <h3 style={sectionH}>PRACTICE MODES</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-        <ModeTile emoji="✏️" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary />
-        {hasHistory && <ModeTile emoji="🎯" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} />}
-        <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints`} onClick={onMock} locked={!isPro} />
+        {curated ? (
+          <>
+            <ModeTile emoji="✏️" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary />
+            {hasHistory && <ModeTile emoji="🎯" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} />}
+            <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints`} onClick={onMock} locked={!isPro} />
+            <ModeTile emoji="✨" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />
+          </>
+        ) : (
+          <>
+            <ModeTile emoji="✨" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
+            <div style={{ ...card({ padding: 14 }), fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
+              📚 A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice gives you unlimited AI-generated questions for this paper.
+            </div>
+          </>
+        )}
         <ModeTile emoji="📝" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
-        <ModeTile emoji="✨" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />
-        <ModeTile emoji="🧠" title="Flashcards" sub={`${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered`} onClick={onFlashcards} />
+        <ModeTile emoji="🧠" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} />
       </div>
 
       {/* syllabus areas */}
