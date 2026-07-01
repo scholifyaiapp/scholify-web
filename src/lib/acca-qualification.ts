@@ -160,9 +160,6 @@ const OTHER_PAPERS: AccaPaper[] = [
   },
 ]
 
-/** Every ACCA paper, in official qualification order. */
-export const ALL_PAPERS: AccaPaper[] = orderPapers([...CONTENT_PAPERS, ...OTHER_PAPERS])
-
 const PAPER_ORDER = [
   "BT", "MA", "FA",
   "LW", "PM", "TX", "FR", "AA", "FM",
@@ -173,6 +170,9 @@ const PAPER_ORDER = [
 function orderPapers(papers: AccaPaper[]): AccaPaper[] {
   return [...papers].sort((a, b) => PAPER_ORDER.indexOf(a.id) - PAPER_ORDER.indexOf(b.id))
 }
+
+/** Every ACCA paper, in official qualification order. */
+export const ALL_PAPERS: AccaPaper[] = orderPapers([...CONTENT_PAPERS, ...OTHER_PAPERS])
 
 export interface LevelGroup {
   key: string
