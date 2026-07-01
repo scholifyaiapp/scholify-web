@@ -57,6 +57,20 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "AA-FC-3", paper: "AA", area: "E", front: "Modified opinions", back: "Material but not pervasive → qualified ('except for'). Material & pervasive misstatement → adverse. Pervasive scope limitation → disclaimer." },
   { id: "AA-FC-4", paper: "AA", area: "A", front: "Level of assurance in an audit", back: "Reasonable (high, not absolute) assurance. A review engagement gives limited assurance." },
   { id: "AA-FC-5", paper: "AA", area: "C", front: "Tests of controls vs substantive procedures", back: "Tests of controls check controls operate effectively; substantive procedures test the figures for misstatement." },
+
+  /* PM */
+  { id: "PM-FC-1", paper: "PM", area: "A", front: "Target cost", back: "Target selling price − required profit margin. The gap to close is the 'cost gap'." },
+  { id: "PM-FC-2", paper: "PM", area: "A", front: "Throughput per unit", back: "Sales price − direct material cost (only material is treated as variable)." },
+  { id: "PM-FC-3", paper: "PM", area: "B", front: "Relevant vs sunk cost", back: "Relevant = future incremental cash flow that differs between options. Sunk = past cost, ignored." },
+  { id: "PM-FC-4", paper: "PM", area: "B", front: "Limiting factor ranking", back: "Rank products by contribution per unit of the scarce (limiting) resource." },
+  { id: "PM-FC-5", paper: "PM", area: "D", front: "Balanced scorecard — 4 perspectives", back: "Financial, customer, internal business process, learning & growth." },
+
+  /* FM */
+  { id: "FM-FC-1", paper: "FM", area: "B", front: "NPV decision rule", back: "Accept a project if NPV > 0 (it earns more than the cost of capital)." },
+  { id: "FM-FC-2", paper: "FM", area: "B", front: "IRR", back: "The discount rate at which NPV = 0. Accept if IRR > cost of capital." },
+  { id: "FM-FC-3", paper: "FM", area: "C", front: "Working capital cycle", back: "Inventory days + receivables days − payables days." },
+  { id: "FM-FC-4", paper: "FM", area: "D", front: "WACC", back: "Weighted average of the cost of equity and cost of debt, weighted by market values." },
+  { id: "FM-FC-5", paper: "FM", area: "E", front: "Dividend growth model", back: "P0 = D0(1 + g) ÷ (re − g), where re is the cost of equity and g the growth rate." },
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {

@@ -365,9 +365,15 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
       <h1 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 6px", color: TEXT }}>
         Your <span style={iriText}>journey</span>
       </h1>
-      <p style={{ color: MUTED, margin: "0 0 20px", fontSize: 15 }}>
-        Pick any paper to practise. Curated banks for FA & FR; every other paper is fully practisable with AI-generated questions.
+      <p style={{ color: MUTED, margin: "0 0 14px", fontSize: 15 }}>
+        Everything you need to pass ACCA in one place — practice, AI tutor, mocks, AI examiner, custom questions, flashcards and a plan.
       </p>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 18 }}>
+        {["✏️ Practice", "✨ AI Tutor", "⏱️ Mocks", "📝 AI Examiner", "🧩 Custom AI", "🧠 Flashcards", "📅 Study plan"].map((t) => (
+          <span key={t} style={{ fontSize: 12, fontWeight: 600, padding: "5px 11px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED }}>{t}</span>
+        ))}
+      </div>
 
       <TodayCard />
 

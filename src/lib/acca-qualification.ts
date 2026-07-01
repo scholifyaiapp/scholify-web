@@ -49,7 +49,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "PM", code: "PM (F5)", name: "Performance Management", level: "Applied Skills",
+    id: "PM", code: "PM (F5)", name: "Performance Management", level: "Applied Skills", hasCuratedContent: true,
     blurb: "Management accounting techniques for planning, decision-making and control.",
     areas: [
       { code: "A", label: "Specialist cost & management accounting" },
@@ -81,7 +81,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "FM", code: "FM (F9)", name: "Financial Management", level: "Applied Skills",
+    id: "FM", code: "FM (F9)", name: "Financial Management", level: "Applied Skills", hasCuratedContent: true,
     blurb: "Investment appraisal, working capital, business finance, cost of capital and valuation.",
     areas: [
       { code: "A", label: "Financial management function" },
