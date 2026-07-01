@@ -51,10 +51,97 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "fetch-url") return handleFetchUrl(body, res)
   if (action === "acca-tutor") return handleAccaTutor(body, res)
   if (action === "acca-examiner") return handleAccaExaminer(body, res)
+  if (action === "acca-generate") return handleAccaGenerate(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner | acca-generate.",
   })
+}
+
+/* ── ACCA question generator — MCQs from a topic / notes (Sonnet) ──────── */
+
+async function handleAccaGenerate(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const paper = String(body.paper || "ACCA")
+  const paperName = String(body.paperName || paper)
+  const topic = String(body.topic || "").slice(0, 200)
+  const notes = String(body.notes || "").slice(0, 3000)
+  const count = Math.max(1, Math.min(10, Math.round(Number(body.count) || 5)))
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.status(200).json({ questions: [], reason: "missing_anthropic_key" })
+    return
+  }
+
+  const focus = notes
+    ? `the following study notes:\n"""\n${notes}\n"""`
+    : `the topic: "${topic || paperName}"`
+
+  const system = `You are an expert ACCA question writer for paper ${paper} (${paperName}).
+Write ORIGINAL multiple-choice questions aligned to the ACCA syllabus and IFRS
+Accounting Standards. Do NOT copy real ACCA exam questions. Every question must
+be technically correct and have exactly one unambiguous correct answer.
+
+Return ONLY valid JSON, no prose, in exactly this shape:
+{"questions":[{"stem":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"why the answer is correct","difficulty":"easy|medium|hard"}]}`
+
+  const prompt = `Write ${count} exam-style multiple-choice questions for ACCA ${paper} based on ${focus}.
+Each question: a clear stem, exactly 4 options, one correct answer (correctIndex 0-3), and a concise teaching explanation.`
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: SONNET,
+      max_tokens: 2000,
+      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: prompt }],
+    })
+    const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
+    const questions = parseGeneratedQuestions(raw)
+    if (questions.length > 0) {
+      res.status(200).json({ questions: questions.slice(0, count) })
+      return
+    }
+    res.status(200).json({ questions: [], reason: "no_questions" })
+  } catch (err) {
+    console.error("lara acca-generate:", err)
+    res.status(200).json({ questions: [], reason: "error" })
+  }
+}
+
+function parseGeneratedQuestions(
+  s: string,
+): Array<{ stem: string; options: string[]; correctIndex: number; explanation: string; difficulty: string }> {
+  try {
+    const start = s.indexOf("{")
+    const end = s.lastIndexOf("}")
+    if (start === -1 || end === -1) return []
+    const o = JSON.parse(s.slice(start, end + 1)) as { questions?: unknown[] }
+    const list = Array.isArray(o.questions) ? o.questions : []
+    const out: Array<{ stem: string; options: string[]; correctIndex: number; explanation: string; difficulty: string }> = []
+    for (const item of list) {
+      const q = item as Record<string, unknown>
+      const options = Array.isArray(q.options) ? q.options.map((x) => String(x)) : []
+      const correctIndex = Math.round(Number(q.correctIndex))
+      if (
+        typeof q.stem === "string" &&
+        options.length === 4 &&
+        correctIndex >= 0 &&
+        correctIndex <= 3
+      ) {
+        out.push({
+          stem: String(q.stem),
+          options,
+          correctIndex,
+          explanation: String(q.explanation || ""),
+          difficulty: ["easy", "medium", "hard"].includes(String(q.difficulty)) ? String(q.difficulty) : "medium",
+        })
+      }
+    }
+    return out
+  } catch {
+    return []
+  }
 }
 
 /* ── ACCA AI Tutor — explain a question / concept (Sonnet) ────────────── */

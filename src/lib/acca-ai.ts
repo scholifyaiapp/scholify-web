@@ -1,5 +1,6 @@
-import type { AccaQuestion } from "@/lib/acca-content"
+import type { AccaQuestion, Difficulty } from "@/lib/acca-content"
 import type { WrittenQuestion } from "@/lib/acca-written"
+import { getPaper } from "@/lib/acca"
 
 /*
  * ACCA AI features — the tutor and the examiner.
@@ -90,4 +91,67 @@ export async function markAnswer(
     feedback: "Couldn't reach the examiner. Please try again.",
     isFallback: true,
   }
+}
+
+export interface GenerateResult {
+  questions: AccaQuestion[]
+  reason?: "missing_anthropic_key" | "no_questions" | "error" | "network"
+}
+
+interface RawGenerated {
+  stem?: unknown
+  options?: unknown
+  correctIndex?: unknown
+  explanation?: unknown
+  difficulty?: unknown
+}
+
+/** Generate original practice MCQs for a paper from a topic or pasted notes. */
+export async function generateQuestions(
+  paperId: string,
+  opts: { topic?: string; notes?: string; count?: number },
+): Promise<GenerateResult> {
+  const paper = getPaper(paperId)
+  const count = opts.count ?? 5
+  try {
+    const res = await fetch(`${API_BASE}/api/lara?action=acca-generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paper: paperId,
+        paperName: paper?.name ?? paperId,
+        topic: opts.topic ?? "",
+        notes: opts.notes ?? "",
+        count,
+      }),
+    })
+    if (res.ok) {
+      const data = (await res.json()) as { questions?: RawGenerated[]; reason?: GenerateResult["reason"] }
+      const questions = (Array.isArray(data.questions) ? data.questions : [])
+        .map((q, i): AccaQuestion | null => {
+          const options = Array.isArray(q.options) ? q.options.map((o) => String(o)) : []
+          const correct = Math.round(Number(q.correctIndex))
+          if (typeof q.stem !== "string" || options.length !== 4 || correct < 0 || correct > 3) return null
+          const diff = String(q.difficulty)
+          return {
+            id: `gen-${paperId}-${Date.now()}-${i}`,
+            paper: paperId,
+            area: "AI",
+            type: "mcq",
+            stem: String(q.stem),
+            options,
+            correct,
+            explanation: String(q.explanation || ""),
+            marks: 2,
+            difficulty: (["easy", "medium", "hard"].includes(diff) ? diff : "medium") as Difficulty,
+          }
+        })
+        .filter((q): q is AccaQuestion => q !== null)
+      if (questions.length > 0) return { questions }
+      return { questions: [], reason: data.reason ?? "no_questions" }
+    }
+  } catch {
+    return { questions: [], reason: "network" }
+  }
+  return { questions: [], reason: "error" }
 }

@@ -274,8 +274,10 @@ export function getPaperStats(paperId: string): PaperStats {
   const accuracy = answered > 0 ? correct / answered : 0
 
   const totalQuestions = getQuestions(paperId).length
-  const distinctAttempted = Object.keys(qRaw).length
-  const coverage = totalQuestions > 0 ? distinctAttempted / totalQuestions : 0
+  // Count only attempts against the seed bank; AI-generated question ids
+  // (prefixed "gen-") aren't part of coverage and must not inflate it past 1.
+  const distinctAttempted = Object.keys(qRaw).filter((id) => !id.startsWith("gen-")).length
+  const coverage = totalQuestions > 0 ? Math.min(1, distinctAttempted / totalQuestions) : 0
 
   // Readiness: you must both know the material (accuracy) AND have covered it
   // (coverage). Weighted so a high score with thin coverage can't fake ready.

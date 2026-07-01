@@ -9,6 +9,7 @@ import PaywallModal from "@/components/PaywallModal"
 import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
 import FlashcardsView from "@/components/acca/FlashcardsView"
+import GenerateView from "@/components/acca/GenerateView"
 import AccaOnboarding from "@/components/acca/AccaOnboarding"
 import {
   getPapers,
@@ -48,7 +49,7 @@ const BORDER = "var(--sch-border)"
 const GREEN = "#10B981"
 const RED = "#EF4444"
 
-type Mode = "onboarding" | "picker" | "overview" | "session" | "examiner" | "flashcards" | "results"
+type Mode = "onboarding" | "picker" | "overview" | "session" | "examiner" | "flashcards" | "generate" | "results"
 
 const SESSION_SIZE = 8
 const MOCK_SIZE = 12
@@ -159,6 +160,26 @@ export default function AccaStudy() {
     setMode("examiner")
   }
 
+  function openGenerate() {
+    if (!isPro) {
+      triggerFeaturePaywall()
+      return
+    }
+    setMode("generate")
+  }
+
+  /** Start a practice session from an externally-supplied set (AI-generated). */
+  function startCustomSession(qs: AccaQuestion[]) {
+    setQuestions(qs)
+    setIdx(0)
+    setCorrectCount(0)
+    setLog([])
+    setIsMock(false)
+    setTimeLeft(0)
+    resetQuestion()
+    setMode("session")
+  }
+
   function resetQuestion() {
     setChoice(null)
     setNumInput("")
@@ -233,6 +254,7 @@ export default function AccaStudy() {
               onWeak={() => startSession(true, false)}
               onMock={() => startSession(false, true)}
               onExaminer={openExaminer}
+              onGenerate={openGenerate}
               onFlashcards={() => setMode("flashcards")}
             />
           )}
@@ -265,6 +287,10 @@ export default function AccaStudy() {
 
           {mode === "flashcards" && paperId && (
             <FlashcardsView key="flashcards" paperId={paperId} onBack={() => { setTick((t) => t + 1); setMode("overview") }} />
+          )}
+
+          {mode === "generate" && paperId && (
+            <GenerateView key="generate" paperId={paperId} onBack={() => setMode("overview")} onReady={startCustomSession} />
           )}
 
           {mode === "results" && paper && (
@@ -388,6 +414,7 @@ function Overview({
   onWeak,
   onMock,
   onExaminer,
+  onGenerate,
   onFlashcards,
 }: {
   paper: AccaPaper
@@ -397,6 +424,7 @@ function Overview({
   onWeak: () => void
   onMock: () => void
   onExaminer: () => void
+  onGenerate: () => void
   onFlashcards: () => void
 }) {
   const stats = getPaperStats(paper.id)
@@ -465,6 +493,7 @@ function Overview({
         {hasHistory && <ModeTile emoji="🎯" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} />}
         <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints`} onClick={onMock} locked={!isPro} />
         <ModeTile emoji="📝" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
+        <ModeTile emoji="✨" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />
         <ModeTile emoji="🧠" title="Flashcards" sub={`${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered`} onClick={onFlashcards} />
       </div>
 
