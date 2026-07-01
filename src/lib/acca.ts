@@ -358,3 +358,18 @@ export function getTodayStats(): TodayStats {
     goalMet: answered >= goal,
   }
 }
+
+/** Questions answered per day for the last `days` days (oldest → newest). */
+export function getDailyActivity(days = 35): { date: string; count: number }[] {
+  const p = readRaw()
+  const daily = p.daily ?? {}
+  const out: { date: string; count: number }[] = []
+  const now = new Date()
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(now.getDate() - i)
+    const key = `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
+    out.push({ date: key, count: daily[key] ?? 0 })
+  }
+  return out
+}
