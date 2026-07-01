@@ -76,6 +76,7 @@ export default function AccaStudy() {
   const [graded, setGraded] = useState(false)
   const [wasCorrect, setWasCorrect] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
+  const [log, setLog] = useState<{ area: string; correct: boolean }[]>([])
   const [isMock, setIsMock] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
 
@@ -122,6 +123,7 @@ export default function AccaStudy() {
     setQuestions(qs)
     setIdx(0)
     setCorrectCount(0)
+    setLog([])
     setIsMock(mock)
     setTimeLeft(mock ? qs.length * MOCK_SECONDS_PER_Q : 0)
     resetQuestion()
@@ -152,6 +154,7 @@ export default function AccaStudy() {
     if (!q) return
     const result = gradeQuestion(q, currentResponse(q))
     recordAnswer(q.paper, q, result.correct)
+    setLog((l) => [...l, { area: q.area, correct: result.correct }])
     setWasCorrect(result.correct)
     setGraded(true)
     if (result.correct) setCorrectCount((c) => c + 1)
@@ -163,6 +166,7 @@ export default function AccaStudy() {
     if (!q) return
     const result = gradeQuestion(q, currentResponse(q))
     recordAnswer(q.paper, q, result.correct)
+    setLog((l) => [...l, { area: q.area, correct: result.correct }])
     if (result.correct) setCorrectCount((c) => c + 1)
     advance()
   }
@@ -247,6 +251,7 @@ export default function AccaStudy() {
               correct={correctCount}
               total={questions.length}
               isMock={isMock}
+              log={log}
               onAgain={() => startSession(false, isMock)}
               onOverview={leaveSession}
             />
@@ -601,17 +606,34 @@ function actionBtn(active: boolean): CSSProperties {
 /* ── Results ──────────────────────────────────────────────────── */
 
 function Results({
-  paper, correct, total, isMock, onAgain, onOverview,
+  paper, correct, total, isMock, log, onAgain, onOverview,
 }: {
   paper: AccaPaper
   correct: number
   total: number
   isMock: boolean
+  log: { area: string; correct: boolean }[]
   onAgain: () => void
   onOverview: () => void
 }) {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
   const passed = pct >= 50
+
+  // per-area breakdown from this session's log
+  const areaRows = useMemo(() => {
+    const map = new Map<string, { seen: number; correct: number }>()
+    for (const e of log) {
+      const r = map.get(e.area) ?? { seen: 0, correct: 0 }
+      r.seen += 1
+      if (e.correct) r.correct += 1
+      map.set(e.area, r)
+    }
+    const labels = new Map(paper.areas.map((a) => [a.code, a.label]))
+    return [...map.entries()]
+      .map(([code, r]) => ({ code, label: labels.get(code) ?? code, ...r, pct: Math.round((r.correct / r.seen) * 100) }))
+      .sort((a, b) => a.pct - b.pct)
+  }, [log, paper])
+
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }} style={{ fontSize: 56, marginBottom: 8 }}>
@@ -621,9 +643,27 @@ function Results({
       <h1 style={{ fontSize: 30, fontWeight: 800, margin: "4px 0", color: TEXT }}>
         <span style={iriText}>{correct}</span> / {total} correct
       </h1>
-      <p style={{ color: MUTED, margin: "0 0 28px", fontSize: 15 }}>
+      <p style={{ color: MUTED, margin: "0 0 24px", fontSize: 15 }}>
         {passed ? `That's a ${pct}% pass on ${paper.name}.` : `${pct}% this round. Keep going — repetition is how the marks come.`}
       </p>
+
+      {areaRows.length > 0 && (
+        <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>
+          <h3 style={{ ...sectionH, textAlign: "center" }}>BY SYLLABUS AREA</h3>
+          <div style={{ display: "grid", gap: 8 }}>
+            {areaRows.map((a) => (
+              <div key={a.code} style={{ ...card({ padding: "10px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ width: 24, height: 24, borderRadius: 7, background: "var(--sch-card-2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: TEXT, flexShrink: 0 }}>{a.code}</span>
+                <span style={{ flex: 1, fontSize: 13, color: TEXT }}>{a.label}</span>
+                <div style={{ width: 60, height: 6, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden", flexShrink: 0 }}>
+                  <div style={{ height: "100%", width: `${a.pct}%`, background: a.pct >= 50 ? GREEN : RED, borderRadius: 999 }} />
+                </div>
+                <span style={{ fontSize: 12, color: a.pct >= 50 ? GREEN : RED, fontWeight: 650, width: 60, textAlign: "right" }}>{a.correct}/{a.seen}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gap: 10, maxWidth: 340, margin: "0 auto" }}>
         <motion.button whileTap={{ scale: 0.99 }} onClick={onAgain} style={{ padding: 16, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 16, cursor: "pointer" }}>

@@ -33,6 +33,15 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "FR-FC-4", paper: "FR", area: "B", front: "IAS 16 — the two measurement models", back: "Cost model (cost less accumulated depreciation & impairment) and revaluation model (fair value less subsequent depreciation & impairment)." },
   { id: "FR-FC-5", paper: "FR", area: "E", front: "Goodwill on acquisition formula", back: "Consideration transferred + NCI at acquisition − fair value of identifiable net assets acquired." },
   { id: "FR-FC-6", paper: "FR", area: "B", front: "Net realisable value (NRV)", back: "Estimated selling price − costs to complete − costs to sell." },
+  { id: "FR-FC-7", paper: "FR", area: "B", front: "IFRS 16 — lessee accounting", back: "Recognise a right-of-use asset and a lease liability (except short-term and low-value leases)." },
+  { id: "FR-FC-8", paper: "FR", area: "B", front: "IAS 38 — research vs development", back: "Research: expensed as incurred. Development: capitalised only if the strict criteria are met." },
+  { id: "FR-FC-9", paper: "FR", area: "B", front: "IAS 36 — recoverable amount", back: "Higher of (a) fair value less costs of disposal and (b) value in use. Impairment = carrying amount − recoverable amount." },
+
+  /* FA extra */
+  { id: "FA-FC-9", paper: "FA", area: "H", front: "ROCE (return on capital employed)", back: "(Profit before interest & tax ÷ Capital employed) × 100%." },
+  { id: "FA-FC-10", paper: "FA", area: "D", front: "Reducing-balance depreciation", back: "Charge a fixed % on the carrying amount (cost less accumulated depreciation) each year." },
+  { id: "FA-FC-11", paper: "FA", area: "E", front: "Errors NOT shown by the trial balance", back: "Errors of omission, commission, principle, original entry, compensating errors, and complete reversal — all keep debits = credits." },
+  { id: "FA-FC-12", paper: "FA", area: "D", front: "Profit / loss on disposal", back: "Sale proceeds − carrying amount at disposal. Positive = profit, negative = loss." },
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {

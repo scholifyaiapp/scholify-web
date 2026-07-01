@@ -118,7 +118,7 @@ function OAuthReturnHandler() {
     }
 
     if (user) {
-      navigate("/learn", { replace: true })
+      navigate("/study", { replace: true })
     } else if (looksLikeAuthHash) {
       navigate("/auth/callback", { replace: true })
     }
@@ -157,7 +157,7 @@ export default function App() {
         <Route path="/support" element={<Page name="Support"><Support /></Page>} />
 
         {/* Everything else (legacy plan routes, unknown paths) → the product */}
-        <Route path="*" element={<Navigate to="/learn" replace />} />
+        <Route path="*" element={<Navigate to="/study" replace />} />
       </Routes>
     </>
   )

@@ -84,6 +84,38 @@ export const WRITTEN_QUESTIONS: WrittenQuestion[] = [
       "Timeliness and understandability are the remaining two enhancing characteristics.",
     ],
   },
+  {
+    id: "FR-W-05",
+    paper: "FR",
+    area: "B",
+    topic: "IAS 36 — impairment",
+    stem: "Explain what is meant by an impairment loss under IAS 36 Impairment of Assets, how the recoverable amount is determined, and how an impairment loss is accounted for. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "An impairment loss arises when an asset's carrying amount exceeds its recoverable amount.",
+      "Recoverable amount is the higher of fair value less costs of disposal and value in use.",
+      "Value in use is the present value of the future cash flows expected from the asset.",
+      "Entities must assess at each reporting date whether there is any indication of impairment.",
+      "For a non-revalued asset, the impairment loss is charged to profit or loss.",
+      "For a revalued asset, the loss is first offset against any revaluation surplus for that asset (in OCI), with any excess to profit or loss.",
+    ],
+  },
+  {
+    id: "FR-W-06",
+    paper: "FR",
+    area: "E",
+    topic: "Goodwill on consolidation",
+    stem: "Explain how goodwill arising on the acquisition of a subsidiary is calculated, and how it is subsequently treated in the consolidated financial statements. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "Goodwill = consideration transferred + non-controlling interest − fair value of identifiable net assets acquired.",
+      "Consideration transferred is measured at fair value at the acquisition date.",
+      "The non-controlling interest may be measured at fair value (full goodwill) or at its proportionate share of net assets (partial goodwill).",
+      "The subsidiary's identifiable net assets are measured at fair value at the acquisition date.",
+      "Goodwill is not amortised.",
+      "Goodwill is tested for impairment at least annually, and any impairment is charged to profit or loss.",
+    ],
+  },
 ]
 
 export function getWrittenQuestions(paperId: string): WrittenQuestion[] {
