@@ -17,7 +17,7 @@ import { PAPERS as CONTENT_PAPERS, type AccaPaper } from "@/lib/acca-content"
 const OTHER_PAPERS: AccaPaper[] = [
   // Applied Knowledge
   {
-    id: "BT", code: "BT (F1)", name: "Business and Technology", level: "Applied Knowledge",
+    id: "BT", code: "BT (F1)", name: "Business and Technology", level: "Applied Knowledge", hasCuratedContent: true,
     blurb: "How businesses work: structure, environment, people, governance, ethics and technology.",
     areas: [
       { code: "A", label: "Business organisation & environment" },
@@ -39,7 +39,7 @@ const OTHER_PAPERS: AccaPaper[] = [
   },
   // Applied Skills
   {
-    id: "LW", code: "LW (F4)", name: "Corporate and Business Law", level: "Applied Skills",
+    id: "LW", code: "LW (F4)", name: "Corporate and Business Law", level: "Applied Skills", hasCuratedContent: true,
     blurb: "The legal framework businesses operate in: contract, employment, company law and more.",
     areas: [
       { code: "A", label: "Essential elements of the legal system" },

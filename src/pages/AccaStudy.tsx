@@ -19,6 +19,8 @@ import {
   getPaperStats,
   getTodayStats,
   hasCuratedContent,
+  recordMock,
+  getMockHistory,
   type AccaPaper,
   type AccaQuestion,
 } from "@/lib/acca"
@@ -113,6 +115,14 @@ export default function AccaStudy() {
       }
     }
   }, [mode, isMock])
+
+  // Record a mock the moment its results screen appears.
+  useEffect(() => {
+    if (mode === "results" && isMock && paperId && questions.length) {
+      recordMock(paperId, correctCount, questions.length)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode])
 
   function openPaper(id: string) {
     setPaperId(id)
@@ -461,6 +471,7 @@ function Overview({
   const [plan, setPlanState] = useState(() => getPlan(paper.id))
   const days = daysUntilExam(paper.id)
   const studyPlan = generateStudyPlan(paper.id)
+  const mocks = getMockHistory(paper.id)
 
   function updateExamDate(date: string) {
     setPlanState(setPlan(paper.id, { examDate: date || null }))
@@ -554,6 +565,23 @@ function Overview({
         <ModeTile emoji="📝" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
         <ModeTile emoji="🧠" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} />
       </div>
+
+      {/* mock history */}
+      {mocks.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h3 style={sectionH}>RECENT MOCKS</h3>
+          <div style={{ display: "grid", gap: 8 }}>
+            {mocks.slice(0, 5).map((m, i) => (
+              <div key={i} style={{ ...card({ padding: "12px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 18 }}>{m.percent >= 50 ? "✅" : "📈"}</span>
+                <span style={{ flex: 1, fontSize: 13.5, color: TEXT }}>{m.date}</span>
+                <span style={{ fontSize: 13, color: MUTED }}>{m.correct}/{m.total}</span>
+                <span style={{ fontWeight: 800, fontSize: 15, color: m.percent >= 50 ? GREEN : RED, width: 48, textAlign: "right" }}>{m.percent}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* syllabus areas */}
       <h3 style={sectionH}>SYLLABUS AREAS</h3>

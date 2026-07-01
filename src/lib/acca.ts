@@ -368,6 +368,48 @@ export function getTodayStats(): TodayStats {
   }
 }
 
+/* ── Mock exam history ────────────────────────────────────────── */
+
+const KEY_MOCKS = "scholify-acca-mocks"
+
+export interface MockResult {
+  date: string
+  correct: number
+  total: number
+  percent: number
+}
+
+type MockStore = Record<string, MockResult[]>
+
+function readMocks(): MockStore {
+  try {
+    const raw = window.localStorage.getItem(KEY_MOCKS)
+    if (raw) return JSON.parse(raw) as MockStore
+  } catch {
+    /* ignore */
+  }
+  return {}
+}
+
+/** Record a completed mock for a paper (keeps the last 20). */
+export function recordMock(paperId: string, correct: number, total: number): void {
+  if (total <= 0) return
+  const store = readMocks()
+  const list = store[paperId] ?? []
+  list.push({ date: todayStr(), correct, total, percent: Math.round((correct / total) * 100) })
+  store[paperId] = list.slice(-20)
+  try {
+    window.localStorage.setItem(KEY_MOCKS, JSON.stringify(store))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Mock attempts for a paper, most recent first. */
+export function getMockHistory(paperId: string): MockResult[] {
+  return [...(readMocks()[paperId] ?? [])].reverse()
+}
+
 /** Questions answered per day for the last `days` days (oldest → newest). */
 export function getDailyActivity(days = 35): { date: string; count: number }[] {
   const p = readRaw()

@@ -71,6 +71,20 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "FM-FC-3", paper: "FM", area: "C", front: "Working capital cycle", back: "Inventory days + receivables days − payables days." },
   { id: "FM-FC-4", paper: "FM", area: "D", front: "WACC", back: "Weighted average of the cost of equity and cost of debt, weighted by market values." },
   { id: "FM-FC-5", paper: "FM", area: "E", front: "Dividend growth model", back: "P0 = D0(1 + g) ÷ (re − g), where re is the cost of equity and g the growth rate." },
+
+  /* BT */
+  { id: "BT-FC-1", paper: "BT", area: "A", front: "PESTEL analysis", back: "Political, Economic, Social, Technological, Environmental, Legal — a framework for the external macro-environment." },
+  { id: "BT-FC-2", paper: "BT", area: "B", front: "Tuckman's team stages", back: "Forming → Storming → Norming → Performing (→ Adjourning)." },
+  { id: "BT-FC-3", paper: "BT", area: "B", front: "Fayol's 5 functions of management", back: "Planning, organising, commanding, coordinating, controlling." },
+  { id: "BT-FC-4", paper: "BT", area: "C", front: "ACCA's 5 fundamental ethical principles", back: "Integrity, objectivity, professional competence & due care, confidentiality, professional behaviour." },
+  { id: "BT-FC-5", paper: "BT", area: "C", front: "The agency problem", back: "Directors (agents) may act in their own interest rather than that of the shareholders (principals)." },
+
+  /* LW */
+  { id: "LW-FC-1", paper: "LW", area: "B", front: "Essential elements of a simple contract", back: "Offer, acceptance, consideration, intention to create legal relations, and capacity." },
+  { id: "LW-FC-2", paper: "LW", area: "B", front: "Invitation to treat", back: "An invitation to make an offer (e.g. shop displays, adverts) — not itself an offer that can be accepted." },
+  { id: "LW-FC-3", paper: "LW", area: "B", front: "Negligence — what must be proved", back: "A duty of care owed, breach of that duty, and loss caused by the breach (not too remote)." },
+  { id: "LW-FC-4", paper: "LW", area: "D", front: "Separate legal personality", back: "Salomon v Salomon: a company is a legal person distinct from its members (the veil of incorporation)." },
+  { id: "LW-FC-5", paper: "LW", area: "D", front: "Limited liability (shares)", back: "A member's liability is limited to any amount unpaid on their shares." },
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {
