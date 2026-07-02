@@ -1737,6 +1737,123 @@ function Stories() {
   )
 }
 
+/* ─────────────────────── COMPARE / ROI ─────────────────────── */
+
+const ROI_COLS = ["Scholify Pro", "Tuition centres", "Global providers", "Private tutor"] as const
+
+const ROI_ROWS: { label: string; values: [string, string, string, string]; highlight?: boolean }[] = [
+  { label: "One paper (~3 months)", values: ["≈ €39", "€390–730", "€400–600", "€900+"], highlight: true },
+  { label: "All 13 exams to membership", values: ["≈ €280", "€6,000+", "€5,500+", "€10,000+"], highlight: true },
+  { label: "AI tutor", values: ["24/7", "class hours", "email", "by the hour"] },
+  { label: "Written answers marked", values: ["seconds", "days", "days", "days"] },
+  { label: "Timed mocks + readiness analytics", values: ["✓", "some", "✓", "—"] },
+  { label: "Personalised daily plan", values: ["✓", "fixed schedule", "self-paced", "✓"] },
+  { label: "Study at your shield time", values: ["✓", "—", "✓", "—"] },
+  { label: "Cancel anytime", values: ["✓", "—", "—", "✓"] },
+]
+
+function CompareROI() {
+  const t = useT()
+  return (
+    <section style={{ padding: "96px 24px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" }}>
+          <SectionLabel>{t("THE ROI")}</SectionLabel>
+          <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
+            {t("Same destination.")}{" "}
+            <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("A fraction of the cost.")}</em>
+          </h2>
+          <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 620, margin: "20px auto 0", lineHeight: 1.65 }}>
+            {t("Tuition centres charge €390–730 per paper. Scholify Pro costs less per month than one hour with a tutor — for every paper, every mode, every day.")}
+          </p>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: EASE_DECISIVE }}
+          className="soft-card"
+          style={{ marginTop: 48, overflow: "hidden", borderRadius: 24 }}
+        >
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: "18px 20px", textAlign: "left", fontSize: 12, letterSpacing: "0.08em", color: INK_MUTED, fontWeight: 600, borderBottom: `1px solid ${HAIR}` }} />
+                  {ROI_COLS.map((c, i) => (
+                    <th
+                      key={c}
+                      style={{
+                        padding: "18px 16px",
+                        textAlign: "center",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        color: i === 0 ? "#fff" : INK,
+                        background: i === 0 ? GRAD_HERO : undefined,
+                        borderBottom: `1px solid ${HAIR}`,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {t(c)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ROI_ROWS.map((row, ri) => (
+                  <tr key={row.label} style={{ background: ri % 2 === 0 ? "transparent" : "rgba(20,20,26,0.02)" }}>
+                    <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 600, color: INK }}>{t(row.label)}</td>
+                    {row.values.map((v, ci) => (
+                      <td
+                        key={ci}
+                        style={{
+                          padding: "14px 16px",
+                          textAlign: "center",
+                          fontSize: row.highlight ? 15 : 13.5,
+                          fontWeight: ci === 0 ? 800 : 500,
+                          color: ci === 0 ? BRAND_500 : v === "—" ? "rgba(20,20,26,0.3)" : INK_MUTED,
+                          background: ci === 0 ? `${BRAND_100}55` : undefined,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {v === "✓" ? <span style={{ color: ci === 0 ? BRAND_500 : SHIELD_500, fontWeight: 800 }}>✓</span> : t(v)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.15, ease: EASE_DECISIVE }}
+          style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}
+        >
+          {[
+            { big: "≈ 95%", small: "saved across the qualification vs tuition-centre courses" },
+            { big: "1 paper fee", small: "at a tuition centre buys 2.5+ years of all of Scholify" },
+            { big: "€0", small: "to start — the first sessions are free, no card required" },
+          ].map((s) => (
+            <div key={s.big} className="soft-card" style={{ padding: 20, textAlign: "center", borderRadius: 18 }}>
+              <div className="font-mono-pro tabular" style={{ fontSize: 26, fontWeight: 600, color: BRAND_500, letterSpacing: "-0.02em" }}>{t(s.big)}</div>
+              <div style={{ fontSize: 12.5, color: INK_MUTED, marginTop: 6, lineHeight: 1.5 }}>{t(s.small)}</div>
+            </div>
+          ))}
+        </motion.div>
+
+        <p className="font-mono-pro" style={{ textAlign: "center", color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", marginTop: 20, lineHeight: 1.6 }}>
+          {t("MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $13.99/MO OR $94.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.")}
+        </p>
+      </div>
+    </section>
+  )
+}
+
 /* ─────────────────────── PRICING ─────────────────────── */
 
 interface ScholifyFeature {
@@ -1952,6 +2069,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
       <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
+      <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 400 }}><Awards /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
