@@ -1336,7 +1336,7 @@ const ROADMAP_LEVELS: {
   label: string
   note?: string
   accent: string
-  papers: { id: string; code?: string; name: string; badge?: "BANK" | "AI EXAMINER" }[]
+  papers: { id: string; code?: string; name: string; badge?: string }[]
 }[] = [
   {
     label: "Applied Knowledge",
@@ -1420,9 +1420,9 @@ function PaperCard({ paper, accent, delay }: { paper: (typeof ROADMAP_LEVELS)[nu
               letterSpacing: "0.1em",
               padding: "3px 8px",
               borderRadius: 999,
-              background: paper.badge === "AI EXAMINER" ? `${FIRE_500}14` : `${SHIELD_500}14`,
-              color: paper.badge === "AI EXAMINER" ? FIRE_500 : "#0F9D8C",
-              border: `1px solid ${paper.badge === "AI EXAMINER" ? FIRE_500 : SHIELD_500}3a`,
+              background: paper.badge === "AI EXAMINER" ? `${FIRE_500}14` : paper.badge === "NEW" ? `${PLUM_500}14` : paper.badge === "BANK" ? `${SHIELD_500}14` : `${BRAND_500}0d`,
+              color: paper.badge === "AI EXAMINER" ? FIRE_500 : paper.badge === "NEW" ? PLUM_500 : paper.badge === "BANK" ? "#0F9D8C" : BRAND_500,
+              border: `1px solid ${paper.badge === "AI EXAMINER" ? FIRE_500 : paper.badge === "NEW" ? PLUM_500 : paper.badge === "BANK" ? SHIELD_500 : BRAND_500}3a`,
               whiteSpace: "nowrap",
             }}
           >
@@ -1448,7 +1448,7 @@ function QualificationRoadmap() {
           <SectionLabel>{t("THE FULL QUALIFICATION")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
             {t("Fifteen papers.")}{" "}
-            <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("One path.")}</em>
+            <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("One roadmap.")}</em>
           </h2>
           <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 580, margin: "20px auto 0", lineHeight: 1.65 }}>
             {t("Expert-written question banks for every Applied Knowledge and Applied Skills exam. Unlimited AI practice across all fifteen papers. One roadmap that follows you from your first exam to full ACCA membership.")}
@@ -1502,47 +1502,53 @@ function QualificationRoadmap() {
   )
 }
 
-/* ── The redesigned ACCA Qualification (official, from 2027) ── */
+/* ── The redesigned ACCA Qualification — second roadmap (official, from 2027) ── */
 
-const FUTURE_LEVELS: { label: string; note?: string; exams: { code: string; name: string; isNew?: boolean }[] }[] = [
+const FUTURE_LEVELS: typeof ROADMAP_LEVELS = [
   {
     label: "Foundations",
-    note: "entry route",
-    exams: [
-      { code: "F1", name: "Accounts Preparation" },
-      { code: "F2", name: "Management Information & Costing" },
-      { code: "F3", name: "Decision Making with Data" },
+    note: "Entry route · exams from July 2027",
+    accent: SHIELD_500,
+    papers: [
+      { id: "F1", name: "Accounts Preparation", badge: "JUL 2027" },
+      { id: "F2", name: "Management Information & Costing", badge: "JUL 2027" },
+      { id: "F3", name: "Decision Making with Data", badge: "JUL 2027" },
     ],
   },
   {
     label: "Knowledge",
-    exams: [
-      { code: "K1", name: "Financial Accounting" },
-      { code: "K2", name: "Management Accounting" },
-      { code: "K3", name: "Business Law" },
+    note: "Exams from July 2027",
+    accent: BRAND_500,
+    papers: [
+      { id: "K1", name: "Financial Accounting", badge: "JUL 2027" },
+      { id: "K2", name: "Management Accounting", badge: "JUL 2027" },
+      { id: "K3", name: "Business Law", badge: "JUL 2027" },
     ],
   },
   {
     label: "Expertise",
-    exams: [
-      { code: "E1", name: "Taxation" },
-      { code: "E2", name: "Financial Reporting" },
-      { code: "E3", name: "Audit, Risk & Control" },
-      { code: "E4", name: "Finance & Investment" },
-      { code: "E5", name: "Performance with Data Analysis" },
+    note: "Exams from September 2027",
+    accent: PLUM_500,
+    papers: [
+      { id: "E1", name: "Taxation", badge: "SEP 2027" },
+      { id: "E2", name: "Financial Reporting", badge: "SEP 2027" },
+      { id: "E3", name: "Audit, Risk & Control", badge: "SEP 2027" },
+      { id: "E4", name: "Finance & Investment", badge: "SEP 2027" },
+      { id: "E5", name: "Performance with Data Analysis", badge: "SEP 2027" },
     ],
   },
   {
     label: "Strategic Professional",
-    note: "S1 + S2 + 1 of 5 options",
-    exams: [
-      { code: "S1", name: "Business & Sustainability Reporting" },
-      { code: "S2", name: "Strategic Business Leader" },
-      { code: "SAA", name: "Audit & Assurance Professional" },
-      { code: "SCF", name: "Corporate Finance Professional" },
-      { code: "SDS", name: "Data Science Professional", isNew: true },
-      { code: "SPI", name: "Performance & Insights Professional" },
-      { code: "STA", name: "Taxation Advisory Professional" },
+    note: "S1 + S2 + 1 of 5 Options · from September 2027",
+    accent: FIRE_500,
+    papers: [
+      { id: "S1", name: "Business & Sustainability Reporting", badge: "SEP 2027" },
+      { id: "S2", name: "Strategic Business Leader", badge: "SEP 2027" },
+      { id: "SAA", name: "Audit & Assurance Professional", badge: "SEP 2027" },
+      { id: "SCF", name: "Corporate Finance Professional", badge: "SEP 2027" },
+      { id: "SDS", name: "Data Science Professional", badge: "NEW" },
+      { id: "SPI", name: "Performance & Insights Professional", badge: "SEP 2027" },
+      { id: "STA", name: "Taxation Advisory Professional", badge: "SEP 2027" },
     ],
   },
 ]
@@ -1550,83 +1556,59 @@ const FUTURE_LEVELS: { label: string; note?: string; exams: { code: string; name
 function FutureQualification() {
   const t = useT()
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.7, ease: EASE_DECISIVE }}
-      style={{
-        marginTop: 56,
-        padding: "28px 28px 24px",
-        borderRadius: 24,
-        border: `1.5px dashed ${BRAND_500}55`,
-        background: `linear-gradient(180deg, ${BRAND_100}44 0%, transparent 60%)`,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span
-          className="font-mono-pro"
-          style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", padding: "4px 10px", borderRadius: 999, background: BRAND_500, color: "#fff" }}
-        >
-          {t("FROM 2027")}
-        </span>
-        <h3 className="font-display" style={{ color: INK, fontSize: "clamp(22px, 3vw, 30px)", margin: 0, letterSpacing: "-0.02em" }}>
-          {t("The redesigned ACCA Qualification.")}
-        </h3>
+    <div style={{ marginTop: 72 }}>
+      <div style={{ textAlign: "center" }}>
+        <SectionLabel>{t("OFFICIAL · THE 2027 REDESIGN")}</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(32px, 4.5vw, 56px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
+          {t("The next roadmap.")}{" "}
+          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("From 2027.")}</em>
+        </h2>
+        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 620, margin: "18px auto 0", lineHeight: 1.65 }}>
+          {t("ACCA relaunches the qualification in 2027: four levels, new exam names, and a brand-new Data Science option. Your current passes carry across — and Scholify will support the new structure from day one.")}
+        </p>
       </div>
-      <p style={{ color: INK_MUTED, fontSize: 14.5, lineHeight: 1.65, margin: "10px 0 0", maxWidth: 640 }}>
-        {t("ACCA relaunches the qualification from July 2027: four levels, new exam names, and a brand-new Data Science option. Your current passes carry across — and Scholify will support the new structure from day one.")}
-      </p>
 
-      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-        {FUTURE_LEVELS.map((level) => (
+      <div style={{ marginTop: 48, display: "flex", flexDirection: "column", gap: 36 }}>
+        {FUTURE_LEVELS.map((level, li) => (
           <div key={level.label}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-              <span className="font-mono-pro" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: INK, fontWeight: 700, textTransform: "uppercase" }}>
+            <motion.div
+              initial={{ opacity: 0, x: -12 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.05, ease: EASE_DECISIVE }}
+              style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: level.accent, boxShadow: `0 0 12px ${level.accent}88`, flexShrink: 0 }} />
+              <span className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK, fontWeight: 700, textTransform: "uppercase" }}>
                 {t(level.label)}
               </span>
               {level.note && (
-                <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.06em", color: INK_MUTED }}>
+                <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.08em", color: INK_MUTED }}>
                   · {t(level.note)}
                 </span>
               )}
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {level.exams.map((e) => (
-                <span
-                  key={e.code}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "6px 12px",
-                    borderRadius: 999,
-                    background: "#fff",
-                    border: `1px solid ${HAIR}`,
-                    fontSize: 12.5,
-                    fontWeight: 500,
-                    color: INK,
-                    boxShadow: "0 1px 2px rgba(20,20,26,0.04)",
-                  }}
-                >
-                  <span className="font-mono-pro" style={{ color: BRAND_500, fontWeight: 700, fontSize: 11.5 }}>{e.code}</span>
-                  {t(e.name)}
-                  {e.isNew && (
-                    <span className="font-mono-pro" style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.1em", padding: "2px 7px", borderRadius: 999, background: `${PLUM_500}14`, color: PLUM_500, border: `1px solid ${PLUM_500}3a` }}>
-                      {t("NEW")}
-                    </span>
-                  )}
-                </span>
+              <span style={{ flex: 1, height: 1, background: HAIR }} />
+            </motion.div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+              {level.papers.map((p, pi) => (
+                <PaperCard key={p.id} paper={p} accent={level.accent} delay={0.08 + li * 0.05 + pi * 0.05} />
               ))}
             </div>
           </div>
         ))}
       </div>
 
-      <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", marginTop: 18 }}>
-        {t("SOURCE: ACCAGLOBAL.COM · FIRST EXAMS JULY–SEPTEMBER 2027 · TRANSITION CREDITS FOR CURRENT PASSES")}
-      </p>
-    </motion.div>
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="font-mono-pro"
+        style={{ textAlign: "center", color: INK_MUTED, fontSize: 10, letterSpacing: "0.12em", marginTop: 32 }}
+      >
+        {t("SOURCE: ACCAGLOBAL.COM · FIRST EXAMS JULY–SEPTEMBER 2027 · CURRENT PASSES CARRY TRANSITION CREDIT")}
+      </motion.p>
+    </div>
   )
 }
 
