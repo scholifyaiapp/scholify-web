@@ -1827,30 +1827,159 @@ function CompareROI() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.15, ease: EASE_DECISIVE }}
-          style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}
-        >
-          {[
-            { big: "≈ 95%", small: "saved across the qualification vs tuition-centre courses" },
-            { big: "1 paper fee", small: "at a tuition centre buys 2.5+ years of all of Scholify" },
-            { big: "€0", small: "to start — the first sessions are free, no card required" },
-          ].map((s) => (
-            <div key={s.big} className="soft-card" style={{ padding: 20, textAlign: "center", borderRadius: 18 }}>
-              <div className="font-mono-pro tabular" style={{ fontSize: 26, fontWeight: 600, color: BRAND_500, letterSpacing: "-0.02em" }}>{t(s.big)}</div>
-              <div style={{ fontSize: 12.5, color: INK_MUTED, marginTop: 6, lineHeight: 1.5 }}>{t(s.small)}</div>
-            </div>
-          ))}
-        </motion.div>
+        <SavingsCalculator />
 
         <p className="font-mono-pro" style={{ textAlign: "center", color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", marginTop: 20, lineHeight: 1.6 }}>
           {t("MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $13.99/MO OR $94.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.")}
         </p>
       </div>
     </section>
+  )
+}
+
+/* ── Interactive savings calculator ───────────────────────────── */
+
+/** Eases a displayed number toward its target whenever the target moves. */
+function useSmoothNumber(target: number, durationMs = 550): number {
+  const [val, setVal] = useState(target)
+  const fromRef = useRef(target)
+  useEffect(() => {
+    const from = fromRef.current
+    if (from === target) return
+    const t0 = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / durationMs)
+      const eased = 1 - Math.pow(1 - p, 3)
+      const v = from + (target - from) * eased
+      setVal(v)
+      if (p < 1) raf = requestAnimationFrame(tick)
+      else fromRef.current = target
+    }
+    raf = requestAnimationFrame(tick)
+    return () => { cancelAnimationFrame(raf); fromRef.current = target }
+  }, [target, durationMs])
+  return val
+}
+
+const EUR = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
+const UZS_PER_EUR = 14200
+const SCHOLIFY_EUR_PER_MONTH = 13
+
+function fmtUzs(eur: number): string {
+  const uzs = Math.round((eur * UZS_PER_EUR) / 100000) * 100000
+  return new Intl.NumberFormat("ru-RU").format(uzs).replace(/,/g, " ")
+}
+
+function RoiSlider({
+  label, value, min, max, step, format, onChange,
+}: { label: string; value: number; min: number; max: number; step: number; format: (v: number) => string; onChange: (v: number) => void }) {
+  const fill = ((value - min) / (max - min)) * 100
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{label}</span>
+        <span className="font-mono-pro tabular" style={{ fontSize: 14, fontWeight: 700, color: BRAND_500, background: `${BRAND_100}88`, padding: "3px 10px", borderRadius: 999 }}>
+          {format(value)}
+        </span>
+      </div>
+      <input
+        type="range"
+        className="roi-range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ ["--fill" as string]: `${fill}%` }}
+        aria-label={label}
+      />
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+        <span className="font-mono-pro" style={{ fontSize: 10.5, color: INK_MUTED }}>{format(min)}</span>
+        <span className="font-mono-pro" style={{ fontSize: 10.5, color: INK_MUTED }}>{format(max)}</span>
+      </div>
+    </div>
+  )
+}
+
+function SavingsCalculator() {
+  const navigate = useNavigate()
+  const t = useT()
+  const [papers, setPapers] = useState(6)
+  const [pricePerPaper, setPricePerPaper] = useState(450)
+  const [monthsPerPaper, setMonthsPerPaper] = useState(3)
+
+  const courseCost = papers * pricePerPaper
+  const scholifyCost = papers * monthsPerPaper * SCHOLIFY_EUR_PER_MONTH
+  const saved = Math.max(0, courseCost - scholifyCost)
+
+  const animSaved = useSmoothNumber(saved)
+  const animCourse = useSmoothNumber(courseCost)
+  const animScholify = useSmoothNumber(scholifyCost)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, delay: 0.1, ease: EASE_DECISIVE }}
+      className="soft-card"
+      style={{ marginTop: 20, borderRadius: 24, overflow: "hidden", display: "flex", flexWrap: "wrap" }}
+    >
+      {/* sliders */}
+      <div style={{ flex: "1 1 320px", padding: "32px 32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+        <div>
+          <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>{t("YOUR NUMBERS")}</div>
+          <h3 className="font-display" style={{ color: INK, fontSize: 26, margin: "8px 0 0", letterSpacing: "-0.02em" }}>
+            {t("Drag the sliders to your reality.")}
+          </h3>
+        </div>
+        <RoiSlider label={t("Papers left to pass")} value={papers} min={1} max={13} step={1} format={(v) => `${v}`} onChange={setPapers} />
+        <RoiSlider label={t("Course price per paper (your local rate)")} value={pricePerPaper} min={300} max={800} step={10} format={(v) => `€${v}`} onChange={setPricePerPaper} />
+        <RoiSlider label={t("Months you study per paper")} value={monthsPerPaper} min={2} max={6} step={1} format={(v) => `${v} mo`} onChange={setMonthsPerPaper} />
+      </div>
+
+      {/* result */}
+      <div style={{ flex: "1 1 320px", background: BG_DARK, padding: "32px 32px 28px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 14 }}>
+        <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: "rgba(250,250,247,0.55)", fontWeight: 500 }}>
+          {t("YOU KEEP")}
+        </div>
+        <div className="font-mono-pro tabular" style={{ fontSize: "clamp(40px, 5vw, 56px)", fontWeight: 600, lineHeight: 1, background: GRAD_HERO, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
+          €{EUR.format(Math.round(animSaved))}
+        </div>
+        <div style={{ color: "rgba(250,250,247,0.65)", fontSize: 13.5, lineHeight: 1.5 }}>
+          ≈ <span className="font-mono-pro tabular" style={{ color: INK_INVERSE, fontWeight: 600 }}>{fmtUzs(saved)}</span> UZS —{" "}
+          {t("kept in your pocket on the way to the same letters.")}
+        </div>
+
+        <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "6px 0" }} />
+
+        {[
+          { label: t("Tuition-centre route"), value: `€${EUR.format(Math.round(animCourse))}`, dim: false, strike: true },
+          { label: t("Scholify Pro route"), value: `€${EUR.format(Math.round(animScholify))}`, dim: false, strike: false },
+        ].map((r) => (
+          <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+            <span style={{ fontSize: 13, color: "rgba(250,250,247,0.55)" }}>{r.label}</span>
+            <span className="font-mono-pro tabular" style={{ fontSize: 15, fontWeight: 600, color: r.strike ? "rgba(250,250,247,0.45)" : "#F4A405", textDecoration: r.strike ? "line-through" : "none" }}>
+              {r.value}
+            </span>
+          </div>
+        ))}
+
+        <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} style={{ marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={() => navigate("/signup")}
+            style={{ width: "100%", padding: "15px 24px", borderRadius: 999, border: "none", background: GRAD_HERO, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", boxShadow: `0 14px 34px -10px ${BRAND_500}88` }}
+          >
+            {t("Keep the difference — start free")}
+          </button>
+        </motion.div>
+        <p style={{ fontSize: 10.5, color: "rgba(250,250,247,0.4)", lineHeight: 1.5, margin: 0 }}>
+          {t("Scholify at €13/mo (Pro monthly; annual is cheaper still). ACCA exam entry fees are separate on every route.")}
+        </p>
+      </div>
+    </motion.div>
   )
 }
 
