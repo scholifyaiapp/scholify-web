@@ -223,9 +223,11 @@ export function isPassed(id: string): boolean {
   return getPassedPapers().includes(id)
 }
 
+const KEY_STUDYING = "scholify-acca-studying"
+
 export function getCurrentPaper(): string | null {
   try {
-    return window.localStorage.getItem(KEY_CURRENT)
+    return getStudyingPapers()[0] ?? window.localStorage.getItem(KEY_CURRENT)
   } catch {
     return null
   }
@@ -234,6 +236,36 @@ export function getCurrentPaper(): string | null {
 export function setCurrentPaper(id: string): void {
   try {
     window.localStorage.setItem(KEY_CURRENT, id)
+    setStudyingPapers([id, ...getStudyingPapers().filter((p) => p !== id)].slice(0, 2))
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Papers being studied concurrently (1–2). Kaplan-style guidance: one paper
+ * per sitting for most students; two only with real weekly hours to spare.
+ * Falls back to the legacy single-paper key.
+ */
+export function getStudyingPapers(): string[] {
+  try {
+    const raw = window.localStorage.getItem(KEY_STUDYING)
+    if (raw) {
+      const arr = JSON.parse(raw) as unknown
+      if (Array.isArray(arr) && arr.length > 0) return arr.map(String).slice(0, 2)
+    }
+    const legacy = window.localStorage.getItem(KEY_CURRENT)
+    return legacy ? [legacy] : []
+  } catch {
+    return []
+  }
+}
+
+export function setStudyingPapers(ids: string[]): void {
+  try {
+    const clean = [...new Set(ids)].slice(0, 2)
+    window.localStorage.setItem(KEY_STUDYING, JSON.stringify(clean))
+    if (clean[0]) window.localStorage.setItem(KEY_CURRENT, clean[0])
   } catch {
     /* ignore */
   }

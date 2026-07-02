@@ -15,11 +15,18 @@ export interface PaperPlan {
   examDate: string | null
   /** Target questions to attempt per day. */
   dailyGoal: number
+  /**
+   * Shield time — the protected daily study slot ("19:00"), or null.
+   * The commitment device: same time every day, life plans around it.
+   */
+  studyTime: string | null
+  /** Minutes the learner committed to per day. */
+  dailyMinutes: number
 }
 
 type Store = Record<string, PaperPlan>
 
-const DEFAULT_PLAN: PaperPlan = { examDate: null, dailyGoal: 15 }
+const DEFAULT_PLAN: PaperPlan = { examDate: null, dailyGoal: 15, studyTime: null, dailyMinutes: 25 }
 
 function read(): Store {
   try {

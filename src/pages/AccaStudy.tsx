@@ -36,9 +36,10 @@ import {
   METHOD_PHASES,
   type Mission,
 } from "@/lib/acca-plan"
-import { paperLevels, getPassedPapers, getCurrentPaper, qualificationProgress } from "@/lib/acca-qualification"
-import { flashcardStats } from "@/lib/acca-flashcards"
+import { paperLevels, getPassedPapers, getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
+import { flashcardStats, getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
+import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -57,7 +58,7 @@ const BORDER = "var(--sch-border)"
 const GREEN = "#10B981"
 const RED = "#EF4444"
 
-type Mode = "onboarding" | "picker" | "overview" | "session" | "examiner" | "flashcards" | "generate" | "results"
+type Mode = "onboarding" | "picker" | "overview" | "topic" | "session" | "examiner" | "flashcards" | "generate" | "results"
 
 const SESSION_SIZE = 8
 const MOCK_SIZE = 12
@@ -98,6 +99,10 @@ export default function AccaStudy() {
   const [isMock, setIsMock] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
 
+  // topic path (Kaplan-style chapter flow)
+  const [topicArea, setTopicArea] = useState<string | null>(null)
+  const [isTopicTest, setIsTopicTest] = useState(false)
+
   const paper = paperId ? getPaper(paperId) : undefined
 
   // mock countdown
@@ -120,10 +125,14 @@ export default function AccaStudy() {
     }
   }, [mode, isMock])
 
-  // Record a mock the moment its results screen appears.
+  // Record a mock / knowledge check the moment its results screen appears.
   useEffect(() => {
-    if (mode === "results" && isMock && paperId && questions.length) {
-      recordMock(paperId, correctCount, questions.length)
+    if (mode === "results" && paperId && questions.length) {
+      if (isTopicTest && topicArea) {
+        recordTopicTest(paperId, topicArea, correctCount / questions.length)
+      } else if (isMock) {
+        recordMock(paperId, correctCount, questions.length)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
@@ -162,7 +171,30 @@ export default function AccaStudy() {
     setCorrectCount(0)
     setLog([])
     setIsMock(mock)
+    setIsTopicTest(false)
+    setTopicArea(null)
     setTimeLeft(mock ? qs.length * MOCK_SECONDS_PER_Q : 0)
+    resetQuestion()
+    setMode("session")
+  }
+
+  /** Topic flow: practise one syllabus area, or sit its knowledge check. */
+  function startTopicSession(area: string, test: boolean) {
+    if (!paperId) return
+    const seed = (Date.now() % 100000) + 1
+    const qs = buildSession(paperId, test ? TOPIC_TEST_SIZE : SESSION_SIZE, { area }, seed)
+    if (qs.length === 0) {
+      toast.info("No curated questions for this topic yet — try Custom practice.")
+      return
+    }
+    setQuestions(qs)
+    setIdx(0)
+    setCorrectCount(0)
+    setLog([])
+    setIsMock(test) // knowledge checks run under exam conditions: timed, no hints
+    setIsTopicTest(test)
+    setTopicArea(area)
+    setTimeLeft(test ? qs.length * MOCK_SECONDS_PER_Q : 0)
     resetQuestion()
     setMode("session")
   }
@@ -248,7 +280,7 @@ export default function AccaStudy() {
   function leaveSession() {
     if (timerRef.current) clearInterval(timerRef.current)
     setTick((t) => t + 1)
-    setMode("overview")
+    setMode(topicArea ? "topic" : "overview")
   }
 
   return (
@@ -270,6 +302,19 @@ export default function AccaStudy() {
               onMock={() => startSession(false, true)}
               onExaminer={openExaminer}
               onGenerate={openGenerate}
+              onFlashcards={() => { setTopicArea(null); setMode("flashcards") }}
+              onTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
+            />
+          )}
+
+          {mode === "topic" && paper && topicArea && (
+            <TopicView
+              key={`topic-${topicArea}`}
+              paper={paper}
+              area={topicArea}
+              onBack={() => { setTopicArea(null); setTick((t) => t + 1); setMode("overview") }}
+              onLearn={() => startTopicSession(topicArea, false)}
+              onTest={() => startTopicSession(topicArea, true)}
               onFlashcards={() => setMode("flashcards")}
             />
           )}
@@ -301,7 +346,12 @@ export default function AccaStudy() {
           )}
 
           {mode === "flashcards" && paperId && (
-            <FlashcardsView key="flashcards" paperId={paperId} onBack={() => { setTick((t) => t + 1); setMode("overview") }} />
+            <FlashcardsView
+              key={`flashcards-${topicArea ?? "all"}`}
+              paperId={paperId}
+              area={topicArea ?? undefined}
+              onBack={() => { setTick((t) => t + 1); setMode(topicArea ? "topic" : "overview") }}
+            />
           )}
 
           {mode === "generate" && paperId && (
@@ -315,8 +365,10 @@ export default function AccaStudy() {
               correct={correctCount}
               total={questions.length}
               isMock={isMock}
+              isTopicTest={isTopicTest}
+              topicArea={topicArea}
               log={log}
-              onAgain={() => startSession(false, isMock)}
+              onAgain={() => (isTopicTest && topicArea ? startTopicSession(topicArea, true) : startSession(false, isMock))}
               onOverview={leaveSession}
             />
           )}
@@ -359,9 +411,20 @@ function JourneyBar() {
   )
 }
 
-function ContinueCard({ onPick }: { onPick: (id: string) => void }) {
-  const current = getCurrentPaper()
-  if (!current || getPassedPapers().includes(current)) return null
+function ContinueCards({ onPick }: { onPick: (id: string) => void }) {
+  const studying = getStudyingPapers().filter((id) => !getPassedPapers().includes(id))
+  if (studying.length === 0) return null
+  return (
+    <>
+      {studying.map((pid) => (
+        <ContinueCard key={pid} pid={pid} onPick={onPick} />
+      ))}
+    </>
+  )
+}
+
+function ContinueCard({ pid, onPick }: { pid: string; onPick: (id: string) => void }) {
+  const current = pid
   const paper = getPaper(current)
   if (!paper) return null
   const mission = todayMission(current)
@@ -408,6 +471,8 @@ function ContinueCard({ onPick }: { onPick: (id: string) => void }) {
 
 function TodayCard() {
   const t = getTodayStats()
+  const currentPid = getCurrentPaper()
+  const shieldTime = currentPid ? getPlan(currentPid).studyTime : null
   const r = 26
   const circ = 2 * Math.PI * r
   const dash = circ * t.progress
@@ -439,6 +504,12 @@ function TodayCard() {
         <div style={{ fontWeight: 800, fontSize: 22 }}>🔥 {t.streak}</div>
         <div style={{ color: DIM, fontSize: 11 }}>day streak</div>
       </div>
+      {shieldTime && (
+        <div style={{ textAlign: "center", flexShrink: 0, paddingLeft: 12, borderLeft: `1px solid ${BORDER}` }}>
+          <div style={{ fontWeight: 800, fontSize: 15, color: "#C80000" }}>🛡️ {shieldTime}</div>
+          <div style={{ color: DIM, fontSize: 11 }}>shield time</div>
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -540,7 +611,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
 
       <JourneyBar />
       <TodayCard />
-      <ContinueCard onPick={onPick} />
+      <ContinueCards onPick={onPick} />
 
       <div style={{ display: "grid", gap: 20 }}>
         {levels.map((g) => (
@@ -607,6 +678,7 @@ function Overview({
   onExaminer,
   onGenerate,
   onFlashcards,
+  onTopic,
 }: {
   paper: AccaPaper
   isPro: boolean
@@ -617,6 +689,7 @@ function Overview({
   onExaminer: () => void
   onGenerate: () => void
   onFlashcards: () => void
+  onTopic: (area: string) => void
 }) {
   const stats = getPaperStats(paper.id)
   const band = readinessBand(stats.readiness)
@@ -782,19 +855,158 @@ function Overview({
         </div>
       )}
 
-      {/* syllabus areas */}
-      <h3 style={sectionH}>SYLLABUS AREAS</h3>
-      <div style={{ display: "grid", gap: 8 }}>
-        {stats.areas.map((a) => (
-          <div key={a.code} style={{ ...card({ padding: 14 }), display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ width: 28, height: 28, borderRadius: 8, background: "var(--sch-card-2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: TEXT, flexShrink: 0 }}>
-              {a.code}
-            </span>
-            <span style={{ flex: 1, fontSize: 14, color: TEXT }}>{a.label}</span>
-            <span style={{ fontSize: 12, color: a.seen ? MUTED : DIM }}>{a.seen ? `${Math.round(a.accuracy * 100)}%` : "—"}</span>
-          </div>
-        ))}
+      {/* the study path — topic by topic, Kaplan-style */}
+      <StudyPathSection paperId={paper.id} curated={curated} onTopic={onTopic} />
+    </motion.div>
+  )
+}
+
+/* ── Study path (chapters → knowledge checks, like the tuition providers) ── */
+
+function topicVisual(t: TopicNode): { emoji: string; ring: string; sub: string } {
+  if (t.state === "mastered") return { emoji: "✅", ring: "#10B981", sub: `Mastered · best ${Math.round(t.best * 100)}%` }
+  if (t.state === "in-progress") {
+    return {
+      emoji: "📖",
+      ring: "#C80000",
+      sub: t.best > 0
+        ? `Best check ${Math.round(t.best * 100)}% · need ${Math.round(TOPIC_PASS * 100)}%`
+        : t.seen > 0
+          ? `${t.seen} answered · ${Math.round(t.accuracy * 100)}% accuracy`
+          : "In progress",
+    }
+  }
+  if (t.state === "available") return { emoji: "▶️", ring: "#C80000", sub: "Up next — start here" }
+  return { emoji: "•", ring: "var(--sch-border)", sub: "Coming up" }
+}
+
+function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; curated: boolean; onTopic: (area: string) => void }) {
+  if (!curated) return null
+  const path = getStudyPath(paperId)
+  const prog = pathProgress(paperId)
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <h3 style={sectionH}>🗺️ STUDY PATH · TOPIC BY TOPIC</h3>
+        <span style={{ fontSize: 12, color: MUTED }}>
+          <b style={{ color: "#C80000" }}>{prog.mastered}</b>/{prog.total} mastered
+        </span>
       </div>
+      <p style={{ fontSize: 12.5, color: DIM, margin: "0 0 12px", lineHeight: 1.5 }}>
+        Learn each topic, then pass its knowledge check ({Math.round(TOPIC_PASS * 100)}%+) to master it — the way the
+        top tuition providers structure every paper. Master them all, then the full mock is a formality.
+      </p>
+      <div style={{ display: "grid", gap: 8 }}>
+        {path.map((t, i) => {
+          const v = topicVisual(t)
+          const dim = t.state === "upcoming"
+          return (
+            <motion.button
+              key={t.code}
+              type="button"
+              onClick={() => onTopic(t.code)}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04 }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.99 }}
+              style={{
+                ...card({ padding: 14, cursor: "pointer", textAlign: "left" }),
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                opacity: dim ? 0.6 : 1,
+                border: `1px solid ${t.state === "available" ? "rgba(200,0,0,0.35)" : BORDER}`,
+              }}
+            >
+              <div
+                style={{
+                  width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
+                  background: t.state === "mastered" ? "rgba(16,185,129,0.1)" : "var(--sch-card-2)",
+                  border: `2px solid ${v.ring}`,
+                }}
+              >
+                {t.state === "upcoming" ? <span style={{ fontWeight: 800, fontSize: 13, color: DIM }}>{t.code}</span> : v.emoji}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>
+                  <span style={{ color: "#C80000", marginRight: 6 }}>{t.code}</span>
+                  {t.label}
+                </div>
+                <div style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{v.sub}</div>
+              </div>
+              <span style={{ fontSize: 16, color: DIM, flexShrink: 0 }}>›</span>
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ── Topic hub: learn → flashcards → knowledge check ──────────── */
+
+function TopicView({
+  paper, area, onBack, onLearn, onTest, onFlashcards,
+}: {
+  paper: AccaPaper
+  area: string
+  onBack: () => void
+  onLearn: () => void
+  onTest: () => void
+  onFlashcards: () => void
+}) {
+  const areaInfo = paper.areas.find((a) => a.code === area)
+  const result = getTopicResult(paper.id, area)
+  const stats = getPaperStats(paper.id)
+  const areaStats = stats.areas.find((a) => a.code === area)
+  const areaCards = getFlashcards(paper.id).filter((c) => c.area === area).length
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      <button onClick={onBack} style={backBtn}>← Study path</button>
+      <p style={{ color: DIM, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, margin: "0 0 4px" }}>
+        {paper.id} · TOPIC {area}
+      </p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 6px", color: TEXT, lineHeight: 1.25 }}>{areaInfo?.label ?? area}</h1>
+      <p style={{ color: MUTED, margin: "0 0 16px", fontSize: 13.5, lineHeight: 1.55 }}>
+        {result.mastered
+          ? <>Mastered — best check {Math.round(result.best * 100)}%. Revisit anytime; mastery is kept warm by your flashcards.</>
+          : <>Learn it, drill it, then pass the knowledge check ({Math.round(TOPIC_PASS * 100)}%+) to master this topic.</>}
+      </p>
+
+      {/* topic stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
+        <Stat label="Answered" value={`${areaStats?.seen ?? 0}`} />
+        <Stat label="Accuracy" value={areaStats?.seen ? `${Math.round((areaStats.accuracy) * 100)}%` : "—"} />
+        <Stat label={result.mastered ? "Mastered" : "Best check"} value={result.attempts > 0 ? `${Math.round(result.best * 100)}%` : "—"} accent={result.mastered} />
+      </div>
+
+      {/* the topic loop */}
+      <h3 style={sectionH}>1 · LEARN</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+        <ModeTile emoji="📖" title={`Practise this topic · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & Ask Lara — questions from this topic only" onClick={onLearn} primary={!result.mastered} />
+      </div>
+
+      <h3 style={sectionH}>2 · MEMORISE</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+        <ModeTile emoji="🧠" title="Topic flashcards" sub={areaCards > 0 ? `${areaCards} card${areaCards === 1 ? "" : "s"} for this topic — swipe to review` : "No cards for this topic yet — practice still counts"} onClick={onFlashcards} />
+      </div>
+
+      <h3 style={sectionH}>3 · PROVE IT</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 8 }}>
+        <ModeTile
+          emoji="🎓"
+          title={`Knowledge check · ${TOPIC_TEST_SIZE} questions, timed`}
+          sub={`Exam conditions, no hints. Score ${Math.round(TOPIC_PASS * 100)}%+ to master the topic${result.attempts > 0 ? ` · ${result.attempts} attempt${result.attempts === 1 ? "" : "s"} so far` : ""}`}
+          onClick={onTest}
+          primary={result.mastered ? false : (areaStats?.seen ?? 0) >= 4}
+        />
+      </div>
+      <p style={{ fontSize: 11.5, color: DIM, lineHeight: 1.5, margin: 0 }}>
+        The tuition-provider loop: learn the chapter, check your knowledge, only then move on. Retakes are unlimited — the best score counts.
+      </p>
     </motion.div>
   )
 }
@@ -1029,18 +1241,22 @@ function actionBtn(active: boolean): CSSProperties {
 /* ── Results ──────────────────────────────────────────────────── */
 
 function Results({
-  paper, correct, total, isMock, log, onAgain, onOverview,
+  paper, correct, total, isMock, isTopicTest, topicArea, log, onAgain, onOverview,
 }: {
   paper: AccaPaper
   correct: number
   total: number
   isMock: boolean
+  isTopicTest?: boolean
+  topicArea?: string | null
   log: { area: string; correct: boolean }[]
   onAgain: () => void
   onOverview: () => void
 }) {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
-  const passed = pct >= 50
+  const passLine = isTopicTest ? Math.round(TOPIC_PASS * 100) : 50
+  const passed = pct >= passLine
+  const topicLabel = isTopicTest && topicArea ? paper.areas.find((a) => a.code === topicArea)?.label ?? topicArea : null
 
   // per-area breakdown from this session's log
   const areaRows = useMemo(() => {
@@ -1062,12 +1278,20 @@ function Results({
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }} style={{ fontSize: 56, marginBottom: 8 }}>
         {passed ? "🎉" : "💪"}
       </motion.div>
-      <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600 }}>{isMock ? "MOCK EXAM RESULT" : "PRACTICE COMPLETE"}</div>
+      <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600 }}>
+        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : "PRACTICE COMPLETE"}
+      </div>
       <h1 style={{ fontSize: 30, fontWeight: 800, margin: "4px 0", color: TEXT }}>
         <span style={iriText}>{correct}</span> / {total} correct
       </h1>
       <p style={{ color: MUTED, margin: "0 0 24px", fontSize: 15 }}>
-        {passed ? `That's a ${pct}% pass on ${paper.name}.` : `${pct}% this round. Keep going — repetition is how the marks come.`}
+        {isTopicTest
+          ? passed
+            ? `${pct}% — topic mastered! ${topicLabel} is locked in. On to the next one.`
+            : `${pct}% — not there yet. You need ${passLine}% to master ${topicLabel}. Practise it once more, then retake.`
+          : passed
+            ? `That's a ${pct}% pass on ${paper.name}.`
+            : `${pct}% this round. Keep going — repetition is how the marks come.`}
       </p>
 
       {areaRows.length > 0 && (
