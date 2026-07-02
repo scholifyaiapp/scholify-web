@@ -284,7 +284,7 @@ function HeroHeadline() {
       }}
     >
       <AnimatedText
-        text={t("Pass ACCA. Paper by paper.")}
+        text={t("From first paper to ACCA member.")}
         textClassName="font-display font-normal tracking-[-0.03em]"
         gradientColors="linear-gradient(90deg, #14141A 0%, #C80000 40%, #E50068 50%, #C80000 60%, #14141A 100%)"
         gradientAnimationDuration={3.5}
