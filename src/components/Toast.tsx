@@ -32,7 +32,7 @@ interface ToastItem {
 const META: Record<ToastType, { color: string; icon: string }> = {
   success: { color: "#34D399", icon: "✓" },
   error: { color: "#FF453A", icon: "✕" },
-  info: { color: "rgba(139,92,246,0.9)", icon: "ℹ" },
+  info: { color: "rgba(200,0,0,0.9)", icon: "ℹ" },
   warning: { color: "#FF9F0A", icon: "⚠" },
 }
 

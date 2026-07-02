@@ -383,7 +383,7 @@ function TaskNode({ task }: { task: AugmentedTask }) {
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(255,255,255,0.08)",
             fontSize: 9.5,
-            color: "#C084FC",
+            color: "#D92E10",
             whiteSpace: "nowrap",
             zIndex: 2,
           }}
@@ -405,13 +405,13 @@ function TaskNode({ task }: { task: AugmentedTask }) {
             padding: "3px 9px",
             borderRadius: 999,
             background: "rgba(10,10,20,0.85)",
-            border: "1px solid rgba(167,139,250,0.45)",
+            border: "1px solid rgba(200,0,0,0.45)",
             color: "var(--sch-text)",
             fontSize: 10.5,
             fontWeight: 700,
             whiteSpace: "nowrap",
             zIndex: 3,
-            boxShadow: "0 6px 18px rgba(167,139,250,0.35)",
+            boxShadow: "0 6px 18px rgba(200,0,0,0.35)",
           }}
         >
           📍 You are here
@@ -496,7 +496,7 @@ function Dot({ status, milestone }: { status: TaskStatus; milestone: boolean }) 
           backgroundSize: "200% 200%",
           display: "grid",
           placeItems: "center",
-          boxShadow: milestone ? "0 0 14px rgba(167,139,250,0.6)" : "none",
+          boxShadow: milestone ? "0 0 14px rgba(200,0,0,0.6)" : "none",
         }}
       >
         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />
@@ -569,7 +569,7 @@ function Dot({ status, milestone }: { status: TaskStatus; milestone: boolean }) 
 
 function statusColor(status: TaskStatus): string {
   if (status === "completed") return "#34D399"
-  if (status === "current") return "#C084FC"
+  if (status === "current") return "#D92E10"
   if (status === "missed") return "#FF6B6B"
   return TEXT_MUTED
 }
@@ -692,7 +692,7 @@ function CurrentPositionPill({
         background: "rgba(10,10,20,0.9)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
-        border: "1px solid rgba(167,139,250,0.4)",
+        border: "1px solid rgba(200,0,0,0.4)",
         color: TEXT_PRIMARY,
         fontSize: 12,
         fontWeight: 700,
@@ -794,8 +794,8 @@ function MiniMap({
               height: 16,
               borderRadius: "50%",
               background: "#fff",
-              border: "2px solid #A78BFA",
-              boxShadow: "0 0 10px rgba(167,139,250,0.65)",
+              border: "2px solid #C80000",
+              boxShadow: "0 0 10px rgba(200,0,0,0.65)",
             }}
             aria-label="Current position"
           />

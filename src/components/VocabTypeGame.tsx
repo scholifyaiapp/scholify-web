@@ -73,7 +73,7 @@ export default function VocabTypeGame({ deck, onClose }: { deck: VocabDeck; onCl
           particleCount: 90,
           spread: 70,
           origin: { y: 0.7 },
-          colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"],
+          colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"],
         })
       } catch {
         /* ignore */
@@ -110,7 +110,7 @@ export default function VocabTypeGame({ deck, onClose }: { deck: VocabDeck; onCl
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: "100%", maxWidth: 440, textAlign: "center" }}
             >
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(192,132,252,0.8)" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(200,0,0,0.8)" }}>
                 Listen & type · {idx + 1}/{words.length}
               </div>
 
@@ -258,7 +258,7 @@ const playBtn: CSSProperties = {
   fontSize: 34,
   cursor: "pointer",
   marginTop: 24,
-  boxShadow: "0 0 40px rgba(139,92,246,0.35)",
+  boxShadow: "0 0 40px rgba(200,0,0,0.35)",
 }
 const field: CSSProperties = {
   width: "100%",
@@ -284,5 +284,5 @@ const primaryBtn: CSSProperties = {
   fontSize: 16,
   fontWeight: 700,
   cursor: "pointer",
-  boxShadow: "0 0 30px rgba(139,92,246,0.3)",
+  boxShadow: "0 0 30px rgba(200,0,0,0.3)",
 }

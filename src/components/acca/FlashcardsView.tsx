@@ -108,7 +108,7 @@ export default function FlashcardsView({ paperId, onBack }: { paperId: string; o
               <button onClick={() => grade(true)} style={gradeBtn(GREEN)}>Got it ✓</button>
             </div>
           ) : (
-            <button onClick={() => setFlipped(true)} style={{ ...gradeBtn("#A78BFA"), width: "100%", marginTop: 16 }}>
+            <button onClick={() => setFlipped(true)} style={{ ...gradeBtn("#C80000"), width: "100%", marginTop: 16 }}>
               Show answer
             </button>
           )}

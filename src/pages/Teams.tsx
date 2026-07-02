@@ -46,7 +46,7 @@ const iridescentBtn: CSSProperties = {
   fontWeight: 600,
   border: "none",
   cursor: "pointer",
-  boxShadow: "0 10px 28px rgba(167,139,250,0.4)",
+  boxShadow: "0 10px 28px rgba(200,0,0,0.4)",
 }
 
 const glassBtn: CSSProperties = {
@@ -325,7 +325,7 @@ function FeatureCard({ icon, title, body }: { icon: string; title: string; body:
 
 const COLOR_SWATCHES = [
   "#5E5CE6",
-  "#A78BFA",
+  "#C80000",
   "#F472B6",
   "#22D3EE",
   "#34D399",
@@ -649,8 +649,8 @@ function SetupWizard({
                     style={{
                       padding: 16,
                       borderRadius: 14,
-                      background: active ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.07)"}`,
+                      background: active ? "rgba(200,0,0,0.08)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${active ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.07)"}`,
                       textAlign: "left",
                       cursor: "pointer",
                       color: "inherit",
@@ -720,9 +720,9 @@ function SetupWizard({
                       style={{
                         padding: "8px 14px",
                         borderRadius: 999,
-                        background: expiresDays === d ? "rgba(139,92,246,0.14)" : "rgba(255,255,255,0.03)",
-                        border: `1px solid ${expiresDays === d ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.07)"}`,
-                        color: expiresDays === d ? "#C084FC" : TEXT_MUTED,
+                        background: expiresDays === d ? "rgba(200,0,0,0.14)" : "rgba(255,255,255,0.03)",
+                        border: `1px solid ${expiresDays === d ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.07)"}`,
+                        color: expiresDays === d ? "#D92E10" : TEXT_MUTED,
                         fontSize: 12.5,
                         fontWeight: 600,
                         cursor: "pointer",
@@ -815,8 +815,8 @@ function ToggleCard({
       style={{
         padding: 14,
         borderRadius: 14,
-        background: active ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.03)",
-        border: `1px solid ${active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.07)"}`,
+        background: active ? "rgba(200,0,0,0.08)" : "rgba(255,255,255,0.03)",
+        border: `1px solid ${active ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.07)"}`,
         textAlign: "left",
         cursor: "pointer",
         color: "inherit",

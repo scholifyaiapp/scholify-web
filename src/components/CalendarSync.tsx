@@ -79,8 +79,8 @@ function Toggle({
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
         background: on ? IRIDESCENT : "var(--sch-border-2)",
-        border: `1px solid ${on ? "rgba(139,92,246,0.5)" : "var(--sch-border-2)"}`,
-        boxShadow: on ? "0 0 10px rgba(139,92,246,0.3)" : "none",
+        border: `1px solid ${on ? "rgba(200,0,0,0.5)" : "var(--sch-border-2)"}`,
+        boxShadow: on ? "0 0 10px rgba(200,0,0,0.3)" : "none",
       }}
     >
       <motion.span
@@ -111,9 +111,9 @@ function StatusBadge({ kind }: { kind: "connected" | "idle" | "warn" }) {
       label: "Connected",
     },
     idle: {
-      bg: "rgba(139,92,246,0.08)",
-      fg: "rgba(192,132,252,0.9)",
-      dot: "rgba(192,132,252,0.9)",
+      bg: "rgba(200,0,0,0.08)",
+      fg: "rgba(200,0,0,0.9)",
+      dot: "rgba(200,0,0,0.9)",
       label: "Not connected",
     },
     warn: {
@@ -287,7 +287,7 @@ function ReminderDropdown({
                       textAlign: "left",
                       ...(active ? iriText : { color: "var(--sch-tx-1)" }),
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.1)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,0,0,0.06)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     {o.label}
@@ -533,7 +533,7 @@ export default function CalendarSync() {
               height: 14,
               borderRadius: "50%",
               border: "2px solid var(--sch-border-2)",
-              borderTopColor: "rgba(139,92,246,0.8)",
+              borderTopColor: "rgba(200,0,0,0.8)",
             }}
           />
           <span style={{ fontSize: 13, color: TEXT2 }}>Loading calendar…</span>
@@ -662,7 +662,7 @@ export default function CalendarSync() {
                   fontWeight: 700,
                   cursor: isGoogleConfigured ? "pointer" : "not-allowed",
                   boxShadow: isGoogleConfigured
-                    ? "0 0 20px rgba(139,92,246,0.3)"
+                    ? "0 0 20px rgba(200,0,0,0.3)"
                     : "none",
                 }}
               >
@@ -817,7 +817,7 @@ export default function CalendarSync() {
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: syncing ? "wait" : "pointer",
-                  boxShadow: "0 0 24px rgba(139,92,246,0.25)",
+                  boxShadow: "0 0 24px rgba(200,0,0,0.25)",
                   position: "relative",
                   overflow: "hidden",
                   opacity: syncing ? 0.85 : 1,

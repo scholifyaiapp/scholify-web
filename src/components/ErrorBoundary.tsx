@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
             type="button"
             onClick={() => window.location.reload()}
             style={{
-              background: "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(99,102,241,0.8))",
+              background: "linear-gradient(135deg, rgba(200,0,0,0.8), rgba(99,102,241,0.8))",
               color: "white",
               border: "none",
               borderRadius: "12px",
@@ -85,7 +85,7 @@ export class ErrorBoundary extends Component<Props, State> {
               fontSize: "14px",
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 0 24px rgba(139,92,246,0.25)",
+              boxShadow: "0 0 24px rgba(200,0,0,0.25)",
             }}
           >
             Reload page

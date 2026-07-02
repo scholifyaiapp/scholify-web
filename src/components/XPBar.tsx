@@ -89,7 +89,7 @@ export default function XPBar({ variant = "sidebar" }: XPBarProps) {
             height: "100%",
             background: IRIDESCENT,
             backgroundSize: "200% 200%",
-            boxShadow: flash ? "0 0 16px rgba(167,139,250,0.6)" : "none",
+            boxShadow: flash ? "0 0 16px rgba(200,0,0,0.6)" : "none",
           }}
         />
         {flash && (
@@ -149,7 +149,7 @@ export function LevelUpOverlay({
   onClose: () => void
 }) {
   const confetti = useMemo(() => {
-    const colors = ["#A78BFA", "#F472B6", "#22D3EE", "#FCD34D", "#34D399"]
+    const colors = ["#C80000", "#F472B6", "#22D3EE", "#FCD34D", "#34D399"]
     return Array.from({ length: 50 }).map((_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -230,7 +230,7 @@ export function LevelUpOverlay({
                 position: "absolute",
                 inset: 0,
                 borderRadius: "50%",
-                background: `conic-gradient(from 0deg, #A78BFA, #F472B6, #22D3EE, #A78BFA)`,
+                background: `conic-gradient(from 0deg, #C80000, #F472B6, #22D3EE, #C80000)`,
                 filter: "blur(2px)",
                 opacity: 0.85,
               }}
@@ -243,7 +243,7 @@ export function LevelUpOverlay({
                 background: "#0A0A14",
                 display: "grid",
                 placeItems: "center",
-                boxShadow: "inset 0 0 32px rgba(167,139,250,0.35)",
+                boxShadow: "inset 0 0 32px rgba(200,0,0,0.35)",
               }}
             >
               <span style={{ fontSize: 36, fontWeight: 900, color: "var(--sch-text)" }}>{newLevel.level}</span>
@@ -281,7 +281,7 @@ export function LevelUpOverlay({
               fontWeight: 700,
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 12px 32px rgba(167,139,250,0.45)",
+              boxShadow: "0 12px 32px rgba(200,0,0,0.45)",
             }}
           >
             Continue →

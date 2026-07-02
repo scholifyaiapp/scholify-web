@@ -131,7 +131,7 @@ function MiniCheckbox({ completed }: { completed: boolean }) {
         color: "#fff",
         fontSize: 11,
         fontWeight: 800,
-        boxShadow: completed ? "0 0 14px rgba(167,139,250,0.5)" : "none",
+        boxShadow: completed ? "0 0 14px rgba(200,0,0,0.5)" : "none",
       }}
     >
       {completed ? "✓" : ""}

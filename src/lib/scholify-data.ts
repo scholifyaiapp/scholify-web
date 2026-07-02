@@ -400,12 +400,12 @@ function normalizePlan(p: StoredPlan): StoredPlan {
 }
 
 const COVER_COLORS = [
-  "linear-gradient(135deg,#8B5CF6,#F472B6)",
-  "linear-gradient(135deg,#38BDF8,#A78BFA)",
+  "linear-gradient(135deg,#C80000,#F472B6)",
+  "linear-gradient(135deg,#F4A405,#C80000)",
   "linear-gradient(135deg,#F59E0B,#F472B6)",
-  "linear-gradient(135deg,#34D399,#38BDF8)",
+  "linear-gradient(135deg,#34D399,#F4A405)",
   "linear-gradient(135deg,#FB7185,#FBBF24)",
-  "linear-gradient(135deg,#C084FC,#60A5FA)",
+  "linear-gradient(135deg,#D92E10,#60A5FA)",
 ]
 
 function pickCoverColor(goal: string): string {

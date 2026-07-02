@@ -148,7 +148,7 @@ export default function SessionNotes({
         padding: 20,
         borderRadius: 20,
         background: "var(--sch-card)",
-        border: "1px solid rgba(139,92,246,0.1)",
+        border: "1px solid rgba(200,0,0,0.06)",
       }}
     >
       <div>
@@ -209,16 +209,16 @@ export default function SessionNotes({
                 animate={{
                   scale: active ? 1.15 : 1,
                   boxShadow: active
-                    ? "0 0 18px rgba(139,92,246,0.4)"
-                    : "0 0 0 rgba(139,92,246,0)",
+                    ? "0 0 18px rgba(200,0,0,0.4)"
+                    : "0 0 0 rgba(200,0,0,0)",
                 }}
                 transition={{ type: "spring", stiffness: 360, damping: 22 }}
                 style={{
                   width: 40,
                   height: 40,
                   borderRadius: "50%",
-                  border: `1px solid ${active ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
-                  background: active ? "rgba(139,92,246,0.14)" : "var(--sch-card-2)",
+                  border: `1px solid ${active ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
+                  background: active ? "rgba(200,0,0,0.14)" : "var(--sch-card-2)",
                   cursor: "pointer",
                   fontSize: 20,
                   display: "flex",
@@ -275,8 +275,8 @@ export default function SessionNotes({
           style={{
             padding: "8px 16px",
             borderRadius: 12,
-            border: `1px solid ${saved ? "rgba(52,211,153,0.4)" : "rgba(139,92,246,0.4)"}`,
-            background: saved ? "rgba(52,211,153,0.08)" : "rgba(139,92,246,0.08)",
+            border: `1px solid ${saved ? "rgba(52,211,153,0.4)" : "rgba(200,0,0,0.4)"}`,
+            background: saved ? "rgba(52,211,153,0.08)" : "rgba(200,0,0,0.08)",
             color: saved ? "#34D399" : "var(--sch-text)",
             fontSize: 13,
             fontWeight: 700,

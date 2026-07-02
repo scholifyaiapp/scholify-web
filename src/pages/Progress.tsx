@@ -95,8 +95,8 @@ function StatCard({
       transition={{ duration: 0.5, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{
         y: -4,
-        borderColor: "rgba(139,92,246,0.3)",
-        boxShadow: "0 8px 32px rgba(139,92,246,0.1)",
+        borderColor: "rgba(200,0,0,0.3)",
+        boxShadow: "0 8px 32px rgba(200,0,0,0.06)",
       }}
       style={{ ...glassCard, borderRadius: 20, padding: 24 }}
     >
@@ -109,8 +109,8 @@ function StatCard({
           alignItems: "center",
           justifyContent: "center",
           fontSize: 18,
-          background: "rgba(139,92,246,0.1)",
-          border: "1px solid rgba(139,92,246,0.2)",
+          background: "rgba(200,0,0,0.06)",
+          border: "1px solid rgba(200,0,0,0.2)",
         }}
       >
         {icon}
@@ -163,7 +163,7 @@ function HeatCell({
     shield: "rgba(255,159,10,0.15)",
     future: "var(--sch-card)",
     none: "var(--sch-card)",
-    today: "rgba(139,92,246,0.1)",
+    today: "rgba(200,0,0,0.06)",
   }
   const border: Record<CellState, string> = {
     completed: "1px solid transparent",
@@ -171,7 +171,7 @@ function HeatCell({
     shield: "1px solid rgba(255,159,10,0.2)",
     future: "1px solid var(--sch-card-2)",
     none: "1px solid var(--sch-card-2)",
-    today: "2px solid rgba(139,92,246,0.6)",
+    today: "2px solid rgba(200,0,0,0.6)",
   }
   const label =
     state === "completed" || state === "today"
@@ -198,7 +198,7 @@ function HeatCell({
           borderRadius: 8,
           background: bg[state],
           border: border[state],
-          boxShadow: state === "completed" ? "0 2px 8px rgba(139,92,246,0.3)" : "none",
+          boxShadow: state === "completed" ? "0 2px 8px rgba(200,0,0,0.3)" : "none",
           cursor: "pointer",
           position: "relative",
         }}
@@ -500,7 +500,7 @@ function BarColumn({
           borderRadius: "6px 6px 0 0",
           background: IRIDESCENT,
           transformOrigin: "bottom",
-          boxShadow: current ? "0 -4px 20px rgba(139,92,246,0.3)" : "none",
+          boxShadow: current ? "0 -4px 20px rgba(200,0,0,0.3)" : "none",
         }}
       />
     </div>
@@ -526,9 +526,9 @@ function Donut({
         <svg width="140" height="140" viewBox="0 0 140 140">
           <defs>
             <linearGradient id="ir-donut" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#C084FC" />
-              <stop offset="50%" stopColor="#818CF8" />
-              <stop offset="100%" stopColor="#38BDF8" />
+              <stop offset="0%" stopColor="#D92E10" />
+              <stop offset="50%" stopColor="#E50068" />
+              <stop offset="100%" stopColor="#F4A405" />
             </linearGradient>
           </defs>
           <circle cx="70" cy="70" r={r} fill="none" stroke="var(--sch-hairline)" strokeWidth="12" />
@@ -629,8 +629,8 @@ function LineChart({
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: "block" }}>
           <defs>
             <linearGradient id="ir-area" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(139,92,246,0.2)" />
-              <stop offset="100%" stopColor="rgba(139,92,246,0)" />
+              <stop offset="0%" stopColor="rgba(200,0,0,0.2)" />
+              <stop offset="100%" stopColor="rgba(200,0,0,0)" />
             </linearGradient>
           </defs>
           {/* y grid */}
@@ -656,7 +656,7 @@ function LineChart({
           <motion.path
             d={linePath}
             fill="none"
-            stroke="#818CF8"
+            stroke="#E50068"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -671,7 +671,7 @@ function LineChart({
               cx={p.x}
               cy={p.y}
               r="3.5"
-              fill="#C084FC"
+              fill="#D92E10"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
@@ -815,7 +815,7 @@ function ShareCard({
             overflow: "hidden",
             borderRadius: 24,
             background: "linear-gradient(135deg, #0D0015, #120820, #0A1520)",
-            border: "1px solid rgba(139,92,246,0.25)",
+            border: "1px solid rgba(200,0,0,0.25)",
             boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
             padding: 32,
             display: "flex",
@@ -825,7 +825,7 @@ function ShareCard({
         >
           {/* Top */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#C084FC" }}>✦ Scholify</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#D92E10" }}>✦ Scholify</span>
             <span style={{ fontSize: 12, color: "rgba(240,238,255,0.5)" }}>
               Week {weekNum} · {todayLabel}
             </span>
@@ -851,7 +851,7 @@ function ShareCard({
                 height: 260,
                 borderRadius: "50%",
                 background:
-                  "radial-gradient(circle, rgba(139,92,246,0.35), rgba(139,92,246,0) 70%)",
+                  "radial-gradient(circle, rgba(200,0,0,0.35), rgba(200,0,0,0) 70%)",
               }}
             />
             <div
@@ -887,7 +887,7 @@ function ShareCard({
                 fontSize: 13,
                 color: "#F0EEFF",
                 background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(139,92,246,0.45)",
+                border: "1px solid rgba(200,0,0,0.45)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -976,7 +976,7 @@ function Achievements({ streak, sessions }: { streak: number; sessions: number }
         {badges.map((b) => (
           <motion.div
             key={b.name}
-            whileHover={b.earned ? { scale: 1.05, y: -2, borderColor: "rgba(139,92,246,0.5)" } : undefined}
+            whileHover={b.earned ? { scale: 1.05, y: -2, borderColor: "rgba(200,0,0,0.5)" } : undefined}
             style={{
               flex: "0 0 auto",
               minWidth: 120,
@@ -984,8 +984,8 @@ function Achievements({ streak, sessions }: { streak: number; sessions: number }
               padding: 16,
               borderRadius: 16,
               background: "var(--sch-card)",
-              border: `1px solid ${b.earned ? "rgba(139,92,246,0.3)" : "var(--sch-border)"}`,
-              boxShadow: b.earned ? "0 0 20px rgba(139,92,246,0.12)" : "none",
+              border: `1px solid ${b.earned ? "rgba(200,0,0,0.3)" : "var(--sch-border)"}`,
+              boxShadow: b.earned ? "0 0 20px rgba(200,0,0,0.07)" : "none",
               opacity: b.earned ? 1 : 0.35,
               filter: b.earned ? "none" : "grayscale(1)",
             }}
@@ -1103,7 +1103,7 @@ export default function Progress() {
                 fontSize: 14,
                 fontWeight: 600,
                 textDecoration: "none",
-                boxShadow: "0 0 24px rgba(139,92,246,0.3)",
+                boxShadow: "0 0 24px rgba(200,0,0,0.3)",
               }}
             >
               Go to Today →

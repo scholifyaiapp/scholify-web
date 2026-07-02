@@ -38,9 +38,9 @@ const DIM = "var(--sch-tx-3)"
 const HEATMAP_DAYS = 35
 
 const MASTERY = [
-  { key: "newCount", label: "New", color: "#818CF8" },
+  { key: "newCount", label: "New", color: "#E50068" },
   { key: "learning", label: "Learning", color: "#FBBF24" },
-  { key: "review", label: "Reviewing", color: "#38BDF8" },
+  { key: "review", label: "Reviewing", color: "#F4A405" },
   { key: "mastered", label: "Mastered", color: "#34D399" },
 ] as const
 
@@ -133,7 +133,7 @@ export default function LearnProgress() {
                   borderRadius: 7,
                   background: c.active ? IRIDESCENT : "var(--sch-card-2)",
                   border: c.active ? "1px solid transparent" : "1px solid var(--sch-border)",
-                  boxShadow: c.active ? "0 2px 8px rgba(139,92,246,0.3)" : "none",
+                  boxShadow: c.active ? "0 2px 8px rgba(200,0,0,0.3)" : "none",
                 }}
               />
             ))}
@@ -222,14 +222,14 @@ function Recommendations({
   const recs = useMemo(() => getRecommendations(deck, progress, dueToday, 3), [deck, progress, dueToday])
   if (recs.length === 0) return null
   return (
-    <div style={{ ...card, border: "1px solid rgba(139,92,246,0.25)" }}>
+    <div style={{ ...card, border: "1px solid rgba(200,0,0,0.25)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div
           style={{
             width: 30,
             height: 30,
             borderRadius: "50%",
-            background: "radial-gradient(circle at 32% 28%,#fff,#C084FC 40%,#7C3AED 92%)",
+            background: "radial-gradient(circle at 32% 28%,#fff,#D92E10 40%,#7C3AED 92%)",
             boxShadow: "0 3px 12px rgba(124,58,237,0.35)",
             flexShrink: 0,
           }}
@@ -446,8 +446,8 @@ function Leaderboard() {
                   gap: 12,
                   padding: "10px 14px",
                   borderRadius: 12,
-                  background: me ? "rgba(139,92,246,0.1)" : "var(--sch-card-2)",
-                  border: me ? "1px solid rgba(139,92,246,0.4)" : "1px solid transparent",
+                  background: me ? "rgba(200,0,0,0.06)" : "var(--sch-card-2)",
+                  border: me ? "1px solid rgba(200,0,0,0.4)" : "1px solid transparent",
                 }}
               >
                 <span style={{ width: 26, textAlign: "center", fontSize: medal ? 16 : 13, fontWeight: 800, color: MUTED, flexShrink: 0 }}>
@@ -516,10 +516,10 @@ function CompoundCard({ deck }: { deck: NonNullable<ReturnType<typeof readDeck>>
   const [youCx, youCy] = px(you).split(",").map(Number)
 
   return (
-    <div style={{ ...card, marginTop: 22, border: "1px solid rgba(139,92,246,0.3)", boxShadow: "0 0 50px rgba(139,92,246,0.08)" }}>
+    <div style={{ ...card, marginTop: 22, border: "1px solid rgba(200,0,0,0.3)", boxShadow: "0 0 50px rgba(200,0,0,0.08)" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h2 style={sectionTitle}>1% better, every day</h2>
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#C084FC" }}>Day {day}</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "#D92E10" }}>Day {day}</span>
       </div>
       <div style={{ fontSize: 26, fontWeight: 900, ...iriText, marginTop: 8 }}>
         ×{mult < 10 ? mult.toFixed(2) : mult.toFixed(1)}
@@ -540,16 +540,16 @@ function CompoundCard({ deck }: { deck: NonNullable<ReturnType<typeof readDeck>>
         />
         <defs>
           <linearGradient id="sch-compound" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#818CF8" />
-            <stop offset="60%" stopColor="#A78BFA" />
-            <stop offset="100%" stopColor="#38BDF8" />
+            <stop offset="0%" stopColor="#E50068" />
+            <stop offset="60%" stopColor="#C80000" />
+            <stop offset="100%" stopColor="#F4A405" />
           </linearGradient>
         </defs>
         <motion.circle
           cx={youCx}
           cy={youCy}
           r="5"
-          fill="#C084FC"
+          fill="#D92E10"
           stroke="var(--sch-card)"
           strokeWidth="2"
           initial={{ scale: 0, opacity: 0 }}
@@ -579,7 +579,7 @@ function CompoundCard({ deck }: { deck: NonNullable<ReturnType<typeof readDeck>>
         {eta && (
           <div style={{ fontSize: 12.5, color: DIM, marginTop: 10 }}>
             At {deck.dailyNewWords} words/day, you're on pace for fluency by{" "}
-            <strong style={{ color: "#C084FC" }}>{format(eta, "MMMM yyyy")}</strong>.
+            <strong style={{ color: "#D92E10" }}>{format(eta, "MMMM yyyy")}</strong>.
           </div>
         )}
       </div>

@@ -166,8 +166,8 @@ export default function RoomChat({
               style={{
                 padding: "6px 10px",
                 borderRadius: 999,
-                background: "rgba(139,92,246,0.06)",
-                border: "1px solid rgba(139,92,246,0.18)",
+                background: "rgba(200,0,0,0.06)",
+                border: "1px solid rgba(200,0,0,0.18)",
                 color: TEXT_PRIMARY,
                 fontSize: 12,
                 cursor: "pointer",
@@ -213,7 +213,7 @@ export default function RoomChat({
               fontSize: 14,
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
+              boxShadow: "0 8px 24px rgba(200,0,0,0.35)",
             }}
           >
             Send
@@ -281,7 +281,7 @@ function MessageRow({ message, meId }: { message: RoomMessage; meId: string }) {
             position: "relative",
             borderRadius: 16,
             padding: "12px 16px",
-            background: "rgba(139,92,246,0.05)",
+            background: "rgba(200,0,0,0.05)",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
           }}
@@ -294,8 +294,8 @@ function MessageRow({ message, meId }: { message: RoomMessage; meId: string }) {
               style={{
                 padding: "2px 8px",
                 borderRadius: 999,
-                background: "rgba(139,92,246,0.12)",
-                color: "#C084FC",
+                background: "rgba(200,0,0,0.07)",
+                color: "#D92E10",
                 fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: "0.08em",
@@ -315,8 +315,8 @@ function MessageRow({ message, meId }: { message: RoomMessage; meId: string }) {
 
   const fromMe = message.userId === meId
   const bubbleStyle: CSSProperties = {
-    background: fromMe ? "rgba(139,92,246,0.12)" : "rgba(255,255,255,0.04)",
-    border: fromMe ? "1px solid rgba(139,92,246,0.22)" : "1px solid rgba(255,255,255,0.06)",
+    background: fromMe ? "rgba(200,0,0,0.07)" : "rgba(255,255,255,0.04)",
+    border: fromMe ? "1px solid rgba(200,0,0,0.22)" : "1px solid rgba(255,255,255,0.06)",
     borderRadius: 14,
     padding: "9px 13px",
     fontSize: 13.5,

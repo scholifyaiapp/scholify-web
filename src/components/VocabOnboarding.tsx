@@ -302,9 +302,9 @@ export default function VocabOnboarding({
                 padding: 18,
                 borderRadius: 18,
                 cursor: "pointer",
-                background: "rgba(139,92,246,0.07)",
-                border: "1px solid rgba(139,92,246,0.4)",
-                boxShadow: "0 0 24px rgba(139,92,246,0.1)",
+                background: "rgba(200,0,0,0.07)",
+                border: "1px solid rgba(200,0,0,0.4)",
+                boxShadow: "0 0 24px rgba(200,0,0,0.06)",
                 opacity: loadingTest ? 0.7 : 1,
               }}
             >
@@ -446,7 +446,7 @@ export default function VocabOnboarding({
                   key={i}
                   animate={{ opacity: [0.25, 1, 0.25], y: [0, -5, 0] }}
                   transition={{ duration: 1, repeat: Infinity, delay: i * 0.18 }}
-                  style={{ width: 9, height: 9, borderRadius: 999, background: "#A78BFA" }}
+                  style={{ width: 9, height: 9, borderRadius: 999, background: "#C80000" }}
                 />
               ))}
             </div>
@@ -505,8 +505,8 @@ function PlanReveal({
           marginTop: 16,
           padding: "10px 22px",
           borderRadius: 999,
-          background: "rgba(139,92,246,0.1)",
-          border: "1px solid rgba(139,92,246,0.4)",
+          background: "rgba(200,0,0,0.06)",
+          border: "1px solid rgba(200,0,0,0.4)",
         }}
       >
         <span style={{ fontSize: 13, fontWeight: 700, color: MUTED }}>Your level</span>
@@ -530,8 +530,8 @@ function PlanReveal({
           padding: 20,
           borderRadius: 20,
           background: "var(--sch-card)",
-          border: "1px solid rgba(139,92,246,0.25)",
-          boxShadow: "0 0 50px rgba(139,92,246,0.1)",
+          border: "1px solid rgba(200,0,0,0.25)",
+          boxShadow: "0 0 50px rgba(200,0,0,0.06)",
           textAlign: "left",
         }}
       >
@@ -578,12 +578,12 @@ function MiniCurve() {
     <svg viewBox="0 0 320 80" width="100%" height="64" preserveAspectRatio="none" style={{ display: "block", margin: "12px 0 4px", overflow: "visible" }} aria-hidden>
       <defs>
         <linearGradient id="ob-curve" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#8B5CF6" />
-          <stop offset="1" stopColor="#38BDF8" />
+          <stop offset="0" stopColor="#C80000" />
+          <stop offset="1" stopColor="#F4A405" />
         </linearGradient>
         <linearGradient id="ob-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="rgba(139,92,246,0.2)" />
-          <stop offset="1" stopColor="rgba(139,92,246,0)" />
+          <stop offset="0" stopColor="rgba(200,0,0,0.2)" />
+          <stop offset="1" stopColor="rgba(200,0,0,0)" />
         </linearGradient>
       </defs>
       <path d="M4,74 C120,72 200,66 250,52 C285,42 305,24 316,6 L316,78 L4,78 Z" fill="url(#ob-fill)" />
@@ -680,8 +680,8 @@ function LangGrid({
             padding: "16px 16px",
             borderRadius: 16,
             cursor: "pointer",
-            background: active === l.code ? "rgba(139,92,246,0.1)" : "var(--sch-card)",
-            border: `1px solid ${active === l.code ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+            background: active === l.code ? "rgba(200,0,0,0.06)" : "var(--sch-card)",
+            border: `1px solid ${active === l.code ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
             textAlign: "left",
           }}
         >
@@ -705,8 +705,8 @@ function PaceCard({ n, active, onClick }: { n: number; active: boolean; onClick:
         padding: "18px 12px",
         borderRadius: 16,
         cursor: "pointer",
-        background: active ? "rgba(139,92,246,0.1)" : "var(--sch-card)",
-        border: `1px solid ${active ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+        background: active ? "rgba(200,0,0,0.06)" : "var(--sch-card)",
+        border: `1px solid ${active ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
         textAlign: "center",
       }}
     >

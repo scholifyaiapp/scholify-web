@@ -116,7 +116,7 @@ export default function NotificationBell() {
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#C084FC",
+                    color: "#D92E10",
                     fontSize: 11.5,
                     fontWeight: 600,
                     cursor: "pointer",

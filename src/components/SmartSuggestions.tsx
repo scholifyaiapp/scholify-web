@@ -34,8 +34,8 @@ const cardStyle: CSSProperties = {
   position: "relative",
   padding: 20,
   borderRadius: 20,
-  background: "rgba(139,92,246,0.04)",
-  border: "1px solid rgba(139,92,246,0.15)",
+  background: "rgba(200,0,0,0.04)",
+  border: "1px solid rgba(200,0,0,0.08)",
   backdropFilter: "blur(16px) saturate(140%)",
   WebkitBackdropFilter: "blur(16px) saturate(140%)",
   overflow: "hidden",
@@ -148,7 +148,7 @@ export default function SmartSuggestions() {
         <p
           style={{
             fontSize: 12,
-            color: "rgba(192,132,252,0.75)",
+            color: "rgba(200,0,0,0.75)",
             letterSpacing: "0.04em",
             fontWeight: 600,
           }}
@@ -207,7 +207,7 @@ export default function SmartSuggestions() {
                   border: "none",
                   cursor: applying ? "default" : "pointer",
                   opacity: applying ? 0.7 : 1,
-                  boxShadow: "0 10px 28px rgba(167,139,250,0.4)",
+                  boxShadow: "0 10px 28px rgba(200,0,0,0.4)",
                 }}
               >
                 {applying ? "Updating…" : "Apply this change ✓"}

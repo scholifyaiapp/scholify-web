@@ -31,7 +31,7 @@ function TestimonialsColumn({ className, testimonials, duration = 30 }: ColumnPr
                 key={`${copyIndex}-${i}`}
                 aria-hidden={copyIndex === 1 ? "true" : "false"}
                 tabIndex={copyIndex === 1 ? -1 : 0}
-                className="p-7 rounded-2xl border border-neutral-200 shadow-sm shadow-black/5 max-w-xs w-full bg-white cursor-default select-none focus:outline-none focus:ring-2 focus:ring-[#5B5BF5]/30"
+                className="p-7 rounded-2xl border border-neutral-200 shadow-sm shadow-black/5 max-w-xs w-full bg-white cursor-default select-none focus:outline-none focus:ring-2 focus:ring-[#C80000]/30"
                 style={{ contain: "layout paint" }}
               >
                 <blockquote className="m-0 p-0">

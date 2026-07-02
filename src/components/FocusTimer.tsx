@@ -287,8 +287,8 @@ function SettingRow({
                 fontWeight: 600,
                 borderRadius: 8,
                 cursor: "pointer",
-                background: active ? "rgba(139,92,246,0.18)" : "transparent",
-                border: `1px solid ${active ? "rgba(139,92,246,0.45)" : "var(--sch-border)"}`,
+                background: active ? "rgba(200,0,0,0.18)" : "transparent",
+                border: `1px solid ${active ? "rgba(200,0,0,0.45)" : "var(--sch-border)"}`,
                 color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
               }}
             >
@@ -321,8 +321,8 @@ function Ring({
     <svg width={size} height={size}>
       <defs>
         <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#A78BFA" />
-          <stop offset="35%" stopColor="#818CF8" />
+          <stop offset="0%" stopColor="#C80000" />
+          <stop offset="35%" stopColor="#E50068" />
           <stop offset="70%" stopColor="#F0ABFC" />
           <stop offset="100%" stopColor="#FBBF24" />
         </linearGradient>
@@ -656,8 +656,8 @@ export default function FocusTimer({
           style={{
             padding: "7px 14px",
             borderRadius: 999,
-            border: "1px solid rgba(139,92,246,0.3)",
-            background: "rgba(139,92,246,0.08)",
+            border: "1px solid rgba(200,0,0,0.3)",
+            background: "rgba(200,0,0,0.08)",
             fontSize: 13,
             fontWeight: 700,
             cursor: "pointer",
@@ -825,7 +825,7 @@ export default function FocusTimer({
                     done
                       ? "transparent"
                       : current
-                        ? "rgba(139,92,246,0.6)"
+                        ? "rgba(200,0,0,0.6)"
                         : "var(--sch-border-2)"
                   }`,
                 }}
@@ -856,8 +856,8 @@ export default function FocusTimer({
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
-                border: "1px solid rgba(139,92,246,0.3)",
-                background: "rgba(139,92,246,0.12)",
+                border: "1px solid rgba(200,0,0,0.3)",
+                background: "rgba(200,0,0,0.07)",
                 color: "var(--sch-text)",
                 cursor: "pointer",
                 fontSize: 16,
@@ -989,7 +989,7 @@ export default function FocusTimer({
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: "pointer",
-                      boxShadow: "0 0 20px rgba(139,92,246,0.3)",
+                      boxShadow: "0 0 20px rgba(200,0,0,0.3)",
                     }}
                   >
                     Mark task complete →

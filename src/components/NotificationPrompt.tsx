@@ -73,7 +73,7 @@ export default function NotificationPrompt({
         padding: 20,
         borderRadius: 18,
         background: "rgba(15,14,22,0.98)",
-        border: "1px solid rgba(139,92,246,0.2)",
+        border: "1px solid rgba(200,0,0,0.2)",
         boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
       }}
     >

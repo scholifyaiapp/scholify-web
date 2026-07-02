@@ -60,7 +60,7 @@ export const STAGES: TreeStage[] = [
     key: "young_tree",
     name: "Young Tree",
     description: "You're past the hardest part — most people give up before here.",
-    hue: { ring: "#A78BFA", glow: "rgba(167,139,250,0.4)" },
+    hue: { ring: "#C80000", glow: "rgba(200,0,0,0.4)" },
   },
   {
     milestone: 21,
@@ -95,7 +95,7 @@ export const STAGES: TreeStage[] = [
     key: "legendary",
     name: "Legendary Tree",
     description: "You have built something rare. Very few people ever reach this.",
-    hue: { ring: "#A78BFA", glow: "rgba(167,139,250,0.5)" },
+    hue: { ring: "#C80000", glow: "rgba(200,0,0,0.5)" },
   },
   {
     milestone: 180,
@@ -228,7 +228,7 @@ export function svgForStage(stage: StageKey): string {
       `)
     case "mythic":
       return wrap(`
-        <defs>${defs("#0F0A1F", "#040208")}<radialGradient id="mythCanopy" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="var(--sch-text)"/><stop offset="40%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#1E1B4B"/></radialGradient></defs>
+        <defs>${defs("#0F0A1F", "#040208")}<radialGradient id="mythCanopy" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="var(--sch-text)"/><stop offset="40%" stop-color="#C80000"/><stop offset="100%" stop-color="#1E1B4B"/></radialGradient></defs>
         ${earth("#0E0A20")}
         ${stars()}
         ${fireflies()}

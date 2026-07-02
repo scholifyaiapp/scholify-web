@@ -97,7 +97,7 @@ function ProgressSteps({ active }: { active: number }) {
                 borderRadius: "50%",
                 flexShrink: 0,
                 background: i <= active ? IRIDESCENT : "var(--sch-border-2)",
-                boxShadow: i === active ? "0 0 10px rgba(139,92,246,0.6)" : "none",
+                boxShadow: i === active ? "0 0 10px rgba(200,0,0,0.6)" : "none",
               }}
             />
             {i < STEPS.length - 1 && (
@@ -191,7 +191,7 @@ function TermsCheckbox({
         <Link
           to="/terms"
           onClick={(e) => e.stopPropagation()}
-          style={{ color: "rgba(139,92,246,0.8)", textDecoration: "none" }}
+          style={{ color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
         >
           Terms of Service
         </Link>{" "}
@@ -199,7 +199,7 @@ function TermsCheckbox({
         <Link
           to="/privacy"
           onClick={(e) => e.stopPropagation()}
-          style={{ color: "rgba(139,92,246,0.8)", textDecoration: "none" }}
+          style={{ color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
         >
           Privacy Policy
         </Link>
@@ -231,7 +231,7 @@ function ConfirmEmailPanel({ email }: { email: string }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 0 40px rgba(139,92,246,0.4)",
+          boxShadow: "0 0 40px rgba(200,0,0,0.4)",
         }}
       >
         <Mail size={28} color="#fff" />
@@ -269,11 +269,11 @@ function ConfirmEmailPanel({ email }: { email: string }) {
           marginTop: 28,
           fontSize: 14,
           fontWeight: 500,
-          color: "rgba(139,92,246,0.9)",
+          color: "rgba(200,0,0,0.9)",
           textDecoration: "none",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(139,92,246,1)")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(139,92,246,0.9)")}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(200,0,0,1)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,0,0,0.9)")}
       >
         Back to sign in →
       </Link>
@@ -551,9 +551,9 @@ export default function SignUp() {
           Already have an account?{" "}
           <Link
             to="/sign-in"
-            style={{ color: "rgba(139,92,246,0.9)", textDecoration: "none", fontWeight: 500 }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(139,92,246,1)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(139,92,246,0.9)")}
+            style={{ color: "rgba(200,0,0,0.9)", textDecoration: "none", fontWeight: 500 }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(200,0,0,1)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,0,0,0.9)")}
           >
             Sign in →
           </Link>

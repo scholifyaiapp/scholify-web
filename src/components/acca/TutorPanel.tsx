@@ -12,7 +12,7 @@ import type { AccaQuestion } from "@/lib/acca"
 const TEXT = "var(--sch-text)"
 const MUTED = "var(--sch-tx-2)"
 const BORDER = "var(--sch-border)"
-const PURPLE = "#A78BFA"
+const PURPLE = "#C80000"
 
 const QUICK = ["Explain more simply", "Why is that the answer?", "Give me a memory tip"]
 
@@ -45,7 +45,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
           padding: "10px 14px",
           borderRadius: 12,
           border: `1px solid ${PURPLE}`,
-          background: "rgba(167,139,250,0.08)",
+          background: "rgba(200,0,0,0.08)",
           color: PURPLE,
           fontWeight: 650,
           fontSize: 14,
@@ -66,7 +66,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
         padding: 16,
         borderRadius: 14,
         border: `1px solid ${PURPLE}`,
-        background: "rgba(167,139,250,0.06)",
+        background: "rgba(200,0,0,0.06)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>

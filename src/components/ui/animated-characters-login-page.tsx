@@ -437,7 +437,7 @@ function LoginPage() {
             <h1 className="font-display text-3xl sm:text-4xl font-normal tracking-tight mb-2 text-[#14141A]">{t("Welcome back.")}</h1>
             <p className="text-neutral-500 text-sm">
               {t("New here?")}{" "}
-              <Link to="/sign-up" className="text-[#5B5BF5] font-semibold hover:underline">
+              <Link to="/sign-up" className="text-[#C80000] font-semibold hover:underline">
                 {t("Create an account")}
               </Link>
             </p>
@@ -457,7 +457,7 @@ function LoginPage() {
                 onFocus={() => setIsTyping(true)}
                 onBlur={() => setIsTyping(false)}
                 required
-                className="h-12 bg-white border-neutral-200 focus:border-[#5B5BF5] focus-visible:ring-[#5B5BF5]/30"
+                className="h-12 bg-white border-neutral-200 focus:border-[#C80000] focus-visible:ring-[#C80000]/30"
               />
             </div>
 
@@ -472,7 +472,7 @@ function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-12 pr-10 bg-white border-neutral-200 focus:border-[#5B5BF5] focus-visible:ring-[#5B5BF5]/30"
+                  className="h-12 pr-10 bg-white border-neutral-200 focus:border-[#C80000] focus-visible:ring-[#C80000]/30"
                 />
                 <button
                   type="button"
@@ -492,7 +492,7 @@ function LoginPage() {
                   {t("Remember for 30 days")}
                 </Label>
               </div>
-              <a href="#" className="text-sm text-[#5B5BF5] hover:underline font-medium">
+              <a href="#" className="text-sm text-[#C80000] hover:underline font-medium">
                 {t("Forgot password?")}
               </a>
             </div>

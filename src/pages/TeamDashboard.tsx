@@ -57,7 +57,7 @@ export default function TeamDashboard() {
       <DashboardLayout>
         <div style={{ padding: 32, color: TEXT_MUTED }}>
           This workspace doesn't exist.{" "}
-          <Link to="/teams" style={{ color: "#C084FC" }}>
+          <Link to="/teams" style={{ color: "#D92E10" }}>
             Back to Teams
           </Link>
         </div>

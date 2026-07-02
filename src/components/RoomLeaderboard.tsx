@@ -33,8 +33,8 @@ function rowStyle(isYou: boolean): CSSProperties {
     gap: 10,
     padding: "10px 12px 10px 16px",
     borderRadius: 12,
-    background: isYou ? "rgba(139,92,246,0.08)" : "transparent",
-    border: `1px solid ${isYou ? "rgba(139,92,246,0.18)" : "transparent"}`,
+    background: isYou ? "rgba(200,0,0,0.08)" : "transparent",
+    border: `1px solid ${isYou ? "rgba(200,0,0,0.18)" : "transparent"}`,
   }
 }
 

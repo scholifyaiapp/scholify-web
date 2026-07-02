@@ -14,7 +14,7 @@ function cssOrb(size: number): CSSProperties {
     width: size,
     height: size,
     borderRadius: "50%",
-    background: "radial-gradient(circle at 32% 28%, #fff, #C084FC 40%, #7C3AED 92%)",
+    background: "radial-gradient(circle at 32% 28%, #fff, #D92E10 40%, #7C3AED 92%)",
     boxShadow: "0 8px 26px -4px rgba(124,58,237,0.5), inset 0 0 0 2px rgba(255,255,255,0.3)",
   }
 }

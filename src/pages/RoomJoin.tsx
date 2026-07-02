@@ -140,7 +140,7 @@ export default function RoomJoin() {
               fontWeight: 700,
               fontSize: 14,
               cursor: "pointer",
-              boxShadow: "0 10px 28px rgba(167,139,250,0.4)",
+              boxShadow: "0 10px 28px rgba(200,0,0,0.4)",
             }}
           >
             Join this room →

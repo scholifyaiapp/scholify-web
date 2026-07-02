@@ -222,8 +222,8 @@ function ProgressRing({ percent }: { percent: number }) {
       <svg width={size} height={size}>
         <defs>
           <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#A78BFA" />
-            <stop offset="35%" stopColor="#818CF8" />
+            <stop offset="0%" stopColor="#C80000" />
+            <stop offset="35%" stopColor="#E50068" />
             <stop offset="70%" stopColor="#F0ABFC" />
             <stop offset="100%" stopColor="#FBBF24" />
           </linearGradient>

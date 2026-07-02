@@ -128,7 +128,7 @@ export default function VocabSpeakGame({ deck, onClose }: { deck: VocabDeck; onC
           particleCount: 90,
           spread: 70,
           origin: { y: 0.7 },
-          colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"],
+          colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"],
         })
       } catch {
         /* ignore */
@@ -176,7 +176,7 @@ export default function VocabSpeakGame({ deck, onClose }: { deck: VocabDeck; onC
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 style={{ width: "100%", maxWidth: 440, textAlign: "center" }}
               >
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(192,132,252,0.8)" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(200,0,0,0.8)" }}>
                   Say it · {idx + 1}/{words.length}
                 </div>
 
@@ -198,13 +198,13 @@ export default function VocabSpeakGame({ deck, onClose }: { deck: VocabDeck; onC
                   whileTap={{ scale: 0.94 }}
                   animate={
                     state === "listening"
-                      ? { boxShadow: ["0 0 0 0 rgba(139,92,246,0.5)", "0 0 0 18px rgba(139,92,246,0)"] }
+                      ? { boxShadow: ["0 0 0 0 rgba(200,0,0,0.5)", "0 0 0 18px rgba(200,0,0,0)"] }
                       : {}
                   }
                   transition={state === "listening" ? { duration: 1.2, repeat: Infinity } : {}}
                   style={{
                     ...micBtn,
-                    background: state === "listening" ? "rgba(139,92,246,0.2)" : IRIDESCENT,
+                    background: state === "listening" ? "rgba(200,0,0,0.2)" : IRIDESCENT,
                   }}
                 >
                   🎙️
@@ -263,4 +263,4 @@ const progressTrack: CSSProperties = { flex: 1, height: 8, borderRadius: 4, back
 const stage: CSSProperties = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 24px 60px" }
 const micBtn: CSSProperties = { width: 96, height: 96, borderRadius: "50%", border: "none", color: "#fff", fontSize: 40, cursor: "pointer", marginTop: 28 }
 const speakChip: CSSProperties = { width: 34, height: 34, borderRadius: "50%", border: "1px solid var(--sch-border)", background: "var(--sch-card-2)", fontSize: 15, cursor: "pointer" }
-const primaryBtn: CSSProperties = { width: "100%", height: 52, marginTop: 24, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 30px rgba(139,92,246,0.3)" }
+const primaryBtn: CSSProperties = { width: "100%", height: 52, marginTop: 24, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 30px rgba(200,0,0,0.3)" }

@@ -18,7 +18,7 @@ const LOADER_STYLES = `
     0% {
       transform: rotate(90deg);
       box-shadow:
-        0 6px 12px 0 #38bdf8 inset,
+        0 6px 12px 0 #F4A405 inset,
         0 12px 18px 0 #005dff inset,
         0 36px 36px 0 #1e40af inset,
         0 0 3px 1.2px rgba(56, 189, 248, 0.3),

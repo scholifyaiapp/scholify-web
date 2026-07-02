@@ -28,10 +28,10 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 const BG = "#050508"
 const TEXT = "#F0EEFF"
 const TEXT_MUTED = "rgba(240,238,255,0.55)"
-const BUBBLE_BG = "rgba(139,92,246,0.08)"
-const BUBBLE_BORDER = "rgba(139,92,246,0.15)"
-const USER_BG = "rgba(139,92,246,0.25)"
-const USER_BORDER = "rgba(139,92,246,0.3)"
+const BUBBLE_BG = "rgba(200,0,0,0.08)"
+const BUBBLE_BORDER = "rgba(200,0,0,0.08)"
+const USER_BG = "rgba(200,0,0,0.25)"
+const USER_BORDER = "rgba(200,0,0,0.3)"
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]
 
 type Stage =
@@ -206,7 +206,7 @@ function LaraAvatar({ size = 32, speaking = false }: { size?: number; speaking?:
           borderRadius: "50%",
           padding: ringWidth,
           background: IRIDESCENT,
-          boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
+          boxShadow: "0 4px 16px rgba(200,0,0,0.4)",
         }}
       >
         <img
@@ -234,7 +234,7 @@ function LaraAvatar({ size = 32, speaking = false }: { size?: number; speaking?:
             position: "absolute",
             inset: 0,
             borderRadius: "50%",
-            border: "2px solid rgba(167,139,250,0.55)",
+            border: "2px solid rgba(200,0,0,0.55)",
             pointerEvents: "none",
           }}
         />
@@ -291,7 +291,7 @@ function LaraBubble({
             width: 2,
             height: "1em",
             verticalAlign: "text-bottom",
-            background: "rgba(167,139,250,0.9)",
+            background: "rgba(200,0,0,0.9)",
             marginLeft: 2,
           }}
         />
@@ -338,7 +338,7 @@ function QuickReplies({
               ? undefined
               : {
                   scale: 1.03,
-                  borderColor: "rgba(139,92,246,0.4)",
+                  borderColor: "rgba(200,0,0,0.4)",
                   color: TEXT,
                 }
           }
@@ -407,7 +407,7 @@ function TypingIndicator() {
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: "rgba(167,139,250,0.85)",
+              background: "rgba(200,0,0,0.85)",
             }}
           />
         ))}
@@ -1032,7 +1032,7 @@ export default function OnboardingChat() {
               fontWeight: 700,
               cursor: sendDisabled ? "not-allowed" : "pointer",
               opacity: sendDisabled ? 0.4 : 1,
-              boxShadow: sendDisabled ? "none" : "0 0 20px rgba(139,92,246,0.4)",
+              boxShadow: sendDisabled ? "none" : "0 0 20px rgba(200,0,0,0.4)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

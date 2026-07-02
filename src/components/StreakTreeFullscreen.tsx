@@ -405,7 +405,7 @@ function AmbientOrbs() {
           height: 520,
           borderRadius: "50%",
           background:
-            "radial-gradient(closest-side, rgba(167,139,250,0.32), transparent 70%)",
+            "radial-gradient(closest-side, rgba(200,0,0,0.32), transparent 70%)",
           filter: "blur(40px)",
         }}
       />
@@ -483,7 +483,7 @@ const shareBtnStyle: CSSProperties = {
   fontSize: 14,
   border: "none",
   cursor: "pointer",
-  boxShadow: "0 14px 36px rgba(167,139,250,0.45)",
+  boxShadow: "0 14px 36px rgba(200,0,0,0.45)",
 }
 
 const ghostBtnStyle: CSSProperties = {

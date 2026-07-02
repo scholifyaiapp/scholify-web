@@ -178,9 +178,9 @@ export default function Room() {
                       flex: 1,
                       padding: "9px 0",
                       borderRadius: 10,
-                      background: active ? "rgba(139,92,246,0.14)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.06)"}`,
-                      color: active ? "#C084FC" : TEXT_MUTED,
+                      background: active ? "rgba(200,0,0,0.14)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${active ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      color: active ? "#D92E10" : TEXT_MUTED,
                       fontSize: 12.5,
                       fontWeight: 600,
                       textTransform: "capitalize",
@@ -299,7 +299,7 @@ function RoomHeader({
                 fontWeight: 600,
                 border: "none",
                 cursor: "pointer",
-                boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
+                boxShadow: "0 8px 24px rgba(200,0,0,0.35)",
               }}
             >
               Join room →
@@ -376,8 +376,8 @@ function MembersList({
                   gap: 10,
                   padding: "8px 10px",
                   borderRadius: 10,
-                  background: m.userId === meId ? "rgba(139,92,246,0.06)" : "transparent",
-                  border: `1px solid ${m.userId === meId ? "rgba(139,92,246,0.16)" : "transparent"}`,
+                  background: m.userId === meId ? "rgba(200,0,0,0.06)" : "transparent",
+                  border: `1px solid ${m.userId === meId ? "rgba(200,0,0,0.16)" : "transparent"}`,
                 }}
               >
                 <div style={{ position: "relative" }}>
@@ -554,7 +554,7 @@ function RightPanel({
                 height: 22,
                 borderRadius: "50%",
                 background: m.doneToday
-                  ? `linear-gradient(135deg,#A78BFA,#F472B6)`
+                  ? `linear-gradient(135deg,#C80000,#F472B6)`
                   : "transparent",
                 border: m.doneToday ? "none" : "1.5px dashed rgba(255,255,255,0.2)",
                 display: "grid",
@@ -624,8 +624,8 @@ function RightPanel({
               style={{
                 padding: "10px 12px",
                 borderRadius: 12,
-                background: "rgba(139,92,246,0.05)",
-                border: "1px solid rgba(139,92,246,0.16)",
+                background: "rgba(200,0,0,0.05)",
+                border: "1px solid rgba(200,0,0,0.16)",
               }}
             >
               <p style={{ fontSize: 12.5, color: TEXT_PRIMARY, lineHeight: 1.5 }}>{a.content}</p>

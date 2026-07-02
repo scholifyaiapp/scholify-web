@@ -25,7 +25,7 @@ const MUTED = "var(--sch-tx-2)"
 const DIM = "var(--sch-tx-3)"
 const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
-const PURPLE = "#A78BFA"
+const PURPLE = "#C80000"
 
 function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
@@ -112,7 +112,7 @@ export default function AccaOnboarding({
                           key={p.id}
                           onClick={() => togglePassed(p.id)}
                           title={p.name}
-                          style={{ padding: "8px 14px", borderRadius: 999, border: `1.5px solid ${on ? PURPLE : BORDER}`, background: on ? "rgba(167,139,250,0.12)" : CARD, color: on ? PURPLE : TEXT, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                          style={{ padding: "8px 14px", borderRadius: 999, border: `1.5px solid ${on ? PURPLE : BORDER}`, background: on ? "rgba(200,0,0,0.07)" : CARD, color: on ? PURPLE : TEXT, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
                         >
                           {on && <span>✓</span>}{p.id}
                         </button>

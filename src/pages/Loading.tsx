@@ -98,8 +98,8 @@ function OrbGraphic() {
           height: 120,
           marginTop: -60,
           marginLeft: -60,
-          border: "1px solid rgba(139,92,246,0.2)",
-          borderTopColor: "rgba(139,92,246,0.7)",
+          border: "1px solid rgba(200,0,0,0.2)",
+          borderTopColor: "rgba(200,0,0,0.7)",
         }}
       />
       {/* Middle ring */}
@@ -126,8 +126,8 @@ function OrbGraphic() {
           height: 60,
           marginTop: -30,
           marginLeft: -30,
-          border: "1px solid rgba(139,92,246,0.5)",
-          background: "radial-gradient(circle, rgba(139,92,246,0.3), transparent)",
+          border: "1px solid rgba(200,0,0,0.5)",
+          background: "radial-gradient(circle, rgba(200,0,0,0.3), transparent)",
         }}
       />
       {/* Center dot */}
@@ -357,13 +357,13 @@ export default function Loading() {
                 height: 48,
                 padding: "0 28px",
                 borderRadius: 12,
-                background: "linear-gradient(135deg,rgba(139,92,246,0.85),rgba(99,102,241,0.85))",
-                border: "1px solid rgba(139,92,246,0.5)",
+                background: "linear-gradient(135deg,rgba(200,0,0,0.85),rgba(99,102,241,0.85))",
+                border: "1px solid rgba(200,0,0,0.5)",
                 color: "#fff",
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: "pointer",
-                boxShadow: "0 0 30px rgba(139,92,246,0.25)",
+                boxShadow: "0 0 30px rgba(200,0,0,0.25)",
               }}
             >
               Try again

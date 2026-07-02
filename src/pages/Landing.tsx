@@ -45,17 +45,17 @@ const BG_DARK = "#0B0B0F"
 const INK = "#14141A"
 const INK_MUTED = "#6B6B76"
 const INK_INVERSE = "#FAFAF7"
-const BRAND_500 = "#5B5BF5"
-const BRAND_400 = "#7C7CFF"
-const BRAND_100 = "#E8E8FF"
-const FIRE_500 = "#FF6B3D"
-const FIRE_100 = "#FFE8DF"
+const BRAND_500 = "#C80000"
+const BRAND_400 = "#D92E10"
+const BRAND_100 = "#FBE7E4"
+const FIRE_500 = "#F4A405"
+const FIRE_100 = "#FDF2DC"
 const SHIELD_500 = "#2DD4BF"
 const SHIELD_100 = "#DDFAF4"
-const PLUM_500 = "#A855F7"
-const PLUM_100 = "#F3E8FF"
+const PLUM_500 = "#E50068"
+const PLUM_100 = "#FCE4EF"
 const HAIR = "rgba(20,20,26,0.08)"
-const GRAD_HERO = "linear-gradient(135deg, #5B5BF5 0%, #A855F7 50%, #FF6B3D 100%)"
+const GRAD_HERO = "linear-gradient(135deg, #C80000 0%, #E50068 50%, #F4A405 100%)"
 
 const EASE_DECISIVE = [0.22, 1, 0.36, 1] as const
 const EASE_HOVER = [0.4, 0, 0.2, 1] as const
@@ -286,7 +286,7 @@ function HeroHeadline() {
       <AnimatedText
         text={t("Pass ACCA. Paper by paper.")}
         textClassName="font-display font-normal tracking-[-0.03em]"
-        gradientColors="linear-gradient(90deg, #14141A 0%, #5B5BF5 40%, #A855F7 50%, #5B5BF5 60%, #14141A 100%)"
+        gradientColors="linear-gradient(90deg, #14141A 0%, #C80000 40%, #E50068 50%, #C80000 60%, #14141A 100%)"
         gradientAnimationDuration={3.5}
         className="!py-0"
       />
@@ -675,7 +675,7 @@ function HowItWorks() {
           text={t("From 'which paper?' to a plan in 60 seconds")}
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
-          underlineClassName="text-[#5B5BF5]"
+          underlineClassName="text-[#C80000]"
           underlineDuration={1.6}
         />
 

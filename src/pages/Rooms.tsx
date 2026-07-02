@@ -55,7 +55,7 @@ const iridescentBtn: CSSProperties = {
   fontWeight: 600,
   border: "none",
   cursor: "pointer",
-  boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
+  boxShadow: "0 8px 24px rgba(200,0,0,0.35)",
 }
 
 const sectionLabel: CSSProperties = {
@@ -200,9 +200,9 @@ export default function Rooms() {
                   style={{
                     padding: "7px 14px",
                     borderRadius: 999,
-                    background: active ? "rgba(139,92,246,0.14)" : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.06)"}`,
-                    color: active ? "#C084FC" : TEXT_MUTED,
+                    background: active ? "rgba(200,0,0,0.14)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${active ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.06)"}`,
+                    color: active ? "#D92E10" : TEXT_MUTED,
                     fontSize: 12.5,
                     fontWeight: active ? 600 : 500,
                     cursor: "pointer",
@@ -469,7 +469,7 @@ function CreateRoomModal({
             max={10}
             value={maxMembers}
             onChange={(e) => setMaxMembers(Number(e.target.value))}
-            style={{ width: "100%", accentColor: "#A78BFA" }}
+            style={{ width: "100%", accentColor: "#C80000" }}
           />
         </Field>
         <Field label="Exam date (optional)">
@@ -496,7 +496,7 @@ function CreateRoomModal({
             type="checkbox"
             checked={isPrivate}
             onChange={(e) => setIsPrivate(e.target.checked)}
-            style={{ accentColor: "#A78BFA" }}
+            style={{ accentColor: "#C80000" }}
           />
           <div>
             <p style={{ fontSize: 13, color: TEXT_PRIMARY }}>Private room</p>

@@ -163,7 +163,7 @@ export default function IntegrationStrip() {
           to="/rooms"
           title={rooms.topRoom || "Your rooms"}
           body={`💬 ${rooms.total} new ${rooms.total === 1 ? "message" : "messages"}`}
-          accent="#C084FC"
+          accent="#D92E10"
         />
       )}
 
@@ -172,7 +172,7 @@ export default function IntegrationStrip() {
           to="/quiz"
           title={`Week ${week} Challenge`}
           body="🏆 Ready · 5 questions"
-          accent="#A78BFA"
+          accent="#C80000"
           glow
         />
       )}
@@ -184,7 +184,7 @@ function Card({
   to,
   title,
   body,
-  accent = "#C084FC",
+  accent = "#D92E10",
   glow = false,
 }: {
   to: string

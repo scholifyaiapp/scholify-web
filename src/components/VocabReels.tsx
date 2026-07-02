@@ -65,7 +65,7 @@ export default function VocabReels({ deck, onClose }: { deck: VocabDeck; onClose
       awardedRef.current = true
       awardXp(Math.min(20, words.length))
       try {
-        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 }, colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399"] })
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 }, colors: ["#D92E10", "#E50068", "#F4A405", "#34D399"] })
       } catch {
         /* ignore */
       }
@@ -211,7 +211,7 @@ function WordCard({ word, lang }: { word: VocabWord; lang: string }) {
             type="button"
             aria-label="Pronounce"
             onClick={() => speak(word.term, lang)}
-            style={{ width: 46, height: 46, borderRadius: 13, border: "none", background: "rgba(139,92,246,0.12)", color: "#7C3AED", fontSize: 20, cursor: "pointer", flexShrink: 0 }}
+            style={{ width: 46, height: 46, borderRadius: 13, border: "none", background: "rgba(200,0,0,0.07)", color: "#7C3AED", fontSize: 20, cursor: "pointer", flexShrink: 0 }}
           >
             🔊
           </button>

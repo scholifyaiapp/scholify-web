@@ -341,7 +341,7 @@ function TodayCard() {
       <div style={{ position: "relative", width: 64, height: 64, flexShrink: 0 }}>
         <svg width="64" height="64" style={{ transform: "rotate(-90deg)" }}>
           <circle cx="32" cy="32" r={r} fill="none" stroke="var(--sch-card-2)" strokeWidth="6" />
-          <circle cx="32" cy="32" r={r} fill="none" stroke="#A78BFA" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
+          <circle cx="32" cy="32" r={r} fill="none" stroke="#C80000" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
           {t.goalMet ? "✅" : "🎯"}
@@ -360,6 +360,79 @@ function TodayCard() {
         <div style={{ color: DIM, fontSize: 11 }}>day streak</div>
       </div>
     </motion.div>
+  )
+}
+
+/* ── Official ACCA news (curated from accaglobal.com) ─────────── */
+
+const ACCA_NEWS: { date: string; title: string; url: string }[] = [
+  {
+    date: "26 Jun",
+    title: "AFIAAR and ACCA form strategic partnership to strengthen accountancy quality across Africa",
+    url: "https://www.accaglobal.com/gb/en/news/2026/June/AFIAAR-MoU.html",
+  },
+  {
+    date: "24 Jun",
+    title: "Keep opportunities in focus when reporting, new ACCA research urges business leaders",
+    url: "https://www.accaglobal.com/gb/en/news/2026/June/reporting-opportunities.html",
+  },
+  {
+    date: "15 Jun",
+    title: "From number crunchers to storytellers: communication skills are becoming critical for finance professionals",
+    url: "https://www.accaglobal.com/gb/en/news/2026/June/number-crunchers.html",
+  },
+  {
+    date: "11 Jun",
+    title: "ACCA partners with UNITAR to expand global capacity-building for sustainable development",
+    url: "https://www.accaglobal.com/gb/en/news/2026/June/ACCA_UNITAR.html",
+  },
+  {
+    date: "1 Jun",
+    title: "ACCA strengthens strategic partnership with Uzbekistan",
+    url: "https://www.accaglobal.com/gb/en/news/2026/June/partner_Uzbekistan.html",
+  },
+]
+
+function AccaNews() {
+  return (
+    <div style={{ marginTop: 26 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
+        <h3 style={{ ...sectionH, margin: 0 }}>OFFICIAL ACCA NEWS</h3>
+        <span style={{ fontSize: 11, color: DIM }}>· accaglobal.com</span>
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {ACCA_NEWS.map((n, i) => (
+          <motion.a
+            key={n.url}
+            href={n.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4, delay: i * 0.05 }}
+            whileHover={{ y: -2 }}
+            style={{
+              ...card({ padding: "12px 14px", cursor: "pointer" }),
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              textDecoration: "none",
+              borderLeft: "3px solid #C80000",
+            }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#C80000", whiteSpace: "nowrap", flexShrink: 0, width: 44 }}>
+              {n.date}
+            </span>
+            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: TEXT, lineHeight: 1.45 }}>{n.title}</span>
+            <span aria-hidden style={{ color: DIM, fontSize: 14, flexShrink: 0 }}>↗</span>
+          </motion.a>
+        ))}
+      </div>
+      <p style={{ fontSize: 11, color: DIM, marginTop: 8 }}>
+        Headlines link to ACCA's official newsroom. Scholify is independent and not affiliated with ACCA.
+      </p>
+    </div>
   )
 }
 
@@ -405,7 +478,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                     onClick={() => onPick(p.id)}
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.99 }}
-                    style={{ ...card({ textAlign: "left", cursor: "pointer", padding: 14, border: `1px solid ${isCurrent ? "#A78BFA" : BORDER}` }), display: "flex", alignItems: "center", gap: 13 }}
+                    style={{ ...card({ textAlign: "left", cursor: "pointer", padding: 14, border: `1px solid ${isCurrent ? "#C80000" : BORDER}` }), display: "flex", alignItems: "center", gap: 13 }}
                   >
                     <div style={{ width: 42, height: 42, borderRadius: 11, background: isPassed ? "var(--sch-card-2)" : IRIDESCENT, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: isPassed ? "#10B981" : "#fff", flexShrink: 0 }}>
                       {isPassed ? "✓" : p.id}
@@ -413,7 +486,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 700, fontSize: 14.5, color: TEXT }}>{p.name}</span>
-                        {isCurrent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "rgba(167,139,250,0.15)", color: "#A78BFA", fontWeight: 700 }}>STUDYING</span>}
+                        {isCurrent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000", fontWeight: 700 }}>STUDYING</span>}
                         {p.hasCuratedContent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED, fontWeight: 700 }}>BANK</span>}
                       </div>
                       <div style={{ color: DIM, fontSize: 11.5, marginTop: 1 }}>{p.code}</div>
@@ -434,6 +507,8 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
           </div>
         ))}
       </div>
+
+      <AccaNews />
     </motion.div>
   )
 }
@@ -519,7 +594,7 @@ function Overview({
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                     <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{ph.label}</span>
-                    <span style={{ fontSize: 11.5, color: "#A78BFA", whiteSpace: "nowrap" }}>{ph.range}</span>
+                    <span style={{ fontSize: 11.5, color: "#C80000", whiteSpace: "nowrap" }}>{ph.range}</span>
                   </div>
                   <div style={{ fontSize: 12.5, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{ph.focus}</div>
                 </div>
@@ -620,7 +695,7 @@ function ModeTile({
       <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: primary ? "#fff" : TEXT, display: "flex", alignItems: "center", gap: 8 }}>
-          {title} {locked && <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 999, background: "rgba(167,139,250,0.15)", color: "#A78BFA", fontWeight: 700 }}>PRO</span>}
+          {title} {locked && <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000", fontWeight: 700 }}>PRO</span>}
         </div>
         <div style={{ fontSize: 12.5, color: primary ? "rgba(255,255,255,0.85)" : MUTED, marginTop: 2 }}>{sub}</div>
       </div>
@@ -710,7 +785,7 @@ function SessionView({
               let bg = CARD
               if (graded && isCorrect) { bd = GREEN; bg = "rgba(16,185,129,0.08)" }
               else if (graded && isChosen && !isCorrect) { bd = RED; bg = "rgba(239,68,68,0.08)" }
-              else if (isChosen) { bd = "#A78BFA" }
+              else if (isChosen) { bd = "#C80000" }
               return (
                 <button
                   key={i}

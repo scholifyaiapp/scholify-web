@@ -141,7 +141,7 @@ export default function CommunityFeed({ filter, myCategory }: Props) {
               fontSize: 12.5,
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 8px 24px rgba(167,139,250,0.4)",
+              boxShadow: "0 8px 24px rgba(200,0,0,0.4)",
               zIndex: 5,
             }}
           >
@@ -233,9 +233,9 @@ function PostCard({ post, onCheer }: { post: CommunityPost; onCheer: (id: string
             gap: 6,
             padding: "3px 9px",
             borderRadius: 999,
-            background: "rgba(139,92,246,0.08)",
-            border: "1px solid rgba(139,92,246,0.2)",
-            color: "#C084FC",
+            background: "rgba(200,0,0,0.08)",
+            border: "1px solid rgba(200,0,0,0.2)",
+            color: "#D92E10",
             fontSize: 11,
             fontWeight: 600,
           }}
@@ -436,7 +436,7 @@ function CertificateBody({ post }: { post: CommunityPost }) {
           marginTop: 10,
           background: "transparent",
           border: "none",
-          color: "#C084FC",
+          color: "#D92E10",
           fontSize: 12.5,
           padding: 0,
           cursor: "pointer",

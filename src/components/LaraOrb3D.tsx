@@ -36,7 +36,7 @@ export default function LaraOrb3D({ size = 96 }: { size?: number }) {
     const geo = new THREE.IcosahedronGeometry(1, 3)
     const basePos = (geo.attributes.position.array as Float32Array).slice()
     const mat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color("#8B5CF6"),
+      color: new THREE.Color("#C80000"),
       emissive: new THREE.Color("#5B21B6"),
       emissiveIntensity: 0.45,
       roughness: 0.3,
@@ -47,7 +47,7 @@ export default function LaraOrb3D({ size = 96 }: { size?: number }) {
 
     // Soft glow shell.
     const glowGeo = new THREE.SphereGeometry(1.32, 32, 32)
-    const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color("#38BDF8"), transparent: true, opacity: 0.1 })
+    const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color("#F4A405"), transparent: true, opacity: 0.1 })
     const glow = new THREE.Mesh(glowGeo, glowMat)
     scene.add(glow)
 

@@ -8,7 +8,7 @@ import { motion, type Variants } from "motion/react"
  * ────────────────────────────────────────────────────────────── */
 
 /** Brand gradient (Scholify design): violet → indigo → sky. Reused for CTAs, the ✦ mark, accents. */
-export const IRIDESCENT = "linear-gradient(135deg,#8B5CF6 0%,#818CF8 48%,#38BDF8 100%)"
+export const IRIDESCENT = "linear-gradient(135deg,#C80000 0%,#E50068 48%,#F4A405 100%)"
 
 /** Scoped CSS — placeholder colour, spinner, autofill, scrollbar. */
 const AUTH_CSS = `
@@ -16,7 +16,7 @@ const AUTH_CSS = `
   .sch-auth input:-webkit-autofill,
   .sch-auth input:-webkit-autofill:focus {
     -webkit-text-fill-color: var(--sch-text);
-    -webkit-box-shadow: 0 0 0 1000px rgba(139,92,246,0.06) inset;
+    -webkit-box-shadow: 0 0 0 1000px rgba(200,0,0,0.06) inset;
     caret-color: var(--sch-text);
     transition: background-color 9999s ease-in-out 0s;
   }
@@ -200,13 +200,13 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
               background: hasError
                 ? "rgba(255,69,58,0.06)"
                 : focused
-                  ? "rgba(139,92,246,0.06)"
+                  ? "rgba(200,0,0,0.06)"
                   : "var(--sch-card-2)",
               border: `1px solid ${
                 hasError
                   ? "#FF453A"
                   : focused
-                    ? "rgba(139,92,246,0.6)"
+                    ? "rgba(200,0,0,0.6)"
                     : "var(--sch-border)"
               }`,
               borderRadius: 12,
@@ -214,7 +214,7 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
               color: "var(--sch-text)",
               fontSize: 15,
               outline: "none",
-              boxShadow: focused && !hasError ? "0 0 0 3px rgba(139,92,246,0.1)" : "none",
+              boxShadow: focused && !hasError ? "0 0 0 3px rgba(200,0,0,0.06)" : "none",
               transition: "all 0.2s ease",
             }}
             {...props}
@@ -267,7 +267,7 @@ export function SubmitButton({
     <motion.button
       type="submit"
       disabled={inert}
-      whileHover={inert ? undefined : { scale: 1.02, boxShadow: "0 0 50px rgba(139,92,246,0.4)" }}
+      whileHover={inert ? undefined : { scale: 1.02, boxShadow: "0 0 50px rgba(200,0,0,0.4)" }}
       whileTap={inert ? undefined : { scale: 0.98 }}
       style={{
         width: "100%",
@@ -278,15 +278,15 @@ export function SubmitButton({
         gap: 10,
         background: disabled
           ? "var(--sch-border)"
-          : "linear-gradient(135deg,rgba(139,92,246,0.8),rgba(99,102,241,0.8))",
-        border: `1px solid ${disabled ? "var(--sch-border)" : "rgba(139,92,246,0.5)"}`,
+          : "linear-gradient(135deg,rgba(200,0,0,0.8),rgba(99,102,241,0.8))",
+        border: `1px solid ${disabled ? "var(--sch-border)" : "rgba(200,0,0,0.5)"}`,
         borderRadius: 12,
         color: disabled ? "var(--sch-tx-3)" : "#fff",
         fontSize: 16,
         fontWeight: 600,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        boxShadow: disabled ? "none" : "0 0 30px rgba(139,92,246,0.25)",
+        boxShadow: disabled ? "none" : "0 0 30px rgba(200,0,0,0.25)",
         cursor: inert ? "not-allowed" : "pointer",
       }}
     >

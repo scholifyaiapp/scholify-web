@@ -180,7 +180,7 @@ export default function WelcomeChecklist({ onDismiss }: { onDismiss: () => void 
                   fontSize: 14,
                   border: "none",
                   cursor: "pointer",
-                  boxShadow: "0 10px 28px rgba(167,139,250,0.4)",
+                  boxShadow: "0 10px 28px rgba(200,0,0,0.4)",
                 }}
               >
                 Let's go →

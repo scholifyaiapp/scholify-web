@@ -112,8 +112,8 @@ export default function FirstVisitTour({
             width: rect.width + 12,
             height: rect.height + 12,
             borderRadius: 18,
-            border: "2px solid rgba(167,139,250,0.9)",
-            boxShadow: "0 0 0 9999px rgba(5,5,8,0.6), 0 0 28px rgba(139,92,246,0.6)",
+            border: "2px solid rgba(200,0,0,0.9)",
+            boxShadow: "0 0 0 9999px rgba(5,5,8,0.6), 0 0 28px rgba(200,0,0,0.6)",
             pointerEvents: "none",
           }}
         />
@@ -131,7 +131,7 @@ export default function FirstVisitTour({
             padding: "16px 18px",
             borderRadius: 16,
             background: "var(--sch-bg-2, #0D0015)",
-            border: "1px solid rgba(139,92,246,0.45)",
+            border: "1px solid rgba(200,0,0,0.45)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
             zIndex: 301,
           }}

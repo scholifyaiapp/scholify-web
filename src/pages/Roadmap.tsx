@@ -128,7 +128,7 @@ export default function Roadmap() {
                 fontWeight: 700,
                 fontSize: 14,
                 textDecoration: "none",
-                boxShadow: "0 10px 28px rgba(167,139,250,0.4)",
+                boxShadow: "0 10px 28px rgba(200,0,0,0.4)",
               }}
             >
               Back to dashboard →

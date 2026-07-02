@@ -429,7 +429,7 @@ function DeckHome({
                 padding: 16,
                 borderRadius: 16,
                 background: "var(--sch-card)",
-                border: "1px solid rgba(139,92,246,0.3)",
+                border: "1px solid rgba(200,0,0,0.3)",
                 display: "flex",
                 gap: 10,
                 alignItems: "center",
@@ -490,8 +490,8 @@ function DeckHome({
             marginTop: 20,
             padding: 18,
             borderRadius: 18,
-            background: "rgba(139,92,246,0.08)",
-            border: "1px solid rgba(139,92,246,0.35)",
+            background: "rgba(200,0,0,0.08)",
+            border: "1px solid rgba(200,0,0,0.35)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -555,8 +555,8 @@ function DeckHome({
           alignItems: "flex-start",
           padding: 16,
           borderRadius: 18,
-          background: "rgba(139,92,246,0.06)",
-          border: "1px solid rgba(139,92,246,0.15)",
+          background: "rgba(200,0,0,0.06)",
+          border: "1px solid rgba(200,0,0,0.08)",
         }}
       >
         <LaraAvatar size={34} />
@@ -575,8 +575,8 @@ function DeckHome({
           padding: 30,
           borderRadius: 24,
           background: "var(--sch-card)",
-          border: "1px solid rgba(139,92,246,0.25)",
-          boxShadow: "0 0 60px rgba(139,92,246,0.1)",
+          border: "1px solid rgba(200,0,0,0.25)",
+          boxShadow: "0 0 60px rgba(200,0,0,0.06)",
           textAlign: "center",
         }}
       >
@@ -692,8 +692,8 @@ function DeckHome({
           padding: 18,
           borderRadius: 18,
           cursor: "pointer",
-          background: "rgba(139,92,246,0.07)",
-          border: "1px solid rgba(139,92,246,0.4)",
+          background: "rgba(200,0,0,0.07)",
+          border: "1px solid rgba(200,0,0,0.4)",
         }}
       >
         <span style={{ fontSize: 26 }}>📄</span>
@@ -705,7 +705,7 @@ function DeckHome({
             {t("A job post, an email, lyrics — I'll pull out the exact words you need.")}
           </span>
         </span>
-        <span style={{ fontSize: 18, color: "#C084FC" }}>→</span>
+        <span style={{ fontSize: 18, color: "#D92E10" }}>→</span>
       </motion.button>
 
       {/* Slim stats strip */}
@@ -737,7 +737,7 @@ function DeckHome({
         >
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: MUTED, marginBottom: 8, gap: 10, flexWrap: "wrap" }}>
             <span>
-              <strong style={{ color: "#C084FC" }}>Day {day}</strong>
+              <strong style={{ color: "#D92E10" }}>Day {day}</strong>
               {" · "}
               <strong style={{ color: TEXT }}>{learned}</strong> / {FLUENCY_WORDS.toLocaleString()} words to fluency
             </span>
@@ -922,15 +922,15 @@ function RightRail({
         <Ring
           pct={goalPct}
           from="#F472B6"
-          to="#8B5CF6"
+          to="#C80000"
           label="Daily goal"
           sub={`${introduced} of ${deck.dailyNewWords} words today`}
         />
         {divider}
         <Ring
           pct={recallPct}
-          from="#8B5CF6"
-          to="#38BDF8"
+          from="#C80000"
+          to="#F4A405"
           label="Recall accuracy"
           sub={reps + lapses > 0 ? "all reviews so far" : "no reviews yet"}
         />
@@ -987,7 +987,7 @@ function RightRail({
           This week
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <RailItem icon="🎯" tint="rgba(139,92,246,0.1)" title={`Hit a ${nextMilestone}-day streak`} sub={`${toGo} day${toGo === 1 ? "" : "s"} to go`} />
+          <RailItem icon="🎯" tint="rgba(200,0,0,0.06)" title={`Hit a ${nextMilestone}-day streak`} sub={`${toGo} day${toGo === 1 ? "" : "s"} to go`} />
           <RailItem icon="📚" tint="rgba(56,189,248,0.12)" title="Words queued" sub={`${newQueued} ready to learn`} />
         </div>
       </div>
@@ -1096,9 +1096,9 @@ function Choice({
         fontWeight: 600,
         cursor: "pointer",
         color: active ? TEXT : MUTED,
-        background: active ? "rgba(139,92,246,0.12)" : "var(--sch-card)",
-        border: `1px solid ${active ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
-        boxShadow: active ? "0 0 20px rgba(139,92,246,0.15)" : "none",
+        background: active ? "rgba(200,0,0,0.07)" : "var(--sch-card)",
+        border: `1px solid ${active ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
+        boxShadow: active ? "0 0 20px rgba(200,0,0,0.08)" : "none",
       }}
     >
       {children}
@@ -1119,7 +1119,7 @@ const primaryBtn: CSSProperties = {
   fontSize: 16,
   fontWeight: 700,
   cursor: "pointer",
-  boxShadow: "0 0 30px rgba(139,92,246,0.3)",
+  boxShadow: "0 0 30px rgba(200,0,0,0.3)",
 }
 const ghostBtn: CSSProperties = {
   padding: "10px 18px",
@@ -1162,7 +1162,7 @@ const proChip: CSSProperties = {
   fontWeight: 800,
   padding: "2px 8px",
   borderRadius: 8,
-  background: "rgba(139,92,246,0.18)",
-  color: "#C084FC",
+  background: "rgba(200,0,0,0.18)",
+  color: "#D92E10",
   letterSpacing: "0.04em",
 }

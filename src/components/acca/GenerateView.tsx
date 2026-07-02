@@ -101,7 +101,7 @@ export default function GenerateView({
           <button
             key={n}
             onClick={() => setCount(n)}
-            style={{ padding: "7px 16px", borderRadius: 999, border: `1.5px solid ${count === n ? "#A78BFA" : BORDER}`, background: count === n ? "rgba(167,139,250,0.1)" : CARD, color: count === n ? "#A78BFA" : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
+            style={{ padding: "7px 16px", borderRadius: 999, border: `1.5px solid ${count === n ? "#C80000" : BORDER}`, background: count === n ? "rgba(200,0,0,0.06)" : CARD, color: count === n ? "#C80000" : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
           >
             {n}
           </button>
@@ -130,7 +130,7 @@ function Toggle({ active, onClick, children }: { active: boolean; onClick: () =>
   return (
     <button
       onClick={onClick}
-      style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${active ? "#A78BFA" : BORDER}`, background: active ? "rgba(167,139,250,0.1)" : CARD, color: active ? "#A78BFA" : TEXT, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+      style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${active ? "#C80000" : BORDER}`, background: active ? "rgba(200,0,0,0.06)" : CARD, color: active ? "#C80000" : TEXT, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
     >
       {children}
     </button>

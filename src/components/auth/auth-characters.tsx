@@ -264,7 +264,7 @@ export function AuthCharacters({ isTyping, password, showPassword }: AuthCharact
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(ellipse 65% 45% at 50% 100%, rgba(139,92,246,0.22), transparent 70%)",
+            "radial-gradient(ellipse 65% 45% at 50% 100%, rgba(200,0,0,0.22), transparent 70%)",
           pointerEvents: "none",
         }}
       />

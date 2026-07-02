@@ -336,8 +336,8 @@ export const LEVEL_META: Record<
   },
   realistic: {
     glyph: "✓",
-    accent: "#A78BFA",
-    subtle: "rgba(167,139,250,0.08)",
+    accent: "#C80000",
+    subtle: "rgba(200,0,0,0.08)",
     label: "Realistic",
     indicator: "✦ Realistic timeline",
   },

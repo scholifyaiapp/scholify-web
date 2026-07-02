@@ -96,7 +96,7 @@ export default function TeamAdmin() {
       <DashboardLayout>
         <div style={{ padding: 32, color: TEXT_MUTED }}>
           This workspace doesn't exist.{" "}
-          <Link to="/teams" style={{ color: "#C084FC" }}>
+          <Link to="/teams" style={{ color: "#D92E10" }}>
             Back to Teams
           </Link>
         </div>
@@ -1103,7 +1103,7 @@ function LineChart({ data, color }: { data: { day: string; pct: number }[]; colo
 function PieChart({ slices, color }: { slices: { label: string; count: number }[]; color: string }) {
   const total = slices.reduce((s, x) => s + x.count, 0) || 1
   let start = 0
-  const colors = [color, "#A78BFA", "#22D3EE", "#FB923C", "#34D399", "#F472B6"]
+  const colors = [color, "#C80000", "#22D3EE", "#FB923C", "#34D399", "#F472B6"]
   const radius = 70
   const cx = 80
   const cy = 80
@@ -1302,7 +1302,7 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
           width: 36,
           height: 20,
           borderRadius: 10,
-          background: on ? "rgba(139,92,246,0.45)" : "rgba(255,255,255,0.08)",
+          background: on ? "rgba(200,0,0,0.45)" : "rgba(255,255,255,0.08)",
           position: "relative",
           transition: "background 0.2s",
         }}

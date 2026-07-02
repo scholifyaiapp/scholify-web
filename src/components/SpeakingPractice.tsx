@@ -121,8 +121,8 @@ function Waveform({ analyser, active }: { analyser: AnalyserNode | null; active:
         const x = i * (barW + 2)
         const y = (h - bh) / 2
         const grad = ctx.createLinearGradient(0, 0, w, 0)
-        grad.addColorStop(0, "#A78BFA")
-        grad.addColorStop(0.35, "#818CF8")
+        grad.addColorStop(0, "#C80000")
+        grad.addColorStop(0.35, "#E50068")
         grad.addColorStop(0.7, "#F0ABFC")
         grad.addColorStop(1, "#FBBF24")
         ctx.fillStyle = grad
@@ -260,8 +260,8 @@ function ProcessingOrb() {
             position: "absolute",
             inset: i * 8,
             borderRadius: "50%",
-            border: `1px solid rgba(139,92,246,${0.2 - i * 0.05})`,
-            borderTopColor: "rgba(167,139,250,0.9)",
+            border: `1px solid rgba(200,0,0,${0.2 - i * 0.05})`,
+            borderTopColor: "rgba(200,0,0,0.9)",
           }}
         />
       ))}
@@ -273,7 +273,7 @@ function ProcessingOrb() {
           inset: 28,
           borderRadius: "50%",
           background: IRIDESCENT,
-          boxShadow: "0 0 50px rgba(139,92,246,0.55)",
+          boxShadow: "0 0 50px rgba(200,0,0,0.55)",
         }}
       />
     </div>
@@ -561,8 +561,8 @@ export default function SpeakingPractice({
             <svg width={0} height={0} style={{ position: "absolute" }}>
               <defs>
                 <linearGradient id="score-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#A78BFA" />
-                  <stop offset="35%" stopColor="#818CF8" />
+                  <stop offset="0%" stopColor="#C80000" />
+                  <stop offset="35%" stopColor="#E50068" />
                   <stop offset="70%" stopColor="#F0ABFC" />
                   <stop offset="100%" stopColor="#FBBF24" />
                 </linearGradient>
@@ -620,8 +620,8 @@ export default function SpeakingPractice({
                       marginTop: 18,
                       padding: "16px 18px",
                       borderRadius: 16,
-                      background: "rgba(139,92,246,0.08)",
-                      border: "1px solid rgba(139,92,246,0.22)",
+                      background: "rgba(200,0,0,0.08)",
+                      border: "1px solid rgba(200,0,0,0.22)",
                     }}
                   >
                     <div style={{ fontSize: 12, color: TEXT2, marginBottom: 8 }}>
@@ -669,7 +669,7 @@ export default function SpeakingPractice({
                         color: "#fff",
                         fontSize: 32,
                         cursor: "pointer",
-                        boxShadow: "0 0 60px rgba(139,92,246,0.4)",
+                        boxShadow: "0 0 60px rgba(200,0,0,0.4)",
                       }}
                     >
                       🎤
@@ -895,14 +895,14 @@ export default function SpeakingPractice({
                       marginTop: 18,
                       padding: 16,
                       borderRadius: 14,
-                      background: "rgba(139,92,246,0.08)",
-                      border: "1px solid rgba(139,92,246,0.18)",
+                      background: "rgba(200,0,0,0.08)",
+                      border: "1px solid rgba(200,0,0,0.18)",
                     }}
                   >
                     <div
                       style={{
                         fontSize: 12,
-                        color: "rgba(192,132,252,0.85)",
+                        color: "rgba(200,0,0,0.85)",
                         marginBottom: 6,
                         fontWeight: 600,
                       }}
@@ -1047,7 +1047,7 @@ const primaryBtn: CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
-  boxShadow: "0 0 20px rgba(139,92,246,0.3)",
+  boxShadow: "0 0 20px rgba(200,0,0,0.3)",
 }
 
 const ghostBtn: CSSProperties = {

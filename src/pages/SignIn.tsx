@@ -191,13 +191,13 @@ export default function SignIn() {
                 to="/support"
                 style={{
                   fontSize: 13,
-                  color: "rgba(139,92,246,0.8)",
+                  color: "rgba(200,0,0,0.8)",
                   textDecoration: "none",
                   cursor: "pointer",
                   transition: "color 0.2s ease",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(139,92,246,1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(139,92,246,0.8)")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(200,0,0,1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,0,0,0.8)")}
               >
                 Forgot password?
               </Link>
@@ -263,12 +263,12 @@ export default function SignIn() {
           <Link
             to="/sign-up"
             style={{
-              color: "rgba(139,92,246,0.9)",
+              color: "rgba(200,0,0,0.9)",
               textDecoration: "none",
               fontWeight: 500,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(139,92,246,1)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(139,92,246,0.9)")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(200,0,0,1)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,0,0,0.9)")}
           >
             Start for free →
           </Link>

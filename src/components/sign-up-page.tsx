@@ -5,7 +5,7 @@ import { useNavigate, Link } from "react-router-dom"
 const BG = "#FAFAF7"
 const INK = "#14141A"
 const INK_MUTED = "#6B6B73"
-const BRAND = "#5B5BF5"
+const BRAND = "#C80000"
 const HAIR = "rgba(20,20,26,0.08)"
 
 function ScholifyMark({ size = 28 }: { size?: number }) {
@@ -34,7 +34,7 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
   if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
   const labels = ["Too short", "Weak", "Okay", "Strong", "Excellent"]
-  const colors = ["#D4D4D8", "#EF4444", "#F59E0B", "#5B5BF5", "#10B981"]
+  const colors = ["#D4D4D8", "#EF4444", "#F59E0B", "#C80000", "#10B981"]
   return { score, label: labels[score], color: colors[score] }
 }
 

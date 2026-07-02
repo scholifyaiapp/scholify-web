@@ -241,10 +241,10 @@ export default function PartnerCard({ variant = "compact" }: { variant?: "compac
               gap: 6,
               padding: "4px 10px",
               borderRadius: 999,
-              background: "rgba(139,92,246,0.08)",
-              border: "1px solid rgba(139,92,246,0.18)",
+              background: "rgba(200,0,0,0.08)",
+              border: "1px solid rgba(200,0,0,0.18)",
               fontSize: 11.5,
-              color: "#C084FC",
+              color: "#D92E10",
             }}
           >
             🎯 {snapshot.goal}
@@ -321,8 +321,8 @@ export default function PartnerCard({ variant = "compact" }: { variant?: "compac
                     style={{
                       padding: "8px 12px",
                       borderRadius: 999,
-                      background: "rgba(139,92,246,0.08)",
-                      border: "1px solid rgba(139,92,246,0.2)",
+                      background: "rgba(200,0,0,0.08)",
+                      border: "1px solid rgba(200,0,0,0.2)",
                       color: TEXT_PRIMARY,
                       fontSize: 12.5,
                       cursor: "pointer",

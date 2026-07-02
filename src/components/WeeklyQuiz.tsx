@@ -29,7 +29,7 @@ import {
  * ────────────────────────────────────────────────────────────────────── */
 
 const IRIDESCENT_SOFT =
-  "linear-gradient(135deg, rgba(167,139,250,0.18), rgba(244,114,182,0.18), rgba(34,211,238,0.18))"
+  "linear-gradient(135deg, rgba(200,0,0,0.18), rgba(244,114,182,0.18), rgba(34,211,238,0.18))"
 const TEXT_PRIMARY = "#F0EEFF"
 
 /* ── Visual primitives ─────────────────────────────────────────────────── */
@@ -39,7 +39,7 @@ function AmbientOrbs() {
     <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
       <motion.div
         className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full blur-3xl"
-        style={{ background: "radial-gradient(closest-side, rgba(167,139,250,0.35), transparent 70%)" }}
+        style={{ background: "radial-gradient(closest-side, rgba(200,0,0,0.35), transparent 70%)" }}
         animate={{ x: [0, 40, -20, 0], y: [0, 30, -10, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -124,7 +124,7 @@ function IridescentBorder({
 function Confetti({ intensity = "full" }: { intensity?: "full" | "light" }) {
   const count = intensity === "full" ? 80 : 32
   const pieces = useMemo(() => {
-    const colors = ["#A78BFA", "#F472B6", "#22D3EE", "#FCD34D", "#34D399"]
+    const colors = ["#C80000", "#F472B6", "#22D3EE", "#FCD34D", "#34D399"]
     return Array.from({ length: count }).map((_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -172,7 +172,7 @@ function CountdownRing({ total, remaining }: { total: number; remaining: number 
 
   const danger = remaining <= 5
   const warning = !danger && remaining <= 10
-  const color = danger ? "#FF453A" : warning ? "#FB923C" : "#A78BFA"
+  const color = danger ? "#FF453A" : warning ? "#FB923C" : "#C80000"
 
   return (
     <motion.div
@@ -261,7 +261,7 @@ export function WeeklyQuizBanner() {
                 <Link
                   to="/quiz"
                   className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg"
-                  style={{ background: IRIDESCENT, boxShadow: "0 8px 28px rgba(167,139,250,0.45)" }}
+                  style={{ background: IRIDESCENT, boxShadow: "0 8px 28px rgba(200,0,0,0.45)" }}
                 >
                   Take quiz <ArrowRight className="size-4" />
                 </Link>
@@ -445,8 +445,8 @@ export function WeeklyQuiz({ goal: goalProp }: { goal?: string }) {
           100% { background-position: 0% 50%; }
         }
         @keyframes wquiz-pulse-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.55), 0 14px 40px rgba(167,139,250,0.35); }
-          50% { box-shadow: 0 0 0 12px rgba(167,139,250,0), 0 18px 50px rgba(244,114,182,0.45); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(200,0,0,0.55), 0 14px 40px rgba(200,0,0,0.35); }
+          50% { box-shadow: 0 0 0 12px rgba(200,0,0,0), 0 18px 50px rgba(244,114,182,0.45); }
         }
       `}</style>
       <AmbientOrbs />
@@ -523,8 +523,8 @@ function LoadingScreen() {
           width: 36,
           height: 36,
           borderRadius: "50%",
-          border: "2px solid rgba(167,139,250,0.2)",
-          borderTopColor: "#A78BFA",
+          border: "2px solid rgba(200,0,0,0.2)",
+          borderTopColor: "#C80000",
         }}
       />
       <p className="mt-6 text-sm" style={{ color: "rgba(240,238,255,0.55)" }}>
@@ -559,7 +559,7 @@ function IntroScreen({
         initial={{ scale: 0.5, rotate: -10 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 14 }}
-        style={{ fontSize: 64, lineHeight: 1, filter: "drop-shadow(0 12px 30px rgba(167,139,250,0.5))" }}
+        style={{ fontSize: 64, lineHeight: 1, filter: "drop-shadow(0 12px 30px rgba(200,0,0,0.5))" }}
       >
         🏆
       </motion.div>
@@ -649,7 +649,7 @@ function QuestionScreen({
                   className="block h-2 w-2 rounded-full"
                   style={{
                     background: done || current ? IRIDESCENT : "rgba(255,255,255,0.12)",
-                    boxShadow: current ? "0 0 12px rgba(167,139,250,0.7)" : "none",
+                    boxShadow: current ? "0 0 12px rgba(200,0,0,0.7)" : "none",
                   }}
                 />
               )
@@ -696,8 +696,8 @@ function QuestionScreen({
             border = "rgba(255,69,58,0.5)"
             glow = "0 0 24px rgba(255,69,58,0.2)"
           } else if (isSelected) {
-            bg = "rgba(139,92,246,0.1)"
-            border = "rgba(139,92,246,0.6)"
+            bg = "rgba(200,0,0,0.06)"
+            border = "rgba(200,0,0,0.6)"
           }
 
           const letter = String.fromCharCode(65 + i)
@@ -755,7 +755,7 @@ function QuestionScreen({
               borderRadius: 12,
               padding: "12px 16px",
               background: "rgba(255,255,255,0.03)",
-              borderLeft: "2px solid #A78BFA",
+              borderLeft: "2px solid #C80000",
               backdropFilter: "blur(14px)",
               WebkitBackdropFilter: "blur(14px)",
             }}
@@ -969,7 +969,7 @@ function ResultsScreen({
           whileTap={{ scale: 0.97 }}
           onClick={onBack}
           className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-          style={{ background: IRIDESCENT, boxShadow: "0 10px 30px rgba(167,139,250,0.4)" }}
+          style={{ background: IRIDESCENT, boxShadow: "0 10px 30px rgba(200,0,0,0.4)" }}
         >
           Back to dashboard <ArrowRight className="size-4" />
         </motion.button>
@@ -988,7 +988,7 @@ function ChampionBadge({ weekNumber }: { weekNumber: number }) {
           position: "absolute",
           inset: 0,
           borderRadius: "50%",
-          background: `conic-gradient(from 0deg, #A78BFA, #F472B6, #22D3EE, #A78BFA)`,
+          background: `conic-gradient(from 0deg, #C80000, #F472B6, #22D3EE, #C80000)`,
           filter: "blur(2px)",
           opacity: 0.9,
         }}
@@ -1001,7 +1001,7 @@ function ChampionBadge({ weekNumber }: { weekNumber: number }) {
           background: "#0A0A14",
           display: "grid",
           placeItems: "center",
-          boxShadow: "inset 0 0 30px rgba(167,139,250,0.35)",
+          boxShadow: "inset 0 0 30px rgba(200,0,0,0.35)",
         }}
       >
         <div className="text-center">

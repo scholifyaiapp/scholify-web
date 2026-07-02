@@ -115,8 +115,8 @@ function Toggle({
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
         background: on ? IRIDESCENT : "var(--sch-border-2)",
-        border: `1px solid ${on ? "rgba(139,92,246,0.5)" : "var(--sch-border-2)"}`,
-        boxShadow: on ? "0 0 10px rgba(139,92,246,0.3)" : "none",
+        border: `1px solid ${on ? "rgba(200,0,0,0.5)" : "var(--sch-border-2)"}`,
+        boxShadow: on ? "0 0 10px rgba(200,0,0,0.3)" : "none",
       }}
     >
       <motion.span
@@ -251,7 +251,7 @@ function Dropdown<T extends string>({
                       textAlign: "left",
                       ...(active ? iriText : { color: "var(--sch-tx-1)" }),
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.1)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,0,0,0.06)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     {o.label}
@@ -428,7 +428,7 @@ const LANGUAGES = [
 
 const THEMES = [
   { id: "light", name: "Light", bg: "#f3f3f7", accent: "#6d5bf5" },
-  { id: "dark", name: "Dark", bg: "#0b0b12", accent: "#818cf8" },
+  { id: "dark", name: "Dark", bg: "#0b0b12", accent: "#E50068" },
 ] as const
 
 export default function Settings() {
@@ -673,8 +673,8 @@ export default function Settings() {
                 height: 80,
                 borderRadius: "50%",
                 background: IRIDESCENT,
-                border: "3px solid rgba(139,92,246,0.4)",
-                boxShadow: "0 0 30px rgba(139,92,246,0.2)",
+                border: "3px solid rgba(200,0,0,0.4)",
+                boxShadow: "0 0 30px rgba(200,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -811,7 +811,7 @@ export default function Settings() {
                 background: "transparent",
                 border: "none",
                 fontSize: 13,
-                color: "rgba(139,92,246,0.75)",
+                color: "rgba(200,0,0,0.75)",
                 cursor: "pointer",
               }}
             >
@@ -900,7 +900,7 @@ export default function Settings() {
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: "pointer",
-                  boxShadow: "0 0 20px rgba(139,92,246,0.3)",
+                  boxShadow: "0 0 20px rgba(200,0,0,0.3)",
                 }}
               >
                 Upgrade to Pro →
@@ -990,7 +990,7 @@ export default function Settings() {
                 fontWeight: 700,
                 cursor: "pointer",
                 flexShrink: 0,
-                boxShadow: "0 0 18px rgba(139,92,246,0.25)",
+                boxShadow: "0 0 18px rgba(200,0,0,0.25)",
               }}
             >
               Copy
@@ -1166,8 +1166,8 @@ export default function Settings() {
                     borderRadius: 14,
                     cursor: "pointer",
                     background: "var(--sch-card)",
-                    border: `2px solid ${selected ? "rgba(139,92,246,0.6)" : "transparent"}`,
-                    boxShadow: selected ? "0 0 20px rgba(139,92,246,0.15)" : "none",
+                    border: `2px solid ${selected ? "rgba(200,0,0,0.6)" : "transparent"}`,
+                    boxShadow: selected ? "0 0 20px rgba(200,0,0,0.08)" : "none",
                   }}
                 >
                   {selected && (
@@ -1231,8 +1231,8 @@ export default function Settings() {
         {/* ── Lara settings ── */}
         <Section
           style={{
-            border: "1px solid rgba(139,92,246,0.12)",
-            background: "rgba(139,92,246,0.04)",
+            border: "1px solid rgba(200,0,0,0.07)",
+            background: "rgba(200,0,0,0.04)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1249,8 +1249,8 @@ export default function Settings() {
                   fontWeight: 700,
                   padding: "3px 8px",
                   borderRadius: 8,
-                  background: "rgba(139,92,246,0.15)",
-                  color: "#C084FC",
+                  background: "rgba(200,0,0,0.08)",
+                  color: "#D92E10",
                   border: "none",
                   cursor: "pointer",
                 }}
@@ -1284,8 +1284,8 @@ export default function Settings() {
                     fontWeight: 700,
                     padding: "3px 8px",
                     borderRadius: 8,
-                    background: "rgba(139,92,246,0.15)",
-                    color: "#C084FC",
+                    background: "rgba(200,0,0,0.08)",
+                    color: "#D92E10",
                     border: "none",
                     cursor: "pointer",
                   }}
@@ -1314,7 +1314,7 @@ export default function Settings() {
                 href="/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: 13, color: "rgba(139,92,246,0.8)", textDecoration: "none" }}
+                style={{ fontSize: 13, color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
               >
                 Read →
               </a>
@@ -1324,7 +1324,7 @@ export default function Settings() {
                 href="/terms"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: 13, color: "rgba(139,92,246,0.8)", textDecoration: "none" }}
+                style={{ fontSize: 13, color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
               >
                 Read →
               </a>

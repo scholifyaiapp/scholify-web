@@ -29,7 +29,7 @@ const LAYOUT_CSS = `
   @keyframes sch-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   .dash-scroll::-webkit-scrollbar { width: 7px; }
   .dash-scroll::-webkit-scrollbar-thumb { background: var(--sch-border); border-radius: 8px; }
-  *:focus-visible { outline: 2px solid #A78BFA !important; outline-offset: 2px; border-radius: 4px; }
+  *:focus-visible { outline: 2px solid #C80000 !important; outline-offset: 2px; border-radius: 4px; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 `
 
@@ -145,7 +145,7 @@ function Avatar({ initial, size = 40 }: { initial: string; size?: number }) {
         flexShrink: 0,
         borderRadius: "50%",
         background: IRIDESCENT,
-        border: "2px solid rgba(139,92,246,0.3)",
+        border: "2px solid rgba(200,0,0,0.3)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -183,8 +183,8 @@ function NavItem({
         fontSize: 14,
         textDecoration: "none",
         transition: "all 0.2s ease",
-        background: active ? "rgba(139,92,246,0.12)" : "transparent",
-        border: `1px solid ${active ? "rgba(139,92,246,0.2)" : "transparent"}`,
+        background: active ? "rgba(200,0,0,0.07)" : "transparent",
+        border: `1px solid ${active ? "rgba(200,0,0,0.2)" : "transparent"}`,
         color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
         fontWeight: active ? 600 : 400,
       }}
@@ -252,7 +252,7 @@ function NavItem({
               display: "grid",
               placeItems: "center",
               lineHeight: 1,
-              boxShadow: "0 4px 12px rgba(167,139,250,0.5)",
+              boxShadow: "0 4px 12px rgba(200,0,0,0.5)",
             }}
             aria-label={`${unread} unread`}
           >
@@ -389,7 +389,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             textAlign: "center",
             background: "var(--sch-card)",
             border: "1px solid var(--sch-border)",
-            boxShadow: "0 0 30px rgba(139,92,246,0.1)",
+            boxShadow: "0 0 30px rgba(200,0,0,0.06)",
           }}
         >
           <div style={{ fontSize: 24 }}>🔥</div>
@@ -555,7 +555,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                       display: "grid",
                       placeItems: "center",
                       lineHeight: 1,
-                      boxShadow: "0 4px 10px rgba(167,139,250,0.45)",
+                      boxShadow: "0 4px 10px rgba(200,0,0,0.45)",
                     }}
                     aria-label={`${unread} unread`}
                   >

@@ -223,9 +223,9 @@ export default function Pricing() {
               letterSpacing: "0.1em",
               padding: "5px 14px",
               borderRadius: 999,
-              border: "1px solid rgba(139,92,246,0.3)",
-              background: "rgba(139,92,246,0.06)",
-              color: "rgba(192,132,252,0.9)",
+              border: "1px solid rgba(200,0,0,0.3)",
+              background: "rgba(200,0,0,0.06)",
+              color: "rgba(200,0,0,0.9)",
             }}
           >
             PRICING
@@ -316,7 +316,7 @@ export default function Pricing() {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                style={{ fontSize: 13, color: "#C084FC", marginTop: 16 }}
+                style={{ fontSize: 13, color: "#D92E10", marginTop: 16 }}
               >
                 {notice}
               </motion.div>

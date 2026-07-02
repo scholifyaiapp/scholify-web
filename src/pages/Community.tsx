@@ -119,9 +119,9 @@ export default function Community() {
                   flexShrink: 0,
                   padding: "7px 14px",
                   borderRadius: 999,
-                  background: active ? "rgba(139,92,246,0.14)" : "rgba(255,255,255,0.03)",
-                  border: `1px solid ${active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.06)"}`,
-                  color: active ? "#C084FC" : TEXT_MUTED,
+                  background: active ? "rgba(200,0,0,0.14)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${active ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.06)"}`,
+                  color: active ? "#D92E10" : TEXT_MUTED,
                   fontSize: 12.5,
                   fontWeight: active ? 600 : 500,
                   cursor: "pointer",
@@ -165,7 +165,7 @@ export default function Community() {
         {optedIn && (
           <p style={{ marginTop: 28, fontSize: 11.5, color: TEXT_DIM, textAlign: "center" }}>
             Only your first name + last initial are shown. You can opt out any time from{" "}
-            <a href="/settings" style={{ color: "#C084FC", textDecoration: "none" }}>
+            <a href="/settings" style={{ color: "#D92E10", textDecoration: "none" }}>
               Settings
             </a>
             .

@@ -16,7 +16,7 @@ export default function LaraAvatar({ size = 32 }: { size?: number }) {
         borderRadius: "50%",
         padding: ring,
         background: IRIDESCENT,
-        boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
+        boxShadow: "0 4px 16px rgba(200,0,0,0.4)",
       }}
     >
       <img

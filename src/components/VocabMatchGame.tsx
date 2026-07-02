@@ -50,7 +50,7 @@ export default function VocabMatchGame({ deck, onClose }: { deck: VocabDeck; onC
         particleCount: 90,
         spread: 70,
         origin: { y: 0.7 },
-        colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"],
+        colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"],
       })
     } catch {
       /* ignore */
@@ -120,8 +120,8 @@ export default function VocabMatchGame({ deck, onClose }: { deck: VocabDeck; onC
                         animate={{ opacity: isMatched ? 0.35 : 1 }}
                         whileTap={isMatched ? undefined : { scale: 0.97 }}
                         style={tile(
-                          isMatched ? "#34D399" : isSel ? "#C084FC" : "var(--sch-border)",
-                          isMatched ? "rgba(52,211,153,0.12)" : isSel ? "rgba(192,132,252,0.14)" : "var(--sch-card)",
+                          isMatched ? "#34D399" : isSel ? "#D92E10" : "var(--sch-border)",
+                          isMatched ? "rgba(52,211,153,0.12)" : isSel ? "rgba(200,0,0,0.14)" : "var(--sch-card)",
                           isMatched,
                         )}
                       >
@@ -249,5 +249,5 @@ const primaryBtn: CSSProperties = {
   fontSize: 16,
   fontWeight: 700,
   cursor: "pointer",
-  boxShadow: "0 0 30px rgba(139,92,246,0.3)",
+  boxShadow: "0 0 30px rgba(200,0,0,0.3)",
 }

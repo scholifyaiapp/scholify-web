@@ -412,8 +412,8 @@ const laraBlockStyle: CSSProperties = {
   gap: 10,
   padding: "11px 14px",
   borderRadius: 14,
-  background: "rgba(139,92,246,0.06)",
-  border: "1px solid rgba(139,92,246,0.18)",
-  borderLeft: "3px solid #A78BFA",
+  background: "rgba(200,0,0,0.06)",
+  border: "1px solid rgba(200,0,0,0.18)",
+  borderLeft: "3px solid #C80000",
 }
 

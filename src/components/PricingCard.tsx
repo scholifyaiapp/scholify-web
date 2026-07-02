@@ -50,9 +50,9 @@ export default function PricingCard({
 
   const cardStyle: CSSProperties = isPro
     ? {
-        background: "rgba(139,92,246,0.07)",
-        border: "1px solid rgba(139,92,246,0.35)",
-        boxShadow: "0 0 80px rgba(139,92,246,0.15), 0 20px 60px rgba(0,0,0,0.4)",
+        background: "rgba(200,0,0,0.07)",
+        border: "1px solid rgba(200,0,0,0.35)",
+        boxShadow: "0 0 80px rgba(200,0,0,0.08), 0 20px 60px rgba(0,0,0,0.4)",
       }
     : {
         background: "var(--sch-card)",
@@ -78,9 +78,9 @@ export default function PricingCard({
         <motion.div
           animate={{
             boxShadow: [
-              "0 4px 20px rgba(139,92,246,0.4)",
-              "0 4px 32px rgba(139,92,246,0.7)",
-              "0 4px 20px rgba(139,92,246,0.4)",
+              "0 4px 20px rgba(200,0,0,0.4)",
+              "0 4px 32px rgba(200,0,0,0.7)",
+              "0 4px 20px rgba(200,0,0,0.4)",
             ],
           }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -108,7 +108,7 @@ export default function PricingCard({
           fontSize: 13,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: isPro ? "rgba(192,132,252,0.8)" : TEXT2,
+          color: isPro ? "rgba(200,0,0,0.8)" : TEXT2,
           fontWeight: 600,
         }}
       >
@@ -205,8 +205,8 @@ export default function PricingCard({
                   padding: "2px 7px",
                   borderRadius: 8,
                   background:
-                    f.badge === "NEW" ? "rgba(52,211,153,0.2)" : "rgba(139,92,246,0.2)",
-                  color: f.badge === "NEW" ? "#34D399" : "#C084FC",
+                    f.badge === "NEW" ? "rgba(52,211,153,0.2)" : "rgba(200,0,0,0.2)",
+                  color: f.badge === "NEW" ? "#34D399" : "#D92E10",
                 }}
               >
                 {f.badge}
@@ -234,8 +234,8 @@ export default function PricingCard({
           background: isPro ? IRIDESCENT : "var(--sch-card)",
           border: isPro
             ? "none"
-            : `1px solid ${variant === "beginner" ? "rgba(139,92,246,0.2)" : "var(--sch-border-2)"}`,
-          boxShadow: isPro ? "0 0 40px rgba(139,92,246,0.3)" : "none",
+            : `1px solid ${variant === "beginner" ? "rgba(200,0,0,0.2)" : "var(--sch-border-2)"}`,
+          boxShadow: isPro ? "0 0 40px rgba(200,0,0,0.3)" : "none",
         }}
       >
         {cta}

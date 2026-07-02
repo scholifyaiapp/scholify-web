@@ -151,8 +151,8 @@ export default function Challenges() {
               style={{
                 padding: "6px 12px",
                 borderRadius: 999,
-                background: "rgba(139,92,246,0.1)",
-                color: "#C084FC",
+                background: "rgba(200,0,0,0.06)",
+                color: "#D92E10",
                 fontWeight: 700,
                 fontSize: 12.5,
               }}

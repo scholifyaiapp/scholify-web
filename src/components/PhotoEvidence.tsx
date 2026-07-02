@@ -57,7 +57,7 @@ export default function PhotoEvidence({
         type="button"
         whileHover={{
           color: TEXT_PRIMARY,
-          borderColor: "rgba(139,92,246,0.4)",
+          borderColor: "rgba(200,0,0,0.4)",
         }}
         onClick={() => setOpen(true)}
         style={pillStyle}
@@ -250,7 +250,7 @@ function PhotoModal({ onClose, dayNumber, taskTitle, goal }: PhotoModalProps) {
               </span>
               <p style={{ marginTop: 12, fontSize: 15, color: TEXT_MUTED }}>Tap to take photo</p>
               <p style={{ marginTop: 8, fontSize: 13, color: TEXT_DIM }}>or</p>
-              <p style={{ marginTop: 6, fontSize: 13, color: "rgba(139,92,246,0.85)", fontWeight: 600 }}>
+              <p style={{ marginTop: 6, fontSize: 13, color: "rgba(200,0,0,0.85)", fontWeight: 600 }}>
                 Upload from gallery
               </p>
             </button>
@@ -409,7 +409,7 @@ function Toggle({
         width: 38,
         height: 22,
         borderRadius: 11,
-        background: on ? "rgba(139,92,246,0.45)" : "rgba(255,255,255,0.08)",
+        background: on ? "rgba(200,0,0,0.45)" : "rgba(255,255,255,0.08)",
         position: "relative",
         border: "none",
         flexShrink: 0,
@@ -565,7 +565,7 @@ const primaryButtonStyle: CSSProperties = {
   border: "none",
   display: "grid",
   placeItems: "center",
-  boxShadow: "0 12px 32px rgba(167,139,250,0.4)",
+  boxShadow: "0 12px 32px rgba(200,0,0,0.4)",
 }
 
 const ghostButtonStyle: CSSProperties = {
@@ -584,8 +584,8 @@ const laraBubbleStyle: CSSProperties = {
   gap: 10,
   padding: "11px 14px",
   borderRadius: 14,
-  background: "rgba(139,92,246,0.06)",
-  border: "1px solid rgba(139,92,246,0.18)",
-  borderLeft: "3px solid #A78BFA",
+  background: "rgba(200,0,0,0.06)",
+  border: "1px solid rgba(200,0,0,0.18)",
+  borderLeft: "3px solid #C80000",
 }
 

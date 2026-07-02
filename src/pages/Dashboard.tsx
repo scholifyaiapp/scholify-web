@@ -350,7 +350,7 @@ export default function Dashboard() {
         particleCount: 80,
         spread: 60,
         origin: { y: 0.7 },
-        colors: ["#8B5CF6", "#F472B6", "#38BDF8", "#34D399"],
+        colors: ["#C80000", "#F472B6", "#F4A405", "#34D399"],
       })
     } catch {
       /* canvas-confetti unsupported in this environment — non-fatal */
@@ -636,7 +636,7 @@ export default function Dashboard() {
 
   const cardStyle: CSSProperties = {
     background: "var(--sch-card)",
-    border: "1px solid rgba(139,92,246,0.2)",
+    border: "1px solid rgba(200,0,0,0.2)",
   }
 
   return (
@@ -754,8 +754,8 @@ export default function Dashboard() {
                   gap: 12,
                   padding: "12px 16px",
                   borderRadius: 14,
-                  background: "rgba(139,92,246,0.08)",
-                  border: "1px solid rgba(139,92,246,0.2)",
+                  background: "rgba(200,0,0,0.08)",
+                  border: "1px solid rgba(200,0,0,0.2)",
                 }}
               >
                 <div style={{ fontSize: 13, color: "var(--sch-text)", lineHeight: 1.5 }}>
@@ -812,7 +812,7 @@ export default function Dashboard() {
             marginTop: 24,
             padding: 32,
             borderRadius: 24,
-            boxShadow: "0 0 60px rgba(139,92,246,0.08)",
+            boxShadow: "0 0 60px rgba(200,0,0,0.08)",
           }}
         >
           {/* Top row */}
@@ -900,7 +900,7 @@ export default function Dashboard() {
               📌 Best resource today
             </div>
             <motion.div
-              whileHover={{ scale: 1.01, boxShadow: "0 0 24px rgba(139,92,246,0.2)" }}
+              whileHover={{ scale: 1.01, boxShadow: "0 0 24px rgba(200,0,0,0.2)" }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -923,7 +923,7 @@ export default function Dashboard() {
               >
                 {resType.icon} {resource ? resource.title : `Curated for: ${task.task_title}`}
               </span>
-              <span style={{ color: "rgba(139,92,246,0.9)", flexShrink: 0, fontWeight: 600 }}>
+              <span style={{ color: "rgba(200,0,0,0.9)", flexShrink: 0, fontWeight: 600 }}>
                 → Open
               </span>
             </motion.div>
@@ -943,8 +943,8 @@ export default function Dashboard() {
               marginTop: 16,
               padding: "12px 16px",
               borderRadius: 14,
-              border: "1px solid rgba(139,92,246,0.25)",
-              background: "rgba(139,92,246,0.06)",
+              border: "1px solid rgba(200,0,0,0.25)",
+              background: "rgba(200,0,0,0.06)",
               color: "var(--sch-text)",
               fontSize: 14,
               fontWeight: 700,
@@ -963,8 +963,8 @@ export default function Dashboard() {
                   fontWeight: 800,
                   padding: "2px 8px",
                   borderRadius: 8,
-                  background: "rgba(139,92,246,0.18)",
-                  color: "#C084FC",
+                  background: "rgba(200,0,0,0.18)",
+                  color: "#D92E10",
                   letterSpacing: "0.04em",
                 }}
               >
@@ -985,16 +985,16 @@ export default function Dashboard() {
             animate={
               markGlow
                 ? { boxShadow: [
-                    "0 0 40px rgba(139,92,246,0.25)",
-                    "0 0 70px rgba(139,92,246,0.8)",
-                    "0 0 40px rgba(139,92,246,0.25)",
+                    "0 0 40px rgba(200,0,0,0.25)",
+                    "0 0 70px rgba(200,0,0,0.8)",
+                    "0 0 40px rgba(200,0,0,0.25)",
                   ] }
                 : undefined
             }
             transition={markGlow ? { duration: 0.7, repeat: 2, ease: "easeInOut" } : undefined}
             whileHover={
               status === "idle"
-                ? { scale: 1.02, boxShadow: "0 0 60px rgba(139,92,246,0.4)" }
+                ? { scale: 1.02, boxShadow: "0 0 60px rgba(200,0,0,0.4)" }
                 : undefined
             }
             whileTap={status === "idle" ? { scale: 0.98 } : undefined}
@@ -1016,11 +1016,11 @@ export default function Dashboard() {
               opacity: status === "loading" ? 0.7 : 1,
               background: isDone
                 ? "linear-gradient(135deg,rgba(52,211,153,0.7),rgba(16,185,129,0.7))"
-                : "linear-gradient(135deg,rgba(139,92,246,0.7),rgba(99,102,241,0.7))",
-              border: `1px solid ${isDone ? "rgba(52,211,153,0.5)" : "rgba(139,92,246,0.5)"}`,
+                : "linear-gradient(135deg,rgba(200,0,0,0.7),rgba(99,102,241,0.7))",
+              border: `1px solid ${isDone ? "rgba(52,211,153,0.5)" : "rgba(200,0,0,0.5)"}`,
               boxShadow: isDone
                 ? "0 0 40px rgba(52,211,153,0.2)"
-                : "0 0 40px rgba(139,92,246,0.25)",
+                : "0 0 40px rgba(200,0,0,0.25)",
             }}
           >
             {status === "loading" && (
@@ -1062,14 +1062,14 @@ export default function Dashboard() {
             marginTop: 20,
             padding: 24,
             borderRadius: 20,
-            background: "rgba(139,92,246,0.06)",
-            border: "1px solid rgba(139,92,246,0.15)",
+            background: "rgba(200,0,0,0.06)",
+            border: "1px solid rgba(200,0,0,0.08)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <LaraAvatar size={32} />
-              <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(192,132,252,0.7)" }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(200,0,0,0.7)" }}>
                 Lara · Your coach
               </span>
             </div>
@@ -1231,9 +1231,9 @@ export default function Dashboard() {
         whileTap={{ scale: 0.9 }}
         animate={{
           boxShadow: [
-            "0 4px 20px rgba(139,92,246,0.35)",
-            "0 4px 30px rgba(139,92,246,0.55)",
-            "0 4px 20px rgba(139,92,246,0.35)",
+            "0 4px 20px rgba(200,0,0,0.35)",
+            "0 4px 30px rgba(200,0,0,0.55)",
+            "0 4px 20px rgba(200,0,0,0.35)",
           ],
         }}
         transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}

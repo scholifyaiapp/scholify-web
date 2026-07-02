@@ -281,7 +281,7 @@ function ActivityTimeline({
               height: 10,
               borderRadius: "50%",
               background: d.you ? IRIDESCENT : "rgba(255,255,255,0.08)",
-              boxShadow: d.you ? "0 0 8px rgba(167,139,250,0.7)" : "none",
+              boxShadow: d.you ? "0 0 8px rgba(200,0,0,0.7)" : "none",
             }}
             aria-label={d.you ? "you completed" : "you missed"}
           />
@@ -332,8 +332,8 @@ function MessageHistory({
               gap: 10,
               padding: "10px 14px",
               borderRadius: 12,
-              background: fromYou ? "rgba(139,92,246,0.06)" : "rgba(244,114,182,0.06)",
-              border: `1px solid ${fromYou ? "rgba(139,92,246,0.16)" : "rgba(244,114,182,0.16)"}`,
+              background: fromYou ? "rgba(200,0,0,0.06)" : "rgba(244,114,182,0.06)",
+              border: `1px solid ${fromYou ? "rgba(200,0,0,0.16)" : "rgba(244,114,182,0.16)"}`,
             }}
           >
             <span style={{ fontSize: 12, color: TEXT_DIM, minWidth: 56 }}>

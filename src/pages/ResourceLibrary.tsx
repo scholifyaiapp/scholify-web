@@ -93,7 +93,7 @@ function ResourceCard({
       transition={{ duration: 0.4, ease: EASE }}
       whileHover={{
         y: -3,
-        borderColor: "rgba(139,92,246,0.25)",
+        borderColor: "rgba(200,0,0,0.25)",
       }}
       onClick={open}
       style={{
@@ -212,7 +212,7 @@ function ResourceCard({
         <span
           style={{
             fontSize: 13,
-            color: "rgba(139,92,246,0.7)",
+            color: "rgba(200,0,0,0.7)",
           }}
           className="sch-open-text"
         >
@@ -242,7 +242,7 @@ function ResourceCard({
       </div>
       <style>{`
         .sch-open-text { transition: color .2s ease; }
-        .sch-open-text:hover { color: rgba(139,92,246,1); }
+        .sch-open-text:hover { color: rgba(200,0,0,1); }
       `}</style>
     </motion.div>
   )
@@ -336,7 +336,7 @@ export default function ResourceLibrary() {
                       ? undefined
                       : {
                           scale: 1.04,
-                          borderColor: "rgba(139,92,246,0.4)",
+                          borderColor: "rgba(200,0,0,0.4)",
                         }
                   }
                   whileTap={{ scale: 0.97 }}
@@ -347,10 +347,10 @@ export default function ResourceLibrary() {
                     fontWeight: 600,
                     cursor: "pointer",
                     border: `1px solid ${
-                      active ? "rgba(139,92,246,0.4)" : "var(--sch-border)"
+                      active ? "rgba(200,0,0,0.4)" : "var(--sch-border)"
                     }`,
                     background: active
-                      ? "rgba(139,92,246,0.12)"
+                      ? "rgba(200,0,0,0.07)"
                       : "var(--sch-card)",
                     color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
                   }}
@@ -484,7 +484,7 @@ function EmptyState({
           fontSize: 13,
           fontWeight: 700,
           cursor: "pointer",
-          boxShadow: "0 0 20px rgba(139,92,246,0.25)",
+          boxShadow: "0 0 20px rgba(200,0,0,0.25)",
         }}
       >
         {kind === "filter" ? "Clear filters" : "Go to today's task →"}

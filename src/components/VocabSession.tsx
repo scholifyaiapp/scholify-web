@@ -34,7 +34,7 @@ const GRADES: { grade: ReviewGrade; label: string; color: string }[] = [
   { grade: "again", label: "Again", color: "#FF6B5E" },
   { grade: "hard", label: "Hard", color: "#FF9F0A" },
   { grade: "good", label: "Good", color: "#34D399" },
-  { grade: "easy", label: "Easy", color: "#38BDF8" },
+  { grade: "easy", label: "Easy", color: "#F4A405" },
 ]
 
 const XP_BY_GRADE: Record<ReviewGrade, number> = { again: 2, hard: 5, good: 10, easy: 12 }
@@ -186,7 +186,7 @@ export default function VocabSession({
         particleCount: 90,
         spread: 65,
         origin: { y: 0.7 },
-        colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"],
+        colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"],
       })
     } catch {
       /* ignore */
@@ -550,7 +550,7 @@ function WordFace({
               height: 42,
               borderRadius: 12,
               border: "none",
-              background: "rgba(139,92,246,0.12)",
+              background: "rgba(200,0,0,0.07)",
               color: "#7C3AED",
               fontSize: 18,
               cursor: "pointer",
@@ -644,7 +644,7 @@ function PrimaryButton({ label, onClick }: { label: string; onClick: () => void 
         fontSize: 16,
         fontWeight: 700,
         cursor: "pointer",
-        boxShadow: "0 0 30px rgba(139,92,246,0.3)",
+        boxShadow: "0 0 30px rgba(200,0,0,0.3)",
       }}
     >
       {label}
@@ -700,14 +700,14 @@ const card: CSSProperties = {
   background: "var(--sch-card)",
   border: "1px solid var(--sch-border)",
   textAlign: "center",
-  boxShadow: "0 0 60px rgba(139,92,246,0.08)",
+  boxShadow: "0 0 60px rgba(200,0,0,0.08)",
 }
 const kicker: CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "rgba(192,132,252,0.8)",
+  color: "rgba(200,0,0,0.8)",
   textAlign: "center",
   marginBottom: 12,
 }
@@ -733,11 +733,11 @@ const kbdHint: CSSProperties = {
 const recapPill: CSSProperties = {
   padding: "6px 14px",
   borderRadius: 999,
-  background: "rgba(139,92,246,0.12)",
-  border: "1px solid rgba(139,92,246,0.32)",
+  background: "rgba(200,0,0,0.07)",
+  border: "1px solid rgba(200,0,0,0.32)",
   fontSize: 13,
   fontWeight: 800,
-  color: "#C084FC",
+  color: "#D92E10",
 }
 const quizOpt: CSSProperties = {
   width: "100%",

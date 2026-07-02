@@ -5,7 +5,7 @@ import { useNavigate, Link } from "react-router-dom"
 const BG = "#FAFAF7"
 const INK = "#14141A"
 const INK_MUTED = "#6B6B73"
-const BRAND = "#5B5BF5"
+const BRAND = "#C80000"
 const HAIR = "rgba(20,20,26,0.08)"
 
 function ScholifyMark({ size = 28 }: { size?: number }) {

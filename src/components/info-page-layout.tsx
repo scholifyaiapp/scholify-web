@@ -9,7 +9,7 @@ const INK = "#14141A"
 const INK_MUTED = "#6B6B76"
 const CREAM = "#FAFAF7"
 const BORDER = "#EAEAEF"
-const BRAND_500 = "#5B5BF5"
+const BRAND_500 = "#C80000"
 
 export interface InfoSection {
   heading: string

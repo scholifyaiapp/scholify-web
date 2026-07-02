@@ -91,27 +91,27 @@
  * lavender accents, warm-plum ink. Tokens match the design export 1:1.
  */
 :root {
-  --sch-bg: #f4eff1;
+  --sch-bg: #f7f3f1;
   --sch-bg-2: #ffffff;
-  --sch-bg-grad: linear-gradient(140deg, #efe7fb, #f4eff1 55%);
-  --sch-bg-blur: rgba(244, 239, 241, 0.85);
+  --sch-bg-grad: linear-gradient(140deg, #fcebe7, #f7f3f1 55%);
+  --sch-bg-blur: rgba(247, 243, 241, 0.85);
   --sch-card: #ffffff;
-  --sch-card-2: #f4eff1;
-  --sch-hairline: rgba(59, 47, 68, 0.06);
-  --sch-border: rgba(59, 47, 68, 0.08);
-  --sch-border-2: rgba(59, 47, 68, 0.14);
-  --sch-text: #3b2f45;
-  --sch-tx-1: #5b4d68;
-  --sch-tx-2: #897e94;
-  --sch-tx-3: #9a8fa3;
-  --sch-tx-4: #b1a6b9;
+  --sch-card-2: #f7f3f1;
+  --sch-hairline: rgba(51, 43, 40, 0.06);
+  --sch-border: rgba(51, 43, 40, 0.08);
+  --sch-border-2: rgba(51, 43, 40, 0.14);
+  --sch-text: #332b28;
+  --sch-tx-1: #5c4f4a;
+  --sch-tx-2: #8e817b;
+  --sch-tx-3: #a1948d;
+  --sch-tx-4: #b9aca5;
 }
 
 /* Dark theme stays available via the Settings toggle. */
 html[data-theme="dark"] {
   --sch-bg: #050508;
   --sch-bg-2: #0a0a14;
-  --sch-bg-grad: linear-gradient(135deg, #0d0015, #120820);
+  --sch-bg-grad: linear-gradient(135deg, #170607, #220a0d);
   --sch-bg-blur: rgba(5, 5, 8, 0.9);
   --sch-card: rgba(255, 255, 255, 0.03);
   --sch-card-2: rgba(255, 255, 255, 0.045);
@@ -127,20 +127,20 @@ html[data-theme="dark"] {
 
 /* Keep light tokens when explicitly selected, too. */
 html[data-theme="light"] {
-  --sch-bg: #f4eff1;
+  --sch-bg: #f7f3f1;
   --sch-bg-2: #ffffff;
-  --sch-bg-grad: linear-gradient(140deg, #efe7fb, #f4eff1 55%);
-  --sch-bg-blur: rgba(244, 239, 241, 0.85);
+  --sch-bg-grad: linear-gradient(140deg, #fcebe7, #f7f3f1 55%);
+  --sch-bg-blur: rgba(247, 243, 241, 0.85);
   --sch-card: #ffffff;
-  --sch-card-2: #f4eff1;
-  --sch-hairline: rgba(59, 47, 68, 0.06);
-  --sch-border: rgba(59, 47, 68, 0.08);
-  --sch-border-2: rgba(59, 47, 68, 0.14);
-  --sch-text: #3b2f45;
-  --sch-tx-1: #5b4d68;
-  --sch-tx-2: #897e94;
-  --sch-tx-3: #9a8fa3;
-  --sch-tx-4: #b1a6b9;
+  --sch-card-2: #f7f3f1;
+  --sch-hairline: rgba(51, 43, 40, 0.06);
+  --sch-border: rgba(51, 43, 40, 0.08);
+  --sch-border-2: rgba(51, 43, 40, 0.14);
+  --sch-text: #332b28;
+  --sch-tx-1: #5c4f4a;
+  --sch-tx-2: #8e817b;
+  --sch-tx-3: #a1948d;
+  --sch-tx-4: #b9aca5;
 }
 
 @theme {
@@ -328,17 +328,17 @@ html[data-theme="light"] {
   .tabular { font-variant-numeric: tabular-nums; }
 
   .grad-hero {
-    background: linear-gradient(135deg, #5B5BF5 0%, #A855F7 50%, #FF6B3D 100%);
+    background: linear-gradient(135deg, #C80000 0%, #E50068 50%, #F4A405 100%);
   }
   .grad-hero-text {
-    background: linear-gradient(135deg, #5B5BF5 0%, #A855F7 50%, #FF6B3D 100%);
+    background: linear-gradient(135deg, #C80000 0%, #E50068 50%, #F4A405 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
   .grad-streak {
-    background: linear-gradient(180deg, #FF6B3D 0%, #FFB088 100%);
+    background: linear-gradient(180deg, #F4A405 0%, #F8C86A 100%);
   }
   .grad-shield {
     background: linear-gradient(180deg, #2DD4BF 0%, #A7F3D0 100%);
@@ -414,7 +414,7 @@ html[data-theme="light"] {
   border-radius: 24px;
   background:
     linear-gradient(var(--bg-dark), var(--bg-dark)) padding-box,
-    conic-gradient(from var(--grad-pos), #5B5BF5, #A855F7, #FF6B3D, #5B5BF5) border-box;
+    conic-gradient(from var(--grad-pos), #C80000, #E50068, #F4A405, #C80000) border-box;
   border: 2px solid transparent;
   animation: border-rotate 8s linear infinite;
 }
@@ -428,4 +428,28 @@ html[data-theme="light"] {
   }
   .mesh-bg { animation: none !important; }
   .animated-border { animation: none !important; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ *  Landing design tokens (raw values). Previously referenced but
+ *  never defined — selection, scrollbar hover, focus rings and the
+ *  mesh background silently fell back. Palette = ACCA brand family
+ *  (red #C80000 anchor, magenta + amber support) on warm paper.
+ * ────────────────────────────────────────────────────────────── */
+:root {
+  --bg-primary: #FAFAF7;
+  --bg-secondary: #F1EFEA;
+  --bg-dark: #0B0B0F;
+  --ink-primary: #14141A;
+  --ink-muted: #6B6B76;
+  --ink-inverse: #FAFAF7;
+  --brand-500: #C80000;
+  --brand-400: #D92E10;
+  --brand-100: #FBE7E4;
+  --fire-500: #F4A405;
+  --fire-100: #FDF2DC;
+  --shield-500: #2DD4BF;
+  --shield-100: #DDFAF4;
+  --plum-500: #E50068;
+  --plum-100: #FCE4EF;
 }

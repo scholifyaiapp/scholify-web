@@ -83,7 +83,7 @@ export default function VocabGuessGame({ deck, onClose }: { deck: VocabDeck; onC
     setOver(true)
     awardXp(Math.round(score / 10))
     try {
-      confetti({ particleCount: 90, spread: 65, origin: { y: 0.7 }, colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"] })
+      confetti({ particleCount: 90, spread: 65, origin: { y: 0.7 }, colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"] })
     } catch {
       /* ignore */
     }

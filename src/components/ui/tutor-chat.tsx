@@ -10,9 +10,9 @@ import { useT } from "@/i18n/LanguageProvider";
 const INK = "#14141A";
 const INK_MUTED = "#6B6B76";
 const CREAM = "#FAFAF7";
-const BRAND_500 = "#5B5BF5";
+const BRAND_500 = "#C80000";
 const BRAND_100 = "#E8E8FF";
-const PLUM_500 = "#A855F7";
+const PLUM_500 = "#E50068";
 
 const LARA_AVATAR =
   "https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06";

@@ -45,7 +45,7 @@ export default function ComingSoon() {
         <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 8, lineHeight: 1.6 }}>
           {info.blurb}
         </p>
-        <p style={{ fontSize: 12, color: "rgba(139,92,246,0.7)", marginTop: 14, fontWeight: 600 }}>
+        <p style={{ fontSize: 12, color: "rgba(200,0,0,0.7)", marginTop: 14, fontWeight: 600 }}>
           Coming soon
         </p>
         <Link

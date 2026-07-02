@@ -85,7 +85,7 @@ function Tab({ item, setPosition }: { item: NavItem; setPosition: (p: CursorPosi
           transition: "color 0.2s ease",
           whiteSpace: "nowrap",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "#5B5BF5")}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#C80000")}
         onMouseLeave={(e) => (e.currentTarget.style.color = "#14141A")}
       >
         {item.label}

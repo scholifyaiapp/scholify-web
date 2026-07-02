@@ -243,7 +243,7 @@ export default function TreeGrowthOverlay({ milestone, onClose }: TreeGrowthOver
 
 function Confetti() {
   const pieces = useMemo(() => {
-    const colors = ["#A78BFA", "#F472B6", "#22D3EE", "#FCD34D", "#34D399"]
+    const colors = ["#C80000", "#F472B6", "#22D3EE", "#FCD34D", "#34D399"]
     return Array.from({ length: 38 }).map((_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -318,7 +318,7 @@ const shareBtnStyle: CSSProperties = {
   fontSize: 13.5,
   border: "none",
   cursor: "pointer",
-  boxShadow: "0 12px 32px rgba(167,139,250,0.45)",
+  boxShadow: "0 12px 32px rgba(200,0,0,0.45)",
 }
 
 const viewBtnStyle: CSSProperties = {

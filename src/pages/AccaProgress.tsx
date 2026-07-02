@@ -74,7 +74,7 @@ export default function AccaProgress() {
     const t = Math.min(1, count / maxCount)
     // pale → vivid purple
     const alpha = 0.25 + 0.65 * t
-    return `rgba(167,139,250,${alpha.toFixed(2)})`
+    return `rgba(200,0,0,${alpha.toFixed(2)})`
   }
 
   function updateGoal(n: number) {
@@ -115,9 +115,9 @@ export default function AccaProgress() {
                     flex: 1,
                     padding: "10px 0",
                     borderRadius: 10,
-                    border: `1.5px solid ${goal === n ? "#A78BFA" : BORDER}`,
-                    background: goal === n ? "rgba(167,139,250,0.1)" : CARD,
-                    color: goal === n ? "#A78BFA" : TEXT,
+                    border: `1.5px solid ${goal === n ? "#C80000" : BORDER}`,
+                    background: goal === n ? "rgba(200,0,0,0.06)" : CARD,
+                    color: goal === n ? "#C80000" : TEXT,
                     fontWeight: 700,
                     fontSize: 14,
                     cursor: "pointer",
@@ -178,7 +178,7 @@ export default function AccaProgress() {
                       <div
                         key={p.id}
                         onClick={() => togglePassed(p.id)}
-                        style={{ ...card({ padding: "11px 14px", cursor: "pointer", border: `1px solid ${isCurrent ? "#A78BFA" : BORDER}` }), display: "flex", alignItems: "center", gap: 12 }}
+                        style={{ ...card({ padding: "11px 14px", cursor: "pointer", border: `1px solid ${isCurrent ? "#C80000" : BORDER}` }), display: "flex", alignItems: "center", gap: 12 }}
                       >
                         <span style={{ width: 26, height: 26, borderRadius: 8, background: on ? "rgba(16,185,129,0.15)" : "var(--sch-card-2)", color: on ? "#10B981" : DIM, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
                           {on ? "✓" : p.id.slice(0, 2)}
@@ -187,7 +187,7 @@ export default function AccaProgress() {
                           <div style={{ fontWeight: 650, fontSize: 13.5, color: TEXT }}>{p.name}</div>
                           <div style={{ fontSize: 11, color: DIM }}>{p.code}</div>
                         </div>
-                        {isCurrent && !on && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(167,139,250,0.15)", color: "#A78BFA", fontWeight: 700 }}>STUDYING</span>}
+                        {isCurrent && !on && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000", fontWeight: 700 }}>STUDYING</span>}
                         {!on && !isCurrent && s.answered > 0 && <span style={{ fontSize: 12, fontWeight: 700, ...iriText }}>{s.readiness}%</span>}
                         {on && <span style={{ fontSize: 12, color: "#10B981", fontWeight: 700 }}>Passed</span>}
                       </div>
@@ -218,7 +218,7 @@ export default function AccaProgress() {
                 <button
                   key={s}
                   onClick={() => updateJourney({ epsm: s })}
-                  style={{ flex: 1, padding: "9px 0", borderRadius: 10, border: `1.5px solid ${journey.epsm === s ? "#A78BFA" : BORDER}`, background: journey.epsm === s ? "rgba(167,139,250,0.1)" : CARD, color: journey.epsm === s ? "#A78BFA" : TEXT, fontWeight: 650, fontSize: 12.5, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "9px 0", borderRadius: 10, border: `1.5px solid ${journey.epsm === s ? "#C80000" : BORDER}`, background: journey.epsm === s ? "rgba(200,0,0,0.06)" : CARD, color: journey.epsm === s ? "#C80000" : TEXT, fontWeight: 650, fontSize: 12.5, cursor: "pointer" }}
                 >
                   {EPSM_LABEL[s]}
                 </button>
@@ -273,7 +273,7 @@ function Stepper({ label, value, max, step, onChange }: { label: string; value: 
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button onClick={() => onChange(Math.max(0, value - step))} style={btn} aria-label="decrease">−</button>
         <div style={{ flex: 1, height: 8, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "#10B981" : "#A78BFA", borderRadius: 999 }} />
+          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "#10B981" : "#C80000", borderRadius: 999 }} />
         </div>
         <button onClick={() => onChange(Math.min(max, value + step))} style={btn} aria-label="increase">+</button>
       </div>

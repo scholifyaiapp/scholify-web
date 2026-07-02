@@ -68,9 +68,9 @@ export function intervalBuckets(deck: VocabDeck): Bucket[] {
   }
   return [
     { label: "Not started", count: b.unseen, color: "#C4B5FD" },
-    { label: "≤ 1 day", count: b.today, color: "#A78BFA" },
-    { label: "2–7 days", count: b.week, color: "#818CF8" },
-    { label: "1–3 weeks", count: b.month, color: "#38BDF8" },
+    { label: "≤ 1 day", count: b.today, color: "#C80000" },
+    { label: "2–7 days", count: b.week, color: "#E50068" },
+    { label: "1–3 weeks", count: b.month, color: "#F4A405" },
     { label: "Mastered", count: b.mastered, color: "#34D399" },
   ]
 }

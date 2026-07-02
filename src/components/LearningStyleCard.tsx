@@ -64,11 +64,11 @@ const STYLE_META: Record<LearningStyle, { emoji: string; name: string; descripti
 }
 
 const TYPE_COLOR: Record<ResourceType, string> = {
-  video: "#818CF8",
+  video: "#E50068",
   practice: "#34D399",
   reading: "#F472B6",
   reflection: "#FB923C",
-  exercise: "#A78BFA",
+  exercise: "#C80000",
 }
 
 const TYPE_ORDER: ResourceType[] = ["video", "practice", "reading", "reflection", "exercise"]
@@ -146,7 +146,7 @@ export default function LearningStyleCard() {
           borderRadius: 20,
           background: IRIDESCENT,
           color: "#fff",
-          boxShadow: "0 14px 36px rgba(167,139,250,0.35)",
+          boxShadow: "0 14px 36px rgba(200,0,0,0.35)",
         }}
       >
         <span style={{ fontSize: 48, lineHeight: 1 }} aria-hidden>
@@ -165,7 +165,7 @@ export default function LearningStyleCard() {
         {orderedBreakdown.map((b, i) => {
           const meta = RESOURCE[b.type]
           const pct = Math.round(b.rate * 100)
-          const color = TYPE_COLOR[b.type] || "#A78BFA"
+          const color = TYPE_COLOR[b.type] || "#C80000"
           return (
             <div key={b.type}>
               <div
@@ -260,7 +260,7 @@ function InsightItem({ text }: { text: string }) {
         lineHeight: 1.55,
       }}
     >
-      <span style={{ color: "#C084FC", flexShrink: 0, fontWeight: 800 }}>✦</span>
+      <span style={{ color: "#D92E10", flexShrink: 0, fontWeight: 800 }}>✦</span>
       <span>{text}</span>
     </li>
   )

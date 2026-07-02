@@ -38,11 +38,11 @@ const iriText: CSSProperties = {
 const OB_CSS = `
   .ob ::placeholder { color: var(--sch-tx-4); }
   .ob-pill { transition: color .2s ease, border-color .2s ease, background .2s ease; }
-  .ob-pill:hover { border-color: rgba(139,92,246,0.4) !important; color: var(--sch-tx-1) !important; }
+  .ob-pill:hover { border-color: rgba(200,0,0,0.4) !important; color: var(--sch-tx-1) !important; }
   .ob-cal-day { transition: background .15s ease, border-color .15s ease; }
-  .ob-cal-day:hover { background: rgba(139,92,246,0.2) !important; border-color: rgba(139,92,246,0.3) !important; }
+  .ob-cal-day:hover { background: rgba(200,0,0,0.2) !important; border-color: rgba(200,0,0,0.3) !important; }
   .ob-arrow { transition: background .15s ease; }
-  .ob-arrow:not(:disabled):hover { background: rgba(139,92,246,0.18) !important; }
+  .ob-arrow:not(:disabled):hover { background: rgba(200,0,0,0.18) !important; }
   .ob-range { -webkit-appearance: none; appearance: none; background: transparent; outline: none; }
   .ob-range::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 34px; border-radius: 50%; cursor: grab; }
   .ob-range:active::-webkit-slider-thumb { cursor: grabbing; }
@@ -67,7 +67,7 @@ function ProgressBar({ step }: { step: number }) {
                 i === step
                   ? IRIDESCENT
                   : i < step
-                    ? "rgba(139,92,246,0.4)"
+                    ? "rgba(200,0,0,0.4)"
                     : "var(--sch-border)",
             }}
           />
@@ -116,7 +116,7 @@ function StepHeader({
         style={{
           fontSize: 11,
           letterSpacing: "0.1em",
-          color: "rgba(139,92,246,0.6)",
+          color: "rgba(200,0,0,0.6)",
           fontWeight: 600,
         }}
       >
@@ -174,8 +174,8 @@ function Pill({
         padding: "8px 16px",
         borderRadius: 20,
         fontSize: 13,
-        background: active ? "rgba(139,92,246,0.15)" : "var(--sch-card)",
-        border: `1px solid ${active ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+        background: active ? "rgba(200,0,0,0.08)" : "var(--sch-card)",
+        border: `1px solid ${active ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
         color: active ? "var(--sch-tx-1)" : "var(--sch-tx-2)",
         cursor: "pointer",
       }}
@@ -325,7 +325,7 @@ function Calendar({
                     : past
                       ? "var(--sch-tx-4)"
                       : "var(--sch-tx-1)",
-                boxShadow: selected ? "0 0 20px rgba(139,92,246,0.4)" : "none",
+                boxShadow: selected ? "0 0 20px rgba(200,0,0,0.4)" : "none",
                 cursor: disabled ? "default" : "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -423,8 +423,8 @@ function MinutesSlider({
             transform: "translate(-50%,-50%)",
             borderRadius: "50%",
             background: "#fff",
-            border: "3px solid rgba(139,92,246,0.8)",
-            boxShadow: "0 0 20px rgba(139,92,246,0.5)",
+            border: "3px solid rgba(200,0,0,0.8)",
+            boxShadow: "0 0 20px rgba(200,0,0,0.5)",
             pointerEvents: "none",
           }}
         />
@@ -486,7 +486,7 @@ function MinutesSlider({
             <motion.div
               key={c.title}
               animate={{
-                borderColor: active ? "rgba(139,92,246,0.35)" : "var(--sch-border)",
+                borderColor: active ? "rgba(200,0,0,0.35)" : "var(--sch-border)",
               }}
               style={{
                 display: "flex",
@@ -494,7 +494,7 @@ function MinutesSlider({
                 gap: 14,
                 padding: "14px 16px",
                 borderRadius: 14,
-                background: active ? "rgba(139,92,246,0.07)" : "var(--sch-card)",
+                background: active ? "rgba(200,0,0,0.07)" : "var(--sch-card)",
                 border: "1px solid var(--sch-border)",
                 borderLeft: active ? "3px solid transparent" : "1px solid var(--sch-border)",
                 borderImage: active ? `${IRIDESCENT} 1` : undefined,
@@ -635,8 +635,8 @@ export default function Onboarding() {
             minHeight: 120,
             padding: 20,
             paddingBottom: 36,
-            background: goalFocus ? "rgba(139,92,246,0.06)" : "var(--sch-card)",
-            border: `1px solid ${goalFocus ? "rgba(139,92,246,0.6)" : "var(--sch-border)"}`,
+            background: goalFocus ? "rgba(200,0,0,0.06)" : "var(--sch-card)",
+            border: `1px solid ${goalFocus ? "rgba(200,0,0,0.6)" : "var(--sch-border)"}`,
             borderRadius: 16,
             color: "var(--sch-text)",
             fontSize: 17,
@@ -644,7 +644,7 @@ export default function Onboarding() {
             resize: "none",
             outline: "none",
             fontFamily: "inherit",
-            boxShadow: goalFocus ? "0 0 0 3px rgba(139,92,246,0.1)" : "none",
+            boxShadow: goalFocus ? "0 0 0 3px rgba(200,0,0,0.06)" : "none",
             transition: "all 0.2s ease",
           }}
         />
@@ -760,7 +760,7 @@ export default function Onboarding() {
           padding: 1.5,
           borderRadius: 20,
           background: IRIDESCENT,
-          boxShadow: "0 0 40px rgba(139,92,246,0.25)",
+          boxShadow: "0 0 40px rgba(200,0,0,0.25)",
         }}
       >
         <div style={{ background: "var(--sch-bg-2)", borderRadius: 18.5, padding: 28 }}>
@@ -799,9 +799,9 @@ export default function Onboarding() {
         disabled={building}
         animate={{
           boxShadow: [
-            "0 0 30px rgba(139,92,246,0.3)",
-            "0 0 60px rgba(139,92,246,0.5)",
-            "0 0 30px rgba(139,92,246,0.3)",
+            "0 0 30px rgba(200,0,0,0.3)",
+            "0 0 60px rgba(200,0,0,0.5)",
+            "0 0 30px rgba(200,0,0,0.3)",
           ],
         }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -812,8 +812,8 @@ export default function Onboarding() {
           height: 60,
           marginTop: 24,
           borderRadius: 14,
-          background: "linear-gradient(135deg,rgba(139,92,246,0.85),rgba(99,102,241,0.85))",
-          border: "1px solid rgba(139,92,246,0.5)",
+          background: "linear-gradient(135deg,rgba(200,0,0,0.85),rgba(99,102,241,0.85))",
+          border: "1px solid rgba(200,0,0,0.5)",
           color: "#fff",
           fontSize: 18,
           fontWeight: 700,
@@ -881,14 +881,14 @@ export default function Onboarding() {
                 padding: "12px 28px",
                 borderRadius: 12,
                 background: canContinue
-                  ? "linear-gradient(135deg,rgba(139,92,246,0.85),rgba(99,102,241,0.85))"
+                  ? "linear-gradient(135deg,rgba(200,0,0,0.85),rgba(99,102,241,0.85))"
                   : "var(--sch-hairline)",
-                border: `1px solid ${canContinue ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+                border: `1px solid ${canContinue ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
                 color: canContinue ? "#fff" : "var(--sch-tx-3)",
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: canContinue ? "pointer" : "not-allowed",
-                boxShadow: canContinue ? "0 0 24px rgba(139,92,246,0.25)" : "none",
+                boxShadow: canContinue ? "0 0 24px rgba(200,0,0,0.25)" : "none",
               }}
             >
               Continue →

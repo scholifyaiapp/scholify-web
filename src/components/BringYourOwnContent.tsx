@@ -202,8 +202,8 @@ export default function BringYourOwnContent({
                     style={{
                       ...tab,
                       color: mode === m ? TEXT : MUTED,
-                      background: mode === m ? "rgba(139,92,246,0.14)" : "var(--sch-card)",
-                      border: `1px solid ${mode === m ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+                      background: mode === m ? "rgba(200,0,0,0.14)" : "var(--sch-card)",
+                      border: `1px solid ${mode === m ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
                     }}
                   >
                     {icon} {label}
@@ -271,8 +271,8 @@ export default function BringYourOwnContent({
                     style={{
                       ...levelPill,
                       color: level === lv ? TEXT : MUTED,
-                      background: level === lv ? "rgba(139,92,246,0.14)" : "var(--sch-card)",
-                      border: `1px solid ${level === lv ? "rgba(139,92,246,0.5)" : "var(--sch-border)"}`,
+                      background: level === lv ? "rgba(200,0,0,0.14)" : "var(--sch-card)",
+                      border: `1px solid ${level === lv ? "rgba(200,0,0,0.5)" : "var(--sch-border)"}`,
                     }}
                   >
                     {lv}
@@ -443,7 +443,7 @@ const urlInput: CSSProperties = { flex: 1, minWidth: 0, height: 44, padding: "0 
 const fetchBtn: CSSProperties = { height: 44, padding: "0 18px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }
 const fileDrop: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 56, marginBottom: 12, borderRadius: 14, border: "1px dashed var(--sch-border-2)", background: "var(--sch-card)", color: MUTED, fontSize: 14, fontWeight: 600, cursor: "pointer" }
 const levelPill: CSSProperties = { padding: "8px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer" }
-const primaryBtn: CSSProperties = { width: "100%", height: 52, marginTop: 22, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 30px rgba(139,92,246,0.3)" }
+const primaryBtn: CSSProperties = { width: "100%", height: 52, marginTop: 22, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 30px rgba(200,0,0,0.3)" }
 const ghostBtn: CSSProperties = { width: "100%", height: 44, marginTop: 10, borderRadius: 12, border: "none", background: "transparent", color: MUTED, fontSize: 14, fontWeight: 600, cursor: "pointer" }
 const speakChip: CSSProperties = { width: 32, height: 32, flexShrink: 0, borderRadius: "50%", border: "1px solid var(--sch-border)", background: "var(--sch-card-2)", fontSize: 14, cursor: "pointer" }
 const checkBox: CSSProperties = { width: 24, height: 24, flexShrink: 0, borderRadius: 7, color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
@@ -454,7 +454,7 @@ function rowCard(include: boolean): CSSProperties {
     padding: "12px 14px",
     borderRadius: 14,
     background: "var(--sch-card)",
-    border: `1px solid ${include ? "rgba(139,92,246,0.3)" : "var(--sch-border)"}`,
+    border: `1px solid ${include ? "rgba(200,0,0,0.3)" : "var(--sch-border)"}`,
     opacity: include ? 1 : 0.55,
   }
 }

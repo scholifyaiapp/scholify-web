@@ -60,7 +60,7 @@ export default function DifficultyAdvisor({
         style={rowStyle}
       >
         {showAvatar && <LaraAvatar />}
-        <div style={bubbleStyle({ accent: "rgba(167,139,250,0.4)" })}>
+        <div style={bubbleStyle({ accent: "rgba(200,0,0,0.4)" })}>
           <TypingDots />
         </div>
       </motion.div>
@@ -182,7 +182,7 @@ function LaraAvatar() {
           borderRadius: "50%",
           padding: ringWidth,
           background: IRIDESCENT,
-          boxShadow: "0 4px 14px rgba(167,139,250,0.45)",
+          boxShadow: "0 4px 14px rgba(200,0,0,0.45)",
         }}
       >
         <img

@@ -93,7 +93,7 @@ export default function Chat() {
                 position: "relative",
                 flexShrink: 0,
                 borderRadius: "50%",
-                boxShadow: "0 0 20px rgba(139,92,246,0.3)",
+                boxShadow: "0 0 20px rgba(200,0,0,0.3)",
               }}
             >
               <LaraAvatar size={38} />
@@ -152,9 +152,9 @@ export default function Chat() {
               width: 36,
               height: 36,
               borderRadius: 10,
-              border: `1px solid ${contextOn ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.08)"}`,
-              background: contextOn ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.03)",
-              color: contextOn ? "rgba(192,132,252,0.9)" : TEXT_MUTED,
+              border: `1px solid ${contextOn ? "rgba(200,0,0,0.4)" : "rgba(255,255,255,0.08)"}`,
+              background: contextOn ? "rgba(200,0,0,0.06)" : "rgba(255,255,255,0.03)",
+              color: contextOn ? "rgba(200,0,0,0.9)" : TEXT_MUTED,
               cursor: "pointer",
               fontSize: 14,
             }}

@@ -43,8 +43,8 @@ export default function Day3Card({ open, onClose }: { open: boolean; onClose: ()
               borderRadius: 24,
               textAlign: "center",
               background: "var(--sch-bg-2, #0D0015)",
-              border: "1px solid rgba(139,92,246,0.4)",
-              boxShadow: "0 40px 120px rgba(0,0,0,0.7), 0 0 80px rgba(139,92,246,0.15)",
+              border: "1px solid rgba(200,0,0,0.4)",
+              boxShadow: "0 40px 120px rgba(0,0,0,0.7), 0 0 80px rgba(200,0,0,0.08)",
             }}
           >
             <div style={{ fontSize: 52, lineHeight: 1 }}>🌱</div>
@@ -93,7 +93,7 @@ export default function Day3Card({ open, onClose }: { open: boolean; onClose: ()
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: "pointer",
-                boxShadow: "0 0 28px rgba(139,92,246,0.3)",
+                boxShadow: "0 0 28px rgba(200,0,0,0.3)",
               }}
             >
               Keep going →

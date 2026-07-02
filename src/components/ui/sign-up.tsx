@@ -227,17 +227,17 @@ const GradientBackground = () => (
     <svg width="100%" height="100%" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" className="absolute top-0 left-0 w-full h-full">
       <defs>
         <linearGradient id="rev_grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: "#5B5BF5", stopOpacity: 0.7 }} />
-          <stop offset="100%" style={{ stopColor: "#A855F7", stopOpacity: 0.5 }} />
+          <stop offset="0%" style={{ stopColor: "#C80000", stopOpacity: 0.7 }} />
+          <stop offset="100%" style={{ stopColor: "#E50068", stopOpacity: 0.5 }} />
         </linearGradient>
         <linearGradient id="rev_grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: "#A855F7", stopOpacity: 0.6 }} />
+          <stop offset="0%" style={{ stopColor: "#E50068", stopOpacity: 0.6 }} />
           <stop offset="50%" style={{ stopColor: "#FF6B3D", stopOpacity: 0.5 }} />
-          <stop offset="100%" style={{ stopColor: "#5B5BF5", stopOpacity: 0.6 }} />
+          <stop offset="100%" style={{ stopColor: "#C80000", stopOpacity: 0.6 }} />
         </linearGradient>
         <radialGradient id="rev_grad3" cx="50%" cy="50%" r="50%">
           <stop offset="0%" style={{ stopColor: "#FF6B3D", stopOpacity: 0.6 }} />
-          <stop offset="100%" style={{ stopColor: "#5B5BF5", stopOpacity: 0.3 }} />
+          <stop offset="100%" style={{ stopColor: "#C80000", stopOpacity: 0.3 }} />
         </radialGradient>
         <filter id="rev_blur1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="35" /></filter>
         <filter id="rev_blur2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="25" /></filter>
@@ -249,7 +249,7 @@ const GradientBackground = () => (
       </g>
       <g style={{ animation: "float2 25s ease-in-out infinite" }}>
         <circle cx="650" cy="450" r="150" fill="url(#rev_grad3)" filter="url(#rev_blur3)" opacity="0.7" />
-        <ellipse cx="50" cy="150" rx="180" ry="120" fill="#A855F7" filter="url(#rev_blur2)" opacity="0.4" />
+        <ellipse cx="50" cy="150" rx="180" ry="120" fill="#E50068" filter="url(#rev_blur2)" opacity="0.4" />
       </g>
     </svg>
   </>
@@ -275,15 +275,15 @@ const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
 )
 
 const modalSteps = [
-  { message: "Signing you up...", icon: <Loader className="w-12 h-12 text-[#5B5BF5] animate-spin" /> },
-  { message: "Building your plan...", icon: <Loader className="w-12 h-12 text-[#5B5BF5] animate-spin" /> },
-  { message: "Finalizing...", icon: <Loader className="w-12 h-12 text-[#5B5BF5] animate-spin" /> },
+  { message: "Signing you up...", icon: <Loader className="w-12 h-12 text-[#C80000] animate-spin" /> },
+  { message: "Building your plan...", icon: <Loader className="w-12 h-12 text-[#C80000] animate-spin" /> },
+  { message: "Finalizing...", icon: <Loader className="w-12 h-12 text-[#C80000] animate-spin" /> },
   { message: "Welcome to Scholify!", icon: <PartyPopper className="w-12 h-12 text-green-500" /> },
 ]
 const TEXT_LOOP_INTERVAL = 1.5
 
 const DefaultLogo = () => (
-  <div className="bg-[#5B5BF5] text-white rounded-md p-1.5">
+  <div className="bg-[#C80000] text-white rounded-md p-1.5">
     <Gem className="h-4 w-4" />
   </div>
 )

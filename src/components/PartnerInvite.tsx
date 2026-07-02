@@ -38,7 +38,7 @@ const cardBase: CSSProperties = {
   borderRadius: 20,
   padding: 24,
   background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(139,92,246,0.1)",
+  border: "1px solid rgba(200,0,0,0.06)",
   backdropFilter: "blur(18px) saturate(140%)",
   WebkitBackdropFilter: "blur(18px) saturate(140%)",
 }
@@ -53,8 +53,8 @@ function ProBadge() {
         fontSize: 11,
         fontWeight: 700,
         letterSpacing: "0.08em",
-        background: "rgba(139,92,246,0.15)",
-        color: "#C084FC",
+        background: "rgba(200,0,0,0.08)",
+        color: "#D92E10",
         borderRadius: 6,
         textTransform: "uppercase",
       }}
@@ -247,7 +247,7 @@ function NewInviteCard() {
               fontWeight: 600,
               border: "none",
               cursor: sending ? "default" : "pointer",
-              boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
+              boxShadow: "0 8px 24px rgba(200,0,0,0.35)",
               opacity: sending ? 0.7 : 1,
             }}
           >
@@ -295,7 +295,7 @@ function NewInviteCard() {
           <span style={{ flex: 1, color: TEXT_MUTED, fontFamily: "var(--font-mono)" }}>
             {inviteUrl.replace(/^https?:\/\//, "")}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#C084FC" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#D92E10" }}>
             Copy
           </span>
         </motion.button>
@@ -490,7 +490,7 @@ function IncomingInviteCard({
               fontWeight: 600,
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
+              boxShadow: "0 8px 24px rgba(200,0,0,0.35)",
             }}
           >
             Accept →

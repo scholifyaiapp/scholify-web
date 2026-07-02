@@ -64,7 +64,7 @@ const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
 /* ── Celebration particles ───────────────────────────────────── */
 
 function Particles() {
-  const colors = ["#C084FC", "#818CF8", "#38BDF8"]
+  const colors = ["#D92E10", "#E50068", "#F4A405"]
   return (
     <div
       aria-hidden
@@ -147,7 +147,7 @@ export default function PaywallModal({
           particleCount: 140,
           spread: 90,
           origin: { y: 0.5 },
-          colors: ["#C084FC", "#818CF8", "#38BDF8", "#34D399", "#FBBF24"],
+          colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"],
         })
       } catch {
         /* confetti is decorative */
@@ -212,10 +212,10 @@ export default function PaywallModal({
               maxHeight: isMobile ? "92vh" : "90vh",
               overflowY: "auto",
               background: "var(--sch-bg-2)",
-              border: "1px solid rgba(139,92,246,0.25)",
+              border: "1px solid rgba(200,0,0,0.25)",
               borderRadius: isMobile ? "28px 28px 0 0" : 28,
               boxShadow:
-                "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px var(--sch-card-2), 0 0 80px rgba(139,92,246,0.1)",
+                "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px var(--sch-card-2), 0 0 80px rgba(200,0,0,0.06)",
             }}
           >
             {/* Close button — only when the paywall can actually be dismissed */}
@@ -306,7 +306,7 @@ export default function PaywallModal({
                         height: 18,
                         borderRadius: "50%",
                         background: IRIDESCENT,
-                        boxShadow: "0 0 10px rgba(139,92,246,0.5)",
+                        boxShadow: "0 0 10px rgba(200,0,0,0.5)",
                       }}
                     />
                   ))}
@@ -350,8 +350,8 @@ export default function PaywallModal({
                         padding: "2px 7px",
                         borderRadius: 8,
                         background:
-                          f.badge === "NEW" ? "rgba(52,211,153,0.2)" : "rgba(139,92,246,0.2)",
-                        color: f.badge === "NEW" ? "#34D399" : "#C084FC",
+                          f.badge === "NEW" ? "rgba(52,211,153,0.2)" : "rgba(200,0,0,0.2)",
+                        color: f.badge === "NEW" ? "#34D399" : "#D92E10",
                       }}
                     >
                       {f.badge}
@@ -458,7 +458,7 @@ export default function PaywallModal({
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    style={{ fontSize: 12, color: "#C084FC", marginBottom: 10 }}
+                    style={{ fontSize: 12, color: "#D92E10", marginBottom: 10 }}
                   >
                     {notice}
                   </motion.div>
@@ -549,7 +549,7 @@ export default function PaywallModal({
                   transition={{ delay: 1.5, duration: 0.4 }}
                   style={{
                     fontSize: 14,
-                    color: "rgba(192,132,252,0.8)",
+                    color: "rgba(200,0,0,0.8)",
                     fontStyle: "italic",
                     marginTop: 12,
                   }}
@@ -586,9 +586,9 @@ function PlanMini({
 }) {
   const cardStyle: CSSProperties = featured
     ? {
-        background: "rgba(139,92,246,0.08)",
-        border: "1px solid rgba(139,92,246,0.4)",
-        boxShadow: "0 0 40px rgba(139,92,246,0.12)",
+        background: "rgba(200,0,0,0.08)",
+        border: "1px solid rgba(200,0,0,0.4)",
+        boxShadow: "0 0 40px rgba(200,0,0,0.07)",
       }
     : { background: "var(--sch-card)", border: "1px solid var(--sch-border)" }
 
@@ -608,7 +608,7 @@ function PlanMini({
             padding: "4px 16px",
             borderRadius: 20,
             whiteSpace: "nowrap",
-            boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
+            boxShadow: "0 4px 16px rgba(200,0,0,0.4)",
           }}
         >
           Most Popular
@@ -619,7 +619,7 @@ function PlanMini({
           fontSize: 12,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: featured ? "rgba(192,132,252,0.8)" : "var(--sch-tx-2)",
+          color: featured ? "rgba(200,0,0,0.8)" : "var(--sch-tx-2)",
         }}
       >
         {name}
@@ -646,7 +646,7 @@ function PlanMini({
       <motion.button
         type="button"
         onClick={onClick}
-        whileHover={{ scale: featured ? 1.02 : 1, boxShadow: featured ? "0 0 50px rgba(139,92,246,0.45)" : undefined }}
+        whileHover={{ scale: featured ? 1.02 : 1, boxShadow: featured ? "0 0 50px rgba(200,0,0,0.45)" : undefined }}
         whileTap={{ scale: 0.98 }}
         style={{
           width: "100%",
@@ -659,7 +659,7 @@ function PlanMini({
           color: featured ? "#fff" : "var(--sch-tx-1)",
           background: featured ? IRIDESCENT : "var(--sch-card)",
           border: featured ? "none" : "1px solid var(--sch-border-2)",
-          boxShadow: featured ? "0 0 30px rgba(139,92,246,0.3)" : "none",
+          boxShadow: featured ? "0 0 30px rgba(200,0,0,0.3)" : "none",
         }}
       >
         {cta}

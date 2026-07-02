@@ -272,7 +272,7 @@ function MenuItem({
       onMouseEnter={(e) => {
         e.currentTarget.style.background = danger
           ? "rgba(255,69,58,0.08)"
-          : "rgba(139,92,246,0.1)"
+          : "rgba(200,0,0,0.06)"
       }}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
@@ -304,8 +304,8 @@ function GoalCard({
       transition={{ duration: 0.45, ease: EASE }}
       whileHover={{
         y: -4,
-        borderColor: "rgba(139,92,246,0.3)",
-        boxShadow: "0 8px 32px rgba(139,92,246,0.1)",
+        borderColor: "rgba(200,0,0,0.3)",
+        boxShadow: "0 8px 32px rgba(200,0,0,0.06)",
       }}
       style={{
         position: "relative",
@@ -514,7 +514,7 @@ const primaryBtn: CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
-  boxShadow: "0 0 18px rgba(139,92,246,0.25)",
+  boxShadow: "0 0 18px rgba(200,0,0,0.25)",
 }
 
 const ghostBtn: CSSProperties = {
@@ -653,7 +653,7 @@ function RecalibrateModal({
                 step={5}
                 value={minutes}
                 onChange={(e) => setMinutes(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#A78BFA" }}
+                style={{ width: "100%", accentColor: "#C80000" }}
               />
             </div>
 
@@ -1025,7 +1025,7 @@ export default function Goals() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 0 22px rgba(139,92,246,0.3)",
+              boxShadow: "0 0 22px rgba(200,0,0,0.3)",
             }}
           >
             + New goal

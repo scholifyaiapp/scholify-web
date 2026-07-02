@@ -15,8 +15,8 @@ function AuthLoading() {
           width: 28,
           height: 28,
           borderRadius: "50%",
-          border: "2px solid rgba(139,92,246,0.25)",
-          borderTopColor: "rgba(139,92,246,0.9)",
+          border: "2px solid rgba(200,0,0,0.25)",
+          borderTopColor: "rgba(200,0,0,0.9)",
           animation: "auth-guard-spin 0.7s linear infinite",
           display: "block",
         }}

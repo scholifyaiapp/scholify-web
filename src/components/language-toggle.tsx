@@ -30,7 +30,7 @@ export default function LanguageToggle({ className = "" }: { className?: string 
             aria-label={aria}
             className="rounded-full px-2 py-[3px] text-[11px] font-bold leading-none transition-colors"
             style={{
-              background: active ? "#5B5BF5" : "transparent",
+              background: active ? "#C80000" : "transparent",
               color: active ? "#FAFAF7" : "#6B6B76",
             }}
           >

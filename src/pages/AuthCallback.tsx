@@ -117,7 +117,7 @@ export default function AuthCallback() {
                 marginTop: 24,
                 fontSize: 14,
                 fontWeight: 600,
-                color: "rgba(139,92,246,0.95)",
+                color: "rgba(200,0,0,0.95)",
                 textDecoration: "none",
               }}
             >

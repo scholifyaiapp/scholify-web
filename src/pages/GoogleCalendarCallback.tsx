@@ -150,7 +150,7 @@ export default function GoogleCalendarCallback() {
             borderTopColor:
               phase === "done" || phase === "error"
                 ? undefined
-                : "rgba(139,92,246,0.9)",
+                : "rgba(200,0,0,0.9)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

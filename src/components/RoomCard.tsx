@@ -202,9 +202,9 @@ export default function RoomCard({
 
       <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 8 }}>
         <Pill style={{
-          background: "rgba(139,92,246,0.08)",
-          border: "1px solid rgba(139,92,246,0.2)",
-          color: "#C084FC",
+          background: "rgba(200,0,0,0.08)",
+          border: "1px solid rgba(200,0,0,0.2)",
+          color: "#D92E10",
         }}>
           🎯 {cat.label}
         </Pill>
@@ -269,7 +269,7 @@ export default function RoomCard({
               fontWeight: 600,
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 6px 18px rgba(167,139,250,0.35)",
+              boxShadow: "0 6px 18px rgba(200,0,0,0.35)",
             }}
           >
             Join room →
