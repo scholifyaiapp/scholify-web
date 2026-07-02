@@ -201,7 +201,7 @@ export default function Pricing() {
           ✦ Scholify
         </Link>
         <Link
-          to={user ? "/dashboard" : "/sign-in"}
+          to={user ? "/study" : "/sign-in"}
           style={{ fontSize: 14, color: "var(--sch-tx-1)", textDecoration: "none" }}
         >
           {user ? "Go to app →" : "Sign in"}
@@ -338,7 +338,7 @@ export default function Pricing() {
             description="Try everything free. No card needed."
             features={FREE_FEATURES}
             cta="Start free trial"
-            onCta={() => (window.location.href = user ? "/dashboard" : "/sign-up")}
+            onCta={() => (window.location.href = user ? "/study" : "/sign-up")}
           />
           <PricingCard
             index={1}

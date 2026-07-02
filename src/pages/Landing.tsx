@@ -11,19 +11,15 @@ import {
   Zap,
   Flame,
   Shield,
-  MessageCircle,
   Share2,
   ArrowRight,
   Check,
-  X,
-  Play,
   Star,
 } from "lucide-react"
 import NavHeader from "@/components/ui/nav-header"
-import { MovingBorder } from "@/components/ui/moving-border"
 import { GlowCard } from "@/components/ui/spotlight-card"
 import { PricingInteraction } from "@/components/ui/pricing-interaction"
-import { LiquidButton, LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
+import { LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { StoreBadge } from "@/components/ui/store-badge"
 import { TestimonialsColumns } from "@/components/ui/testimonials-columns"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
@@ -34,8 +30,6 @@ import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
 import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
-import { ShiningText } from "@/components/ui/shining-text"
-import { Component as AiLoader } from "@/components/ui/ai-loader"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
@@ -67,30 +61,6 @@ const EASE_DECISIVE = [0.22, 1, 0.36, 1] as const
 const EASE_HOVER = [0.4, 0, 0.2, 1] as const
 
 /* ─────────────────────── UTILITY HOOKS ─────────────────────── */
-
-function useTypewriter(text: string, speedMs = 28, start = true) {
-  const [typed, setTyped] = useState("")
-  const prefersReduced = useReducedMotion()
-  useEffect(() => {
-    if (!start) {
-      setTyped("")
-      return
-    }
-    if (prefersReduced) {
-      setTyped(text)
-      return
-    }
-    setTyped("")
-    let i = 0
-    const id = setInterval(() => {
-      i += 1
-      setTyped(text.slice(0, i))
-      if (i >= text.length) clearInterval(id)
-    }, speedMs)
-    return () => clearInterval(id)
-  }, [text, speedMs, start, prefersReduced])
-  return typed
-}
 
 function useCountUp(target: number, durationMs = 1200, start = true) {
   const [val, setVal] = useState(0)
@@ -216,34 +186,6 @@ function PrimaryCTA({ children, onClick, large = false }: { children: React.Reac
   )
 }
 
-function GhostCTA({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <motion.div
-      whileHover={{ y: -2, scale: 1.02 }}
-      whileTap={{ scale: 0.97 }}
-      transition={CTA_SPRING}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      style={{ display: "inline-block" }}
-    >
-      <LiquidButton
-        onClick={onClick}
-        size="xl"
-        className="!rounded-full font-semibold gap-2"
-        style={{
-          background: hovered ? MONO_BLACK : MONO_WHITE,
-          color: hovered ? MONO_WHITE : MONO_BLACK,
-          border: `1.5px solid ${MONO_BLACK}`,
-          transition: "background 0.2s ease, color 0.2s ease",
-        }}
-      >
-        {children}
-      </LiquidButton>
-    </motion.div>
-  )
-}
-
 /* ─────────────────────── NAV ─────────────────────── */
 
 function Nav() {
@@ -309,10 +251,10 @@ function Nav() {
           {t("Sign in")}
         </a>
         <a
-          href="/onboarding"
+          href="/signup"
           onClick={(e) => {
             e.preventDefault()
-            navigate("/onboarding")
+            navigate("/signup")
           }}
           className="scholify-glass-pill-primary rounded-full px-4 py-2 text-sm font-bold sm:px-5"
           style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
@@ -558,7 +500,7 @@ function Hero() {
         <UpgradeBanner
           buttonText={t("The AI Examiner is here")}
           description={t("— try it free")}
-          onClick={() => navigate("/onboarding")}
+          onClick={() => navigate("/signup")}
         />
 
         <HeroHeadline />
@@ -584,7 +526,7 @@ function Hero() {
           transition={{ duration: 0.7, delay: 1, ease: EASE_DECISIVE }}
           style={{ marginTop: 40, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
         >
-          <PrimaryCTA onClick={() => navigate("/onboarding")}>
+          <PrimaryCTA onClick={() => navigate("/signup")}>
             {t("Start for free")} <ArrowRight size={18} strokeWidth={2.4} />
           </PrimaryCTA>
         </motion.div>
@@ -1009,129 +951,7 @@ function VisualShields() {
   )
 }
 
-/* ── C — Meet Lara typing chat ── */
-
-function LaraOrb() {
-  return (
-    <motion.div
-      animate={{ scale: [1, 1.05, 1] }}
-      transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-      style={{
-        width: 40,
-        height: 40,
-        flexShrink: 0,
-        borderRadius: "50%",
-        background: GRAD_HERO,
-        boxShadow: `0 12px 28px -8px ${BRAND_500}66, inset 0 -8px 16px ${PLUM_500}66`,
-      }}
-    />
-  )
-}
-
-function LaraBubble({ text, delay }: { text: string; delay: number }) {
-  const { ref, inView } = useInViewOnce<HTMLDivElement>("-80px")
-  const typed = useTypewriter(text, 14, inView)
-  const done = typed.length >= text.length
-  return (
-    <div ref={ref} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-      <LaraOrb />
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.4, delay }}
-        style={{
-          padding: "14px 18px",
-          borderRadius: 18,
-          borderTopLeftRadius: 6,
-          background: BRAND_100,
-          color: INK,
-          fontSize: 14.5,
-          lineHeight: 1.55,
-          fontWeight: 500,
-          maxWidth: 320,
-        }}
-      >
-        {typed}
-        {!done && (
-          <motion.span
-            animate={{ opacity: [1, 0, 1] }}
-            transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-            style={{ display: "inline-block", marginLeft: 2, color: BRAND_500 }}
-          >
-            ▍
-          </motion.span>
-        )}
-      </motion.div>
-    </div>
-  )
-}
-
-function LaraPortrait({ size = 132 }: { size?: number }) {
-  return (
-    <MovingBorder
-      isCircle
-      borderWidth={3}
-      gradientWidth={120}
-      duration={4}
-      colors={["#3a5ba0", "#f7c873", "#6ea3c1", "#A855F7"]}
-      outerClassName="shrink-0"
-    >
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: "50%",
-          overflow: "hidden",
-          background: "#FAF3E0",
-          display: "grid",
-          placeItems: "center",
-        }}
-      >
-        <img
-          src="https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
-          alt="Your AI Partner"
-          width={size}
-          height={size}
-          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-          loading="lazy"
-        />
-      </div>
-    </MovingBorder>
-  )
-}
-
-function VisualLara() {
-  return (
-    <GlowCard customSize glowColor="purple" className="!p-1 !gap-0 !rounded-3xl !shadow-none" width={460}>
-      <div className="soft-card" style={{ width: "100%", maxWidth: "100%", padding: 28, display: "flex", flexDirection: "column", gap: 18, borderRadius: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <LaraPortrait size={108} />
-        <div>
-          <div className="font-display" style={{ color: INK, fontSize: 26, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-            AI Partner
-          </div>
-          <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", fontWeight: 500, marginTop: 6 }}>
-            YOUR AI PARTNER · ONLINE
-          </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-            <motion.span
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-              style={{ width: 8, height: 8, borderRadius: "50%", background: SHIELD_500 }}
-            />
-            <span style={{ color: SHIELD_500, fontSize: 12, fontWeight: 600 }}>typing…</span>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ height: 1, background: HAIR }} />
-
-        <LaraBubble delay={0.1} text="Nuriddin, Day 14. You've studied 5.8 hours total. Most people quit by day 7. You didn't." />
-        <LaraBubble delay={1.6} text="Today: IELTS Writing Task 2. 25 minutes. You've done harder than this." />
-      </div>
-    </GlowCard>
-  )
-}
+/* ── C — Meet Lara ── */
 
 function VisualAIPartnerWidget() {
   const prefersReduced = useReducedMotion()
@@ -1510,6 +1330,169 @@ function FeatureSwiper() {
   )
 }
 
+/* ─────────────────────── QUALIFICATION ROADMAP ─────────────────────── */
+
+const ROADMAP_LEVELS: {
+  label: string
+  note?: string
+  accent: string
+  papers: { id: string; name: string; badge?: "BANK" | "AI EXAMINER" }[]
+}[] = [
+  {
+    label: "Applied Knowledge",
+    accent: BRAND_500,
+    papers: [
+      { id: "BT", name: "Business & Technology", badge: "BANK" },
+      { id: "MA", name: "Management Accounting", badge: "BANK" },
+      { id: "FA", name: "Financial Accounting", badge: "BANK" },
+    ],
+  },
+  {
+    label: "Applied Skills",
+    accent: PLUM_500,
+    papers: [
+      { id: "LW", name: "Corporate & Business Law", badge: "BANK" },
+      { id: "PM", name: "Performance Management", badge: "BANK" },
+      { id: "TX", name: "Taxation", badge: "BANK" },
+      { id: "FR", name: "Financial Reporting", badge: "BANK" },
+      { id: "AA", name: "Audit & Assurance", badge: "BANK" },
+      { id: "FM", name: "Financial Management", badge: "BANK" },
+    ],
+  },
+  {
+    label: "Strategic Professional",
+    note: "Essentials + 2 of 4 Options",
+    accent: FIRE_500,
+    papers: [
+      { id: "SBL", name: "Strategic Business Leader" },
+      { id: "SBR", name: "Strategic Business Reporting", badge: "AI EXAMINER" },
+      { id: "AFM", name: "Advanced Financial Mgmt" },
+      { id: "APM", name: "Advanced Performance Mgmt" },
+      { id: "ATX", name: "Advanced Taxation" },
+      { id: "AAA", name: "Advanced Audit & Assurance" },
+    ],
+  },
+]
+
+function PaperCard({ paper, accent, delay }: { paper: (typeof ROADMAP_LEVELS)[number]["papers"][number]; accent: string; delay: number }) {
+  const navigate = useNavigate()
+  const t = useT()
+  return (
+    <motion.button
+      type="button"
+      onClick={() => navigate("/signup")}
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5, delay, ease: EASE_DECISIVE }}
+      whileHover={{ y: -4, boxShadow: `0 1px 2px rgba(20,20,26,0.04), 0 18px 40px -14px ${accent}66` }}
+      whileTap={{ scale: 0.98 }}
+      className="soft-card"
+      style={{
+        padding: "16px 18px",
+        borderRadius: 16,
+        textAlign: "left",
+        cursor: "pointer",
+        border: `1px solid ${HAIR}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        minWidth: 0,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <span className="font-mono-pro" style={{ fontSize: 15, fontWeight: 700, color: accent, letterSpacing: "0.02em" }}>
+          {paper.id}
+        </span>
+        {paper.badge ? (
+          <span
+            className="font-mono-pro"
+            style={{
+              fontSize: 8.5,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              padding: "3px 8px",
+              borderRadius: 999,
+              background: paper.badge === "AI EXAMINER" ? `${FIRE_500}14` : `${SHIELD_500}14`,
+              color: paper.badge === "AI EXAMINER" ? FIRE_500 : "#0F9D8C",
+              border: `1px solid ${paper.badge === "AI EXAMINER" ? FIRE_500 : SHIELD_500}3a`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t(paper.badge)}
+          </span>
+        ) : (
+          <span className="font-mono-pro" style={{ fontSize: 8.5, fontWeight: 500, letterSpacing: "0.1em", padding: "3px 8px", borderRadius: 999, background: "rgba(20,20,26,0.04)", color: INK_MUTED, border: `1px solid ${HAIR}`, whiteSpace: "nowrap" }}>
+            {t("AI PRACTICE")}
+          </span>
+        )}
+      </div>
+      <span style={{ fontSize: 13, fontWeight: 500, color: INK, lineHeight: 1.35 }}>{t(paper.name)}</span>
+    </motion.button>
+  )
+}
+
+function QualificationRoadmap() {
+  const t = useT()
+  return (
+    <section style={{ padding: "96px 24px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" }}>
+          <SectionLabel>{t("THE FULL QUALIFICATION")}</SectionLabel>
+          <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
+            {t("Every paper.")}{" "}
+            <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("BT to AAA.")}</em>
+          </h2>
+          <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 580, margin: "20px auto 0", lineHeight: 1.65 }}>
+            {t("Curated question banks for all nine OT papers. AI-generated practice for all fifteen. One roadmap from your first paper to membership.")}
+          </p>
+        </div>
+
+        <div style={{ marginTop: 56, display: "flex", flexDirection: "column", gap: 36 }}>
+          {ROADMAP_LEVELS.map((level, li) => (
+            <div key={level.label}>
+              <motion.div
+                initial={{ opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.5, delay: 0.05, ease: EASE_DECISIVE }}
+                style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: level.accent, boxShadow: `0 0 12px ${level.accent}88`, flexShrink: 0 }} />
+                <span className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK, fontWeight: 700, textTransform: "uppercase" }}>
+                  {t(level.label)}
+                </span>
+                {level.note && (
+                  <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.08em", color: INK_MUTED }}>
+                    · {t(level.note)}
+                  </span>
+                )}
+                <span style={{ flex: 1, height: 1, background: HAIR }} />
+              </motion.div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+                {level.papers.map((p, pi) => (
+                  <PaperCard key={p.id} paper={p} accent={level.accent} delay={0.08 + li * 0.05 + pi * 0.05} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="font-mono-pro"
+          style={{ textAlign: "center", color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginTop: 32 }}
+        >
+          {t("TAP ANY PAPER TO START FREE")}
+        </motion.p>
+      </div>
+    </section>
+  )
+}
+
 /* ─────────────────────── IDENTITY (dark) ─────────────────────── */
 
 function Identity() {
@@ -1637,139 +1620,6 @@ function Stories() {
 
 /* ─────────────────────── PRICING ─────────────────────── */
 
-function PricingFree({ onCta }: { onCta: () => void }) {
-  return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.25, ease: EASE_HOVER }}
-      className="soft-card-sand"
-      style={{ padding: 36, borderRadius: 24, display: "flex", flexDirection: "column" }}
-    >
-      <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>FREE</div>
-      <div className="font-display" style={{ fontSize: 56, color: INK, margin: "16px 0 0", letterSpacing: "-0.04em", lineHeight: 1 }}>
-        $<span className="font-mono-pro tabular" style={{ fontFamily: "Geist Mono" }}>0</span>
-      </div>
-      <div style={{ color: INK_MUTED, fontSize: 13, marginTop: 6 }}>Free, forever.</div>
-      <div style={{ height: 1, background: HAIR, margin: "22px 0" }} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {[
-          "Unlimited learning goals",
-          "AI daily plan by Lara",
-          "Daily text coach messages",
-          "Life Shields (2 per week)",
-          "Progress dashboard",
-        ].map((f) => (
-          <FeatureCheck key={f}>{f}</FeatureCheck>
-        ))}
-      </div>
-      <motion.button
-        whileHover={{ background: BG_PRIMARY }}
-        whileTap={{ scale: 0.97 }}
-        onClick={onCta}
-        style={{
-          marginTop: "auto",
-          marginBlockStart: 32,
-          height: 50,
-          borderRadius: 999,
-          background: "transparent",
-          border: `1px solid ${HAIR}`,
-          color: INK,
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: "pointer",
-        }}
-      >
-        Start free
-      </motion.button>
-    </motion.div>
-  )
-}
-
-function PricingPro({ onCta }: { onCta: () => void }) {
-  return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.25, ease: EASE_HOVER }}
-      className="animated-border"
-      style={{ padding: 36, borderRadius: 24, color: INK_INVERSE, display: "flex", flexDirection: "column" }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: "rgba(250,250,247,0.6)", fontWeight: 500 }}>PRO</div>
-        <div
-          className="font-mono-pro"
-          style={{
-            fontSize: 10,
-            padding: "3px 10px",
-            borderRadius: 999,
-            background: GRAD_HERO,
-            color: "white",
-            fontWeight: 500,
-            letterSpacing: "0.08em",
-          }}
-        >
-          MOST POPULAR
-        </div>
-      </div>
-      <div className="font-display" style={{ fontSize: 56, margin: "16px 0 0", letterSpacing: "-0.04em", lineHeight: 1 }}>
-        $<span className="font-mono-pro tabular">7.99</span>
-        <span style={{ fontSize: 16, color: "rgba(250,250,247,0.5)", marginLeft: 6 }} className="font-sans-pro">/month</span>
-      </div>
-      <div style={{ color: "rgba(250,250,247,0.55)", fontSize: 13, marginTop: 6 }}>The full Scholify experience.</div>
-      <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "22px 0" }} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {[
-          "Everything in Free",
-          "Voice mode with Lara (ElevenLabs)",
-          "Speaking practice + AI scoring",
-          "Milestone achievement videos",
-          "Goal completion certificate",
-          "Year Rewind video (Annual)",
-        ].map((f) => (
-          <div key={f} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                flexShrink: 0,
-                borderRadius: "50%",
-                background: GRAD_HERO,
-                display: "grid",
-                placeItems: "center",
-                color: "white",
-                marginTop: 1,
-                boxShadow: `0 6px 14px -4px ${BRAND_500}80`,
-              }}
-            >
-              <Check size={12} strokeWidth={3} />
-            </div>
-            <span style={{ color: INK_INVERSE, fontSize: 14.5, fontWeight: 500 }}>{f}</span>
-          </div>
-        ))}
-      </div>
-      <motion.button
-        whileHover={{ filter: "brightness(1.08)" }}
-        whileTap={{ scale: 0.97 }}
-        onClick={onCta}
-        style={{
-          marginTop: "auto",
-          marginBlockStart: 32,
-          height: 50,
-          borderRadius: 999,
-          background: GRAD_HERO,
-          border: "none",
-          color: "white",
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: "pointer",
-          boxShadow: `0 18px 36px -10px ${BRAND_500}80`,
-        }}
-      >
-        Get Pro
-      </motion.button>
-    </motion.div>
-  )
-}
-
 interface ScholifyFeature {
   label: string
   pro?: boolean
@@ -1828,7 +1678,7 @@ function Pricing() {
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
               ctaLabel={t("Start 7-day free trial")}
-              onCta={() => navigate("/onboarding")}
+              onCta={() => navigate("/signup")}
             />
           </div>
 
@@ -1955,7 +1805,7 @@ function FinalCTA() {
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
         <HandWrittenTitle title="Then the next one." subtitle="Pass this paper." />
         <div style={{ marginTop: -32, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-          <PrimaryCTA large onClick={() => navigate("/onboarding")}>
+          <PrimaryCTA large onClick={() => navigate("/signup")}>
             Start prepping — free <ArrowRight size={20} strokeWidth={2.4} />
           </PrimaryCTA>
           <p style={{ color: INK_MUTED, fontSize: 14 }}>
@@ -1967,73 +1817,6 @@ function FinalCTA() {
   )
 }
 
-/* ─────────────────────── FOOTER ─────────────────────── */
-
-const footerCols: { label: string; links: string[] }[] = [
-  { label: "Product", links: ["Features", "Pricing", "How it works", "Sign in", "Get started"] },
-  { label: "Company", links: ["About", "Blog", "Privacy Policy", "Terms", "Contact"] },
-  { label: "Follow", links: ["Twitter / X", "Instagram", "TikTok", "LinkedIn"] },
-]
-
-function Footer() {
-  return (
-    <footer style={{ background: BG_PRIMARY, borderTop: `1px solid ${HAIR}`, padding: "56px 24px 32px" }}>
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "1.4fr repeat(3, 1fr)",
-          gap: 48,
-        }}
-      >
-        <div>
-          <ScholifyLogo size={36} />
-          <p style={{ color: INK_MUTED, fontSize: 13.5, lineHeight: 1.75, marginTop: 18, maxWidth: 280 }}>
-            The AI learning habit coach. Built on Atomic Habits. Powered by the Scholify learning engine.
-          </p>
-        </div>
-        {footerCols.map((col) => (
-          <div key={col.label}>
-            <div className="font-mono-pro" style={{ fontSize: 11, color: INK_MUTED, letterSpacing: "0.14em", fontWeight: 500 }}>
-              {col.label.toUpperCase()}
-            </div>
-            <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-              {col.links.map((l) => (
-                <a
-                  key={l}
-                  href="#"
-                  style={{ color: INK, fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = BRAND_500)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = INK)}
-                >
-                  {l}
-                </a>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "48px auto 0",
-          paddingTop: 24,
-          borderTop: `1px solid ${HAIR}`,
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-          color: INK_MUTED,
-          fontSize: 12,
-        }}
-      >
-        <span>© <span className="font-mono-pro tabular">2026</span> Scholify. All rights reserved.</span>
-        <span>Made with intention in Tashkent.</span>
-      </div>
-    </footer>
-  )
-}
 
 /* ─────────────────────── PAGE ─────────────────────── */
 
@@ -2045,10 +1828,7 @@ export default function Landing() {
       <Hero />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
-      <div className="flex flex-col items-center gap-6 pb-20">
-        <AiLoader size={150} text="Generating" fullScreen={false} />
-        <ShiningText text="Scholify is generating..." />
-      </div>
+      <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>

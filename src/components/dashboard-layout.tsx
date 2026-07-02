@@ -470,7 +470,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           }}
         >
           <Link
-            to="/dashboard"
+            to="/study"
             className="lg:invisible"
             style={{
               display: "flex",

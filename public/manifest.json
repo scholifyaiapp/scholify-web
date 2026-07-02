@@ -1,7 +1,7 @@
 {
   "name": "Scholify",
   "short_name": "Scholify",
-  "description": "Get 1% better every day. Lara turns any text into your personal vocabulary plan and coaches you to fluency.",
+  "description": "AI exam prep for ACCA students — curated question banks, timed mocks, flashcards and the AI Examiner that marks written answers in seconds.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -24,14 +24,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Today's Session",
-      "url": "/learn",
-      "description": "Start today's vocabulary session"
+      "name": "Study",
+      "url": "/study",
+      "description": "Practise your next ACCA paper"
     },
     {
       "name": "My Progress",
-      "url": "/learn/progress",
-      "description": "See your path to fluency"
+      "url": "/study/progress",
+      "description": "Readiness, mocks and mastery"
     }
   ]
 }
