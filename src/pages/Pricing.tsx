@@ -15,69 +15,73 @@ const TEXT2 = "var(--sch-tx-2)"
 const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 
 const FREE_FEATURES: PlanFeature[] = [
-  { text: "1 active learning goal" },
-  { text: "AI plan by Lara (7 days)" },
-  { text: "Daily text coach messages" },
-  { text: "Life Shields (2 per week)" },
-  { text: "Basic progress tracking" },
-  { text: "Best Resource Today" },
-  { text: "Weekly quiz (Gemini AI)" },
-  { text: "Goal cover art" },
+  { text: "Curated question banks — 9 papers" },
+  { text: "Practice with instant marking" },
+  { text: "Teaching explanations on every question" },
+  { text: "SRS flashcards" },
+  { text: "Study plan + readiness score" },
+  { text: "Lara AI tutor (limited)" },
+  { text: "Streaks & daily goals" },
+  { text: "Full ACCA roadmap BT → AAA" },
 ]
 
 const BEGINNER_FEATURES: PlanFeature[] = [
-  { text: "Unlimited learning goals" },
-  { text: "Daily text coach Lara" },
-  { text: "Best Resource Today (Perplexity AI)" },
-  { text: "Weekly progress report card" },
-  { text: "Shareable milestone cards" },
-  { text: "Life Shields (2 per week)" },
-  { text: "Progress heatmap calendar" },
-  { text: "Weekly challenge quiz" },
+  { text: "Unlimited practice sessions" },
+  { text: "Weak-area targeting" },
+  { text: "Per-syllabus-area analytics" },
+  { text: "Study heatmap & progress dashboard" },
+  { text: "Weekly XP leaderboard" },
+  { text: "Daily study reminders" },
+  { text: "Exam-date countdown & phased plan" },
+  { text: "EPSM + PER progress tracker" },
 ]
 
 const PRO_FEATURES: PlanFeature[] = [
-  { text: "🎙 Voice coach Lara (ElevenLabs)", badge: "PRO" },
-  { text: "🎤 Speaking practice + AI scoring" },
-  { text: "🎬 Milestone cinematic videos (Higgsfield)", badge: "NEW" },
-  { text: "📜 Goal completion certificate" },
-  { text: "🎵 Learning anthem (Suno AI)" },
+  { text: "⏱ Timed mock exams", badge: "PRO" },
+  { text: "📝 AI Examiner — written answers marked in seconds", badge: "NEW" },
+  { text: "✨ Custom practice from any topic or your notes" },
+  { text: "🤖 Unlimited Lara AI tutor" },
+  { text: "🎯 Mock history & pass-line tracking" },
   { text: "📅 Google Calendar sync" },
-  { text: "👥 Accountability partner" },
-  { text: "🛡 Life Shields — 5 per week" },
+  { text: "🌍 English & Russian" },
+  { text: "🚀 Priority AI generation" },
 ]
 
 const COMPARISON: Array<[string, string, string, string, string]> = [
-  ["Active goals", "1", "Unlimited", "Unlimited", "Unlimited"],
-  ["AI plan by Lara", "✓", "✓", "✓", "✓"],
-  ["Daily coach messages", "3/week", "✓", "✓", "✓"],
-  ["Voice coach (Lara)", "—", "—", "✓", "✓"],
-  ["Speaking practice", "—", "—", "✓", "✓"],
-  ["Milestone videos", "—", "—", "✓", "✓"],
-  ["Life Shields", "2/week", "2/week", "5/week", "5/week"],
-  ["Goal certificate", "—", "—", "✓", "✓"],
-  ["Learning anthem", "—", "—", "✓", "✓"],
-  ["Year Rewind video", "—", "—", "—", "✓"],
+  ["Curated question banks", "✓", "✓", "✓", "✓"],
+  ["Practice sessions", "Limited", "Unlimited", "Unlimited", "Unlimited"],
+  ["Instant marking + explanations", "✓", "✓", "✓", "✓"],
+  ["SRS flashcards", "✓", "✓", "✓", "✓"],
+  ["Readiness score", "✓", "✓", "✓", "✓"],
+  ["Weak-area analytics", "—", "✓", "✓", "✓"],
+  ["Lara AI tutor", "Limited", "Limited", "Unlimited", "Unlimited"],
+  ["Timed mock exams", "—", "—", "✓", "✓"],
+  ["AI Examiner (written marking)", "—", "—", "✓", "✓"],
+  ["Custom practice from your notes", "—", "—", "✓", "✓"],
   ["Priority AI", "—", "—", "—", "✓"],
   ["Calendar sync", "—", "—", "✓", "✓"],
 ]
 
 const FAQS: Array<[string, string]> = [
   [
+    "Which papers does Scholify cover?",
+    "All 15 papers of the ACCA qualification, BT to AAA. Nine papers (BT, MA, FA, LW, PM, TX, FR, AA, FM) have curated, expert-written question banks; every paper also supports unlimited AI-generated practice, and the AI Examiner marks written answers for FR and SBR today, with more papers coming.",
+  ],
+  [
+    "What is the AI Examiner?",
+    "Strategic Professional and parts of Applied Skills are written exams — and traditionally you wait days for a tutor to mark your answers. The AI Examiner marks your written answer against a marking scheme point by point, in seconds, and shows you exactly which marks you earned and which you missed.",
+  ],
+  [
+    "Is Scholify affiliated with ACCA?",
+    "No. Scholify is an independent study tool for ACCA students. All questions are original and aligned to the public syllabus — we never reproduce official exam materials. ACCA is a registered trademark of the Association of Chartered Certified Accountants.",
+  ],
+  [
     "Can I cancel anytime?",
     "Yes. Cancel from Settings anytime. Your plan stays active until the period ends. No questions, no forms, no hidden steps.",
   ],
   [
     "What happens after my free trial?",
-    "After 7 days, choose a paid plan or your account switches to the free tier. Your streak and progress are always saved.",
-  ],
-  [
-    "Does Scholify work for any learning goal?",
-    "Yes. IELTS, Python, Figma, Chinese, AWS, fitness, reading — Lara has built plans for all of these. If you can describe it, Lara can plan it.",
-  ],
-  [
-    "How is Scholify different from Duolingo?",
-    "Duolingo is for languages only and punishes missed days. Scholify works for any goal, never punishes misses, and adapts your plan when life gets in the way.",
+    "After 7 days, choose a paid plan or your account switches to the free tier. Your streak, readiness scores and progress are always saved.",
   ],
 ]
 
@@ -236,10 +240,10 @@ export default function Pricing() {
               lineHeight: 1.05,
             }}
           >
-            Simple, honest pricing.
+            Cheaper than one tutoring hour.
           </h1>
           <p style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 12 }}>
-            Start free for 7 days. Upgrade when you're ready.
+            Start free for 7 days. Upgrade when you're ready to pass.
           </p>
 
           {/* Billing toggle */}
@@ -344,7 +348,7 @@ export default function Pricing() {
             priceUnit="/mo"
             oldPrice={beginnerCard.oldPrice}
             billedNote={beginnerCard.billedNote}
-            description="For consistent learners"
+            description="For steady daily practice"
             featuresHeader="Everything in Free, plus:"
             features={BEGINNER_FEATURES}
             cta="Choose Beginner"
@@ -358,7 +362,7 @@ export default function Pricing() {
             priceUnit="/mo"
             oldPrice={proCard.oldPrice}
             billedNote={proCard.billedNote}
-            description="The full Scholify experience"
+            description="Mocks, AI Examiner & unlimited AI"
             featuresHeader="Everything in Beginner, plus:"
             features={PRO_FEATURES}
             cta="Choose Pro →"
@@ -426,9 +430,9 @@ export default function Pricing() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 380 }}>
             {[
               "✓ Everything in Pro",
-              "✓ 5 shields per week",
-              "✓ Year Rewind video",
+              "✓ Covers multiple sittings per year",
               "✓ Priority AI generation",
+              "✓ Best value — $7.92/mo",
             ].map((p) => (
               <span
                 key={p}

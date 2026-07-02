@@ -24,41 +24,41 @@ const HEADERS: Record<
     kind: "celebrate",
     emoji: "🏆",
     title: "You built a 7-day streak!",
-    sub: "That puts you in the top 3% of learners worldwide. Most people quit before day 3. You didn't.",
+    sub: "That puts you in the top 3% of ACCA students. Most people quit before day 3. You didn't.",
   },
   streak14: {
     kind: "celebrate",
     emoji: "🔥",
     title: "14 days strong.",
-    sub: "Two full weeks of showing up. This isn't a phase anymore — it's becoming who you are.",
+    sub: "Two full weeks of showing up. Students who practise daily pass at nearly twice the average rate.",
   },
   streak21: {
     kind: "celebrate",
     emoji: "💎",
     title: "21 days — it's a habit now.",
-    sub: "Research says habits take about three weeks to form. You just made learning automatic.",
+    sub: "Research says habits take about three weeks to form. You just made exam prep automatic.",
   },
   feature: {
     kind: "lock",
     emoji: "🔒",
     title: "This is a Pro feature",
-    sub: "Upgrade to unlock speaking practice, Listen & Type, premium voice, and unlimited words.",
+    sub: "Upgrade to unlock timed mocks, the AI Examiner, custom practice and unlimited Lara.",
   },
   general: {
     kind: "lara",
     emoji: "L",
     title: "Unlock the full Scholify",
-    sub: "Speaking practice, premium voice, unlimited words — everything Lara can do.",
+    sub: "Timed mocks, instant written marking, custom practice — everything you need to pass.",
   },
 }
 
 const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
-  { text: "Unlimited new words every day" },
-  { text: "Speaking practice — say it, get scored", badge: "PRO" },
-  { text: "Listen & Type spelling drills", badge: "PRO" },
-  { text: "Premium, natural pronunciation voice", badge: "PRO" },
-  { text: "Every language — switch anytime" },
-  { text: "Spaced repetition tuned to your memory" },
+  { text: "Timed mock exams with pass-line tracking", badge: "PRO" },
+  { text: "AI Examiner — written answers marked in seconds", badge: "NEW" },
+  { text: "Custom practice from any topic or your notes", badge: "PRO" },
+  { text: "Unlimited Lara AI tutor" },
+  { text: "Curated banks for all nine OT papers" },
+  { text: "Readiness score & weak-area analytics" },
 ]
 
 /* ── Celebration particles ───────────────────────────────────── */

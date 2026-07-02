@@ -342,7 +342,7 @@ function HeroHeadline() {
       }}
     >
       <AnimatedText
-        text={t("Welcome to Scholify")}
+        text={t("Pass ACCA. Paper by paper.")}
         textClassName="font-display font-normal tracking-[-0.03em]"
         gradientColors="linear-gradient(90deg, #14141A 0%, #5B5BF5 40%, #A855F7 50%, #5B5BF5 60%, #14141A 100%)"
         gradientAnimationDuration={3.5}
@@ -447,7 +447,7 @@ function PhoneMockup() {
         </motion.div>
 
         <motion.div {...childStagger(1)} style={{ color: "rgba(250,250,247,0.45)", fontSize: 12, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-          <Shield size={12} color={SHIELD_500} /> 2 shields this week
+          <Shield size={12} color={SHIELD_500} /> Readiness 68% and climbing
         </motion.div>
 
         <motion.div
@@ -464,10 +464,10 @@ function PhoneMockup() {
             DAY <span className="tabular">14</span> OF <span className="tabular">47</span> · <span className="tabular">25</span> MIN
           </div>
           <div style={{ color: INK_INVERSE, fontSize: 15, fontWeight: 600, marginTop: 8 }}>
-            IELTS Writing Task 2 Strategy
+            FR · Consolidated financial statements
           </div>
           <div style={{ color: "rgba(250,250,247,0.4)", fontSize: 12, marginTop: 4 }}>
-            Analyze argument structure…
+            20 exam-style questions · instant marking
           </div>
 
           <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "14px 0" }} />
@@ -504,7 +504,7 @@ function PhoneMockup() {
             boxShadow: `0 8px 22px -6px ${BRAND_500}80`,
           }}
         >
-          Mark today complete
+          Start today's session
         </motion.button>
 
         <motion.div
@@ -529,7 +529,7 @@ function PhoneMockup() {
             <div className="font-mono-pro" style={{ fontSize: 10, color: BRAND_400, fontWeight: 500, letterSpacing: "0.08em" }}>LARA · YOUR COACH</div>
           </div>
           <div style={{ color: "rgba(250,250,247,0.7)", fontSize: 12, marginTop: 6, lineHeight: 1.5 }}>
-            Day <span className="font-mono-pro tabular">14</span>. You've studied <span className="font-mono-pro tabular">5.8</span>h total. Keep this up.
+            Day <span className="font-mono-pro tabular">14</span>. Area E is your weakest — today we close that gap.
           </div>
         </motion.div>
       </motion.div>
@@ -556,7 +556,7 @@ function Hero() {
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
-          buttonText={t("Lara just got 3× smarter")}
+          buttonText={t("The AI Examiner is here")}
           description={t("— try it free")}
           onClick={() => navigate("/onboarding")}
         />
@@ -575,7 +575,7 @@ function Hero() {
             lineHeight: 1.55,
           }}
         >
-          {t("Set your goal. Lara builds the plan. You just show up.")}
+          {t("Tell Lara your next paper and exam date. She builds the plan, marks your answers, and gets you exam-ready.")}
         </motion.p>
 
         <motion.div
@@ -623,7 +623,7 @@ function Hero() {
             ))}
           </div>
           <span style={{ color: INK_MUTED, fontSize: 13 }}>
-            <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>2,400+</span> {t("learners")} ·{" "}
+            <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>2,400+</span> {t("ACCA students")} ·{" "}
             <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>4.9</span>
             <Star size={11} strokeWidth={0} fill={FIRE_500} style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 2, marginRight: 2 }} />
             · {t("Free to start")}
@@ -632,8 +632,8 @@ function Hero() {
 
         <div style={{ marginTop: 48 }}>
           <HandWrittenTitle
-            title={t("Just start today.")}
-            subtitle={t("The rest is on Scholify.")}
+            title={t("13 exams. One app.")}
+            subtitle={t("Start with your next paper — today.")}
           />
         </div>
       </div>
@@ -694,20 +694,20 @@ function Problem() {
     <section style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 72px)", color: INK, margin: 0 }}>
-          {t("The internet gave you everything to learn.")}
+          {t("Half of ACCA candidates fail each sitting.")}
         </h2>
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(36px, 5vw, 72px)", margin: "16px 0 0", fontStyle: "italic" }}>
-          {t("Scholify gives you the discipline to finish.")}
+          {t("Scholify exists to put you in the other half.")}
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 18, maxWidth: 620, margin: "32px auto 0", lineHeight: 1.65 }}>
-          <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>92%</span>{" "}
-          {t("of online courses are abandoned within 30 days — not from lack of motivation, but lack of a daily rhythm. Scholify is the rhythm.")}
+          <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>~50%</span>{" "}
+          {t("pass a typical Applied Skills sitting. The difference isn't intelligence — it's practice volume, feedback speed, and a plan. Scholify is all three.")}
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
-          <StatCard tone="blue" value="92%" label={t("of online courses never finished")} source={t("Source: MIT research")} delay={0.05} />
-          <StatCard tone="green" value="5 min" label={t("is all Scholify asks per day")} source={t("Less than one TikTok scroll")} delay={0.15} />
-          <StatCard tone="purple" value="14×" label={t("more consistent than self-study")} source={t("Based on habit formation research")} delay={0.25} />
+          <StatCard tone="blue" value="50%" label={t("average pass rate on Applied Skills exams")} source={t("Published ACCA global pass rates")} delay={0.05} />
+          <StatCard tone="green" value="13" label={t("exams to qualify — one system for all of them")} source={t("BT to Strategic Professional")} delay={0.15} />
+          <StatCard tone="purple" value="10×" label={t("cheaper than a private ACCA tutor")} source={t("Pro costs less than one tutoring hour")} delay={0.25} />
         </div>
       </div>
     </section>
@@ -717,9 +717,9 @@ function Problem() {
 /* ─────────────────────── HOW IT WORKS ─────────────────────── */
 
 const steps = [
-  { num: "01", label: "CUE", title: "Set your goal", desc: "Type what you want to learn. Add your deadline. Tell Lara how many minutes you have per day. That's it.", Icon: Target, accent: BRAND_500 },
-  { num: "02", label: "CRAVING", title: "Lara builds your plan", desc: "In 15 seconds, Lara generates a complete day-by-day learning plan tailored to your goal, deadline, and time.", Icon: Zap, accent: PLUM_500 },
-  { num: "03", label: "RESPONSE → REWARD", title: "Show up daily", desc: "Complete your daily task. Earn your streak. If life happens, your shield protects you. You never start over.", Icon: Flame, accent: FIRE_500 },
+  { num: "01", label: "YOUR RECORD", title: "Tell Lara where you are", desc: "Mark the papers you've passed, pick your next one, and set your exam date. Takes a minute.", Icon: Target, accent: BRAND_500 },
+  { num: "02", label: "YOUR PLAN", title: "Get your phased plan", desc: "Lara builds a day-by-day plan to exam day: learn the syllabus, drill your weak areas, then timed mocks.", Icon: Zap, accent: PLUM_500 },
+  { num: "03", label: "THE LOOP", title: "Practise. Review. Pass.", desc: "Every question is marked instantly with a teaching explanation. Your readiness score climbs until you're exam-ready.", Icon: Flame, accent: FIRE_500 },
 ]
 
 function HowItWorks() {
@@ -730,7 +730,7 @@ function HowItWorks() {
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <SectionLabel>{t("HOW IT WORKS")}</SectionLabel>
         <AnimatedUnderlineText
-          text={t("From goal to habit in 15 seconds")}
+          text={t("From 'which paper?' to a plan in 60 seconds")}
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
           underlineClassName="text-[#5B5BF5]"
@@ -889,16 +889,16 @@ function VisualPlanGen() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
   const t = useT()
   const tasks = [
-    "Day 1 · IELTS — Task 1 fundamentals",
-    "Day 2 · Task 1 — line graphs",
-    "Day 3 · Task 2 — argument essays",
-    "Day 4 · Task 2 — structure drills",
+    "Phase 1 · Learn — areas A to C",
+    "Phase 2 · Drill your weak areas",
+    "Phase 3 · Timed mock exams",
+    "Exam week · Final review",
   ]
   return (
     <div ref={ref} className="soft-card" style={{ width: 420, maxWidth: "100%", padding: 28 }}>
       <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.12em", color: INK_MUTED, fontWeight: 500 }}>{t("YOUR GOAL")}</div>
       <div style={{ color: INK, fontSize: 16, marginTop: 8, fontWeight: 500 }}>
-        {t("Pass IELTS 7.0 in")} <span className="font-mono-pro tabular">47</span> {t("days")} · <span className="font-mono-pro tabular">25</span> {t("min/day")}
+        {t("Pass FR (F7) in")} <span className="font-mono-pro tabular">47</span> {t("days")} · <span className="font-mono-pro tabular">25</span> {t("min/day")}
       </div>
       <div style={{ height: 1, background: HAIR, margin: "18px 0" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -993,17 +993,17 @@ function VisualShields() {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingInline: 6 }}>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(250,250,247,0.55)", fontWeight: 500 }}>
-          {t("ORDER")}
+          {t("YOUR ANSWER")}
         </span>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: SHIELD_500, fontWeight: 500 }}>
-          {t("STREAK INTACT")}
+          {t("MARKED IN SECONDS")}
         </span>
         <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(250,250,247,0.55)", fontWeight: 500 }}>
-          {t("CHAOS")}
+          {t("YOUR MARK")}
         </span>
       </div>
       <p style={{ marginTop: 12, color: "rgba(250,250,247,0.65)", fontSize: 13, lineHeight: 1.55, fontStyle: "italic", textAlign: "center" }}>
-        {t("Life keeps happening. Your streak doesn't break.")}
+        {t("A human marker takes days. Lara takes seconds.")}
       </p>
     </div>
   )
@@ -1175,7 +1175,7 @@ function VisualAIPartnerWidget() {
           {t("Meet Lara.")}
         </h3>
         <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
-          {t("Your AI Partner. She knows your goal, your streak, and today's task — every message generated just for you.")}
+          {t("Your AI tutor. She knows your papers, your readiness, and today's task — every explanation generated just for you.")}
         </p>
 
         <motion.div
@@ -1287,9 +1287,9 @@ function VisualProgress() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginTop: 16 }}>
         {[
-          { label: "Sessions", v: "5" },
-          { label: "Time", v: "2.1h" },
-          { label: "Progress", v: "48%" },
+          { label: "Mocks", v: "3" },
+          { label: "Accuracy", v: "71%" },
+          { label: "Readiness", v: "68%" },
         ].map((m) => (
           <div key={m.label}>
             <div className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", fontWeight: 500 }}>{t(m.label).toUpperCase()}</div>
@@ -1383,21 +1383,21 @@ function Features() {
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("FEATURES")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK, margin: "18px 0 0" }}>
-            {t("Everything you need to actually finish.")}
+            {t("Everything you need to pass — in one place.")}
           </h2>
         </div>
 
         <FeatureBlock
           index={0}
           reverse={false}
-          tag="AI BRAIN"
-          title="Lara knows your goal inside out."
-          desc="The Scholify AI engine reads your goal, your deadline, and your daily time — then builds a specific, progressive plan that actually matches your life. Not a generic template."
+          tag="QUESTION BANK + AI TUTOR"
+          title="Practise like it's the real exam."
+          desc="Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. And when you want more, Lara writes fresh exam-style questions on any topic, even from your own notes."
           bullets={[
-            "Generates unique plans for any learning goal",
-            "Progressive difficulty — starts easy, builds up",
-            "Recalibrates automatically when you miss days",
-            "Powered by the Scholify learning engine",
+            "Curated banks for all nine OT papers",
+            "Instant marking with teaching explanations",
+            "Ask Lara why — on any question, 24/7",
+            "Unlimited AI questions from topics or your notes",
           ]}
           visual={<VisualPlanGen />}
         />
@@ -1405,14 +1405,14 @@ function Features() {
         <FeatureBlock
           index={1}
           reverse
-          tag="LIFE SHIELDS"
-          title="Miss days. Keep your streak."
-          desc="The #1 reason people quit: they miss one day and feel like they've failed. Scholify's Life Shields protect your streak when life gets in the way. Two shields per week. Lara adjusts the plan. You never start over."
+          tag="AI EXAMINER"
+          title="Written answers, marked in seconds."
+          desc="Strategic Professional exams are written — and nobody gives you instant feedback on written answers. Scholify's AI Examiner marks your answer against a marking scheme, point by point, in seconds. That loop used to take a tutor and a week."
           bullets={[
-            "2 Life Shields every week, reset on Monday",
-            "Streak protected automatically on miss",
-            "Plan recalibrates to keep your deadline",
-            "Compassion-first: no guilt, just momentum",
+            "Type your answer, get your mark in seconds",
+            "Point-by-point feedback against the rubric",
+            "FR and SBR banks live — more papers coming",
+            "Trains the skill OT questions can't teach",
           ]}
           visual={<VisualShields />}
         />
@@ -1420,14 +1420,14 @@ function Features() {
         <FeatureBlock
           index={2}
           reverse={false}
-          tag="MEET YOUR AI PARTNER"
+          tag="MEET YOUR AI TUTOR"
           title="Your AI Partner."
-          desc="Your AI Partner is built into Scholify. It knows your name, your streak, your goal, and today's task. Every message it sends is generated just for you — specific, real, and actually useful."
+          desc="Lara is built into Scholify. She knows which papers you've passed, your weak syllabus areas, and today's task. Ask her to explain deferred tax like you're five — she will, at 2am, without judgement."
           bullets={[
-            "Personalised messages using your real data",
-            "Voice mode — hear your AI Partner speak (Pro)",
-            "Speaking practice with AI scoring (Pro)",
-            "Available in 29 languages",
+            "Explains any concept — IFRS, audit, tax, costing",
+            "Knows your weak areas and today's plan",
+            "Built into every practice session",
+            "English and Russian",
           ]}
           visual={<VisualAIPartnerWidget />}
         />
@@ -1435,15 +1435,15 @@ function Features() {
         <FeatureBlock
           index={3}
           reverse
-          tag="PROGRESS"
-          title="Progress you'll want to show off."
-          desc="Shareable weekly report cards. 30-day heatmaps. Goal completion certificates. A Year Rewind video on Annual Pro. Every milestone is designed to be shared."
+          tag="READINESS"
+          title="Know you're ready before you book."
+          desc="A readiness score per paper. Accuracy per syllabus area. Full mock history against the pass line. A 30-day study heatmap. Exam day should be a formality, not a gamble."
           bullets={[
-            "Weekly progress card for Instagram Stories",
-            "30-day completion heatmap",
-            "Goal completion certificate (PDF)",
-            "Streak tree that grows with you",
-            "Year Rewind video at 12 months (Annual)",
+            "Exam readiness score per paper",
+            "Accuracy by syllabus area — see the gaps",
+            "Timed mock history against the 50% pass line",
+            "30-day study heatmap",
+            "Your full BT → AAA qualification roadmap",
           ]}
           visual={<VisualProgress />}
         />
@@ -1489,10 +1489,10 @@ function FeatureSwiper() {
   return (
     <section style={{ padding: "96px 24px", background: BG_PRIMARY }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>{t("BUILT FOR EVERY GOAL")}</SectionLabel>
+        <SectionLabel>{t("BUILT FOR EVERY PAPER")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
-          {t("Six ways Scholify")}{" "}
-          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("shows up for you.")}</em>
+          {t("Six tools that")}{" "}
+          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("get you exam-ready.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 560, margin: "20px auto 0", lineHeight: 1.65 }}>
           {t("Swipe through the deck — every card is a real piece of how the app works.")}
@@ -1527,10 +1527,10 @@ function Identity() {
       <div style={{ position: "relative", maxWidth: 1180, margin: "0 auto", textAlign: "center", width: "100%", zIndex: 2 }}>
         <SectionLabel tone="inverse">{t("THE TRANSFORMATION")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK_INVERSE, margin: "18px 0 0" }}>
-          {t("You're not learning a skill.")}
+          {t("You're not just passing exams.")}
         </h2>
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(40px, 5vw, 80px)", margin: "16px 0 0", fontStyle: "italic" }}>
-          {t("You're becoming someone who shows up.")}
+          {t("You're becoming an ACCA member.")}
         </h2>
         <p style={{ color: "rgba(250,250,247,0.65)", fontSize: 18, maxWidth: 620, margin: "24px auto 0", lineHeight: 1.65 }}>
           {t("Drag the slider — see what 60 days of Scholify actually changes.")}
@@ -1560,56 +1560,56 @@ type GlowTone = "blue" | "purple" | "green" | "red" | "orange"
 const learnerTestimonials: { name: string; role: string; text: string; image: string }[] = [
   {
     name: "Dilnoza M.",
-    role: "IELTS 7.5 · 52-day streak",
-    text: "I passed IELTS 7.5 in 52 days. I'd failed twice before.",
+    role: "FR · passed first attempt",
+    text: "The AI Examiner rewired how I structure written answers. Passed FR at my first attempt.",
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Marcus T.",
-    role: "Python · 84-day streak",
-    text: "I tried 4 coding courses. Never finished one. With Scholify I actually completed Python.",
+    role: "AA · passed after 2 fails",
+    text: "I failed AA twice studying from question banks alone. The per-area breakdown showed me exactly what to fix.",
     image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Aiko R.",
-    role: "Figma · 121-day streak",
-    text: "The Life Shields feature is genius. Missing a day no longer means quitting.",
+    role: "FA · 92% readiness",
+    text: "Instant explanations beat waiting a week to ask my tuition class. I finally understand double entry.",
     image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Raj P.",
-    role: "Spanish · 47-day streak",
-    text: "47-day Spanish streak. My plan survived two business trips.",
+    role: "TX · 47-day streak",
+    text: "The daily plan survived two business trips. I never fell behind and never restarted.",
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Sarah K.",
-    role: "AWS cert · 60-day streak",
-    text: "Got my AWS certification in 60 days. Daily tasks were always exactly right.",
+    role: "FM · passed",
+    text: "My mock scores predicted my real FM result within 3%. I walked in knowing I'd pass.",
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Omar F.",
-    role: "Reading habit · 312-day streak",
-    text: "I read 18 books this year. Changed how I think about learning forever.",
+    role: "BT + MA + FA in one year",
+    text: "Cleared all three Knowledge papers in a year while working full-time. 25 minutes a day.",
     image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Lila K.",
-    role: "UI/UX · 96-day streak",
-    text: "Built my portfolio in 90 days. Got my first design job last week.",
+    role: "PM · passed",
+    text: "Custom practice from my own notes is genius. It quizzed me on exactly what I kept getting wrong.",
     image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Tom B.",
-    role: "Marathon · 142-day streak",
-    text: "Trained for the Berlin marathon. Lara's plan worked around two injuries — I never restarted.",
+    role: "SBR candidate",
+    text: "Written-answer feedback in seconds. Nothing else on the market does this for Strategic Professional.",
     image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
     name: "Priya S.",
-    role: "French · 188-day streak",
-    text: "Conversational French in 6 months. Lara built the schedule. I just showed up daily.",
+    role: "LW · passed",
+    text: "Lara explained consideration and privity better than my lecture notes ever did.",
     image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200",
   },
 ]
@@ -1619,12 +1619,12 @@ function Stories() {
   return (
     <section id="stories" style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>{t("LEARNER STORIES")}</SectionLabel>
+        <SectionLabel>{t("STUDENT STORIES")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
-          {t("Real goals.")} <em style={{ fontStyle: "italic" }}>{t("Real results.")}</em>
+          {t("Real papers.")} <em style={{ fontStyle: "italic" }}>{t("Real passes.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 540, margin: "16px auto 0", lineHeight: 1.65 }}>
-          {t("Thousands of learners finish what they started — and they tell us why.")}
+          {t("ACCA students in 20+ countries prep with Scholify — and they tell us why.")}
         </p>
 
         <TestimonialsColumns
@@ -1776,16 +1776,16 @@ interface ScholifyFeature {
 }
 
 const scholifyFeatures: ScholifyFeature[] = [
-  { label: "AI-generated personalised daily plan" },
-  { label: "Daily coach messages from Lara" },
-  { label: "Life Shields streak protection" },
-  { label: "Best Resource Today — live verified links" },
-  { label: "Progress heatmap and weekly reports" },
-  { label: "Shareable milestone cards" },
-  { label: "Voice coach", pro: true },
-  { label: "Speaking practice with AI scoring", pro: true },
-  { label: "Goal completion certificate", pro: true },
-  { label: "Google Calendar sync", pro: true },
+  { label: "Curated question banks — all nine OT papers" },
+  { label: "Instant marking + teaching explanations" },
+  { label: "SRS flashcards for standards, rules & formulas" },
+  { label: "Personalised study plan to exam day" },
+  { label: "Readiness score & per-area analytics" },
+  { label: "Full BT → AAA qualification roadmap" },
+  { label: "Timed mock exams", pro: true },
+  { label: "AI Examiner — instant written marking", pro: true },
+  { label: "Custom practice from topics or your notes", pro: true },
+  { label: "Unlimited Lara tutor", pro: true },
 ]
 
 function Pricing() {
@@ -1837,10 +1837,10 @@ function Pricing() {
               {t("WHAT'S INCLUDED")}
             </div>
             <h3 className="font-display" style={{ color: INK, fontSize: 26, margin: "10px 0 4px", letterSpacing: "-0.02em" }}>
-              {t("Every plan. Every day.")}
+              {t("Every paper. Every mode.")}
             </h3>
             <p style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>
-              {t("Beginner gets you the system. Pro adds Lara's voice and the share-worthy proof.")}
+              {t("Free gets you practising. Pro unlocks mocks, the AI Examiner and unlimited AI practice.")}
             </p>
 
             <div style={{ height: 1, background: HAIR, margin: "22px 0" }} />
@@ -1909,7 +1909,7 @@ function Awards() {
           {t("Awarded on every store.")}
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 12, maxWidth: 540, marginInline: "auto" }}>
-          {t("Editors' Choice. Year after year. The system learners actually finish with.")}
+          {t("Editors' Choice. Year after year. The prep ACCA students actually stick with.")}
         </p>
 
         <motion.div
@@ -1953,13 +1953,13 @@ function FinalCTA() {
       }}
     >
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
-        <HandWrittenTitle title="Then forever." subtitle="Show up tomorrow. Then the next day." />
+        <HandWrittenTitle title="Then the next one." subtitle="Pass this paper." />
         <div style={{ marginTop: -32, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <PrimaryCTA large onClick={() => navigate("/onboarding")}>
-            Start your streak — free <ArrowRight size={20} strokeWidth={2.4} />
+            Start prepping — free <ArrowRight size={20} strokeWidth={2.4} />
           </PrimaryCTA>
           <p style={{ color: INK_MUTED, fontSize: 14 }}>
-            No credit card · 5 minutes a day · Cancel anytime
+            No credit card · A plan in 60 seconds · Cancel anytime
           </p>
         </div>
       </div>
@@ -2055,7 +2055,7 @@ export default function Landing() {
       <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 400 }}><Awards /></LazyOnView>
-      <LazyOnView style={{ minHeight: 500 }}><CinematicFooter /></LazyOnView>
+      <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
       <LaraLandingWidget />
     </div>
   )
