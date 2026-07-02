@@ -1336,27 +1336,27 @@ const ROADMAP_LEVELS: {
   label: string
   note?: string
   accent: string
-  papers: { id: string; name: string; badge?: "BANK" | "AI EXAMINER" }[]
+  papers: { id: string; code?: string; name: string; badge?: "BANK" | "AI EXAMINER" }[]
 }[] = [
   {
     label: "Applied Knowledge",
     accent: BRAND_500,
     papers: [
-      { id: "BT", name: "Business & Technology", badge: "BANK" },
-      { id: "MA", name: "Management Accounting", badge: "BANK" },
-      { id: "FA", name: "Financial Accounting", badge: "BANK" },
+      { id: "BT", code: "F1", name: "Business & Technology", badge: "BANK" },
+      { id: "MA", code: "F2", name: "Management Accounting", badge: "BANK" },
+      { id: "FA", code: "F3", name: "Financial Accounting", badge: "BANK" },
     ],
   },
   {
     label: "Applied Skills",
     accent: PLUM_500,
     papers: [
-      { id: "LW", name: "Corporate & Business Law", badge: "BANK" },
-      { id: "PM", name: "Performance Management", badge: "BANK" },
-      { id: "TX", name: "Taxation", badge: "BANK" },
-      { id: "FR", name: "Financial Reporting", badge: "BANK" },
-      { id: "AA", name: "Audit & Assurance", badge: "BANK" },
-      { id: "FM", name: "Financial Management", badge: "BANK" },
+      { id: "LW", code: "F4", name: "Corporate & Business Law", badge: "BANK" },
+      { id: "PM", code: "F5", name: "Performance Management", badge: "BANK" },
+      { id: "TX", code: "F6", name: "Taxation", badge: "BANK" },
+      { id: "FR", code: "F7", name: "Financial Reporting", badge: "BANK" },
+      { id: "AA", code: "F8", name: "Audit & Assurance", badge: "BANK" },
+      { id: "FM", code: "F9", name: "Financial Management", badge: "BANK" },
     ],
   },
   {
@@ -1366,10 +1366,10 @@ const ROADMAP_LEVELS: {
     papers: [
       { id: "SBL", name: "Strategic Business Leader" },
       { id: "SBR", name: "Strategic Business Reporting", badge: "AI EXAMINER" },
-      { id: "AFM", name: "Advanced Financial Mgmt" },
-      { id: "APM", name: "Advanced Performance Mgmt" },
-      { id: "ATX", name: "Advanced Taxation" },
-      { id: "AAA", name: "Advanced Audit & Assurance" },
+      { id: "AFM", code: "P4", name: "Advanced Financial Mgmt" },
+      { id: "APM", code: "P5", name: "Advanced Performance Mgmt" },
+      { id: "ATX", code: "P6", name: "Advanced Taxation" },
+      { id: "AAA", code: "P7", name: "Advanced Audit & Assurance" },
     ],
   },
 ]
@@ -1401,8 +1401,15 @@ function PaperCard({ paper, accent, delay }: { paper: (typeof ROADMAP_LEVELS)[nu
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span className="font-mono-pro" style={{ fontSize: 15, fontWeight: 700, color: accent, letterSpacing: "0.02em" }}>
-          {paper.id}
+        <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+          {paper.code && (
+            <span className="font-mono-pro" style={{ fontSize: 11, fontWeight: 600, color: INK_MUTED, letterSpacing: "0.04em" }}>
+              {paper.code}
+            </span>
+          )}
+          <span className="font-mono-pro" style={{ fontSize: 15, fontWeight: 700, color: accent, letterSpacing: "0.02em" }}>
+            {paper.id}
+          </span>
         </span>
         {paper.badge ? (
           <span
