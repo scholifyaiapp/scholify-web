@@ -672,7 +672,7 @@ function HowItWorks() {
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <SectionLabel>{t("HOW IT WORKS")}</SectionLabel>
         <AnimatedUnderlineText
-          text={t("From 'which paper?' to a plan in 60 seconds")}
+          text={t("Your exam plan in 60 seconds")}
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
           underlineClassName="text-[#C80000]"
