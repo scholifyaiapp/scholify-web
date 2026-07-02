@@ -574,8 +574,8 @@ function Hero() {
 
         <div style={{ marginTop: 48 }}>
           <HandWrittenTitle
-            title={t("13 exams. One app.")}
-            subtitle={t("Start with your next paper — today.")}
+            title={t("Your whole journey. One app.")}
+            subtitle={t("Every paper, from BT to AAA.")}
           />
         </div>
       </div>
