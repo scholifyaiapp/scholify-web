@@ -1495,8 +1495,138 @@ function QualificationRoadmap() {
         >
           {t("TAP ANY PAPER TO START FREE")}
         </motion.p>
+
+        <FutureQualification />
       </div>
     </section>
+  )
+}
+
+/* ── The redesigned ACCA Qualification (official, from 2027) ── */
+
+const FUTURE_LEVELS: { label: string; note?: string; exams: { code: string; name: string; isNew?: boolean }[] }[] = [
+  {
+    label: "Foundations",
+    note: "entry route",
+    exams: [
+      { code: "F1", name: "Accounts Preparation" },
+      { code: "F2", name: "Management Information & Costing" },
+      { code: "F3", name: "Decision Making with Data" },
+    ],
+  },
+  {
+    label: "Knowledge",
+    exams: [
+      { code: "K1", name: "Financial Accounting" },
+      { code: "K2", name: "Management Accounting" },
+      { code: "K3", name: "Business Law" },
+    ],
+  },
+  {
+    label: "Expertise",
+    exams: [
+      { code: "E1", name: "Taxation" },
+      { code: "E2", name: "Financial Reporting" },
+      { code: "E3", name: "Audit, Risk & Control" },
+      { code: "E4", name: "Finance & Investment" },
+      { code: "E5", name: "Performance with Data Analysis" },
+    ],
+  },
+  {
+    label: "Strategic Professional",
+    note: "S1 + S2 + 1 of 5 options",
+    exams: [
+      { code: "S1", name: "Business & Sustainability Reporting" },
+      { code: "S2", name: "Strategic Business Leader" },
+      { code: "SAA", name: "Audit & Assurance Professional" },
+      { code: "SCF", name: "Corporate Finance Professional" },
+      { code: "SDS", name: "Data Science Professional", isNew: true },
+      { code: "SPI", name: "Performance & Insights Professional" },
+      { code: "STA", name: "Taxation Advisory Professional" },
+    ],
+  },
+]
+
+function FutureQualification() {
+  const t = useT()
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.7, ease: EASE_DECISIVE }}
+      style={{
+        marginTop: 56,
+        padding: "28px 28px 24px",
+        borderRadius: 24,
+        border: `1.5px dashed ${BRAND_500}55`,
+        background: `linear-gradient(180deg, ${BRAND_100}44 0%, transparent 60%)`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span
+          className="font-mono-pro"
+          style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", padding: "4px 10px", borderRadius: 999, background: BRAND_500, color: "#fff" }}
+        >
+          {t("FROM 2027")}
+        </span>
+        <h3 className="font-display" style={{ color: INK, fontSize: "clamp(22px, 3vw, 30px)", margin: 0, letterSpacing: "-0.02em" }}>
+          {t("The redesigned ACCA Qualification.")}
+        </h3>
+      </div>
+      <p style={{ color: INK_MUTED, fontSize: 14.5, lineHeight: 1.65, margin: "10px 0 0", maxWidth: 640 }}>
+        {t("ACCA relaunches the qualification from July 2027: four levels, new exam names, and a brand-new Data Science option. Your current passes carry across — and Scholify will support the new structure from day one.")}
+      </p>
+
+      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+        {FUTURE_LEVELS.map((level) => (
+          <div key={level.label}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+              <span className="font-mono-pro" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: INK, fontWeight: 700, textTransform: "uppercase" }}>
+                {t(level.label)}
+              </span>
+              {level.note && (
+                <span className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.06em", color: INK_MUTED }}>
+                  · {t(level.note)}
+                </span>
+              )}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {level.exams.map((e) => (
+                <span
+                  key={e.code}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    background: "#fff",
+                    border: `1px solid ${HAIR}`,
+                    fontSize: 12.5,
+                    fontWeight: 500,
+                    color: INK,
+                    boxShadow: "0 1px 2px rgba(20,20,26,0.04)",
+                  }}
+                >
+                  <span className="font-mono-pro" style={{ color: BRAND_500, fontWeight: 700, fontSize: 11.5 }}>{e.code}</span>
+                  {t(e.name)}
+                  {e.isNew && (
+                    <span className="font-mono-pro" style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.1em", padding: "2px 7px", borderRadius: 999, background: `${PLUM_500}14`, color: PLUM_500, border: `1px solid ${PLUM_500}3a` }}>
+                      {t("NEW")}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", marginTop: 18 }}>
+        {t("SOURCE: ACCAGLOBAL.COM · FIRST EXAMS JULY–SEPTEMBER 2027 · TRANSITION CREDITS FOR CURRENT PASSES")}
+      </p>
+    </motion.div>
   )
 }
 
