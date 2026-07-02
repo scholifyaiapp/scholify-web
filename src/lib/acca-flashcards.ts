@@ -85,6 +85,23 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "LW-FC-3", paper: "LW", area: "B", front: "Negligence — what must be proved", back: "A duty of care owed, breach of that duty, and loss caused by the breach (not too remote)." },
   { id: "LW-FC-4", paper: "LW", area: "D", front: "Separate legal personality", back: "Salomon v Salomon: a company is a legal person distinct from its members (the veil of incorporation)." },
   { id: "LW-FC-5", paper: "LW", area: "D", front: "Limited liability (shares)", back: "A member's liability is limited to any amount unpaid on their shares." },
+
+  /* TX */
+  { id: "TX-FC-1", paper: "TX", area: "A", front: "Personal allowance taper", back: "The allowance is reduced by £1 for every £2 of adjusted net income above £100,000 (so it can taper to nil)." },
+  { id: "TX-FC-2", paper: "TX", area: "A", front: "Key indicators of EMPLOYMENT (vs self-employment)", back: "Control by the engager, mutual obligation, personal service (no substitute), integration into the business, no financial risk." },
+  { id: "TX-FC-3", paper: "TX", area: "B", front: "CGT exempt assets", back: "Motor cars, main residence (with PRR), assets in ISAs, gilts & qualifying corporate bonds, wasting chattels." },
+  { id: "TX-FC-4", paper: "TX", area: "B", front: "Share matching order (individuals)", back: "1) Same-day acquisitions 2) Acquisitions in the following 30 days 3) The share pool." },
+  { id: "TX-FC-5", paper: "TX", area: "C", front: "Adjustment of trading profits", back: "Add back disallowed items (depreciation, client entertaining, fines); deduct capital allowances." },
+  { id: "TX-FC-6", paper: "TX", area: "D", front: "'Taxable supplies' for VAT registration", back: "Standard-rated + reduced-rated + zero-rated supplies. Exempt supplies never count towards the threshold." },
+  { id: "TX-FC-7", paper: "TX", area: "E", front: "PET vs CLT", back: "Gift to an individual = potentially exempt transfer (exempt if donor survives 7 years). Gift into most trusts = chargeable lifetime transfer, taxed when made." },
+
+  /* SBR */
+  { id: "SBR-FC-1", paper: "SBR", area: "A", front: "Asset (Conceptual Framework 2018)", back: "A present economic resource controlled by the entity as a result of past events; an economic resource is a right with the potential to produce economic benefits." },
+  { id: "SBR-FC-2", paper: "SBR", area: "A", front: "Liability (Conceptual Framework 2018)", back: "A present obligation of the entity to transfer an economic resource as a result of past events." },
+  { id: "SBR-FC-3", paper: "SBR", area: "C", front: "IFRS 10 — three elements of control", back: "Power over the investee; exposure/rights to variable returns; ability to use power to affect those returns." },
+  { id: "SBR-FC-4", paper: "SBR", area: "D", front: "IFRS 9 — financial asset categories", back: "Amortised cost (hold-to-collect + SPPI); FVOCI (collect & sell + SPPI, or elected equity); FVTPL (residual)." },
+  { id: "SBR-FC-5", paper: "SBR", area: "D", front: "Expected credit loss stages", back: "Stage 1: 12-month ECL. Stage 2: lifetime ECL (significant increase in credit risk). Stage 3: credit-impaired — interest on the net amount." },
+  { id: "SBR-FC-6", paper: "SBR", area: "B", front: "IFRS 2 — equity- vs cash-settled", back: "Equity-settled: grant-date fair value, not remeasured, credit to equity. Cash-settled: liability remeasured each period through P/L." },
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {
