@@ -123,6 +123,107 @@ export function getRecommendations(paperId: string): Recommendation[] {
   return recs
 }
 
+/* ── The Scholify Method: four mastery-driven phases ──────────────
+ *
+ * How a good tutor takes a student through one paper (~12 weeks):
+ *   1. LEARN       — cover every syllabus area in order, with explanations.
+ *   2. STRENGTHEN  — drill the weak areas until nothing is below ~65%.
+ *   3. REVISE      — flashcards to zero-due, written answers, recall.
+ *   4. REHEARSE    — timed mocks + exam technique until consistently
+ *                    above the pass line.
+ * Progression is by MASTERY SIGNALS, not the calendar — except that with
+ * ≤14 days to the exam a tutor always switches to exam rehearsal.
+ */
+
+export type MethodPhaseKey = "learn" | "strengthen" | "revise" | "rehearse"
+
+export interface MethodPhase {
+  key: MethodPhaseKey
+  label: string
+  emoji: string
+  /** Share of a paper's study time, for calendar plans. */
+  share: number
+  /** What the phase is for — one tutor sentence. */
+  goal: string
+}
+
+export const METHOD_PHASES: MethodPhase[] = [
+  { key: "learn", label: "Learn", emoji: "📚", share: 0.45, goal: "Cover every syllabus area, one at a time, until nothing is unfamiliar." },
+  { key: "strengthen", label: "Strengthen", emoji: "🎯", share: 0.25, goal: "Drill your weakest areas until no area sits below ~65% accuracy." },
+  { key: "revise", label: "Revise", emoji: "🧠", share: 0.15, goal: "Lock it in: flashcards to zero-due, written answers, active recall." },
+  { key: "rehearse", label: "Rehearse", emoji: "⏱️", share: 0.15, goal: "Timed mocks under exam conditions until you're consistently above the pass line." },
+]
+
+/** Which phase the learner is in on this paper — mastery-driven. */
+export function currentPhase(paperId: string): MethodPhase {
+  const stats = getPaperStats(paperId)
+  const days = daysUntilExam(paperId)
+
+  // Two weeks out, a tutor always switches to exam rehearsal.
+  if (days !== null && days <= 14 && stats.answered > 0) return METHOD_PHASES[3]
+
+  if (stats.answered < 20 || stats.coverage < 0.85) return METHOD_PHASES[0]
+
+  const weak = stats.areas.filter((a) => a.seen >= 2 && a.accuracy < 0.6)
+  if (weak.length > 0) return METHOD_PHASES[1]
+
+  if (stats.readiness < 75) return METHOD_PHASES[2]
+  return METHOD_PHASES[3]
+}
+
+export interface Mission {
+  phase: MethodPhase
+  title: string
+  detail: string
+  /** Which app mode fulfils the mission. */
+  action: "practice" | "weak" | "flashcards" | "mock" | "examiner"
+}
+
+/** Today's mission on a paper — the ONE thing a tutor would assign today. */
+export function todayMission(paperId: string): Mission {
+  const phase = currentPhase(paperId)
+  const stats = getPaperStats(paperId)
+  const plan = getPlan(paperId)
+
+  if (phase.key === "learn") {
+    const next = stats.areas.find((a) => a.seen === 0) ?? stats.areas.find((a) => a.seen < 3)
+    return {
+      phase,
+      title: next ? `Learn area ${next.code} — ${next.label}` : `Practise ${plan.dailyGoal} questions`,
+      detail: next
+        ? "Work through it question by question — ask Lara the moment anything is unclear."
+        : "Steady coverage across the syllabus builds the base everything else stands on.",
+      action: "practice",
+    }
+  }
+
+  if (phase.key === "strengthen") {
+    const weakest = [...stats.areas].filter((a) => a.seen >= 2).sort((a, b) => a.accuracy - b.accuracy)[0]
+    return {
+      phase,
+      title: weakest ? `Drill area ${weakest.code} — currently ${Math.round(weakest.accuracy * 100)}%` : "Target your weak areas",
+      detail: "Marks live in your weakest areas, not your strongest. Lift the floor.",
+      action: "weak",
+    }
+  }
+
+  if (phase.key === "revise") {
+    return {
+      phase,
+      title: "Clear your due flashcards, then one written answer",
+      detail: "Active recall today is marks on exam day. Finish with the AI Examiner.",
+      action: "flashcards",
+    }
+  }
+
+  return {
+    phase,
+    title: "Sit a timed mock",
+    detail: "Exam conditions, no hints. Review every wrong answer — that review IS the study.",
+    action: "mock",
+  }
+}
+
 /* ── Phased study plan ────────────────────────────────────────── */
 
 export interface PlanPhase {
@@ -148,8 +249,9 @@ function fmtDate(d: Date): string {
 }
 
 /**
- * Build a three-phase plan (Learn → Practice → Revise & mock) from the paper's
- * exam date. Split 50/30/20 of the remaining time. Deterministic and offline.
+ * Build the four-phase calendar plan (Learn → Strengthen → Revise → Rehearse)
+ * from the paper's exam date, split by METHOD_PHASES shares (45/25/15/15).
+ * Deterministic and offline.
  */
 export function generateStudyPlan(paperId: string): StudyPlan {
   const days = daysUntilExam(paperId)
@@ -157,29 +259,36 @@ export function generateStudyPlan(paperId: string): StudyPlan {
     return { hasDate: days === 0, daysLeft: days, dailyTarget: 15, phases: [] }
   }
 
-  const learn = Math.max(1, Math.round(days * 0.5))
-  const practice = Math.max(1, Math.round(days * 0.3))
-  const revise = Math.max(1, days - learn - practice)
-
-  const now = new Date()
-  const start = new Date(now)
-  const p1End = new Date(now); p1End.setDate(now.getDate() + learn)
-  const p2End = new Date(p1End); p2End.setDate(p1End.getDate() + practice)
-  const exam = new Date(p2End); exam.setDate(p2End.getDate() + revise)
-
   // Aim to cover the syllabus with steady daily practice; scale with time left.
   const dailyTarget = days > 60 ? 12 : days > 30 ? 18 : days > 14 ? 25 : 30
 
-  return {
-    hasDate: true,
-    daysLeft: days,
-    dailyTarget,
-    phases: [
-      { emoji: "📚", label: "Learn the syllabus", focus: "Work through each syllabus area with practice + Ask Lara on anything unclear.", days: learn, range: `${fmtDate(start)} – ${fmtDate(p1End)}` },
-      { emoji: "🎯", label: "Practice & target weak areas", focus: "Drill questions, use weak-area targeting, and generate custom sets on shaky topics.", days: practice, range: `${fmtDate(p1End)} – ${fmtDate(p2End)}` },
-      { emoji: "⏱️", label: "Revise & mock", focus: "Sit timed mocks, mark written answers with the AI Examiner, and close the last gaps.", days: revise, range: `${fmtDate(p2End)} – ${fmtDate(exam)}` },
-    ],
+  const focuses: Record<MethodPhaseKey, string> = {
+    learn: "Work through each syllabus area in order — practice with explanations, Ask Lara on anything unclear.",
+    strengthen: "Drill your weakest areas with targeted sets and custom AI questions until nothing sits below ~65%.",
+    revise: "Flashcards to zero-due, written answers with the AI Examiner, and a second pass on your two weakest areas.",
+    rehearse: "Timed mocks under exam conditions every 2–3 days. Review every wrong answer in full.",
   }
+
+  const phases: PlanPhase[] = []
+  let cursor = new Date()
+  let remaining = days
+  for (let i = 0; i < METHOD_PHASES.length; i++) {
+    const m = METHOD_PHASES[i]
+    const span = i === METHOD_PHASES.length - 1 ? Math.max(1, remaining) : Math.max(1, Math.round(days * m.share))
+    const end = new Date(cursor)
+    end.setDate(cursor.getDate() + span)
+    phases.push({
+      emoji: m.emoji,
+      label: m.label,
+      focus: focuses[m.key],
+      days: span,
+      range: `${fmtDate(cursor)} – ${fmtDate(end)}`,
+    })
+    cursor = end
+    remaining -= span
+  }
+
+  return { hasDate: true, daysLeft: days, dailyTarget, phases }
 }
 
 /** Human label for a readiness band. */

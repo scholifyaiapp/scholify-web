@@ -9,7 +9,7 @@ import {
   setPassedPapers,
   setCurrentPaper,
 } from "@/lib/acca-qualification"
-import { setPlan, generateStudyPlan } from "@/lib/acca-plan"
+import { setPlan, generateStudyPlan, METHOD_PHASES } from "@/lib/acca-plan"
 
 /*
  * Guided first-run for /study, in Lara's voice. Four steps:
@@ -228,9 +228,26 @@ function PlanReveal({ paperId, examDate, onStart }: { paperId: string; examDate:
           ))}
         </div>
       ) : (
-        <div style={{ ...card({ marginBottom: 22 }) }}>
-          <p style={{ margin: 0, color: MUTED, fontSize: 14, lineHeight: 1.55 }}>
-            I'll guide you through Learn → Practice → Revise for this paper. Add your exam date and I'll turn it into a dated, day-by-day plan.
+        <div style={{ display: "grid", gap: 10, marginBottom: 22 }}>
+          {METHOD_PHASES.map((m, i) => (
+            <motion.div
+              key={m.key}
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.12 * i }}
+              style={{ ...card({ padding: 16 }), display: "flex", gap: 14 }}
+            >
+              <span style={{ fontSize: 24, flexShrink: 0 }}>{m.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontWeight: 750, fontSize: 15, color: TEXT }}>
+                  {i + 1}. {m.label}
+                </span>
+                <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.5, marginTop: 3 }}>{m.goal}</div>
+              </div>
+            </motion.div>
+          ))}
+          <p style={{ margin: "4px 0 0", color: MUTED, fontSize: 12.5, lineHeight: 1.55 }}>
+            This is how I'll coach you through every paper. Add your exam date anytime and I'll turn it into a dated, day-by-day plan.
           </p>
         </div>
       )}

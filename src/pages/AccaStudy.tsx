@@ -31,8 +31,12 @@ import {
   getRecommendations,
   readinessBand,
   generateStudyPlan,
+  currentPhase,
+  todayMission,
+  METHOD_PHASES,
+  type Mission,
 } from "@/lib/acca-plan"
-import { paperLevels, getPassedPapers, getCurrentPaper } from "@/lib/acca-qualification"
+import { paperLevels, getPassedPapers, getCurrentPaper, qualificationProgress } from "@/lib/acca-qualification"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 
@@ -324,6 +328,82 @@ export default function AccaStudy() {
   )
 }
 
+/* ── Dashboard: journey bar + continue card ───────────────────── */
+
+function JourneyBar() {
+  const q = qualificationProgress()
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{ ...card({ padding: 16, marginBottom: 12 }) }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+        <span style={{ fontWeight: 750, fontSize: 13.5, color: TEXT }}>Journey to membership</span>
+        <span style={{ fontSize: 12.5, color: MUTED }}>
+          <b style={{ color: "#C80000" }}>{q.passedCount}</b> of {q.totalExams} exams · {q.percent}%
+        </span>
+      </div>
+      <div style={{ height: 8, marginTop: 10, borderRadius: 999, background: "var(--sch-card-2)", overflow: "hidden" }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.max(2, q.percent)}%` }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+          style={{ height: "100%", borderRadius: 999, background: IRIDESCENT }}
+        />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10.5, color: DIM }}>
+        <span>Knowledge</span><span>Skills</span><span>Strategic Professional</span><span>ACCA ✓</span>
+      </div>
+    </motion.div>
+  )
+}
+
+function ContinueCard({ onPick }: { onPick: (id: string) => void }) {
+  const current = getCurrentPaper()
+  if (!current || getPassedPapers().includes(current)) return null
+  const paper = getPaper(current)
+  if (!paper) return null
+  const mission = todayMission(current)
+  const stats = getPaperStats(current)
+  const days = daysUntilExam(current)
+  return (
+    <motion.button
+      type="button"
+      onClick={() => onPick(current)}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.995 }}
+      style={{ ...card({ padding: 18, marginBottom: 20, cursor: "pointer", textAlign: "left", width: "100%", border: "1px solid rgba(200,0,0,0.25)" }), display: "block" }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>CONTINUE · {paper.id}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000" }}>
+          {mission.phase.emoji} {mission.phase.label.toUpperCase()} PHASE
+        </span>
+        {days !== null && (
+          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED }}>
+            {days === 0 ? "EXAM TODAY" : `${days} DAYS TO EXAM`}
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 16.5, color: TEXT, lineHeight: 1.3 }}>{mission.title}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{mission.detail}</div>
+        </div>
+        <div style={{ textAlign: "center", flexShrink: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 20, ...iriText }}>{stats.readiness}%</div>
+          <div style={{ color: DIM, fontSize: 10.5 }}>ready</div>
+        </div>
+        <span style={{ fontSize: 20, color: "#C80000", flexShrink: 0 }}>→</span>
+      </div>
+    </motion.button>
+  )
+}
+
 /* ── Paper picker ─────────────────────────────────────────────── */
 
 function TodayCard() {
@@ -458,7 +538,9 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
         ))}
       </div>
 
+      <JourneyBar />
       <TodayCard />
+      <ContinueCard onPick={onPick} />
 
       <div style={{ display: "grid", gap: 20 }}>
         {levels.map((g) => (
@@ -547,6 +629,15 @@ function Overview({
   const days = daysUntilExam(paper.id)
   const studyPlan = generateStudyPlan(paper.id)
   const mocks = getMockHistory(paper.id)
+  const phase = currentPhase(paper.id)
+  const mission = todayMission(paper.id)
+  const missionHandlers: Record<Mission["action"], () => void> = {
+    practice: onPractice,
+    weak: onWeak,
+    flashcards: onFlashcards,
+    mock: onMock,
+    examiner: onExaminer,
+  }
 
   function updateExamDate(date: string) {
     setPlanState(setPlan(paper.id, { examDate: date || null }))
@@ -564,6 +655,31 @@ function Overview({
         <Stat label="Accuracy" value={hasHistory ? `${Math.round(stats.accuracy * 100)}%` : "—"} />
         <Stat label="Answered" value={`${stats.answered}`} />
       </div>
+
+      {/* the method — where you are in the 4 phases */}
+      <MethodTracker activeKey={phase.key} />
+
+      {/* today's mission */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        style={{ ...card({ padding: 16, marginBottom: 20, border: "1px solid rgba(200,0,0,0.25)" }) }}
+      >
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>
+          {mission.phase.emoji} TODAY'S MISSION · {mission.phase.label.toUpperCase()} PHASE
+        </div>
+        <div style={{ fontWeight: 800, fontSize: 16, color: TEXT, marginTop: 6, lineHeight: 1.35 }}>{mission.title}</div>
+        <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{mission.detail}</div>
+        <motion.button
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={missionHandlers[mission.action]}
+          style={{ marginTop: 12, padding: "10px 22px", borderRadius: 999, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 13.5, cursor: "pointer" }}
+        >
+          Start the mission →
+        </motion.button>
+      </motion.div>
 
       {/* study plan */}
       <div style={card({ marginBottom: 16 })}>
@@ -607,7 +723,7 @@ function Overview({
       {/* recommendations */}
       {recs.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <h3 style={sectionH}>WHAT TO DO NEXT</h3>
+          <h3 style={sectionH}>COACH'S NOTES</h3>
           <div style={{ display: "grid", gap: 8 }}>
             {recs.map((r, i) => (
               <div key={i} style={card({ padding: 14 })}>
@@ -619,15 +735,13 @@ function Overview({
         </div>
       )}
 
-      {/* modes */}
-      <h3 style={sectionH}>PRACTICE MODES</h3>
-      <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+      {/* study rooms — grouped by what they're FOR in the method */}
+      <h3 style={sectionH}>📚 LEARN & PRACTISE</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
         {curated ? (
           <>
-            <ModeTile emoji="✏️" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary />
-            {hasHistory && <ModeTile emoji="🎯" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} />}
-            <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints`} onClick={onMock} locked={!isPro} />
-            <ModeTile emoji="✨" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />
+            <ModeTile emoji="✏️" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn"} />
+            {hasHistory && <ModeTile emoji="🎯" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} primary={phase.key === "strengthen"} />}
           </>
         ) : (
           <>
@@ -637,8 +751,18 @@ function Overview({
             </div>
           </>
         )}
+      </div>
+
+      <h3 style={sectionH}>🧠 STRENGTHEN & REVISE</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+        <ModeTile emoji="🧠" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={phase.key === "revise" && fcStats.due > 0} />
+        {curated && <ModeTile emoji="✨" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />}
+      </div>
+
+      <h3 style={sectionH}>⏱️ EXAM ROOM</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+        {curated && <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`} onClick={onMock} locked={!isPro} primary={phase.key === "rehearse"} />}
         <ModeTile emoji="📝" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
-        <ModeTile emoji="🧠" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} />
       </div>
 
       {/* mock history */}
@@ -670,6 +794,55 @@ function Overview({
             <span style={{ fontSize: 12, color: a.seen ? MUTED : DIM }}>{a.seen ? `${Math.round(a.accuracy * 100)}%` : "—"}</span>
           </div>
         ))}
+      </div>
+    </motion.div>
+  )
+}
+
+/** The four-phase method stepper — where the learner is on this paper. */
+function MethodTracker({ activeKey }: { activeKey: string }) {
+  const activeIdx = METHOD_PHASES.findIndex((p) => p.key === activeKey)
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 }}
+      style={{ ...card({ padding: "14px 16px", marginBottom: 12 }) }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: DIM, marginBottom: 10 }}>THE METHOD</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {METHOD_PHASES.map((p, i) => {
+          const done = i < activeIdx
+          const active = i === activeIdx
+          return (
+            <div key={p.key} style={{ flex: 1, display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
+                <motion.div
+                  animate={active ? { scale: [1, 1.12, 1] } : {}}
+                  transition={{ duration: 2, repeat: active ? Infinity : 0, ease: "easeInOut" }}
+                  style={{
+                    width: 30, height: 30, borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+                    background: done || active ? IRIDESCENT : "var(--sch-card-2)",
+                    opacity: done ? 0.55 : 1,
+                    boxShadow: active ? "0 4px 14px rgba(200,0,0,0.35)" : "none",
+                  }}
+                >
+                  {done ? <span style={{ color: "#fff", fontWeight: 800, fontSize: 12 }}>✓</span> : <span>{p.emoji}</span>}
+                </motion.div>
+                <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600, color: active ? "#C80000" : done ? MUTED : DIM, whiteSpace: "nowrap" }}>
+                  {p.label}
+                </span>
+              </div>
+              {i < METHOD_PHASES.length - 1 && (
+                <div style={{ height: 2, flexShrink: 0, width: 14, borderRadius: 1, background: i < activeIdx ? "#C80000" : "var(--sch-card-2)", marginBottom: 16 }} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: MUTED, marginTop: 10, lineHeight: 1.5 }}>
+        {METHOD_PHASES[Math.max(0, activeIdx)].goal}
       </div>
     </motion.div>
   )
