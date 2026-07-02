@@ -1447,8 +1447,8 @@ function QualificationRoadmap() {
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("THE FULL QUALIFICATION")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
-            {t("The whole qualification,")}{" "}
-            <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("mapped.")}</em>
+            {t("Fifteen papers.")}{" "}
+            <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("One path.")}</em>
           </h2>
           <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 580, margin: "20px auto 0", lineHeight: 1.65 }}>
             {t("Expert-written question banks for every Applied Knowledge and Applied Skills exam. Unlimited AI practice across all fifteen papers. One roadmap that follows you from your first exam to full ACCA membership.")}
