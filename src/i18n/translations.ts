@@ -403,4 +403,217 @@ export const ru: Record<string, string> = {
   "Loaded from link ✓": "Загружено по ссылке ✓",
   "File is over 2MB — paste a section instead.": "Файл больше 2 МБ — вставьте часть текста.",
   "Couldn't read that file.": "Не удалось прочитать файл.",
+
+  /* ═══════════ ACCA LANDING (M12–M18, 2026-07) ═══════════
+   * Official ACCA paper names (Financial Reporting, SBL …) and level
+   * names (Applied Knowledge/Skills, Strategic Professional) stay in
+   * English on purpose — Russian-speaking ACCA students use them. */
+
+  /* ── Nav / hero ── */
+  "The AI Examiner is here": "AI-Экзаменатор уже здесь",
+  "From F1 to ACCA member.": "От F1 до члена ACCA.",
+  "Tell Lara your next paper and exam date. She builds the plan, marks your answers, and gets you exam-ready.":
+    "Скажите Ларе, какой экзамен следующий и когда. Она составит план, проверит ваши ответы и доведёт до готовности к экзамену.",
+  "ACCA students": "студентов ACCA",
+  "Start. Pass. Repeat.": "Начни. Сдай. Повтори.",
+  "Until you're ACCA.": "Пока не станете ACCA.",
+
+  /* ── Problem ── */
+  "Half of ACCA candidates fail each sitting.": "Половина кандидатов ACCA проваливает каждую сессию.",
+  "Scholify exists to put you in the other half.": "Scholify существует, чтобы вы были в другой половине.",
+  "pass a typical Applied Skills sitting. The difference isn't intelligence — it's practice volume, feedback speed, and a plan. Scholify is all three.":
+    "— средняя сдаваемость экзаменов Applied Skills. Разница не в интеллекте, а в объёме практики, скорости обратной связи и плане. Scholify — это всё три.",
+  "average pass rate on Applied Skills exams": "средняя сдаваемость экзаменов Applied Skills",
+  "Published ACCA global pass rates": "Официальная мировая статистика ACCA",
+  "exams to qualify — one system for all of them": "экзаменов до квалификации — одна система для всех",
+  "BT to Strategic Professional": "От BT до Strategic Professional",
+  "cheaper than a private ACCA tutor": "дешевле частного репетитора ACCA",
+  "Pro costs less than one tutoring hour": "Pro стоит меньше одного часа с репетитором",
+
+  /* ── How it works ── */
+  "Your exam plan in 60 seconds": "Ваш план подготовки за 60 секунд",
+  "YOUR RECORD": "ВАШ ПУТЬ",
+  "Tell Lara where you are": "Скажите Ларе, где вы сейчас",
+  "Mark the papers you've passed, pick your next one, and set your exam date. Takes a minute.":
+    "Отметьте сданные экзамены, выберите следующий и укажите дату. Это займёт минуту.",
+  "YOUR PLAN": "ВАШ ПЛАН",
+  "Get your phased plan": "Получите поэтапный план",
+  "Lara builds a day-by-day plan to exam day: learn the syllabus, drill your weak areas, then timed mocks.":
+    "Лара строит план по дням до самого экзамена: изучение программы, проработка слабых мест, затем пробные экзамены на время.",
+  "THE LOOP": "ЦИКЛ",
+  "Practise. Review. Pass.": "Практика. Разбор. Сдача.",
+  "Every question is marked instantly with a teaching explanation. Your readiness score climbs until you're exam-ready.":
+    "Каждый вопрос проверяется мгновенно с обучающим объяснением. Ваша готовность растёт, пока вы не будете готовы к экзамену.",
+
+  /* ── Qualification roadmap ── */
+  "THE FULL QUALIFICATION": "ВСЯ КВАЛИФИКАЦИЯ",
+  "Fifteen papers.": "Пятнадцать экзаменов.",
+  "One roadmap.": "Одна дорожная карта.",
+  "Expert-written question banks for every Applied Knowledge and Applied Skills exam. Unlimited AI practice across all fifteen papers. One roadmap that follows you from your first exam to full ACCA membership.":
+    "Банки вопросов от экспертов для каждого экзамена Applied Knowledge и Applied Skills. Безлимитная AI-практика по всем пятнадцати экзаменам. Одна дорожная карта — от первого экзамена до полного членства ACCA.",
+  "Essentials + 2 of 4 Options": "Essentials + 2 из 4 Options",
+  "BANK": "БАНК",
+  "AI EXAMINER": "AI-ЭКЗАМЕНАТОР",
+  "AI PRACTICE": "AI-ПРАКТИКА",
+  "TAP ANY PAPER TO START FREE": "НАЖМИТЕ НА ЛЮБОЙ ЭКЗАМЕН И НАЧНИТЕ БЕСПЛАТНО",
+
+  /* ── 2027 redesign ── */
+  "OFFICIAL · THE 2027 REDESIGN": "ОФИЦИАЛЬНО · РЕФОРМА 2027",
+  "The next roadmap.": "Следующая дорожная карта.",
+  "From 2027.": "С 2027 года.",
+  "ACCA relaunches the qualification in 2027: four levels, new exam names, and a brand-new Data Science option. Your current passes carry across — and Scholify will support the new structure from day one.":
+    "В 2027 году ACCA обновляет квалификацию: четыре уровня, новые названия экзаменов и новая опция Data Science. Уже сданные экзамены засчитываются — а Scholify поддержит новую структуру с первого дня.",
+  "Entry route · exams from July 2027": "Стартовый уровень · экзамены с июля 2027",
+  "Exams from July 2027": "Экзамены с июля 2027",
+  "Exams from September 2027": "Экзамены с сентября 2027",
+  "S1 + S2 + 1 of 5 Options · from September 2027": "S1 + S2 + 1 из 5 Options · с сентября 2027",
+  "JUL 2027": "ИЮЛЬ 2027",
+  "SEP 2027": "СЕНТ 2027",
+  "NEW": "НОВОЕ",
+  "SOURCE: ACCAGLOBAL.COM · FIRST EXAMS JULY–SEPTEMBER 2027 · CURRENT PASSES CARRY TRANSITION CREDIT":
+    "ИСТОЧНИК: ACCAGLOBAL.COM · ПЕРВЫЕ ЭКЗАМЕНЫ ИЮЛЬ–СЕНТЯБРЬ 2027 · СДАННЫЕ ЭКЗАМЕНЫ ЗАСЧИТЫВАЮТСЯ",
+
+  /* ── Features ── */
+  "Everything you need to pass — in one place.": "Всё, что нужно для сдачи, — в одном месте.",
+  "QUESTION BANK + AI TUTOR": "БАНК ВОПРОСОВ + AI-РЕПЕТИТОР",
+  "Practise like it's the real exam.": "Тренируйтесь как на настоящем экзамене.",
+  "Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. And when you want more, Lara writes fresh exam-style questions on any topic, even from your own notes.":
+    "Оригинальные банки вопросов по программе для каждого экзамена Applied Knowledge и Applied Skills — мгновенная проверка и понятные объяснения. А когда хочется больше, Лара пишет новые вопросы экзаменационного формата на любую тему — даже по вашим конспектам.",
+  "Curated banks for all nine OT papers": "Готовые банки для всех девяти OT-экзаменов",
+  "Instant marking with teaching explanations": "Мгновенная проверка с обучающими объяснениями",
+  "Ask Lara why — on any question, 24/7": "Спросите Лару «почему?» — по любому вопросу, 24/7",
+  "Unlimited AI questions from topics or your notes": "Безлимитные AI-вопросы по темам или вашим конспектам",
+  "Written answers, marked in seconds.": "Письменные ответы — проверка за секунды.",
+  "Strategic Professional exams are written — and nobody gives you instant feedback on written answers. Scholify's AI Examiner marks your answer against a marking scheme, point by point, in seconds. That loop used to take a tutor and a week.":
+    "Экзамены Strategic Professional — письменные, и никто не даёт мгновенной обратной связи по письменным ответам. AI-Экзаменатор Scholify проверяет ваш ответ по схеме оценивания, пункт за пунктом, за секунды. Раньше на это уходили репетитор и неделя.",
+  "Type your answer, get your mark in seconds": "Напишите ответ — получите оценку за секунды",
+  "Point-by-point feedback against the rubric": "Обратная связь по каждому пункту схемы оценивания",
+  "FR and SBR banks live — more papers coming": "Банки FR и SBR уже работают — впереди новые экзамены",
+  "Trains the skill OT questions can't teach": "Тренирует навык, который не дают OT-вопросы",
+  "MEET YOUR AI TUTOR": "ЗНАКОМЬТЕСЬ: ВАШ AI-РЕПЕТИТОР",
+  "Lara is built into Scholify. She knows which papers you've passed, your weak syllabus areas, and today's task. Ask her to explain deferred tax like you're five — she will, at 2am, without judgement.":
+    "Лара встроена в Scholify. Она знает, какие экзамены вы сдали, ваши слабые темы и сегодняшнюю задачу. Попросите объяснить отложенный налог «как пятилетнему» — объяснит, хоть в 2 часа ночи, без осуждения.",
+  "Explains any concept — IFRS, audit, tax, costing": "Объяснит любую тему — МСФО, аудит, налоги, костинг",
+  "Knows your weak areas and today's plan": "Знает ваши слабые места и план на сегодня",
+  "Built into every practice session": "Встроена в каждую тренировку",
+  "English and Russian": "Английский и русский",
+  "Your AI tutor. She knows your papers, your readiness, and today's task — every explanation generated just for you.":
+    "Ваш AI-репетитор. Она знает ваши экзамены, вашу готовность и сегодняшнюю задачу — каждое объяснение создаётся именно для вас.",
+  "READINESS": "ГОТОВНОСТЬ",
+  "Know you're ready before you book.": "Знайте, что готовы, ещё до записи на экзамен.",
+  "A readiness score per paper. Accuracy per syllabus area. Full mock history against the pass line. A 30-day study heatmap. Exam day should be a formality, not a gamble.":
+    "Показатель готовности по каждому экзамену. Точность по каждой теме программы. История пробных экзаменов относительно проходного балла. Тепловая карта занятий за 30 дней. День экзамена должен быть формальностью, а не лотереей.",
+  "Exam readiness score per paper": "Показатель готовности по каждому экзамену",
+  "Accuracy by syllabus area — see the gaps": "Точность по темам — видно все пробелы",
+  "Timed mock history against the 50% pass line": "История пробных экзаменов и проходной балл 50%",
+  "30-day study heatmap": "Тепловая карта занятий за 30 дней",
+  "Your full BT → AAA qualification roadmap": "Полная дорожная карта квалификации BT → AAA",
+  "A human marker takes days. Lara takes seconds.": "Проверяющему нужны дни. Ларе — секунды.",
+  "YOUR ANSWER": "ВАШ ОТВЕТ",
+  "MARKED IN SECONDS": "ПРОВЕРКА ЗА СЕКУНДЫ",
+  "YOUR MARK": "ВАША ОЦЕНКА",
+  "Pass FR (F7) in": "Сдать FR (F7) за",
+  "Mocks": "Пробные",
+  "Accuracy": "Точность",
+  "Readiness": "Готовность",
+
+  /* ── Swiper / identity / stories ── */
+  "BUILT FOR EVERY PAPER": "СОЗДАНО ДЛЯ КАЖДОГО ЭКЗАМЕНА",
+  "Six tools that": "Шесть инструментов, которые",
+  "get you exam-ready.": "доведут вас до готовности.",
+  "You're not just passing exams.": "Вы не просто сдаёте экзамены.",
+  "You're becoming an ACCA member.": "Вы становитесь членом ACCA.",
+  "STUDENT STORIES": "ИСТОРИИ СТУДЕНТОВ",
+  "Real papers.": "Настоящие экзамены.",
+  "Real passes.": "Настоящие сдачи.",
+  "ACCA students in 20+ countries prep with Scholify — and they tell us why.":
+    "Студенты ACCA в 20+ странах готовятся со Scholify — и вот почему.",
+  "FR · passed first attempt": "FR · сдала с первого раза",
+  "The AI Examiner rewired how I structure written answers. Passed FR at my first attempt.":
+    "AI-Экзаменатор перестроил то, как я пишу ответы. Сдала FR с первой попытки.",
+  "AA · passed after 2 fails": "AA · сдал после 2 провалов",
+  "I failed AA twice studying from question banks alone. The per-area breakdown showed me exactly what to fix.":
+    "Я дважды провалил AA, готовясь только по банкам вопросов. Разбор по темам показал, что именно чинить.",
+  "FA · 92% readiness": "FA · готовность 92%",
+  "Instant explanations beat waiting a week to ask my tuition class. I finally understand double entry.":
+    "Мгновенные объяснения лучше, чем неделя ожидания вопроса на курсах. Я наконец понимаю двойную запись.",
+  "TX · 47-day streak": "TX · серия 47 дней",
+  "The daily plan survived two business trips. I never fell behind and never restarted.":
+    "Ежедневный план пережил две командировки. Я ни разу не отстал и не начинал заново.",
+  "FM · passed": "FM · сдала",
+  "My mock scores predicted my real FM result within 3%. I walked in knowing I'd pass.":
+    "Пробные экзамены предсказали мой реальный результат FM с точностью до 3%. Я шла на экзамен, зная, что сдам.",
+  "BT + MA + FA in one year": "BT + MA + FA за один год",
+  "Cleared all three Knowledge papers in a year while working full-time. 25 minutes a day.":
+    "Закрыл все три экзамена уровня Knowledge за год, работая фулл-тайм. 25 минут в день.",
+  "PM · passed": "PM · сдала",
+  "Custom practice from my own notes is genius. It quizzed me on exactly what I kept getting wrong.":
+    "Практика по моим конспектам — гениально. Меня спрашивали именно то, что я постоянно путала.",
+  "SBR candidate": "Кандидат SBR",
+  "Written-answer feedback in seconds. Nothing else on the market does this for Strategic Professional.":
+    "Обратная связь по письменным ответам за секунды. Больше никто на рынке не делает этого для Strategic Professional.",
+  "LW · passed": "LW · сдала",
+  "Lara explained consideration and privity better than my lecture notes ever did.":
+    "Лара объяснила consideration и privity лучше любых конспектов лекций.",
+
+  /* ── ROI / calculator ── */
+  "THE ROI": "ОКУПАЕМОСТЬ",
+  "Same destination.": "Та же цель.",
+  "A fraction of the cost.": "Малая часть цены.",
+  "Tuition centres charge €390–730 per paper. Scholify Pro costs less per month than one hour with a tutor — for every paper, every mode, every day.":
+    "Учебные центры берут €390–730 за один экзамен. Scholify Pro стоит в месяц меньше, чем час с репетитором, — и это все экзамены, все режимы, каждый день.",
+  "Tuition centres": "Учебные центры",
+  "Global providers": "Мировые провайдеры",
+  "Private tutor": "Частный репетитор",
+  "One paper (~3 months)": "Один экзамен (~3 месяца)",
+  "All 13 exams to membership": "Все 13 экзаменов до членства",
+  "AI tutor": "AI-репетитор",
+  "Written answers marked": "Проверка письменных ответов",
+  "Timed mocks + readiness analytics": "Пробные экзамены + аналитика готовности",
+  "Personalised daily plan": "Персональный ежедневный план",
+  "Study at your shield time": "Занятия в ваше защищённое время",
+  "Cancel anytime": "Отмена в любой момент",
+  "class hours": "по расписанию",
+  "email": "по почте",
+  "by the hour": "почасово",
+  "seconds": "секунды",
+  "some": "частично",
+  "fixed schedule": "жёсткое расписание",
+  "self-paced": "самостоятельно",
+  "MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $13.99/MO OR $94.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.":
+    "РЫНОЧНЫЕ ЦЕНЫ: ОПУБЛИКОВАННЫЕ ЦЕНЫ ОНЛАЙН-КУРСОВ ЗА ЭКЗАМЕН (УЧЕБНЫЕ ЦЕНТРЫ СНГ, 2026) И ТИПИЧНЫЕ ЦЕНЫ ON-DEMAND КУРСОВ. SCHOLIFY: PRO $13.99/МЕС ИЛИ $94.99/ГОД. ВЗНОСЫ ACCA ЗА ЭКЗАМЕНЫ ОПЛАЧИВАЮТСЯ ОТДЕЛЬНО ВЕЗДЕ.",
+  "YOUR NUMBERS": "ВАШИ ЦИФРЫ",
+  "Drag the sliders to your reality.": "Передвиньте ползунки под вашу реальность.",
+  "Papers left to pass": "Осталось сдать экзаменов",
+  "Course price per paper (your local rate)": "Цена курса за экзамен (у вас)",
+  "Months you study per paper": "Месяцев на один экзамен",
+  "YOU KEEP": "ВЫ СОХРАНЯЕТЕ",
+  "kept in your pocket on the way to the same letters.": "остаются у вас на пути к тем же буквам после имени.",
+  "Tuition-centre route": "Через учебный центр",
+  "Scholify Pro route": "Через Scholify Pro",
+  "Keep the difference — start free": "Оставьте разницу себе — начните бесплатно",
+  "Scholify at €13/mo (Pro monthly; annual is cheaper still). ACCA exam entry fees are separate on every route.":
+    "Scholify — €13/мес (Pro помесячно; годовой ещё дешевле). Взносы ACCA за экзамены оплачиваются отдельно при любом пути.",
+
+  /* ── Pricing / awards / final ── */
+  "Every paper. Every mode.": "Каждый экзамен. Каждый режим.",
+  "Free gets you practising. Pro unlocks mocks, the AI Examiner and unlimited AI practice.":
+    "Бесплатный план — для практики. Pro открывает пробные экзамены, AI-Экзаменатора и безлимитную AI-практику.",
+  "Curated question banks — all nine OT papers": "Готовые банки вопросов — все девять OT-экзаменов",
+  "Instant marking + teaching explanations": "Мгновенная проверка + обучающие объяснения",
+  "SRS flashcards for standards, rules & formulas": "SRS-карточки по стандартам, правилам и формулам",
+  "Personalised study plan to exam day": "Персональный план до дня экзамена",
+  "Readiness score & per-area analytics": "Показатель готовности и аналитика по темам",
+  "Full BT → AAA qualification roadmap": "Полная дорожная карта BT → AAA",
+  "Timed mock exams": "Пробные экзамены на время",
+  "AI Examiner — instant written marking": "AI-Экзаменатор — мгновенная проверка письменных ответов",
+  "Custom practice from topics or your notes": "Своя практика по темам или вашим конспектам",
+  "Unlimited Lara tutor": "Безлимитная Лара-репетитор",
+  "Editors' Choice. Year after year. The prep ACCA students actually stick with.":
+    "Выбор редакции. Год за годом. Подготовка, с которой студенты ACCA действительно остаются.",
+  "Then the next one.": "А потом следующий.",
+  "Pass this paper.": "Сдайте этот экзамен.",
+  "Start prepping — free": "Начать подготовку — бесплатно",
+  "No credit card · A plan in 60 seconds · Cancel anytime": "Без карты · План за 60 секунд · Отмена в любой момент",
+  "Your next paper is waiting.": "Ваш следующий экзамен ждёт.",
 }

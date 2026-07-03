@@ -2157,6 +2157,7 @@ function Awards() {
 
 function FinalCTA() {
   const navigate = useNavigate()
+  const t = useT()
   return (
     <section
       className="mesh-bg"
@@ -2168,13 +2169,13 @@ function FinalCTA() {
       }}
     >
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
-        <HandWrittenTitle title="Then the next one." subtitle="Pass this paper." />
+        <HandWrittenTitle title={t("Then the next one.")} subtitle={t("Pass this paper.")} />
         <div style={{ marginTop: -32, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <PrimaryCTA large onClick={() => navigate("/signup")}>
-            Start prepping — free <ArrowRight size={20} strokeWidth={2.4} />
+            {t("Start prepping — free")} <ArrowRight size={20} strokeWidth={2.4} />
           </PrimaryCTA>
           <p style={{ color: INK_MUTED, fontSize: 14 }}>
-            No credit card · A plan in 60 seconds · Cancel anytime
+            {t("No credit card · A plan in 60 seconds · Cancel anytime")}
           </p>
         </div>
       </div>
