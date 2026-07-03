@@ -102,6 +102,13 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "SBR-FC-4", paper: "SBR", area: "D", front: "IFRS 9 — financial asset categories", back: "Amortised cost (hold-to-collect + SPPI); FVOCI (collect & sell + SPPI, or elected equity); FVTPL (residual)." },
   { id: "SBR-FC-5", paper: "SBR", area: "D", front: "Expected credit loss stages", back: "Stage 1: 12-month ECL. Stage 2: lifetime ECL (significant increase in credit risk). Stage 3: credit-impaired — interest on the net amount." },
   { id: "SBR-FC-6", paper: "SBR", area: "B", front: "IFRS 2 — equity- vs cash-settled", back: "Equity-settled: grant-date fair value, not remeasured, credit to equity. Cash-settled: liability remeasured each period through P/L." },
+
+  /* SBL */
+  { id: "SBL-FC-1", paper: "SBL", area: "A", front: "The four roles of NEDs", back: "Strategy (challenge & contribute), scrutiny (monitor executives), risk (robust controls & reporting), people (remuneration & appointments)." },
+  { id: "SBL-FC-2", paper: "SBL", area: "B", front: "Porter's five forces", back: "New entrants, supplier power, buyer power, substitutes, competitive rivalry." },
+  { id: "SBL-FC-3", paper: "SBL", area: "B", front: "Mendelow's matrix quadrants", back: "Key players (manage closely), keep satisfied (high power), keep informed (high interest), minimal effort (low/low). Axes: power × interest." },
+  { id: "SBL-FC-4", paper: "SBL", area: "C", front: "TARA risk responses", back: "Transfer (insure/outsource), Avoid (exit the activity), Reduce (controls), Accept (retain low/low risks)." },
+  { id: "SBL-FC-5", paper: "SBL", area: "A", front: "The three key board committees", back: "Audit (financial reporting & controls), remuneration (executive pay), nomination (board appointments & succession) — staffed by NEDs." },
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {

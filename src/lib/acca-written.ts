@@ -2,9 +2,10 @@
  * Scholify — ACCA written (constructed-response) questions for the AI Examiner.
  *
  * These are the questions the giants can't give instant feedback on:
- * discursive answers (FR and Strategic Professional SBR) marked per valid
- * point. Each carries a rubric (marking points) the AI Examiner marks
- * against. All ORIGINAL and syllabus-aligned — no ACCA IP reproduced.
+ * discursive answers (FR + Strategic Professional Essentials: SBR and SBL)
+ * marked per valid point. Each carries a rubric (marking points) the AI
+ * Examiner marks against. All ORIGINAL and syllabus-aligned — no ACCA IP
+ * reproduced.
  */
 
 export interface WrittenQuestion {
@@ -217,7 +218,106 @@ export const WRITTEN_QUESTIONS: WrittenQuestion[] = [
       "If bias persists, escalate: discuss with senior management or those charged with governance, seek professional advice, and consider resignation or other formal action as a last resort.",
     ],
   },
-]
+
+  /* ───────────── SBL — Strategic Business Leader ───────────── */
+  {
+    id: "SBL-W-01",
+    paper: "SBL",
+    area: "A",
+    topic: "Non-executive directors & governance",
+    stem: "Explain the roles of non-executive directors (NEDs) on a listed company's board, and discuss how they contribute to good corporate governance. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "NEDs provide independent oversight of executive management while having no day-to-day operational role.",
+      "Strategy role: constructively challenge and help develop proposals on strategy.",
+      "Scrutiny role: monitor the performance of executive management against agreed goals and objectives.",
+      "Risk role: satisfy themselves that financial information is accurate and that financial controls and risk management systems are robust.",
+      "People role: determine executive remuneration and play a leading part in board appointments and succession (remuneration and nomination committees).",
+      "Their independence reduces the agency problem and balances power on the board — e.g. staffing the audit, remuneration and nomination committees.",
+    ],
+  },
+  {
+    id: "SBL-W-02",
+    paper: "SBL",
+    area: "B",
+    topic: "Porter's five forces",
+    stem: "Describe the five forces in Porter's model of industry competition, and explain how a board can use the model when setting strategy. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "Threat of new entrants — determined by barriers to entry such as capital requirements, economies of scale, regulation and brand loyalty.",
+      "Bargaining power of suppliers — high when suppliers are concentrated or inputs are critical and hard to substitute.",
+      "Bargaining power of buyers — high when buyers are large, concentrated, price-sensitive or face low switching costs.",
+      "Threat of substitute products or services meeting the same customer need.",
+      "Intensity of competitive rivalry among existing firms (growth rates, exit barriers, differentiation).",
+      "Use: assess the attractiveness/profit potential of an industry and design strategies that weaken adverse forces — e.g. differentiation to soften rivalry, raising switching costs, diversifying suppliers.",
+    ],
+  },
+  {
+    id: "SBL-W-03",
+    paper: "SBL",
+    area: "C",
+    topic: "Risk management process & TARA",
+    stem: "Describe the main stages of an effective risk management process, including the four TARA responses to identified risks. (7 marks)",
+    maxMarks: 7,
+    rubric: [
+      "Identification: systematically identify internal and external risks facing the organisation (e.g. registers, workshops, scenario analysis).",
+      "Assessment: evaluate each risk's likelihood and impact, typically mapped on a risk heat map.",
+      "Transfer: shift the risk to a third party, e.g. insurance or outsourcing.",
+      "Avoid: withdraw from the activity giving rise to a risk that is outside appetite.",
+      "Reduce: implement internal controls to lower likelihood or impact.",
+      "Accept: retain risks that are low likelihood and low impact where mitigation isn't cost-effective; responses should reflect the board's risk appetite.",
+      "Monitoring and reporting: maintain the risk register, review responses regularly, and escalate changes to the board/risk committee.",
+    ],
+  },
+  {
+    id: "SBL-W-04",
+    paper: "SBL",
+    area: "D",
+    topic: "Big data — benefits & risks",
+    stem: "Discuss the potential benefits and risks to a large retail company of investing in big data analytics. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "Benefit: customer insight and personalisation — targeted offers and recommendations that increase revenue and loyalty.",
+      "Benefit: improved demand forecasting and inventory optimisation, reducing stockouts and holding costs.",
+      "Benefit: faster, evidence-based decisions (e.g. dynamic pricing, store location analytics) as a source of competitive advantage.",
+      "Risk: data quality/veracity — analytics built on incomplete or biased data leads to poor decisions.",
+      "Risk: privacy and regulatory compliance (e.g. data protection law); breaches cause fines and reputational damage.",
+      "Risk: significant cost and scarce skills — infrastructure investment and competition for data specialists, plus cyber-security exposure.",
+    ],
+  },
+  {
+    id: "SBL-W-05",
+    paper: "SBL",
+    area: "B",
+    topic: "Mendelow's stakeholder matrix",
+    stem: "Explain Mendelow's matrix, and describe how management should respond to stakeholders in each quadrant. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "Mendelow's matrix maps stakeholders on two dimensions: their power over the organisation and their level of interest in its activities.",
+      "Key players (high power, high interest): engage closely — their participation or approval is central to strategy (e.g. major shareholders, regulators in regulated industries).",
+      "Keep satisfied (high power, low interest): meet their needs so they don't become active opponents (e.g. institutional investors, some regulators).",
+      "Keep informed (low power, high interest): communicate openly — they can influence others (e.g. employees, community groups, pressure groups).",
+      "Minimal effort (low power, low interest): monitor without over-investing management time.",
+      "The matrix is dynamic — stakeholders move between quadrants as issues develop, so the mapping must be revisited.",
+    ],
+  },
+  {
+    id: "SBL-W-06",
+    paper: "SBL",
+    area: "C",
+    topic: "Internal audit effectiveness",
+    stem: "Describe the factors that determine whether an internal audit function is effective. (6 marks)",
+    maxMarks: 6,
+    rubric: [
+      "Independence: internal audit should report to the audit committee, not to the executives whose activities it audits.",
+      "Objectivity: staff should have no operational responsibilities and should not audit work they previously performed.",
+      "Competence and resources: appropriately qualified, trained staff with sufficient budget.",
+      "Scope and access: unrestricted access to records, personnel and all areas of the business, with a risk-based work plan.",
+      "Reporting and follow-up: findings reported clearly with recommendations tracked to implementation.",
+      "Standing and quality: board support, adherence to professional standards, and periodic external quality review.",
+    ],
+  },
+
 
 export function getWrittenQuestions(paperId: string): WrittenQuestion[] {
   return WRITTEN_QUESTIONS.filter((q) => q.paper === paperId)

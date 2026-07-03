@@ -1364,7 +1364,7 @@ const ROADMAP_LEVELS: {
     note: "Essentials + 2 of 4 Options",
     accent: FIRE_500,
     papers: [
-      { id: "SBL", name: "Strategic Business Leader" },
+      { id: "SBL", name: "Strategic Business Leader", badge: "AI EXAMINER" },
       { id: "SBR", name: "Strategic Business Reporting", badge: "AI EXAMINER" },
       { id: "AFM", code: "P4", name: "Advanced Financial Mgmt" },
       { id: "APM", code: "P5", name: "Advanced Performance Mgmt" },
