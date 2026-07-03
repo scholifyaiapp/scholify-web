@@ -317,7 +317,7 @@ export const WRITTEN_QUESTIONS: WrittenQuestion[] = [
       "Standing and quality: board support, adherence to professional standards, and periodic external quality review.",
     ],
   },
-
+]
 
 export function getWrittenQuestions(paperId: string): WrittenQuestion[] {
   return WRITTEN_QUESTIONS.filter((q) => q.paper === paperId)
