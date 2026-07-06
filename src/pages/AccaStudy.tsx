@@ -36,7 +36,6 @@ import {
   currentPhase,
   todayMission,
   METHOD_PHASES,
-  type Mission,
 } from "@/lib/acca-plan"
 import { paperLevels, getPassedPapers, getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
 import { flashcardStats, getFlashcards } from "@/lib/acca-flashcards"
@@ -44,6 +43,7 @@ import { getWrittenQuestions } from "@/lib/acca-written"
 import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
+import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -713,6 +713,8 @@ function Overview({
   onTopic: (area: string) => void
 }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const firstName = (user?.user_metadata?.first_name as string) || ""
   const stats = getPaperStats(paper.id)
   const diagnostic = getLatestDiagnostic(paper.id)
   // Live pass-probability from cumulative practice — moves as the student drills.
@@ -732,13 +734,14 @@ function Overview({
   const studyPlan = generateStudyPlan(paper.id)
   const mocks = getMockHistory(paper.id)
   const phase = currentPhase(paper.id)
-  const mission = todayMission(paper.id)
-  const missionHandlers: Record<Mission["action"], () => void> = {
-    practice: onPractice,
+  // AI Study OS: today's auto-generated plan — the student never has to choose.
+  const todayPlan = buildTodayPlan(paper.id)
+  const todayHandlers: Record<TodayAction, () => void> = {
+    diagnostic: () => navigate("/study/diagnostic"),
     weak: onWeak,
+    practice: onPractice,
     flashcards: onFlashcards,
     mock: onMock,
-    examiner: onExaminer,
   }
 
   function updateExamDate(date: string) {
@@ -749,7 +752,56 @@ function Overview({
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <button onClick={onBack} style={backBtn}>← All papers</button>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
-      <p style={{ color: DIM, margin: "0 0 20px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+      <p style={{ color: DIM, margin: "0 0 18px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+
+      {/* AI Study OS — your plan for today */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ ...card({ padding: 18, marginBottom: 16 }), background: "linear-gradient(135deg, rgba(200,0,0,0.05), var(--sch-card))" }}
+      >
+        <div style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>{greeting(firstName)}</div>
+        <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{todayHeadline(paper.id)}</div>
+
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000", margin: "16px 0 8px" }}>
+          TODAY'S PLAN
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {todayPlan.map((t, i) => (
+            <motion.button
+              key={t.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 * i }}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={todayHandlers[t.action]}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                textAlign: "left",
+                padding: "12px 14px",
+                borderRadius: 12,
+                cursor: "pointer",
+                border: `1px solid ${i === 0 ? "rgba(200,0,0,0.3)" : BORDER}`,
+                background: i === 0 ? "rgba(200,0,0,0.05)" : "var(--sch-bg)",
+              }}
+            >
+              <span style={{ fontSize: 20, flexShrink: 0 }}>{t.icon}</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>{t.title}</span>
+                <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{t.detail}</span>
+              </span>
+              {i === 0 && (
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: IRIDESCENT, padding: "4px 10px", borderRadius: 999, flexShrink: 0 }}>
+                  START
+                </span>
+              )}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
 
       {/* readiness — live pass probability once there's practice, else coverage-based */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
@@ -806,28 +858,6 @@ function Overview({
 
       {/* the method — where you are in the 4 phases */}
       <MethodTracker activeKey={phase.key} />
-
-      {/* today's mission */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        style={{ ...card({ padding: 16, marginBottom: 20, border: "1px solid rgba(200,0,0,0.25)" }) }}
-      >
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>
-          {mission.phase.emoji} TODAY'S MISSION · {mission.phase.label.toUpperCase()} PHASE
-        </div>
-        <div style={{ fontWeight: 800, fontSize: 16, color: TEXT, marginTop: 6, lineHeight: 1.35 }}>{mission.title}</div>
-        <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{mission.detail}</div>
-        <motion.button
-          whileHover={{ y: -1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={missionHandlers[mission.action]}
-          style={{ marginTop: 12, padding: "10px 22px", borderRadius: 999, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 13.5, cursor: "pointer" }}
-        >
-          Start the mission →
-        </motion.button>
-      </motion.div>
 
       {/* study plan */}
       <div style={card({ marginBottom: 16 })}>
