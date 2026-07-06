@@ -13,11 +13,16 @@ import { getPaper } from "@/lib/acca"
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
 
-/** Ask Lara to explain a question — optionally a specific follow-up. */
+/**
+ * Ask Lara to explain a question — optionally a specific follow-up.
+ * `learnerContext` is a compact summary of the student's weak areas (see
+ * learnerProfileSummary) so Lara can tie the explanation to their weaknesses.
+ */
 export async function askTutor(
   q: AccaQuestion,
   correctText: string,
   question?: string,
+  learnerContext?: string,
 ): Promise<{ answer: string; isFallback: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/api/lara?action=acca-tutor`, {
@@ -31,6 +36,7 @@ export async function askTutor(
         correctText,
         explanation: q.explanation,
         question: question ?? "",
+        learnerContext: learnerContext ?? "",
       }),
     })
     if (res.ok) {

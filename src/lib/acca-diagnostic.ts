@@ -24,7 +24,7 @@
  * learning-data moat) lives in acca-cloud.ts and layers on top of this.
  */
 
-import { getPaper, getQuestions } from "@/lib/acca"
+import { getPaper, getQuestions, getPaperStats } from "@/lib/acca"
 import type { AccaQuestion, Difficulty } from "@/lib/acca-content"
 
 /* ── Tunables ─────────────────────────────────────────────────── */
@@ -305,4 +305,44 @@ export function getLatestDiagnostic(paperId: string): DiagnosticResult | null {
 export function mergeDiagnostic(result: DiagnosticResult): void {
   const existing = getLatestDiagnostic(result.paperId)
   if (!existing || result.answeredAt > existing.answeredAt) saveDiagnosticLocal(result)
+}
+
+/* ── Learner profile (what Lara "remembers" about you) ────────── */
+
+/**
+ * A compact, prompt-ready summary of a student's weaknesses on a paper — drawn
+ * from their latest diagnostic and their live per-area practice accuracy. This
+ * is what makes Lara stateful: fed into the tutor, she can tie explanations to
+ * the areas this student actually struggles with, across sessions. Returns ""
+ * when there's nothing learned yet.
+ */
+export function learnerProfileSummary(paperId: string): string {
+  const lines: string[] = []
+
+  const diag = getLatestDiagnostic(paperId)
+  if (diag) {
+    lines.push(`Latest diagnostic: ${diag.passProbability}% pass probability (estimated exam score ${diag.estimatedScore}%).`)
+    if (diag.weakest.length) {
+      lines.push(
+        `Weakest areas from that diagnostic: ${diag.weakest
+          .map((a) => `${a.code} ${a.label} (${Math.round(a.score * 100)}%)`)
+          .join("; ")}.`,
+      )
+    }
+  }
+
+  // Live practice signal — areas attempted at least twice, weakest first.
+  const attempted = getPaperStats(paperId)
+    .areas.filter((a) => a.seen >= 2)
+    .sort((a, b) => a.accuracy - b.accuracy)
+  const weakPractice = attempted.slice(0, 3).filter((a) => a.accuracy < 0.7)
+  if (weakPractice.length) {
+    lines.push(
+      `Recent practice shows they struggle with: ${weakPractice
+        .map((a) => `${a.code} ${a.label} (${Math.round(a.accuracy * 100)}%)`)
+        .join("; ")}.`,
+    )
+  }
+
+  return lines.join("\n")
 }

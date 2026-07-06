@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { askTutor } from "@/lib/acca-ai"
+import { learnerProfileSummary } from "@/lib/acca-diagnostic"
 import type { AccaQuestion } from "@/lib/acca"
 
 /*
@@ -22,10 +23,14 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
   const [answer, setAnswer] = useState<string | null>(null)
   const [input, setInput] = useState("")
 
+  // What Lara "remembers" about this student on this paper — weak areas from
+  // their diagnostic + live practice. Recomputed per question (cheap, local).
+  const learnerContext = useMemo(() => learnerProfileSummary(q.paper), [q.paper])
+
   async function ask(question: string) {
     setLoading(true)
     setAnswer(null)
-    const res = await askTutor(q, correctText, question)
+    const res = await askTutor(q, correctText, question, learnerContext)
     setAnswer(res.answer)
     setLoading(false)
   }

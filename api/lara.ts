@@ -154,6 +154,7 @@ async function handleAccaTutor(body: Record<string, unknown>, res: VercelRespons
   const correctText = String(body.correctText || "")
   const baseExplanation = String(body.explanation || "").slice(0, 1200)
   const question = String(body.question || "").slice(0, 500) // the learner's follow-up ("why is B wrong?")
+  const learnerContext = String(body.learnerContext || "").slice(0, 800) // the student's known weak areas
 
   const fallback =
     baseExplanation ||
@@ -168,15 +169,22 @@ async function handleAccaTutor(body: Record<string, unknown>, res: VercelRespons
   const system = `You are Lara, a warm, sharp ACCA tutor. You are helping a student
 with paper ${paper}. Explain clearly and correctly using the ACCA syllabus and
 IFRS Accounting Standards. Be concise (max ~150 words), use plain language, and
-where useful show the calculation step by step. Never invent standards or figures.`
+where useful show the calculation step by step. Never invent standards or figures.
+You remember this student across sessions. When their learning profile is given and
+this question touches one of their known weak areas, briefly acknowledge it and tie
+the explanation to shoring up that weakness — encouraging, never repetitive. Do not
+mention weak areas that aren't relevant to this question.`
 
   const optionsText = options.length
     ? `\nOptions:\n${options.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join("\n")}`
     : ""
+  const profileText = learnerContext
+    ? `\n\nStudent's learning profile (their weak areas across sessions):\n${learnerContext}`
+    : ""
   const prompt = `Syllabus area: ${area}
 Question: ${stem}${optionsText}
 Correct answer: ${correctText}
-Model explanation: ${baseExplanation}
+Model explanation: ${baseExplanation}${profileText}
 
 Student asks: ${question || "Explain this in a simpler way."}`
 
