@@ -42,6 +42,7 @@ import { flashcardStats, getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
 import { getLatestDiagnostic, passBand } from "@/lib/acca-diagnostic"
+import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -107,6 +108,18 @@ export default function AccaStudy() {
 
   const paper = paperId ? getPaper(paperId) : undefined
 
+  // Reconcile with the server-side learner record on load: if the cloud copy
+  // is more complete (fresh device / cleared browser), hydrate local from it.
+  useEffect(() => {
+    let alive = true
+    void syncAccaProgress().then((hydrated) => {
+      if (hydrated && alive) setTick((t) => t + 1)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
   // mock countdown
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
@@ -135,6 +148,7 @@ export default function AccaStudy() {
       } else if (isMock) {
         recordMock(paperId, correctCount, questions.length)
       }
+      queueAccaProgressPush()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
@@ -245,6 +259,7 @@ export default function AccaStudy() {
     if (!q) return
     const result = gradeQuestion(q, currentResponse(q))
     recordAnswer(q.paper, q, result.correct)
+    queueAccaProgressPush()
     setLog((l) => [...l, { area: q.area, correct: result.correct }])
     setWasCorrect(result.correct)
     setGraded(true)
@@ -257,6 +272,7 @@ export default function AccaStudy() {
     if (!q) return
     const result = gradeQuestion(q, currentResponse(q))
     recordAnswer(q.paper, q, result.correct)
+    queueAccaProgressPush()
     setLog((l) => [...l, { area: q.area, correct: result.correct }])
     if (result.correct) setCorrectCount((c) => c + 1)
     advance()

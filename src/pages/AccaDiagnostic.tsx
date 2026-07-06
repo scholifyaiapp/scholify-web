@@ -21,7 +21,7 @@ import {
   type AnsweredDiagnostic,
   type DiagnosticAreaResult,
 } from "@/lib/acca-diagnostic"
-import { persistDiagnostic, fetchLatestDiagnostic } from "@/lib/acca-cloud"
+import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from "@/lib/acca-cloud"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -342,6 +342,7 @@ export default function AccaDiagnostic() {
       setResult(scored)
       setPhase("results")
       void persistDiagnostic(scored)
+      queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
     }, 1600)
     return () => clearTimeout(timer)
   }, [phase, paperId])

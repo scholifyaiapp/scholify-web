@@ -322,6 +322,26 @@ export function clearAccaProgress(): void {
   }
 }
 
+/* ── Sync surface (used by acca-cloud for server persistence) ──── */
+
+/** Opaque progress snapshot — persisted verbatim to the server. */
+export type AccaProgressSnapshot = RawProgress
+
+/** The full local progress blob, for pushing to the cloud. */
+export function snapshotProgress(): AccaProgressSnapshot {
+  return readRaw()
+}
+
+/** Overwrite local progress from a cloud snapshot (hydrate a fresh device). */
+export function restoreProgress(raw: Partial<AccaProgressSnapshot>): void {
+  writeRaw({ ...EMPTY, ...raw })
+}
+
+/** Total questions answered — a monotonic signal for safe cross-device merges. */
+export function progressAnsweredCount(): number {
+  return readRaw().totalAnswered
+}
+
 /* ── Daily goal + today ───────────────────────────────────────── */
 
 const KEY_DAILY_GOAL = "scholify-acca-daily-goal"

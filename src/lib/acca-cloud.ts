@@ -16,6 +16,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { snapshotProgress, restoreProgress, progressAnsweredCount } from "@/lib/acca"
 import {
   getLatestDiagnostic,
   mergeDiagnostic,
@@ -103,4 +104,70 @@ export async function fetchLatestDiagnostic(paperId: string): Promise<Diagnostic
   } catch {
     return local
   }
+}
+
+/* ── Progress snapshot sync (the learning-data spine) ─────────── */
+
+/** Push the local progress snapshot to the server (upsert one row per user). */
+export async function pushAccaProgress(): Promise<void> {
+  const userId = await currentUserId()
+  if (!userId) return
+  try {
+    await supabase.from("acca_progress").upsert(
+      {
+        user_id: userId,
+        data: snapshotProgress(),
+        answered: progressAnsweredCount(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    )
+  } catch {
+    /* offline / table missing — local remains authoritative */
+  }
+}
+
+/**
+ * Reconcile local and cloud progress on load. Because `answered` only ever
+ * grows, the more-complete copy wins with no lost work:
+ *  - cloud ahead (e.g. fresh device / cleared browser) → hydrate local from it
+ *  - local ahead → push local up
+ * Returns true when local was hydrated, so the caller can refresh the UI.
+ */
+export async function syncAccaProgress(): Promise<boolean> {
+  const userId = await currentUserId()
+  if (!userId) return false
+  try {
+    const { data, error } = await supabase
+      .from("acca_progress")
+      .select("data, answered")
+      .eq("user_id", userId)
+      .maybeSingle()
+
+    if (error) return false
+
+    const cloudAnswered = data?.answered ?? -1
+    const localAnswered = progressAnsweredCount()
+
+    if (data && cloudAnswered > localAnswered) {
+      restoreProgress(data.data ?? {})
+      return true
+    }
+    if (localAnswered > cloudAnswered) {
+      void pushAccaProgress()
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
+// Debounced push: many answers in a session coalesce into one write.
+let pushTimer: ReturnType<typeof setTimeout> | null = null
+export function queueAccaProgressPush(delayMs = 2500): void {
+  if (pushTimer) clearTimeout(pushTimer)
+  pushTimer = setTimeout(() => {
+    pushTimer = null
+    void pushAccaProgress()
+  }, delayMs)
 }
