@@ -15,7 +15,7 @@
  *    AI-backed flow layered on top later.
  */
 
-import type { AccaPaper, AccaQuestion } from "@/lib/acca-content"
+import type { AccaPaper, AccaQuestion, Difficulty } from "@/lib/acca-content"
 import { QUESTIONS } from "@/lib/acca-content"
 import { ALL_PAPERS } from "@/lib/acca-qualification"
 
@@ -130,6 +130,48 @@ export function buildSession(
   }
 
   return shuffle(pool, seed).slice(0, count)
+}
+
+/**
+ * Build an ADAPTIVE session — the loop's engine. Instead of random, it ranks
+ * every question by how useful it is to this student right now:
+ *  - weak areas first (low per-area accuracy; unseen areas count as moderately
+ *    weak so coverage grows),
+ *  - difficulty matched to the area's competence (build easy where they're lost,
+ *    stretch hard where they're strong — the zone of proximal development),
+ *  - unseen > previously-wrong > already-correct (reinforce, don't re-quiz mastery).
+ * A small seeded jitter keeps repeat sessions from being identical.
+ */
+export function buildAdaptiveSession(paperId: string, count = 8, seed = Date.now()): AccaQuestion[] {
+  const pool = getQuestions(paperId)
+  if (pool.length === 0) return []
+
+  const stats = getPaperStats(paperId)
+  const areaInfo = new Map(stats.areas.map((a) => [a.code, { acc: a.accuracy, seen: a.seen }]))
+  const qStats = getQuestionStats(paperId)
+
+  function targetDifficulty(acc: number): Difficulty {
+    if (acc < 0.45) return "easy"
+    if (acc < 0.7) return "medium"
+    return "hard"
+  }
+
+  function priority(q: AccaQuestion): number {
+    const a = areaInfo.get(q.area) ?? { acc: 0.5, seen: 0 }
+    const areaWeakness = a.seen === 0 ? 0.6 : 1 - a.acc // 0..1, higher = drill this
+    const diffMatch = q.difficulty === targetDifficulty(a.acc) ? 1 : 0.5
+    const qs = qStats[q.id]
+    const familiarity = !qs || qs.attempts === 0 ? 1 : qs.correct < qs.attempts ? 0.8 : 0.25
+    return areaWeakness * 2 + diffMatch + familiarity
+  }
+
+  let s = seed || 1
+  const scored = pool.map((q) => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff
+    return { q, p: priority(q) + (s % 100) / 1000 }
+  })
+  scored.sort((a, b) => b.p - a.p)
+  return scored.slice(0, count).map((x) => x.q)
 }
 
 /* ── Progress (localStorage-first) ────────────────────────────── */
@@ -291,6 +333,11 @@ export function getPaperStats(paperId: string): PaperStats {
   const readiness = Math.round(accuracy * 70 + coverage * 30)
 
   return { paperId, answered, correct, accuracy, coverage, readiness, areas }
+}
+
+/** Per-question {attempts, correct} for a paper — powers adaptive selection. */
+export function getQuestionStats(paperId: string): Record<string, { attempts: number; correct: number }> {
+  return readRaw().questions[paperId] ?? {}
 }
 
 export interface OverallProgress {

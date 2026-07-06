@@ -15,6 +15,7 @@ import AccaOnboarding from "@/components/acca/AccaOnboarding"
 import {
   getPaper,
   buildSession,
+  buildAdaptiveSession,
   gradeQuestion,
   recordAnswer,
   getPaperStats,
@@ -41,7 +42,7 @@ import { paperLevels, getPassedPapers, getCurrentPaper, getStudyingPapers, quali
 import { flashcardStats, getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
-import { getLatestDiagnostic, passBand } from "@/lib/acca-diagnostic"
+import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 
 /* ──────────────────────────────────────────────────────────────
@@ -177,7 +178,9 @@ export default function AccaStudy() {
     }
     const seed = (Date.now() % 100000) + 1
     const size = mock ? MOCK_SIZE : SESSION_SIZE
-    const qs = buildSession(paperId, size, { weakFirst }, seed)
+    // "Target my weak areas" uses the adaptive engine (weak areas + matched
+    // difficulty + spaced reinforcement); plain practice stays a fresh shuffle.
+    const qs = weakFirst && !mock ? buildAdaptiveSession(paperId, size, seed) : buildSession(paperId, size, { weakFirst }, seed)
     if (qs.length === 0) {
       toast.info("No questions available yet for this paper.")
       return
@@ -711,8 +714,14 @@ function Overview({
 }) {
   const navigate = useNavigate()
   const stats = getPaperStats(paper.id)
-  const band = readinessBand(stats.readiness)
   const diagnostic = getLatestDiagnostic(paper.id)
+  // Live pass-probability from cumulative practice — moves as the student drills.
+  const live = estimateFromPractice(paper.id)
+  const band = live ? passBand(live.passProbability) : readinessBand(stats.readiness)
+  const readinessValue = live ? `${live.passProbability}%` : `${stats.readiness}%`
+  // The diagnostic CTA anchors on a formal diagnostic if taken, else the live read.
+  const passShown = diagnostic ?? live
+  const passIsLive = !diagnostic && !!live
   const hasHistory = stats.answered > 0
   const curated = hasCuratedContent(paper.id)
   const recs = getRecommendations(paper.id)
@@ -742,9 +751,9 @@ function Overview({
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
       <p style={{ color: DIM, margin: "0 0 20px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
 
-      {/* readiness */}
+      {/* readiness — live pass probability once there's practice, else coverage-based */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
-        <Stat label={band.label} value={`${stats.readiness}%`} accent />
+        <Stat label={band.label} value={readinessValue} accent />
         <Stat label="Accuracy" value={hasHistory ? `${Math.round(stats.accuracy * 100)}%` : "—"} />
         <Stat label="Answered" value={`${stats.answered}`} />
       </div>
@@ -764,19 +773,23 @@ function Overview({
           marginBottom: 16,
           borderRadius: 14,
           cursor: "pointer",
-          border: diagnostic ? `1px solid ${BORDER}` : "1px solid rgba(200,0,0,0.25)",
-          background: diagnostic ? CARD : "linear-gradient(135deg, rgba(200,0,0,0.06), rgba(200,0,0,0.02))",
+          border: passShown ? `1px solid ${BORDER}` : "1px solid rgba(200,0,0,0.25)",
+          background: passShown ? CARD : "linear-gradient(135deg, rgba(200,0,0,0.06), rgba(200,0,0,0.02))",
         }}
       >
-        {diagnostic ? (
+        {passShown ? (
           <>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 12, background: "var(--sch-card-2)", flexShrink: 0 }}>
-              <span style={{ fontSize: 19, fontWeight: 800, color: passBand(diagnostic.passProbability).color, lineHeight: 1 }}>{diagnostic.passProbability}%</span>
+              <span style={{ fontSize: 19, fontWeight: 800, color: passBand(passShown.passProbability).color, lineHeight: 1 }}>{passShown.passProbability}%</span>
               <span style={{ fontSize: 8.5, fontWeight: 700, color: MUTED, marginTop: 2 }}>PASS</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 750, fontSize: 14.5, color: TEXT }}>{passBand(diagnostic.passProbability).label}</div>
-              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Est. score {diagnostic.estimatedScore}% · tap to retake the diagnostic</div>
+              <div style={{ fontWeight: 750, fontSize: 14.5, color: TEXT }}>{passBand(passShown.passProbability).label}</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>
+                {passIsLive
+                  ? "Live estimate from practice · tap for the full diagnostic"
+                  : `Est. score ${passShown.estimatedScore}% · tap to retake the diagnostic`}
+              </div>
             </div>
           </>
         ) : (

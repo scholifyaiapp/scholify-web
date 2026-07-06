@@ -183,6 +183,12 @@ function areaScore(answers: AnsweredDiagnostic[]): number {
   return (wCorrect + ALPHA * PRIOR) / (wSum + ALPHA)
 }
 
+/** Prior-shrunk competence from plain seen/correct counts (no difficulty detail). */
+function areaScoreFromCounts(seen: number, correct: number): number {
+  if (seen === 0) return PRIOR
+  return (correct + ALPHA * PRIOR) / (seen + ALPHA)
+}
+
 /** Mean of assessed-area scores, regressed toward neutral by coverage confidence. */
 function overallCompetence(
   assessed: { score: number }[],
@@ -194,36 +200,19 @@ function overallCompetence(
 }
 
 /**
- * Turn a set of graded diagnostic answers into a full result: per-area
- * competence, an estimated exam score, a pass probability, and a counterfactual
- * "get to X%" target built from the weakest areas.
+ * Assemble a full result from already-scored areas: pass probability, estimated
+ * score, weakest/strongest, and the counterfactual "get to X%" target. Shared
+ * by the formal diagnostic and the live-from-practice estimate so both speak the
+ * exact same model.
  */
-export function scoreDiagnostic(paperId: string, answers: AnsweredDiagnostic[]): DiagnosticResult {
-  const paper = getPaper(paperId)
-  const areasMeta = paper?.areas ?? []
-
-  const byArea = new Map<string, AnsweredDiagnostic[]>()
-  for (const a of answers) {
-    const list = byArea.get(a.q.area) ?? []
-    list.push(a)
-    byArea.set(a.q.area, list)
-  }
-
-  const areas: DiagnosticAreaResult[] = areasMeta.map((meta) => {
-    const list = byArea.get(meta.code) ?? []
-    const score = areaScore(list)
-    return {
-      code: meta.code,
-      label: meta.label,
-      seen: list.length,
-      correct: list.filter((a) => a.correct).length,
-      score,
-      band: bandFor(score),
-    }
-  })
-
+function assembleResult(
+  paperId: string,
+  areas: DiagnosticAreaResult[],
+  totalAreas: number,
+  meta: { questionsAnswered: number; rawCorrect: number },
+): DiagnosticResult {
   const assessed = areas.filter((a) => a.seen > 0)
-  const confidence = areasMeta.length > 0 ? assessed.length / areasMeta.length : 0
+  const confidence = totalAreas > 0 ? assessed.length / totalAreas : 0
 
   const competence = overallCompetence(assessed, confidence)
   const estimatedScore = Math.round(competence * 100)
@@ -245,8 +234,8 @@ export function scoreDiagnostic(paperId: string, answers: AnsweredDiagnostic[]):
   return {
     paperId,
     answeredAt: new Date().toISOString(),
-    questionsAnswered: answers.length,
-    rawCorrect: answers.filter((a) => a.correct).length,
+    questionsAnswered: meta.questionsAnswered,
+    rawCorrect: meta.rawCorrect,
     estimatedScore,
     passProbability,
     confidence,
@@ -259,6 +248,61 @@ export function scoreDiagnostic(paperId: string, answers: AnsweredDiagnostic[]):
       projectedPassProbability: Math.max(projectedPassProbability, passProbability),
     },
   }
+}
+
+/**
+ * Turn a set of graded diagnostic answers into a full result: per-area
+ * competence, an estimated exam score, a pass probability, and a counterfactual
+ * "get to X%" target built from the weakest areas.
+ */
+export function scoreDiagnostic(paperId: string, answers: AnsweredDiagnostic[]): DiagnosticResult {
+  const areasMeta = getPaper(paperId)?.areas ?? []
+
+  const byArea = new Map<string, AnsweredDiagnostic[]>()
+  for (const a of answers) {
+    const list = byArea.get(a.q.area) ?? []
+    list.push(a)
+    byArea.set(a.q.area, list)
+  }
+
+  const areas: DiagnosticAreaResult[] = areasMeta.map((meta) => {
+    const list = byArea.get(meta.code) ?? []
+    const score = areaScore(list)
+    return {
+      code: meta.code,
+      label: meta.label,
+      seen: list.length,
+      correct: list.filter((a) => a.correct).length,
+      score,
+      band: bandFor(score),
+    }
+  })
+
+  return assembleResult(paperId, areas, areasMeta.length, {
+    questionsAnswered: answers.length,
+    rawCorrect: answers.filter((a) => a.correct).length,
+  })
+}
+
+/**
+ * A LIVE pass-probability estimate computed from cumulative practice (the same
+ * model as the formal diagnostic, minus difficulty weighting since practice
+ * counts don't retain it). This is what closes the loop: as the student drills
+ * their weak areas, this number moves. Returns null until they've practised.
+ */
+export function estimateFromPractice(paperId: string): DiagnosticResult | null {
+  const stats = getPaperStats(paperId)
+  if (stats.answered === 0) return null
+
+  const areas: DiagnosticAreaResult[] = stats.areas.map((a) => {
+    const score = areaScoreFromCounts(a.seen, a.correct)
+    return { code: a.code, label: a.label, seen: a.seen, correct: a.correct, score, band: bandFor(score) }
+  })
+
+  return assembleResult(paperId, areas, stats.areas.length, {
+    questionsAnswered: stats.answered,
+    rawCorrect: stats.correct,
+  })
 }
 
 /** UI band for a pass probability: colour + short verdict. */
