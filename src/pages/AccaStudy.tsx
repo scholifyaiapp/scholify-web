@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
+import { useNavigate } from "react-router-dom"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
@@ -40,6 +41,7 @@ import { paperLevels, getPassedPapers, getCurrentPaper, getStudyingPapers, quali
 import { flashcardStats, getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
+import { getLatestDiagnostic, passBand } from "@/lib/acca-diagnostic"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -691,8 +693,10 @@ function Overview({
   onFlashcards: () => void
   onTopic: (area: string) => void
 }) {
+  const navigate = useNavigate()
   const stats = getPaperStats(paper.id)
   const band = readinessBand(stats.readiness)
+  const diagnostic = getLatestDiagnostic(paper.id)
   const hasHistory = stats.answered > 0
   const curated = hasCuratedContent(paper.id)
   const recs = getRecommendations(paper.id)
@@ -728,6 +732,48 @@ function Overview({
         <Stat label="Accuracy" value={hasHistory ? `${Math.round(stats.accuracy * 100)}%` : "—"} />
         <Stat label="Answered" value={`${stats.answered}`} />
       </div>
+
+      {/* pass-probability diagnostic — the headline number */}
+      <motion.button
+        whileHover={{ y: -1 }}
+        whileTap={{ scale: 0.99 }}
+        onClick={() => navigate("/study/diagnostic")}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "14px 16px",
+          marginBottom: 16,
+          borderRadius: 14,
+          cursor: "pointer",
+          border: diagnostic ? `1px solid ${BORDER}` : "1px solid rgba(200,0,0,0.25)",
+          background: diagnostic ? CARD : "linear-gradient(135deg, rgba(200,0,0,0.06), rgba(200,0,0,0.02))",
+        }}
+      >
+        {diagnostic ? (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 12, background: "var(--sch-card-2)", flexShrink: 0 }}>
+              <span style={{ fontSize: 19, fontWeight: 800, color: passBand(diagnostic.passProbability).color, lineHeight: 1 }}>{diagnostic.passProbability}%</span>
+              <span style={{ fontSize: 8.5, fontWeight: 700, color: MUTED, marginTop: 2 }}>PASS</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 750, fontSize: 14.5, color: TEXT }}>{passBand(diagnostic.passProbability).label}</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Est. score {diagnostic.estimatedScore}% · tap to retake the diagnostic</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 26, flexShrink: 0 }}>🎯</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 14.5, color: "#C80000" }}>What's your chance of passing?</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Take the ~15-min diagnostic → pass probability + your weakest areas</div>
+            </div>
+          </>
+        )}
+        <span style={{ fontSize: 18, color: MUTED, flexShrink: 0 }}>→</span>
+      </motion.button>
 
       {/* the method — where you are in the 4 phases */}
       <MethodTracker activeKey={phase.key} />
