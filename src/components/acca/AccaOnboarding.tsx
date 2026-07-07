@@ -10,6 +10,7 @@ import {
   setStudyingPapers,
 } from "@/lib/acca-qualification"
 import { setPlan, generateStudyPlan, METHOD_PHASES } from "@/lib/acca-plan"
+import { EXPERIENCE_OPTIONS, setExperience, type Experience } from "@/lib/acca-profile"
 
 /*
  * Guided first-run for /study, in Lara's voice. Five steps:
@@ -51,6 +52,7 @@ export default function AccaOnboarding({
   const [preset, setPreset] = useState<3 | 6 | null>(null)
   const [studyTime, setStudyTime] = useState("19:00")
   const [minutes, setMinutes] = useState(25)
+  const [exp, setExp] = useState<Experience | null>(null)
 
   const nextPapers = useMemo(() => suggestedNextPapers([...passed]), [passed])
   const qual = useMemo(() => qualificationProgress([...passed]), [passed])
@@ -81,6 +83,7 @@ export default function AccaOnboarding({
     if (picked.length === 0) return
     setPassedPapers([...passed])
     setStudyingPapers(picked)
+    if (exp) setExperience(exp)
     for (const pid of picked) {
       setPlan(pid, {
         examDate: examDate || null,
@@ -215,6 +218,32 @@ export default function AccaOnboarding({
               />
               <p style={{ fontSize: 12, color: DIM, margin: "8px 0 0", lineHeight: 1.5 }}>
                 Roughly 3 months per paper is the standard tuition pace. No date yet? Skip it — I'll pace you by mastery instead.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, marginBottom: 8 }}>🧭 Where are you starting from?</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {EXPERIENCE_OPTIONS.map((o) => {
+                  const on = exp === o.value
+                  return (
+                    <button
+                      key={o.value}
+                      onClick={() => setExp(o.value)}
+                      style={{ ...card({ cursor: "pointer", textAlign: "left", border: `1.5px solid ${on ? RED : BORDER}`, padding: "12px 14px", background: on ? "rgba(200,0,0,0.05)" : CARD }), display: "flex", alignItems: "center", gap: 11 }}
+                    >
+                      <span style={{ fontSize: 20, flexShrink: 0 }}>{o.emoji}</span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: "block", fontWeight: 700, fontSize: 13.5, color: on ? RED : TEXT }}>{o.label}</span>
+                        <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{o.blurb}</span>
+                      </span>
+                      {on && <span style={{ color: RED, fontWeight: 800, flexShrink: 0 }}>✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <p style={{ fontSize: 12, color: DIM, margin: "8px 0 0", lineHeight: 1.5 }}>
+                I pitch every explanation at your level — from first principles to pure exam technique.
               </p>
             </div>
 

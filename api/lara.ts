@@ -52,9 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "acca-tutor") return handleAccaTutor(body, res)
   if (action === "acca-examiner") return handleAccaExaminer(body, res)
   if (action === "acca-generate") return handleAccaGenerate(body, res)
+  if (action === "acca-postmortem") return handleAccaPostmortem(body, res)
   res.status(400).json({
     error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner | acca-generate.",
+      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner | acca-generate | acca-postmortem.",
   })
 }
 
@@ -203,6 +204,197 @@ Student asks: ${question || "Explain this in a simpler way."}`
     console.error("lara acca-tutor:", err)
     res.status(200).json({ answer: fallback, isFallback: true })
   }
+}
+
+/* ── ACCA post-mortem — mock-fail analysis & real-exam reflection (Sonnet) ── */
+
+interface PostmortemArea {
+  code: string
+  label: string
+  correct: number
+  seen: number
+}
+
+async function handleAccaPostmortem(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const kind = body.kind === "exam" ? "exam" : "mock"
+  const paper = String(body.paper || "ACCA")
+  const paperName = String(body.paperName || paper).slice(0, 120)
+  const percent = Number.isFinite(Number(body.percent)) ? Math.round(Number(body.percent)) : null
+  const learnerContext = String(body.learnerContext || "").slice(0, 800)
+  const areas: PostmortemArea[] = (Array.isArray(body.areas) ? body.areas : [])
+    .slice(0, 12)
+    .map((a) => {
+      const r = a as Record<string, unknown>
+      return {
+        code: String(r.code || "?").slice(0, 8),
+        label: String(r.label || "").slice(0, 120),
+        correct: Math.max(0, Math.round(Number(r.correct) || 0)),
+        seen: Math.max(0, Math.round(Number(r.seen) || 0)),
+      }
+    })
+    .filter((a) => a.seen > 0)
+  const mockHistory = (Array.isArray(body.mockHistory) ? body.mockHistory : [])
+    .slice(0, 10)
+    .map((m) => {
+      const r = m as Record<string, unknown>
+      return { date: String(r.date || "").slice(0, 12), percent: Math.round(Number(r.percent) || 0) }
+    })
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.status(200).json({ ...localPostmortem(kind, percent, areas, mockHistory), isFallback: true })
+    return
+  }
+
+  const system =
+    kind === "mock"
+      ? `You are Lara, an ACCA exam coach running a post-mortem on a student's FAILED timed mock for paper ${paper} (${paperName}). The ACCA pass line is 50%.
+Analyse where the marks were lost using the per-area breakdown, detect the weak topics, and set a short recovery plan. Direct, warm, specific — a coach after a lost match, never disappointed in the student, always in the plan.
+Return ONLY valid JSON, no prose, exactly this shape:
+{"headline":"one punchy sentence","analysis":"3-4 sentences: where the marks were lost and why this is fixable","lostMarks":[{"area":"<area code>","detail":"what went wrong there and roughly how many marks it cost"}],"plan":[{"title":"short imperative step","detail":"one sentence on how","action":"weak|practice|flashcards|mock"}]}
+Rules: lostMarks covers the 2-3 worst areas only. plan is exactly 3 steps, ending with action "mock" (the retry).`
+      : `You are Lara, an ACCA coach holding a reflection session with a student who FAILED the real ${paper} (${paperName}) exam. This is an emotional moment: acknowledge it honestly first — many ACCA members failed papers on the way — then move to evidence.
+Compare their real result with their mock history if given, analyse their weak areas like an examiner would, and set the comeback plan. Warm, steady, zero toxic positivity.
+Return ONLY valid JSON, no prose, exactly this shape:
+{"headline":"one supportive but honest sentence","analysis":"4-5 sentences: emotional acknowledgement, then what the evidence says went wrong (compare with mocks if available)","lostMarks":[{"area":"<area code>","detail":"the weakness and what it likely cost in the real exam"}],"plan":[{"title":"short imperative step","detail":"one sentence on how","action":"weak|practice|flashcards|mock"}]}
+Rules: lostMarks covers the 2-3 worst areas only. plan is exactly 3 steps for the retake run.`
+
+  const areaLines = areas.length
+    ? areas
+        .map((a) => `${a.code} ${a.label}: ${a.correct}/${a.seen} (${Math.round((a.correct / a.seen) * 100)}%)`)
+        .join("\n")
+    : "(no per-area breakdown available)"
+  const historyLine = mockHistory.length
+    ? `Mock history (most recent first): ${mockHistory.map((m) => `${m.percent}%`).join(", ")}`
+    : "No mock history available."
+  const prompt = `${kind === "mock" ? `Mock score: ${percent ?? "?"}% (pass line 50%).` : `Real exam result: FAIL${percent !== null ? ` at ${percent}% (pass mark 50)` : " (mark not shared)"}.`}
+${historyLine}
+
+Per-area performance:
+${areaLines}
+${learnerContext ? `\nStudent's learning profile:\n${learnerContext}` : ""}`
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const completion = await client.messages.create({
+      model: SONNET,
+      max_tokens: 900,
+      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: prompt }],
+    })
+    const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
+    const parsed = safePostmortemJson(raw)
+    if (parsed) {
+      res.status(200).json(parsed)
+      return
+    }
+    res.status(200).json({ ...localPostmortem(kind, percent, areas, mockHistory), isFallback: true })
+  } catch (err) {
+    console.error("lara acca-postmortem:", err)
+    res.status(200).json({ ...localPostmortem(kind, percent, areas, mockHistory), isFallback: true })
+  }
+}
+
+interface PostmortemPayload {
+  headline: string
+  analysis: string
+  lostMarks: { area: string; detail: string }[]
+  plan: { title: string; detail: string; action: string }[]
+}
+
+function safePostmortemJson(s: string): PostmortemPayload | null {
+  try {
+    const start = s.indexOf("{")
+    const end = s.lastIndexOf("}")
+    if (start === -1 || end === -1) return null
+    const o = JSON.parse(s.slice(start, end + 1)) as Record<string, unknown>
+    const lostMarks = (Array.isArray(o.lostMarks) ? o.lostMarks : []).map((l) => {
+      const r = l as Record<string, unknown>
+      return { area: String(r.area || ""), detail: String(r.detail || "") }
+    })
+    const plan = (Array.isArray(o.plan) ? o.plan : []).map((p) => {
+      const r = p as Record<string, unknown>
+      const action = String(r.action || "practice")
+      return {
+        title: String(r.title || ""),
+        detail: String(r.detail || ""),
+        action: ["weak", "practice", "flashcards", "mock"].includes(action) ? action : "practice",
+      }
+    })
+    if (!o.headline || !o.analysis || plan.length === 0) return null
+    return { headline: String(o.headline), analysis: String(o.analysis), lostMarks, plan }
+  } catch {
+    return null
+  }
+}
+
+/** No-key fallback: a deterministic post-mortem from the area breakdown. */
+function localPostmortem(
+  kind: "mock" | "exam",
+  percent: number | null,
+  areas: PostmortemArea[],
+  mockHistory: { date: string; percent: number }[],
+): PostmortemPayload {
+  const ranked = [...areas]
+    .map((a) => ({ ...a, pct: Math.round((a.correct / Math.max(1, a.seen)) * 100) }))
+    .sort((a, b) => a.pct - b.pct)
+  const worst = ranked.filter((a) => a.pct < 50).slice(0, 3)
+  const gap = percent !== null ? Math.max(0, 50 - percent) : null
+  const mockAvg = mockHistory.length
+    ? Math.round(mockHistory.reduce((s, m) => s + m.percent, 0) / mockHistory.length)
+    : null
+
+  const headline =
+    kind === "mock"
+      ? gap !== null && gap <= 10
+        ? `You were ${gap} marks off the pass line — this is one focused week away.`
+        : "Not this time — but now we know exactly where the marks went."
+      : "This result doesn't define you — plenty of ACCA members needed a second run at this paper."
+
+  const analysisParts: string[] = []
+  if (kind === "exam") {
+    analysisParts.push("Take a breath first: a fail on the day is an event, not a verdict.")
+    if (mockAvg !== null && percent !== null) {
+      analysisParts.push(
+        mockAvg >= 50 && percent < 50
+          ? `Your mocks averaged ${mockAvg}%, so the knowledge is there — the gap looks like exam-day execution: time pressure, question selection, nerves.`
+          : `Your mocks averaged ${mockAvg}%, which matches this result — the gap is knowledge in your weakest areas, and that's the most fixable kind.`,
+      )
+    }
+  }
+  if (worst.length) {
+    analysisParts.push(
+      `The evidence points at ${worst.map((a) => `${a.code} (${a.pct}%)`).join(", ")} — that's where the marks were lost.`,
+    )
+  } else {
+    analysisParts.push("No single area collapsed — the marks leaked evenly, which points at exam technique and time management more than knowledge.")
+  }
+  analysisParts.push(kind === "mock" ? "Drill those areas, then come straight back for the retry." : "We rebuild the plan around those areas and book the retake with a clear runway.")
+
+  const lostMarks = worst.map((a) => ({
+    area: a.code,
+    detail: `${a.label}: ${a.correct}/${a.seen} correct (${a.pct}%) — below the pass line, likely your biggest mark leak.`,
+  }))
+
+  const plan = [
+    {
+      title: worst.length ? `Drill ${worst[0].code} — ${worst[0].label}` : "Run targeted weak-area practice",
+      detail: "Adaptive sets aimed at your lowest-scoring topics first.",
+      action: "weak",
+    },
+    {
+      title: "Clear your due flashcards daily",
+      detail: "Spaced recall keeps the fixed areas fixed while you repair the weak ones.",
+      action: "flashcards",
+    },
+    {
+      title: kind === "mock" ? "Retry the mock in 2–3 days" : "Sit a fresh mock before the retake",
+      detail: "Exam conditions again — pass it and you're back on track.",
+      action: "mock",
+    },
+  ]
+
+  return { headline, analysis: analysisParts.join(" "), lostMarks, plan }
 }
 
 /* ── ACCA AI Examiner — mark a written answer vs a rubric (Sonnet) ─────── */

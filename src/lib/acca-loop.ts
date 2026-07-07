@@ -1,0 +1,320 @@
+/*
+ * Scholify — the student journey loop (ACCA-L5).
+ *
+ * The product's spine, as one closed loop per paper:
+ *
+ *   Sign up → AI onboarding → diagnostic → roadmap → today's mission →
+ *   learn/practise/flashcards/revise → progress check (pass probability) →
+ *   ── < 75%: the plan keeps steering at weak areas ──
+ *   ── ≥ 75%: the mock exam room UNLOCKS ──
+ *   mock pass/fail (fail → AI post-mortem → adaptive practice → retry) →
+ *   real ACCA exam →
+ *   PASS: celebrate, unlock the next paper → the loop restarts
+ *   FAIL: reflection session, new exam date, new roadmap → back to missions
+ *
+ * This module owns the connective tissue: the 75% gate, real-exam outcomes,
+ * the paper-to-paper transition, and the derived "where am I in the loop"
+ * stages that JourneyMap renders. localStorage-first like the rest of the
+ * ACCA engine.
+ */
+
+import { getPaperStats, getMockHistory } from "@/lib/acca"
+import { getLatestDiagnostic, estimateFromPractice } from "@/lib/acca-diagnostic"
+import { getPlan, setPlan } from "@/lib/acca-plan"
+import {
+  getPassedPapers,
+  setPassedPapers,
+  getStudyingPapers,
+  setStudyingPapers,
+} from "@/lib/acca-qualification"
+
+/** Pass probability that unlocks the mock exam room. */
+export const MOCK_GATE = 75
+/** The ACCA pass line applied to mocks. */
+export const MOCK_PASS = 50
+
+function todayStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
+}
+
+/* ── Progress check: the single pass-probability read ─────────── */
+
+/**
+ * The learner's current pass probability on a paper: the live practice
+ * estimate when they've practised, else their latest formal diagnostic.
+ */
+export function passProbability(paperId: string): number | null {
+  const live = estimateFromPractice(paperId)
+  if (live) return live.passProbability
+  const diag = getLatestDiagnostic(paperId)
+  return diag ? diag.passProbability : null
+}
+
+/* ── The 75% gate on the mock exam room ───────────────────────── */
+
+export interface MockGate {
+  unlocked: boolean
+  /** Current pass probability (0 when no evidence yet). */
+  prob: number
+  /** The threshold (MOCK_GATE), for display. */
+  needed: number
+}
+
+/** Has the learner ever passed a timed mock on this paper? */
+export function hasPassedMock(paperId: string): boolean {
+  return getMockHistory(paperId).some((m) => m.percent >= MOCK_PASS)
+}
+
+/**
+ * The readiness gate: mocks unlock at MOCK_GATE% pass probability. Once the
+ * room has been unlocked and used it never re-locks — probability dips while
+ * drilling new weak areas, and the fail → post-mortem → RETRY path must
+ * always be able to reach "retry".
+ */
+export function mockGate(paperId: string): MockGate {
+  const prob = passProbability(paperId) ?? 0
+  return { unlocked: prob >= MOCK_GATE || getMockHistory(paperId).length > 0, prob, needed: MOCK_GATE }
+}
+
+/* ── Real-exam outcomes ───────────────────────────────────────── */
+
+const KEY_EXAMS = "scholify-acca-exams"
+const KEY_SNOOZE = "scholify-acca-exam-snooze"
+
+export interface ExamOutcome {
+  paperId: string
+  /** The sitting this outcome belongs to (yyyy-MM-dd). */
+  examDate: string
+  passed: boolean
+  /** Official mark 0–100 when the learner shared it. */
+  score: number | null
+  recordedAt: string
+}
+
+type ExamStore = Record<string, ExamOutcome[]>
+
+function readExams(): ExamStore {
+  try {
+    const raw = window.localStorage.getItem(KEY_EXAMS)
+    if (raw) return JSON.parse(raw) as ExamStore
+  } catch {
+    /* ignore */
+  }
+  return {}
+}
+
+export function recordExamOutcome(paperId: string, passed: boolean, score?: number | null): ExamOutcome {
+  const outcome: ExamOutcome = {
+    paperId,
+    examDate: getPlan(paperId).examDate ?? todayStr(),
+    passed,
+    score: typeof score === "number" && Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : null,
+    recordedAt: new Date().toISOString(),
+  }
+  const store = readExams()
+  store[paperId] = [...(store[paperId] ?? []), outcome].slice(-10)
+  try {
+    window.localStorage.setItem(KEY_EXAMS, JSON.stringify(store))
+  } catch {
+    /* ignore */
+  }
+  return outcome
+}
+
+/** Real-exam attempts for a paper, most recent first. */
+export function getExamOutcomes(paperId: string): ExamOutcome[] {
+  return [...(readExams()[paperId] ?? [])].reverse()
+}
+
+export function latestExamOutcome(paperId: string): ExamOutcome | null {
+  return getExamOutcomes(paperId)[0] ?? null
+}
+
+/* ── The exam-day prompt ("how did it go?") ───────────────────── */
+
+function readSnooze(): Record<string, string> {
+  try {
+    const raw = window.localStorage.getItem(KEY_SNOOZE)
+    if (raw) return JSON.parse(raw) as Record<string, string>
+  } catch {
+    /* ignore */
+  }
+  return {}
+}
+
+/** Hide the exam-day prompt for a few days (results not out yet). */
+export function snoozeExamPrompt(paperId: string, days = 3): void {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  const until = `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
+  const store = readSnooze()
+  store[paperId] = until
+  try {
+    window.localStorage.setItem(KEY_SNOOZE, JSON.stringify(store))
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Should the "exam day — how did it go?" flow show for this paper?
+ * True once the exam date has arrived, until an outcome is recorded for that
+ * sitting (or the prompt is snoozed while results are pending).
+ */
+export function examDayDue(paperId: string): boolean {
+  const examDate = getPlan(paperId).examDate
+  if (!examDate || examDate > todayStr()) return false
+  const recorded = (readExams()[paperId] ?? []).some((o) => o.examDate === examDate)
+  if (recorded) return false
+  const snoozedUntil = readSnooze()[paperId]
+  if (snoozedUntil && snoozedUntil > todayStr()) return false
+  return true
+}
+
+/* ── Loop transitions ─────────────────────────────────────────── */
+
+/**
+ * Real exam PASSED: record it, add to the qualification record, and retire
+ * the paper from the studying list. The celebration UI then offers the next
+ * paper (suggestedNextPapers) to restart the loop.
+ */
+export function completePaper(paperId: string, score?: number | null): void {
+  recordExamOutcome(paperId, true, score)
+  setPassedPapers([...getPassedPapers(), paperId])
+  setStudyingPapers(getStudyingPapers().filter((p) => p !== paperId))
+}
+
+/** Start the loop on a new paper (from the celebration screen). */
+export function startNextPaper(nextId: string): void {
+  const others = getStudyingPapers().filter((p) => p !== nextId)
+  setStudyingPapers([nextId, ...others])
+  setPlan(nextId, { examDate: null })
+}
+
+/**
+ * Real exam FAILED: record it, set the new sitting date — the roadmap,
+ * phases and daily missions all re-derive from the new date automatically.
+ */
+export function scheduleRetake(paperId: string, newExamDate: string | null, score?: number | null): void {
+  recordExamOutcome(paperId, false, score)
+  setPlan(paperId, { examDate: newExamDate })
+}
+
+/* ── The journey map: where the learner is in the loop ────────── */
+
+export type StageStatus = "done" | "current" | "todo" | "locked"
+
+export interface JourneyStage {
+  key: string
+  emoji: string
+  label: string
+  detail: string
+  status: StageStatus
+}
+
+/**
+ * Derive the loop stages for a paper from real evidence. Exactly one stage
+ * is "current"; stages behind it are "done", gated ones ahead are "locked".
+ */
+export function getJourneyStages(paperId: string): JourneyStage[] {
+  const stats = getPaperStats(paperId)
+  const diag = getLatestDiagnostic(paperId)
+  const prob = passProbability(paperId)
+  const gate = mockGate(paperId)
+  const mockDone = hasPassedMock(paperId)
+  const outcome = latestExamOutcome(paperId)
+  const plan = getPlan(paperId)
+
+  const diagnosed = Boolean(diag) || stats.answered >= 5
+  const hasRoadmap = Boolean(plan.examDate) || diagnosed
+  const examPassed = Boolean(outcome?.passed)
+
+  const stages: JourneyStage[] = [
+    {
+      key: "onboarding",
+      emoji: "🎓",
+      label: "AI onboarding",
+      detail: "Exam, date and experience captured — Lara knows your starting point.",
+      status: "done",
+    },
+    {
+      key: "diagnostic",
+      emoji: "🎯",
+      label: "Initial diagnostic",
+      detail: diagnosed
+        ? "Baseline set — your pass probability and weak areas are mapped."
+        : "~15 min to find your pass probability and weak areas.",
+      status: diagnosed ? "done" : "current",
+    },
+    {
+      key: "roadmap",
+      emoji: "🗺️",
+      label: "Personalised roadmap",
+      detail: plan.examDate
+        ? "Four phases, dated back from your exam day."
+        : "Paced by mastery — add your exam date for a day-by-day plan.",
+      status: hasRoadmap ? "done" : diagnosed ? "current" : "todo",
+    },
+    {
+      key: "missions",
+      emoji: "⚡",
+      label: "Today's mission",
+      detail: "Learn · AI tutor · practice · flashcards · revision — one plan a day, no choosing.",
+      status: !diagnosed ? "todo" : gate.unlocked ? "done" : "current",
+    },
+    {
+      key: "progress",
+      emoji: "📈",
+      label: "Progress check — pass probability",
+      detail:
+        prob === null
+          ? "Every answer moves this number."
+          : gate.unlocked
+            ? `You're at ${prob}% — mock room unlocked.`
+            : `You're at ${prob}% — reach ${MOCK_GATE}% and the mock room unlocks. Until then I keep adjusting your plan at your weak topics.`,
+      status: !diagnosed ? "todo" : gate.unlocked ? "done" : "current",
+    },
+    {
+      key: "mock",
+      emoji: "⏱️",
+      label: "Mock exam · exam simulation · AI examiner",
+      detail: mockDone
+        ? "Mock passed — you've proven it under exam conditions."
+        : gate.unlocked
+          ? "Timed, no hints. Fail one and Lara runs a post-mortem, then you retry."
+          : `Locked until ${MOCK_GATE}% pass probability.`,
+      status: mockDone ? "done" : gate.unlocked ? "current" : "locked",
+    },
+    {
+      key: "exam",
+      emoji: "🏛️",
+      label: "Real ACCA exam",
+      detail: examPassed
+        ? "Passed — this paper is behind you."
+        : mockDone
+          ? plan.examDate
+            ? "You're rehearsed and ready. Keep mocks warm until the day."
+            : "You're mock-ready — book your sitting and set the date."
+          : "Unlocks once you're consistently passing mocks.",
+      status: examPassed ? "done" : mockDone ? "current" : "locked",
+    },
+    {
+      key: "next",
+      emoji: "🔁",
+      label: examPassed ? "Celebrate — next paper unlocked" : "The loop continues",
+      detail: examPassed
+        ? "Progress updated. Pick your next paper and the loop restarts."
+        : "Pass: celebrate and unlock the next paper. Fail: reflection, new date, new roadmap — and back into the loop.",
+      status: examPassed ? "current" : "locked",
+    },
+  ]
+
+  return stages
+}
+
+/** The stage the learner is on right now (for compact displays). */
+export function currentStage(paperId: string): JourneyStage {
+  const stages = getJourneyStages(paperId)
+  return stages.find((s) => s.status === "current") ?? stages[stages.length - 1]
+}

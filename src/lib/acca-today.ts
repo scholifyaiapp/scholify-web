@@ -17,6 +17,7 @@
 import { getPaperStats, getPaper } from "@/lib/acca"
 import { getLatestDiagnostic, estimateFromPractice } from "@/lib/acca-diagnostic"
 import { flashcardStats } from "@/lib/acca-flashcards"
+import { MOCK_GATE, mockGate } from "@/lib/acca-loop"
 
 export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock"
 
@@ -91,14 +92,14 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
     })
   }
 
-  // 4. Ready enough → mock; otherwise keep practising to build coverage.
-  const pass = est?.passProbability ?? 0
-  if (pass >= 60 && stats.answered >= 20) {
+  // 4. Gate earned (≥MOCK_GATE% or the room already opened) → mock;
+  //    otherwise keep practising to build coverage toward the unlock.
+  if (mockGate(paperId).unlocked && stats.answered >= 20) {
     tasks.push({
       id: "mock",
       icon: "⏱️",
       title: "Sit a timed mock",
-      detail: "Exam conditions — confirm you're genuinely on track",
+      detail: `Exam room unlocked at ${MOCK_GATE}% — confirm it under exam conditions`,
       action: "mock",
     })
   } else if (tasks.length < 2) {

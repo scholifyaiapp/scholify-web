@@ -12,6 +12,9 @@ import ExaminerView from "@/components/acca/ExaminerView"
 import FlashcardsView from "@/components/acca/FlashcardsView"
 import GenerateView from "@/components/acca/GenerateView"
 import AccaOnboarding from "@/components/acca/AccaOnboarding"
+import ExamDayFlow from "@/components/acca/ExamDayFlow"
+import JourneyMap from "@/components/acca/JourneyMap"
+import PostMortemPanel from "@/components/acca/PostMortemPanel"
 import {
   getPaper,
   buildSession,
@@ -44,6 +47,8 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
+import { mockGate, MOCK_GATE, examDayDue, currentStage } from "@/lib/acca-loop"
+import type { PostMortemAction } from "@/lib/acca-ai"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -62,7 +67,7 @@ const BORDER = "var(--sch-border)"
 const GREEN = "#10B981"
 const RED = "#EF4444"
 
-type Mode = "onboarding" | "picker" | "overview" | "topic" | "session" | "examiner" | "flashcards" | "generate" | "results"
+type Mode = "onboarding" | "picker" | "overview" | "topic" | "session" | "examiner" | "flashcards" | "generate" | "results" | "journey"
 
 const SESSION_SIZE = 8
 const MOCK_SIZE = 12
@@ -172,9 +177,18 @@ export default function AccaStudy() {
 
   function startSession(weakFirst = false, mock = false) {
     if (!paperId) return
-    if (mock && !isPro) {
-      triggerFeaturePaywall()
-      return
+    if (mock) {
+      // The loop's 75% gate: mocks stay locked until the learner's pass
+      // probability has earned them (see acca-loop.ts).
+      const gate = mockGate(paperId)
+      if (!gate.unlocked) {
+        toast.info(`The mock room unlocks at ${MOCK_GATE}% pass probability — you're at ${gate.prob}%. Today's plan is aimed at getting you there.`)
+        return
+      }
+      if (!isPro) {
+        triggerFeaturePaywall()
+        return
+      }
     }
     const seed = (Date.now() % 100000) + 1
     const size = mock ? MOCK_SIZE : SESSION_SIZE
@@ -304,6 +318,17 @@ export default function AccaStudy() {
     setMode(topicArea ? "topic" : "overview")
   }
 
+  /** Jump into a practice mode from a post-mortem / reflection plan step. */
+  function runLoopAction(a: PostMortemAction) {
+    if (a === "weak") startSession(true, false)
+    else if (a === "practice") startSession(false, false)
+    else if (a === "mock") startSession(false, true)
+    else {
+      setTopicArea(null)
+      setMode("flashcards")
+    }
+  }
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 0 40px" }} key={tick}>
@@ -325,7 +350,15 @@ export default function AccaStudy() {
               onGenerate={openGenerate}
               onFlashcards={() => { setTopicArea(null); setMode("flashcards") }}
               onTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
+              onJourney={() => setMode("journey")}
+              onLoopAction={runLoopAction}
+              onRefresh={() => setTick((t) => t + 1)}
+              onSwitchPaper={(pid) => { setPaperId(pid); setTick((t) => t + 1); setMode("overview") }}
             />
+          )}
+
+          {mode === "journey" && paperId && (
+            <JourneyMap key="journey" paperId={paperId} onBack={() => setMode("overview")} />
           )}
 
           {mode === "topic" && paper && topicArea && (
@@ -391,6 +424,7 @@ export default function AccaStudy() {
               log={log}
               onAgain={() => (isTopicTest && topicArea ? startTopicSession(topicArea, true) : startSession(false, isMock))}
               onOverview={leaveSession}
+              onAction={runLoopAction}
             />
           )}
         </AnimatePresence>
@@ -700,6 +734,10 @@ function Overview({
   onGenerate,
   onFlashcards,
   onTopic,
+  onJourney,
+  onLoopAction,
+  onRefresh,
+  onSwitchPaper,
 }: {
   paper: AccaPaper
   isPro: boolean
@@ -711,6 +749,10 @@ function Overview({
   onGenerate: () => void
   onFlashcards: () => void
   onTopic: (area: string) => void
+  onJourney: () => void
+  onLoopAction: (a: PostMortemAction) => void
+  onRefresh: () => void
+  onSwitchPaper: (pid: string) => void
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -734,6 +776,10 @@ function Overview({
   const studyPlan = generateStudyPlan(paper.id)
   const mocks = getMockHistory(paper.id)
   const phase = currentPhase(paper.id)
+  // The journey loop: 75% gate on the exam room + the exam-day decision point.
+  const gate = mockGate(paper.id)
+  const examDue = examDayDue(paper.id)
+  const stage = currentStage(paper.id)
   // AI Study OS: today's auto-generated plan — the student never has to choose.
   const todayPlan = buildTodayPlan(paper.id)
   const todayHandlers: Record<TodayAction, () => void> = {
@@ -753,6 +799,11 @@ function Overview({
       <button onClick={onBack} style={backBtn}>← All papers</button>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
       <p style={{ color: DIM, margin: "0 0 18px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+
+      {/* Exam day — the loop's decision point: celebrate or reflect */}
+      {examDue && (
+        <ExamDayFlow paperId={paper.id} onDone={onRefresh} onStartPaper={onSwitchPaper} onAction={onLoopAction} />
+      )}
 
       {/* AI Study OS — your plan for today */}
       <motion.div
@@ -859,6 +910,29 @@ function Overview({
       {/* the method — where you are in the 4 phases */}
       <MethodTracker activeKey={phase.key} />
 
+      {/* the journey loop — where you are in the whole arc of this paper */}
+      <motion.button
+        whileHover={{ y: -1 }}
+        whileTap={{ scale: 0.99 }}
+        onClick={onJourney}
+        style={{ ...card({ padding: "13px 16px", marginBottom: 12, cursor: "pointer" }), display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left" }}
+      >
+        <motion.span
+          animate={{ rotate: 360 }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          style={{ fontSize: 18, flexShrink: 0 }}
+        >
+          🔁
+        </motion.span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontWeight: 750, fontSize: 13.5, color: TEXT }}>The journey loop</span>
+          <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
+            You are here: <b style={{ color: "#C80000" }}>{stage.emoji} {stage.label}</b>
+          </span>
+        </span>
+        <span style={{ fontSize: 16, color: DIM, flexShrink: 0 }}>›</span>
+      </motion.button>
+
       {/* study plan */}
       <div style={card({ marginBottom: 16 })}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -939,7 +1013,13 @@ function Overview({
 
       <h3 style={sectionH}>⏱️ EXAM ROOM</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-        {curated && <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`} onClick={onMock} locked={!isPro} primary={phase.key === "rehearse"} />}
+        {curated && (
+          gate.unlocked ? (
+            <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`} onClick={onMock} locked={!isPro} primary={phase.key === "rehearse"} />
+          ) : (
+            <MockGateTile prob={gate.prob} onWeak={onWeak} />
+          )
+        )}
         <ModeTile emoji="📝" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
       </div>
 
@@ -1194,6 +1274,46 @@ function ModeTile({
   )
 }
 
+/**
+ * The 75% gate, visible: the mock room locked, with live progress toward the
+ * unlock. Tapping it routes the learner where the marks actually are — the
+ * adaptive weak-area drill.
+ */
+function MockGateTile({ prob, onWeak }: { prob: number; onWeak: () => void }) {
+  const progress = Math.min(100, Math.round((prob / MOCK_GATE) * 100))
+  return (
+    <motion.button
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.99 }}
+      onClick={onWeak}
+      style={{ ...card({ cursor: "pointer", padding: 16 }), display: "flex", alignItems: "center", gap: 14, textAlign: "left", borderStyle: "dashed" }}
+    >
+      <span style={{ fontSize: 22, flexShrink: 0, opacity: 0.8 }}>🔒</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: TEXT, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          Mock exam
+          <span style={{ fontSize: 10.5, padding: "1px 8px", borderRadius: 999, background: "rgba(245,158,11,0.12)", color: "#B45309", fontWeight: 800 }}>
+            UNLOCKS AT {MOCK_GATE}%
+          </span>
+        </div>
+        <div style={{ fontSize: 12.5, color: MUTED, margin: "4px 0 8px" }}>
+          You're at <b style={{ color: TEXT }}>{prob}%</b> pass probability — I'm steering your daily plan at your weak
+          areas to close the gap. Tap to drill them now.
+        </div>
+        <div style={{ height: 6, borderRadius: 999, background: "var(--sch-card-2)", overflow: "hidden", position: "relative" }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            style={{ height: "100%", borderRadius: 999, background: IRIDESCENT }}
+          />
+        </div>
+      </div>
+      <span style={{ color: DIM, fontSize: 18, flexShrink: 0 }}>›</span>
+    </motion.button>
+  )
+}
+
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div style={card({ padding: 14, textAlign: "center" })}>
@@ -1346,7 +1466,7 @@ function actionBtn(active: boolean): CSSProperties {
 /* ── Results ──────────────────────────────────────────────────── */
 
 function Results({
-  paper, correct, total, isMock, isTopicTest, topicArea, log, onAgain, onOverview,
+  paper, correct, total, isMock, isTopicTest, topicArea, log, onAgain, onOverview, onAction,
 }: {
   paper: AccaPaper
   correct: number
@@ -1357,6 +1477,7 @@ function Results({
   log: { area: string; correct: boolean }[]
   onAgain: () => void
   onOverview: () => void
+  onAction: (a: PostMortemAction) => void
 }) {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
   const passLine = isTopicTest ? Math.round(TOPIC_PASS * 100) : 50
@@ -1398,6 +1519,36 @@ function Results({
             ? `That's a ${pct}% pass on ${paper.name}.`
             : `${pct}% this round. Keep going — repetition is how the marks come.`}
       </p>
+
+      {/* mock failed → the loop's post-mortem: lost marks, weak topics, recovery plan */}
+      {isMock && !isTopicTest && !passed && (
+        <PostMortemPanel
+          input={{
+            kind: "mock",
+            paperId: paper.id,
+            percent: pct,
+            areas: areaRows.map((a) => ({ code: a.code, label: a.label, correct: a.correct, seen: a.seen })),
+            mockHistory: getMockHistory(paper.id).map((m) => ({ date: m.date, percent: m.percent })),
+          }}
+          onAction={onAction}
+        />
+      )}
+
+      {/* mock passed → the next stage of the loop is the real thing */}
+      {isMock && !isTopicTest && passed && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{ ...card({ padding: 16 }), maxWidth: 420, margin: "0 auto 24px", textAlign: "left", display: "flex", gap: 12, alignItems: "center", borderColor: "rgba(16,185,129,0.4)" }}
+        >
+          <span style={{ fontSize: 24, flexShrink: 0 }}>🏛️</span>
+          <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
+            <b style={{ color: TEXT }}>You just passed under exam conditions.</b> The real {paper.id} sitting is the
+            next stage of the loop — keep a mock every 2–3 days until exam day so this stays sharp.
+          </span>
+        </motion.div>
+      )}
 
       {areaRows.length > 0 && (
         <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>

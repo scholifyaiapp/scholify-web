@@ -25,6 +25,7 @@
  */
 
 import { getPaper, getQuestions, getPaperStats } from "@/lib/acca"
+import { experienceLine } from "@/lib/acca-profile"
 import type { AccaQuestion, Difficulty } from "@/lib/acca-content"
 
 /* ── Tunables ─────────────────────────────────────────────────── */
@@ -362,6 +363,10 @@ export function mergeDiagnostic(result: DiagnosticResult): void {
  */
 export function learnerProfileSummary(paperId: string): string {
   const lines: string[] = []
+
+  // Background from onboarding — pitches every explanation at the right level.
+  const exp = experienceLine()
+  if (exp) lines.push(exp)
 
   const diag = getLatestDiagnostic(paperId)
   if (diag) {
