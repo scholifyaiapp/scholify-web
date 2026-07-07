@@ -2,8 +2,8 @@ import type { CSSProperties } from "react"
 import { motion } from "motion/react"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
-import { getPaper } from "@/lib/acca"
-import { getJourneyStages, MOCK_GATE, type JourneyStage } from "@/lib/acca-loop"
+import { getPaper, getMockHistory } from "@/lib/acca"
+import { getJourneyStages, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED, type JourneyStage } from "@/lib/acca-loop"
 
 /*
  * The journey loop, made visible — the full arc of one paper:
@@ -32,6 +32,42 @@ function nodeVisual(s: JourneyStage): { fill: string; content: React.ReactNode; 
   if (s.status === "locked")
     return { fill: "var(--sch-card-2)", content: <span style={{ fontSize: 13 }}>🔒</span>, dim: true }
   return { fill: "var(--sch-card-2)", content: <span style={{ fontSize: 15, opacity: 0.75 }}>{s.emoji}</span>, dim: true }
+}
+
+/** The Mock 1 → 2 → 3 slots — the last three sittings, oldest first. */
+function MockChips({ paperId }: { paperId: string }) {
+  const recent = getMockHistory(paperId).slice(0, MOCKS_REQUIRED).reverse()
+  return (
+    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+      {Array.from({ length: MOCKS_REQUIRED }, (_, i) => {
+        const m = recent[i]
+        const passed = m ? m.percent >= MOCK_PASS : null
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 + i * 0.08 }}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 10,
+              textAlign: "center",
+              border: `1.5px solid ${m ? (passed ? GREEN : "#EF4444") : BORDER}`,
+              background: m ? (passed ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.06)") : "var(--sch-card-2)",
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.4, color: m ? (passed ? GREEN : "#EF4444") : DIM }}>
+              MOCK {i + 1}
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 750, color: m ? TEXT : DIM, marginTop: 2 }}>
+              {m ? `${m.percent}%${passed ? " ✓" : ""}` : "—"}
+            </div>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function JourneyMap({ paperId, onBack }: { paperId: string; onBack: () => void }) {
@@ -114,19 +150,22 @@ export default function JourneyMap({ paperId, onBack }: { paperId: string; onBac
                 </div>
                 <div style={{ fontSize: 12.5, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{s.detail}</div>
 
-                {/* the 75% gate fork, visualised under the progress-check stage */}
+                {/* the readiness gate fork, visualised under the progress-check stage */}
                 {s.key === "progress" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
                     <div style={{ ...card({ padding: "10px 12px", borderRadius: 12 }), borderLeft: "3px solid #F59E0B" }}>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: "#F59E0B" }}>&lt; {MOCK_GATE}% READY</div>
-                      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 2, lineHeight: 1.45 }}>AI adjusts your roadmap — more practice on weak topics.</div>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: "#F59E0B" }}>≤ {MOCK_GATE}% READY</div>
+                      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 2, lineHeight: 1.45 }}>Revision — AI adjusts your roadmap at your weak topics.</div>
                     </div>
                     <div style={{ ...card({ padding: "10px 12px", borderRadius: 12 }), borderLeft: `3px solid ${GREEN}` }}>
                       <div style={{ fontSize: 11, fontWeight: 800, color: GREEN }}>≥ {MOCK_GATE}% READY</div>
-                      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 2, lineHeight: 1.45 }}>Mock exam, exam simulation and AI Examiner unlock.</div>
+                      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 2, lineHeight: 1.45 }}>The mock room unlocks — Mock 1 → 2 → 3, then the real thing.</div>
                     </div>
                   </div>
                 )}
+
+                {/* Mock 1 → 2 → 3, with the rehabilitation loop on a fail */}
+                {s.key === "mock" && s.status !== "locked" && <MockChips paperId={paperId} />}
 
                 {/* the pass/fail fork after the real exam */}
                 {s.key === "exam" && (

@@ -105,7 +105,7 @@ export default function PostMortemPanel({
           )}
 
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: DIM, margin: "16px 0 8px" }}>
-            {input.kind === "mock" ? "THE RECOVERY PLAN" : "THE COMEBACK PLAN"}
+            {input.kind === "mock" ? "🩹 REHABILITATION PLAN" : "THE COMEBACK PLAN"}
           </div>
           <div style={{ display: "grid", gap: 8 }}>
             {result.plan.map((p, i) => (

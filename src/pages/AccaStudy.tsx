@@ -47,7 +47,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
-import { mockGate, MOCK_GATE, examDayDue, currentStage } from "@/lib/acca-loop"
+import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage } from "@/lib/acca-loop"
 import type { PostMortemAction } from "@/lib/acca-ai"
 
 /* ──────────────────────────────────────────────────────────────
@@ -1015,7 +1015,14 @@ function Overview({
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
         {curated && (
           gate.unlocked ? (
-            <ModeTile emoji="⏱️" title="Mock exam" sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`} onClick={onMock} locked={!isPro} primary={phase.key === "rehearse"} />
+            <ModeTile
+              emoji="⏱️"
+              title={mockProgress(paper.id).examReady ? "Mock exam — keep it warm" : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED}`}
+              sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`}
+              onClick={onMock}
+              locked={!isPro}
+              primary={phase.key === "rehearse"}
+            />
           ) : (
             <MockGateTile prob={gate.prob} onWeak={onWeak} />
           )
@@ -1534,21 +1541,35 @@ function Results({
         />
       )}
 
-      {/* mock passed → the next stage of the loop is the real thing */}
-      {isMock && !isTopicTest && passed && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          style={{ ...card({ padding: 16 }), maxWidth: 420, margin: "0 auto 24px", textAlign: "left", display: "flex", gap: 12, alignItems: "center", borderColor: "rgba(16,185,129,0.4)" }}
-        >
-          <span style={{ fontSize: 24, flexShrink: 0 }}>🏛️</span>
-          <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
-            <b style={{ color: TEXT }}>You just passed under exam conditions.</b> The real {paper.id} sitting is the
-            next stage of the loop — keep a mock every 2–3 days until exam day so this stays sharp.
-          </span>
-        </motion.div>
-      )}
+      {/* mock passed → the next stage of the loop: more mocks or the real thing */}
+      {isMock && !isTopicTest && passed && (() => {
+        const mp = mockProgress(paper.id)
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{ ...card({ padding: 16 }), maxWidth: 420, margin: "0 auto 24px", textAlign: "left", display: "flex", gap: 12, alignItems: "center", borderColor: "rgba(16,185,129,0.4)" }}
+          >
+            <span style={{ fontSize: 24, flexShrink: 0 }}>🏛️</span>
+            <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
+              {mp.examReady ? (
+                <>
+                  <b style={{ color: TEXT }}>Mock {Math.min(mp.attempts, MOCKS_REQUIRED)} of {MOCKS_REQUIRED} — sequence complete.</b>{" "}
+                  You're proven under exam conditions; the real {paper.id} sitting is next. Keep a mock every 2–3
+                  days until exam day so this stays sharp.
+                </>
+              ) : (
+                <>
+                  <b style={{ color: TEXT }}>Mock {mp.attempts} of {MOCKS_REQUIRED} passed.</b>{" "}
+                  {MOCKS_REQUIRED - mp.attempts} more to go before the real {paper.id} sitting — sit the next one in
+                  2–3 days.
+                </>
+              )}
+            </span>
+          </motion.div>
+        )
+      })()}
 
       {areaRows.length > 0 && (
         <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>

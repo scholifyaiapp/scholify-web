@@ -28,10 +28,12 @@ import {
   setStudyingPapers,
 } from "@/lib/acca-qualification"
 
-/** Pass probability that unlocks the mock exam room. */
-export const MOCK_GATE = 75
+/** Pass probability that unlocks the mock exam room (the sketch's ≥60% fork). */
+export const MOCK_GATE = 60
 /** The ACCA pass line applied to mocks. */
 export const MOCK_PASS = 50
+/** Mocks to sit before the real exam — Mock 1 → Mock 2 → Mock 3. */
+export const MOCKS_REQUIRED = 3
 
 function todayStr(): string {
   const d = new Date()
@@ -64,6 +66,38 @@ export interface MockGate {
 /** Has the learner ever passed a timed mock on this paper? */
 export function hasPassedMock(paperId: string): boolean {
   return getMockHistory(paperId).some((m) => m.percent >= MOCK_PASS)
+}
+
+export interface MockProgress {
+  /** Mocks sat so far. */
+  attempts: number
+  /** MOCKS_REQUIRED, for display. */
+  required: number
+  /** Mocks passed (≥ MOCK_PASS). */
+  passed: number
+  /** Did the most recent mock pass? Fail here = the rehabilitation loop. */
+  latestPassed: boolean
+  /** Sat all required mocks AND the latest one passed → ready for the real exam. */
+  examReady: boolean
+}
+
+/**
+ * Progress through the Mock 1 → Mock 2 → Mock 3 sequence. A fail anywhere
+ * routes through rehabilitation (post-mortem → drills → retry), so exam-ready
+ * means the required count is in AND the latest sitting was a pass.
+ */
+export function mockProgress(paperId: string): MockProgress {
+  const history = getMockHistory(paperId) // most recent first
+  const attempts = history.length
+  const passed = history.filter((m) => m.percent >= MOCK_PASS).length
+  const latestPassed = history.length > 0 && history[0].percent >= MOCK_PASS
+  return {
+    attempts,
+    required: MOCKS_REQUIRED,
+    passed,
+    latestPassed,
+    examReady: attempts >= MOCKS_REQUIRED && latestPassed,
+  }
 }
 
 /**
@@ -222,7 +256,7 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
   const diag = getLatestDiagnostic(paperId)
   const prob = passProbability(paperId)
   const gate = mockGate(paperId)
-  const mockDone = hasPassedMock(paperId)
+  const mocks = mockProgress(paperId)
   const outcome = latestExamOutcome(paperId)
   const plan = getPlan(paperId)
 
@@ -272,19 +306,19 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
           ? "Every answer moves this number."
           : gate.unlocked
             ? `You're at ${prob}% — mock room unlocked.`
-            : `You're at ${prob}% — reach ${MOCK_GATE}% and the mock room unlocks. Until then I keep adjusting your plan at your weak topics.`,
+            : `You're at ${prob}% — reach ${MOCK_GATE}% and the mock room unlocks. Until then it's revision: I keep adjusting your plan at your weak topics.`,
       status: !diagnosed ? "todo" : gate.unlocked ? "done" : "current",
     },
     {
       key: "mock",
       emoji: "⏱️",
-      label: "Mock exam · exam simulation · AI examiner",
-      detail: mockDone
-        ? "Mock passed — you've proven it under exam conditions."
+      label: "Mock 1 → Mock 2 → Mock 3",
+      detail: mocks.examReady
+        ? `All ${mocks.required} mocks sat and the latest passed — proven under exam conditions.`
         : gate.unlocked
-          ? "Timed, no hints. Fail one and Lara runs a post-mortem, then you retry."
+          ? `${mocks.attempts} of ${mocks.required} sat${mocks.attempts > 0 && !mocks.latestPassed ? " — last one didn't pass, so it's rehabilitation: post-mortem, drills, retry" : ""}. Timed, no hints.`
           : `Locked until ${MOCK_GATE}% pass probability.`,
-      status: mockDone ? "done" : gate.unlocked ? "current" : "locked",
+      status: mocks.examReady ? "done" : gate.unlocked ? "current" : "locked",
     },
     {
       key: "exam",
@@ -292,12 +326,12 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
       label: "Real ACCA exam",
       detail: examPassed
         ? "Passed — this paper is behind you."
-        : mockDone
+        : mocks.examReady
           ? plan.examDate
             ? "You're rehearsed and ready. Keep mocks warm until the day."
             : "You're mock-ready — book your sitting and set the date."
-          : "Unlocks once you're consistently passing mocks.",
-      status: examPassed ? "done" : mockDone ? "current" : "locked",
+          : `Unlocks after ${MOCKS_REQUIRED} mocks with the latest one passed.`,
+      status: examPassed ? "done" : mocks.examReady ? "current" : "locked",
     },
     {
       key: "next",
