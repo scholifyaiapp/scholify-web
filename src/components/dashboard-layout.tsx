@@ -2,17 +2,18 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { readVocabProgress, readDeck, getDeckStats } from "@/lib/vocab"
-import { languageFlag } from "@/lib/vocab-content"
-import { getFeatureFlags, type FeatureFlags } from "@/lib/featureFlags"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import { Icon, type IconName, C, SP, R, SHADOW, GRAD } from "@/components/acca/ui"
 import NotificationBell from "@/components/NotificationBell"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
+import { getTodayStats } from "@/lib/acca"
+import { qualificationProgress } from "@/lib/acca-qualification"
 
 /* ──────────────────────────────────────────────────────────────
- *  Shared app shell for the signed-in screens (Dashboard, Progress…).
- *  Renders the sidebar + mobile tab bar; pages supply their content.
+ *  Shared app shell for the signed-in ACCA screens (Study, Progress,
+ *  Settings). Renders the sidebar + mobile tab bar; pages supply content.
+ *  Rebuilt on the shared design foundation (@/components/acca/ui).
  * ────────────────────────────────────────────────────────────── */
 
 /** Iridescent gradient as text fill — the app-wide accent. */
@@ -25,8 +26,6 @@ export const iriText: CSSProperties = {
 }
 
 const LAYOUT_CSS = `
-  @keyframes dash-spin { to { transform: rotate(360deg); } }
-  @keyframes sch-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   .dash-scroll::-webkit-scrollbar { width: 7px; }
   .dash-scroll::-webkit-scrollbar-thumb { background: var(--sch-border); border-radius: 8px; }
   *:focus-visible { outline: 2px solid #C80000 !important; outline-offset: 2px; border-radius: 4px; }
@@ -34,7 +33,7 @@ const LAYOUT_CSS = `
 `
 
 type NavItemDef = {
-  icon: string
+  icon: IconName
   label: string
   to: string
   /** Which notification source(s) light up the red dot on this item. */
@@ -42,75 +41,22 @@ type NavItemDef = {
 }
 
 export const NAV: NavItemDef[] = [
-  { icon: "🎓", label: "Study", to: "/study" },
-  { icon: "📈", label: "Progress", to: "/study/progress" },
-  { icon: "⚙️", label: "Settings", to: "/settings" },
+  { icon: "study", label: "Study", to: "/study" },
+  { icon: "progress", label: "Progress", to: "/study/progress" },
+  { icon: "settings", label: "Settings", to: "/settings" },
 ]
-
-// Mobile bottom bar — pick the 5 most important. "Social" merges Rooms +
-// Partner + Community by routing to /community (which links out to all
-// social surfaces from its filter pills + the notification bell).
-const MOBILE_NAV: NavItemDef[] = [
-  { icon: "🎓", label: "Study", to: "/study" },
-  { icon: "📈", label: "Progress", to: "/study/progress" },
-  { icon: "⚙️", label: "Settings", to: "/settings" },
-]
-
-/*
- * Per-route visibility. Routes absent from this map are always shown (the
- * core loop: Today, Progress, Goals, Resources, Ask Lara, Settings). A value
- * keyed to a FeatureFlags field shows only when that flag is on. The "early"
- * sentinel hides advanced-but-flagless surfaces until the user is past the
- * early stage — together this yields the clean 6-item sidebar for new users.
- */
-type NavRule = keyof FeatureFlags | "early"
-const NAV_VISIBILITY: Record<string, NavRule> = {
-  "/roadmap": "early",
-  "/tree": "early",
-  "/rooms": "studyRooms",
-  "/partner": "accountabilityPartner",
-  "/community": "community",
-  "/teams": "teams",
-  "/achievements": "early",
-  "/challenges": "early",
-}
-
-function isNavVisible(to: string, flags: FeatureFlags, isEarlyUser: boolean): boolean {
-  const rule = NAV_VISIBILITY[to]
-  if (!rule) return true
-  if (rule === "early") return !isEarlyUser
-  return flags[rule]
-}
 
 /* ── Shared bits ─────────────────────────────────────────────── */
 
 export function ProgressBar({ pct, height = 6 }: { pct: number; height?: number }) {
   return (
-    <div
-      style={{
-        width: "100%",
-        height,
-        borderRadius: height / 2,
-        background: "var(--sch-hairline)",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ width: "100%", height, borderRadius: height / 2, background: "var(--sch-hairline)", overflow: "hidden" }}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-        style={{ height: "100%", background: IRIDESCENT, position: "relative" }}
-      >
-        <motion.div
-          animate={{ x: ["-100%", "200%"] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)",
-          }}
-        />
-      </motion.div>
+        style={{ height: "100%", background: IRIDESCENT }}
+      />
     </div>
   )
 }
@@ -119,16 +65,9 @@ export function Pill({ children, style }: { children: ReactNode; style?: CSSProp
   return (
     <span
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "4px 12px",
-        borderRadius: 999,
-        fontSize: 12,
-        border: "1px solid var(--sch-border)",
-        background: "var(--sch-card)",
-        color: "var(--sch-tx-1)",
-        ...style,
+        display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px",
+        borderRadius: 999, fontSize: 12, border: "1px solid var(--sch-border)",
+        background: "var(--sch-card)", color: "var(--sch-tx-1)", ...style,
       }}
     >
       {children}
@@ -136,22 +75,13 @@ export function Pill({ children, style }: { children: ReactNode; style?: CSSProp
   )
 }
 
-function Avatar({ initial, size = 40 }: { initial: string; size?: number }) {
+function Avatar({ initial, size = 38 }: { initial: string; size?: number }) {
   return (
     <div
       style={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        borderRadius: "50%",
-        background: IRIDESCENT,
-        border: "2px solid rgba(200,0,0,0.3)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontWeight: 800,
-        fontSize: size * 0.42,
+        width: size, height: size, flexShrink: 0, borderRadius: R.md, background: GRAD,
+        display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: size * 0.42,
+        boxShadow: SHADOW.sm,
       }}
     >
       {initial}
@@ -159,105 +89,47 @@ function Avatar({ initial, size = 40 }: { initial: string; size?: number }) {
   )
 }
 
-function NavItem({
-  item,
-  active,
-  badge,
-  unread,
-}: {
-  item: NavItemDef
-  active: boolean
-  badge?: boolean
-  unread?: number
-}) {
+/** The Scholify wordmark with its gradient monogram. */
+function Brand({ compact }: { compact?: boolean }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+      <span style={{ width: 26, height: 26, borderRadius: 8, background: GRAD, display: "grid", placeItems: "center", boxShadow: SHADOW.sm }}>
+        <Icon name="study" size={15} color="#fff" />
+      </span>
+      {!compact && <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: C.text }}>Scholify</span>}
+    </span>
+  )
+}
+
+function NavItem({ item, active, badge, unread }: { item: NavItemDef; active: boolean; badge?: boolean; unread?: number }) {
   return (
     <Link
       to={item.to}
       style={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "10px 12px",
-        borderRadius: 10,
-        fontSize: 14,
-        textDecoration: "none",
-        transition: "all 0.2s ease",
-        background: active ? "rgba(200,0,0,0.07)" : "transparent",
-        border: `1px solid ${active ? "rgba(200,0,0,0.2)" : "transparent"}`,
-        color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
-        fontWeight: active ? 600 : 400,
+        position: "relative", display: "flex", alignItems: "center", gap: 11,
+        padding: "10px 12px", minHeight: 44, borderRadius: R.md, fontSize: 14,
+        textDecoration: "none", transition: "background .18s ease, color .18s ease",
+        background: active ? C.brandSoft : "transparent",
+        color: active ? C.brand : C.soft, fontWeight: active ? 700 : 500,
       }}
-      onMouseEnter={(e) => {
-        if (active) return
-        e.currentTarget.style.background = "var(--sch-card-2)"
-        e.currentTarget.style.color = "var(--sch-tx-1)"
-      }}
-      onMouseLeave={(e) => {
-        if (active) return
-        e.currentTarget.style.background = "transparent"
-        e.currentTarget.style.color = "var(--sch-tx-2)"
-      }}
+      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = C.card2; e.currentTarget.style.color = C.text } }}
+      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.soft } }}
     >
       {active && (
-        <span
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 8,
-            bottom: 8,
-            width: 3,
-            borderRadius: 3,
-            background: "rgba(99,102,241,0.9)",
-          }}
+        <motion.span
+          layoutId="nav-active"
+          style={{ position: "absolute", left: 0, top: 9, bottom: 9, width: 3, borderRadius: 3, background: C.brand }}
         />
       )}
-      <span style={{ position: "relative", fontSize: 16 }}>
-        {item.icon}
+      <span style={{ position: "relative", display: "grid", placeItems: "center" }}>
+        <Icon name={item.icon} size={19} color={active ? C.brand : "currentColor"} strokeWidth={active ? 2.4 : 2} />
         {badge && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 360, damping: 22 }}
-            style={{
-              position: "absolute",
-              top: -2,
-              right: -4,
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#34D399",
-              boxShadow: "0 0 8px rgba(52,211,153,0.7)",
-            }}
-            aria-label="calendar connected"
-          />
+          <span style={{ position: "absolute", top: -3, right: -4, width: 8, height: 8, borderRadius: "50%", background: C.green, border: "1.5px solid var(--sch-card)" }} aria-label="calendar connected" />
         )}
         {unread != null && unread > 0 && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 360, damping: 22 }}
-            style={{
-              position: "absolute",
-              top: -4,
-              right: -8,
-              minWidth: 16,
-              height: 16,
-              padding: "0 4px",
-              borderRadius: 8,
-              background: IRIDESCENT,
-              color: "#fff",
-              fontSize: 9,
-              fontWeight: 700,
-              display: "grid",
-              placeItems: "center",
-              lineHeight: 1,
-              boxShadow: "0 4px 12px rgba(200,0,0,0.5)",
-            }}
-            aria-label={`${unread} unread`}
-          >
+          <span style={{ position: "absolute", top: -6, right: -8, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: GRAD, color: "#fff", fontSize: 9, fontWeight: 800, display: "grid", placeItems: "center", lineHeight: 1 }} aria-label={`${unread} unread`}>
             {unread > 9 ? "9+" : unread}
-          </motion.span>
+          </span>
         )}
       </span>
       {item.label}
@@ -271,18 +143,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const location = useLocation()
 
-  const vocabProgress = useMemo(() => readVocabProgress(), [])
-  const vocabDeck = useMemo(() => readDeck(), [])
-  const vocabStats = useMemo(() => (vocabDeck ? getDeckStats(vocabDeck) : null), [vocabDeck])
   const [calendarConnected, setCalendarConnected] = useState(false)
   const [notifTick, setNotifTick] = useState(0)
   useEffect(() => subscribeNotifications(() => setNotifTick((t) => t + 1)), [])
   const notif = useMemo(() => deriveNotifications(user?.id || "demo-user"), [user?.id, notifTick])
 
-  const unreadFor = (kinds?: NotificationKind[]): number => {
-    if (!kinds || kinds.length === 0) return 0
-    return kinds.reduce((sum, k) => sum + (notif.counts[k] || 0), 0)
-  }
+  // Real ACCA signals (was previously fed by legacy vocab data — wrong numbers).
+  const today = useMemo(() => getTodayStats(), [])
+  const qual = useMemo(() => qualificationProgress(), [])
+
+  const unreadFor = (kinds?: NotificationKind[]): number =>
+    !kinds || kinds.length === 0 ? 0 : kinds.reduce((sum, k) => sum + (notif.counts[k] || 0), 0)
 
   useEffect(() => {
     let cancelled = false
@@ -290,41 +161,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       if (!user?.id) return
       const acc = await loadCalendarAccount(user.id)
       if (cancelled) return
-      setCalendarConnected(
-        Boolean(
-          (acc?.google_access_token && acc.calendar_sync_enabled) ||
-            acc?.calcom_api_key,
-        ),
-      )
+      setCalendarConnected(Boolean((acc?.google_access_token && acc.calendar_sync_enabled) || acc?.calcom_api_key))
     }
     check()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
-  const isPro = Boolean(
-    user?.user_metadata?.plan && user.user_metadata.plan !== "free",
-  )
-  const sessions = vocabProgress.sessionsCompleted
-
-  // Progressive disclosure — reveal advanced surfaces as the user invests.
-  const flags = useMemo(() => getFeatureFlags(sessions, isPro), [sessions, isPro])
-  const isEarlyUser = sessions < 20
-  const visibleNav = useMemo(
-    () => NAV.filter((item) => isNavVisible(item.to, flags, isEarlyUser)),
-    [flags, isEarlyUser],
-  )
-  const visibleMobileNav = useMemo(
-    () => MOBILE_NAV.filter((item) => isNavVisible(item.to, flags, isEarlyUser)),
-    [flags, isEarlyUser],
-  )
-
-  const masteryPct =
-    vocabStats && vocabStats.total > 0
-      ? Math.round((vocabStats.mastered / vocabStats.total) * 100)
-      : 0
+  const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>
@@ -334,77 +178,54 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       <aside
         className="hidden lg:flex dash-scroll"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: 240,
-          flexDirection: "column",
-          padding: "24px 16px",
-          background: "var(--sch-card)",
-          borderRight: "1px solid var(--sch-hairline)",
-          overflowY: "auto",
-          zIndex: 20,
+          position: "fixed", top: 0, left: 0, bottom: 0, width: 244, flexDirection: "column",
+          padding: `${SP.xl}px ${SP.lg}px`, background: "var(--sch-card)",
+          borderRight: "1px solid var(--sch-hairline)", overflowY: "auto", zIndex: 20,
         }}
       >
+        {/* Brand */}
+        <Link to="/study" style={{ textDecoration: "none", padding: "2px 4px", marginBottom: SP["2xl"] }}>
+          <Brand />
+        </Link>
+
         {/* User */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 4px" }}>
           <Avatar initial={firstName.charAt(0).toUpperCase()} />
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: "var(--sch-text)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {firstName}
             </div>
             <span
               style={{
-                fontSize: 10,
-                fontWeight: 700,
-                padding: "1px 7px",
-                borderRadius: 999,
-                background: isPro ? IRIDESCENT : "linear-gradient(135deg,#FFD66B,#F5A623)",
-                color: isPro ? "#fff" : "#3A2A00",
+                display: "inline-block", fontSize: 9.5, fontWeight: 800, letterSpacing: "0.04em",
+                padding: "1.5px 8px", borderRadius: 999, marginTop: 2,
+                background: isPro ? GRAD : C.card2, color: isPro ? "#fff" : C.soft,
+                border: isPro ? "none" : `1px solid ${C.border}`,
               }}
             >
-              {isPro ? "PRO" : "FREE"}
+              {isPro ? "PRO" : "FREE PLAN"}
             </span>
           </div>
         </div>
 
-        {/* Streak card */}
-        <motion.div
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          style={{
-            marginTop: 24,
-            padding: "20px 16px",
-            borderRadius: 16,
-            textAlign: "center",
-            background: "var(--sch-card)",
-            border: "1px solid var(--sch-border)",
-            boxShadow: "0 0 30px rgba(200,0,0,0.06)",
-          }}
-        >
-          <div style={{ fontSize: 24 }}>🔥</div>
-          <div style={{ fontSize: 28, fontWeight: 800, ...iriText, marginTop: 2 }}>
-            {vocabProgress.streak}
+        {/* Streak + qualification — real ACCA data, calm (no infinite pulse) */}
+        <div style={{ marginTop: SP.xl, display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.sm }}>
+          <div style={{ padding: `${SP.md}px ${SP.sm}px`, borderRadius: R.lg, textAlign: "center", background: C.card2, border: `1px solid ${C.border}` }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.brand }}>
+              <Icon name="streak" size={15} color={C.brand} />
+              <span style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{today.streak}</span>
+            </div>
+            <div style={{ fontSize: 10.5, color: C.faint, marginTop: 1 }}>day streak</div>
           </div>
-          <div style={{ fontSize: 11, color: "var(--sch-tx-2)" }}>day streak</div>
-          <div style={{ fontSize: 12, color: "rgba(255,159,67,0.9)", marginTop: 4 }}>
-            🏆 best {vocabProgress.longestStreak}
+          <div style={{ padding: `${SP.md}px ${SP.sm}px`, borderRadius: R.lg, textAlign: "center", background: C.card2, border: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{qual.passedCount}<span style={{ fontSize: 12, color: C.faint, fontWeight: 700 }}>/{qual.totalExams}</span></div>
+            <div style={{ fontSize: 10.5, color: C.faint, marginTop: 1 }}>exams passed</div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Nav */}
-        <nav style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 4 }}>
-          {visibleNav.map((item) => (
+        <nav style={{ marginTop: SP["2xl"], display: "flex", flexDirection: "column", gap: 3 }}>
+          {NAV.map((item) => (
             <NavItem
               key={item.to}
               item={item}
@@ -415,75 +236,31 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* Current language card */}
-        {vocabDeck && (
-          <div style={{ marginTop: "auto", paddingTop: 20 }}>
-            <div
-              style={{
-                padding: 14,
-                borderRadius: 12,
-                background: "var(--sch-card)",
-                border: "1px solid var(--sch-border)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--sch-tx-2)",
-                  marginBottom: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span>{languageFlag(vocabDeck.targetLanguage)}</span>
-                {vocabDeck.targetLanguageLabel}
-              </div>
-              <ProgressBar pct={masteryPct} />
-              <div style={{ fontSize: 11, color: "var(--sch-tx-3)", marginTop: 8 }}>
-                {masteryPct}% mastered · {vocabStats?.total ?? 0} words
-              </div>
+        {/* Qualification progress — the one persistent goal */}
+        <div style={{ marginTop: "auto", paddingTop: SP.xl }}>
+          <div style={{ padding: SP.md, borderRadius: R.lg, background: C.card2, border: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: C.muted }}>To membership</span>
+              <span style={{ fontSize: 11.5, fontWeight: 800, color: C.brand }}>{qual.percent}%</span>
             </div>
+            <ProgressBar pct={qual.percent} />
           </div>
-        )}
+        </div>
       </aside>
 
       {/* ── Main content ── */}
-      <main className="lg:pl-[240px]">
-        {/* Top bar — notification bell + (hidden on desktop) brand */}
+      <main className="lg:pl-[244px]">
+        {/* Top bar */}
         <div
           style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 25,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "10px clamp(16px, 4vw, 40px)",
-            background: "var(--sch-bg-blur, rgba(10,10,20,0.6))",
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
-            borderBottom: "1px solid var(--sch-hairline, rgba(255,255,255,0.04))",
+            position: "sticky", top: 0, zIndex: 25, display: "flex", alignItems: "center",
+            justifyContent: "space-between", padding: "10px clamp(16px, 4vw, 40px)",
+            background: "var(--sch-bg-blur)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+            borderBottom: "1px solid var(--sch-hairline)",
           }}
         >
-          <Link
-            to="/study"
-            className="lg:invisible"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              textDecoration: "none",
-              color: "var(--sch-text)",
-              fontWeight: 700,
-              fontSize: 15,
-            }}
-          >
-            <span aria-hidden>✦</span>
-            Scholify
+          <Link to="/study" className="lg:invisible" style={{ textDecoration: "none" }}>
+            <Brand compact />
           </Link>
           <NotificationBell />
         </div>
@@ -497,22 +274,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       <nav
         className="lg:hidden"
         style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          justifyContent: "space-around",
-          padding: "8px 4px",
-          paddingBottom: "max(8px, env(safe-area-inset-bottom))",
-          background: "var(--sch-bg-blur)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderTop: "1px solid var(--sch-hairline)",
-          zIndex: 30,
+          position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "space-around",
+          padding: "8px 4px", paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+          background: "var(--sch-bg-blur)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          borderTop: "1px solid var(--sch-hairline)", zIndex: 30,
         }}
       >
-        {visibleMobileNav.map((item) => {
+        {NAV.map((item) => {
           const active = location.pathname === item.to
           const unread = unreadFor(item.notifyKinds)
           return (
@@ -520,47 +288,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               key={item.to}
               to={item.to}
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 3,
-                padding: "6px 8px",
-                minHeight: 44, // tap target
-                minWidth: 56,
-                textDecoration: "none",
-                fontSize: 11,
-                color: active ? "var(--sch-text)" : "var(--sch-tx-2)",
-                fontWeight: active ? 600 : 400,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                padding: "6px 8px", minHeight: 48, minWidth: 60, textDecoration: "none",
+                fontSize: 11, fontWeight: active ? 700 : 500, color: active ? C.brand : C.soft,
               }}
             >
-              <span style={{ position: "relative", fontSize: 20 }}>
-                {item.icon}
+              <span style={{ position: "relative", display: "grid", placeItems: "center" }}>
+                <Icon name={item.icon} size={22} color={active ? C.brand : "currentColor"} strokeWidth={active ? 2.4 : 2} />
                 {unread > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 360, damping: 22 }}
-                    style={{
-                      position: "absolute",
-                      top: -3,
-                      right: -7,
-                      minWidth: 14,
-                      height: 14,
-                      padding: "0 4px",
-                      borderRadius: 7,
-                      background: IRIDESCENT,
-                      color: "#fff",
-                      fontSize: 9,
-                      fontWeight: 700,
-                      display: "grid",
-                      placeItems: "center",
-                      lineHeight: 1,
-                      boxShadow: "0 4px 10px rgba(200,0,0,0.45)",
-                    }}
-                    aria-label={`${unread} unread`}
-                  >
+                  <span style={{ position: "absolute", top: -5, right: -7, minWidth: 14, height: 14, padding: "0 4px", borderRadius: 7, background: GRAD, color: "#fff", fontSize: 9, fontWeight: 800, display: "grid", placeItems: "center", lineHeight: 1 }} aria-label={`${unread} unread`}>
                     {unread > 9 ? "9+" : unread}
-                  </motion.span>
+                  </span>
                 )}
               </span>
               {item.label}

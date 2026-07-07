@@ -49,6 +49,7 @@ import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage } from "@/lib/acca-loop"
 import type { PostMortemAction } from "@/lib/acca-ai"
+import { Icon, IconBadge, Badge, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -917,20 +918,14 @@ function Overview({
         onClick={onJourney}
         style={{ ...card({ padding: "13px 16px", marginBottom: 12, cursor: "pointer" }), display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left" }}
       >
-        <motion.span
-          animate={{ rotate: 360 }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          style={{ fontSize: 18, flexShrink: 0 }}
-        >
-          🔁
-        </motion.span>
+        <IconBadge name="loop" tone="brand" size={38} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontWeight: 750, fontSize: 13.5, color: TEXT }}>The journey loop</span>
           <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-            You are here: <b style={{ color: "#C80000" }}>{stage.emoji} {stage.label}</b>
+            You are here: <b style={{ color: "#C80000" }}>{stage.label}</b>
           </span>
         </span>
-        <span style={{ fontSize: 16, color: DIM, flexShrink: 0 }}>›</span>
+        <Icon name="chevron" size={16} color={C.faint} />
       </motion.button>
 
       {/* study plan */}
@@ -992,12 +987,12 @@ function Overview({
       <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
         {curated ? (
           <>
-            <ModeTile emoji="✏️" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn"} />
-            {hasHistory && <ModeTile emoji="🎯" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} primary={phase.key === "strengthen"} />}
+            <ModeTile icon="practice" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn"} />
+            {hasHistory && <ModeTile icon="weak" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} primary={phase.key === "strengthen"} />}
           </>
         ) : (
           <>
-            <ModeTile emoji="✨" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
+            <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
             <div style={{ ...card({ padding: 14 }), fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
               📚 A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice gives you unlimited AI-generated questions for this paper.
             </div>
@@ -1007,8 +1002,8 @@ function Overview({
 
       <h3 style={sectionH}>🧠 STRENGTHEN & REVISE</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-        <ModeTile emoji="🧠" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={phase.key === "revise" && fcStats.due > 0} />
-        {curated && <ModeTile emoji="✨" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />}
+        <ModeTile icon="flashcards" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={phase.key === "revise" && fcStats.due > 0} />
+        {curated && <ModeTile icon="generate" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />}
       </div>
 
       <h3 style={sectionH}>⏱️ EXAM ROOM</h3>
@@ -1027,7 +1022,7 @@ function Overview({
             <MockGateTile prob={gate.prob} onWeak={onWeak} />
           )
         )}
-        <ModeTile emoji="📝" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
+        <ModeTile icon="examiner" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
       </div>
 
       {/* mock history */}
@@ -1178,18 +1173,18 @@ function TopicView({
       {/* the topic loop */}
       <h3 style={sectionH}>1 · LEARN</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-        <ModeTile emoji="📖" title={`Practise this topic · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & Ask Lara — questions from this topic only" onClick={onLearn} primary={!result.mastered} />
+        <ModeTile icon="learn" title={`Practise this topic · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & Ask Lara — questions from this topic only" onClick={onLearn} primary={!result.mastered} />
       </div>
 
       <h3 style={sectionH}>2 · MEMORISE</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-        <ModeTile emoji="🧠" title="Topic flashcards" sub={areaCards > 0 ? `${areaCards} card${areaCards === 1 ? "" : "s"} for this topic — swipe to review` : "No cards for this topic yet — practice still counts"} onClick={onFlashcards} />
+        <ModeTile icon="flashcards" title="Topic flashcards" sub={areaCards > 0 ? `${areaCards} card${areaCards === 1 ? "" : "s"} for this topic — swipe to review` : "No cards for this topic yet — practice still counts"} onClick={onFlashcards} />
       </div>
 
       <h3 style={sectionH}>3 · PROVE IT</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 8 }}>
         <ModeTile
-          emoji="🎓"
+          icon="check"
           title={`Knowledge check · ${TOPIC_TEST_SIZE} questions, timed`}
           sub={`Exam conditions, no hints. Score ${Math.round(TOPIC_PASS * 100)}%+ to master the topic${result.attempts > 0 ? ` · ${result.attempts} attempt${result.attempts === 1 ? "" : "s"} so far` : ""}`}
           onClick={onTest}
@@ -1253,30 +1248,33 @@ function MethodTracker({ activeKey }: { activeKey: string }) {
 }
 
 function ModeTile({
-  emoji, title, sub, onClick, primary, locked,
-}: { emoji: string; title: string; sub: string; onClick: () => void; primary?: boolean; locked?: boolean }) {
+  icon, title, sub, onClick, primary, locked,
+}: { icon: IconName; title: string; sub: string; onClick: () => void; primary?: boolean; locked?: boolean }) {
   return (
     <motion.button
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -2, boxShadow: SHADOW.md }}
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
       style={{
-        ...card({ cursor: "pointer", padding: 16 }),
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        textAlign: "left",
-        ...(primary ? { background: IRIDESCENT, border: "none" } : {}),
+        display: "flex", alignItems: "center", gap: 14, textAlign: "left", width: "100%",
+        cursor: "pointer", padding: 16, borderRadius: R["2xl"], boxShadow: primary ? SHADOW.brand : SHADOW.sm,
+        background: primary ? GRAD : C.card, border: primary ? "none" : `1px solid ${C.border}`,
       }}
     >
-      <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
+      {primary ? (
+        <span style={{ width: 40, height: 40, borderRadius: R.md, background: "rgba(255,255,255,0.18)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+          <Icon name={icon} size={20} color="#fff" />
+        </span>
+      ) : (
+        <IconBadge name={icon} tone="brand" />
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 15, color: primary ? "#fff" : TEXT, display: "flex", alignItems: "center", gap: 8 }}>
-          {title} {locked && <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000", fontWeight: 700 }}>PRO</span>}
+        <div style={{ fontWeight: 700, fontSize: 15, color: primary ? "#fff" : C.text, display: "flex", alignItems: "center", gap: 8 }}>
+          {title} {locked && <Badge tone="brand">PRO</Badge>}
         </div>
-        <div style={{ fontSize: 12.5, color: primary ? "rgba(255,255,255,0.85)" : MUTED, marginTop: 2 }}>{sub}</div>
+        <div style={{ fontSize: 12.5, color: primary ? "rgba(255,255,255,0.9)" : C.soft, marginTop: 2, lineHeight: 1.45 }}>{sub}</div>
       </div>
-      <span style={{ color: primary ? "#fff" : DIM, fontSize: 18 }}>›</span>
+      <Icon name="chevron" size={18} color={primary ? "#fff" : C.faint} />
     </motion.button>
   )
 }
@@ -1295,13 +1293,11 @@ function MockGateTile({ prob, onWeak }: { prob: number; onWeak: () => void }) {
       onClick={onWeak}
       style={{ ...card({ cursor: "pointer", padding: 16 }), display: "flex", alignItems: "center", gap: 14, textAlign: "left", borderStyle: "dashed" }}
     >
-      <span style={{ fontSize: 22, flexShrink: 0, opacity: 0.8 }}>🔒</span>
+      <IconBadge name="lock" tone="amber" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: TEXT, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           Mock exam
-          <span style={{ fontSize: 10.5, padding: "1px 8px", borderRadius: 999, background: "rgba(245,158,11,0.12)", color: "#B45309", fontWeight: 800 }}>
-            UNLOCKS AT {MOCK_GATE}%
-          </span>
+          <Badge tone="amber">UNLOCKS AT {MOCK_GATE}%</Badge>
         </div>
         <div style={{ fontSize: 12.5, color: MUTED, margin: "4px 0 8px" }}>
           You're at <b style={{ color: TEXT }}>{prob}%</b> pass probability — I'm steering your daily plan at your weak
