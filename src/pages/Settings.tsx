@@ -52,9 +52,6 @@ interface AppSettings {
   weeklyReport: boolean
   newFeatures: boolean
   theme: "dark" | "darker" | "midnight"
-  coachStyle: "direct" | "warm" | "brief"
-  voiceCoach: boolean
-  coachTime: string
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -64,9 +61,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   weeklyReport: true,
   newFeatures: false,
   theme: "dark",
-  coachStyle: "direct",
-  voiceCoach: false,
-  coachTime: "08:00",
 }
 
 function readSettings(): AppSettings {
@@ -528,13 +522,10 @@ function ConfirmDialog({
 
 /* ── Page ────────────────────────────────────────────────────── */
 
+// Only languages that actually work — the app is English-first, landing is EN/RU.
 const LANGUAGES = [
   { value: "en", label: "🇺🇸 English" },
-  { value: "uz", label: "🇺🇿 Uzbek" },
   { value: "ru", label: "🇷🇺 Russian" },
-  { value: "ar", label: "🇦🇪 Arabic" },
-  { value: "zh", label: "🇨🇳 Chinese" },
-  { value: "de", label: "🇩🇪 German" },
 ] as const
 
 const THEMES = [
@@ -557,7 +548,7 @@ export default function Settings() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [firstName, setFirstName] = useState((user?.user_metadata?.first_name as string) || "")
   const [lastName, setLastName] = useState((user?.user_metadata?.last_name as string) || "")
-  const [email, setEmail] = useState(user?.email || "")
+  const email = user?.email || ""
   const [savingProfile, setSavingProfile] = useState(false)
   const [avatarHover, setAvatarHover] = useState(false)
   const [dialog, setDialog] = useState<"cancel" | "reset" | "delete" | null>(null)
@@ -613,18 +604,11 @@ export default function Settings() {
     }
   }, [isAdmin])
 
-  /* Goal stats */
-  const goal = plan.goal?.trim() || "Your learning goal"
-  const dailyMinutes = Math.max(5, Number(plan.daily_minutes) || 20)
-  const tasks = Array.isArray(plan.tasks) ? plan.tasks : []
-  const deadline = plan.deadline ? new Date(plan.deadline) : null
-  const daysRemaining =
-    deadline && !Number.isNaN(deadline.getTime())
-      ? Math.max(0, differenceInCalendarDays(deadline, new Date()))
-      : Math.max(0, (tasks.length || 30) - progress.completed.length)
-  const totalDays = Math.max(daysRemaining + progress.completed.length, tasks.length, 1)
-  const goalPct = Math.round((progress.completed.length / totalDays) * 100)
-  const currentDay = progress.completed.length + 1
+  /* Trial: 7 days from account creation (same clock as the paywall). */
+  const trialDaysLeft = user?.created_at
+    ? Math.max(0, 7 - differenceInCalendarDays(new Date(), new Date(user.created_at)))
+    : 7
+  const trialPct = Math.round(((7 - trialDaysLeft) / 7) * 100)
 
   /* Auto-saving settings */
   const update = useCallback(
@@ -910,7 +894,13 @@ export default function Settings() {
                     <Field label="Last name" value={lastName} onChange={setLastName} />
                   </div>
                   <div style={{ marginTop: 12 }}>
-                    <Field label="Email" value={email} onChange={setEmail} full />
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: TEXT2, marginBottom: 5 }}>Email</div>
+                    <div style={{ padding: "11px 13px", borderRadius: R.md, background: "var(--sch-card-2)", color: "var(--sch-text)", fontSize: 13.5 }}>
+                      {email}
+                    </div>
+                    <div style={{ fontSize: 11, color: TEXT2, marginTop: 5 }}>
+                      Your sign-in email — contact support to change it.
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
                     <Button
@@ -929,53 +919,6 @@ export default function Settings() {
           </AnimatePresence>
         </Section>
 
-        {/* ── Current goal ── */}
-        <Section>
-          <SectionHead
-            icon="diagnostic"
-            right={
-              <button
-                type="button"
-                onClick={() => navigate("/onboarding")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  background: "transparent",
-                  border: "none",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: C.brand,
-                  cursor: "pointer",
-                  padding: 4,
-                }}
-              >
-                Change goal <Icon name="arrow" size={14} />
-              </button>
-            }
-          >
-            Current Goal
-          </SectionHead>
-          <div style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: "var(--sch-text)" }}>
-            {goal}
-          </div>
-          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 12 }}>
-            {[
-              [`Day ${currentDay}`, "of plan"],
-              [`${goalPct}%`, "complete"],
-              [`${daysRemaining} days`, "remaining"],
-              [deadline ? format(deadline, "MMM d, yyyy") : "—", "deadline"],
-            ].map(([v, l]) => (
-              <div key={l}>
-                <div style={{ fontSize: 18, fontWeight: 700, ...iriText }}>{v}</div>
-                <div style={{ fontSize: 11, color: TEXT2 }}>{l}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <ProgressBar pct={goalPct} />
-          </div>
-        </Section>
 
         {/* ── Subscription ── */}
         <Section>
@@ -994,7 +937,11 @@ export default function Settings() {
                 {isPaid ? "Pro" : "Free Trial"}
               </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>
-                {isPaid ? "Billed monthly · $13.99/month" : "7 days remaining in your trial"}
+                {isPaid
+                  ? "Billed monthly · $13.99/month"
+                  : trialDaysLeft > 0
+                    ? `${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} remaining in your trial`
+                    : "Trial ended — upgrade to keep Pro features"}
               </div>
               {!isPaid && (
                 <div
@@ -1010,7 +957,7 @@ export default function Settings() {
                   <div
                     style={{
                       height: "100%",
-                      width: "0%",
+                      width: `${trialPct}%`,
                       background: "linear-gradient(90deg,#FF9F0A,#FF453A)",
                     }}
                   />
@@ -1339,86 +1286,6 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* ── Lara settings ── */}
-        <Section
-          style={{
-            border: "1px solid rgba(200,0,0,0.07)",
-            background: "rgba(200,0,0,0.04)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <span style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon name="tutor" size={18} color={C.brand} />
-                Lara Settings
-              </span>
-              <div style={{ fontSize: 12, color: TEXT2 }}>Customise your AI coach</div>
-            </div>
-            {!isPaid && (
-              <button
-                type="button"
-                onClick={lockedUpgrade}
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  letterSpacing: "0.03em",
-                  padding: "5px 10px",
-                  borderRadius: R.pill,
-                  background: C.brandSoft,
-                  color: C.brand,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                PRO
-              </button>
-            )}
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <SettingRow name="Message style" desc="How Lara communicates with you">
-              <Dropdown
-                value={settings.coachStyle}
-                minWidth={180}
-                options={[
-                  { value: "direct", label: "Direct & factual" },
-                  { value: "warm", label: "Warm & encouraging" },
-                  { value: "brief", label: "Brief & minimal" },
-                ]}
-                onChange={(v) => update("coachStyle", v)}
-              />
-            </SettingRow>
-            <SettingRow name="Voice coach" desc="Hear Lara read your daily message">
-              {isPaid ? (
-                <Toggle on={settings.voiceCoach} onChange={(v) => update("voiceCoach", v)} />
-              ) : (
-                <button
-                  type="button"
-                  onClick={lockedUpgrade}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: "0.03em",
-                    padding: "5px 10px",
-                    borderRadius: R.pill,
-                    background: C.brandSoft,
-                    color: C.brand,
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <Icon name="lock" size={12} />
-                  PRO
-                </button>
-              )}
-            </SettingRow>
-            <SettingRow name="Coach message time" desc="When to receive your daily Lara message" last>
-              <TimeInput value={settings.coachTime} onChange={(v) => update("coachTime", v)} />
-            </SettingRow>
-          </div>
-        </Section>
 
         {/* ── Data & privacy ── */}
         <Section>

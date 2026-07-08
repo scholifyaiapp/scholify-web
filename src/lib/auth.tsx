@@ -221,17 +221,5 @@ export function useAuth() {
   return ctx
 }
 
-/**
- * Whether the user has finished the onboarding wizard.
- * Checks the Supabase user metadata, with a localStorage fallback so a
- * just-finished onboarding counts immediately (before metadata refreshes).
- */
-export function isOnboarded(user: User | null): boolean {
-  if (!user) return false
-  if (user.user_metadata?.onboarded === true) return true
-  try {
-    return window.localStorage.getItem("scholify-onboarded") === "true"
-  } catch {
-    return false
-  }
-}
+// Onboarding state lives in @/lib/acca-profile (isAccaOnboarded) — the one
+// flag the wizard actually sets.

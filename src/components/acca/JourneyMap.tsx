@@ -21,7 +21,7 @@ const STAGE_ICON: Record<string, IconName> = {
 /*
  * The journey loop, made visible — the full arc of one paper:
  * onboarding → diagnostic → roadmap → daily missions → progress check →
- * the 75% gate → mock → real exam → pass/fail fork → next paper, and around
+ * the 60% gate → mock → real exam → pass/fail fork → next paper, and around
  * again. Every node's status is derived from the learner's real data.
  */
 

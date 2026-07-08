@@ -47,9 +47,10 @@ import { getWrittenQuestions } from "@/lib/acca-written"
 import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
-import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
-import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages } from "@/lib/acca-loop"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAction } from "@/lib/acca-today"
+import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
+import { isAccaOnboarded, markAccaOnboarded } from "@/lib/acca-profile"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
@@ -76,19 +77,8 @@ type Mode = "onboarding" | "picker" | "overview" | "topic" | "session" | "examin
 const SESSION_SIZE = 8
 const MOCK_SIZE = 12
 const MOCK_SECONDS_PER_Q = 90
-/** Rough per-task durations for the daily plan (design: "~25 min"). */
-const MISSION_MIN: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30,
-}
-const ONBOARDED_KEY = "scholify-acca-onboarded"
-
-function wasOnboarded(): boolean {
-  try {
-    return window.localStorage.getItem(ONBOARDED_KEY) === "1"
-  } catch {
-    return false
-  }
-}
+// Single source of truth for the onboarding flag (shared with Dashboard).
+const wasOnboarded = isAccaOnboarded
 
 function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
@@ -96,12 +86,17 @@ function card(extra?: CSSProperties): CSSProperties {
 
 export default function AccaStudy() {
   const { toast } = useToast()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
 
-  const [paperId, setPaperId] = useState<string | null>(null)
-  const [mode, setMode] = useState<Mode>(() => (wasOnboarded() ? "picker" : "onboarding"))
+  // Land where the loop is: the current paper's overview. The picker stays
+  // one tap away ("← All papers"); new users get the onboarding wizard.
+  const [paperId, setPaperId] = useState<string | null>(() => (wasOnboarded() ? getCurrentPaper() : null))
+  const [mode, setMode] = useState<Mode>(() =>
+    wasOnboarded() ? (getCurrentPaper() ? "overview" : "picker") : "onboarding",
+  )
   const [tick, setTick] = useState(0) // force stats refresh after a session
 
   // session state
@@ -162,6 +157,27 @@ export default function AccaStudy() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Deep links: /study?do=weak|practice|mock|flashcards|diagnostic — the
+  // Dashboard/Analytics "Start now" buttons land INSIDE the task, not on a
+  // picker. The loop hands the student the next best action in one tap.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const action = params.get("do") as TodayAction | null
+    if (!action) return
+    window.history.replaceState({}, "", window.location.pathname)
+    if (!wasOnboarded()) return
+    if (action === "diagnostic") {
+      navigate("/study/diagnostic")
+      return
+    }
+    if (!paperId) return
+    if (action === "weak") startSession(true, false)
+    else if (action === "practice") startSession(false, false)
+    else if (action === "mock") startSession(false, true)
+    else if (action === "flashcards") setMode("flashcards")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // mock countdown
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
@@ -208,11 +224,7 @@ export default function AccaStudy() {
   }
 
   function finishOnboarding(pid: string, examDate: string | null) {
-    try {
-      window.localStorage.setItem(ONBOARDED_KEY, "1")
-    } catch {
-      /* ignore */
-    }
+    markAccaOnboarded()
     if (examDate) setPlan(pid, { examDate })
     setPaperId(pid)
     setMode("overview")
@@ -221,7 +233,7 @@ export default function AccaStudy() {
   function startSession(weakFirst = false, mock = false) {
     if (!paperId) return
     if (mock) {
-      // The loop's 75% gate: mocks stay locked until the learner's pass
+      // The loop's gate (MOCK_GATE = 60%): mocks stay locked until the learner's pass
       // probability has earned them (see acca-loop.ts).
       const gate = mockGate(paperId)
       if (!gate.unlocked) {
@@ -556,8 +568,9 @@ function ContinueCard({ pid, onPick }: { pid: string; onPick: (id: string) => vo
           <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{mission.detail}</div>
         </div>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 20, ...iriText }}>{stats.readiness}%</div>
-          <div style={{ color: DIM, fontSize: 10.5 }}>ready</div>
+          {/* same canonical number as Dashboard/Analytics/Overview */}
+          <div style={{ fontWeight: 800, fontSize: 20, ...iriText }}>{passProbability(current) ?? stats.readiness}%</div>
+          <div style={{ color: DIM, fontSize: 10.5 }}>{passProbability(current) !== null ? "to pass" : "ready"}</div>
         </div>
         <span style={{ fontSize: 20, color: "#C80000", flexShrink: 0 }}>→</span>
       </div>
@@ -811,10 +824,12 @@ function Overview({
   const firstName = (user?.user_metadata?.first_name as string) || ""
   const stats = getPaperStats(paper.id)
   const diagnostic = getLatestDiagnostic(paper.id)
-  // Live pass-probability from cumulative practice — moves as the student drills.
   const live = estimateFromPractice(paper.id)
-  const band = live ? passBand(live.passProbability) : readinessBand(stats.readiness)
-  const readinessValue = live ? `${live.passProbability}%` : `${stats.readiness}%`
+  // THE pass-probability read — same source as Dashboard/Analytics/Journey,
+  // including the real-exam recalibration during a recovery run.
+  const prob = passProbability(paper.id)
+  const band = prob !== null ? passBand(prob) : readinessBand(stats.readiness)
+  const readinessValue = prob !== null ? `${prob}%` : `${stats.readiness}%`
   // The diagnostic CTA anchors on a formal diagnostic if taken, else the live read.
   const passShown = diagnostic ?? live
   const passIsLive = !diagnostic && !!live
@@ -828,7 +843,7 @@ function Overview({
   const studyPlan = generateStudyPlan(paper.id)
   const mocks = getMockHistory(paper.id)
   const phase = currentPhase(paper.id)
-  // The journey loop: 75% gate on the exam room + the exam-day decision point.
+  // The journey loop: the 60% gate on the exam room + the exam-day decision point.
   const gate = mockGate(paper.id)
   const examDue = examDayDue(paper.id)
   const stage = currentStage(paper.id)
@@ -916,7 +931,10 @@ function Overview({
           <Icon name="mission" size={14} color="#C80000" strokeWidth={2.4} />
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>TODAY'S PLAN · THE PLAN ALREADY CHOSE FOR YOU</span>
           <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 750, color: DIM }}>
-            {getTodayStats().goalMet ? "goal met" : `0 of ${todayPlan.length} done`}
+            {(() => {
+              const t = getTodayStats()
+              return t.goalMet ? "goal met" : t.answered > 0 ? `${t.answered}/${t.goal} today` : `0 of ${todayPlan.length} done`
+            })()}
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -947,7 +965,7 @@ function Overview({
                   {["①", "②", "③"][i] ?? ""} {t.title}
                 </span>
                 <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-                  {t.detail} · ~{MISSION_MIN[t.action]} min
+                  {t.detail} · ~{MISSION_MINUTES[t.action]} min
                 </span>
               </span>
               {i === 0 && (
@@ -1129,7 +1147,10 @@ function Overview({
             <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
             <div style={{ ...card({ padding: 14 }), display: "flex", gap: 10, fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
               <Icon name="learn" size={16} color={C.soft} style={{ marginTop: 1 }} />
-              <span>A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice gives you unlimited AI-generated questions for this paper.</span>
+              <span>
+                A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice (Pro) generates
+                unlimited AI questions for this paper — or switch to a paper with a full bank from <b style={{ color: TEXT }}>← All papers</b>.
+              </span>
             </div>
           </>
         )}
@@ -1148,7 +1169,7 @@ function Overview({
             <ModeTile
               icon="mock"
               title={mockProgress(paper.id).examReady ? "Mock exam — keep it warm" : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED}`}
-              sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`}
+              sub={`${MOCK_SIZE} questions, timed, no hints — pass line ${MOCK_PASS}%`}
               onClick={onMock}
               locked={!isPro}
               primary={phase.key === "rehearse"}
@@ -1170,7 +1191,7 @@ function Overview({
             <div style={{ ...card({ padding: 16 }), marginBottom: 8 }}>
               <TrendBars
                 points={[...mocks].reverse().map((m) => ({ date: m.date, percent: m.percent }))}
-                passLine={50}
+                passLine={MOCK_PASS}
                 unit="mock score"
               />
             </div>
@@ -1178,10 +1199,10 @@ function Overview({
           <div style={{ display: "grid", gap: 8 }}>
             {mocks.slice(0, 5).map((m, i) => (
               <div key={i} style={{ ...card({ padding: "12px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
-                <Icon name={m.percent >= 50 ? "done" : "stats"} size={17} color={m.percent >= 50 ? GREEN : "#C2740B"} />
+                <Icon name={m.percent >= MOCK_PASS ? "done" : "stats"} size={17} color={m.percent >= MOCK_PASS ? GREEN : "#C2740B"} />
                 <span style={{ flex: 1, fontSize: 13.5, color: TEXT }}>{m.date}</span>
                 <span style={{ fontSize: 13, color: MUTED }}>{m.correct}/{m.total}</span>
-                <MeterBar value={m.percent} color={bandColor(m.percent, 50)} target={50} height={6} style={{ width: 56, flexShrink: 0 }} />
+                <MeterBar value={m.percent} color={bandColor(m.percent, MOCK_PASS)} target={MOCK_PASS} height={6} style={{ width: 56, flexShrink: 0 }} />
                 <span style={{ fontWeight: 800, fontSize: 14, color: TEXT, width: 44, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{m.percent}%</span>
               </div>
             ))}
@@ -1521,7 +1542,7 @@ function ModeTile({
 }
 
 /**
- * The 75% gate, visible: the mock room locked, with live progress toward the
+ * The gate (MOCK_GATE = 60%), visible: the mock room locked, with live progress toward the
  * unlock. Tapping it routes the learner where the marks actually are — the
  * adaptive weak-area drill.
  */
@@ -1828,7 +1849,7 @@ function Results({
   onAction: (a: PostMortemAction) => void
 }) {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
-  const passLine = isTopicTest ? Math.round(TOPIC_PASS * 100) : 50
+  const passLine = isTopicTest ? Math.round(TOPIC_PASS * 100) : MOCK_PASS
   const passed = pct >= passLine
   const topicLabel = isTopicTest && topicArea ? paper.areas.find((a) => a.code === topicArea)?.label ?? topicArea : null
 

@@ -212,11 +212,11 @@ function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper
     <>
       {/* hero — the one number */}
       <Card style={{ display: "flex", alignItems: "center", gap: SP["2xl"], flexWrap: "wrap", marginBottom: SP.md }}>
-        <RingGauge value={prob} size={188} stroke={14} color={band?.color} label={band?.label} sublabel="live from your practice" target={50} />
+        <RingGauge value={prob} size={188} stroke={14} color={band?.color} label={band?.label} sublabel="live from your practice" target={MOCK_PASS} />
         <div style={{ flex: 1, minWidth: 220 }}>
           <CardTitle icon="diagnostic">Pass probability</CardTitle>
           <p style={{ ...TYPE.body, color: C.muted, margin: 0, lineHeight: 1.6 }}>
-            {paper.id} — {paper.name} · pass line 50%.{" "}
+            {paper.id} — {paper.name} · pass line {MOCK_PASS}%.{" "}
             {rec.active
               ? "Recalibrated by your last real sitting — every answer earns it back."
               : prob >= 50
@@ -232,7 +232,7 @@ function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper
                   <span style={{ fontSize: 13, fontWeight: 700, color: C.soft }}> / 100</span>
                 </span>
               </div>
-              <MeterBar value={est.estimatedScore} max={100} color={bandColor(est.estimatedScore, 50)} target={50} height={9} />
+              <MeterBar value={est.estimatedScore} max={100} color={bandColor(est.estimatedScore, MOCK_PASS)} target={MOCK_PASS} height={9} />
               <div style={{ ...TYPE.small, color: C.faint, marginTop: 6 }}>
                 {est.estimatedScore >= 50 ? `${est.estimatedScore - 50} marks above the pass line` : `${50 - est.estimatedScore} marks below the pass line`} · based on {getPaperStats(paperId).answered} answers across {Math.round(getPaperStats(paperId).coverage * 100)}% of the syllabus
               </div>
@@ -692,7 +692,7 @@ function StudySection({ paperId }: { paperId: string }) {
               transition={{ delay: i * 0.07 }}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.99 }}
-              onClick={() => navigate("/study")}
+              onClick={() => navigate(`/study?do=${t.action}`)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -795,7 +795,7 @@ function StudySection({ paperId }: { paperId: string }) {
             {fc.due > 0 ? "Spaced repetition holds mastery — clear it before it grows." : "Queue clear — mastery is holding."}
           </div>
           {fc.due > 0 && (
-            <button onClick={() => navigate("/study")} style={{ padding: "10px 16px", borderRadius: R.md, border: "none", background: "linear-gradient(135deg,#C80000,#E50068)", color: "#fff", fontWeight: 750, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={() => navigate("/study?do=flashcards")} style={{ padding: "10px 16px", borderRadius: R.md, border: "none", background: "linear-gradient(135deg,#C80000,#E50068)", color: "#fff", fontWeight: 750, fontSize: 13, cursor: "pointer" }}>
               Clear the queue
             </button>
           )}

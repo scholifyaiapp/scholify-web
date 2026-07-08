@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, Navigate, useNavigate } from "react-router-dom"
 import { motion } from "motion/react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
@@ -16,6 +16,7 @@ import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOC
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
+import { isAccaOnboarded } from "@/lib/acca-profile"
 
 /*
  * /dashboard — the command centre, not a report. One glance answers
@@ -65,6 +66,10 @@ export default function Dashboard() {
     snapshotProbability(paperId)
   }, [paperId])
 
+  // The loop starts at onboarding — a brand-new user goes there first
+  // (paper choice, exam date, commitment), never straight to a default "FA".
+  if (!isAccaOnboarded()) return <Navigate to="/study" replace />
+
   if (!paper) return null
   const noDiag = prob === null
 
@@ -92,7 +97,7 @@ export default function Dashboard() {
             paperId={paperId}
             onDone={() => setTick((t) => t + 1)}
             onStartPaper={() => navigate("/study")}
-            onAction={() => navigate("/study")}
+            onAction={(a) => navigate(`/study?do=${a}`)}
           />
         )}
 
@@ -120,7 +125,7 @@ export default function Dashboard() {
         {!noDiag && !examDue && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: SP.md, marginBottom: SP.md }}>
             <Card style={{ display: "flex", alignItems: "center", gap: SP.xl, flexWrap: "wrap" }}>
-              <RingGauge value={prob!} size={140} stroke={12} color={band?.color} target={50} />
+              <RingGauge value={prob!} size={140} stroke={12} color={band?.color} target={MOCK_PASS} />
               <div style={{ flex: 1, minWidth: 150 }}>
                 <div style={{ ...TYPE.label, color: C.faint, marginBottom: 5 }}>Pass probability</div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>{band?.label}</div>
@@ -191,7 +196,9 @@ export default function Dashboard() {
           <Card style={{ marginBottom: SP.md }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.md }}>
               <span style={{ ...TYPE.label, color: C.faint }}>Your next action · the plan already chose</span>
-              <span style={{ fontSize: 11.5, fontWeight: 750, color: C.faint }}>{today.answered > 0 ? "in motion" : "0 of"} {mission.length} {today.answered > 0 ? "" : "done"}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 750, color: today.goalMet ? C.green : C.faint }}>
+                {today.goalMet ? "goal met" : today.answered > 0 ? `${today.answered}/${today.goal} today` : `0 of ${mission.length} done`}
+              </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: SP.lg, flexWrap: "wrap", padding: "4px 0 2px" }}>
               <span style={{ width: 46, height: 46, borderRadius: 13, background: IRIDESCENT, display: "grid", placeItems: "center", flexShrink: 0 }}>
@@ -201,7 +208,7 @@ export default function Dashboard() {
                 <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>① {mission[0].title}</div>
                 <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{mission[0].detail} · ~{MISSION_MINUTES[mission[0].action]} min</div>
               </div>
-              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate("/study")} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
+              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(`/study?do=${mission[0].action}`)} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
                 Start now
               </motion.button>
             </div>
@@ -235,7 +242,7 @@ export default function Dashboard() {
             <VitalTile
               icon="weak"
               label="Weakest topic"
-              onClick={() => navigate("/study")}
+              onClick={() => navigate("/study?do=weak")}
               action="drill →"
             >
               {weakest ? (
@@ -252,7 +259,7 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12.5, color: C.soft }}>Practise a little and this finds itself.</div>
               )}
             </VitalTile>
-            <VitalTile icon={gate.unlocked ? "mock" : "lock"} label={gate.unlocked ? "Mock exams" : "Mock gate"} onClick={() => navigate("/study")}>
+            <VitalTile icon={gate.unlocked ? "mock" : "lock"} label={gate.unlocked ? "Mock exams" : "Mock gate"} onClick={() => navigate(gate.unlocked ? "/study?do=mock" : "/study?do=weak")}>
               {gate.unlocked ? (
                 <>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
@@ -291,7 +298,7 @@ export default function Dashboard() {
             </Link>
           )}
           {fc.due > 0 && (
-            <Link to="/study" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: C.muted, textDecoration: "none" }}>
+            <Link to="/study?do=flashcards" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: C.muted, textDecoration: "none" }}>
               <Icon name="flashcards" size={14} color={C.amber} /> {fc.due} cards due
             </Link>
           )}

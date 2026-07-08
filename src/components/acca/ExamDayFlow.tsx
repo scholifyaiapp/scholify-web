@@ -6,7 +6,7 @@ import { iriText } from "@/components/dashboard-layout"
 import { getPaper, getMockHistory, getPaperStats } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { qualificationProgress, suggestedNextPapers } from "@/lib/acca-qualification"
-import { completePaper, recordExamOutcome, snoozeExamPrompt, startNextPaper, passProbability } from "@/lib/acca-loop"
+import { completePaper, recordExamOutcome, snoozeExamPrompt, startNextPaper, passProbability, MOCK_PASS } from "@/lib/acca-loop"
 import PostMortemPanel from "@/components/acca/PostMortemPanel"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Button, Icon, IconBadge, C } from "@/components/acca/ui"
@@ -186,7 +186,7 @@ function ResultImport({ paperId, onImported }: { paperId: string; onImported: (s
             outline: "none",
           }}
         />
-        <span style={{ fontSize: 15, fontWeight: 700, color: MUTED }}>/ 100 · pass mark 50</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: MUTED }}>/ 100 · pass mark {MOCK_PASS}</span>
       </div>
       <Button variant="primary" size="lg" full disabled={!valid} onClick={() => valid && onImported(parsed)}>
         Save my mark — show me the way back
@@ -384,7 +384,7 @@ function Reflection({
       {/* the recalibrated learner model — the result already fed the engine */}
       {recalibrated !== null && (
         <div style={{ ...card({ padding: 20, marginBottom: 12 }), display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
-          <RingGauge value={recalibrated} size={104} stroke={9} target={50} suffix="%" />
+          <RingGauge value={recalibrated} size={104} stroke={9} target={MOCK_PASS} suffix="%" />
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, marginBottom: 5 }}>
               RECALIBRATED PASS PROBABILITY

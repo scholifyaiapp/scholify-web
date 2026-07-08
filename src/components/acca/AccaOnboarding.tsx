@@ -10,6 +10,7 @@ import {
   setStudyingPapers,
 } from "@/lib/acca-qualification"
 import { setPlan, generateStudyPlan, METHOD_PHASES } from "@/lib/acca-plan"
+import { setDailyGoal } from "@/lib/acca"
 import { EXPERIENCE_OPTIONS, setExperience, type Experience } from "@/lib/acca-profile"
 
 /*
@@ -93,14 +94,18 @@ export default function AccaOnboarding({
     setPassedPapers([...passed])
     setStudyingPapers(picked)
     if (exp) setExperience(exp)
+    const questionsPerDay = minutes >= 60 ? 30 : minutes >= 40 ? 22 : minutes >= 25 ? 15 : 10
     for (const pid of picked) {
       setPlan(pid, {
         examDate: examDate || null,
         studyTime: studyTime || null,
         dailyMinutes: minutes,
-        dailyGoal: minutes >= 60 ? 30 : minutes >= 40 ? 22 : minutes >= 25 ? 15 : 10,
+        dailyGoal: questionsPerDay,
       })
     }
+    // The commitment the learner just made IS the daily-goal meter —
+    // this is the store the Dashboard/Analytics/Settings goal reads.
+    setDailyGoal(questionsPerDay)
     onDone(picked[0], examDate || null)
   }
 

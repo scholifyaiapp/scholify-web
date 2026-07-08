@@ -21,6 +21,7 @@ import {
   type AnsweredDiagnostic,
 } from "@/lib/acca-diagnostic"
 import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from "@/lib/acca-cloud"
+import { MOCK_PASS } from "@/lib/acca-loop"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { RingGauge, BreakdownList } from "@/components/acca/charts"
 
@@ -391,10 +392,10 @@ function ResultsView({
 
       {/* Headline */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 0 26px" }}>
-        <RingGauge value={result.passProbability} size={200} stroke={14} color={band.color} label="chance to pass" target={50} />
+        <RingGauge value={result.passProbability} size={200} stroke={14} color={band.color} label="chance to pass" target={MOCK_PASS} />
         <div style={{ marginTop: 14, fontSize: 17, fontWeight: 700, color: band.color }}>{band.label}</div>
         <div style={{ marginTop: 4, fontSize: 13.5, color: MUTED }}>
-          Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark 50%
+          Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark {MOCK_PASS}%
         </div>
       </div>
 

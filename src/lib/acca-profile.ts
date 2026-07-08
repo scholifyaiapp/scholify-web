@@ -8,6 +8,24 @@
 export type Experience = "new" | "some" | "professional"
 
 const KEY = "scholify-acca-experience"
+const ONBOARDED_KEY = "scholify-acca-onboarded"
+
+/** Has the ACCA onboarding wizard been completed? (single source of truth) */
+export function isAccaOnboarded(): boolean {
+  try {
+    return window.localStorage.getItem(ONBOARDED_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+export function markAccaOnboarded(): void {
+  try {
+    window.localStorage.setItem(ONBOARDED_KEY, "1")
+  } catch {
+    /* ignore */
+  }
+}
 
 export const EXPERIENCE_OPTIONS: { value: Experience; emoji: string; label: string; blurb: string }[] = [
   { value: "new", emoji: "🌱", label: "New to accounting", blurb: "Starting fresh — everything from first principles." },

@@ -21,6 +21,11 @@ import { MOCK_GATE, mockGate, passProbability, recoveryState } from "@/lib/acca-
 
 export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock"
 
+/** Rough per-task durations — the single source for "~25 min" labels. */
+export const MISSION_MINUTES: Record<TodayAction, number> = {
+  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30,
+}
+
 export interface TodayTask {
   id: string
   icon: string

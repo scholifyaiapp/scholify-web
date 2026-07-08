@@ -5,14 +5,14 @@
  *
  *   Sign up → AI onboarding → diagnostic → roadmap → today's mission →
  *   learn/practise/flashcards/revise → progress check (pass probability) →
- *   ── < 75%: the plan keeps steering at weak areas ──
- *   ── ≥ 75%: the mock exam room UNLOCKS ──
+ *   ── < 60%: the plan keeps steering at weak areas ──
+ *   ── ≥ 60%: the mock exam room UNLOCKS ──
  *   mock pass/fail (fail → AI post-mortem → adaptive practice → retry) →
  *   real ACCA exam →
  *   PASS: celebrate, unlock the next paper → the loop restarts
  *   FAIL: reflection session, new exam date, new roadmap → back to missions
  *
- * This module owns the connective tissue: the 75% gate, real-exam outcomes,
+ * This module owns the connective tissue: the 60% gate, real-exam outcomes,
  * the paper-to-paper transition, and the derived "where am I in the loop"
  * stages that JourneyMap renders. localStorage-first like the rest of the
  * ACCA engine.
@@ -70,7 +70,7 @@ export function passProbability(paperId: string): number | null {
   return Math.round(w * examProb + (1 - w) * base)
 }
 
-/* ── The 75% gate on the mock exam room ───────────────────────── */
+/* ── The 60% gate (MOCK_GATE) on the mock exam room ───────────────────────── */
 
 export interface MockGate {
   unlocked: boolean
