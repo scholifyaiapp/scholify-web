@@ -31,6 +31,7 @@ import LazyOnView from "@/components/LazyOnView"
 import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
+import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
@@ -387,7 +388,10 @@ function Hero() {
           </span>
         </motion.div>
 
-        <div style={{ marginTop: 48 }}>
+        {/* the product itself, staged in 3D — tilt it */}
+        <Hero3DShowcase />
+
+        <div style={{ marginTop: 56 }}>
           <HandWrittenTitle
             title={t("Start. Pass. Repeat.")}
             subtitle={t("Until you're ACCA.")}
@@ -2009,6 +2013,7 @@ export default function Landing() {
       <Hero />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
+      <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
