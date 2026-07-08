@@ -33,6 +33,9 @@ import {
   SHADOW,
   TYPE,
 } from "@/components/acca/ui"
+import { getPaper, getDailyGoal, setDailyGoal } from "@/lib/acca"
+import { getPlan, setPlan } from "@/lib/acca-plan"
+import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -77,6 +80,106 @@ function readSettings(): AppSettings {
 }
 
 /* ── Reusable bits ───────────────────────────────────────────── */
+
+/* ── Exam setup — current paper, exam date, daily goal & minutes ── */
+
+function ExamSetupSection() {
+  const paperId = getCurrentPaper() ?? getStudyingPapers()[0] ?? "FA"
+  const paper = getPaper(paperId)
+  const [plan, setPlanState] = useState(() => getPlan(paperId))
+  const [goal, setGoal] = useState(() => getDailyGoal())
+
+  function updatePlan(patch: Parameters<typeof setPlan>[1]) {
+    setPlanState(setPlan(paperId, patch))
+  }
+  function updateGoal(n: number) {
+    setGoal(n)
+    setDailyGoal(n)
+  }
+
+  return (
+    <Section>
+      <SectionHead icon="exam">Exam setup</SectionHead>
+      <SettingRow name="Current paper" desc="The paper your loop is built around">
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+          <span style={{ width: 34, height: 34, borderRadius: 9, background: IRIDESCENT, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 12 }}>
+            {paperId}
+          </span>
+          <span style={{ fontSize: 13, color: "var(--sch-text)", fontWeight: 650 }}>{paper?.name ?? paperId}</span>
+        </span>
+      </SettingRow>
+      <SettingRow name="Exam date" desc="Your roadmap dates itself back from this">
+        <input
+          type="date"
+          value={plan.examDate ?? ""}
+          onChange={(e) => updatePlan({ examDate: e.target.value || null })}
+          style={{
+            padding: "10px 13px",
+            borderRadius: R.md,
+            border: `1px solid ${C.border}`,
+            background: "var(--sch-bg)",
+            color: C.text,
+            fontSize: 13.5,
+            fontWeight: 600,
+            colorScheme: "light dark",
+          }}
+        />
+      </SettingRow>
+      <SettingRow name="Daily goal" desc="Questions to answer each day">
+        <span style={{ display: "inline-flex", gap: 6 }}>
+          {[10, 15, 20, 30].map((n) => {
+            const on = goal === n
+            return (
+              <motion.button
+                key={n}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => updateGoal(n)}
+                style={{
+                  minWidth: 44,
+                  height: 38,
+                  padding: "0 10px",
+                  borderRadius: R.sm,
+                  border: `1.5px solid ${on ? C.brand : C.border}`,
+                  background: on ? C.brandSoft : "var(--sch-card)",
+                  color: on ? C.brand : C.text,
+                  fontWeight: 750,
+                  fontSize: 13.5,
+                  cursor: "pointer",
+                  transition: "background .15s ease, border-color .15s ease, color .15s ease",
+                }}
+              >
+                {n}
+              </motion.button>
+            )
+          })}
+        </span>
+      </SettingRow>
+      <SettingRow name="Daily study minutes" desc="Target study time per day" last>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={() => updatePlan({ dailyMinutes: Math.max(10, plan.dailyMinutes - 5) })}
+            aria-label="decrease minutes"
+            style={{ width: 36, height: 36, borderRadius: R.sm, border: `1px solid ${C.border}`, background: "var(--sch-card)", color: C.text, fontWeight: 800, fontSize: 17, cursor: "pointer", lineHeight: 1 }}
+          >
+            −
+          </motion.button>
+          <span style={{ fontSize: 14.5, fontWeight: 800, color: C.text, minWidth: 62, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+            {plan.dailyMinutes} min
+          </span>
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={() => updatePlan({ dailyMinutes: Math.min(240, plan.dailyMinutes + 5) })}
+            aria-label="increase minutes"
+            style={{ width: 36, height: 36, borderRadius: R.sm, border: `1px solid ${C.border}`, background: "var(--sch-card)", color: C.text, fontWeight: 800, fontSize: 17, cursor: "pointer", lineHeight: 1 }}
+          >
+            +
+          </motion.button>
+        </span>
+      </SettingRow>
+    </Section>
+  )
+}
 
 function Section({
   children,
@@ -931,6 +1034,9 @@ export default function Settings() {
             )}
           </div>
         </Section>
+
+        {/* ── Exam setup — the loop's parameters ── */}
+        <ExamSetupSection />
 
         {/* ── Notifications ── */}
         <Section>

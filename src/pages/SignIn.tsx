@@ -80,7 +80,7 @@ export default function SignIn() {
       return
     }
     setAttempts(0)
-    navigate("/study")
+    navigate("/dashboard")
   }
 
   const handleGoogle = async () => {
@@ -94,7 +94,7 @@ export default function SignIn() {
       return
     }
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
-    navigate("/study")
+    navigate("/dashboard")
   }
 
   return (

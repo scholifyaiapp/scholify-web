@@ -352,7 +352,7 @@ export default function SignUp() {
     } catch {
       /* analytics/referral are best-effort */
     }
-    navigate("/study")
+    navigate("/dashboard")
   }
 
   const handleGoogle = async () => {
@@ -367,7 +367,7 @@ export default function SignUp() {
     }
     trackEvent("signup_completed", { method: "google" })
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
-    navigate("/study")
+    navigate("/dashboard")
   }
 
   // After sign-up with email confirmation ON, show the inbox panel instead.

@@ -35,7 +35,7 @@ export default function AuthCallback() {
       if (cancelled) return
       const { data } = await supabase.auth.getSession()
       if (data.session) {
-        navigate("/study", { replace: true })
+        navigate("/dashboard", { replace: true })
         return
       }
       if (++tries > 24) {

@@ -48,7 +48,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
-import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState } from "@/lib/acca-loop"
+import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
@@ -76,6 +76,10 @@ type Mode = "onboarding" | "picker" | "overview" | "topic" | "session" | "examin
 const SESSION_SIZE = 8
 const MOCK_SIZE = 12
 const MOCK_SECONDS_PER_Q = 90
+/** Rough per-task durations for the daily plan (design: "~25 min"). */
+const MISSION_MIN: Record<TodayAction, number> = {
+  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30,
+}
 const ONBOARDED_KEY = "scholify-acca-onboarded"
 
 function wasOnboarded(): boolean {
@@ -855,7 +859,10 @@ function Overview({
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <button onClick={onBack} style={backBtn}>← All papers</button>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
-      <p style={{ color: DIM, margin: "0 0 18px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+      <p style={{ color: DIM, margin: "0 0 14px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+
+      {/* You are here — the loop as a compact strip (the GPS) */}
+      <LoopStrip paperId={paper.id} onJourney={onJourney} />
 
       {/* Exam day — the loop's decision point: celebrate or reflect */}
       {examDue && (
@@ -907,7 +914,10 @@ function Overview({
 
         <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "16px 0 8px" }}>
           <Icon name="mission" size={14} color="#C80000" strokeWidth={2.4} />
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>TODAY'S PLAN</span>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>TODAY'S PLAN · THE PLAN ALREADY CHOSE FOR YOU</span>
+          <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 750, color: DIM }}>
+            {getTodayStats().goalMet ? "goal met" : `0 of ${todayPlan.length} done`}
+          </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {todayPlan.map((t, i) => (
@@ -933,8 +943,12 @@ function Overview({
             >
               <IconBadge name={todayIcons[t.action]} tone={i === 0 ? "brand" : "neutral"} size={38} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>{t.title}</span>
-                <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{t.detail}</span>
+                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
+                  {["①", "②", "③"][i] ?? ""} {t.title}
+                </span>
+                <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
+                  {t.detail} · ~{MISSION_MIN[t.action]} min
+                </span>
               </span>
               {i === 0 && (
                 <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: IRIDESCENT, padding: "4px 10px", borderRadius: 999, flexShrink: 0 }}>
@@ -947,6 +961,16 @@ function Overview({
       </motion.div>
 
       {/* readiness — live pass probability once there's practice, else coverage-based */}
+      <SectionHead
+        icon="stats"
+        right={
+          <button onClick={() => navigate("/study/analytics")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 750, color: "#C80000", display: "inline-flex", alignItems: "center", gap: 4, padding: 0, textTransform: "none", letterSpacing: 0 }}>
+            Full analytics <Icon name="arrow" size={12} color="#C80000" />
+          </button>
+        }
+      >
+        Progress check
+      </SectionHead>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
         <StatCard
           index={0}
@@ -1168,6 +1192,85 @@ function Overview({
       {/* the study path — topic by topic, Kaplan-style */}
       <StudyPathSection paperId={paper.id} curated={curated} onTopic={onTopic} />
     </motion.div>
+  )
+}
+
+/* ── The loop strip — "you are here", one glance ──────────────── */
+
+const LOOP_ICONS: Record<string, IconName> = {
+  onboarding: "study", diagnostic: "diagnostic", roadmap: "roadmap", missions: "mission",
+  progress: "stats", mock: "mock", exam: "exam", recovery: "reflect", next: "loop",
+}
+const LOOP_SHORT: Record<string, string> = {
+  onboarding: "Onboard", diagnostic: "Diagnostic", roadmap: "Roadmap", missions: "Mission",
+  progress: "Progress", mock: "Mocks", exam: "Real exam", recovery: "Recovery", next: "Next paper",
+}
+
+function LoopStrip({ paperId, onJourney }: { paperId: string; onJourney: () => void }) {
+  const stages = getJourneyStages(paperId)
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.995 }}
+      onClick={onJourney}
+      style={{ ...card({ padding: "12px 16px", marginBottom: 14, cursor: "pointer" }), width: "100%", textAlign: "left" }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, color: DIM }}>YOU ARE HERE · {paperId} LOOP</span>
+        <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 750, color: "#C80000", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          Journey map <Icon name="chevron" size={13} color="#C80000" />
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 2, overflowX: "auto", paddingBottom: 2 }}>
+        {stages.map((s, i) => {
+          const current = s.status === "current"
+          const done = s.status === "done"
+          return (
+            <div key={s.key} style={{ display: "flex", alignItems: "flex-start", flex: 1, minWidth: 52 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1 }}>
+                <span
+                  style={{
+                    width: current ? 30 : 24,
+                    height: current ? 30 : 24,
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    background: done ? "rgba(16,185,129,0.12)" : current ? IRIDESCENT : "var(--sch-card-2)",
+                    boxShadow: current ? "0 4px 12px rgba(200,0,0,0.3)" : undefined,
+                  }}
+                >
+                  {done ? (
+                    <Icon name="done" size={13} color={GREEN} />
+                  ) : s.status === "locked" ? (
+                    <Icon name="lock" size={10} color={DIM} />
+                  ) : (
+                    <Icon name={LOOP_ICONS[s.key] ?? "study"} size={current ? 14 : 12} color={current ? "#fff" : MUTED} />
+                  )}
+                </span>
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: current ? 800 : 600,
+                    color: current ? TEXT : done ? MUTED : DIM,
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {LOOP_SHORT[s.key] ?? s.label}
+                </span>
+              </div>
+              {i < stages.length - 1 && (
+                <span style={{ height: 2, flex: 0.6, minWidth: 6, borderRadius: 2, background: done ? "rgba(16,185,129,0.35)" : "var(--sch-border)", marginTop: current ? 14 : 11 }} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </motion.button>
   )
 }
 

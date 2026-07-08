@@ -55,6 +55,7 @@ const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalend
 const AccaStudy = lazyWithReload(() => import("@/pages/AccaStudy"))
 const AccaDiagnostic = lazyWithReload(() => import("@/pages/AccaDiagnostic"))
 const AccaAnalytics = lazyWithReload(() => import("@/pages/AccaAnalytics"))
+const Dashboard = lazyWithReload(() => import("@/pages/Dashboard"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
 const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
@@ -118,7 +119,7 @@ function OAuthReturnHandler() {
     }
 
     if (user) {
-      navigate("/study", { replace: true })
+      navigate("/dashboard", { replace: true })
     } else if (looksLikeAuthHash) {
       navigate("/auth/callback", { replace: true })
     }
@@ -145,6 +146,7 @@ export default function App() {
         <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
 
         {/* The product */}
+        <Route path="/dashboard" element={<ProtectedRoute><Page name="Dashboard"><Dashboard /></Page></ProtectedRoute>} />
         <Route path="/study" element={<ProtectedRoute><Page name="AccaStudy"><AccaStudy /></Page></ProtectedRoute>} />
         {/* Progress merged into Analytics — keep old links working */}
         <Route path="/study/progress" element={<Navigate to="/study/analytics" replace />} />
@@ -158,8 +160,8 @@ export default function App() {
         <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
         <Route path="/support" element={<Page name="Support"><Support /></Page>} />
 
-        {/* Everything else (legacy plan routes, unknown paths) → the product */}
-        <Route path="*" element={<Navigate to="/study" replace />} />
+        {/* Everything else (legacy plan routes, unknown paths) → the command centre */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>
   )
