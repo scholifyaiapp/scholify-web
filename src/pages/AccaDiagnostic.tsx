@@ -354,7 +354,7 @@ export default function AccaDiagnostic() {
           )}
 
           {phase === "results" && result && (
-            <ResultsView key="results" result={result} paperName={paper?.name ?? paperId} paperCode={paper?.code ?? paperId} onRetake={retake} onContinue={() => navigate("/study")} onProgress={() => navigate("/study/progress")} />
+            <ResultsView key="results" result={result} paperName={paper?.name ?? paperId} paperCode={paper?.code ?? paperId} onRetake={retake} onContinue={() => navigate("/study")} onProgress={() => navigate("/study/analytics")} />
           )}
         </AnimatePresence>
       </div>
