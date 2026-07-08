@@ -1,5 +1,6 @@
 import NumberFlow from "@number-flow/react"
 import { useState } from "react"
+import { useT } from "@/i18n/LanguageProvider"
 
 interface PricingInteractionProps {
   starterMonth: number
@@ -24,6 +25,7 @@ export function PricingInteraction({
   ctaLabel = "Get Started",
   onCta,
 }: PricingInteractionProps) {
+  const t = useT()
   const [active, setActive] = useState<0 | 1 | 2>(0)
   const [period, setPeriod] = useState<0 | 1>(0)
   const [starter, setStarter] = useState(starterMonth)
@@ -85,7 +87,7 @@ export function PricingInteraction({
             cursor: "pointer",
           }}
         >
-          Monthly
+          {t("Monthly")}
         </button>
         <button
           onClick={() => handleChangePeriod(1)}
@@ -103,7 +105,7 @@ export function PricingInteraction({
             cursor: "pointer",
           }}
         >
-          Yearly
+          {t("Yearly")}
         </button>
         <div
           style={{
@@ -135,8 +137,8 @@ export function PricingInteraction({
         <PlanRow
           active={active === 0}
           onClick={() => handleChangePlan(0)}
-          title={freeLabel}
-          rightLabel={<><span style={{ color: "var(--foreground)", fontWeight: 500 }}>$0.00</span>/month</>}
+          title={t(freeLabel)}
+          rightLabel={<><span style={{ color: "var(--foreground)", fontWeight: 500 }}>$0.00</span>{t("/month")}</>}
         />
 
         <PlanRow
@@ -156,7 +158,7 @@ export function PricingInteraction({
                   marginLeft: 6,
                 }}
               >
-                Popular
+                {t("Popular")}
               </span>
             </>
           }
@@ -166,7 +168,7 @@ export function PricingInteraction({
                 $&nbsp;
                 <NumberFlow value={starter} />
               </span>
-              <span style={{ marginLeft: 4 }}>/month</span>
+              <span style={{ marginLeft: 4 }}>{t("/month")}</span>
             </span>
           }
         />
@@ -181,7 +183,7 @@ export function PricingInteraction({
                 $&nbsp;
                 <NumberFlow value={pro} />
               </span>
-              <span style={{ marginLeft: 4 }}>/month</span>
+              <span style={{ marginLeft: 4 }}>{t("/month")}</span>
             </span>
           }
         />

@@ -169,7 +169,7 @@ export default function AccaOnboarding({
             <div style={{ ...card({ padding: 14, marginBottom: 18, textAlign: "center" }) }}>
               <span style={{ fontSize: 13.5, color: MUTED }}>
                 {qual.passedCount > 0 ? (
-                  <>You've passed <strong style={{ color: TEXT }}>{qual.passedCount}</strong> of 13 exams — <strong style={{ ...iriText }}>{qual.percent}%</strong> qualified. Keep going! 💪</>
+                  <>You've passed <strong style={{ color: TEXT }}>{qual.passedCount}</strong> of 13 exams — <strong style={{ ...iriText }}>{qual.percent}%</strong> qualified. Keep going!</>
                 ) : (
                   <>Just starting out? Perfect — everyone begins at Applied Knowledge.</>
                 )}

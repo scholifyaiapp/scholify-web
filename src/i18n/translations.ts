@@ -616,4 +616,23 @@ export const ru: Record<string, string> = {
   "Start prepping — free": "Начать подготовку — бесплатно",
   "No credit card · A plan in 60 seconds · Cancel anytime": "Без карты · План за 60 секунд · Отмена в любой момент",
   "Your next paper is waiting.": "Ваш следующий экзамен ждёт.",
+
+  /* ── Plan-generator phases (hero visual) ── */
+  "Phase 1 · Learn — areas A to C": "Фаза 1 · Учёба — темы A–C",
+  "Phase 2 · Drill your weak areas": "Фаза 2 · Проработка слабых мест",
+  "Phase 3 · Timed mock exams": "Фаза 3 · Пробные экзамены на время",
+  "Exam week · Final review": "Неделя экзамена · Финальное повторение",
+
+  /* ── Pricing widget ── */
+  "Monthly": "Помесячно",
+  "Yearly": "Ежегодно",
+  "Popular": "Популярный",
+  "/month": "/мес",
+  "Free": "Бесплатно",
+
+  /* ── Store badges / footer ── */
+  "AWARDED ON": "НАГРАДА",
+  "Crafted for learners by": "Создано для студентов командой",
+  "Back to top": "Наверх",
+  "mo": "мес",
 }

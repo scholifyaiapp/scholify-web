@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type MouseEvent } from "react"
+import { useT } from "@/i18n/LanguageProvider"
 
 type StoreType = "app-store" | "google-play"
 
@@ -31,6 +32,7 @@ const STORE_META: Record<StoreType, { topLine: string; bottomLine: string; href:
 }
 
 export const StoreBadge = ({ store, award = "Editors' Choice", caption, link }: StoreBadgeProps) => {
+  const t = useT()
   const ref = useRef<HTMLAnchorElement>(null)
   const uid = useId().replace(/:/g, "")
   const [firstOverlayPosition, setFirstOverlayPosition] = useState(0)
@@ -242,7 +244,7 @@ export const StoreBadge = ({ store, award = "Editors' Choice", caption, link }: 
             x="64"
             y="24"
           >
-            {meta.topLine}
+            {t(meta.topLine)}
           </text>
 
           {/* Store name */}
@@ -267,7 +269,7 @@ export const StoreBadge = ({ store, award = "Editors' Choice", caption, link }: 
             x="64"
             y="63"
           >
-            ★ {award}
+            ★ {t(award)}
             {caption ? ` · ${caption}` : ""}
           </text>
 

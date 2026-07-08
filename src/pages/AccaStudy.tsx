@@ -5,6 +5,7 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import PaywallModal from "@/components/PaywallModal"
 import TutorPanel from "@/components/acca/TutorPanel"
@@ -49,7 +50,7 @@ import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage } from "@/lib/acca-loop"
 import type { PostMortemAction } from "@/lib/acca-ai"
-import { Icon, IconBadge, Badge, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
+import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -125,6 +126,34 @@ export default function AccaStudy() {
     return () => {
       alive = false
     }
+  }, [])
+
+  // Paddle checkout lands back on /study?upgraded=true. The webhook writes
+  // the plan onto the user server-side, so refresh the session (with a
+  // couple of retries — the webhook can lag the redirect by a few seconds)
+  // until the entitlement shows up.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("upgraded") !== "true") return
+    window.history.replaceState({}, "", window.location.pathname)
+    toast.success("Payment received — welcome aboard! Unlocking Pro…")
+    if (!isSupabaseConfigured) return
+    let cancelled = false
+    const attempt = async (retriesLeft: number) => {
+      try {
+        const { data } = await supabase.auth.refreshSession()
+        const plan = data.session?.user?.user_metadata?.plan
+        if (plan && plan !== "free") return
+      } catch {
+        /* transient — retry below */
+      }
+      if (!cancelled && retriesLeft > 0) setTimeout(() => void attempt(retriesLeft - 1), 4000)
+    }
+    void attempt(4)
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // mock countdown

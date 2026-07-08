@@ -86,7 +86,6 @@ export function GlowCard({
       backgroundColor: "var(--backdrop, transparent)",
       backgroundSize: "calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))",
       backgroundPosition: "50% 50%",
-      backgroundAttachment: "fixed",
       border: "var(--border-size) solid var(--backup-border)",
       position: "relative",
       touchAction: "auto",

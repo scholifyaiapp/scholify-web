@@ -56,6 +56,8 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     fal: !!process.env.FAL_KEY,
     vapid: !!process.env.VAPID_PRIVATE_KEY,
     paddle: !!process.env.VITE_PADDLE_TOKEN,
+    paddle_webhook: !!process.env.PADDLE_WEBHOOK_SECRET,
+    paddle_api: !!process.env.PADDLE_API_KEY,
   }
   const allCriticalPresent =
     keys.anthropic && keys.supabase_url && keys.supabase_anon && keys.supabase_service

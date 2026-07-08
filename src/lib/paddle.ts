@@ -56,13 +56,16 @@ export const PADDLE_PRICES = {
  * Returns false if Paddle isn't ready or the price id is missing — the
  * caller should then surface a "payments coming soon" message.
  */
-export function openCheckout(priceId: string | undefined, email?: string): boolean {
+export function openCheckout(priceId: string | undefined, email?: string, userId?: string): boolean {
   const Paddle = initPaddle()
   if (!Paddle || !priceId) return false
   try {
     Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
       ...(email ? { customer: { email } } : {}),
+      // The webhook (api/paddle.ts) uses this to write the entitlement
+      // onto the right Supabase user.
+      ...(userId ? { customData: { userId } } : {}),
       settings: {
         displayMode: "overlay",
         theme: "dark",

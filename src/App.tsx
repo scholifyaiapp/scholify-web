@@ -45,18 +45,16 @@ function lazyWithReload<T extends ComponentType<unknown>>(
   })
 }
 
-/* ── MVP pages only. Legacy plan pages still exist in the repo but are not
- *    routed — any old URL redirects to /learn (see the catch-all below). ── */
+/* ── ACCA product pages only — any old URL redirects to /study
+ *    (see the catch-all below). ── */
 const Landing = lazyWithReload(() => import("@/pages/Landing"))
 const SignIn = lazyWithReload(() => import("@/pages/SignIn"))
 const SignUp = lazyWithReload(() => import("@/pages/SignUp"))
 const AuthCallback = lazyWithReload(() => import("@/pages/AuthCallback"))
 const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalendarCallback"))
-const Learn = lazyWithReload(() => import("@/pages/Learn"))
 const AccaStudy = lazyWithReload(() => import("@/pages/AccaStudy"))
 const AccaProgress = lazyWithReload(() => import("@/pages/AccaProgress"))
 const AccaDiagnostic = lazyWithReload(() => import("@/pages/AccaDiagnostic"))
-const LearnProgress = lazyWithReload(() => import("@/pages/LearnProgress"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
 const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
@@ -136,7 +134,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Page name="Landing"><Landing /></Page>} />
 
-        {/* Guest-only — logged-in users are bounced to /learn */}
+        {/* Guest-only — logged-in users are bounced to /study */}
         <Route path="/sign-in" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
         <Route path="/signin" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
         <Route path="/sign-up" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
@@ -150,8 +148,6 @@ export default function App() {
         <Route path="/study" element={<ProtectedRoute><Page name="AccaStudy"><AccaStudy /></Page></ProtectedRoute>} />
         <Route path="/study/progress" element={<ProtectedRoute><Page name="AccaProgress"><AccaProgress /></Page></ProtectedRoute>} />
         <Route path="/study/diagnostic" element={<ProtectedRoute><Page name="AccaDiagnostic"><AccaDiagnostic /></Page></ProtectedRoute>} />
-        <Route path="/learn" element={<ProtectedRoute><Page name="Learn"><Learn /></Page></ProtectedRoute>} />
-        <Route path="/learn/progress" element={<ProtectedRoute><Page name="LearnProgress"><LearnProgress /></Page></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />
 
         {/* Public info */}

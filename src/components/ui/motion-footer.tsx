@@ -217,7 +217,7 @@ export function CinematicFooter({
               {t(copyright)}
             </div>
             <div className="footer-glass-pill px-6 py-3 rounded-full flex items-center gap-2 order-1 md:order-2 cursor-default border-border/50">
-              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">Crafted for learners by</span>
+              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("Crafted for learners by")}</span>
               <img
                 src="/logo.svg"
                 alt="Scholify"
@@ -239,7 +239,7 @@ export function CinematicFooter({
               as="button"
               onClick={scrollToTop}
               className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground group order-3"
-              aria-label="Back to top"
+              aria-label={t("Back to top")}
             >
               <svg className="w-5 h-5 transform group-hover:-translate-y-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />

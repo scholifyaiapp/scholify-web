@@ -557,6 +557,36 @@ export default function Settings() {
     }
   }
 
+  const cancelPlan = async () => {
+    setDialog(null)
+    if (!isSupabaseConfigured) {
+      toast.info("Billing isn't connected on this account")
+      return
+    }
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) {
+        toast.error("Please sign in again to manage billing")
+        return
+      }
+      const res = await fetch("/api/paddle?action=cancel", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; reason?: string }
+      if (body.ok) {
+        toast.success("Plan will end at the period close — access stays until then")
+      } else if (body.reason === "no_subscription" || body.reason === "not_configured") {
+        toast.info("No active subscription found on this account")
+      } else {
+        toast.error("Couldn't cancel right now — please try again or contact support")
+      }
+    } catch {
+      toast.error("Couldn't reach billing — please try again")
+    }
+  }
+
   const exportData = () => {
     toast.info("Preparing export…")
     const payload = {
@@ -1435,10 +1465,7 @@ export default function Settings() {
         title="Cancel your plan?"
         body="Your streak and progress are always saved. You'll switch to the free tier at the end of your billing period."
         confirmLabel="Cancel anyway"
-        onConfirm={() => {
-          setDialog(null)
-          toast.success("Plan will end at the period close")
-        }}
+        onConfirm={() => void cancelPlan()}
         onCancel={() => setDialog(null)}
       />
       <ConfirmDialog

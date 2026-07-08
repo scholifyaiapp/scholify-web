@@ -37,14 +37,14 @@ const BEGINNER_FEATURES: PlanFeature[] = [
 ]
 
 const PRO_FEATURES: PlanFeature[] = [
-  { text: "⏱ Timed mock exams", badge: "PRO" },
-  { text: "📝 AI Examiner — written answers marked in seconds", badge: "NEW" },
-  { text: "✨ Custom practice from any topic or your notes" },
-  { text: "🤖 Unlimited Lara AI tutor" },
-  { text: "🎯 Mock history & pass-line tracking" },
-  { text: "📅 Google Calendar sync" },
-  { text: "🌍 English & Russian" },
-  { text: "🚀 Priority AI generation" },
+  { text: "Timed mock exams", badge: "PRO" },
+  { text: "AI Examiner — written answers marked in seconds", badge: "NEW" },
+  { text: "Custom practice from any topic or your notes" },
+  { text: "Unlimited Lara AI tutor" },
+  { text: "Mock history & pass-line tracking" },
+  { text: "Google Calendar sync" },
+  { text: "English & Russian" },
+  { text: "Priority AI generation" },
 ]
 
 const COMPARISON: Array<[string, string, string, string, string]> = [
@@ -162,7 +162,7 @@ export default function Pricing() {
   }
 
   const checkout = (priceId: string | undefined) => {
-    if (!openCheckout(priceId, user?.email)) {
+    if (!openCheckout(priceId, user?.email, user?.id)) {
       flash("Checkout is being set up — coming soon ✦")
     }
   }

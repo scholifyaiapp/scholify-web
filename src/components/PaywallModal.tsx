@@ -9,6 +9,7 @@ import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import LaraAvatar from "@/components/LaraAvatar"
+import { Icon, type IconName } from "@/components/acca/ui"
 import type { PaywallType } from "@/hooks/usePaywall"
 
 /* ──────────────────────────────────────────────────────────────
@@ -18,35 +19,35 @@ import type { PaywallType } from "@/hooks/usePaywall"
 
 const HEADERS: Record<
   PaywallType,
-  { kind: "celebrate" | "lock" | "lara"; emoji: string; title: string; sub: string }
+  { kind: "celebrate" | "lock" | "lara"; icon: IconName; title: string; sub: string }
 > = {
   streak7: {
     kind: "celebrate",
-    emoji: "🏆",
+    icon: "trophy",
     title: "You built a 7-day streak!",
     sub: "That puts you in the top 3% of ACCA students. Most people quit before day 3. You didn't.",
   },
   streak14: {
     kind: "celebrate",
-    emoji: "🔥",
+    icon: "streak",
     title: "14 days strong.",
     sub: "Two full weeks of showing up. Students who practise daily pass at nearly twice the average rate.",
   },
   streak21: {
     kind: "celebrate",
-    emoji: "💎",
+    icon: "gem",
     title: "21 days — it's a habit now.",
     sub: "Research says habits take about three weeks to form. You just made exam prep automatic.",
   },
   feature: {
     kind: "lock",
-    emoji: "🔒",
+    icon: "lock",
     title: "This is a Pro feature",
     sub: "Upgrade to unlock timed mocks, the AI Examiner, custom practice and unlimited Lara.",
   },
   general: {
     kind: "lara",
-    emoji: "L",
+    icon: "tutor",
     title: "Unlock the full Scholify",
     sub: "Timed mocks, instant written marking, custom practice — everything you need to pass.",
   },
@@ -167,7 +168,7 @@ export default function PaywallModal({
 
   const handleCheckout = (priceId: string | undefined) => {
     trackEvent("upgrade_started", { plan: planFor(priceId) })
-    const ok = openCheckout(priceId, email)
+    const ok = openCheckout(priceId, email, user?.id)
     if (!ok) {
       setNotice("Couldn't open checkout. Please try again.")
       setTimeout(() => setNotice(null), 2800)
@@ -264,8 +265,13 @@ export default function PaywallModal({
                     <LaraAvatar size={48} />
                   </div>
                 ) : (
-                  <span style={{ fontSize: 48, position: "relative", zIndex: 1 }}>
-                    {header.emoji}
+                  <span style={{ position: "relative", zIndex: 1, display: "inline-flex" }}>
+                    <Icon
+                      name={header.icon}
+                      size={44}
+                      color={header.kind === "lock" ? "var(--sch-tx-2)" : "#C80000"}
+                      strokeWidth={1.8}
+                    />
                   </span>
                 )}
               </div>
@@ -515,9 +521,9 @@ export default function PaywallModal({
                   initial={{ scale: 0 }}
                   animate={{ scale: [0, 1.3, 1] }}
                   transition={{ duration: 0.5, times: [0, 0.6, 1], ease: "easeOut" }}
-                  style={{ fontSize: 60, lineHeight: 1 }}
+                  style={{ lineHeight: 1, display: "flex", justifyContent: "center" }}
                 >
-                  🏆
+                  <Icon name="trophy" size={56} color="#F4A405" strokeWidth={1.8} />
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
