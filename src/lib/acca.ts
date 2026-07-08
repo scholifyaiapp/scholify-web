@@ -212,6 +212,8 @@ interface RawProgress {
   streak: number
   /** yyyy-MM-dd → questions answered that day. */
   daily: Record<string, number>
+  /** yyyy-MM-dd → questions answered CORRECTLY that day (subset of daily). */
+  dailyCorrect: Record<string, number>
 }
 
 const EMPTY: RawProgress = {
@@ -223,6 +225,7 @@ const EMPTY: RawProgress = {
   history: [],
   streak: 0,
   daily: {},
+  dailyCorrect: {},
 }
 
 function readRaw(): RawProgress {
@@ -274,10 +277,15 @@ export function recordAnswer(paperId: string, q: AccaQuestion, correct: boolean)
   const today = todayStr()
   if (!p.daily) p.daily = {}
   p.daily[today] = (p.daily[today] ?? 0) + 1
-  // keep the map small — drop entries older than ~120 days
+  if (!p.dailyCorrect) p.dailyCorrect = {}
+  if (correct) p.dailyCorrect[today] = (p.dailyCorrect[today] ?? 0) + 1
+  // keep the maps small — drop entries older than ~120 days
   const keys = Object.keys(p.daily)
   if (keys.length > 140) {
-    for (const k of keys.sort().slice(0, keys.length - 120)) delete p.daily[k]
+    for (const k of keys.sort().slice(0, keys.length - 120)) {
+      delete p.daily[k]
+      delete p.dailyCorrect[k]
+    }
   }
   if (p.lastStudied !== today) {
     if (!p.history.includes(today)) p.history = [...p.history, today].slice(-120)
@@ -477,17 +485,62 @@ export function getMockHistory(paperId: string): MockResult[] {
   return [...(readMocks()[paperId] ?? [])].reverse()
 }
 
-/** Questions answered per day for the last `days` days (oldest → newest). */
-export function getDailyActivity(days = 35): { date: string; count: number }[] {
+/** Per-day activity for the last `days` days (oldest → newest). */
+export interface DayActivity {
+  date: string
+  count: number
+  /** Correct answers that day — 0 for days recorded before per-day accuracy tracking. */
+  correct: number
+}
+
+export function getDailyActivity(days = 35): DayActivity[] {
   const p = readRaw()
   const daily = p.daily ?? {}
-  const out: { date: string; count: number }[] = []
+  const dailyCorrect = p.dailyCorrect ?? {}
+  const out: DayActivity[] = []
   const now = new Date()
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now)
     d.setDate(now.getDate() - i)
     const key = `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
-    out.push({ date: key, count: daily[key] ?? 0 })
+    out.push({ date: key, count: daily[key] ?? 0, correct: dailyCorrect[key] ?? 0 })
   }
   return out
+}
+
+/* ── Week-over-week comparison (feeds the dashboard delta chips) ── */
+
+export interface WeekComparison {
+  /** Questions answered in the last 7 days / the 7 days before that. */
+  answered: number
+  prevAnswered: number
+  /** Signed % change in volume vs the prior week — null when the prior week is empty. */
+  answeredDeltaPct: number | null
+  /** Accuracy (0–100) over the last 7 days — null when nothing was answered. */
+  accuracy: number | null
+  /** Signed accuracy change in percentage points vs the prior week — null without both windows. */
+  accuracyDeltaPts: number | null
+  /** Days studied out of the last 7. */
+  activeDays: number
+}
+
+export function getWeekComparison(): WeekComparison {
+  const days = getDailyActivity(14)
+  const prev = days.slice(0, 7)
+  const cur = days.slice(7)
+  const sum = (xs: DayActivity[], f: (d: DayActivity) => number) => xs.reduce((a, d) => a + f(d), 0)
+  const answered = sum(cur, (d) => d.count)
+  const prevAnswered = sum(prev, (d) => d.count)
+  const correct = sum(cur, (d) => d.correct)
+  const prevCorrect = sum(prev, (d) => d.correct)
+  const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : null
+  const prevAccuracy = prevAnswered > 0 ? Math.round((prevCorrect / prevAnswered) * 100) : null
+  return {
+    answered,
+    prevAnswered,
+    answeredDeltaPct: prevAnswered > 0 ? Math.round(((answered - prevAnswered) / prevAnswered) * 100) : null,
+    accuracy,
+    accuracyDeltaPts: accuracy != null && prevAccuracy != null ? accuracy - prevAccuracy : null,
+    activeDays: cur.filter((d) => d.count > 0).length,
+  }
 }

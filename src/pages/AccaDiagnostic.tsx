@@ -19,10 +19,10 @@ import {
   getLatestDiagnostic,
   type DiagnosticResult,
   type AnsweredDiagnostic,
-  type DiagnosticAreaResult,
 } from "@/lib/acca-diagnostic"
 import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
+import { RingGauge, BreakdownList } from "@/components/acca/charts"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -45,115 +45,6 @@ const RED = "#EF4444"
 const AMBER = "#F59E0B"
 
 type Phase = "intro" | "assessing" | "analyzing" | "results"
-
-/** A small count-up for the headline number, so the reveal feels earned. */
-function useCountUp(target: number, run: boolean, ms = 1100): number {
-  const [v, setV] = useState(0)
-  useEffect(() => {
-    if (!run) return
-    let raf = 0
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / ms)
-      const eased = 1 - Math.pow(1 - t, 3)
-      setV(Math.round(target * eased))
-      if (t < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [target, run, ms])
-  return v
-}
-
-/* ── Circular pass-probability gauge ──────────────────────────── */
-
-function Gauge({ prob, color, run }: { prob: number; color: string; run: boolean }) {
-  const size = 200
-  const stroke = 14
-  const r = (size - stroke) / 2
-  const circ = 2 * Math.PI * r
-  const shown = useCountUp(prob, run)
-  const offset = circ * (1 - prob / 100)
-
-  return (
-    <div style={{ position: "relative", width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={CARD2} strokeWidth={stroke} />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          initial={{ strokeDashoffset: circ }}
-          animate={{ strokeDashoffset: run ? offset : circ }}
-          transition={{ duration: 1.1, ease: "easeOut" }}
-        />
-      </svg>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div style={{ fontSize: 52, fontWeight: 800, color: TEXT, lineHeight: 1 }}>
-          {shown}
-          <span style={{ fontSize: 24, fontWeight: 700, color: MUTED }}>%</span>
-        </div>
-        <div style={{ fontSize: 12, fontWeight: 700, color, marginTop: 6, letterSpacing: 0.3 }}>
-          chance to pass
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ── Per-area competence bar ──────────────────────────────────── */
-
-function AreaBar({ area, delay }: { area: DiagnosticAreaResult; delay: number }) {
-  const pct = Math.round(area.score * 100)
-  const color = area.band === "strong" ? GREEN : area.band === "moderate" ? AMBER : RED
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0" }}>
-      <span
-        style={{
-          width: 24,
-          height: 24,
-          flexShrink: 0,
-          borderRadius: 7,
-          background: CARD2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 700,
-          fontSize: 12,
-          color: TEXT,
-        }}
-      >
-        {area.code}
-      </span>
-      <span style={{ flex: 1, fontSize: 13, color: TEXT, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {area.label}
-      </span>
-      <div style={{ width: 84, height: 6, background: CARD2, borderRadius: 999, overflow: "hidden", flexShrink: 0 }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, delay, ease: "easeOut" }}
-          style={{ height: "100%", background: color, borderRadius: 999 }}
-        />
-      </div>
-      <span style={{ width: 34, textAlign: "right", fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{pct}%</span>
-    </div>
-  )
-}
 
 /* ── Question card (in-assessment) ────────────────────────────── */
 
@@ -500,7 +391,7 @@ function ResultsView({
 
       {/* Headline */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 0 26px" }}>
-        <Gauge prob={result.passProbability} color={band.color} run />
+        <RingGauge value={result.passProbability} size={200} stroke={14} color={band.color} label="chance to pass" target={50} />
         <div style={{ marginTop: 14, fontSize: 17, fontWeight: 700, color: band.color }}>{band.label}</div>
         <div style={{ marginTop: 4, fontSize: 13.5, color: MUTED }}>
           Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark 50%
@@ -545,9 +436,14 @@ function ResultsView({
           <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: RED, letterSpacing: 0.4, marginBottom: 6 }}>
             <Icon name="weak" size={15} color={RED} /> WEAKEST AREAS
           </div>
-          {result.weakest.map((a, i) => (
-            <AreaBar key={a.code} area={a} delay={0.5 + i * 0.12} />
-          ))}
+          <BreakdownList
+            items={result.weakest.map((a) => ({
+              code: a.code,
+              label: a.label,
+              pct: Math.round(a.score * 100),
+              valueText: `${a.correct}/${a.seen}`,
+            }))}
+          />
         </div>
       )}
 
@@ -557,9 +453,14 @@ function ResultsView({
           <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: GREEN, letterSpacing: 0.4, marginBottom: 6 }}>
             <Icon name="trophy" size={15} color={GREEN} /> STRONGEST AREAS
           </div>
-          {result.strongest.map((a, i) => (
-            <AreaBar key={a.code} area={a} delay={0.7 + i * 0.12} />
-          ))}
+          <BreakdownList
+            items={result.strongest.map((a) => ({
+              code: a.code,
+              label: a.label,
+              pct: Math.round(a.score * 100),
+              valueText: `${a.correct}/${a.seen}`,
+            }))}
+          />
         </div>
       )}
 

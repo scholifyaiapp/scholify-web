@@ -8,7 +8,6 @@ import {
   IconBadge,
   Badge,
   Card,
-  Stat,
   SectionLabel,
   C,
   SP,
@@ -16,11 +15,13 @@ import {
   SHADOW,
   MOTION,
 } from "@/components/acca/ui"
+import { StatCard, MeterBar, bandColor } from "@/components/acca/charts"
 import {
   getPaperStats,
   getOverallProgress,
   getTodayStats,
   getDailyActivity,
+  getWeekComparison,
   getDailyGoal,
   setDailyGoal,
 } from "@/lib/acca"
@@ -49,6 +50,8 @@ export default function AccaProgress() {
   const overall = getOverallProgress()
   const today = getTodayStats()
   const activity = getDailyActivity(HEATMAP_DAYS)
+  const week = getWeekComparison()
+  const spark14 = getDailyActivity(14)
   const [goal, setGoal] = useState(getDailyGoal())
   const [passed, setPassed] = useState<Set<string>>(() => new Set(getPassedPapers()))
   const [journey, setJourneyState] = useState(() => getJourney())
@@ -94,19 +97,42 @@ export default function AccaProgress() {
             ACCA <span style={iriText}>readiness</span>
           </h1>
 
-          {/* headline stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: SP.md, marginBottom: SP.lg }}>
-            <Stat
-              label="Day streak"
-              value={
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <Icon name="streak" size={18} color={C.amber} />
-                  {overall.streak}
-                </span>
+          {/* headline KPIs — what gets measured gets done */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: SP.md, marginBottom: SP.lg }}>
+            <StatCard
+              index={0}
+              icon="practice"
+              label="Answered this week"
+              value={week.answered}
+              delta={week.answeredDeltaPct}
+              deltaSuffix="%"
+              deltaVs="last week"
+              spark={spark14}
+              sparkUnit="answered"
+              footnote={`${overall.totalAnswered} all-time`}
+            />
+            <StatCard
+              index={1}
+              icon="diagnostic"
+              label="Accuracy · 7 days"
+              value={week.accuracy != null ? week.accuracy : "—"}
+              suffix={week.accuracy != null ? "%" : undefined}
+              delta={week.accuracyDeltaPts}
+              deltaSuffix="pts"
+              deltaVs="last week"
+              footnote={
+                overall.totalAnswered
+                  ? `${Math.round(overall.accuracy * 100)}% all-time`
+                  : "Answer questions to measure it"
               }
             />
-            <Stat label="Answered" value={`${overall.totalAnswered}`} />
-            <Stat label="Accuracy" value={overall.totalAnswered ? `${Math.round(overall.accuracy * 100)}%` : "—"} accent />
+            <StatCard
+              index={2}
+              icon="streak"
+              label="Day streak"
+              value={overall.streak}
+              footnote={`${week.activeDays} of the last 7 days active`}
+            />
           </div>
 
           {/* daily goal */}
@@ -127,6 +153,13 @@ export default function AccaProgress() {
                 {today.goalMet && <Icon name="done" size={15} color={C.green} />}
               </span>
             </div>
+            <MeterBar
+              value={today.answered}
+              max={goal}
+              color={today.goalMet ? C.green : C.brand}
+              track={today.goalMet ? C.greenSoft : C.brandSoft}
+              style={{ marginBottom: SP.md }}
+            />
             <div style={{ display: "flex", gap: SP.sm }}>
               {[10, 15, 20, 30].map((n) => {
                 const on = goal === n
@@ -237,8 +270,21 @@ export default function AccaProgress() {
                           <div style={{ fontWeight: 650, fontSize: 13.5, color: C.text }}>{p.name}</div>
                           <div style={{ fontSize: 11, color: C.faint }}>{p.code}</div>
                         </div>
+                        {!on && s.answered > 0 && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                            <MeterBar
+                              value={s.readiness}
+                              color={bandColor(s.readiness)}
+                              target={60}
+                              height={6}
+                              style={{ width: 64 }}
+                            />
+                            <span style={{ fontSize: 12, fontWeight: 750, color: C.muted, fontVariantNumeric: "tabular-nums", width: 32, textAlign: "right" }}>
+                              {s.readiness}%
+                            </span>
+                          </span>
+                        )}
                         {isCurrent && !on && <Badge tone="brand">Studying</Badge>}
-                        {!on && !isCurrent && s.answered > 0 && <span style={{ fontSize: 12, fontWeight: 700, ...iriText }}>{s.readiness}%</span>}
                         {on && <span style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>Passed</span>}
                       </Card>
                     )
@@ -374,9 +420,12 @@ function Stepper({ label, value, max, step, onChange }: { label: string; value: 
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: SP.md - 2 }}>
         <motion.button whileTap={{ scale: 0.95 }} onClick={() => onChange(Math.max(0, value - step))} style={btn} aria-label="decrease">−</motion.button>
-        <div style={{ flex: 1, height: 8, background: C.card2, borderRadius: R.pill, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? C.green : C.brand, borderRadius: R.pill }} />
-        </div>
+        <MeterBar
+          value={pct}
+          color={pct >= 100 ? C.green : C.brand}
+          track={pct >= 100 ? C.greenSoft : C.brandSoft}
+          style={{ flex: 1 }}
+        />
         <motion.button whileTap={{ scale: 0.95 }} onClick={() => onChange(Math.min(max, value + step))} style={btn} aria-label="increase">+</motion.button>
       </div>
     </div>

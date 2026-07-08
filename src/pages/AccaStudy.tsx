@@ -51,6 +51,7 @@ import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib
 import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage } from "@/lib/acca-loop"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
+import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study — Scholify's ACCA exam-prep home.
@@ -898,10 +899,29 @@ function Overview({
       </motion.div>
 
       {/* readiness — live pass probability once there's practice, else coverage-based */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
-        <Stat label={band.label} value={readinessValue} accent />
-        <Stat label="Accuracy" value={hasHistory ? `${Math.round(stats.accuracy * 100)}%` : "—"} />
-        <Stat label="Answered" value={`${stats.answered}`} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <StatCard
+          index={0}
+          icon="diagnostic"
+          label={band.label}
+          value={readinessValue}
+          footnote={live ? "live from your practice" : hasHistory ? "readiness from coverage" : "start practising to measure"}
+        />
+        <StatCard
+          index={1}
+          icon="done"
+          label="Accuracy"
+          value={hasHistory ? Math.round(stats.accuracy * 100) : "—"}
+          suffix={hasHistory ? "%" : undefined}
+          footnote={hasHistory ? `${stats.correct} of ${stats.answered} correct` : undefined}
+        />
+        <StatCard
+          index={2}
+          icon="practice"
+          label="Answered"
+          value={stats.answered}
+          footnote={`${Math.round(stats.coverage * 100)}% of the bank seen`}
+        />
       </div>
 
       {/* pass-probability diagnostic — the headline number */}
@@ -1068,17 +1088,29 @@ function Overview({
         <ModeTile icon="examiner" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
       </div>
 
-      {/* mock history */}
+      {/* mock history — score trend against the pass line, then the receipts */}
       {mocks.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <SectionHead icon="mock">Recent mocks</SectionHead>
+          <SectionHead icon="mock" right={<span style={{ fontSize: 12, color: MUTED, textTransform: "none", letterSpacing: 0 }}>best <b style={{ color: TEXT }}>{Math.max(...mocks.map((m) => m.percent))}%</b></span>}>
+            Recent mocks
+          </SectionHead>
+          {mocks.length >= 2 && (
+            <div style={{ ...card({ padding: 16 }), marginBottom: 8 }}>
+              <TrendBars
+                points={[...mocks].reverse().map((m) => ({ date: m.date, percent: m.percent }))}
+                passLine={50}
+                unit="mock score"
+              />
+            </div>
+          )}
           <div style={{ display: "grid", gap: 8 }}>
             {mocks.slice(0, 5).map((m, i) => (
               <div key={i} style={{ ...card({ padding: "12px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
                 <Icon name={m.percent >= 50 ? "done" : "stats"} size={17} color={m.percent >= 50 ? GREEN : "#C2740B"} />
                 <span style={{ flex: 1, fontSize: 13.5, color: TEXT }}>{m.date}</span>
                 <span style={{ fontSize: 13, color: MUTED }}>{m.correct}/{m.total}</span>
-                <span style={{ fontWeight: 800, fontSize: 15, color: m.percent >= 50 ? GREEN : RED, width: 48, textAlign: "right" }}>{m.percent}%</span>
+                <MeterBar value={m.percent} color={bandColor(m.percent, 50)} target={50} height={6} style={{ width: 56, flexShrink: 0 }} />
+                <span style={{ fontWeight: 800, fontSize: 14, color: TEXT, width: 44, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{m.percent}%</span>
               </div>
             ))}
           </div>
@@ -1206,10 +1238,23 @@ function TopicView({
       </p>
 
       {/* topic stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
-        <Stat label="Answered" value={`${areaStats?.seen ?? 0}`} />
-        <Stat label="Accuracy" value={areaStats?.seen ? `${Math.round((areaStats.accuracy) * 100)}%` : "—"} />
-        <Stat label={result.mastered ? "Mastered" : "Best check"} value={result.attempts > 0 ? `${Math.round(result.best * 100)}%` : "—"} accent={result.mastered} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 18 }}>
+        <StatCard index={0} icon="practice" label="Answered" value={areaStats?.seen ?? 0} />
+        <StatCard
+          index={1}
+          icon="done"
+          label="Accuracy"
+          value={areaStats?.seen ? Math.round(areaStats.accuracy * 100) : "—"}
+          suffix={areaStats?.seen ? "%" : undefined}
+        />
+        <StatCard
+          index={2}
+          icon={result.mastered ? "trophy" : "diagnostic"}
+          label={result.mastered ? "Mastered" : "Best check"}
+          value={result.attempts > 0 ? Math.round(result.best * 100) : "—"}
+          suffix={result.attempts > 0 ? "%" : undefined}
+          footnote={result.mastered ? undefined : `need ${Math.round(TOPIC_PASS * 100)}% to master`}
+        />
       </div>
 
       {/* the topic loop */}
@@ -1348,26 +1393,22 @@ function MockGateTile({ prob, onWeak }: { prob: number; onWeak: () => void }) {
           You're at <b style={{ color: TEXT }}>{prob}%</b> pass probability — I'm steering your daily plan at your weak
           areas to close the gap. Tap to drill them now.
         </div>
-        <div style={{ height: 6, borderRadius: 999, background: "var(--sch-card-2)", overflow: "hidden", position: "relative" }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            style={{ height: "100%", borderRadius: 999, background: IRIDESCENT }}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ flex: 1, height: 6, borderRadius: 999, background: "var(--sch-card-2)", overflow: "hidden", position: "relative" }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              style={{ height: "100%", borderRadius: 999, background: IRIDESCENT }}
+            />
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 750, color: MUTED, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+            {prob}/{MOCK_GATE}%
+          </span>
         </div>
       </div>
       <span style={{ color: DIM, fontSize: 18, flexShrink: 0 }}>›</span>
     </motion.button>
-  )
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div style={card({ padding: 14, textAlign: "center" })}>
-      <div style={{ fontWeight: 800, fontSize: 22, ...(accent ? iriText : { color: TEXT }) }}>{value}</div>
-      <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>{label}</div>
-    </div>
   )
 }
 
@@ -1549,17 +1590,23 @@ function Results({
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }} style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-        <span style={{ width: 68, height: 68, borderRadius: "50%", display: "grid", placeItems: "center", background: passed ? C.greenSoft : C.brandSoft }}>
-          <Icon name={passed ? "celebrate" : "weak"} size={32} color={passed ? C.green : C.brand} />
-        </span>
-      </motion.div>
-      <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600 }}>
+      <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600, marginBottom: 14 }}>
         {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : "PRACTICE COMPLETE"}
       </div>
-      <h1 style={{ fontSize: 30, fontWeight: 800, margin: "4px 0", color: TEXT }}>
-        <span style={iriText}>{correct}</span> / {total} correct
-      </h1>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 160, damping: 18, delay: 0.05 }}
+        style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}
+      >
+        <RingGauge
+          value={pct}
+          size={172}
+          target={passLine}
+          label={passed ? (isMock ? "mock passed" : isTopicTest ? "topic mastered" : "pass-level score") : `pass line ${passLine}%`}
+          sublabel={`${correct}/${total} correct`}
+        />
+      </motion.div>
       <p style={{ color: MUTED, margin: "0 0 24px", fontSize: 15 }}>
         {isTopicTest
           ? passed
@@ -1617,20 +1664,37 @@ function Results({
       {areaRows.length > 0 && (
         <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>
           <h3 style={{ ...sectionH, textAlign: "center" }}>BY SYLLABUS AREA</h3>
-          <div style={{ display: "grid", gap: 8 }}>
-            {areaRows.map((a) => (
-              <div key={a.code} style={{ ...card({ padding: "10px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ width: 24, height: 24, borderRadius: 7, background: "var(--sch-card-2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: TEXT, flexShrink: 0 }}>{a.code}</span>
-                <span style={{ flex: 1, fontSize: 13, color: TEXT }}>{a.label}</span>
-                <div style={{ width: 60, height: 6, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden", flexShrink: 0 }}>
-                  <div style={{ height: "100%", width: `${a.pct}%`, background: a.pct >= 50 ? GREEN : RED, borderRadius: 999 }} />
-                </div>
-                <span style={{ fontSize: 12, color: a.pct >= 50 ? GREEN : RED, fontWeight: 650, width: 60, textAlign: "right" }}>{a.correct}/{a.seen}</span>
-              </div>
-            ))}
+          <div style={card({ padding: "8px 16px" })}>
+            <BreakdownList
+              items={areaRows.map((a) => ({
+                code: a.code,
+                label: a.label,
+                pct: a.pct,
+                valueText: `${a.correct}/${a.seen}`,
+              }))}
+              passLine={passLine}
+            />
           </div>
         </div>
       )}
+
+      {/* mock score trend — every attempt against the pass line */}
+      {isMock && !isTopicTest && (() => {
+        const history = getMockHistory(paper.id)
+        if (history.length < 2) return null
+        return (
+          <div style={{ maxWidth: 420, margin: "0 auto 24px", textAlign: "left" }}>
+            <h3 style={{ ...sectionH, textAlign: "center" }}>MOCK TREND</h3>
+            <div style={card({ padding: 16 })}>
+              <TrendBars
+                points={[...history].reverse().map((m) => ({ date: m.date, percent: m.percent }))}
+                passLine={passLine}
+                unit="mock score"
+              />
+            </div>
+          </div>
+        )
+      })()}
 
       <div style={{ display: "grid", gap: 10, maxWidth: 340, margin: "0 auto" }}>
         <motion.button whileTap={{ scale: 0.99 }} onClick={onAgain} style={{ padding: 16, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 16, cursor: "pointer" }}>
