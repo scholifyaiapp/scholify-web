@@ -439,7 +439,7 @@ export default function PaywallModal({
                   </span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, ...iriText }}>$99.99/yr</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, ...iriText }}>$119.99/yr</span>
                   <span
                     style={{
                       fontSize: 10,
@@ -450,7 +450,7 @@ export default function PaywallModal({
                       border: "1px solid rgba(52,211,153,0.2)",
                     }}
                   >
-                    Save 43%
+                    Save 33%
                   </span>
                 </span>
               </motion.button>

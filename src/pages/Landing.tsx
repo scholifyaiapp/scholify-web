@@ -1649,7 +1649,7 @@ function CompareROI() {
         <SavingsCalculator />
 
         <p className="font-mono-pro" style={{ textAlign: "center", color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", marginTop: 20, lineHeight: 1.6 }}>
-          {t("MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $14.99/MO OR $99.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.")}
+          {t("MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $14.99/MO OR $119.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.")}
         </p>
       </div>
     </section>
@@ -1833,7 +1833,7 @@ function Pricing() {
           {t("Start free.")} <em style={{ fontStyle: "italic" }}>{t("Upgrade when you're ready.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 14, maxWidth: 560, marginInline: "auto" }}>
-          {t("7-day free trial — no credit card required. Annual saves 43%.")}
+          {t("7-day free trial — no credit card required. Annual saves 33%.")}
         </p>
 
         <div
@@ -1856,9 +1856,9 @@ function Pricing() {
           >
             <PricingInteraction
               starterMonth={9.99}
-              starterAnnual={5.99}
+              starterAnnual={6.67}
               proMonth={14.99}
-              proAnnual={8.33}
+              proAnnual={10.00}
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
               ctaLabel={t("Start 7-day free trial")}

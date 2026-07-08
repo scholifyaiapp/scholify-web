@@ -203,8 +203,8 @@ export const ru: Record<string, string> = {
   "PRICING": "ЦЕНЫ",
   "Start free.": "Начните бесплатно.",
   "Upgrade when you're ready.": "Перейдите на платный план, когда будете готовы.",
-  "7-day free trial — no credit card required. Annual saves 43%.":
-    "7 дней бесплатно — без привязки карты. Годовой план экономит 43%.",
+  "7-day free trial — no credit card required. Annual saves 33%.":
+    "7 дней бесплатно — без привязки карты. Годовой план экономит 33%.",
   "Beginner": "Новичок",
   "Pro": "Pro",
   "Start 7-day free trial": "Начать 7-дневный пробный период",
@@ -580,8 +580,8 @@ export const ru: Record<string, string> = {
   "some": "частично",
   "fixed schedule": "жёсткое расписание",
   "self-paced": "самостоятельно",
-  "MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $14.99/MO OR $99.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.":
-    "РЫНОЧНЫЕ ЦЕНЫ: ОПУБЛИКОВАННЫЕ ЦЕНЫ ОНЛАЙН-КУРСОВ ЗА ЭКЗАМЕН (УЧЕБНЫЕ ЦЕНТРЫ СНГ, 2026) И ТИПИЧНЫЕ ЦЕНЫ ON-DEMAND КУРСОВ. SCHOLIFY: PRO $14.99/МЕС ИЛИ $99.99/ГОД. ВЗНОСЫ ACCA ЗА ЭКЗАМЕНЫ ОПЛАЧИВАЮТСЯ ОТДЕЛЬНО ВЕЗДЕ.",
+  "MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $14.99/MO OR $119.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.":
+    "РЫНОЧНЫЕ ЦЕНЫ: ОПУБЛИКОВАННЫЕ ЦЕНЫ ОНЛАЙН-КУРСОВ ЗА ЭКЗАМЕН (УЧЕБНЫЕ ЦЕНТРЫ СНГ, 2026) И ТИПИЧНЫЕ ЦЕНЫ ON-DEMAND КУРСОВ. SCHOLIFY: PRO $14.99/МЕС ИЛИ $119.99/ГОД. ВЗНОСЫ ACCA ЗА ЭКЗАМЕНЫ ОПЛАЧИВАЮТСЯ ОТДЕЛЬНО ВЕЗДЕ.",
   "YOUR NUMBERS": "ВАШИ ЦИФРЫ",
   "Drag the sliders to your reality.": "Передвиньте ползунки под вашу реальность.",
   "Papers left to pass": "Осталось сдать экзаменов",
