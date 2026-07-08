@@ -49,6 +49,7 @@ import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState } from "@/lib/acca-loop"
+import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
@@ -184,7 +185,14 @@ export default function AccaStudy() {
         recordTopicTest(paperId, topicArea, correctCount / questions.length)
       } else if (isMock) {
         recordMock(paperId, correctCount, questions.length)
+        // Questions the clock took are lost-to-time marks, not knowledge gaps.
+        if (timeLeft === 0 && log.length < questions.length) {
+          recordMistake(paperId, "time", questions.length - log.length)
+        }
       }
+      // Every finished session updates the learner model — snapshot it for
+      // the Pass Momentum trend.
+      snapshotProbability(paperId)
       queueAccaProgressPush()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -834,6 +842,11 @@ function Overview({
     diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock",
   }
 
+  // Keep the Pass Momentum trend fed even on read-only visits.
+  useEffect(() => {
+    snapshotProbability(paper.id)
+  }, [paper.id])
+
   function updateExamDate(date: string) {
     setPlanState(setPlan(paper.id, { examDate: date || null }))
   }
@@ -1480,6 +1493,49 @@ function SessionView({
   const pct = (index / total) * 100
   const lowTime = isMock && timeLeft <= 60
 
+  // ── Analytics instrumentation (all optional, never blocks the flow) ──
+  const shownAtRef = useRef(performance.now())
+  const [sure, setSure] = useState<boolean | null>(null)
+  const [mistakeTag, setMistakeTag] = useState<MistakeTag | null>(null)
+  const confidenceRecorded = useRef(false)
+  useEffect(() => {
+    shownAtRef.current = performance.now()
+    setSure(null)
+    setMistakeTag(null)
+    confidenceRecorded.current = false
+  }, [q.id])
+
+  // Confidence resolves the moment the answer is graded.
+  useEffect(() => {
+    if (graded && sure !== null && !confidenceRecorded.current) {
+      confidenceRecorded.current = true
+      recordConfidence(q.paper, sure, wasCorrect)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graded])
+
+  function recordTiming() {
+    recordAnswerTiming(q.paper, (performance.now() - shownAtRef.current) / 1000)
+  }
+  function handleSubmit() {
+    recordTiming()
+    onSubmit()
+  }
+  function handleMockNext() {
+    recordTiming()
+    onMockNext()
+  }
+  function handleNext() {
+    // A missed question defaults to a knowledge gap unless the learner said why.
+    if (!wasCorrect && mistakeTag === null) recordMistake(q.paper, "knowledge")
+    onNext()
+  }
+  function tagMistake(tag: MistakeTag) {
+    if (mistakeTag !== null) return
+    setMistakeTag(tag)
+    recordMistake(q.paper, tag)
+  }
+
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -1537,6 +1593,39 @@ function SessionView({
           </div>
         )}
 
+        {/* optional one-tap confidence mark — feeds calibration analytics */}
+        {!isMock && !graded && canSubmit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}
+          >
+            <span style={{ fontSize: 11.5, color: DIM, fontWeight: 650 }}>How sure are you?</span>
+            {([true, false] as const).map((v) => {
+              const on = sure === v
+              return (
+                <button
+                  key={String(v)}
+                  onClick={() => setSure(on ? null : v)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 999,
+                    border: `1.5px solid ${on ? "#C80000" : BORDER}`,
+                    background: on ? "rgba(200,0,0,0.07)" : CARD,
+                    color: on ? "#C80000" : MUTED,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "border-color .15s, background .15s, color .15s",
+                  }}
+                >
+                  {v ? "Sure" : "Not sure"}
+                </button>
+              )
+            })}
+          </motion.div>
+        )}
+
         {/* explanation + tutor (practice only) */}
         <AnimatePresence>
           {graded && !isMock && (
@@ -1546,6 +1635,38 @@ function SessionView({
                   {wasCorrect ? "✓ Correct" : "✗ Not quite"}
                 </div>
                 <div style={{ fontSize: 14, lineHeight: 1.55, color: TEXT }}>{q.explanation}</div>
+                {!wasCorrect && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: 11.5, color: DIM, fontWeight: 700, marginBottom: 7 }}>
+                      {mistakeTag ? "Noted — this sharpens your mistake analysis." : "Why did this one slip? (one tap — improves your plan)"}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {(Object.keys(MISTAKE_LABELS) as MistakeTag[]).map((tag) => {
+                        const on = mistakeTag === tag
+                        return (
+                          <button
+                            key={tag}
+                            onClick={() => tagMistake(tag)}
+                            disabled={mistakeTag !== null}
+                            style={{
+                              padding: "5px 11px",
+                              borderRadius: 999,
+                              border: `1.5px solid ${on ? RED : BORDER}`,
+                              background: on ? "rgba(239,68,68,0.08)" : CARD,
+                              color: on ? RED : mistakeTag !== null ? DIM : MUTED,
+                              fontSize: 12,
+                              fontWeight: 650,
+                              cursor: mistakeTag === null ? "pointer" : "default",
+                              transition: "border-color .15s, background .15s",
+                            }}
+                          >
+                            {MISTAKE_LABELS[tag]}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
               <TutorPanel q={q} correctText={q.options?.[correctIdx ?? -1] ?? `${q.numericAnswer ?? ""}`} />
             </motion.div>
@@ -1556,15 +1677,15 @@ function SessionView({
       {/* action bar */}
       <div style={{ marginTop: 16 }}>
         {isMock ? (
-          <motion.button whileTap={{ scale: 0.99 }} disabled={!canSubmit} onClick={onMockNext} style={actionBtn(canSubmit)}>
+          <motion.button whileTap={{ scale: 0.99 }} disabled={!canSubmit} onClick={handleMockNext} style={actionBtn(canSubmit)}>
             {index + 1 >= total ? "Finish mock" : "Next →"}
           </motion.button>
         ) : !graded ? (
-          <motion.button whileTap={{ scale: 0.99 }} disabled={!canSubmit} onClick={onSubmit} style={actionBtn(canSubmit)}>
+          <motion.button whileTap={{ scale: 0.99 }} disabled={!canSubmit} onClick={handleSubmit} style={actionBtn(canSubmit)}>
             Check answer
           </motion.button>
         ) : (
-          <motion.button whileTap={{ scale: 0.99 }} onClick={onNext} style={actionBtn(true)}>
+          <motion.button whileTap={{ scale: 0.99 }} onClick={handleNext} style={actionBtn(true)}>
             {index + 1 >= total ? "See results" : "Next question →"}
           </motion.button>
         )}

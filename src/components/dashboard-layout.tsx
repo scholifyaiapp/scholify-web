@@ -42,6 +42,7 @@ type NavItemDef = {
 
 export const NAV: NavItemDef[] = [
   { icon: "study", label: "Study", to: "/study" },
+  { icon: "stats", label: "Analytics", to: "/study/analytics" },
   { icon: "progress", label: "Progress", to: "/study/progress" },
   { icon: "settings", label: "Settings", to: "/settings" },
 ]

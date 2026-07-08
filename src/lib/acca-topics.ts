@@ -27,6 +27,8 @@ export interface TopicResult {
   best: number
   mastered: boolean
   lastAt: string | null
+  /** When mastery was first reached (ISO) — feeds learning velocity. */
+  masteredAt?: string | null
 }
 
 type Store = Record<string, Record<string, TopicResult>>
@@ -59,15 +61,22 @@ export function getTopicResult(paperId: string, area: string): TopicResult {
 export function recordTopicTest(paperId: string, area: string, score: number): TopicResult {
   const store = read()
   const prev = store[paperId]?.[area] ?? { attempts: 0, best: 0, mastered: false, lastAt: null }
+  const nowMastered = prev.mastered || score >= TOPIC_PASS
   const next: TopicResult = {
     attempts: prev.attempts + 1,
     best: Math.max(prev.best, score),
-    mastered: prev.mastered || score >= TOPIC_PASS,
+    mastered: nowMastered,
     lastAt: new Date().toISOString(),
+    masteredAt: prev.masteredAt ?? (nowMastered && !prev.mastered ? new Date().toISOString() : null),
   }
   store[paperId] = { ...(store[paperId] ?? {}), [area]: next }
   write(store)
   return next
+}
+
+/** All topic results for a paper (area code → result) — feeds analytics. */
+export function getTopicResults(paperId: string): Record<string, TopicResult> {
+  return read()[paperId] ?? {}
 }
 
 export type TopicState = "mastered" | "in-progress" | "available" | "upcoming"

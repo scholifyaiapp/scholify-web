@@ -55,6 +55,7 @@ const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalend
 const AccaStudy = lazyWithReload(() => import("@/pages/AccaStudy"))
 const AccaProgress = lazyWithReload(() => import("@/pages/AccaProgress"))
 const AccaDiagnostic = lazyWithReload(() => import("@/pages/AccaDiagnostic"))
+const AccaAnalytics = lazyWithReload(() => import("@/pages/AccaAnalytics"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
 const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
@@ -148,6 +149,7 @@ export default function App() {
         <Route path="/study" element={<ProtectedRoute><Page name="AccaStudy"><AccaStudy /></Page></ProtectedRoute>} />
         <Route path="/study/progress" element={<ProtectedRoute><Page name="AccaProgress"><AccaProgress /></Page></ProtectedRoute>} />
         <Route path="/study/diagnostic" element={<ProtectedRoute><Page name="AccaDiagnostic"><AccaDiagnostic /></Page></ProtectedRoute>} />
+        <Route path="/study/analytics" element={<ProtectedRoute><Page name="AccaAnalytics"><AccaAnalytics /></Page></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />
 
         {/* Public info */}
