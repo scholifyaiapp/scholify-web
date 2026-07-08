@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
+import { Icon, IconBadge, Button, C, SP, R, SHADOW } from "@/components/acca/ui"
 import { getDueFlashcards, getFlashcards, reviewFlashcard, type Flashcard } from "@/lib/acca-flashcards"
 
 /*
@@ -11,15 +11,15 @@ import { getDueFlashcards, getFlashcards, reviewFlashcard, type Flashcard } from
  * without, reviews today's due cards across the paper.
  */
 
-const TEXT = "var(--sch-text)"
-const MUTED = "var(--sch-tx-2)"
-const DIM = "var(--sch-tx-3)"
-const CARD = "var(--sch-card)"
-const BORDER = "var(--sch-border)"
-const GREEN = "#10B981"
-
-function card(extra?: CSSProperties): CSSProperties {
-  return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
+function cardStyle(extra?: CSSProperties): CSSProperties {
+  return {
+    background: C.card,
+    border: `1px solid ${C.border}`,
+    borderRadius: R["2xl"],
+    padding: SP.xl,
+    boxShadow: SHADOW.sm,
+    ...extra,
+  }
 }
 
 export default function FlashcardsView({ paperId, area, onBack }: { paperId: string; area?: string; onBack: () => void }) {
@@ -51,26 +51,29 @@ export default function FlashcardsView({ paperId, area, onBack }: { paperId: str
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-      <button onClick={onBack} style={backBtn}>← Back</button>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: TEXT }}>
+      <Button variant="ghost" onClick={onBack} style={{ minHeight: 40, padding: "6px 0", marginBottom: SP.md }}>
+        <Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} /> Back
+      </Button>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SP.lg }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: C.text }}>
           <span style={iriText}>{area ? `Topic ${area} cards` : "Flashcards"}</span>
         </h1>
-        {!done && <span style={{ color: DIM, fontSize: 13 }}>{idx + 1} / {total}</span>}
+        {!done && <span style={{ color: C.faint, fontSize: 13 }}>{idx + 1} / {total}</span>}
       </div>
 
       {done ? (
-        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", paddingTop: 24 }}>
-          <div style={{ fontSize: 52, marginBottom: 8 }}>🧠</div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: TEXT, margin: "0 0 4px" }}>
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", paddingTop: SP["2xl"] }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: SP.md }}>
+            <IconBadge name="flashcards" tone="brand" size={64} />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 4px" }}>
             {reviewed > 0 ? `${reviewed} cards reviewed` : "All caught up!"}
           </h2>
-          <p style={{ color: MUTED, margin: "0 0 24px", fontSize: 15 }}>
+          <p style={{ color: C.soft, margin: "0 0 24px", fontSize: 15 }}>
             {reviewed > 0 ? "Nice work — come back tomorrow for the next batch." : "No cards are due right now. Check back later."}
           </p>
-          <button onClick={onBack} style={{ ...card({ cursor: "pointer" }), fontWeight: 700, color: TEXT, background: IRIDESCENT, border: "none", ...({ color: "#fff" } as CSSProperties), padding: "14px 28px" }}>
-            Back to {paperId}
-          </button>
+          <Button onClick={onBack} size="lg">Back to {paperId}</Button>
         </motion.div>
       ) : (
         <>
@@ -95,22 +98,30 @@ export default function FlashcardsView({ paperId, area, onBack }: { paperId: str
                   width: "100%",
                   minHeight: 240,
                   boxSizing: "border-box",
-                  ...card({ cursor: flipped ? "grab" : "pointer" }),
+                  ...cardStyle({ cursor: flipped ? "grab" : "pointer" }),
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   textAlign: "center",
-                  gap: 12,
-                  padding: 28,
-                  border: flipped ? `1px solid ${GREEN}` : `1px solid ${BORDER}`,
+                  gap: SP.md,
+                  padding: SP["3xl"] - 4,
+                  border: flipped ? `1px solid ${C.green}` : `1px solid ${C.border}`,
                   touchAction: "pan-y",
                 }}
               >
-                <span style={{ fontSize: 11, letterSpacing: 0.5, color: DIM, fontWeight: 700 }}>
-                  {flipped ? "← REVIEW AGAIN · SWIPE · GOT IT →" : `AREA ${cardItem.area} · TAP TO FLIP`}
+                <span style={{ fontSize: 11, letterSpacing: 0.5, color: C.faint, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  {flipped ? (
+                    <>
+                      <Icon name="arrow" size={13} color={C.red} style={{ transform: "rotate(180deg)" }} />
+                      REVIEW · SWIPE · GOT IT
+                      <Icon name="arrow" size={13} color={C.green} />
+                    </>
+                  ) : (
+                    `AREA ${cardItem.area} · TAP TO FLIP`
+                  )}
                 </span>
-                <span style={{ fontSize: flipped ? 16 : 19, fontWeight: flipped ? 500 : 700, lineHeight: 1.5, color: TEXT }}>
+                <span style={{ fontSize: flipped ? 16 : 19, fontWeight: flipped ? 500 : 700, lineHeight: 1.5, color: C.text }}>
                   {flipped ? cardItem.back : cardItem.front}
                 </span>
               </motion.div>
@@ -118,40 +129,19 @@ export default function FlashcardsView({ paperId, area, onBack }: { paperId: str
           </div>
 
           {flipped ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-              <button onClick={() => grade(false)} style={gradeBtn("#EF4444")}>← Review again</button>
-              <button onClick={() => grade(true)} style={gradeBtn(GREEN)}>Got it →</button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.sm, marginTop: SP.lg }}>
+              <Button variant="secondary" full onClick={() => grade(false)} style={{ color: C.red, borderColor: C.red }}>
+                <Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} /> Review again
+              </Button>
+              <Button variant="secondary" full onClick={() => grade(true)} style={{ color: C.green, borderColor: C.green }}>
+                Got it <Icon name="arrow" size={16} />
+              </Button>
             </div>
           ) : (
-            <button onClick={() => setFlipped(true)} style={{ ...gradeBtn("#C80000"), width: "100%", marginTop: 16 }}>
-              Show answer
-            </button>
+            <Button full onClick={() => setFlipped(true)} style={{ marginTop: SP.lg }}>Show answer</Button>
           )}
         </>
       )}
     </motion.div>
   )
-}
-
-function gradeBtn(color: string): CSSProperties {
-  return {
-    padding: 15,
-    borderRadius: 14,
-    border: `1.5px solid ${color}`,
-    background: "var(--sch-card)",
-    color,
-    fontWeight: 700,
-    fontSize: 15,
-    cursor: "pointer",
-  }
-}
-
-const backBtn: CSSProperties = {
-  background: "none",
-  border: "none",
-  color: MUTED,
-  cursor: "pointer",
-  fontSize: 14,
-  padding: 0,
-  marginBottom: 14,
 }

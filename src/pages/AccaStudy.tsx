@@ -500,7 +500,7 @@ function ContinueCard({ pid, onPick }: { pid: string; onPick: (id: string) => vo
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>CONTINUE · {paper.id}</span>
         <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000" }}>
-          {mission.phase.emoji} {mission.phase.label.toUpperCase()} PHASE
+          {mission.phase.label.toUpperCase()} PHASE
         </span>
         {days !== null && (
           <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED }}>
@@ -544,8 +544,8 @@ function TodayCard() {
           <circle cx="32" cy="32" r={r} fill="none" stroke="var(--sch-card-2)" strokeWidth="6" />
           <circle cx="32" cy="32" r={r} fill="none" stroke="#C80000" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
         </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-          {t.goalMet ? "✅" : "🎯"}
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+          <Icon name={t.goalMet ? "done" : "diagnostic"} size={20} color="#C80000" />
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -557,12 +557,16 @@ function TodayCard() {
         </div>
       </div>
       <div style={{ textAlign: "center", flexShrink: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: 22 }}>🔥 {t.streak}</div>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 22, color: TEXT }}>
+          <Icon name="streak" size={18} color="#C80000" /> {t.streak}
+        </div>
         <div style={{ color: DIM, fontSize: 11 }}>day streak</div>
       </div>
       {shieldTime && (
         <div style={{ textAlign: "center", flexShrink: 0, paddingLeft: 12, borderLeft: `1px solid ${BORDER}` }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: "#C80000" }}>🛡️ {shieldTime}</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 15, color: "#C80000" }}>
+            <Icon name="shield" size={15} color="#C80000" /> {shieldTime}
+          </div>
           <div style={{ color: DIM, fontSize: 11 }}>shield time</div>
         </div>
       )}
@@ -660,8 +664,13 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
       </p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 18 }}>
-        {["✏️ Practice", "✨ AI Tutor", "⏱️ Mocks", "📝 AI Examiner", "🧩 Custom AI", "🧠 Flashcards", "📅 Study plan"].map((t) => (
-          <span key={t} style={{ fontSize: 12, fontWeight: 600, padding: "5px 11px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED }}>{t}</span>
+        {([
+          ["practice", "Practice"], ["tutor", "AI Tutor"], ["mock", "Mocks"], ["examiner", "AI Examiner"],
+          ["generate", "Custom AI"], ["flashcards", "Flashcards"], ["calendar", "Study plan"],
+        ] as [IconName, string][]).map(([ic, t]) => (
+          <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, padding: "5px 11px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED }}>
+            <Icon name={ic} size={13} color={C.soft} /> {t}
+          </span>
         ))}
       </div>
 
@@ -790,6 +799,9 @@ function Overview({
     flashcards: onFlashcards,
     mock: onMock,
   }
+  const todayIcons: Record<TodayAction, IconName> = {
+    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock",
+  }
 
   function updateExamDate(date: string) {
     setPlanState(setPlan(paper.id, { examDate: date || null }))
@@ -815,8 +827,9 @@ function Overview({
         <div style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>{greeting(firstName)}</div>
         <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{todayHeadline(paper.id)}</div>
 
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000", margin: "16px 0 8px" }}>
-          TODAY'S PLAN
+        <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "16px 0 8px" }}>
+          <Icon name="mission" size={14} color="#C80000" strokeWidth={2.4} />
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>TODAY'S PLAN</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {todayPlan.map((t, i) => (
@@ -840,7 +853,7 @@ function Overview({
                 background: i === 0 ? "rgba(200,0,0,0.05)" : "var(--sch-bg)",
               }}
             >
-              <span style={{ fontSize: 20, flexShrink: 0 }}>{t.icon}</span>
+              <IconBadge name={todayIcons[t.action]} tone={i === 0 ? "brand" : "neutral"} size={38} />
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>{t.title}</span>
                 <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{t.detail}</span>
@@ -898,14 +911,14 @@ function Overview({
           </>
         ) : (
           <>
-            <div style={{ fontSize: 26, flexShrink: 0 }}>🎯</div>
+            <IconBadge name="diagnostic" tone="brand" size={44} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: 14.5, color: "#C80000" }}>What's your chance of passing?</div>
               <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Take the ~15-min diagnostic → pass probability + your weakest areas</div>
             </div>
           </>
         )}
-        <span style={{ fontSize: 18, color: MUTED, flexShrink: 0 }}>→</span>
+        <Icon name="arrow" size={17} color={MUTED} />
       </motion.button>
 
       {/* the method — where you are in the 4 phases */}
@@ -932,7 +945,7 @@ function Overview({
       <div style={card({ marginBottom: 16 })}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>📅 Exam date</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14, color: TEXT }}><Icon name="calendar" size={16} color={C.brand} /> Exam date</div>
             <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>
               {days === null ? "Set your sitting to get a countdown." : days === 0 ? "That's today — good luck!" : `${days} days to go`}
             </div>
@@ -953,7 +966,7 @@ function Overview({
           <div style={{ display: "grid", gap: 8 }}>
             {studyPlan.phases.map((ph) => (
               <div key={ph.label} style={{ ...card({ padding: 14 }), display: "flex", gap: 12 }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{ph.emoji}</span>
+                <IconBadge name={PHASE_ICON[ph.label.toLowerCase()] ?? "learn"} tone="brand" size={36} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                     <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{ph.label}</span>
@@ -983,7 +996,7 @@ function Overview({
       )}
 
       {/* study rooms — grouped by what they're FOR in the method */}
-      <h3 style={sectionH}>📚 LEARN & PRACTISE</h3>
+      <SectionHead icon="learn">Learn & practise</SectionHead>
       <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
         {curated ? (
           <>
@@ -993,25 +1006,26 @@ function Overview({
         ) : (
           <>
             <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
-            <div style={{ ...card({ padding: 14 }), fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-              📚 A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice gives you unlimited AI-generated questions for this paper.
+            <div style={{ ...card({ padding: 14 }), display: "flex", gap: 10, fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
+              <Icon name="learn" size={16} color={C.soft} style={{ marginTop: 1 }} />
+              <span>A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice gives you unlimited AI-generated questions for this paper.</span>
             </div>
           </>
         )}
       </div>
 
-      <h3 style={sectionH}>🧠 STRENGTHEN & REVISE</h3>
+      <SectionHead icon="flashcards">Strengthen & revise</SectionHead>
       <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
         <ModeTile icon="flashcards" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={phase.key === "revise" && fcStats.due > 0} />
         {curated && <ModeTile icon="generate" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />}
       </div>
 
-      <h3 style={sectionH}>⏱️ EXAM ROOM</h3>
+      <SectionHead icon="mock">Exam room</SectionHead>
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
         {curated && (
           gate.unlocked ? (
             <ModeTile
-              emoji="⏱️"
+              icon="mock"
               title={mockProgress(paper.id).examReady ? "Mock exam — keep it warm" : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED}`}
               sub={`${MOCK_SIZE} questions, timed, no hints — pass line 50%`}
               onClick={onMock}
@@ -1028,11 +1042,11 @@ function Overview({
       {/* mock history */}
       {mocks.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <h3 style={sectionH}>RECENT MOCKS</h3>
+          <SectionHead icon="mock">Recent mocks</SectionHead>
           <div style={{ display: "grid", gap: 8 }}>
             {mocks.slice(0, 5).map((m, i) => (
               <div key={i} style={{ ...card({ padding: "12px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 18 }}>{m.percent >= 50 ? "✅" : "📈"}</span>
+                <Icon name={m.percent >= 50 ? "done" : "stats"} size={17} color={m.percent >= 50 ? GREEN : "#C2740B"} />
                 <span style={{ flex: 1, fontSize: 13.5, color: TEXT }}>{m.date}</span>
                 <span style={{ fontSize: 13, color: MUTED }}>{m.correct}/{m.total}</span>
                 <span style={{ fontWeight: 800, fontSize: 15, color: m.percent >= 50 ? GREEN : RED, width: 48, textAlign: "right" }}>{m.percent}%</span>
@@ -1050,11 +1064,11 @@ function Overview({
 
 /* ── Study path (chapters → knowledge checks, like the tuition providers) ── */
 
-function topicVisual(t: TopicNode): { emoji: string; ring: string; sub: string } {
-  if (t.state === "mastered") return { emoji: "✅", ring: "#10B981", sub: `Mastered · best ${Math.round(t.best * 100)}%` }
+function topicVisual(t: TopicNode): { icon: IconName; ring: string; sub: string } {
+  if (t.state === "mastered") return { icon: "done", ring: "#10B981", sub: `Mastered · best ${Math.round(t.best * 100)}%` }
   if (t.state === "in-progress") {
     return {
-      emoji: "📖",
+      icon: "learn",
       ring: "#C80000",
       sub: t.best > 0
         ? `Best check ${Math.round(t.best * 100)}% · need ${Math.round(TOPIC_PASS * 100)}%`
@@ -1063,8 +1077,8 @@ function topicVisual(t: TopicNode): { emoji: string; ring: string; sub: string }
           : "In progress",
     }
   }
-  if (t.state === "available") return { emoji: "▶️", ring: "#C80000", sub: "Up next — start here" }
-  return { emoji: "•", ring: "var(--sch-border)", sub: "Coming up" }
+  if (t.state === "available") return { icon: "arrow", ring: "#C80000", sub: "Up next — start here" }
+  return { icon: "topics", ring: "var(--sch-border)", sub: "Coming up" }
 }
 
 function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; curated: boolean; onTopic: (area: string) => void }) {
@@ -1073,12 +1087,9 @@ function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; cura
   const prog = pathProgress(paperId)
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <h3 style={sectionH}>🗺️ STUDY PATH · TOPIC BY TOPIC</h3>
-        <span style={{ fontSize: 12, color: MUTED }}>
-          <b style={{ color: "#C80000" }}>{prog.mastered}</b>/{prog.total} mastered
-        </span>
-      </div>
+      <SectionHead icon="roadmap" right={<span style={{ fontSize: 12, color: MUTED, textTransform: "none", letterSpacing: 0 }}><b style={{ color: "#C80000" }}>{prog.mastered}</b>/{prog.total} mastered</span>}>
+        Study path · topic by topic
+      </SectionHead>
       <p style={{ fontSize: 12.5, color: DIM, margin: "0 0 12px", lineHeight: 1.5 }}>
         Learn each topic, then pass its knowledge check ({Math.round(TOPIC_PASS * 100)}%+) to master it — the way the
         top tuition providers structure every paper. Master them all, then the full mock is a formality.
@@ -1109,12 +1120,14 @@ function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; cura
               <div
                 style={{
                   width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
+                  display: "grid", placeItems: "center",
                   background: t.state === "mastered" ? "rgba(16,185,129,0.1)" : "var(--sch-card-2)",
                   border: `2px solid ${v.ring}`,
                 }}
               >
-                {t.state === "upcoming" ? <span style={{ fontWeight: 800, fontSize: 13, color: DIM }}>{t.code}</span> : v.emoji}
+                {t.state === "upcoming"
+                  ? <span style={{ fontWeight: 800, fontSize: 13, color: DIM }}>{t.code}</span>
+                  : <Icon name={v.icon} size={18} color={t.state === "mastered" ? GREEN : "#C80000"} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>
@@ -1123,7 +1136,7 @@ function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; cura
                 </div>
                 <div style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{v.sub}</div>
               </div>
-              <span style={{ fontSize: 16, color: DIM, flexShrink: 0 }}>›</span>
+              <Icon name="chevron" size={16} color={DIM} />
             </motion.button>
           )
         })}
@@ -1198,6 +1211,9 @@ function TopicView({
   )
 }
 
+/** Method phase key → semantic Lucide icon (replaces the phase emoji). */
+const PHASE_ICON: Record<string, IconName> = { learn: "learn", strengthen: "weak", revise: "flashcards", rehearse: "mock" }
+
 /** The four-phase method stepper — where the learner is on this paper. */
 function MethodTracker({ activeKey }: { activeKey: string }) {
   const activeIdx = METHOD_PHASES.findIndex((p) => p.key === activeKey)
@@ -1216,19 +1232,19 @@ function MethodTracker({ activeKey }: { activeKey: string }) {
           return (
             <div key={p.key} style={{ flex: 1, display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
-                <motion.div
-                  animate={active ? { scale: [1, 1.12, 1] } : {}}
-                  transition={{ duration: 2, repeat: active ? Infinity : 0, ease: "easeInOut" }}
+                <div
                   style={{
-                    width: 30, height: 30, borderRadius: "50%",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+                    width: 32, height: 32, borderRadius: "50%",
+                    display: "grid", placeItems: "center",
                     background: done || active ? IRIDESCENT : "var(--sch-card-2)",
-                    opacity: done ? 0.55 : 1,
-                    boxShadow: active ? "0 4px 14px rgba(200,0,0,0.35)" : "none",
+                    opacity: done ? 0.6 : 1,
+                    boxShadow: active ? "0 4px 14px rgba(200,0,0,0.30)" : "none",
                   }}
                 >
-                  {done ? <span style={{ color: "#fff", fontWeight: 800, fontSize: 12 }}>✓</span> : <span>{p.emoji}</span>}
-                </motion.div>
+                  {done
+                    ? <Icon name="done" size={15} color="#fff" />
+                    : <Icon name={PHASE_ICON[p.key] ?? "learn"} size={15} color={active ? "#fff" : C.soft} />}
+                </div>
                 <span style={{ fontSize: 10.5, fontWeight: active ? 800 : 600, color: active ? "#C80000" : done ? MUTED : DIM, whiteSpace: "nowrap" }}>
                   {p.label}
                 </span>
@@ -1504,8 +1520,10 @@ function Results({
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }} style={{ fontSize: 56, marginBottom: 8 }}>
-        {passed ? "🎉" : "💪"}
+      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }} style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+        <span style={{ width: 68, height: 68, borderRadius: "50%", display: "grid", placeItems: "center", background: passed ? C.greenSoft : C.brandSoft }}>
+          <Icon name={passed ? "celebrate" : "weak"} size={32} color={passed ? C.green : C.brand} />
+        </span>
       </motion.div>
       <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600 }}>
         {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : "PRACTICE COMPLETE"}
@@ -1547,7 +1565,7 @@ function Results({
             transition={{ delay: 0.2 }}
             style={{ ...card({ padding: 16 }), maxWidth: 420, margin: "0 auto 24px", textAlign: "left", display: "flex", gap: 12, alignItems: "center", borderColor: "rgba(16,185,129,0.4)" }}
           >
-            <span style={{ fontSize: 24, flexShrink: 0 }}>🏛️</span>
+            <IconBadge name="exam" tone="green" size={40} />
             <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
               {mp.examReady ? (
                 <>

@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
+import { Icon, IconBadge, Button, C, GRAD, type IconName } from "@/components/acca/ui"
 import {
   paperLevels,
   suggestedNextPapers,
@@ -22,12 +22,21 @@ import { EXPERIENCE_OPTIONS, setExperience, type Experience } from "@/lib/acca-p
  * Shown once (the parent tracks the localStorage flag).
  */
 
-const TEXT = "var(--sch-text)"
-const MUTED = "var(--sch-tx-2)"
-const DIM = "var(--sch-tx-3)"
-const CARD = "var(--sch-card)"
-const BORDER = "var(--sch-border)"
-const RED = "#C80000"
+const TEXT = C.text
+const MUTED = C.soft
+const DIM = C.faint
+const CARD = C.card
+const BORDER = C.border
+const RED = C.brand
+
+/** Method phase (learn/strengthen/revise/rehearse) → semantic Lucide icon. */
+const PHASE_ICON: Record<string, IconName> = {
+  Learn: "learn",
+  Strengthen: "weak",
+  Revise: "flashcards",
+  Rehearse: "mock",
+}
+const phaseIcon = (label: string): IconName => PHASE_ICON[label] ?? "learn"
 
 function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
@@ -100,7 +109,7 @@ export default function AccaOnboarding({
       {/* progress dots */}
       <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 26 }}>
         {[0, 1, 2, 3, 4].map((s) => (
-          <div key={s} style={{ width: s === step ? 22 : 7, height: 7, borderRadius: 999, background: s <= step ? "transparent" : "var(--sch-card-2)", backgroundImage: s <= step ? IRIDESCENT : undefined, transition: "width .2s" }} />
+          <div key={s} style={{ width: s === step ? 22 : 7, height: 7, borderRadius: 999, background: s <= step ? RED : "var(--sch-card-2)", transition: "width .2s ease, background .2s ease" }} />
         ))}
       </div>
 
@@ -109,7 +118,9 @@ export default function AccaOnboarding({
         {step === 0 && (
           <Slide key="s0">
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 52, marginBottom: 12 }}>🎓</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                <IconBadge name="study" tone="brand" size={64} />
+              </div>
               <h1 style={{ fontSize: 27, fontWeight: 800, color: TEXT, margin: "0 0 10px" }}>
                 Hi, I'm <span style={iriText}>Lara</span> — your ACCA coach
               </h1>
@@ -117,7 +128,7 @@ export default function AccaOnboarding({
                 I'll take you all the way from Applied Knowledge to Strategic Professional — topic by topic,
                 the way the top tuition providers teach, with a plan built around your exam date and your day.
               </p>
-              <Primary onClick={() => setStep(1)}>Let's go</Primary>
+              <Button variant="primary" size="lg" full onClick={() => setStep(1)}>Let's go</Button>
             </div>
           </Slide>
         )}
@@ -145,9 +156,9 @@ export default function AccaOnboarding({
                           key={p.id}
                           onClick={() => togglePassed(p.id)}
                           title={p.name}
-                          style={{ padding: "8px 14px", borderRadius: 999, border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,0.07)" : CARD, color: on ? RED : TEXT, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                          style={{ padding: "8px 14px", borderRadius: 999, border: `1.5px solid ${on ? RED : BORDER}`, background: on ? C.brandSoft : CARD, color: on ? RED : TEXT, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "border-color .15s ease, background .15s ease, color .15s ease" }}
                         >
-                          {on && <span>✓</span>}{p.id}
+                          {on && <Icon name="done" size={14} color={RED} />}{p.id}
                         </button>
                       )
                     })}
@@ -164,8 +175,10 @@ export default function AccaOnboarding({
                 )}
               </span>
             </div>
-            <Primary onClick={() => setStep(2)}>Continue</Primary>
-            <Skip onClick={() => setStep(2)}>I'll do this later</Skip>
+            <Button variant="primary" size="lg" full onClick={() => setStep(2)}>Continue</Button>
+            <div style={{ textAlign: "center", marginTop: 8 }}>
+              <Button variant="ghost" onClick={() => setStep(2)}>I'll do this later</Button>
+            </div>
           </Slide>
         )}
 
@@ -184,27 +197,27 @@ export default function AccaOnboarding({
                   <button
                     key={p.id}
                     onClick={() => togglePicked(p.id)}
-                    style={{ ...card({ cursor: "pointer", textAlign: "left", border: `1.5px solid ${on ? RED : BORDER}`, padding: 14 }), display: "flex", alignItems: "center", gap: 12 }}
+                    style={{ ...card({ cursor: "pointer", textAlign: "left", border: `1.5px solid ${on ? RED : BORDER}`, padding: 14 }), display: "flex", alignItems: "center", gap: 12, transition: "border-color .15s ease" }}
                   >
-                    <div style={{ width: 42, height: 42, borderRadius: 11, background: IRIDESCENT, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#fff", flexShrink: 0, fontSize: 14 }}>{p.id}</div>
+                    <div style={{ width: 42, height: 42, borderRadius: 11, background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#fff", flexShrink: 0, fontSize: 14 }}>{p.id}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 14.5, color: TEXT }}>{p.name}</div>
                       <div style={{ color: DIM, fontSize: 12 }}>{p.code} · {p.level}</div>
                     </div>
-                    {on && <span style={{ color: RED, fontWeight: 800 }}>✓</span>}
+                    {on && <Icon name="done" size={18} color={RED} />}
                   </button>
                 )
               })}
             </div>
 
             <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, marginBottom: 8 }}>📅 When's the exam?</div>
+              <FieldLabel icon="calendar">When's the exam?</FieldLabel>
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 {([3, 6] as const).map((m) => (
                   <button
                     key={m}
                     onClick={() => pickPreset(m)}
-                    style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${preset === m ? RED : BORDER}`, background: preset === m ? "rgba(200,0,0,0.07)" : CARD, color: preset === m ? RED : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
+                    style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${preset === m ? RED : BORDER}`, background: preset === m ? C.brandSoft : CARD, color: preset === m ? RED : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer", transition: "border-color .15s ease, background .15s ease, color .15s ease" }}
                   >
                     In ~{m} months
                   </button>
@@ -222,7 +235,7 @@ export default function AccaOnboarding({
             </div>
 
             <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, marginBottom: 8 }}>🧭 Where are you starting from?</div>
+              <FieldLabel icon="roadmap">Where are you starting from?</FieldLabel>
               <div style={{ display: "grid", gap: 8 }}>
                 {EXPERIENCE_OPTIONS.map((o) => {
                   const on = exp === o.value
@@ -230,14 +243,14 @@ export default function AccaOnboarding({
                     <button
                       key={o.value}
                       onClick={() => setExp(o.value)}
-                      style={{ ...card({ cursor: "pointer", textAlign: "left", border: `1.5px solid ${on ? RED : BORDER}`, padding: "12px 14px", background: on ? "rgba(200,0,0,0.05)" : CARD }), display: "flex", alignItems: "center", gap: 11 }}
+                      style={{ ...card({ cursor: "pointer", textAlign: "left", border: `1.5px solid ${on ? RED : BORDER}`, padding: "12px 14px", background: on ? C.brandSoft : CARD }), display: "flex", alignItems: "center", gap: 11, transition: "border-color .15s ease, background .15s ease" }}
                     >
                       <span style={{ fontSize: 20, flexShrink: 0 }}>{o.emoji}</span>
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ display: "block", fontWeight: 700, fontSize: 13.5, color: on ? RED : TEXT }}>{o.label}</span>
                         <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{o.blurb}</span>
                       </span>
-                      {on && <span style={{ color: RED, fontWeight: 800, flexShrink: 0 }}>✓</span>}
+                      {on && <Icon name="done" size={16} color={RED} />}
                     </button>
                   )
                 })}
@@ -247,21 +260,24 @@ export default function AccaOnboarding({
               </p>
             </div>
 
-            <Primary disabled={picked.length === 0} onClick={() => setStep(3)}>Continue</Primary>
+            <Button variant="primary" size="lg" full disabled={picked.length === 0} onClick={() => setStep(3)}>Continue</Button>
           </Slide>
         )}
 
         {/* 3 — shield time */}
         {step === 3 && (
           <Slide key="s3">
-            <h2 style={h2}>🛡️ Your shield time</h2>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <IconBadge name="shield" tone="brand" size={52} />
+            </div>
+            <h2 style={h2}>Your shield time</h2>
             <p style={sub}>
               The students who pass don't find time — they protect it. Pick the daily slot that's yours,
               and how long you'll show up for. I'll build the plan around it.
             </p>
 
             <div style={{ ...card({ padding: 18, marginBottom: 14 }) }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 8 }}>⏰ Same time, every day</div>
+              <FieldLabel icon="mock">Same time, every day</FieldLabel>
               <input
                 type="time"
                 value={studyTime}
@@ -277,7 +293,7 @@ export default function AccaOnboarding({
                   <button
                     key={m}
                     onClick={() => setMinutes(m)}
-                    style={{ padding: "12px 0", borderRadius: 12, border: `1.5px solid ${minutes === m ? RED : BORDER}`, background: minutes === m ? "rgba(200,0,0,0.07)" : CARD, color: minutes === m ? RED : TEXT, fontWeight: 750, fontSize: 14, cursor: "pointer" }}
+                    style={{ padding: "12px 0", borderRadius: 12, border: `1.5px solid ${minutes === m ? RED : BORDER}`, background: minutes === m ? C.brandSoft : CARD, color: minutes === m ? RED : TEXT, fontWeight: 750, fontSize: 14, cursor: "pointer", transition: "border-color .15s ease, background .15s ease, color .15s ease" }}
                   >
                     {m}m
                   </button>
@@ -288,7 +304,9 @@ export default function AccaOnboarding({
               </p>
             </div>
 
-            <Primary onClick={() => setStep(4)}>Build my plan →</Primary>
+            <Button variant="primary" size="lg" full onClick={() => setStep(4)}>
+              Build my plan <Icon name="arrow" size={18} color="#fff" />
+            </Button>
           </Slide>
         )}
 
@@ -322,7 +340,9 @@ function PlanReveal({
   return (
     <div>
       <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 46, marginBottom: 8 }}>✨</div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+          <IconBadge name="celebrate" tone="brand" size={52} />
+        </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: TEXT, margin: "0 0 6px" }}>Your personalised plan</h2>
         <p style={{ color: MUTED, fontSize: 14.5, margin: 0 }}>
           {plan.hasDate && plan.daysLeft
@@ -332,8 +352,8 @@ function PlanReveal({
       </div>
 
       {two && (
-        <div style={{ ...card({ padding: 14, marginBottom: 12 }), display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={{ fontSize: 20 }}>📚</span>
+        <div style={{ ...card({ padding: 14, marginBottom: 12 }), display: "flex", gap: 12, alignItems: "center" }}>
+          <IconBadge name="learn" tone="neutral" size={36} />
           <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
             Two papers ({paperIds.join(" + ")}): alternate them day by day — I'll keep both plans and both study paths on track.
           </span>
@@ -348,9 +368,9 @@ function PlanReveal({
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.12 * i }}
-              style={{ ...card({ padding: 16 }), display: "flex", gap: 14 }}
+              style={{ ...card({ padding: 16 }), display: "flex", gap: 14, alignItems: "flex-start" }}
             >
-              <span style={{ fontSize: 24, flexShrink: 0 }}>{ph.emoji}</span>
+              <IconBadge name={phaseIcon(ph.label)} tone="brand" size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ fontWeight: 750, fontSize: 15, color: TEXT }}>{ph.label}</span>
@@ -370,9 +390,9 @@ function PlanReveal({
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.12 * i }}
-              style={{ ...card({ padding: 16 }), display: "flex", gap: 14 }}
+              style={{ ...card({ padding: 16 }), display: "flex", gap: 14, alignItems: "flex-start" }}
             >
-              <span style={{ fontSize: 24, flexShrink: 0 }}>{m.emoji}</span>
+              <IconBadge name={phaseIcon(m.label)} tone="brand" size={40} />
               <div style={{ flex: 1 }}>
                 <span style={{ fontWeight: 750, fontSize: 15, color: TEXT }}>
                   {i + 1}. {m.label}
@@ -388,7 +408,9 @@ function PlanReveal({
         </div>
       )}
 
-      <Primary onClick={onStart}>Start studying →</Primary>
+      <Button variant="primary" size="lg" full onClick={onStart}>
+        Start studying <Icon name="arrow" size={18} color="#fff" />
+      </Button>
     </div>
   )
 }
@@ -403,24 +425,12 @@ function Slide({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Primary({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
+function FieldLabel({ icon, children }: { icon: IconName; children: React.ReactNode }) {
   return (
-    <motion.button
-      whileTap={{ scale: disabled ? 1 : 0.99 }}
-      disabled={disabled}
-      onClick={onClick}
-      style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", background: disabled ? "var(--sch-card-2)" : IRIDESCENT, color: disabled ? DIM : "#fff", fontWeight: 750, fontSize: 16, cursor: disabled ? "not-allowed" : "pointer" }}
-    >
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
+      <Icon name={icon} size={16} color={RED} />
       {children}
-    </motion.button>
-  )
-}
-
-function Skip({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{ display: "block", margin: "14px auto 0", background: "none", border: "none", color: DIM, fontSize: 14, cursor: "pointer" }}>
-      {children}
-    </button>
+    </div>
   )
 }
 

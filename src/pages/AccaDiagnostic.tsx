@@ -22,6 +22,7 @@ import {
   type DiagnosticAreaResult,
 } from "@/lib/acca-diagnostic"
 import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from "@/lib/acca-cloud"
+import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -259,24 +260,9 @@ function QuestionCard({
         </div>
       )}
 
-      <button
-        onClick={submit}
-        disabled={!canSubmit}
-        style={{
-          marginTop: 22,
-          width: "100%",
-          padding: "14px",
-          borderRadius: 12,
-          border: "none",
-          background: canSubmit ? IRIDESCENT : CARD2,
-          color: canSubmit ? "#fff" : DIM,
-          fontSize: 15,
-          fontWeight: 700,
-          cursor: canSubmit ? "pointer" : "default",
-        }}
-      >
-        Next →
-      </button>
+      <Button onClick={submit} disabled={!canSubmit} size="lg" full style={{ marginTop: 22 }}>
+        Next <Icon name="arrow" size={17} color="#fff" />
+      </Button>
     </div>
   )
 }
@@ -359,12 +345,17 @@ export default function AccaDiagnostic() {
         <AnimatePresence mode="wait">
           {phase === "intro" && (
             <motion.div key="intro" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
-              <button onClick={() => navigate("/study")} style={backLink}>← Study</button>
+              <button onClick={() => navigate("/study")} style={backLink}>
+                <Icon name="arrow" size={15} style={{ transform: "rotate(180deg)" }} /> Study
+              </button>
 
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: "#C80000", marginTop: 18 }}>
-                PASS-PROBABILITY DIAGNOSTIC
+              <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginTop: 18 }}>
+                <IconBadge name="diagnostic" tone="brand" />
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: C.brand }}>
+                  PASS-PROBABILITY DIAGNOSTIC
+                </div>
               </div>
-              <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, margin: "8px 0 12px", lineHeight: 1.15 }}>
+              <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, margin: "12px 0 12px", lineHeight: 1.15 }}>
                 Know your real <span style={iriText}>chance to pass</span>.
               </h1>
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
@@ -373,7 +364,7 @@ export default function AccaDiagnostic() {
                 lift that gets you over the line.
               </p>
 
-              <div style={{ ...cardStyle, marginBottom: 16 }}>
+              <Card style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: DIM, letterSpacing: 0.3 }}>WHICH PAPER?</label>
                 <select
                   value={paperId}
@@ -403,11 +394,11 @@ export default function AccaDiagnostic() {
                     Last diagnostic: <strong style={{ color: TEXT }}>{prior.passProbability}%</strong> — {passBand(prior.passProbability).label.toLowerCase()}. Retake to update.
                   </div>
                 )}
-              </div>
+              </Card>
 
-              <button onClick={start} style={primaryBtn}>
-                Start the diagnostic →
-              </button>
+              <Button onClick={start} size="lg" full>
+                Start the diagnostic <Icon name="arrow" size={18} color="#fff" />
+              </Button>
               <p style={{ fontSize: 12, color: DIM, textAlign: "center", marginTop: 12 }}>
                 Your results are saved to your account.
               </p>
@@ -525,11 +516,14 @@ function ResultsView({
           style={{
             ...cardStyle,
             background: "linear-gradient(135deg, rgba(200,0,0,0.06), rgba(200,0,0,0.02))",
-            border: "1px solid rgba(200,0,0,0.18)",
+            border: `1px solid ${C.brandLine}`,
+            boxShadow: SHADOW.sm,
             marginBottom: 16,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#C80000", letterSpacing: 0.4, marginBottom: 8 }}>YOUR FASTEST PATH</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: C.brand, letterSpacing: 0.4, marginBottom: 8 }}>
+            <Icon name="rocket" size={15} color={C.brand} /> YOUR FASTEST PATH
+          </div>
           <p style={{ fontSize: 15, color: TEXT, lineHeight: 1.55, margin: 0 }}>
             Get{" "}
             {result.target.focusAreas.map((label, i) => (
@@ -547,8 +541,10 @@ function ResultsView({
 
       {/* Weak areas */}
       {result.weakest.length > 0 && (
-        <div style={{ ...cardStyle, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: RED, letterSpacing: 0.4, marginBottom: 6 }}>WEAKEST AREAS</div>
+        <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: RED, letterSpacing: 0.4, marginBottom: 6 }}>
+            <Icon name="weak" size={15} color={RED} /> WEAKEST AREAS
+          </div>
           {result.weakest.map((a, i) => (
             <AreaBar key={a.code} area={a} delay={0.5 + i * 0.12} />
           ))}
@@ -557,8 +553,10 @@ function ResultsView({
 
       {/* Strong areas */}
       {result.strongest.length > 0 && (
-        <div style={{ ...cardStyle, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, letterSpacing: 0.4, marginBottom: 6 }}>STRONGEST AREAS</div>
+        <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: GREEN, letterSpacing: 0.4, marginBottom: 6 }}>
+            <Icon name="trophy" size={15} color={GREEN} /> STRONGEST AREAS
+          </div>
           {result.strongest.map((a, i) => (
             <AreaBar key={a.code} area={a} delay={0.7 + i * 0.12} />
           ))}
@@ -573,10 +571,14 @@ function ResultsView({
       )}
 
       {/* CTAs */}
-      <button onClick={onContinue} style={primaryBtn}>Start closing the gap →</button>
+      <Button onClick={onContinue} size="lg" full>
+        Start closing the gap <Icon name="arrow" size={18} color="#fff" />
+      </Button>
       <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-        <button onClick={onProgress} style={secondaryBtn}>See full progress</button>
-        <button onClick={onRetake} style={secondaryBtn}>Retake</button>
+        <Button onClick={onProgress} variant="secondary" full>See full progress</Button>
+        <Button onClick={onRetake} variant="secondary" full>
+          <Icon name="loop" size={16} /> Retake
+        </Button>
       </div>
     </motion.div>
   )
@@ -591,31 +593,10 @@ const cardStyle = {
   padding: "16px 18px",
 } as const
 
-const primaryBtn = {
-  width: "100%",
-  padding: "15px",
-  borderRadius: 13,
-  border: "none",
-  background: IRIDESCENT,
-  color: "#fff",
-  fontSize: 15.5,
-  fontWeight: 700,
-  cursor: "pointer",
-} as const
-
-const secondaryBtn = {
-  flex: 1,
-  padding: "13px",
-  borderRadius: 12,
-  border: `1px solid ${BORDER}`,
-  background: CARD,
-  color: TEXT,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-} as const
-
 const backLink = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
   background: "none",
   border: "none",
   color: MUTED,

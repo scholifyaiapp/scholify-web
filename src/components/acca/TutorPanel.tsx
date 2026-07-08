@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { askTutor } from "@/lib/acca-ai"
 import { learnerProfileSummary } from "@/lib/acca-diagnostic"
 import type { AccaQuestion } from "@/lib/acca"
+import { Button, Icon, C, SP } from "@/components/acca/ui"
 
 /*
  * Inline "Ask Lara" tutor — appears under a graded question. The learner can
@@ -37,28 +38,22 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
 
   if (!open) {
     return (
-      <button
+      <Button
+        variant="secondary"
         onClick={() => {
           setOpen(true)
           void ask("Explain this clearly.")
         }}
         style={{
-          marginTop: 12,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "10px 14px",
-          borderRadius: 12,
-          border: `1px solid ${PURPLE}`,
-          background: "rgba(200,0,0,0.08)",
-          color: PURPLE,
-          fontWeight: 650,
-          fontSize: 14,
-          cursor: "pointer",
+          marginTop: SP.md,
+          background: C.brandSoft,
+          borderColor: C.brand,
+          color: C.brand,
         }}
       >
-        ✨ Ask Lara
-      </button>
+        <Icon name="tutor" size={16} color={C.brand} />
+        Ask Lara
+      </Button>
     )
   }
 
@@ -75,7 +70,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 15 }}>✨</span>
+        <Icon name="tutor" size={16} color={PURPLE} />
         <span style={{ fontWeight: 700, fontSize: 14, color: PURPLE }}>Lara — your ACCA tutor</span>
       </div>
 

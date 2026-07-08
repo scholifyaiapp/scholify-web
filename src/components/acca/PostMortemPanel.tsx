@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react"
 import { motion } from "motion/react"
 import { getPostMortem, type PostMortem, type PostMortemAction, type PostMortemInput } from "@/lib/acca-ai"
 import { learnerProfileSummary } from "@/lib/acca-diagnostic"
+import { Icon, type IconName } from "@/components/acca/ui"
 
 /*
  * The AI post-mortem — shown after a FAILED mock (and reused, via kind="exam",
@@ -17,11 +18,11 @@ const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
 const RED = "#C80000"
 
-const ACTION_ICON: Record<PostMortemAction, string> = {
-  weak: "💪",
-  practice: "✏️",
-  flashcards: "🧠",
-  mock: "⏱️",
+const ACTION_ICON: Record<PostMortemAction, IconName> = {
+  weak: "weak",
+  practice: "practice",
+  flashcards: "flashcards",
+  mock: "mock",
 }
 
 export default function PostMortemPanel({
@@ -60,8 +61,9 @@ export default function PostMortemPanel({
         padding: 20,
       }}
     >
-      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, marginBottom: 10 }}>
-        {input.kind === "mock" ? "🔍 LARA'S POST-MORTEM" : "🔍 EXAMINER ANALYSIS"}
+      <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, marginBottom: 10 }}>
+        <Icon name={input.kind === "mock" ? "diagnostic" : "examiner"} size={14} color={RED} strokeWidth={2.4} />
+        {input.kind === "mock" ? "LARA'S POST-MORTEM" : "EXAMINER ANALYSIS"}
       </div>
 
       {!result ? (
@@ -69,9 +71,9 @@ export default function PostMortemPanel({
           <motion.span
             animate={{ opacity: [0.35, 1, 0.35] }}
             transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ fontSize: 18 }}
+            style={{ display: "inline-flex" }}
           >
-            ✨
+            <Icon name="tutor" size={18} color={RED} />
           </motion.span>
           <span style={{ fontSize: 13.5, color: MUTED }}>Lara is going through your paper, mark by mark…</span>
         </div>
@@ -104,8 +106,9 @@ export default function PostMortemPanel({
             </>
           )}
 
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: DIM, margin: "16px 0 8px" }}>
-            {input.kind === "mock" ? "🩹 REHABILITATION PLAN" : "THE COMEBACK PLAN"}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: DIM, margin: "16px 0 8px" }}>
+            <Icon name={input.kind === "mock" ? "reflect" : "loop"} size={13} color={DIM} strokeWidth={2.4} />
+            {input.kind === "mock" ? "REHABILITATION PLAN" : "THE COMEBACK PLAN"}
           </div>
           <div style={{ display: "grid", gap: 8 }}>
             {result.plan.map((p, i) => (
@@ -119,14 +122,16 @@ export default function PostMortemPanel({
                 onClick={() => onAction(p.action)}
                 style={planBtn}
               >
-                <span style={{ fontSize: 18, flexShrink: 0 }}>{ACTION_ICON[p.action]}</span>
+                <span style={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 9, background: "rgba(200,0,0,0.08)", flexShrink: 0 }}>
+                  <Icon name={ACTION_ICON[p.action]} size={16} color={RED} />
+                </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontWeight: 700, fontSize: 13.5, color: TEXT }}>
                     {i + 1}. {p.title}
                   </span>
                   <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{p.detail}</span>
                 </span>
-                <span style={{ color: RED, fontSize: 15, flexShrink: 0 }}>›</span>
+                <Icon name="chevron" size={16} color={RED} style={{ flexShrink: 0 }} />
               </motion.button>
             ))}
           </div>

@@ -156,6 +156,19 @@ export function SectionLabel({ children, style }: { children: ReactNode; style?:
   return <div style={{ ...TYPE.label, color: C.faint, marginBottom: SP.md, ...style }}>{children}</div>
 }
 
+/** An uppercase section header with a leading icon — replaces emoji-in-heading. */
+export function SectionHead({
+  icon, children, right, style,
+}: { icon?: IconName; children: ReactNode; right?: ReactNode; style?: CSSProperties }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: SP.md, ...style }}>
+      {icon && <Icon name={icon} size={14} color={C.brand} strokeWidth={2.4} />}
+      <span style={{ ...TYPE.label, color: C.faint }}>{children}</span>
+      {right != null && <span style={{ marginLeft: "auto" }}>{right}</span>}
+    </div>
+  )
+}
+
 export function Badge({
   children, tone = "neutral",
 }: { children: ReactNode; tone?: "brand" | "green" | "amber" | "neutral" }) {

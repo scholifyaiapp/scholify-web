@@ -21,6 +21,18 @@ import { syncReminder } from "@/lib/reminders"
 import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
+import {
+  Icon,
+  Badge,
+  Card,
+  Button,
+  SectionHead,
+  C,
+  SP,
+  R,
+  SHADOW,
+  TYPE,
+} from "@/components/acca/ui"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -74,18 +86,9 @@ function Section({
   style?: CSSProperties
 }) {
   return (
-    <div
-      style={{
-        marginTop: 16,
-        padding: 24,
-        borderRadius: 20,
-        background: "var(--sch-card)",
-        border: "1px solid var(--sch-border)",
-        ...style,
-      }}
-    >
+    <Card style={{ marginTop: SP.lg, padding: SP["2xl"], ...style }}>
       {children}
-    </div>
+    </Card>
   )
 }
 
@@ -191,18 +194,23 @@ function Dropdown<T extends string>({
           justifyContent: "space-between",
           alignItems: "center",
           gap: 8,
-          padding: "8px 14px",
-          borderRadius: 10,
+          padding: "0 14px",
+          minHeight: 44,
+          borderRadius: R.sm,
           fontSize: 14,
-          color: "var(--sch-text)",
-          background: "var(--sch-card)",
-          border: "1px solid var(--sch-border)",
+          fontWeight: 600,
+          color: C.text,
+          background: C.card,
+          border: `1px solid ${C.border}`,
           cursor: "pointer",
         }}
       >
         {current?.label ?? value}
-        <motion.span animate={{ rotate: open ? 180 : 0 }} style={{ fontSize: 10, color: TEXT2 }}>
-          ▼
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          style={{ display: "inline-flex", color: TEXT2 }}
+        >
+          <Icon name="chevron" size={15} style={{ transform: "rotate(90deg)" }} />
         </motion.span>
       </button>
       <AnimatePresence>
@@ -255,7 +263,7 @@ function Dropdown<T extends string>({
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     {o.label}
-                    {active && <span>✓</span>}
+                    {active && <Icon name="done" size={15} color={C.brand} />}
                   </button>
                 )
               })}
@@ -617,26 +625,39 @@ export default function Settings() {
   }
 
   const ghostBtn: CSSProperties = {
-    padding: "9px 20px",
-    borderRadius: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SP.sm,
+    padding: "0 18px",
+    minHeight: 44,
+    borderRadius: R.lg,
     fontSize: 14,
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: "pointer",
-    color: "var(--sch-tx-1)",
-    background: "var(--sch-card)",
-    border: "1px solid var(--sch-border-2)",
+    color: C.text,
+    background: C.card,
+    border: `1px solid ${C.border}`,
+    boxShadow: SHADOW.sm,
+    transition: "background .18s ease, border-color .18s ease, color .18s ease",
   }
   const redGhost: CSSProperties = {
-    padding: "9px 18px",
-    borderRadius: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SP.sm,
+    padding: "0 18px",
+    minHeight: 44,
+    borderRadius: R.lg,
     fontSize: 14,
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: "pointer",
-    color: "rgba(255,69,58,0.65)",
-    background: "rgba(255,69,58,0.04)",
-    border: "1px solid rgba(255,69,58,0.2)",
+    color: C.red,
+    background: C.redSoft,
+    border: `1px solid ${C.red}33`,
+    transition: "background .18s ease, border-color .18s ease",
   }
-  const sectionHead: CSSProperties = { fontSize: 15, fontWeight: 600, color: "var(--sch-text)" }
+  const sectionHead: CSSProperties = { ...TYPE.h3, color: C.text }
 
   return (
     <DashboardLayout>
@@ -710,37 +731,29 @@ export default function Settings() {
               <div style={{ fontSize: 20, fontWeight: 700, color: "var(--sch-text)" }}>{fullName}</div>
               <div style={{ fontSize: 14, color: TEXT2, marginTop: 4 }}>{user?.email}</div>
               <div style={{ marginTop: 10 }}>
-                <span
-                  style={{
-                    fontSize: 12,
-                    padding: "4px 12px",
-                    borderRadius: 999,
-                    ...(isPaid
-                      ? { background: IRIDESCENT, color: "#fff" }
-                      : {
-                          background: "var(--sch-hairline)",
-                          border: "1px solid var(--sch-border)",
-                          color: TEXT2,
-                        }),
-                  }}
-                >
-                  {isPaid ? "✦ Pro" : "Free Trial"}
-                </span>
+                <Badge tone={isPaid ? "brand" : "neutral"}>
+                  {isPaid ? (
+                    <>
+                      <Icon name="trophy" size={12} /> Pro
+                    </>
+                  ) : (
+                    "Free Trial"
+                  )}
+                </Badge>
               </div>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", marginTop: 6 }}>
                 Member since {memberSince}
               </div>
             </div>
 
-            <motion.button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => setEditingProfile((v) => !v)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={{ ...ghostBtn, marginLeft: "auto" }}
+              style={{ marginLeft: "auto" }}
             >
+              <Icon name="settings" size={16} />
               Edit Profile
-            </motion.button>
+            </Button>
           </div>
 
           <AnimatePresence>
@@ -767,32 +780,15 @@ export default function Settings() {
                     <Field label="Email" value={email} onChange={setEmail} full />
                   </div>
                   <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                    <motion.button
-                      type="button"
+                    <Button
                       onClick={saveProfile}
                       disabled={savingProfile}
-                      whileTap={{ scale: 0.98 }}
-                      style={{
-                        padding: "10px 22px",
-                        borderRadius: 12,
-                        border: "none",
-                        background: IRIDESCENT,
-                        color: "#fff",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        opacity: savingProfile ? 0.7 : 1,
-                      }}
                     >
                       {savingProfile ? "Saving…" : "Save changes"}
-                    </motion.button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingProfile(false)}
-                      style={{ ...ghostBtn, background: "transparent" }}
-                    >
+                    </Button>
+                    <Button variant="ghost" onClick={() => setEditingProfile(false)}>
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </motion.div>
@@ -802,22 +798,31 @@ export default function Settings() {
 
         {/* ── Current goal ── */}
         <Section>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={sectionHead}>🎯 Current Goal</span>
-            <button
-              type="button"
-              onClick={() => navigate("/onboarding")}
-              style={{
-                background: "transparent",
-                border: "none",
-                fontSize: 13,
-                color: "rgba(200,0,0,0.75)",
-                cursor: "pointer",
-              }}
-            >
-              Change goal →
-            </button>
-          </div>
+          <SectionHead
+            icon="diagnostic"
+            right={
+              <button
+                type="button"
+                onClick={() => navigate("/onboarding")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.brand,
+                  cursor: "pointer",
+                  padding: 4,
+                }}
+              >
+                Change goal <Icon name="arrow" size={14} />
+              </button>
+            }
+          >
+            Current Goal
+          </SectionHead>
           <div style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: "var(--sch-text)" }}>
             {goal}
           </div>
@@ -851,7 +856,10 @@ export default function Settings() {
             }}
           >
             <div>
-              <div style={sectionHead}>{isPaid ? "✦ Pro" : "Free Trial"}</div>
+              <div style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="trophy" size={18} color={C.brand} />
+                {isPaid ? "Pro" : "Free Trial"}
+              </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>
                 {isPaid ? "Billed monthly · $13.99/month" : "7 days remaining in your trial"}
               </div>
@@ -878,40 +886,25 @@ export default function Settings() {
             </div>
             {isPaid ? (
               <div style={{ display: "flex", gap: 10 }}>
-                <button type="button" onClick={() => navigate("/pricing")} style={ghostBtn}>
+                <Button variant="secondary" onClick={() => navigate("/pricing")}>
                   Manage plan
-                </button>
+                </Button>
                 <button type="button" onClick={() => setDialog("cancel")} style={redGhost}>
                   Cancel plan
                 </button>
               </div>
             ) : (
-              <motion.button
-                type="button"
-                onClick={() => navigate("/pricing")}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                style={{
-                  padding: "10px 24px",
-                  borderRadius: 12,
-                  border: "none",
-                  background: IRIDESCENT,
-                  color: "#fff",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: "0 0 20px rgba(200,0,0,0.3)",
-                }}
-              >
-                Upgrade to Pro →
-              </motion.button>
+              <Button onClick={() => navigate("/pricing")}>
+                Upgrade to Pro
+                <Icon name="arrow" size={16} />
+              </Button>
             )}
           </div>
         </Section>
 
         {/* ── Notifications ── */}
         <Section>
-          <span style={sectionHead}>🔔 Notifications</span>
+          <SectionHead icon="mission">Notifications</SectionHead>
           <div style={{ marginTop: 8 }}>
             <SettingRow name="Daily email reminder" desc="A nudge to study on days you haven't yet">
               <Toggle
@@ -950,7 +943,7 @@ export default function Settings() {
 
         {/* ── Invite friends (referrals) ── */}
         <Section>
-          <span style={sectionHead}>🎁 Invite Friends</span>
+          <SectionHead icon="support">Invite Friends</SectionHead>
           <p style={{ fontSize: 13, color: TEXT2, marginTop: 6, lineHeight: 1.6 }}>
             Share your link and earn rewards when friends build their habits.
           </p>
@@ -974,27 +967,10 @@ export default function Settings() {
                 outline: "none",
               }}
             />
-            <motion.button
-              type="button"
-              onClick={copyReferral}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              style={{
-                height: 44,
-                padding: "0 18px",
-                borderRadius: 12,
-                border: "none",
-                background: IRIDESCENT,
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-                flexShrink: 0,
-                boxShadow: "0 0 18px rgba(200,0,0,0.25)",
-              }}
-            >
+            <Button onClick={copyReferral} style={{ flexShrink: 0 }}>
+              <Icon name="check" size={15} />
               Copy
-            </motion.button>
+            </Button>
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
@@ -1026,7 +1002,7 @@ export default function Settings() {
         {/* ── Retention (admin only) ── */}
         {isAdmin && (
           <Section>
-            <span style={sectionHead}>📊 Retention (admin)</span>
+            <SectionHead icon="stats">Retention (admin)</SectionHead>
             {retention ? (
               <>
                 <div
@@ -1092,7 +1068,7 @@ export default function Settings() {
 
         {/* ── Privacy ── */}
         <Section>
-          <span style={sectionHead}>🌍 Privacy</span>
+          <SectionHead icon="shield">Privacy</SectionHead>
           <div style={{ marginTop: 8 }}>
             <SettingRow
               name="Share completions to community feed"
@@ -1145,7 +1121,7 @@ export default function Settings() {
 
         {/* ── Appearance ── */}
         <Section>
-          <span style={sectionHead}>🎨 Appearance</span>
+          <SectionHead icon="settings">Appearance</SectionHead>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             {THEMES.map((t) => {
               const selected = theme === t.id
@@ -1181,13 +1157,12 @@ export default function Settings() {
                         borderRadius: "50%",
                         background: IRIDESCENT,
                         color: "#fff",
-                        fontSize: 10,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      ✓
+                      <Icon name="done" size={12} color="#fff" />
                     </span>
                   )}
                   <div
@@ -1237,7 +1212,10 @@ export default function Settings() {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <span style={sectionHead}>✦ Lara Settings</span>
+              <span style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="tutor" size={18} color={C.brand} />
+                Lara Settings
+              </span>
               <div style={{ fontSize: 12, color: TEXT2 }}>Customise your AI coach</div>
             </div>
             {!isPaid && (
@@ -1246,11 +1224,12 @@ export default function Settings() {
                 onClick={lockedUpgrade}
                 style={{
                   fontSize: 11,
-                  fontWeight: 700,
-                  padding: "3px 8px",
-                  borderRadius: 8,
-                  background: "rgba(200,0,0,0.08)",
-                  color: "#D92E10",
+                  fontWeight: 800,
+                  letterSpacing: "0.03em",
+                  padding: "5px 10px",
+                  borderRadius: R.pill,
+                  background: C.brandSoft,
+                  color: C.brand,
                   border: "none",
                   cursor: "pointer",
                 }}
@@ -1280,17 +1259,22 @@ export default function Settings() {
                   type="button"
                   onClick={lockedUpgrade}
                   style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
                     fontSize: 11,
-                    fontWeight: 700,
-                    padding: "3px 8px",
-                    borderRadius: 8,
-                    background: "rgba(200,0,0,0.08)",
-                    color: "#D92E10",
+                    fontWeight: 800,
+                    letterSpacing: "0.03em",
+                    padding: "5px 10px",
+                    borderRadius: R.pill,
+                    background: C.brandSoft,
+                    color: C.brand,
                     border: "none",
                     cursor: "pointer",
                   }}
                 >
-                  🔒 PRO
+                  <Icon name="lock" size={12} />
+                  PRO
                 </button>
               )}
             </SettingRow>
@@ -1302,11 +1286,12 @@ export default function Settings() {
 
         {/* ── Data & privacy ── */}
         <Section>
-          <span style={sectionHead}>🔒 Data &amp; Privacy</span>
+          <SectionHead icon="lock">Data &amp; Privacy</SectionHead>
           <div style={{ marginTop: 8 }}>
             <SettingRow name="Export my data" desc="Download all your progress and plan data">
               <button type="button" onClick={exportData} style={ghostBtn}>
-                Export →
+                Export
+                <Icon name="arrow" size={15} />
               </button>
             </SettingRow>
             <SettingRow name="Privacy Policy" desc="Read how we handle your data">
@@ -1314,9 +1299,17 @@ export default function Settings() {
                 href="/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: 13, color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.brand,
+                  textDecoration: "none",
+                }}
               >
-                Read →
+                Read <Icon name="arrow" size={14} />
               </a>
             </SettingRow>
             <SettingRow name="Terms of Service" desc="Read our terms" last>
@@ -1324,9 +1317,17 @@ export default function Settings() {
                 href="/terms"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: 13, color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.brand,
+                  textDecoration: "none",
+                }}
               >
-                Read →
+                Read <Icon name="arrow" size={14} />
               </a>
             </SettingRow>
           </div>
@@ -1339,8 +1340,17 @@ export default function Settings() {
             background: "rgba(255,69,58,0.02)",
           }}
         >
-          <span style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,69,58,0.7)" }}>
-            ⚠️ Danger Zone
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              ...TYPE.label,
+              color: C.red,
+            }}
+          >
+            <Icon name="settings" size={14} color={C.red} strokeWidth={2.4} />
+            Danger Zone
           </span>
           <div style={{ marginTop: 8 }}>
             <SettingRow
@@ -1397,14 +1407,24 @@ export default function Settings() {
             e.currentTarget.style.background = "var(--sch-card)"
           }}
         >
-          <span style={{ transform: "rotate(180deg)", display: "inline-block" }}>→</span>
+          <Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} />
           Sign out
         </motion.button>
 
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <div style={{ fontSize: 12, color: "var(--sch-tx-4)" }}>Scholify v1.0.0</div>
-          <div style={{ fontSize: 11, color: "var(--sch-tx-4)" }}>
-            Built with ✦ for learners
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              fontSize: 11,
+              color: "var(--sch-tx-4)",
+            }}
+          >
+            Built with
+            <Icon name="tutor" size={12} />
+            for learners
           </div>
         </div>
       </motion.div>

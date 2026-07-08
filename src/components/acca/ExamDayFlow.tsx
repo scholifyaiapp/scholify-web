@@ -9,6 +9,7 @@ import { qualificationProgress, suggestedNextPapers } from "@/lib/acca-qualifica
 import { completePaper, recordExamOutcome, snoozeExamPrompt, startNextPaper } from "@/lib/acca-loop"
 import PostMortemPanel from "@/components/acca/PostMortemPanel"
 import type { PostMortemAction } from "@/lib/acca-ai"
+import { Button, Icon, IconBadge, C } from "@/components/acca/ui"
 
 /*
  * Exam day — the loop's decision point. Shows once the exam date arrives:
@@ -89,9 +90,9 @@ export default function ExamDayFlow({
             <motion.span
               animate={{ rotate: [0, -8, 8, 0] }}
               transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1.5 }}
-              style={{ fontSize: 30 }}
+              style={{ display: "inline-flex", transformOrigin: "bottom center" }}
             >
-              🏛️
+              <IconBadge name="exam" tone="brand" size={44} />
             </motion.span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: TEXT }}>Your {paper.id} exam day has arrived</div>
@@ -99,16 +100,17 @@ export default function ExamDayFlow({
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
-            <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={onPassed} style={{ padding: "13px 8px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14, cursor: "pointer" }}>
-              I passed 🎉
-            </motion.button>
-            <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={onFailed} style={{ padding: "13px 8px", borderRadius: 12, border: `1.5px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <Button variant="primary" full onClick={onPassed}>
+              I passed
+              <Icon name="celebrate" size={16} color="#fff" />
+            </Button>
+            <Button variant="secondary" full onClick={onFailed}>
               Not this time
-            </motion.button>
+            </Button>
           </div>
-          <button onClick={onWaiting} style={{ display: "block", margin: "10px auto 0", background: "none", border: "none", color: DIM, fontSize: 12.5, cursor: "pointer" }}>
+          <Button variant="ghost" onClick={onWaiting} style={{ display: "flex", margin: "8px auto 0", fontSize: 12.5, fontWeight: 600, color: DIM }}>
             Results aren't out yet — ask me in a few days
-          </button>
+          </Button>
         </motion.div>
       )}
 
@@ -157,8 +159,8 @@ function Celebration({
       exit={{ opacity: 0 }}
       style={{ ...card({ padding: 26, marginBottom: 16 }), textAlign: "center", borderColor: "rgba(16,185,129,0.4)" }}
     >
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.15, stiffness: 200 }} style={{ fontSize: 58, marginBottom: 6 }}>
-        🎉
+      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.15, stiffness: 200 }} style={{ display: "inline-flex", marginBottom: 10 }}>
+        <IconBadge name="celebrate" tone="green" size={64} />
       </motion.div>
       <h2 style={{ fontSize: 25, fontWeight: 800, color: TEXT, margin: "0 0 6px" }}>
         {paper?.id} — <span style={iriText}>PASSED</span>
@@ -169,8 +171,11 @@ function Celebration({
 
       {/* qualification progress, freshly updated */}
       <div style={{ maxWidth: 380, margin: "0 auto 20px", textAlign: "left" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 6 }}>
-          <span style={{ fontWeight: 700, color: TEXT }}>Journey to membership</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, marginBottom: 6 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, color: TEXT }}>
+            <Icon name="trophy" size={14} color={C.amber} />
+            Journey to membership
+          </span>
           <span style={{ color: MUTED }}>
             <b style={{ color: GREEN }}>{qual.passedCount}</b> of {qual.totalExams} · {qual.percent}%
           </span>
@@ -187,8 +192,9 @@ function Celebration({
 
       {next.length > 0 ? (
         <>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, margin: "0 0 10px" }}>
-            🔓 NEXT PAPER UNLOCKED — RESTART THE LOOP
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, margin: "0 0 10px" }}>
+            <Icon name="loop" size={13} color={RED} strokeWidth={2.4} />
+            NEXT PAPER UNLOCKED — RESTART THE LOOP
           </div>
           <div style={{ display: "grid", gap: 8, textAlign: "left" }}>
             {next.map((p, i) => (
@@ -212,18 +218,19 @@ function Celebration({
                   <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{p.name}</div>
                   <div style={{ fontSize: 11.5, color: DIM }}>{p.code} · {p.level}</div>
                 </div>
-                <span style={{ color: RED, fontWeight: 800, fontSize: 16 }}>→</span>
+                <Icon name="arrow" size={17} color={RED} style={{ flexShrink: 0 }} />
               </motion.button>
             ))}
           </div>
-          <button onClick={onLater} style={{ display: "block", margin: "12px auto 0", background: "none", border: "none", color: DIM, fontSize: 13, cursor: "pointer" }}>
+          <Button variant="ghost" onClick={onLater} style={{ display: "flex", margin: "10px auto 0", fontSize: 13, fontWeight: 600, color: DIM }}>
             I'll choose my next paper later
-          </button>
+          </Button>
         </>
       ) : (
-        <motion.button whileTap={{ scale: 0.98 }} onClick={onLater} style={{ padding: "14px 26px", borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15, cursor: "pointer" }}>
-          That was the last one — you're through every exam 🏆
-        </motion.button>
+        <Button variant="primary" size="lg" onClick={onLater}>
+          That was the last one — you're through every exam
+          <Icon name="trophy" size={17} color="#fff" />
+        </Button>
       )}
     </motion.div>
   )
@@ -273,7 +280,9 @@ function Reflection({
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ marginBottom: 16 }}>
       {/* emotional support first — before any analysis */}
       <div style={{ ...card({ padding: 22, marginBottom: 12 }), textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>🫂</div>
+        <div style={{ display: "inline-flex", marginBottom: 10 }}>
+          <IconBadge name="support" tone="brand" size={52} />
+        </div>
         <h2 style={{ fontSize: 21, fontWeight: 800, color: TEXT, margin: "0 0 8px" }}>This one stung. Let it.</h2>
         <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0, maxWidth: 420, marginInline: "auto" }}>
           A failed sitting is an event, not a verdict — a huge share of ACCA members failed at least one paper on
@@ -282,7 +291,8 @@ function Reflection({
         </p>
         {mockAvg !== null && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, padding: "8px 14px", borderRadius: 999, background: "var(--sch-card-2)", fontSize: 12.5, color: MUTED }}>
-            📊 Your mocks averaged <b style={{ color: TEXT }}>{mockAvg}%</b>
+            <Icon name="stats" size={14} color={MUTED} />
+            Your mocks averaged <b style={{ color: TEXT }}>{mockAvg}%</b>
             {mockAvg >= 50 ? " — the knowledge is there; exam day is what we'll rehearse harder." : " — we'll lift the base before the retake."}
           </div>
         )}
@@ -293,19 +303,27 @@ function Reflection({
 
       {/* new exam date → new roadmap */}
       <div style={card({ padding: 20 })}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: TEXT, marginBottom: 4 }}>📅 Pick the retake sitting</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, fontSize: 15, color: TEXT, marginBottom: 4 }}>
+          <Icon name="calendar" size={17} color={RED} />
+          Pick the retake sitting
+        </div>
         <p style={{ fontSize: 13, color: MUTED, margin: "0 0 12px", lineHeight: 1.5 }}>
           The moment you set it, I rebuild your roadmap and daily missions around the new date.
         </p>
         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
           {([3, 6] as const).map((m) => (
-            <button
+            <Button
               key={m}
+              variant="secondary"
               onClick={() => pickPreset(m)}
-              style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${preset === m ? RED : BORDER}`, background: preset === m ? "rgba(200,0,0,0.07)" : CARD, color: preset === m ? RED : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
+              style={{
+                flex: 1,
+                fontSize: 13.5,
+                ...(preset === m ? { borderColor: C.brand, background: C.brandSoft, color: C.brand } : {}),
+              }}
             >
               In ~{m} months
-            </button>
+            </Button>
           ))}
         </div>
         <input
@@ -314,13 +332,9 @@ function Reflection({
           onChange={(e) => { setNewDate(e.target.value); setPreset(null) }}
           style={{ width: "100%", boxSizing: "border-box", padding: "12px 15px", borderRadius: 12, border: `1px solid ${BORDER}`, background: "var(--sch-bg)", color: TEXT, fontSize: 14.5, colorScheme: "dark light", marginBottom: 14 }}
         />
-        <motion.button
-          whileTap={{ scale: 0.99 }}
-          onClick={rebuild}
-          style={{ width: "100%", padding: 15, borderRadius: 13, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15, cursor: "pointer" }}
-        >
-          {newDate ? "Rebuild my roadmap → back into the loop" : "Continue without a date — pace me by mastery"}
-        </motion.button>
+        <Button variant="primary" size="lg" full onClick={rebuild}>
+          {newDate ? "Rebuild my roadmap — back into the loop" : "Continue without a date — pace me by mastery"}
+        </Button>
       </div>
     </motion.div>
   )

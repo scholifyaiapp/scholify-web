@@ -1,7 +1,7 @@
-import { useState, type CSSProperties } from "react"
+import { useState } from "react"
 import { motion } from "motion/react"
-import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
+import { Icon, Card, Button, C, SP, R } from "@/components/acca/ui"
 import { generateQuestions } from "@/lib/acca-ai"
 import type { AccaQuestion } from "@/lib/acca"
 
@@ -10,16 +10,6 @@ import type { AccaQuestion } from "@/lib/acca"
  * notes. The "learn from your world" wedge applied to ACCA: infinite,
  * personalised practice. Needs a live AI key; degrades to a clear prompt.
  */
-
-const TEXT = "var(--sch-text)"
-const MUTED = "var(--sch-tx-2)"
-const DIM = "var(--sch-tx-3)"
-const CARD = "var(--sch-card)"
-const BORDER = "var(--sch-border)"
-
-function card(extra?: CSSProperties): CSSProperties {
-  return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
-}
 
 export default function GenerateView({
   paperId,
@@ -61,16 +51,18 @@ export default function GenerateView({
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-      <button onClick={onBack} style={backBtn}>← Back</button>
-      <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 4px", color: TEXT }}>
+      <Button variant="ghost" onClick={onBack} style={{ minHeight: 40, padding: "6px 0", marginBottom: SP.md }}>
+        <Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} /> Back
+      </Button>
+      <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 4px", color: C.text }}>
         Custom <span style={iriText}>practice</span>
       </h1>
-      <p style={{ color: MUTED, margin: "0 0 20px", fontSize: 15 }}>
+      <p style={{ color: C.soft, margin: "0 0 20px", fontSize: 15 }}>
         Generate fresh exam-style questions on any topic — or paste your own notes and practise exactly what you're revising.
       </p>
 
       {/* mode toggle */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: SP.sm, marginBottom: SP.lg }}>
         <Toggle active={mode === "topic"} onClick={() => setMode("topic")}>By topic</Toggle>
         <Toggle active={mode === "notes"} onClick={() => setMode("notes")}>From my notes</Toggle>
       </div>
@@ -81,7 +73,7 @@ export default function GenerateView({
           disabled={loading}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="e.g. IAS 16 depreciation, consolidation goodwill, accruals…"
-          style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", fontSize: 15, borderRadius: 12, border: `1px solid ${BORDER}`, background: "var(--sch-bg)", color: TEXT, outline: "none" }}
+          style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", fontSize: 15, borderRadius: R.md, border: `1px solid ${C.border}`, background: C.bg, color: C.text, outline: "none" }}
         />
       ) : (
         <textarea
@@ -90,51 +82,53 @@ export default function GenerateView({
           onChange={(e) => setNotes(e.target.value)}
           rows={7}
           placeholder="Paste your study notes here — Lara will turn them into practice questions."
-          style={{ width: "100%", boxSizing: "border-box", padding: 16, fontSize: 15, lineHeight: 1.6, borderRadius: 12, border: `1px solid ${BORDER}`, background: "var(--sch-bg)", color: TEXT, outline: "none", resize: "vertical", fontFamily: "inherit" }}
+          style={{ width: "100%", boxSizing: "border-box", padding: SP.lg, fontSize: 15, lineHeight: 1.6, borderRadius: R.md, border: `1px solid ${C.border}`, background: C.bg, color: C.text, outline: "none", resize: "vertical", fontFamily: "inherit" }}
         />
       )}
 
       {/* count */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
-        <span style={{ fontSize: 13.5, color: MUTED }}>How many?</span>
-        {[3, 5, 8].map((n) => (
-          <button
-            key={n}
-            onClick={() => setCount(n)}
-            style={{ padding: "7px 16px", borderRadius: 999, border: `1.5px solid ${count === n ? "#C80000" : BORDER}`, background: count === n ? "rgba(200,0,0,0.06)" : CARD, color: count === n ? "#C80000" : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
-          >
-            {n}
-          </button>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", gap: SP.sm + 2, margin: "16px 0" }}>
+        <span style={{ fontSize: 13.5, color: C.soft }}>How many?</span>
+        {[3, 5, 8].map((n) => {
+          const on = count === n
+          return (
+            <motion.button
+              key={n}
+              onClick={() => setCount(n)}
+              whileTap={{ scale: 0.97 }}
+              style={{ minWidth: 44, minHeight: 40, padding: "7px 16px", borderRadius: R.pill, border: `1.5px solid ${on ? C.brand : C.border}`, background: on ? C.brandSoft : C.card, color: on ? C.brand : C.text, fontWeight: 700, fontSize: 13.5, cursor: "pointer", transition: "background .18s ease, border-color .18s ease, color .18s ease" }}
+            >
+              {n}
+            </motion.button>
+          )
+        })}
       </div>
 
       {error && (
-        <div style={{ ...card({ padding: 14, marginBottom: 14 }), border: "1px solid #F59E0B", background: "rgba(245,158,11,0.08)" }}>
-          <div style={{ fontSize: 13.5, color: TEXT, lineHeight: 1.5 }}>{error}</div>
-        </div>
+        <Card style={{ padding: SP.lg - 2, marginBottom: SP.lg, border: `1px solid ${C.amber}`, background: C.amberSoft }}>
+          <div style={{ display: "flex", gap: SP.sm, alignItems: "flex-start", fontSize: 13.5, color: C.text, lineHeight: 1.5 }}>
+            <Icon name="shield" size={17} color={C.amber} style={{ marginTop: 1 }} />
+            <span>{error}</span>
+          </div>
+        </Card>
       )}
 
-      <motion.button
-        whileTap={{ scale: canGo && !loading ? 0.99 : 1 }}
-        disabled={!canGo || loading}
-        onClick={generate}
-        style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", background: canGo && !loading ? IRIDESCENT : "var(--sch-card-2)", color: canGo && !loading ? "#fff" : DIM, fontWeight: 750, fontSize: 16, cursor: canGo && !loading ? "pointer" : "not-allowed" }}
-      >
+      <Button full size="lg" disabled={!canGo || loading} onClick={generate}>
+        <Icon name="generate" size={18} color={canGo && !loading ? "#fff" : C.faint} />
         {loading ? "Lara is writing questions…" : "Generate & practise"}
-      </motion.button>
+      </Button>
     </motion.div>
   )
 }
 
 function Toggle({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${active ? "#C80000" : BORDER}`, background: active ? "rgba(200,0,0,0.06)" : CARD, color: active ? "#C80000" : TEXT, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+      whileTap={{ scale: 0.99 }}
+      style={{ flex: 1, minHeight: 44, padding: "11px 0", borderRadius: R.md, border: `1.5px solid ${active ? C.brand : C.border}`, background: active ? C.brandSoft : C.card, color: active ? C.brand : C.text, fontWeight: 700, fontSize: 14, cursor: "pointer", transition: "background .18s ease, border-color .18s ease, color .18s ease" }}
     >
       {children}
-    </button>
+    </motion.button>
   )
 }
-
-const backBtn: CSSProperties = { background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 14, padding: 0, marginBottom: 14 }
