@@ -394,7 +394,7 @@ export default function PaywallModal({
             >
               <PlanMini
                 name="Beginner"
-                price="$6.99"
+                price="$9.99"
                 unit="/month"
                 description="Build the habit"
                 cta="Choose Beginner"
@@ -403,7 +403,7 @@ export default function PaywallModal({
               <PlanMini
                 featured
                 name="Pro"
-                price="$13.99"
+                price="$14.99"
                 unit="/month"
                 description="The full experience"
                 cta="Choose Pro →"
@@ -439,7 +439,7 @@ export default function PaywallModal({
                   </span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, ...iriText }}>$94.99/yr</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, ...iriText }}>$99.99/yr</span>
                   <span
                     style={{
                       fontSize: 10,

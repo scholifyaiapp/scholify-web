@@ -169,17 +169,17 @@ export default function Pricing() {
 
   const beginnerCard = useMemo(
     () => ({
-      price: annual ? "$4.17" : "$6.99",
-      oldPrice: annual ? "$6.99" : undefined,
-      billedNote: annual ? "Billed as $49.99/yr" : undefined,
+      price: annual ? "$5.99" : "$9.99",
+      oldPrice: annual ? "$9.99" : undefined,
+      billedNote: annual ? "Billed as $71.99/yr" : undefined,
     }),
     [annual],
   )
   const proCard = useMemo(
     () => ({
-      price: annual ? "$7.92" : "$13.99",
-      oldPrice: annual ? "$13.99" : undefined,
-      billedNote: annual ? "Billed as $94.99/yr" : undefined,
+      price: annual ? "$8.33" : "$14.99",
+      oldPrice: annual ? "$14.99" : undefined,
+      billedNote: annual ? "Billed as $99.99/yr" : undefined,
     }),
     [annual],
   )
@@ -420,10 +420,10 @@ export default function Pricing() {
                 width: "fit-content",
               }}
             >
-              $94.99/year
+              $99.99/year
             </div>
             <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>
-              = $7.92/month · Billed annually
+              = $8.33/month · Billed annually
             </div>
           </div>
 
@@ -432,7 +432,7 @@ export default function Pricing() {
               "✓ Everything in Pro",
               "✓ Covers multiple sittings per year",
               "✓ Priority AI generation",
-              "✓ Best value — $7.92/mo",
+              "✓ Best value — $8.33/mo",
             ].map((p) => (
               <span
                 key={p}

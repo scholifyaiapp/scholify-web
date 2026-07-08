@@ -1649,7 +1649,7 @@ function CompareROI() {
         <SavingsCalculator />
 
         <p className="font-mono-pro" style={{ textAlign: "center", color: INK_MUTED, fontSize: 10, letterSpacing: "0.1em", marginTop: 20, lineHeight: 1.6 }}>
-          {t("MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $13.99/MO OR $94.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.")}
+          {t("MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $14.99/MO OR $99.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.")}
         </p>
       </div>
     </section>
@@ -1683,7 +1683,7 @@ function useSmoothNumber(target: number, durationMs = 550): number {
 
 const EUR = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
 const UZS_PER_EUR = 14200
-const SCHOLIFY_EUR_PER_MONTH = 13
+const SCHOLIFY_EUR_PER_MONTH = 14
 
 function fmtUzs(eur: number): string {
   const uzs = Math.round((eur * UZS_PER_EUR) / 100000) * 100000
@@ -1795,7 +1795,7 @@ function SavingsCalculator() {
           </button>
         </motion.div>
         <p style={{ fontSize: 10.5, color: "rgba(250,250,247,0.4)", lineHeight: 1.5, margin: 0 }}>
-          {t("Scholify at €13/mo (Pro monthly; annual is cheaper still). ACCA exam entry fees are separate on every route.")}
+          {t("Scholify at €14/mo (Pro monthly; annual is cheaper still). ACCA exam entry fees are separate on every route.")}
         </p>
       </div>
     </motion.div>
@@ -1855,10 +1855,10 @@ function Pricing() {
             }}
           >
             <PricingInteraction
-              starterMonth={6.99}
-              starterAnnual={3.99}
-              proMonth={13.99}
-              proAnnual={7.92}
+              starterMonth={9.99}
+              starterAnnual={5.99}
+              proMonth={14.99}
+              proAnnual={8.33}
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
               ctaLabel={t("Start 7-day free trial")}

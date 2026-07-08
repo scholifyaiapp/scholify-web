@@ -938,7 +938,7 @@ export default function Settings() {
               </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>
                 {isPaid
-                  ? "Billed monthly · $13.99/month"
+                  ? "Billed monthly · $14.99/month"
                   : trialDaysLeft > 0
                     ? `${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} remaining in your trial`
                     : "Trial ended — upgrade to keep Pro features"}

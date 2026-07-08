@@ -580,8 +580,8 @@ export const ru: Record<string, string> = {
   "some": "частично",
   "fixed schedule": "жёсткое расписание",
   "self-paced": "самостоятельно",
-  "MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $13.99/MO OR $94.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.":
-    "РЫНОЧНЫЕ ЦЕНЫ: ОПУБЛИКОВАННЫЕ ЦЕНЫ ОНЛАЙН-КУРСОВ ЗА ЭКЗАМЕН (УЧЕБНЫЕ ЦЕНТРЫ СНГ, 2026) И ТИПИЧНЫЕ ЦЕНЫ ON-DEMAND КУРСОВ. SCHOLIFY: PRO $13.99/МЕС ИЛИ $94.99/ГОД. ВЗНОСЫ ACCA ЗА ЭКЗАМЕНЫ ОПЛАЧИВАЮТСЯ ОТДЕЛЬНО ВЕЗДЕ.",
+  "MARKET RATES: PUBLISHED ONLINE-COURSE PRICES PER PAPER (CIS TUITION CENTRES, 2026) AND TYPICAL ON-DEMAND COURSE PRICING. SCHOLIFY: PRO AT $14.99/MO OR $99.99/YR. EXAM ENTRY FEES PAYABLE TO ACCA ARE SEPARATE EVERYWHERE.":
+    "РЫНОЧНЫЕ ЦЕНЫ: ОПУБЛИКОВАННЫЕ ЦЕНЫ ОНЛАЙН-КУРСОВ ЗА ЭКЗАМЕН (УЧЕБНЫЕ ЦЕНТРЫ СНГ, 2026) И ТИПИЧНЫЕ ЦЕНЫ ON-DEMAND КУРСОВ. SCHOLIFY: PRO $14.99/МЕС ИЛИ $99.99/ГОД. ВЗНОСЫ ACCA ЗА ЭКЗАМЕНЫ ОПЛАЧИВАЮТСЯ ОТДЕЛЬНО ВЕЗДЕ.",
   "YOUR NUMBERS": "ВАШИ ЦИФРЫ",
   "Drag the sliders to your reality.": "Передвиньте ползунки под вашу реальность.",
   "Papers left to pass": "Осталось сдать экзаменов",
@@ -592,8 +592,8 @@ export const ru: Record<string, string> = {
   "Tuition-centre route": "Через учебный центр",
   "Scholify Pro route": "Через Scholify Pro",
   "Keep the difference — start free": "Оставьте разницу себе — начните бесплатно",
-  "Scholify at €13/mo (Pro monthly; annual is cheaper still). ACCA exam entry fees are separate on every route.":
-    "Scholify — €13/мес (Pro помесячно; годовой ещё дешевле). Взносы ACCA за экзамены оплачиваются отдельно при любом пути.",
+  "Scholify at €14/mo (Pro monthly; annual is cheaper still). ACCA exam entry fees are separate on every route.":
+    "Scholify — €14/мес (Pro помесячно; годовой ещё дешевле). Взносы ACCA за экзамены оплачиваются отдельно при любом пути.",
 
   /* ── Pricing / awards / final ── */
   "Every paper. Every mode.": "Каждый экзамен. Каждый режим.",
