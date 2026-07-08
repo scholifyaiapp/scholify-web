@@ -42,10 +42,29 @@ const AMBER = "#C2740B"
 const GRAD = "linear-gradient(135deg, #C80000 0%, #E50068 50%, #F4A405 100%)"
 const EASE = [0.22, 1, 0.36, 1] as const
 
-/* ── shared: pointer-tilt rig ─────────────────────────────────── */
+/* ── shared: media + pointer-tilt rigs ────────────────────────── */
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = () => setMatches(mq.matches)
+    mq.addEventListener("change", onChange)
+    return () => mq.removeEventListener("change", onChange)
+  }, [query])
+  return matches
+}
+
+/** Phones/tablets: no hover cursor — tilt should be automatic, not tracked. */
+function useCoarsePointer(): boolean {
+  return useMediaQuery("(pointer: coarse)")
+}
 
 function useTilt(maxDeg = 9) {
   const reduce = useReducedMotion()
+  const coarse = useCoarsePointer()
   const mx = useMotionValue(0.5)
   const my = useMotionValue(0.5)
   const sx = useSpring(mx, { stiffness: 140, damping: 18 })
@@ -54,7 +73,8 @@ function useTilt(maxDeg = 9) {
   const rotateX = useTransform(sy, [0, 1], [maxDeg, -maxDeg])
 
   function onPointerMove(e: React.PointerEvent<HTMLElement>) {
-    if (reduce) return
+    // On touch, pointermove fires mid-scroll — tracking it fights the thumb.
+    if (reduce || coarse) return
     const r = e.currentTarget.getBoundingClientRect()
     mx.set((e.clientX - r.left) / r.width)
     my.set((e.clientY - r.top) / r.height)
@@ -63,7 +83,7 @@ function useTilt(maxDeg = 9) {
     mx.set(0.5)
     my.set(0.5)
   }
-  return { rotateX, rotateY, onPointerMove, onPointerLeave, reduce }
+  return { rotateX, rotateY, onPointerMove, onPointerLeave, reduce, coarse }
 }
 
 /* ── the hero showcase — the app, staged in 3D ─────────────────── */
@@ -172,7 +192,8 @@ function FloatCard({
 }
 
 export function Hero3DShowcase() {
-  const { rotateX, rotateY, onPointerMove, onPointerLeave } = useTilt(8)
+  const { rotateX, rotateY, onPointerMove, onPointerLeave, reduce, coarse } = useTilt(8)
+  const isMobile = useMediaQuery("(max-width: 640px)")
   const trend = [41, 43, 47, 52, 55]
 
   return (
@@ -181,14 +202,18 @@ export function Hero3DShowcase() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.9, delay: 0.15, ease: EASE }}
-      style={{ perspective: 1200, marginTop: 64, display: "flex", justifyContent: "center" }}
+      style={{ perspective: 1200, marginTop: isMobile ? 48 : 64, display: "flex", justifyContent: "center" }}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
       <motion.div
+        // Touch devices can't tilt with a cursor — give them a slow,
+        // self-driven 3D sway instead so the scene still reads as 3D.
+        animate={coarse && !reduce ? { rotateX: [2.5, -2.5, 2.5], rotateY: [-5, 5, -5] } : undefined}
+        transition={coarse && !reduce ? { duration: 9, repeat: Infinity, ease: "easeInOut" } : undefined}
         style={{
-          rotateX,
-          rotateY,
+          rotateX: coarse ? undefined : rotateX,
+          rotateY: coarse ? undefined : rotateY,
           transformStyle: "preserve-3d",
           position: "relative",
           width: "min(660px, 92vw)",
@@ -216,15 +241,15 @@ export function Hero3DShowcase() {
           </div>
 
           {/* app body — real Dashboard composition, EN by design */}
-          <div style={{ padding: "20px 22px 22px", textAlign: "left" }}>
+          <div style={{ padding: isMobile ? "16px 16px 18px" : "20px 22px 22px", textAlign: "left" }}>
             <div style={{ fontSize: 15.5, fontWeight: 800, color: INK }}>Good morning, Amara</div>
             <div style={{ fontSize: 12.5, color: INK_MUTED, marginTop: 3 }}>
               You're at <b style={{ color: INK }}>68%</b> to pass FR — today's plan pushes it higher.
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 18, flexWrap: "wrap" }}>
-              <MiniRing value={68} />
-              <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 14 : 20, marginTop: 18, flexWrap: "wrap", justifyContent: isMobile ? "center" : "flex-start" }}>
+              <MiniRing value={68} size={isMobile ? 100 : 118} />
+              <div style={{ flex: 1, minWidth: isMobile ? "100%" : 220 }}>
                 <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.7, color: INK_MUTED }}>
                   YOUR NEXT ACTION · THE PLAN ALREADY CHOSE
                 </div>
@@ -238,12 +263,13 @@ export function Hero3DShowcase() {
                     display: "flex",
                     alignItems: "center",
                     gap: 11,
+                    flexWrap: "wrap",
                   }}
                 >
                   <span style={{ width: 34, height: 34, borderRadius: 9, background: GRAD, display: "grid", placeItems: "center", flexShrink: 0 }}>
                     <Target size={16} color="#fff" strokeWidth={2.4} />
                   </span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ flex: 1, minWidth: 160 }}>
                     <span style={{ display: "block", fontWeight: 750, fontSize: 13, color: INK }}>
                       ① Recover the marks in Group Accounts
                     </span>
@@ -251,11 +277,24 @@ export function Hero3DShowcase() {
                       Your weakest area — worth the most today · ~25 min
                     </span>
                   </span>
-                  <span style={{ padding: "8px 14px", borderRadius: 10, background: GRAD, color: "#fff", fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>
+                  <span
+                    style={{
+                      padding: "9px 14px",
+                      borderRadius: 10,
+                      background: GRAD,
+                      color: "#fff",
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                      textAlign: "center",
+                      ...(isMobile ? { flexBasis: "100%" } : {}),
+                    }}
+                  >
                     Start now
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 10.5, color: INK_MUTED }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 10.5, color: INK_MUTED, flexWrap: "wrap" }}>
                   <span style={{ padding: "4px 9px", borderRadius: 999, background: "#F1EFEA" }}>② 23 flashcards · ~12 min</span>
                   <span style={{ padding: "4px 9px", borderRadius: 999, background: "#F1EFEA" }}>③ Fresh mock · ~30 min</span>
                 </div>
@@ -264,49 +303,52 @@ export function Hero3DShowcase() {
           </div>
         </div>
 
-        {/* floating depth layers */}
-        <FloatCard z={70} x="-7%" y="18%" delay={0.5} duration={5.4}>
+        {/* floating depth layers — repositioned (and trimmed) on phones so
+            nothing clips at the viewport edge or covers the mission card */}
+        <FloatCard z={70} x={isMobile ? "2%" : "-7%"} y={isMobile ? "-7%" : "18%"} delay={0.5} duration={5.4}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, color: GREEN }}>
             <TrendingUp size={14} strokeWidth={2.6} />
             +6 pts this week
           </div>
         </FloatCard>
 
-        <FloatCard z={55} x="72%" y="-9%" delay={0.65} duration={6}>
-          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.6, color: INK_MUTED, marginBottom: 6 }}>MOCK TREND</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 34, position: "relative" }}>
-            <span style={{ position: "absolute", left: 0, right: 0, bottom: "50%", height: 1, background: INK, opacity: 0.2 }} />
-            {trend.map((p, i) => (
-              <motion.span
-                key={i}
-                initial={{ height: 3 }}
-                whileInView={{ height: `${p}%` }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.8 + i * 0.08 }}
-                style={{ width: 9, borderRadius: "3px 3px 0 0", background: p >= 50 ? GREEN : BRAND, display: "block" }}
-              />
-            ))}
-          </div>
-          <div style={{ fontSize: 9.5, color: INK_MUTED, marginTop: 4 }}>
-            best <b style={{ color: GREEN }}>55%</b> · pass line 50%
-          </div>
-        </FloatCard>
+        {!isMobile && (
+          <FloatCard z={55} x="72%" y="-9%" delay={0.65} duration={6}>
+            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.6, color: INK_MUTED, marginBottom: 6 }}>MOCK TREND</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 34, position: "relative" }}>
+              <span style={{ position: "absolute", left: 0, right: 0, bottom: "50%", height: 1, background: INK, opacity: 0.2 }} />
+              {trend.map((p, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ height: 3 }}
+                  whileInView={{ height: `${p}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.8 + i * 0.08 }}
+                  style={{ width: 9, borderRadius: "3px 3px 0 0", background: p >= 50 ? GREEN : BRAND, display: "block" }}
+                />
+              ))}
+            </div>
+            <div style={{ fontSize: 9.5, color: INK_MUTED, marginTop: 4 }}>
+              best <b style={{ color: GREEN }}>55%</b> · pass line 50%
+            </div>
+          </FloatCard>
+        )}
 
-        <FloatCard z={45} x="4%" y="86%" delay={0.8} duration={5.8}>
+        <FloatCard z={45} x={isMobile ? "3%" : "4%"} y={isMobile ? "94%" : "86%"} delay={0.8} duration={5.8}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 750, color: INK }}>
             <Flame size={14} color={FIRE} fill={FIRE} strokeWidth={0} />
             14-day streak
           </div>
         </FloatCard>
 
-        <FloatCard z={62} x="66%" y="88%" delay={0.95} duration={6.4}>
+        <FloatCard z={62} x={isMobile ? "48%" : "66%"} y={isMobile ? "96%" : "88%"} delay={0.95} duration={6.4}>
           <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 750 }}>
             {[1, 2].map((n) => (
               <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: GREEN }}>
                 <Check size={12} strokeWidth={3} /> Mock {n}
               </span>
             ))}
-            <span style={{ color: INK_MUTED }}>Mock 3 →</span>
+            {!isMobile && <span style={{ color: INK_MUTED }}>Mock 3 →</span>}
           </div>
         </FloatCard>
       </motion.div>
