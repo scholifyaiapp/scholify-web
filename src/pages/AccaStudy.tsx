@@ -48,7 +48,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
-import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage } from "@/lib/acca-loop"
+import { mockGate, MOCK_GATE, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState } from "@/lib/acca-loop"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
@@ -820,6 +820,7 @@ function Overview({
   const gate = mockGate(paper.id)
   const examDue = examDayDue(paper.id)
   const stage = currentStage(paper.id)
+  const recovery = recoveryState(paper.id)
   // AI Study OS: today's auto-generated plan — the student never has to choose.
   const todayPlan = buildTodayPlan(paper.id)
   const todayHandlers: Record<TodayAction, () => void> = {
@@ -846,6 +847,40 @@ function Overview({
       {/* Exam day — the loop's decision point: celebrate or reflect */}
       {examDue && (
         <ExamDayFlow paperId={paper.id} onDone={onRefresh} onStartPaper={onSwitchPaper} onAction={onLoopAction} />
+      )}
+
+      {/* Retake run — the recovery loop stays visible until the paper is won */}
+      {!examDue && recovery.active && (
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.99 }}
+          onClick={onJourney}
+          style={{
+            ...card({ padding: "14px 16px", marginBottom: 16, cursor: "pointer" }),
+            display: "flex",
+            alignItems: "center",
+            gap: 13,
+            width: "100%",
+            textAlign: "left",
+            borderLeft: `3px solid ${C.amber}`,
+          }}
+        >
+          <IconBadge name="reflect" tone="amber" size={42} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: TEXT, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              Retake run — {paper.id}
+              {recovery.provenAgain && <Badge tone="green">PROVEN AGAIN</Badge>}
+            </div>
+            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>
+              {recovery.provenAgain
+                ? `Fresh mock passed — hold it warm until the retake${days != null ? ` in ${days} days` : ""}.`
+                : `You know exactly where the marks were lost — ${recovery.answeredSince > 0 ? `${recovery.answeredSince} answers into recovering them` : "today's plan starts recovering them"}. Then a fresh mock, then the retake${days != null ? ` in ${days} days` : ""}.`}
+            </div>
+          </div>
+          <Icon name="chevron" size={17} color={DIM} style={{ flexShrink: 0 }} />
+        </motion.button>
       )}
 
       {/* AI Study OS — your plan for today */}

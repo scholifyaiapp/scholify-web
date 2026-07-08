@@ -14,6 +14,7 @@ const STAGE_ICON: Record<string, IconName> = {
   progress: "stats",
   mock: "mock",
   exam: "exam",
+  recovery: "reflect",
   next: "loop",
 }
 

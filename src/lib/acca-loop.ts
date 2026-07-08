@@ -18,7 +18,7 @@
  * ACCA engine.
  */
 
-import { getPaperStats, getMockHistory } from "@/lib/acca"
+import { getPaperStats, getMockHistory, getDailyActivity } from "@/lib/acca"
 import { getLatestDiagnostic, estimateFromPractice } from "@/lib/acca-diagnostic"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import {
@@ -44,13 +44,30 @@ function todayStr(): string {
 
 /**
  * The learner's current pass probability on a paper: the live practice
- * estimate when they've practised, else their latest formal diagnostic.
+ * estimate when they've practised, else their latest formal diagnostic —
+ * recalibrated by a failed real sitting when one is on record (below).
+ *
+ * A real exam result is the strongest evidence the model ever gets. After a
+ * fail, the estimate anchors toward the real mark, and every question
+ * answered since progressively hands the read back to the live practice
+ * model — recovery work literally earns the number back.
  */
 export function passProbability(paperId: string): number | null {
   const live = estimateFromPractice(paperId)
-  if (live) return live.passProbability
   const diag = getLatestDiagnostic(paperId)
-  return diag ? diag.passProbability : null
+  const base = live ? live.passProbability : diag ? diag.passProbability : null
+
+  const rec = recoveryState(paperId)
+  if (!rec.active || !rec.outcome) return base
+
+  // Map the real mark to a next-sitting probability (50 is the pass line);
+  // an unshared mark reads as a near-miss.
+  const score = rec.outcome.score
+  const examProb = score != null ? Math.max(5, Math.min(90, 50 + (score - 50) * 2)) : 35
+  if (base === null) return Math.round(examProb)
+  // Exam evidence starts at 65% weight and washes out over ~260 answers.
+  const w = Math.max(0, 0.65 - rec.answeredSince / 400)
+  return Math.round(w * examProb + (1 - w) * base)
 }
 
 /* ── The 75% gate on the mock exam room ───────────────────────── */
@@ -165,6 +182,44 @@ export function latestExamOutcome(paperId: string): ExamOutcome | null {
   return getExamOutcomes(paperId)[0] ?? null
 }
 
+/* ── The recovery run: a failed sitting is part of the journey ── */
+
+export interface RecoveryState {
+  /** True while the latest real sitting on this paper was a fail. */
+  active: boolean
+  outcome: ExamOutcome | null
+  /** Questions answered since the failed sitting was recorded. */
+  answeredSince: number
+  /** Fresh timed mocks sat since the failed sitting. */
+  mocksSince: number
+  /** Passed a fresh mock since the fail — proven again, retake-ready. */
+  provenAgain: boolean
+}
+
+const NO_RECOVERY: RecoveryState = { active: false, outcome: null, answeredSince: 0, mocksSince: 0, provenAgain: false }
+
+/**
+ * Where the learner is in the recovery run after a failed real sitting.
+ * Active from the moment the fail is recorded until the next real outcome
+ * (the retake) replaces it.
+ */
+export function recoveryState(paperId: string): RecoveryState {
+  const outcome = latestExamOutcome(paperId)
+  if (!outcome || outcome.passed) return NO_RECOVERY
+  const failDate = outcome.recordedAt.slice(0, 10)
+  const answeredSince = getDailyActivity(120)
+    .filter((d) => d.date > failDate)
+    .reduce((s, d) => s + d.count, 0)
+  const freshMocks = getMockHistory(paperId).filter((m) => m.date > failDate)
+  return {
+    active: true,
+    outcome,
+    answeredSince,
+    mocksSince: freshMocks.length,
+    provenAgain: freshMocks.some((m) => m.percent >= MOCK_PASS),
+  }
+}
+
 /* ── The exam-day prompt ("how did it go?") ───────────────────── */
 
 function readSnooze(): Record<string, string> {
@@ -259,6 +314,7 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
   const mocks = mockProgress(paperId)
   const outcome = latestExamOutcome(paperId)
   const plan = getPlan(paperId)
+  const rec = recoveryState(paperId)
 
   const diagnosed = Boolean(diag) || stats.answered >= 5
   const hasRoadmap = Boolean(plan.examDate) || diagnosed
@@ -323,26 +379,51 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
     {
       key: "exam",
       emoji: "🏛️",
-      label: "Real ACCA exam",
+      label: rec.active ? "Real ACCA exam — first sitting" : "Real ACCA exam",
       detail: examPassed
         ? "Passed — this paper is behind you."
-        : mocks.examReady
-          ? plan.examDate
-            ? "You're rehearsed and ready. Keep mocks warm until the day."
-            : "You're mock-ready — book your sitting and set the date."
-          : `Unlocks after ${MOCKS_REQUIRED} mocks with the latest one passed.`,
-      status: examPassed ? "done" : mocks.examReady ? "current" : "locked",
+        : rec.active
+          ? "Not this time — recorded, reflected on, and feeding the plan. The retake run is live."
+          : mocks.examReady
+            ? plan.examDate
+              ? "You're rehearsed and ready. Keep mocks warm until the day."
+              : "You're mock-ready — book your sitting and set the date."
+            : `Unlocks after ${MOCKS_REQUIRED} mocks with the latest one passed.`,
+      status: examPassed ? "done" : rec.active ? "done" : mocks.examReady ? "current" : "locked",
     },
+    ...(rec.active
+      ? [
+          {
+            key: "recovery",
+            emoji: "🩺",
+            label: "Recovery run — the retake",
+            detail: rec.provenAgain
+              ? `Fresh mock passed since the sitting — you're proven again. Keep it warm until retake day${plan.examDate ? ` (${plan.examDate})` : " — set your new date"}.`
+              : rec.answeredSince > 0
+                ? `${rec.answeredSince} questions into the comeback. You know exactly where the marks were lost — close those gaps, then prove it with a fresh mock.`
+                : "You now know exactly where the marks were lost. Let's recover them: targeted drills → a fresh mock → the retake.",
+            status: "current" as StageStatus,
+          },
+        ]
+      : []),
     {
       key: "next",
       emoji: "🔁",
       label: examPassed ? "Celebrate — next paper unlocked" : "The loop continues",
       detail: examPassed
         ? "Progress updated. Pick your next paper and the loop restarts."
-        : "Pass: celebrate and unlock the next paper. Fail: reflection, new date, new roadmap — and back into the loop.",
+        : "Pass: celebrate and unlock the next paper. Not this time: reflect, recalibrate, rebuild — and back into the loop until you're through.",
       status: examPassed ? "current" : "locked",
     },
   ]
+
+  // Exactly one "current": during a recovery run the recovery stage owns it
+  // (mock rehabilitation is part of that run, not a separate place).
+  if (rec.active) {
+    for (const s of stages) {
+      if (s.key !== "recovery" && s.status === "current") s.status = "done"
+    }
+  }
 
   return stages
 }

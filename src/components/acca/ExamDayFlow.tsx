@@ -6,10 +6,11 @@ import { iriText } from "@/components/dashboard-layout"
 import { getPaper, getMockHistory, getPaperStats } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { qualificationProgress, suggestedNextPapers } from "@/lib/acca-qualification"
-import { completePaper, recordExamOutcome, snoozeExamPrompt, startNextPaper } from "@/lib/acca-loop"
+import { completePaper, recordExamOutcome, snoozeExamPrompt, startNextPaper, passProbability } from "@/lib/acca-loop"
 import PostMortemPanel from "@/components/acca/PostMortemPanel"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Button, Icon, IconBadge, C } from "@/components/acca/ui"
+import { RingGauge } from "@/components/acca/charts"
 
 /*
  * Exam day — the loop's decision point. Shows once the exam date arrives:
@@ -40,7 +41,7 @@ function datePlusMonths(months: number): string {
   return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
 }
 
-type Stage = "ask" | "celebrate" | "reflect"
+type Stage = "ask" | "import" | "celebrate" | "reflect"
 
 export default function ExamDayFlow({
   paperId,
@@ -58,6 +59,7 @@ export default function ExamDayFlow({
 }) {
   const paper = getPaper(paperId)
   const [stage, setStage] = useState<Stage>("ask")
+  const [examScore, setExamScore] = useState<number | null>(null)
 
   if (!paper) return null
 
@@ -67,7 +69,13 @@ export default function ExamDayFlow({
   }
 
   function onFailed() {
-    recordExamOutcome(paperId, false)
+    // Capture the mark first — it sharpens the whole recovery run.
+    setStage("import")
+  }
+
+  function onImported(score: number | null) {
+    recordExamOutcome(paperId, false, score)
+    setExamScore(score)
     setStage("reflect")
   }
 
@@ -114,14 +122,83 @@ export default function ExamDayFlow({
         </motion.div>
       )}
 
+      {stage === "import" && <ResultImport key="import" paperId={paperId} onImported={onImported} />}
+
       {stage === "celebrate" && (
         <Celebration key="celebrate" paperId={paperId} onStartPaper={onStartPaper} onLater={onDone} />
       )}
 
       {stage === "reflect" && (
-        <Reflection key="reflect" paperId={paperId} onReplanned={onDone} onAction={onAction} />
+        <Reflection key="reflect" paperId={paperId} score={examScore} onReplanned={onDone} onAction={onAction} />
       )}
     </AnimatePresence>
+  )
+}
+
+/* ── FAIL step 1: import the result (self-reported) ───────────── */
+
+function ResultImport({ paperId, onImported }: { paperId: string; onImported: (score: number | null) => void }) {
+  const paper = getPaper(paperId)
+  const [raw, setRaw] = useState("")
+  const parsed = raw.trim() === "" ? null : Math.max(0, Math.min(100, Math.round(Number(raw))))
+  const valid = parsed !== null && Number.isFinite(parsed)
+
+  return (
+    <motion.div
+      key="import"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      style={{ ...card({ padding: 22, marginBottom: 16 }) }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+        <IconBadge name="stats" tone="brand" size={44} />
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: TEXT }}>Log your {paper?.id} mark</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>
+            Your mark shows exactly how far the pass line was — it sharpens every step of the recovery plan.
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={100}
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          placeholder="e.g. 43"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && valid) onImported(parsed)
+          }}
+          style={{
+            flex: 1,
+            boxSizing: "border-box",
+            padding: "13px 16px",
+            fontSize: 18,
+            fontWeight: 700,
+            borderRadius: 12,
+            border: `1.5px solid ${BORDER}`,
+            background: "var(--sch-bg)",
+            color: TEXT,
+            outline: "none",
+          }}
+        />
+        <span style={{ fontSize: 15, fontWeight: 700, color: MUTED }}>/ 100 · pass mark 50</span>
+      </div>
+      <Button variant="primary" size="lg" full disabled={!valid} onClick={() => valid && onImported(parsed)}>
+        Save my mark — show me the way back
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => onImported(null)}
+        style={{ display: "flex", margin: "8px auto 0", fontSize: 12.5, fontWeight: 600, color: DIM }}
+      >
+        I don't have my mark — continue without it
+      </Button>
+    </motion.div>
   )
 }
 
@@ -240,10 +317,13 @@ function Celebration({
 
 function Reflection({
   paperId,
+  score,
   onReplanned,
   onAction,
 }: {
   paperId: string
+  /** Self-reported real exam mark (0–100) when shared. */
+  score: number | null
   onReplanned: () => void
   onAction: (a: PostMortemAction) => void
 }) {
@@ -253,17 +333,20 @@ function Reflection({
   const [newDate, setNewDate] = useState("")
   const [preset, setPreset] = useState<3 | 6 | null>(null)
   const mockAvg = mocks.length ? Math.round(mocks.reduce((s, m) => s + m.percent, 0) / mocks.length) : null
+  // The outcome is already recorded, so this read is exam-recalibrated: the
+  // learner model has absorbed the real result.
+  const recalibrated = passProbability(paperId)
 
   const pmInput = useMemo(
     () => ({
       kind: "exam" as const,
       paperId,
-      percent: null,
+      percent: score,
       areas: stats.areas.filter((a) => a.seen > 0).map((a) => ({ code: a.code, label: a.label, correct: a.correct, seen: a.seen })),
       mockHistory: mocks.map((m) => ({ date: m.date, percent: m.percent })),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [paperId],
+    [paperId, score],
   )
 
   function pickPreset(months: 3 | 6) {
@@ -297,6 +380,26 @@ function Reflection({
           </div>
         )}
       </div>
+
+      {/* the recalibrated learner model — the result already fed the engine */}
+      {recalibrated !== null && (
+        <div style={{ ...card({ padding: 20, marginBottom: 12 }), display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+          <RingGauge value={recalibrated} size={104} stroke={9} target={50} suffix="%" />
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, marginBottom: 5 }}>
+              RECALIBRATED PASS PROBABILITY
+            </div>
+            <div style={{ fontWeight: 750, fontSize: 15, color: TEXT, lineHeight: 1.4 }}>
+              You now know exactly where the marks were lost. Let's recover them.
+            </div>
+            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>
+              {score !== null
+                ? `Your real mark (${score}%) is now the strongest evidence in your learner model — every question you answer from here earns this number back up.`
+                : "The result is in your learner model — every question you answer from here earns this number back up."}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lara's examiner analysis + comeback plan */}
       <PostMortemPanel input={pmInput} onAction={onAction} />

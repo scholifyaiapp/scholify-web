@@ -17,7 +17,7 @@
 import { getPaperStats, getPaper } from "@/lib/acca"
 import { getLatestDiagnostic, estimateFromPractice } from "@/lib/acca-diagnostic"
 import { flashcardStats } from "@/lib/acca-flashcards"
-import { MOCK_GATE, mockGate } from "@/lib/acca-loop"
+import { MOCK_GATE, mockGate, passProbability, recoveryState } from "@/lib/acca-loop"
 
 export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock"
 
@@ -39,11 +39,15 @@ export function greeting(name?: string): string {
 
 /** The line under the greeting — honest, evidence-tied pass framing. */
 export function todayHeadline(paperId: string): string {
-  const est = estimateFromPractice(paperId) ?? getLatestDiagnostic(paperId)
   const paper = getPaper(paperId)
   const name = paper?.id ?? "this paper"
-  if (!est) return `Let's find out where you stand on ${name}.`
-  return `You're at ${est.passProbability}% to pass ${name}. Finish today's plan to push it higher.`
+  const prob = passProbability(paperId)
+  if (prob === null) return `Let's find out where you stand on ${name}.`
+  const rec = recoveryState(paperId)
+  if (rec.active) {
+    return `Retake run on ${name}: you're at ${prob}% and every answer recovers lost marks. Today's plan is the way back.`
+  }
+  return `You're at ${prob}% to pass ${name}. Finish today's plan to push it higher.`
 }
 
 /** Build today's ordered plan for a paper (max 3 tasks). */
@@ -68,15 +72,19 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
   }
 
   const tasks: TodayTask[] = []
+  const rec = recoveryState(paperId)
 
-  // 2. Strengthen the weakest area.
+  // 2. Strengthen the weakest area — during a retake run this IS the mission:
+  //    the marks were lost somewhere specific, so that's where we go.
   const weakest = est?.weakest?.[0]
   if (weakest) {
     tasks.push({
       id: "weak",
       icon: "💪",
-      title: `Strengthen ${weakest.label}`,
-      detail: `Your weakest area (${Math.round(weakest.score * 100)}%) — a targeted, adaptive drill`,
+      title: rec.active ? `Recover the marks in ${weakest.label}` : `Strengthen ${weakest.label}`,
+      detail: rec.active
+        ? `Where the sitting hurt most (${Math.round(weakest.score * 100)}%) — a targeted drill wins those marks back`
+        : `Your weakest area (${Math.round(weakest.score * 100)}%) — a targeted, adaptive drill`,
       action: "weak",
     })
   }
@@ -98,8 +106,11 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
     tasks.push({
       id: "mock",
       icon: "⏱️",
-      title: "Sit a timed mock",
-      detail: `Exam room unlocked at ${MOCK_GATE}% — confirm it under exam conditions`,
+      title: rec.active && !rec.provenAgain ? "Prove it again — fresh timed mock" : "Sit a timed mock",
+      detail:
+        rec.active && !rec.provenAgain
+          ? "A pass here says the gaps from the sitting are closed — the retake gets booked from strength"
+          : `Exam room unlocked at ${MOCK_GATE}% — confirm it under exam conditions`,
       action: "mock",
     })
   } else if (tasks.length < 2) {
