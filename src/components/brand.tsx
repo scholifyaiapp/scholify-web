@@ -20,7 +20,9 @@ const VARIANT_COLOR: Record<Exclude<MarkVariant, "gradient">, string> = {
 
 export function ScholifyMark({
   size = 24,
-  variant = "gradient",
+  // MONO / DEEP RED is the primary variant (founder decision 2026-07-09);
+  // gradient remains available for special surfaces.
+  variant = "red",
   style,
 }: {
   size?: number
@@ -93,7 +95,7 @@ export function ScholifyWordmark({
             width: "0.16em",
             height: "0.16em",
             borderRadius: "50%",
-            background: "linear-gradient(135deg,#C80000,#E50068)",
+            background: "#C80000",
           }}
         />
       </span>
@@ -105,7 +107,7 @@ export function ScholifyWordmark({
 /** The standard lockup: mark + wordmark, spacing keyed to the mark size. */
 export function ScholifyLockup({
   size = 26,
-  variant = "gradient",
+  variant = "red",
   color = "#14141A",
   wordmark = true,
   style,

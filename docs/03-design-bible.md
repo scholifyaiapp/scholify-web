@@ -12,9 +12,9 @@ Source: the approved brand board (`Desktop\Scholify\Scholify logo design brief`)
 
 ### 0.1 The mark — hexagonal circuit of waypoints
 
-Six rotational circuit traces close into a hexagon — each terminal a node, each turn a waypoint on the journey to graduation. It is the Loop, drawn. Geometry (viewBox `0 0 200 200`): **one arm** — node `circle(71,46,r5.5)`, trace `M79,46 L123,46 L133,63`, inner dash `M89,57 L114,57`, terminal `circle(133,63,r4)` — stroked at **7 (3.5% of width), round caps**, rotated **6 × 60°** around (100,100). Fill/stroke gradient **Deep Red `#C80000` → Magenta `#E50068`** at 45°.
+Six rotational circuit traces close into a hexagon — each terminal a node, each turn a waypoint on the journey to graduation. It is the Loop, drawn. Geometry (viewBox `0 0 200 200`): **one arm** — node `circle(71,46,r5.5)`, trace `M79,46 L123,46 L133,63`, inner dash `M89,57 L114,57`, terminal `circle(133,63,r4)` — stroked at **7 (3.5% of width), round caps**, rotated **6 × 60°** around (100,100). Fill/stroke **MONO / DEEP RED `#C80000`**.
 
-**Variants** (all in `ScholifyMark`'s `variant` prop): `gradient` (primary), `red` (mono deep red), `ink` (`#14141A`), `white` (knockout on dark). **Minimums:** 48px print · 24px UI · **16px absolute floor**. **Clear space:** one node diameter on every side.
+**Variants** (all in `ScholifyMark`'s `variant` prop): **`red` (MONO / DEEP RED) — the PRIMARY variant, founder decision 2026-07-09; the component default and `public/logo.svg`**; `gradient` (Deep Red → Magenta `#E50068`, special surfaces only); `ink` (`#14141A`); `white` (knockout on dark). The wordmark's i-dot node is solid `#C80000` to match. **Minimums:** 48px print · 24px UI · **16px absolute floor**. **Clear space:** one node diameter on every side.
 
 ### 0.2 The wordmark
 

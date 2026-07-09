@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200" role="img" aria-labelledby="t">
   <title id="t">Scholify</title>
-  <!-- Scholify brand mark v1.0 — hexagonal circuit of waypoints.
+  <!-- Scholify brand mark v1.1 — hexagonal circuit of waypoints.
        One arm, rotated six times (60°). Stroke 7/200 = 3.5% of width,
-       round terminals. Gradient: Deep Red #C80000 → Magenta #E50068. -->
+       round terminals. MONO / DEEP RED #C80000 (primary variant). -->
   <defs>
-    <linearGradient id="sgrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#C80000"/>
-      <stop offset="1" stop-color="#E50068"/>
-    </linearGradient>
-    <g id="sarm" fill="url(#sgrad)" stroke="url(#sgrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <g id="sarm" fill="#C80000" stroke="#C80000" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="71" cy="46" r="5.5" stroke="none"/>
       <path fill="none" d="M 79,46 L 123,46 L 133,63"/>
       <path fill="none" d="M 89,57 L 114,57"/>
