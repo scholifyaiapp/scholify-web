@@ -100,15 +100,31 @@ const GOAL_ICON: Record<Goal, IconName> = {
 
 const TOTAL = 6
 
+// The split-screen needs real width; below 1080 the phone layout reads better.
 function useIsMobile(): boolean {
-  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 900px)").matches)
+  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 1080px)").matches)
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 900px)")
+    const mq = window.matchMedia("(max-width: 1080px)")
     const on = () => setMobile(mq.matches)
     mq.addEventListener("change", on)
     return () => mq.removeEventListener("change", on)
   }, [])
   return mobile
+}
+
+const PHOTOS = ["/onboarding/welcome-m.webp", "/onboarding/welcome-d.webp", "/onboarding/time-d.webp", "/onboarding/goal-d.webp"]
+
+/* Directional slide variants — enter and exit run SIMULTANEOUSLY (no
+   mode="wait" gap), so steps hand over in one continuous motion. */
+const slideVariants = {
+  enter: (d: number) => ({ opacity: 0, x: d > 0 ? 70 : -70 }),
+  center: { opacity: 1, x: 0 },
+  exit: (d: number) => ({ opacity: 0, x: d > 0 ? -70 : 70 }),
+}
+const fadeVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
 }
 
 /* ── page ────────────────────────────────────────────────────── */
@@ -139,6 +155,11 @@ export default function Welcome() {
 
   useEffect(() => {
     if (isAccaOnboarded()) navigate("/dashboard", { replace: true })
+    // Decode every photo up front so step changes never flash or stall.
+    for (const src of PHOTOS) {
+      const img = new Image()
+      img.src = src
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -173,13 +194,13 @@ export default function Welcome() {
   const finishToDiagnostic = () => { persist(); navigate("/study/diagnostic?next=paywall") }
   const finishSkip = () => { persist(); navigate("/dashboard") }
 
-  const slideAnim = reduced
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-    : {
-        initial: { opacity: 0, x: dir > 0 ? 90 : -90 },
-        animate: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: dir > 0 ? -90 : 90 },
-      }
+  const slideAnim = {
+    variants: reduced ? fadeVariants : slideVariants,
+    initial: "enter" as const,
+    animate: "center" as const,
+    exit: "exit" as const,
+    custom: dir,
+  }
 
   /* shared slide bodies (question controls only — chrome differs per device) */
   const body: Record<number, ReactNode> = {
@@ -224,11 +245,13 @@ export default function Welcome() {
   }
 
   const KICKERS = ["A GPS for ACCA", "Step 1 · your target", "Protect your time", "Lock your date", "Your why", ""]
+  // Step 3's question depends on the paper: session exams pick a sitting,
+  // on-demand CBEs (BT·MA·FA·LW) pick any date.
   const TITLES = [
     "",
     "Which paper are we passing?",
     "How much time can you protect, daily?",
-    "Which sitting are you taking?",
+    sessionPaper ? "Which sitting are you taking?" : "When's your exam?",
     "What are you here for?",
     "Your loop is set.",
   ]
@@ -236,7 +259,9 @@ export default function Welcome() {
     "",
     "Pick one to start. You can add more later.",
     "Honest beats ambitious. We build the plan around this.",
-    "Your plan counts back from exam week.",
+    sessionPaper
+      ? "Your plan counts back from exam week."
+      : `${paper ?? "Your paper"} is an on-demand computer exam — book any date at your local centre.`,
     "This shapes the tone I'll coach you in.",
     "",
   ]
@@ -246,7 +271,7 @@ export default function Welcome() {
     return (
       <div style={{ position: "fixed", inset: 0, background: PAGE, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: SANS }}>
         {step === 0 && (
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 264, overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 264, overflow: "hidden", background: PANEL }}>
             <img src="/onboarding/welcome-m.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(20,20,26,.12) 0%, rgba(250,250,247,0) 34%, rgba(250,250,247,.65) 82%, ${PAGE} 100%)`, pointerEvents: "none" }} />
           </div>
@@ -261,8 +286,8 @@ export default function Welcome() {
               transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
               style={{ display: "flex", alignItems: "center", gap: 9 }}
             >
-              <ScholifyMark size={step === 0 ? 27 : 24} />
-              <span style={{ font: `800 ${step === 0 ? 18 : 17}px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
+              <ScholifyMark size={24} />
+              <span style={{ font: `800 17px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
             </motion.div>
             <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{`0${step + 1}`} / 08</span>
           </div>
@@ -273,11 +298,11 @@ export default function Welcome() {
 
         {/* content */}
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <AnimatePresence mode="wait" custom={dir}>
+          <AnimatePresence custom={dir} initial={false}>
             <motion.div
               key={step}
               {...slideAnim}
-              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
               drag={reduced ? false : "x"}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.16}
@@ -337,14 +362,16 @@ export default function Welcome() {
               <PrimaryBtn onClick={() => (canAdvance ? go(1) : undefined)} big={step === 0} disabled={!canAdvance}>
                 {step === 0 ? "Start — it takes a minute" : "Continue"}
               </PrimaryBtn>
-              <div style={{ textAlign: "center", marginTop: 14, font: `500 10px/1 ${MONO}`, letterSpacing: "0.2em", color: HINT, textTransform: "uppercase" }}>
-                {step === 0 ? "swipe →" : step > 0 ? "swipe · tap back anywhere on the bar" : ""}
+              <div style={{ display: "flex", alignItems: "center", marginTop: 12, minHeight: 22, position: "relative" }}>
+                {step > 0 && (
+                  <button onClick={() => go(-1)} style={{ background: "none", border: "none", color: MUTE, font: `600 12px/1 ${SANS}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, padding: "4px 6px 4px 0" }}>
+                    <Icon name="arrow" size={13} color={MUTE} style={{ transform: "rotate(180deg)" }} /> Back
+                  </button>
+                )}
+                <div style={{ position: "absolute", left: 0, right: 0, textAlign: "center", font: `500 10px/1 ${MONO}`, letterSpacing: "0.2em", color: HINT, textTransform: "uppercase", pointerEvents: "none" }}>
+                  swipe →
+                </div>
               </div>
-              {step > 0 && (
-                <button onClick={() => go(-1)} style={{ position: "absolute", left: 24, bottom: 26, background: "none", border: "none", color: MUTE, font: `600 12px/1 ${SANS}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, padding: 4 }}>
-                  <Icon name="arrow" size={13} color={MUTE} style={{ transform: "rotate(180deg)" }} /> Back
-                </button>
-              )}
             </>
           )}
         </div>
@@ -356,7 +383,7 @@ export default function Welcome() {
   return (
     <div style={{ position: "fixed", inset: 0, background: PAGE, display: "flex", overflow: "hidden", fontFamily: SANS }}>
       {/* left — question panel */}
-      <div style={{ width: "55%", flex: "none", display: "flex", flexDirection: "column", padding: "44px 60px 58px", position: "relative", minWidth: 0 }}>
+      <div style={{ width: "55%", flex: "none", display: "flex", flexDirection: "column", padding: "40px clamp(32px, 4vw, 60px) 54px", position: "relative", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <ScholifyMark size={30} />
           <span style={{ font: `800 21px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
@@ -369,17 +396,17 @@ export default function Welcome() {
         </div>
 
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <AnimatePresence mode="wait" custom={dir}>
+          <AnimatePresence custom={dir} initial={false}>
             <motion.div
               key={step}
               {...slideAnim}
-              transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
               style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 620, overflowY: "auto", paddingRight: 8 }}
             >
               {step === 0 ? (
                 <div>
                   <div style={kicker}>A GPS for ACCA</div>
-                  <h1 style={{ margin: 0, font: `800 43px/1.05 ${SANS}`, letterSpacing: "-1.6px", color: INK }}>
+                  <h1 style={{ margin: 0, font: `800 clamp(32px, 3vw, 43px)/1.05 ${SANS}`, letterSpacing: "-1.4px", color: INK }}>
                     Welcome{firstName ? `, ${firstName}` : ""}. Let's pass your next paper.
                   </h1>
                   <p style={{ margin: "20px 0 0", font: `400 18px/1.5 ${SANS}`, color: BODY, maxWidth: 460 }}>
@@ -396,7 +423,7 @@ export default function Welcome() {
                   ) : (
                     <div style={kicker}>{KICKERS[step]}</div>
                   )}
-                  <h1 style={{ margin: 0, font: `800 ${step === 5 ? 43 : step === 1 ? 38 : 40}px/1.05 ${SANS}`, letterSpacing: "-1.6px", color: INK, marginBottom: step === 5 ? 24 : 0 }}>
+                  <h1 style={{ margin: 0, font: `800 clamp(30px, ${step === 5 ? "3vw" : step === 1 ? "2.6vw" : "2.8vw"}, ${step === 5 ? 43 : step === 1 ? 38 : 40}px)/1.05 ${SANS}`, letterSpacing: "-1.6px", color: INK, marginBottom: step === 5 ? 24 : 0 }}>
                     {TITLES[step]}
                   </h1>
                   {SUBS[step] && <p style={{ margin: "12px 0 0", font: `400 15px/1.5 ${SANS}`, color: SUB }}>{SUBS[step]}</p>}
@@ -434,13 +461,13 @@ export default function Welcome() {
 
       {/* right — visual panel */}
       <div style={{ width: "45%", flex: "none", position: "relative", overflow: "hidden" }}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           <motion.div
             key={step}
             initial={reduced ? { opacity: 0 } : { opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, x: -20 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: "absolute", inset: 0 }}
           >
             <VisualPanel step={step} paper={paper} sitting={sittings.find((s) => s.date === pickedSitting) ?? null} sittings={sittings} levels={levels} />
@@ -780,7 +807,7 @@ function VisualPanel({
   /* 0 · welcome photo + brand chip */
   if (step === 0) {
     return (
-      <div style={{ position: "absolute", inset: 0 }}>
+      <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/welcome-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <div style={{ position: "absolute", left: 28, bottom: 28, display: "flex", alignItems: "center", gap: 13, padding: "12px 18px 12px 12px", borderRadius: 16, background: RED, boxShadow: "0 18px 44px -16px rgba(200,0,0,.7)" }}>
           <div style={{ width: 42, height: 42, borderRadius: 11, background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -832,7 +859,7 @@ function VisualPanel({
   /* 2 · time photo + caption chip */
   if (step === 2) {
     return (
-      <div style={{ position: "absolute", inset: 0 }}>
+      <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/time-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <div style={{ position: "absolute", left: 28, bottom: 28, display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", borderRadius: 14, background: "rgba(20,20,26,.72)", backdropFilter: "blur(6px)" }}>
           <Icon name="time" size={16} color="#F4A405" />
@@ -881,7 +908,7 @@ function VisualPanel({
   /* 4 · goal photo */
   if (step === 4) {
     return (
-      <div style={{ position: "absolute", inset: 0 }}>
+      <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/goal-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     )
