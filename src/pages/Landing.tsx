@@ -32,6 +32,7 @@ import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
+import { ScholifyLockup } from "@/components/brand"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
@@ -101,38 +102,14 @@ function useInViewOnce<T extends HTMLElement>(margin = "-80px") {
 
 function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?: boolean }) {
   return (
-    <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-      <span
-        style={{
-          display: "inline-grid",
-          placeItems: "center",
-          width: size,
-          height: size,
-          borderRadius: 10,
-          overflow: "hidden",
-          transition: "transform 0.2s ease",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        aria-label="Scholify"
-      >
-        <img
-          src="/logo.svg"
-          alt="Scholify"
-          width={size}
-          height={size}
-          decoding="async"
-          style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }}
-        />
-      </span>
-      {wordmark && (
-        <span
-          className="font-display"
-          style={{ color: INK, fontSize: Math.max(20, size * 0.75), lineHeight: 1, letterSpacing: "-0.02em", fontWeight: 700 }}
-        >
-          Scholify
-        </span>
-      )}
+    <a
+      href="/"
+      style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", transition: "transform 0.2s ease" }}
+      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      aria-label="Scholify"
+    >
+      <ScholifyLockup size={size} color={INK} wordmark={wordmark} />
     </a>
   )
 }

@@ -1,8 +1,45 @@
 # Scholify — UI/UX Design Bible
 
-**Version 1.0 · 2026-07-08**
+**Version 1.1 · 2026-07-09** *(1.1 adds §0 Brand identity from the approved brand board)*
 
 The single source of truth for how Scholify looks, moves and speaks. Everything here is extracted verbatim from the shipped foundation — `src/components/acca/ui.tsx` (tokens + primitives), `src/components/acca/charts.tsx` (metrics layer), `src/index.css` (CSS tokens) — and from the reference screens (`Dashboard.tsx`, `AccaAnalytics.tsx`, `AccaStudy.tsx`). **Build every app screen from these pieces. Do not hand-roll cards, buttons, bars, rings or icons.**
+
+---
+
+## 0. Brand identity (the mark & wordmark)
+
+Source: the approved brand board (`Desktop\Scholify\Scholify logo design brief`), implemented 2026-07-09 in `src/components/brand.tsx` + `public/logo.svg`.
+
+### 0.1 The mark — hexagonal circuit of waypoints
+
+Six rotational circuit traces close into a hexagon — each terminal a node, each turn a waypoint on the journey to graduation. It is the Loop, drawn. Geometry (viewBox `0 0 200 200`): **one arm** — node `circle(71,46,r5.5)`, trace `M79,46 L123,46 L133,63`, inner dash `M89,57 L114,57`, terminal `circle(133,63,r4)` — stroked at **7 (3.5% of width), round caps**, rotated **6 × 60°** around (100,100). Fill/stroke gradient **Deep Red `#C80000` → Magenta `#E50068`** at 45°.
+
+**Variants** (all in `ScholifyMark`'s `variant` prop): `gradient` (primary), `red` (mono deep red), `ink` (`#14141A`), `white` (knockout on dark). **Minimums:** 48px print · 24px UI · **16px absolute floor**. **Clear space:** one node diameter on every side.
+
+### 0.2 The wordmark
+
+"Scholify" in **Plus Jakarta Sans Bold (700), −2% tracking**, ink `#14141A`. Signature glyph: **the dot of the "i" is a gradient circuit node** (implemented in `ScholifyWordmark` as dotless ı + positioned gradient dot). Tagline: *"Learn Daily, Grow Steadily"* — uppercase, +28% tracking, 55% ink; brand-asset use only, not app chrome.
+
+### 0.3 Usage in code
+
+- `ScholifyMark({size, variant})` — the icon alone (auth panels, avatars, favicons).
+- `ScholifyLockup({size, color, wordmark})` — mark + wordmark, gap = 0.34 × size (nav bars, footers). Used by Landing nav, app sidebar (`dashboard-layout Brand`), Pricing top bar.
+- `public/logo.svg` — the master vector (also the SVG favicon). Raster icons (`favicon.png` 48, `icon-192/512.png` on off-white rounded squares) regenerate via `node scripts/make-brand-icons.mjs`.
+- The legacy `✦` glyph is retired from brand positions (still fine as a decorative sparkle inside copy).
+
+### 0.4 Misuse (never)
+
+Don't stretch or distort · don't recolor off-brand · don't add shadows or 3D · don't place on low contrast · don't render below 16px · don't rebuild the mark by hand — import it.
+
+### 0.5 Palette (print/CMYK reference)
+
+| Name | HEX | RGB | CMYK |
+|---|---|---|---|
+| Deep Red | `#C80000` | 200 0 0 | 0 100 100 22 |
+| Magenta | `#E50068` | 229 0 104 | 0 100 55 10 |
+| Amber | `#F4A405` | 244 164 5 | 0 33 98 4 |
+| Ink | `#14141A` | 20 20 26 | 23 23 0 90 |
+| Off-White | `#FAFAF7` | 250 250 247 | 0 0 1 2 |
 
 ---
 

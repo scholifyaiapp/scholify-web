@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, type IconName, C, SP, R, SHADOW, GRAD } from "@/components/acca/ui"
+import { ScholifyLockup } from "@/components/brand"
 import NotificationBell from "@/components/NotificationBell"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
 import { getTodayStats } from "@/lib/acca"
@@ -92,14 +93,7 @@ function Avatar({ initial, size = 38 }: { initial: string; size?: number }) {
 
 /** The Scholify wordmark with its gradient monogram. */
 function Brand({ compact }: { compact?: boolean }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-      <span style={{ width: 26, height: 26, borderRadius: 8, background: GRAD, display: "grid", placeItems: "center", boxShadow: SHADOW.sm }}>
-        <Icon name="study" size={15} color="#fff" />
-      </span>
-      {!compact && <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: C.text }}>Scholify</span>}
-    </span>
-  )
+  return <ScholifyLockup size={26} color={C.text} wordmark={!compact} />
 }
 
 function NavItem({ item, active, badge, unread }: { item: NavItemDef; active: boolean; badge?: boolean; unread?: number }) {

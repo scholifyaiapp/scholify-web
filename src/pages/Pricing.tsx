@@ -6,6 +6,7 @@ import { openCheckout, PADDLE_PRICES } from "@/lib/paddle"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
+import { ScholifyLockup } from "@/components/brand"
 
 /* ──────────────────────────────────────────────────────────────
  *  Public pricing page (/pricing) — plans, comparison table, FAQ.
@@ -197,8 +198,8 @@ export default function Pricing() {
           margin: "0 auto",
         }}
       >
-        <Link to="/" style={{ textDecoration: "none", fontSize: 18, fontWeight: 800, ...iriText }}>
-          ✦ Scholify
+        <Link to="/" style={{ textDecoration: "none", display: "inline-flex" }} aria-label="Scholify">
+          <ScholifyLockup size={24} color="var(--sch-text)" />
         </Link>
         <Link
           to={user ? "/study" : "/sign-in"}

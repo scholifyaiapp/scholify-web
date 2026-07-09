@@ -1,6 +1,7 @@
 import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { motion, type Variants } from "motion/react"
+import { ScholifyMark } from "@/components/brand"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared building blocks for the SignIn / SignUp pages.
@@ -307,23 +308,14 @@ const socialProof = [
 function LeftPanel() {
   return (
     <div style={{ maxWidth: 360, width: "100%" }}>
-      {/* ✦ mark */}
+      {/* brand mark */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        style={{
-          fontSize: 48,
-          lineHeight: 1,
-          background: IRIDESCENT,
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-          WebkitTextFillColor: "transparent",
-          width: "fit-content",
-        }}
+        style={{ width: "fit-content" }}
       >
-        ✦
+        <ScholifyMark size={48} />
       </motion.div>
 
       <motion.h1
