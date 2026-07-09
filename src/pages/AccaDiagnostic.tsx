@@ -24,6 +24,7 @@ import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from 
 import { MOCK_PASS } from "@/lib/acca-loop"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { RingGauge, BreakdownList } from "@/components/acca/charts"
+import PaywallModal from "@/components/PaywallModal"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -165,6 +166,14 @@ export default function AccaDiagnostic() {
   const navigate = useNavigate()
   const papers = useMemo(() => getPapers().filter((p) => hasCuratedContent(p.id)), [])
   const defaultPaper = getCurrentPaper() && hasCuratedContent(getCurrentPaper()!) ? getCurrentPaper()! : papers[0]?.id ?? "FA"
+
+  // /welcome funnel: ?next=paywall → after the results, show the trial
+  // paywall once, then land on the dashboard.
+  const fromWelcome = useMemo(
+    () => new URLSearchParams(window.location.search).get("next") === "paywall",
+    [],
+  )
+  const [showTrialPaywall, setShowTrialPaywall] = useState(false)
 
   const [phase, setPhase] = useState<Phase>("intro")
   const [paperId, setPaperId] = useState(defaultPaper)
@@ -355,10 +364,28 @@ export default function AccaDiagnostic() {
           )}
 
           {phase === "results" && result && (
-            <ResultsView key="results" result={result} paperName={paper?.name ?? paperId} paperCode={paper?.code ?? paperId} onRetake={retake} onContinue={() => navigate("/study")} onProgress={() => navigate("/study/analytics")} />
+            <ResultsView
+              key="results"
+              result={result}
+              paperName={paper?.name ?? paperId}
+              paperCode={paper?.code ?? paperId}
+              onRetake={retake}
+              onContinue={() => (fromWelcome ? setShowTrialPaywall(true) : navigate("/study"))}
+              onProgress={() => navigate("/study/analytics")}
+            />
           )}
         </AnimatePresence>
       </div>
+
+      {/* /welcome funnel: results → the trial paywall → the dashboard. */}
+      <PaywallModal
+        open={showTrialPaywall}
+        type="general"
+        onClose={() => {
+          setShowTrialPaywall(false)
+          navigate("/dashboard")
+        }}
+      />
     </DashboardLayout>
   )
 }

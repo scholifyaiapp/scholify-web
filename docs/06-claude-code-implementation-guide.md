@@ -224,11 +224,14 @@ stays.
   and only** onboarding flag (localStorage `scholify-acca-onboarded`). Never invent a
   second signal (auth metadata, presence of a plan, etc.) — `src/lib/auth.tsx` has a
   comment pointing here for exactly this reason.
-- `/dashboard` redirects un-onboarded users: `Dashboard.tsx:71` —
-  `if (!isAccaOnboarded()) return <Navigate to="/study" replace />`. Keep it.
-- The onboarding wizard's commitment step writes `setDailyGoal(questionsPerDay)`
-  (`AccaOnboarding.tsx:108`, goal from `src/lib/acca.ts`); `markAccaOnboarded()` is
-  called on completion in `AccaStudy.tsx`. Any change to onboarding must preserve both writes.
+- Onboarding lives at **`/welcome`** (`src/pages/Welcome.tsx`, full-screen swipe flow,
+  2026-07-09). `/dashboard` and `/study` both redirect un-onboarded users there;
+  `/welcome` self-redirects to `/dashboard` once onboarded. Keep all three redirects.
+- `Welcome.tsx::persist()` writes `setDailyGoal(questionsPerDay)` (goal from
+  `src/lib/acca.ts`), per-paper `setPlan`, `setStudyingPapers`, `setGoal`, and calls
+  `markAccaOnboarded()`. Any change to onboarding must preserve these writes. The
+  primary exit is `/study/diagnostic?next=paywall` (day-one activation) → results →
+  trial paywall → `/dashboard` (`SetupStrip` shows the answers).
 
 ### 3.5 GPS ideology — closed feedback loops
 

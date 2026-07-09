@@ -10,13 +10,14 @@ import ExamDayFlow from "@/components/acca/ExamDayFlow"
 import { getPaper, getPaperStats, getTodayStats, getDailyActivity } from "@/lib/acca"
 import { getMockHistory } from "@/lib/acca"
 import { passBand } from "@/lib/acca-diagnostic"
-import { daysUntilExam, currentPhase, METHOD_PHASES } from "@/lib/acca-plan"
+import { daysUntilExam, currentPhase, METHOD_PHASES, getPlan } from "@/lib/acca-plan"
 import { getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
 import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
-import { isAccaOnboarded } from "@/lib/acca-profile"
+import { isAccaOnboarded, getGoal, GOAL_OPTIONS } from "@/lib/acca-profile"
+import { format } from "date-fns"
 
 /*
  * /dashboard — the command centre, not a report. One glance answers
@@ -68,7 +69,7 @@ export default function Dashboard() {
 
   // The loop starts at onboarding — a brand-new user goes there first
   // (paper choice, exam date, commitment), never straight to a default "FA".
-  if (!isAccaOnboarded()) return <Navigate to="/study" replace />
+  if (!isAccaOnboarded()) return <Navigate to="/welcome" replace />
 
   if (!paper) return null
   const noDiag = prob === null
@@ -286,6 +287,9 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* your setup — the commitments made at onboarding, always visible */}
+        <SetupStrip />
+
         {/* footer strip — quiet housekeeping */}
         <div style={{ display: "flex", alignItems: "center", gap: SP.md, flexWrap: "wrap", padding: "14px 18px", borderRadius: R.xl, background: C.card, border: `1px solid ${C.border}` }}>
           {isPro ? (
@@ -315,6 +319,43 @@ export default function Dashboard() {
         </div>
       </div>
     </DashboardLayout>
+  )
+}
+
+/** The onboarding answers, pinned: paper · daily commitment · exam date · goal. */
+function SetupStrip() {
+  const pid = getCurrentPaper()
+  if (!pid) return null
+  const plan = getPlan(pid)
+  const goal = getGoal()
+  const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
+  const items: { icon: IconName; k: string; v: string }[] = [
+    { icon: "roadmap", k: "Paper", v: pid },
+    { icon: "time", k: "Daily", v: `${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}` },
+    {
+      icon: "calendar",
+      k: "Exam",
+      v: plan.examDate
+        ? format(new Date(`${plan.examDate}T00:00:00`), "d MMM yyyy")
+        : "Paced by mastery",
+    },
+    ...(goalLabel ? [{ icon: "diagnostic" as IconName, k: "Goal", v: goalLabel }] : []),
+  ]
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: SP.md, flexWrap: "wrap", padding: "13px 18px", borderRadius: R.xl, background: C.card, border: `1px solid ${C.border}` }}>
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: C.faint, whiteSpace: "nowrap" }}>
+        Your setup
+      </span>
+      {items.map((it) => (
+        <span key={it.k} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.muted }}>
+          <Icon name={it.icon} size={13} color={C.brand} />
+          <span style={{ fontWeight: 750, color: C.text }}>{it.v}</span>
+        </span>
+      ))}
+      <Link to="/settings" style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 750, color: C.brand, textDecoration: "none", whiteSpace: "nowrap" }}>
+        Edit →
+      </Link>
+    </div>
   )
 }
 

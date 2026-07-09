@@ -126,13 +126,15 @@ A single stateful page with modes: `onboarding | picker | overview | topic | ses
 
 **Cloud sync:** on mount, `syncAccaProgress()` reconciles local vs cloud (monotonic `answered` counter decides the winner); every answer queues a debounced push (`queueAccaProgressPush()`, 2.5s).
 
-#### 3.2.a Onboarding wizard (`AccaOnboarding.tsx`)
+#### 3.2.a Onboarding — `/welcome` (`Welcome.tsx`, replaced the in-/study wizard 2026-07-09)
 
-Five steps in Lara's voice, progress dots: **0** Welcome ("Hi, I'm Lara — your ACCA coach") · **1** Your ACCA record — tap passed exams (self-reported myACCA; skippable; shows live `qualificationProgress`) · **2** Next paper(s) — pick 1–2 from `suggestedNextPapers()`, exam date via ~3/~6-month presets or exact date (skippable → mastery-paced), experience level (new/some/professional) · **3** Shield time — daily time slot (default 19:00) + minutes commitment (15/25/40/60 with coach copy) · **4** Plan reveal — `generateStudyPlan()` phases (or the 4 generic METHOD_PHASES when dateless), dual-paper alternation note.
+Full-screen, swipeable (drag / ← → keys / buttons), branded backdrop, top progress bar. Six slides: **0** Hero — mark + first-name greeting + the loop as waypoint chips (Diagnostic → Daily missions → 3 mocks → Pass) · **1** Target paper — full 13-paper grid grouped by level, single-select, expandable "I've already passed some papers" multi-mark · **2** Daily time — 15/25/40/60 min + daily slot (default 19:00) · **3** Exam date — **exam-logic aware**: BT·MA·FA·LW are on-demand CBEs → date picker; every other paper → the next 3 real quarterly sittings (Mar/Jun/Sep/Dec, exam week = first full Mon–Fri week, computed in `nextSittings()`); skippable → mastery-paced · **4** Goal — `GOAL_OPTIONS` (first-pass / recovery / level / career; career also sets experience "professional") · **5** Ready — answers summary; **primary exit = "Find my pass probability" → `/study/diagnostic?next=paywall`** (day-one activation); ghost skip → `/dashboard`.
 
-**Exit writes:** `setPassedPapers`, `setStudyingPapers`, `setExperience`, per-paper `setPlan({examDate, studyTime, dailyMinutes, dailyGoal})`, `setDailyGoal(questionsPerDay)` where minutes → questions: 60→30, 40→22, 25→15, else 10; `markAccaOnboarded()`.
+**Funnel:** diagnostic results (when `?next=paywall`) → Continue opens the trial `PaywallModal` (type "general") → close → `/dashboard`, where `SetupStrip` pins the onboarding answers (paper · daily · exam · goal, Edit → Settings).
 
-**Acceptance:** cannot finish with zero papers; wizard shows exactly once; the committed minutes ARE the daily-goal meter across Dashboard/Analytics/Settings.
+**Exit writes:** `setPassedPapers`, `setStudyingPapers`, `setGoal`, per-paper `setPlan({examDate, studyTime, dailyMinutes, dailyGoal})`, `setDailyGoal(questionsPerDay)` where minutes → questions: 60→30, 40→22, 25→15, else 10; `markAccaOnboarded()`.
+
+**Acceptance:** cannot pass slide 1 without a paper or slide 4 without a goal; flow shows exactly once (`/welcome` self-redirects when onboarded; `/dashboard` + `/study` redirect un-onboarded users to `/welcome`); the committed minutes ARE the daily-goal meter across Dashboard/Analytics/Settings.
 
 #### 3.2.b Picker ("Your journey")
 

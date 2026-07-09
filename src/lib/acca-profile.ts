@@ -7,8 +7,37 @@
 
 export type Experience = "new" | "some" | "professional"
 
+/** The learner's stated ambition, captured at onboarding. */
+export type Goal = "first-pass" | "recovery" | "level" | "career"
+
+export const GOAL_OPTIONS: { value: Goal; label: string; blurb: string }[] = [
+  { value: "first-pass", label: "Pass first time", blurb: "One clean run at this paper — no retakes." },
+  { value: "recovery", label: "Come back from a failed attempt", blurb: "You know the exam now. This time, recover the marks." },
+  { value: "level", label: "Finish my level this year", blurb: "Clear the remaining papers of your level on schedule." },
+  { value: "career", label: "Build my finance career", blurb: "ACCA membership is the plan — paper by paper." },
+]
+
 const KEY = "scholify-acca-experience"
 const ONBOARDED_KEY = "scholify-acca-onboarded"
+const GOAL_KEY = "scholify-acca-goal"
+
+export function getGoal(): Goal | null {
+  try {
+    const v = window.localStorage.getItem(GOAL_KEY)
+    if (v === "first-pass" || v === "recovery" || v === "level" || v === "career") return v
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+export function setGoal(g: Goal): void {
+  try {
+    window.localStorage.setItem(GOAL_KEY, g)
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Has the ACCA onboarding wizard been completed? (single source of truth) */
 export function isAccaOnboarded(): boolean {

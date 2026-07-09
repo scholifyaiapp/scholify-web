@@ -12,7 +12,6 @@ import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
 import FlashcardsView from "@/components/acca/FlashcardsView"
 import GenerateView from "@/components/acca/GenerateView"
-import AccaOnboarding from "@/components/acca/AccaOnboarding"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
 import JourneyMap from "@/components/acca/JourneyMap"
 import PostMortemPanel from "@/components/acca/PostMortemPanel"
@@ -50,7 +49,7 @@ import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAction } from "@/lib/acca-today"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
-import { isAccaOnboarded, markAccaOnboarded } from "@/lib/acca-profile"
+import { isAccaOnboarded } from "@/lib/acca-profile"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
@@ -92,11 +91,17 @@ export default function AccaStudy() {
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
 
   // Land where the loop is: the current paper's overview. The picker stays
-  // one tap away ("← All papers"); new users get the onboarding wizard.
+  // one tap away ("← All papers"); new users go to the /welcome flow.
   const [paperId, setPaperId] = useState<string | null>(() => (wasOnboarded() ? getCurrentPaper() : null))
   const [mode, setMode] = useState<Mode>(() =>
     wasOnboarded() ? (getCurrentPaper() ? "overview" : "picker") : "onboarding",
   )
+
+  // The onboarding experience lives at /welcome (full-screen flow).
+  useEffect(() => {
+    if (!wasOnboarded()) navigate("/welcome", { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [tick, setTick] = useState(0) // force stats refresh after a session
 
   // session state
@@ -220,19 +225,6 @@ export default function AccaStudy() {
 
   function openPaper(id: string) {
     setPaperId(id)
-    setMode("overview")
-  }
-
-  function finishOnboarding(pid: string, examDate: string | null, next: "diagnostic" | "overview") {
-    markAccaOnboarded()
-    if (examDate) setPlan(pid, { examDate })
-    setPaperId(pid)
-    if (next === "diagnostic") {
-      // Day-one activation: the loop opens by measuring — the diagnostic sets
-      // the starting pass probability everything else steers by.
-      navigate("/study/diagnostic")
-      return
-    }
     setMode("overview")
   }
 
@@ -394,8 +386,6 @@ export default function AccaStudy() {
     <DashboardLayout>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 0 40px" }} key={tick}>
         <AnimatePresence mode="wait">
-          {mode === "onboarding" && <AccaOnboarding key="onboarding" onDone={finishOnboarding} />}
-
           {mode === "picker" && <Picker key="picker" onPick={openPaper} />}
 
           {mode === "overview" && paper && (
