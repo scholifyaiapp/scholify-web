@@ -29,4 +29,33 @@ await sharp(Buffer.from(mark), { density }).resize(48, 48).png().toFile("public/
 for (const size of [192, 512]) {
   await sharp(Buffer.from(appIcon(size)), { density }).resize(size, size).png().toFile(`public/icon-${size}.png`)
 }
-console.log("brand icons written: favicon.png, icon-192.png, icon-512.png")
+
+// favicon.ico — ICO container with PNG-encoded 16/32/48 entries (Vista+
+// format). Browsers request /favicon.ico unprompted; without a real file
+// the SPA rewrite serves HTML and the tab icon silently breaks.
+const icoSizes = [16, 32, 48]
+const pngs = []
+for (const size of icoSizes) {
+  pngs.push(await sharp(Buffer.from(mark), { density }).resize(size, size).png().toBuffer())
+}
+const header = Buffer.alloc(6)
+header.writeUInt16LE(0, 0) // reserved
+header.writeUInt16LE(1, 2) // type: icon
+header.writeUInt16LE(icoSizes.length, 4)
+const entries = []
+let offset = 6 + 16 * icoSizes.length
+icoSizes.forEach((size, i) => {
+  const e = Buffer.alloc(16)
+  e.writeUInt8(size === 256 ? 0 : size, 0) // width
+  e.writeUInt8(size === 256 ? 0 : size, 1) // height
+  e.writeUInt8(0, 2) // palette
+  e.writeUInt8(0, 3) // reserved
+  e.writeUInt16LE(1, 4) // color planes
+  e.writeUInt16LE(32, 6) // bits per pixel
+  e.writeUInt32LE(pngs[i].length, 8)
+  e.writeUInt32LE(offset, 12)
+  offset += pngs[i].length
+  entries.push(e)
+})
+writeFileSync("public/favicon.ico", Buffer.concat([header, ...entries, ...pngs]))
+console.log("brand icons written: favicon.png, favicon.ico (16/32/48), icon-192.png, icon-512.png")
