@@ -209,39 +209,38 @@ Scholify's market includes students on unreliable connections and the product is
 
 ---
 
-## 5. Cost & metering architecture — **PLANNED, not built**
+## 5. Cost & metering architecture — **SHIPPED 2026-07-09**
 
-> Nothing in this section exists in code today. There is no auth on `/api/lara`, no usage logging, and no caps. This is the design target.
+> Implemented in `api/lara.ts` (`meterAcca()`, `DAILY_CAPS`, `meterMessage()`), `supabase/migrations/0013_ai_usage.sql`, and `src/lib/acca-ai.ts::aiHeaders()`. Metering activates automatically the moment `ANTHROPIC_API_KEY` is set; until then the keyless fallbacks make it a no-op. **Fails closed:** if the key is set but the Supabase service role or the `ai_usage` table is missing, ACCA AI calls return fallbacks (`reason: "metering_unavailable"`) rather than unmetered spend.
 
-### 5.1 Per-call cost model (Sonnet 4.6 at $3 / $15 per MTok)
+### 5.1 Per-call cost model (after the model mix, Sonnet 5 intro $2/$10, Haiku $1/$5 per MTok)
 
-| action | est. input | est. output | est. cost/call |
-|---|---|---|---|
-| `acca-tutor` | ~600 tok (cached system) | ≤400 tok | **~$0.006** |
-| `acca-examiner` | ~1,500 tok | ≤700 tok | **~$0.012** |
-| `acca-generate` | ~800 tok | ≤2,000 tok | **~$0.030** |
-| `acca-postmortem` | ~900 tok | ≤900 tok | **~$0.013** |
+| action | model | est. input | out budget | est. cost/call |
+|---|---|---|---|---|
+| `acca-tutor` | **Haiku 4.5** | ~600 tok (cached system) | ≤400 | **~$0.002** |
+| `acca-examiner` | Sonnet 5 | ~1,500 tok | ≤700 | **~$0.008** |
+| `acca-generate` | Sonnet 5 | ~800 tok | ≤**1,400** (was 2,000) | **~$0.014** |
+| `acca-postmortem` | Sonnet 5 | ~900 tok | ≤900 | **~$0.009** |
 
-A heavy Pro user (20 tutor + 5 examiner + 2 generate + 1 postmortem/day) ≈ **$0.25/day ≈ $7.50/mo** — fine under a ~$15–20 Pro price, ruinous if unmetered on Free.
+### 5.2 Enforced caps (`DAILY_CAPS` in `api/lara.ts`, keyed on `user_metadata.plan`; 0 = not in plan)
 
-### 5.2 Planned caps (aligned to Paddle plans in `user_metadata.plan`)
+| plan | tutor | generate | examiner | postmortem |
+|---|---|---|---|---|
+| Free | 5 / day | 0 | 0 | 10 / day |
+| Beginner | 25 / day | 0 | 0 | 10 / day |
+| Pro (any non-free, non-beginner plan) | 100 / day | 10 / day | 20 / day | 10 / day |
 
-| plan | Lara tutor | examiner | generate |
-|---|---|---|---|
-| Free | 5 / day | 2 / day | 1 / day |
-| Beginner | 25 / day | 10 / day | 5 / day |
-| Pro | 100 / day fair-use | 10 / day | 20 / day |
+Worst-case Pro day ≈ $0.53 → hard ceiling ≈ $16/mo; realistic power user ≈ $1.10/mo. Over-cap responses are HTTP 200 fallbacks with `reason: "limit_reached" | "plan_required" | "auth_required" | "metering_unavailable"` — the tutor prepends a friendly meter message to the model explanation, the examiner prepends it to the local marking feedback, generate surfaces it in `GenerateView`, and the post-mortem silently serves the deterministic analysis (the recovery loop never blocks).
 
-### 5.3 Planned model mix
+### 5.3 The flow per metered call
 
-- `SONNET` constant → `claude-sonnet-5` on release validation (one-line change in `api/lara.ts`).
-- `acca-tutor` → **Haiku** for first-explanation calls (the bundled explanation already anchors correctness), keeping Sonnet for follow-up questions and all marking. Cuts the dominant call's cost ~3×.
+1. Client (`acca-ai.ts::aiHeaders()`) attaches the Supabase access token to all four ACCA actions.
+2. Server (`meterAcca()`): skip if no `ANTHROPIC_API_KEY` (keyless fallbacks anyway) → verify JWT via service-role `auth.getUser` → map plan → tier → check `DAILY_CAPS` → read today's `ai_usage` count → allow/deny.
+3. After a successful Claude call, `m.record(input_tokens, output_tokens)` fire-and-forgets the `increment_ai_usage` RPC (atomic upsert; counts + token totals per user/day/action).
 
-### 5.4 Required plumbing (in order)
+### 5.4 Usage data (`ai_usage` table, migration 0013)
 
-1. **JWT auth on `/api/lara`** — same pattern already shipped in `api/paddle.ts::cancel` and `api/reminders.ts::handleSync`: `supabase.auth.getUser(bearerToken)`, 401 without.
-2. **Usage logging to Supabase** — `ai_usage(user_id, action, model, input_tokens, output_tokens, created_at)` with RLS, written server-side with the service role after each call.
-3. **Cap enforcement** — count today's rows per action before calling Anthropic; over-cap returns the fallback path with `reason: "quota"` (the client already renders `isFallback` gracefully — the metering UX is free).
+`(user_id, day, action) → count, tokens_in, tokens_out` with RLS (users read their own rows — a future in-app meter display; only the service role writes). This is also the measured-unit-economics feed for the CFO model in `docs/08`.
 
 ---
 
@@ -253,7 +252,7 @@ A heavy Pro user (20 tutor + 5 examiner + 2 generate + 1 postmortem/day) ≈ **$
 - **Input clamping at the trust boundary.** Every handler truncates and coerces before prompting: tutor `stem.slice(0, 1200)`, follow-up `question.slice(0, 500)`, `learnerContext.slice(0, 800)`; examiner `answer.slice(0, 4000)`, `stem.slice(0, 2000)`; generate `notes.slice(0, 3000)`, `count` clamped 1–10; postmortem areas capped at 12 rows with per-field slices; photo payload capped at ~6.5 MB base64. Numbers go through `Math.max/min/round`; enums through normalisers (`normalizeLevel`, `normalizeStage`, `normalizeMedia`).
 - **Output validation** — the safe-parse layer (§1.4) means model output can't inject unexpected shapes into the client.
 
-**Known risk — the unauthenticated endpoint.** `POST /api/lara` requires no authentication. Today the blast radius is zero *because the key isn't set in production*, but the moment `ANTHROPIC_API_KEY` lands, the endpoint is a free Claude proxy: anyone can script `?action=acca-tutor` and spend our tokens (Sonnet at 2,000 output tokens per `acca-generate` call is the juiciest target). **Fix (must ship with the key, before or same deploy):** the §5.4 JWT check plus per-user daily caps; optionally an origin/referer allow-list as a cheap second layer. `fetch-url` is additionally a mild SSRF surface (it fetches arbitrary `http(s)` URLs server-side); it should be restricted to authenticated users and public-IP targets when it graduates from legacy status.
+**Closed 2026-07-09 — the ACCA actions are authenticated and capped.** The four `acca-*` actions now require a valid Supabase JWT and enforce `DAILY_CAPS` the moment `ANTHROPIC_API_KEY` exists (§5); missing metering infrastructure fails closed to fallbacks. Residual items: the legacy non-ACCA actions (`message`, `chat`, `vocab`, …) remain unmetered — acceptable while unused by the ACCA app, but meter or remove them before any reactivation. `fetch-url` is additionally a mild SSRF surface (it fetches arbitrary `http(s)` URLs server-side); restrict to authenticated users and public-IP targets if it ever graduates from legacy status.
 
 ---
 

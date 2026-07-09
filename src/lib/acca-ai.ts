@@ -1,6 +1,7 @@
 import type { AccaQuestion, Difficulty } from "@/lib/acca-content"
 import type { WrittenQuestion } from "@/lib/acca-written"
 import { getPaper } from "@/lib/acca"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 /*
  * ACCA AI features — the tutor and the examiner.
@@ -9,9 +10,26 @@ import { getPaper } from "@/lib/acca"
  * or the call fails, the server returns a useful fallback (the model
  * explanation for the tutor; a keyword-based mark for the examiner) so the
  * features never hard-crash in demo mode.
+ *
+ * Every call carries the Supabase access token — the server meters usage per
+ * user per day (see api/lara.ts DAILY_CAPS) once its API key is live.
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || ""
+
+/** Auth header for the metered AI endpoints — empty when signed out/demo. */
+async function aiHeaders(): Promise<Record<string, string>> {
+  const base: Record<string, string> = { "Content-Type": "application/json" }
+  if (!isSupabaseConfigured) return base
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (token) base.Authorization = `Bearer ${token}`
+  } catch {
+    /* signed out — server will respond with its graceful fallback */
+  }
+  return base
+}
 
 /**
  * Ask Lara to explain a question — optionally a specific follow-up.
@@ -27,7 +45,7 @@ export async function askTutor(
   try {
     const res = await fetch(`${API_BASE}/api/lara?action=acca-tutor`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await aiHeaders(),
       body: JSON.stringify({
         paper: q.paper,
         area: q.area,
@@ -66,7 +84,7 @@ export async function markAnswer(
   try {
     const res = await fetch(`${API_BASE}/api/lara?action=acca-examiner`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await aiHeaders(),
       body: JSON.stringify({
         paper: wq.paper,
         stem: wq.stem,
@@ -131,7 +149,7 @@ export async function getPostMortem(input: PostMortemInput): Promise<PostMortem>
   try {
     const res = await fetch(`${API_BASE}/api/lara?action=acca-postmortem`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await aiHeaders(),
       body: JSON.stringify({
         kind: input.kind,
         paper: input.paperId,
@@ -206,7 +224,15 @@ function offlinePostMortem(input: PostMortemInput): PostMortem {
 
 export interface GenerateResult {
   questions: AccaQuestion[]
-  reason?: "missing_anthropic_key" | "no_questions" | "error" | "network"
+  reason?:
+    | "missing_anthropic_key"
+    | "no_questions"
+    | "error"
+    | "network"
+    | "limit_reached"
+    | "plan_required"
+    | "auth_required"
+    | "metering_unavailable"
 }
 
 interface RawGenerated {
@@ -227,7 +253,7 @@ export async function generateQuestions(
   try {
     const res = await fetch(`${API_BASE}/api/lara?action=acca-generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await aiHeaders(),
       body: JSON.stringify({
         paper: paperId,
         paperName: paper?.name ?? paperId,

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import Anthropic from "@anthropic-ai/sdk"
+import { createClient } from "@supabase/supabase-js"
 
 /*
  * Combined Lara endpoint — dispatches by ?action= to keep us under the
@@ -22,7 +23,118 @@ import Anthropic from "@anthropic-ai/sdk"
 export const config = { maxDuration: 30 }
 
 const HAIKU = "claude-haiku-4-5"
-const SONNET = "claude-sonnet-4-6"
+// Sonnet 5: better model, intro pricing ($2/$10 per MTok through 2026-08-31).
+const SONNET = "claude-sonnet-5"
+
+/* ── AI metering — auth + per-plan daily caps on the ACCA actions ──────────
+ *
+ * The CFO guardrail: once ANTHROPIC_API_KEY is live, no unauthenticated or
+ * uncapped Claude calls. Caps per plan per day (0 = plan doesn't include it):
+ *
+ *              tutor  generate  examiner  postmortem
+ *   free         5       0         0         10
+ *   beginner    25       0         0         10
+ *   pro        100      10        20         10
+ *
+ * Everything degrades to the deterministic fallback (HTTP 200 + isFallback +
+ * reason) — never a hard error the app has to special-case. If metering
+ * infrastructure is missing while the API key is set, we fail CLOSED
+ * (fallbacks, not unmetered spend).
+ */
+
+type Tier = "free" | "beginner" | "pro"
+type AccaAction = "acca-tutor" | "acca-generate" | "acca-examiner" | "acca-postmortem"
+
+const DAILY_CAPS: Record<Tier, Record<AccaAction, number>> = {
+  free: { "acca-tutor": 5, "acca-generate": 0, "acca-examiner": 0, "acca-postmortem": 10 },
+  beginner: { "acca-tutor": 25, "acca-generate": 0, "acca-examiner": 0, "acca-postmortem": 10 },
+  pro: { "acca-tutor": 100, "acca-generate": 10, "acca-examiner": 20, "acca-postmortem": 10 },
+}
+
+export type MeterReason = "auth_required" | "plan_required" | "limit_reached" | "metering_unavailable"
+
+interface Meter {
+  allowed: boolean
+  reason?: MeterReason
+  /** Fire-and-forget usage write after a successful model call. */
+  record: (tokensIn: number, tokensOut: number) => void
+}
+
+const METER_PASS: Meter = { allowed: true, record: () => {} }
+
+function meteringAdmin() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key, { auth: { persistSession: false } })
+}
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter> {
+  // No API key → handlers return free fallbacks anyway; nothing to meter.
+  if (!process.env.ANTHROPIC_API_KEY) return METER_PASS
+
+  const supa = meteringAdmin()
+  if (!supa) return { allowed: false, reason: "metering_unavailable", record: () => {} }
+
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) return { allowed: false, reason: "auth_required", record: () => {} }
+  const { data, error } = await supa.auth.getUser(token)
+  const user = data?.user
+  if (error || !user) return { allowed: false, reason: "auth_required", record: () => {} }
+
+  const rawPlan = String(user.user_metadata?.plan || "free")
+  const tier: Tier = rawPlan === "beginner" ? "beginner" : rawPlan !== "free" ? "pro" : "free"
+  const cap = DAILY_CAPS[tier][action]
+  if (cap === 0) return { allowed: false, reason: "plan_required", record: () => {} }
+
+  const day = todayUtc()
+  try {
+    const { data: row } = await supa
+      .from("ai_usage")
+      .select("count")
+      .eq("user_id", user.id)
+      .eq("day", day)
+      .eq("action", action)
+      .maybeSingle()
+    if ((row?.count ?? 0) >= cap) return { allowed: false, reason: "limit_reached", record: () => {} }
+  } catch {
+    // Table missing (migration 0013 not run) → fail closed, never unmetered.
+    return { allowed: false, reason: "metering_unavailable", record: () => {} }
+  }
+
+  return {
+    allowed: true,
+    record: (tokensIn, tokensOut) => {
+      void supa
+        .rpc("increment_ai_usage", {
+          p_user: user.id,
+          p_day: day,
+          p_action: action,
+          p_tokens_in: Math.max(0, Math.round(tokensIn)),
+          p_tokens_out: Math.max(0, Math.round(tokensOut)),
+        })
+        .then(undefined, () => {})
+    },
+  }
+}
+
+/** The friendly line shown in place of a Lara answer when a cap is hit. */
+function meterMessage(reason: MeterReason | undefined, feature: string): string {
+  switch (reason) {
+    case "limit_reached":
+      return `You've used today's ${feature} allowance — it resets tomorrow. Pro includes a much higher daily limit.`
+    case "plan_required":
+      return `${feature[0].toUpperCase()}${feature.slice(1)} is a Pro feature — upgrade to unlock it.`
+    case "auth_required":
+      return "Please sign in to use Lara's AI features."
+    default:
+      return "Lara's AI is warming up — using the built-in explanation for now."
+  }
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (req.method !== "POST") {
@@ -49,10 +161,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "placement") return handlePlacement(body, res)
   if (action === "extract") return handleExtract(body, res)
   if (action === "fetch-url") return handleFetchUrl(body, res)
-  if (action === "acca-tutor") return handleAccaTutor(body, res)
-  if (action === "acca-examiner") return handleAccaExaminer(body, res)
-  if (action === "acca-generate") return handleAccaGenerate(body, res)
-  if (action === "acca-postmortem") return handleAccaPostmortem(body, res)
+  if (action === "acca-tutor") return handleAccaTutor(req, body, res)
+  if (action === "acca-examiner") return handleAccaExaminer(req, body, res)
+  if (action === "acca-generate") return handleAccaGenerate(req, body, res)
+  if (action === "acca-postmortem") return handleAccaPostmortem(req, body, res)
   res.status(400).json({
     error:
       "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner | acca-generate | acca-postmortem.",
@@ -61,7 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
 /* ── ACCA question generator — MCQs from a topic / notes (Sonnet) ──────── */
 
-async function handleAccaGenerate(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+async function handleAccaGenerate(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
   const paper = String(body.paper || "ACCA")
   const paperName = String(body.paperName || paper)
   const topic = String(body.topic || "").slice(0, 200)
@@ -71,6 +183,12 @@ async function handleAccaGenerate(body: Record<string, unknown>, res: VercelResp
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     res.status(200).json({ questions: [], reason: "missing_anthropic_key" })
+    return
+  }
+
+  const m = await meterAcca(req, "acca-generate")
+  if (!m.allowed) {
+    res.status(200).json({ questions: [], reason: m.reason })
     return
   }
 
@@ -93,10 +211,12 @@ Each question: a clear stem, exactly 4 options, one correct answer (correctIndex
     const client = new Anthropic({ apiKey })
     const completion = await client.messages.create({
       model: SONNET,
-      max_tokens: 2000,
+      // 8-question batches fit comfortably in 1400 — caps the priciest call.
+      max_tokens: 1400,
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     })
+    m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
     const questions = parseGeneratedQuestions(raw)
     if (questions.length > 0) {
@@ -147,7 +267,7 @@ function parseGeneratedQuestions(
 
 /* ── ACCA AI Tutor — explain a question / concept (Sonnet) ────────────── */
 
-async function handleAccaTutor(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+async function handleAccaTutor(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
   const paper = String(body.paper || "ACCA")
   const area = String(body.area || "")
   const stem = String(body.stem || "").slice(0, 1200)
@@ -164,6 +284,17 @@ async function handleAccaTutor(body: Record<string, unknown>, res: VercelRespons
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     res.status(200).json({ answer: fallback, isFallback: true })
+    return
+  }
+
+  const m = await meterAcca(req, "acca-tutor")
+  if (!m.allowed) {
+    // The meter message leads, then the model explanation still teaches.
+    res.status(200).json({
+      answer: `${meterMessage(m.reason, "Lara questions")}\n\n${fallback}`,
+      isFallback: true,
+      reason: m.reason,
+    })
     return
   }
 
@@ -192,11 +323,14 @@ Student asks: ${question || "Explain this in a simpler way."}`
   try {
     const client = new Anthropic({ apiKey })
     const completion = await client.messages.create({
-      model: SONNET,
+      // The highest-volume call in the product — Haiku keeps it fast and
+      // ~3× cheaper; explanation quality holds at this scope (≤150 words).
+      model: HAIKU,
       max_tokens: 400,
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     })
+    m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     const text =
       completion.content[0]?.type === "text" ? completion.content[0].text.trim() : fallback
     res.status(200).json({ answer: text })
@@ -215,7 +349,7 @@ interface PostmortemArea {
   seen: number
 }
 
-async function handleAccaPostmortem(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+async function handleAccaPostmortem(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
   const kind = body.kind === "exam" ? "exam" : "mock"
   const paper = String(body.paper || "ACCA")
   const paperName = String(body.paperName || paper).slice(0, 120)
@@ -243,6 +377,13 @@ async function handleAccaPostmortem(body: Record<string, unknown>, res: VercelRe
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     res.status(200).json({ ...localPostmortem(kind, percent, areas, mockHistory), isFallback: true })
+    return
+  }
+
+  const mtr = await meterAcca(req, "acca-postmortem")
+  if (!mtr.allowed) {
+    // The deterministic post-mortem still runs the recovery loop.
+    res.status(200).json({ ...localPostmortem(kind, percent, areas, mockHistory), isFallback: true, reason: mtr.reason })
     return
   }
 
@@ -282,6 +423,7 @@ ${learnerContext ? `\nStudent's learning profile:\n${learnerContext}` : ""}`
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     })
+    mtr.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
     const parsed = safePostmortemJson(raw)
     if (parsed) {
@@ -399,7 +541,7 @@ function localPostmortem(
 
 /* ── ACCA AI Examiner — mark a written answer vs a rubric (Sonnet) ─────── */
 
-async function handleAccaExaminer(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+async function handleAccaExaminer(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
   const paper = String(body.paper || "ACCA")
   const stem = String(body.stem || "").slice(0, 2000)
   const maxMarks = Math.max(1, Math.round(Number(body.maxMarks) || 10))
@@ -410,6 +552,18 @@ async function handleAccaExaminer(body: Record<string, unknown>, res: VercelResp
   if (!apiKey) {
     const local = localExaminer(answer, rubric, maxMarks)
     res.status(200).json({ ...local, isFallback: true })
+    return
+  }
+
+  const m = await meterAcca(req, "acca-examiner")
+  if (!m.allowed) {
+    const local = localExaminer(answer, rubric, maxMarks)
+    res.status(200).json({
+      ...local,
+      feedback: `${meterMessage(m.reason, "AI Examiner marking")} ${local.feedback}`,
+      isFallback: true,
+      reason: m.reason,
+    })
     return
   }
 
@@ -440,6 +594,7 @@ ${answer || "(no answer given)"}`
     const raw =
       completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
     const parsed = safeExaminerJson(raw, maxMarks)
+    m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     if (parsed) {
       res.status(200).json(parsed)
       return

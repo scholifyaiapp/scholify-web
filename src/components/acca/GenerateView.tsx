@@ -45,7 +45,13 @@ export default function GenerateView({
     setError(
       res.reason === "missing_anthropic_key"
         ? "Custom question generation needs a live AI key. Ask the team to connect one, then this feature turns on."
-        : "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
+        : res.reason === "limit_reached"
+          ? "You've used today's custom-practice allowance — it resets tomorrow."
+          : res.reason === "plan_required"
+            ? "Custom practice is a Pro feature — upgrade to unlock it."
+            : res.reason === "auth_required"
+              ? "Please sign in to generate custom questions."
+              : "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
     )
   }
 
