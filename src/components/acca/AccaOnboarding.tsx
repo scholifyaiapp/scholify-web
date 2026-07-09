@@ -2,6 +2,8 @@ import { useMemo, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { iriText } from "@/components/dashboard-layout"
 import { Icon, IconBadge, Button, C, GRAD, type IconName } from "@/components/acca/ui"
+import { ScholifyMark } from "@/components/brand"
+import { useAuth } from "@/lib/auth"
 import {
   paperLevels,
   suggestedNextPapers,
@@ -15,11 +17,12 @@ import { EXPERIENCE_OPTIONS, setExperience, type Experience } from "@/lib/acca-p
 
 /*
  * Guided first-run for /study, in Lara's voice. Five steps:
- *   1. Welcome
+ *   1. Welcome — the loop, pitched as waypoints
  *   2. Your ACCA record — mark the exams you've passed (self-reported myACCA)
- *   3. Which paper(s) next (1–2) + exam date (3/6-month presets or exact)
+ *   3. Which paper(s) next (1–2) + exam date (real ACCA sittings or exact)
  *   4. Shield time — the protected daily study slot + minutes commitment
- *   5. Personalised plan reveal
+ *   5. Personalised plan reveal → the DIAGNOSTIC (day-one activation: the
+ *      primary exit is "find my pass probability", not "browse the app")
  * Shown once (the parent tracks the localStorage flag).
  */
 
@@ -43,27 +46,59 @@ function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
 }
 
-function datePlusMonths(months: number): string {
-  const d = new Date()
-  d.setMonth(d.getMonth() + months)
-  return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
+/** The experience picker's Lucide icons (never emoji — design law). */
+const EXPERIENCE_ICON: Record<Experience, IconName> = {
+  new: "learn",
+  some: "study",
+  professional: "exam",
+}
+
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+/**
+ * The next two real ACCA sittings (March / June / September / December).
+ * The nominal date is the 1st of the sitting month — exam week varies, and
+ * the learner can fine-tune with the date field below.
+ */
+function nextSittings(count = 2): { label: string; date: string }[] {
+  const SITTING_MONTHS = [2, 5, 8, 11] // Mar, Jun, Sep, Dec (0-based)
+  const now = new Date()
+  const out: { label: string; date: string }[] = []
+  let year = now.getFullYear()
+  let idx = SITTING_MONTHS.findIndex((m) => m > now.getMonth())
+  if (idx === -1) { idx = 0; year += 1 }
+  while (out.length < count) {
+    const m = SITTING_MONTHS[idx]
+    out.push({
+      label: `${MONTH_SHORT[m]} '${`${year}`.slice(2)} sitting`,
+      date: `${year}-${`${m + 1}`.padStart(2, "0")}-01`,
+    })
+    idx += 1
+    if (idx >= SITTING_MONTHS.length) { idx = 0; year += 1 }
+  }
+  return out
 }
 
 export default function AccaOnboarding({
   onDone,
 }: {
-  onDone: (paperId: string, examDate: string | null) => void
+  onDone: (paperId: string, examDate: string | null, next: "diagnostic" | "overview") => void
 }) {
+  const { user } = useAuth()
+  const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0]
+    || user?.email?.split("@")[0]
+    || null
   const levels = paperLevels()
   const [step, setStep] = useState(0)
   const [passed, setPassed] = useState<Set<string>>(new Set())
   const [picked, setPicked] = useState<string[]>([])
   const [examDate, setExamDate] = useState("")
-  const [preset, setPreset] = useState<3 | 6 | null>(null)
+  const [preset, setPreset] = useState<string | null>(null)
   const [studyTime, setStudyTime] = useState("19:00")
   const [minutes, setMinutes] = useState(25)
   const [exp, setExp] = useState<Experience | null>(null)
 
+  const sittings = useMemo(() => nextSittings(2), [])
   const nextPapers = useMemo(() => suggestedNextPapers([...passed]), [passed])
   const qual = useMemo(() => qualificationProgress([...passed]), [passed])
 
@@ -84,12 +119,12 @@ export default function AccaOnboarding({
     })
   }
 
-  function pickPreset(months: 3 | 6) {
-    setPreset(months)
-    setExamDate(datePlusMonths(months))
+  function pickPreset(date: string) {
+    setPreset(date)
+    setExamDate(date)
   }
 
-  function finish() {
+  function finish(next: "diagnostic" | "overview") {
     if (picked.length === 0) return
     setPassedPapers([...passed])
     setStudyingPapers(picked)
@@ -106,34 +141,72 @@ export default function AccaOnboarding({
     // The commitment the learner just made IS the daily-goal meter —
     // this is the store the Dashboard/Analytics/Settings goal reads.
     setDailyGoal(questionsPerDay)
-    onDone(picked[0], examDate || null)
+    onDone(picked[0], examDate || null, next)
   }
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto", paddingTop: 12 }}>
-      {/* progress dots */}
-      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 26 }}>
-        {[0, 1, 2, 3, 4].map((s) => (
-          <div key={s} style={{ width: s === step ? 22 : 7, height: 7, borderRadius: 999, background: s <= step ? RED : "var(--sch-card-2)", transition: "width .2s ease, background .2s ease" }} />
-        ))}
+      {/* progress dots + back */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", marginBottom: 26, minHeight: 28 }}>
+        {step > 0 && (
+          <button
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            aria-label="Back"
+            style={{ position: "absolute", left: 0, display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", color: MUTED, fontSize: 12.5, fontWeight: 700, padding: "4px 6px" }}
+          >
+            <Icon name="arrow" size={14} color={MUTED} style={{ transform: "rotate(180deg)" }} /> Back
+          </button>
+        )}
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0, 1, 2, 3, 4].map((s) => (
+            <div key={s} style={{ width: s === step ? 22 : 7, height: 7, borderRadius: 999, background: s <= step ? RED : "var(--sch-card-2)", transition: "width .2s ease, background .2s ease" }} />
+          ))}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {/* 0 — welcome */}
+        {/* 0 — welcome: the brand, the coach, the loop */}
         {step === 0 && (
           <Slide key="s0">
             <div style={{ textAlign: "center" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                <IconBadge name="study" tone="brand" size={64} />
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.7, rotate: -20 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}
+              >
+                <ScholifyMark size={64} />
+              </motion.div>
               <h1 style={{ fontSize: 27, fontWeight: 800, color: TEXT, margin: "0 0 10px" }}>
-                Hi, I'm <span style={iriText}>Lara</span> — your ACCA coach
+                {firstName ? <>Hi {firstName} — I'm <span style={iriText}>Lara</span></> : <>Hi, I'm <span style={iriText}>Lara</span></>}, your ACCA coach
               </h1>
-              <p style={{ color: MUTED, fontSize: 15.5, lineHeight: 1.6, margin: "0 0 28px" }}>
-                I'll take you all the way from Applied Knowledge to Strategic Professional — topic by topic,
-                the way the top tuition providers teach, with a plan built around your exam date and your day.
+              <p style={{ color: MUTED, fontSize: 15.5, lineHeight: 1.6, margin: "0 0 22px" }}>
+                Scholify works like a GPS for your paper: I measure where you are, hand you the next best
+                task every day, and recalculate until you pass. Here's the route:
               </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap", marginBottom: 26 }}>
+                {([
+                  ["diagnostic", "Diagnostic"],
+                  ["mission", "Daily missions"],
+                  ["mock", "3 mocks"],
+                  ["celebrate", "Pass"],
+                ] as [IconName, string][]).map(([icon, label], i, arr) => (
+                  <motion.span
+                    key={label}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + i * 0.14 }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 11px", borderRadius: 999, border: `1px solid ${BORDER}`, background: CARD, fontSize: 12, fontWeight: 750, color: TEXT }}>
+                      <Icon name={icon} size={13} color={RED} /> {label}
+                    </span>
+                    {i < arr.length - 1 && <Icon name="arrow" size={12} color={DIM} />}
+                  </motion.span>
+                ))}
+              </div>
               <Button variant="primary" size="lg" full onClick={() => setStep(1)}>Let's go</Button>
+              <p style={{ fontSize: 12, color: DIM, margin: "10px 0 0" }}>Four quick questions — about a minute.</p>
             </div>
           </Slide>
         )}
@@ -218,13 +291,13 @@ export default function AccaOnboarding({
             <div style={{ marginBottom: 22 }}>
               <FieldLabel icon="calendar">When's the exam?</FieldLabel>
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                {([3, 6] as const).map((m) => (
+                {sittings.map((s) => (
                   <button
-                    key={m}
-                    onClick={() => pickPreset(m)}
-                    style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${preset === m ? RED : BORDER}`, background: preset === m ? C.brandSoft : CARD, color: preset === m ? RED : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer", transition: "border-color .15s ease, background .15s ease, color .15s ease" }}
+                    key={s.date}
+                    onClick={() => pickPreset(s.date)}
+                    style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: `1.5px solid ${preset === s.date ? RED : BORDER}`, background: preset === s.date ? C.brandSoft : CARD, color: preset === s.date ? RED : TEXT, fontWeight: 700, fontSize: 13.5, cursor: "pointer", transition: "border-color .15s ease, background .15s ease, color .15s ease" }}
                   >
-                    In ~{m} months
+                    {s.label}
                   </button>
                 ))}
               </div>
@@ -235,7 +308,8 @@ export default function AccaOnboarding({
                 style={{ width: "100%", boxSizing: "border-box", padding: "13px 16px", borderRadius: 12, border: `1px solid ${BORDER}`, background: "var(--sch-bg)", color: TEXT, fontSize: 15, colorScheme: "dark light" }}
               />
               <p style={{ fontSize: 12, color: DIM, margin: "8px 0 0", lineHeight: 1.5 }}>
-                Roughly 3 months per paper is the standard tuition pace. No date yet? Skip it — I'll pace you by mastery instead.
+                Those are the real ACCA sittings — set the exact day once you book. Knowledge exams (BT·MA·FA·LW)
+                are on-demand, so any date works. No date yet? Skip it — I'll pace you by mastery instead.
               </p>
             </div>
 
@@ -250,7 +324,7 @@ export default function AccaOnboarding({
                       onClick={() => setExp(o.value)}
                       style={{ ...card({ cursor: "pointer", textAlign: "left", border: `1.5px solid ${on ? RED : BORDER}`, padding: "12px 14px", background: on ? C.brandSoft : CARD }), display: "flex", alignItems: "center", gap: 11, transition: "border-color .15s ease, background .15s ease" }}
                     >
-                      <span style={{ fontSize: 20, flexShrink: 0 }}>{o.emoji}</span>
+                      <IconBadge name={EXPERIENCE_ICON[o.value]} tone={on ? "brand" : "neutral"} size={34} />
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ display: "block", fontWeight: 700, fontSize: 13.5, color: on ? RED : TEXT }}>{o.label}</span>
                         <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{o.blurb}</span>
@@ -315,7 +389,7 @@ export default function AccaOnboarding({
           </Slide>
         )}
 
-        {/* 4 — plan reveal */}
+        {/* 4 — plan reveal → the diagnostic (day-one activation) */}
         {step === 4 && picked.length > 0 && (
           <Slide key="s4">
             <PlanReveal
@@ -334,7 +408,7 @@ export default function AccaOnboarding({
 
 function PlanReveal({
   paperIds, examDate, studyTime, minutes, onStart,
-}: { paperIds: string[]; examDate: string; studyTime: string; minutes: number; onStart: () => void }) {
+}: { paperIds: string[]; examDate: string; studyTime: string; minutes: number; onStart: (next: "diagnostic" | "overview") => void }) {
   // Persist the primary paper's plan first so the generator can read it.
   useMemo(() => {
     if (examDate) setPlan(paperIds[0], { examDate })
@@ -413,9 +487,23 @@ function PlanReveal({
         </div>
       )}
 
-      <Button variant="primary" size="lg" full onClick={onStart}>
-        Start studying <Icon name="arrow" size={18} color="#fff" />
+      {/* Day-one activation: the loop starts by measuring. The diagnostic
+          sets the starting pass probability every screen is built around. */}
+      <div style={{ ...card({ padding: 16, marginBottom: 14 }), display: "flex", gap: 12, alignItems: "center" }}>
+        <IconBadge name="diagnostic" tone="brand" size={40} />
+        <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
+          One thing before the plan starts: a <strong style={{ color: TEXT }}>10-minute diagnostic</strong> sets
+          your starting <strong style={{ ...iriText }}>pass probability</strong> — the number this whole plan
+          steers by.
+        </span>
+      </div>
+
+      <Button variant="primary" size="lg" full onClick={() => onStart("diagnostic")}>
+        Find my pass probability <Icon name="arrow" size={18} color="#fff" />
       </Button>
+      <div style={{ textAlign: "center", marginTop: 8 }}>
+        <Button variant="ghost" onClick={() => onStart("overview")}>Skip for now — take me to studying</Button>
+      </div>
     </div>
   )
 }

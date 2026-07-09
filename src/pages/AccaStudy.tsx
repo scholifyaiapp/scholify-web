@@ -223,10 +223,16 @@ export default function AccaStudy() {
     setMode("overview")
   }
 
-  function finishOnboarding(pid: string, examDate: string | null) {
+  function finishOnboarding(pid: string, examDate: string | null, next: "diagnostic" | "overview") {
     markAccaOnboarded()
     if (examDate) setPlan(pid, { examDate })
     setPaperId(pid)
+    if (next === "diagnostic") {
+      // Day-one activation: the loop opens by measuring — the diagnostic sets
+      // the starting pass probability everything else steers by.
+      navigate("/study/diagnostic")
+      return
+    }
     setMode("overview")
   }
 
