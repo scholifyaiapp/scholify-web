@@ -171,6 +171,20 @@ export function diagnosticSeconds(questionCount: number): number {
   return questionCount * 100
 }
 
+/**
+ * Honest ± margin (percentage points, ~80% interval) on a diagnostic's pass
+ * probability: binomial standard error on the observed proportion, widened
+ * when syllabus coverage is partial. More questions → tighter band.
+ *   n=24, p=0.5, full coverage → ±13; n=12, half coverage → ±26 (capped 30).
+ */
+export function diagnosticMargin(passProbability: number, questionsAnswered: number, coverage: number): number {
+  if (questionsAnswered <= 0) return 30
+  const prob = Math.min(0.95, Math.max(0.05, passProbability / 100))
+  const se = Math.sqrt((prob * (1 - prob)) / questionsAnswered)
+  const coveragePenalty = 1 + (1 - Math.min(1, Math.max(0, coverage)))
+  return Math.min(30, Math.max(3, Math.round(100 * 1.28 * se * coveragePenalty)))
+}
+
 /* ── Scoring & the pass-probability model ─────────────────────── */
 
 function logistic(score0to100: number): number {

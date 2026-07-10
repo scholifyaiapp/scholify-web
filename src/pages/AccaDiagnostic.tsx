@@ -18,6 +18,7 @@ import {
   passBand,
   getLatestDiagnostic,
   diagnosticSeconds,
+  diagnosticMargin,
   type DiagnosticResult,
   type AnsweredDiagnostic,
 } from "@/lib/acca-diagnostic"
@@ -451,6 +452,12 @@ function ResultsView({
         <div style={{ marginTop: 14, fontSize: 17, fontWeight: 700, color: band.color }}>{band.label}</div>
         <div style={{ marginTop: 4, fontSize: 13.5, color: MUTED }}>
           Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark {MOCK_PASS}%
+        </div>
+        <div style={{ marginTop: 6, fontSize: 12, color: DIM, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: MUTED }}>
+            ±{diagnosticMargin(result.passProbability, result.questionsAnswered, result.confidence)} pts
+          </span>
+          · a measurement, not a verdict — it tightens as you answer more
         </div>
       </div>
 
