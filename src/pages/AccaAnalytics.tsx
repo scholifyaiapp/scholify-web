@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import { getExamIntel, avgPassRate } from "@/lib/acca-examiner"
 import { Icon, IconBadge, Card, Badge, SectionLabel, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, BreakdownList, TrendBars, DeltaChip, Sparkbars, bandColor } from "@/components/acca/charts"
 import { getPaper, getPaperStats, getTodayStats, getDailyActivity, getDailyGoal, setDailyGoal, type AccaPaper } from "@/lib/acca"
@@ -974,6 +975,8 @@ function ExamSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) 
       </div>
 
       {/* real exam history */}
+      <ExaminerIntelligence paperId={paperId} paper={paper} />
+
       <Card>
         <CardTitle icon="exam">Real exam history</CardTitle>
         {outcomes.length > 0 ? (
@@ -1015,5 +1018,95 @@ function ExamSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) 
         )}
       </Card>
     </>
+  )
+}
+
+
+/* ── Examiner Intelligence — what the last sittings actually show ── */
+
+function ExaminerIntelligence({ paperId, paper }: { paperId: string; paper: AccaPaper }) {
+  const intel = getExamIntel(paperId)
+  if (!intel || intel.sittings.length === 0) return null
+  const avg = avgPassRate(paperId)
+  const latest = intel.sittings[intel.sittings.length - 1]
+  const isSession = intel.kind === "session"
+
+  return (
+    <Card style={{ marginBottom: SP.md }}>
+      <CardTitle
+        icon="stats"
+        right={avg != null ? <span style={{ fontSize: 12, color: C.soft, textTransform: "none", letterSpacing: 0 }}>avg <b style={{ color: C.text }}>{avg}%</b> pass rate</span> : undefined}
+      >
+        Examiner intelligence · {paper.id}
+      </CardTitle>
+      <p style={{ ...TYPE.small, color: C.soft, margin: "0 0 14px", lineHeight: 1.55 }}>
+        {isSession
+          ? `Official global pass rates for the last ${intel.sittings.length} sittings, and what the examiner's reports keep flagging. Your target is to walk in above this line.`
+          : "On-demand CBE — ACCA publishes annual average pass rates instead of sitting reports. The bar is friendlier here; the discipline still decides it."}
+      </p>
+
+      {/* pass-rate trend */}
+      <div style={{ marginBottom: 16 }}>
+        <TrendBars
+          points={intel.sittings.map((x) => ({ date: x.label, percent: x.passRate }))}
+          passLine={50}
+          unit={isSession ? "sitting pass rate" : "annual pass rate"}
+        />
+        <div style={{ ...TYPE.small, color: C.faint, marginTop: 6 }}>
+          Latest ({latest.label}): <b style={{ color: C.text }}>{latest.passRate}%</b> of candidates worldwide passed.
+        </div>
+      </div>
+
+      {/* area hotspots */}
+      {intel.hotspots.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ ...TYPE.label, color: C.faint, marginBottom: 10 }}>WHERE THE MARKS LIVE</div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {intel.hotspots.map((h) => {
+              const label = paper.areas.find((a) => a.code === h.code)?.label ?? h.code
+              return (
+                <div key={h.code}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: C.text }}>
+                      {h.code} · {label}
+                    </span>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: h.frequency >= 95 ? C.brand : C.soft, whiteSpace: "nowrap" }}>
+                      {h.frequency}% of sittings
+                    </span>
+                  </div>
+                  <MeterBar value={h.frequency} max={100} color={h.frequency >= 95 ? C.brand : C.amber} height={6} />
+                  <div style={{ ...TYPE.small, color: C.soft, marginTop: 3 }}>{h.note}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* recurring examiner themes */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ ...TYPE.label, color: C.faint, marginBottom: 8 }}>THE EXAMINER KEEPS SAYING</div>
+        <div style={{ display: "grid", gap: 8 }}>
+          {intel.themes.map((t, i) => (
+            <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+              <Icon name="check" size={14} color={C.brand} style={{ marginTop: 2 }} />
+              <span style={{ fontSize: 13, color: C.muted, lineHeight: 1.55 }}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <a
+        href={intel.officialUrl}
+        target="_blank"
+        rel="noreferrer"
+        style={{ fontSize: 12, fontWeight: 750, color: C.brand, textDecoration: "none" }}
+      >
+        Official ACCA reports & past exams →
+      </a>
+      <div style={{ ...TYPE.small, color: C.faint, marginTop: 8, lineHeight: 1.5 }}>
+        Pass rates are ACCA's official published figures; commentary is Scholify's independent analysis of public examiner reports. Scholify is not affiliated with ACCA.
+      </div>
+    </Card>
   )
 }

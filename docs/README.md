@@ -12,5 +12,6 @@ The complete company and product documentation set, written 2026-07-08 against t
 | 6 | [Claude Code Master Implementation Guide](06-claude-code-implementation-guide.md) | The engineering playbook: workflow, invariants, laws — read before touching the codebase |
 | 7 | [Marketing & Go-to-Market Strategy](07-gtm-strategy.md) | Positioning, channels with CAC math, 90-day launch plan, lifecycle marketing, kill rules |
 | 8 | [Investor Pitch & Business Plan](08-investor-pitch-business-plan.md) | The fundable story: market, unit economics, 18-month financial scenarios, ask & risks |
+| 9 | [The Content Program](09-content-program.md) | BT→Professional content pipeline: sources policy, Kaplan-equal stack, wave plan, Examiner Intelligence |
 
 **Reading order for a new team member:** 1 → 6 → 2 → 3 (builders) or 1 → 8 → 7 (business).
