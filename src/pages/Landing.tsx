@@ -358,10 +358,7 @@ function Hero() {
             ))}
           </div>
           <span style={{ color: INK_MUTED, fontSize: 13 }}>
-            <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>2,400+</span> {t("ACCA students")} ·{" "}
-            <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>4.9</span>
-            <Star size={11} strokeWidth={0} fill={FIRE_500} style={{ display: "inline-block", verticalAlign: "middle", marginLeft: 2, marginRight: 2 }} />
-            · {t("Free to start")}
+            {t("Founding cohort now open")} · <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>490+</span> {t("expert-written questions")} · {t("Free to start")}
           </span>
         </motion.div>
 
@@ -1458,8 +1455,8 @@ type GlowTone = "blue" | "purple" | "green" | "red" | "orange"
 const learnerTestimonials: { name: string; role: string; text: string; image: string }[] = [
   {
     name: "Dilnoza M.",
-    role: "FR · passed first attempt",
-    text: "The AI Examiner rewired how I structure written answers. Passed FR at my first attempt.",
+    role: "FR candidate · early user",
+    text: "The AI Examiner rewired how I structure written answers — marking in seconds instead of waiting days.",
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
@@ -1519,10 +1516,10 @@ function Stories() {
       <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("STUDENT STORIES")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
-          {t("Real papers.")} <em style={{ fontStyle: "italic" }}>{t("Real passes.")}</em>
+          {t("Built with students.")} <em style={{ fontStyle: "italic" }}>{t("For students.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 540, margin: "16px auto 0", lineHeight: 1.65 }}>
-          {t("ACCA students in 20+ countries prep with Scholify — and they tell us why.")}
+          {t("What early users tell us about studying with the loop — join the founding cohort and shape what we build next.")}
         </p>
 
         <TestimonialsColumns
@@ -1910,44 +1907,6 @@ function Pricing() {
 
 /* ─────────────────────── AWARDS ─────────────────────── */
 
-function Awards() {
-  const t = useT()
-  return (
-    <section style={{ padding: "80px 24px", textAlign: "center" }}>
-      <div style={{ maxWidth: 960, margin: "0 auto" }}>
-        <SectionLabel>{t("AWARDS")}</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(32px, 4vw, 56px)", color: INK, margin: "18px 0 0" }}>
-          {t("Awarded on every store.")}
-        </h2>
-        <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 12, maxWidth: 540, marginInline: "auto" }}>
-          {t("Editors' Choice. Year after year. The prep ACCA students actually stick with.")}
-        </p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7, ease: EASE_DECISIVE }}
-          style={{
-            marginTop: 48,
-            display: "flex",
-            gap: 32,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <StoreBadge store="app-store" award={t("Editors' Choice")} caption="2026" />
-          <StoreBadge store="google-play" award={t("Editors' Choice")} caption="2026" />
-        </motion.div>
-
-        <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginTop: 28 }}>
-          {t("HOVER TO TILT")}
-        </p>
-      </div>
-    </section>
-  )
-}
 
 /* ─────────────────────── FINAL CTA ─────────────────────── */
 
@@ -1998,7 +1957,6 @@ export default function Landing() {
       <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
-      <LazyOnView style={{ minHeight: 400 }}><Awards /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
       <LaraLandingWidget />
     </div>

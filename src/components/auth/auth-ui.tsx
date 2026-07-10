@@ -302,7 +302,7 @@ export function SubmitButton({
 const socialProof = [
   { icon: "⚡", text: "AI plan in 15 seconds" },
   { icon: "🛡", text: "Life Shields protect your streak" },
-  { icon: "📈", text: "2,400+ learners staying consistent" },
+  { icon: "📈", text: "A live pass probability from day one" },
 ]
 
 function LeftPanel() {

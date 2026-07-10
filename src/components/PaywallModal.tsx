@@ -168,6 +168,7 @@ export default function PaywallModal({
 
   const handleCheckout = (priceId: string | undefined) => {
     trackEvent("upgrade_started", { plan: planFor(priceId) })
+    trackEvent("paywall_checkout_clicked", { type })
     const ok = openCheckout(priceId, email, user?.id)
     if (!ok) {
       setNotice("Couldn't open checkout. Please try again.")

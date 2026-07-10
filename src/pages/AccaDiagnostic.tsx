@@ -28,6 +28,7 @@ import { MOCK_PASS } from "@/lib/acca-loop"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { RingGauge, BreakdownList } from "@/components/acca/charts"
 import PaywallModal from "@/components/PaywallModal"
+import { trackEvent } from "@/lib/analytics"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -226,6 +227,7 @@ export default function AccaDiagnostic() {
     setQuestions(qs)
     setIdx(0)
     setTimeLeft(diagnosticSeconds(qs.length))
+    trackEvent("diagnostic_started", { paper: paperId, questions: qs.length, fromOnboarding: fromWelcome })
     setPhase("assessing")
   }
 
@@ -250,6 +252,7 @@ export default function AccaDiagnostic() {
     const timer = setTimeout(() => {
       setResult(scored)
       setPhase("results")
+      trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome })
       void persistDiagnostic(scored)
       queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
     }, 1600)

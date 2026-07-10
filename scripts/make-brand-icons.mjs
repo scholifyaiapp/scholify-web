@@ -58,4 +58,16 @@ icoSizes.forEach((size, i) => {
   entries.push(e)
 })
 writeFileSync("public/favicon.ico", Buffer.concat([header, ...entries, ...pngs]))
-console.log("brand icons written: favicon.png, favicon.ico (16/32/48), icon-192.png, icon-512.png")
+// OG share image — 1200×630, warm paper, mark + wordmark + tagline.
+const og = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630">
+  <rect width="1200" height="630" fill="#FAFAF7"/>
+  <circle cx="1080" cy="80" r="340" fill="rgba(200,0,0,0.06)"/>
+  <circle cx="120" cy="590" r="300" fill="rgba(244,164,5,0.07)"/>
+  ${mark.replace('viewBox="0 0 200 200"', 'viewBox="0 0 200 200" width="170" height="170" x="90" y="120"').replace(/<\?xml[^>]*\?>/, "")}
+  <text x="90" y="400" font-family="Arial, sans-serif" font-weight="800" font-size="86" fill="#14141A" letter-spacing="-3">Scholify</text>
+  <text x="90" y="462" font-family="Arial, sans-serif" font-weight="600" font-size="34" fill="#5F584F">The Learning OS for ACCA</text>
+  <text x="90" y="530" font-family="monospace" font-weight="600" font-size="22" fill="#C80000" letter-spacing="4">KNOW YOU'LL PASS BEFORE YOU SIT</text>
+  <rect x="0" y="622" width="1200" height="8" fill="#C80000"/>
+</svg>`
+await sharp(Buffer.from(og), { density: 150 }).png().toFile("public/og-image.png")
+console.log("brand icons written: favicon.png, favicon.ico (16/32/48), icon-192.png, icon-512.png, og-image.png")

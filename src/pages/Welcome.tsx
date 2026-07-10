@@ -8,6 +8,7 @@ import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qual
 import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
 import { GOAL_OPTIONS, setGoal, setExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
+import { trackEvent } from "@/lib/analytics"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -176,7 +177,11 @@ export default function Welcome() {
 
   function go(delta: number) {
     setDir(delta)
-    setStep((s) => Math.min(TOTAL - 1, Math.max(0, s + delta)))
+    setStep((s) => {
+      const next = Math.min(TOTAL - 1, Math.max(0, s + delta))
+      if (next !== s) trackEvent("onboarding_step", { step: next, direction: delta > 0 ? "forward" : "back" })
+      return next
+    })
   }
 
   useEffect(() => {
@@ -200,11 +205,12 @@ export default function Welcome() {
     markAccaOnboarded()
   }
 
-  const finishToDiagnostic = () => { persist(); setStartMode("assess"); navigate("/study/diagnostic?next=paywall") }
-  const finishSkip = () => { persist(); setStartMode("assess"); navigate("/dashboard") }
+  const onboardingProps = () => ({ paper, minutes, target, goal, hasExamDate: Boolean(examDate) })
+  const finishToDiagnostic = () => { persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" }); navigate("/study/diagnostic?next=paywall") }
+  const finishSkip = () => { persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "skip" }); navigate("/dashboard") }
   // Brand-new learner: study FIRST — the Dashboard gates the diagnostic
   // behind initial coverage instead of testing zero knowledge.
-  const finishZero = () => { persist(); setStartMode("zero"); navigate("/dashboard") }
+  const finishZero = () => { persist(); setStartMode("zero"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "zero_start" }); navigate("/dashboard") }
 
   const slideAnim = {
     variants: reduced ? fadeVariants : slideVariants,
