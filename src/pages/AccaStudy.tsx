@@ -15,7 +15,7 @@ import GenerateView from "@/components/acca/GenerateView"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
 import JourneyMap from "@/components/acca/JourneyMap"
 import PostMortemPanel from "@/components/acca/PostMortemPanel"
-import {
+import { getQuestions,
   getPaper,
   buildSession,
   buildAdaptiveSession,
@@ -78,6 +78,17 @@ type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session"
 const SESSION_SIZE = 8
 const LEARN_SIZE = 5 // the guided first questions after a Topic Brief
 const MOCK_SIZE = 12
+/**
+ * Exam-scale mock size — with deep banks a mock should feel like the
+ * sitting (founder spec): 30 questions (45 min) on 100+ question banks,
+ * 20 (30 min) on 60+, else the legacy 12 (18 min).
+ */
+function mockSize(paperId: string): number {
+  const bank = getQuestions(paperId).length
+  if (bank >= 100) return 30
+  if (bank >= 60) return 20
+  return MOCK_SIZE
+}
 const MOCK_SECONDS_PER_Q = 90
 // Single source of truth for the onboarding flag (shared with Dashboard).
 const wasOnboarded = isAccaOnboarded
@@ -253,7 +264,7 @@ export default function AccaStudy() {
       }
     }
     const seed = (Date.now() % 100000) + 1
-    const size = mock ? MOCK_SIZE : SESSION_SIZE
+    const size = mock ? mockSize(paperId) : SESSION_SIZE
     // "Target my weak areas" uses the adaptive engine (weak areas + matched
     // difficulty + spaced reinforcement); plain practice stays a fresh shuffle.
     const qs = weakFirst && !mock ? buildAdaptiveSession(paperId, size, seed) : buildSession(paperId, size, { weakFirst }, seed)
@@ -1227,7 +1238,7 @@ function Overview({
             <ModeTile
               icon="mock"
               title={mockProgress(paper.id).examReady ? "Mock exam — keep it warm" : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED}`}
-              sub={`${MOCK_SIZE} questions, timed, no hints — pass line ${MOCK_PASS}%`}
+              sub={`${mockSize(paper.id)} questions · ${Math.round((mockSize(paper.id) * MOCK_SECONDS_PER_Q) / 60)} min, timed, no hints — pass line ${MOCK_PASS}%`}
               onClick={onMock}
               locked={!isPro}
               primary={phase.key === "rehearse"}

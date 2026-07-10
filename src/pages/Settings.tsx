@@ -148,6 +148,35 @@ function ExamSetupSection() {
           })}
         </span>
       </SettingRow>
+      <SettingRow name="Target before exam day" desc="The pass probability your plan pushes toward">
+        <span style={{ display: "inline-flex", gap: 6 }}>
+          {[65, 75, 85].map((v) => {
+            const on = plan.targetProb === v
+            return (
+              <motion.button
+                key={v}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => updatePlan({ targetProb: v })}
+                style={{
+                  minWidth: 52,
+                  height: 38,
+                  padding: "0 10px",
+                  borderRadius: R.sm,
+                  border: `1.5px solid ${on ? C.brand : C.border}`,
+                  background: on ? C.brandSoft : "var(--sch-card)",
+                  color: on ? C.brand : C.text,
+                  fontWeight: 750,
+                  fontSize: 13.5,
+                  cursor: "pointer",
+                  transition: "background .15s ease, border-color .15s ease, color .15s ease",
+                }}
+              >
+                {v}%
+              </motion.button>
+            )
+          })}
+        </span>
+      </SettingRow>
       <SettingRow name="Daily study minutes" desc="Target study time per day" last>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
           <motion.button

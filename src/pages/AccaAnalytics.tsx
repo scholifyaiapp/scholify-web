@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { getExamIntel, avgPassRate } from "@/lib/acca-examiner"
+import { getBankRuns, bankRunProgress, BANK_RUNS_TARGET } from "@/lib/acca-bankruns"
 import { Icon, IconBadge, Card, Badge, SectionLabel, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, BreakdownList, TrendBars, DeltaChip, Sparkbars, bandColor } from "@/components/acca/charts"
 import { getPaper, getPaperStats, getTodayStats, getDailyActivity, getDailyGoal, setDailyGoal, type AccaPaper } from "@/lib/acca"
@@ -975,6 +976,24 @@ function ExamSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) 
       </div>
 
       {/* real exam history */}
+      {(() => {
+        const runs = getBankRuns(paperId)
+        const br = bankRunProgress(paperId)
+        if (runs.length === 0) return null
+        return (
+          <Card style={{ marginBottom: SP.md }}>
+            <CardTitle icon="check" right={br.best != null ? <span style={{ fontSize: 12, color: C.soft, textTransform: "none", letterSpacing: 0 }}>best <b style={{ color: C.green }}>{br.best}%</b></span> : undefined}>
+              Bank runs · {Math.min(br.done, BANK_RUNS_TARGET)} of {BANK_RUNS_TARGET}
+            </CardTitle>
+            {runs.length >= 2 ? (
+              <TrendBars points={runs.map((r) => ({ date: r.date, percent: r.percent }))} passLine={50} unit="bank run" />
+            ) : (
+              <Measuring>One more bank run and the trend draws itself — 50 whole-paper questions under the clock.</Measuring>
+            )}
+          </Card>
+        )
+      })()}
+
       <ExaminerIntelligence paperId={paperId} paper={paper} />
 
       <Card>
