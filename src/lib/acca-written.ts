@@ -1,3 +1,4 @@
+import { WRITTEN_WAVE2 } from "@/lib/acca-written-wave2"
 /*
  * Scholify — ACCA written (constructed-response) questions for the AI Examiner.
  *
@@ -317,6 +318,7 @@ export const WRITTEN_QUESTIONS: WrittenQuestion[] = [
       "Standing and quality: board support, adherence to professional standards, and periodic external quality review.",
     ],
   },
+  ...WRITTEN_WAVE2,
 ]
 
 export function getWrittenQuestions(paperId: string): WrittenQuestion[] {
