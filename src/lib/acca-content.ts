@@ -1,3 +1,5 @@
+import { FA_WAVE2 } from "@/lib/acca-content-fa2"
+import { FR_WAVE2 } from "@/lib/acca-content-fr2"
 /*
  * Scholify — ACCA content: papers, syllabus areas, and a seed question bank.
  *
@@ -1484,4 +1486,6 @@ export const QUESTIONS: AccaQuestion[] = [
     explanation: "The estate above the nil rate band is £500,000 − £325,000 = £175,000, taxed at 40% = £70,000.",
     marks: 2, difficulty: "medium",
   },
+  ...FA_WAVE2,
+  ...FR_WAVE2,
 ]
