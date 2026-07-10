@@ -17,6 +17,29 @@ export const GOAL_OPTIONS: { value: Goal; label: string; blurb: string }[] = [
   { value: "career", label: "Build my finance career", blurb: "ACCA membership is the plan — paper by paper." },
 ]
 
+/**
+ * How the learner enters the loop (set on the onboarding ready slide):
+ *  - "zero"   — brand new to the paper: learn the basics FIRST; the
+ *                diagnostic unlocks after initial study (Dashboard gates it).
+ *  - "assess" — has prior knowledge (studied before / failed a sitting):
+ *                the diagnostic is the honest starting point.
+ */
+export type StartMode = "zero" | "assess"
+
+const START_KEY = "scholify-acca-startmode"
+
+export function getStartMode(): StartMode {
+  try {
+    const v = window.localStorage.getItem(START_KEY)
+    if (v === "zero" || v === "assess") return v
+  } catch { /* ignore */ }
+  return "assess"
+}
+
+export function setStartMode(m: StartMode): void {
+  try { window.localStorage.setItem(START_KEY, m) } catch { /* ignore */ }
+}
+
 const KEY = "scholify-acca-experience"
 const ONBOARDED_KEY = "scholify-acca-onboarded"
 const GOAL_KEY = "scholify-acca-goal"

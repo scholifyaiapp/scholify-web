@@ -16,7 +16,7 @@ import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOC
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
-import { isAccaOnboarded, getGoal, GOAL_OPTIONS } from "@/lib/acca-profile"
+import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
 import { format } from "date-fns"
 
 /*
@@ -73,6 +73,11 @@ export default function Dashboard() {
 
   if (!paper) return null
   const noDiag = prob === null
+  // Brand-new learners (start mode "zero") learn the basics BEFORE the
+  // diagnostic: the gate opens at 15 answered questions on this paper.
+  const stats = getPaperStats(paperId)
+  const DIAG_UNLOCK_ANSWERS = 15
+  const zeroStart = noDiag && getStartMode() === "zero" && stats.answered < DIAG_UNLOCK_ANSWERS
 
   return (
     <DashboardLayout>
@@ -102,8 +107,39 @@ export default function Dashboard() {
           />
         )}
 
+        {/* brand-new learner — learn the basics first; the diagnostic unlocks at 15 answers */}
+        {zeroStart && !examDue && (
+          <Card style={{ padding: SP["3xl"], marginBottom: SP.md }}>
+            <div style={{ display: "flex", gap: SP.lg, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <span style={{ flex: "none", width: 56, height: 56, borderRadius: 16, background: C.brandSoft, display: "grid", placeItems: "center" }}>
+                <Icon name="learn" size={26} color={C.brand} />
+              </span>
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Start here — learn the basics</div>
+                <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>New to {paper.id}? Perfect. We start with the first topic.</h2>
+                <p style={{ ...TYPE.body, color: C.soft, margin: "0 0 14px", lineHeight: 1.6 }}>
+                  Read the topic brief, try the first guided questions, flip the flashcards. Once you've answered{" "}
+                  <strong style={{ color: C.text }}>{DIAG_UNLOCK_ANSWERS} questions</strong>, the diagnostic unlocks and sets your
+                  starting pass probability — measured fairly, after you've met the basics.
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, maxWidth: 380 }}>
+                  <div style={{ flex: 1, height: 8, background: C.card2, borderRadius: R.pill, overflow: "hidden" }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (stats.answered / DIAG_UNLOCK_ANSWERS) * 100)}%` }} transition={{ duration: 0.8 }} style={{ height: "100%", background: IRIDESCENT, borderRadius: R.pill }} />
+                  </div>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                    {stats.answered} / {DIAG_UNLOCK_ANSWERS} <span style={{ color: C.faint, fontWeight: 600 }}>to diagnostic</span>
+                  </span>
+                </div>
+                <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate("/study")} style={{ padding: "14px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15, cursor: "pointer" }}>
+                  Open topic 1 — the brief & first questions
+                </motion.button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* no diagnostic yet — one CTA, nothing else competes */}
-        {noDiag && !examDue && (
+        {noDiag && !zeroStart && !examDue && (
           <Card style={{ textAlign: "center", padding: SP["4xl"], marginBottom: SP.md }}>
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} style={{ display: "inline-flex", marginBottom: 12 }}>
               <span style={{ width: 62, height: 62, borderRadius: 18, background: C.brandSoft, display: "grid", placeItems: "center" }}>

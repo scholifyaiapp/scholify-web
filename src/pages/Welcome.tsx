@@ -7,7 +7,7 @@ import { ScholifyMark } from "@/components/brand"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
 import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
-import { GOAL_OPTIONS, setGoal, setExperience, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
+import { GOAL_OPTIONS, setGoal, setExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -151,6 +151,7 @@ export default function Welcome() {
   const [showPassed, setShowPassed] = useState(false)
   const [paper, setPaper] = useState<string | null>(null)
   const [minutes, setMinutes] = useState(25)
+  const [customMin, setCustomMin] = useState("")
   const [slot, setSlot] = useState("19:00")
   const [examDate, setExamDate] = useState("")
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
@@ -199,8 +200,11 @@ export default function Welcome() {
     markAccaOnboarded()
   }
 
-  const finishToDiagnostic = () => { persist(); navigate("/study/diagnostic?next=paywall") }
-  const finishSkip = () => { persist(); navigate("/dashboard") }
+  const finishToDiagnostic = () => { persist(); setStartMode("assess"); navigate("/study/diagnostic?next=paywall") }
+  const finishSkip = () => { persist(); setStartMode("assess"); navigate("/dashboard") }
+  // Brand-new learner: study FIRST — the Dashboard gates the diagnostic
+  // behind initial coverage instead of testing zero knowledge.
+  const finishZero = () => { persist(); setStartMode("zero"); navigate("/dashboard") }
 
   const slideAnim = {
     variants: reduced ? fadeVariants : slideVariants,
@@ -224,7 +228,7 @@ export default function Welcome() {
         isMobile={isMobile}
       />
     ),
-    2: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} />,
+    2: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} customMin={customMin} setCustomMin={setCustomMin} />,
     3: (
       <SittingSlide
         sessionPaper={sessionPaper}
@@ -247,6 +251,7 @@ export default function Welcome() {
         goal={goal}
         onDiagnostic={finishToDiagnostic}
         onSkip={finishSkip}
+        onZero={finishZero}
         isMobile={isMobile}
       />
     ),
@@ -318,7 +323,7 @@ export default function Welcome() {
                 if (info.offset.x < -70 && canAdvance && step < TOTAL - 1) go(1)
                 else if (info.offset.x > 70 && step > 0) go(-1)
               }}
-              style={{ position: "absolute", inset: 0, overflowY: "auto", padding: step === 0 ? "284px 24px 12px" : "22px 24px 12px", display: "flex", flexDirection: "column" }}
+              style={{ position: "absolute", inset: 0, overflowY: "auto", padding: step === 0 ? "284px 24px 56px" : "22px 24px 56px", display: "flex", flexDirection: "column" }}
             >
               {step === 0 ? (
                 <>
@@ -328,6 +333,7 @@ export default function Welcome() {
                   <p style={{ margin: "16px 0 0", font: `400 15px/1.5 ${SANS}`, color: BODY, maxWidth: 300 }}>
                     A GPS for ACCA: it measures where you are, hands you the next task daily, and recalculates until you pass.
                   </p>
+                  <ValueTrio style={{ marginTop: 18 }} />
                   <WaypointChips style={{ marginTop: 24 }} />
                 </>
               ) : (
@@ -361,7 +367,10 @@ export default function Welcome() {
           {step === 5 ? (
             <>
               <PrimaryBtn onClick={finishToDiagnostic} big>Find my pass probability</PrimaryBtn>
-              <button onClick={finishSkip} style={{ width: "100%", marginTop: 10, padding: 15, borderRadius: 15, background: "transparent", color: MUTE, font: `700 14px/1 ${SANS}`, border: `1.5px solid ${BORDER}`, cursor: "pointer" }}>
+              <button onClick={finishZero} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "#fff", color: META, font: `650 12.5px/1.4 ${SANS}`, border: `1.5px dashed ${BORDER}`, cursor: "pointer" }}>
+                <b style={{ color: INK }}>Brand new to {paper}?</b> Learn first — diagnostic unlocks after the basics.
+              </button>
+              <button onClick={finishSkip} style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
                 Skip for now
               </button>
             </>
@@ -409,10 +418,10 @@ export default function Welcome() {
               key={step}
               {...slideAnim}
               transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-              style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 620, overflowY: "auto", paddingRight: 8 }}
+              style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", maxWidth: 620, overflowY: "auto", paddingRight: 8 }}
             >
               {step === 0 ? (
-                <div>
+                <div style={{ margin: "auto 0", paddingBottom: 12 }}>
                   <div style={kicker}>A GPS for ACCA</div>
                   <h1 style={{ margin: 0, font: `800 clamp(32px, 3vw, 43px)/1.05 ${SANS}`, letterSpacing: "-1.4px", color: INK }}>
                     Welcome{firstName ? `, ${firstName}` : ""}. Let's pass your next paper.
@@ -420,10 +429,11 @@ export default function Welcome() {
                   <p style={{ margin: "20px 0 0", font: `400 18px/1.5 ${SANS}`, color: BODY, maxWidth: 460 }}>
                     It measures where you are, hands you the next task daily, and recalculates until you pass.
                   </p>
+                  <ValueTrio style={{ marginTop: 22 }} big />
                   <WaypointChips style={{ marginTop: 30 }} big />
                 </div>
               ) : (
-                <div>
+                <div style={{ margin: "auto 0", padding: "18px 0 24px" }}>
                   {step === 5 ? (
                     <div style={{ ...kicker, color: GREEN, display: "flex", alignItems: "center", gap: 7 }}>
                       <Icon name="done" size={14} color={GREEN} /> Ready
@@ -495,6 +505,27 @@ const kicker: CSSProperties = {
 }
 
 /* ── shared slide bodies ─────────────────────────────────────── */
+
+/** What Scholify actually gives you — shown on the hero so the value is explicit. */
+function ValueTrio({ style, big }: { style?: CSSProperties; big?: boolean }) {
+  const items: { icon: IconName; text: string }[] = [
+    { icon: "diagnostic", text: "A live pass probability — know where you stand every day" },
+    { icon: "mission", text: "Daily missions built from YOUR weakest areas" },
+    { icon: "tutor", text: "Lara: AI tutor on every question + examiner-style marking" },
+  ]
+  return (
+    <div style={{ display: "grid", gap: big ? 9 : 8, ...style }}>
+      {items.map((it, i) => (
+        <motion.div key={it.text} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 + i * 0.12 }} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <span style={{ flex: "none", width: big ? 26 : 24, height: big ? 26 : 24, borderRadius: 8, background: "rgba(200,0,0,.08)", display: "grid", placeItems: "center" }}>
+            <Icon name={it.icon} size={big ? 14 : 13} color={RED} />
+          </span>
+          <span style={{ font: `600 ${big ? 13.5 : 12.5}px/1.4 ${SANS}`, color: "#3E3831" }}>{it.text}</span>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
 
 function WaypointChips({ style, big }: { style?: CSSProperties; big?: boolean }) {
   const chip = (label: string, filled = false): CSSProperties => ({
@@ -602,15 +633,29 @@ function PaperSlide({
   )
 }
 
-function TimeSlide({ minutes, setMinutes, slot, setSlot }: { minutes: number; setMinutes: (n: number) => void; slot: string; setSlot: (s: string) => void }) {
-  const micro = MINUTE_OPTIONS.find((m) => m.v === minutes)?.micro ?? ""
+function TimeSlide({
+  minutes, setMinutes, slot, setSlot, customMin, setCustomMin,
+}: {
+  minutes: number
+  setMinutes: (n: number) => void
+  slot: string
+  setSlot: (s: string) => void
+  customMin: string
+  setCustomMin: (v: string) => void
+}) {
+  const isCustom = customMin !== ""
+  const micro = isCustom
+    ? minutes >= 90
+      ? "Marathon pace — remember: consistency beats intensity. Daily beats heroic."
+      : `${minutes} minutes, every day, protected — the loop will size your missions to fit.`
+    : MINUTE_OPTIONS.find((m) => m.v === minutes)?.micro ?? ""
   return (
     <div style={{ maxWidth: 440 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
         {MINUTE_OPTIONS.map((m) => {
-          const on = minutes === m.v
+          const on = !isCustom && minutes === m.v
           return (
-            <button key={m.v} onClick={() => setMinutes(m.v)} style={{ ...tileStyle(on), padding: "20px 18px" }}>
+            <button key={m.v} onClick={() => { setCustomMin(""); setMinutes(m.v) }} style={{ ...tileStyle(on), padding: "20px 18px" }}>
               <div style={{ font: `800 34px/1 ${SANS}`, letterSpacing: "-1px", color: INK }}>
                 {m.v}
                 <span style={{ font: `600 13px/1 ${MONO}`, color: FAINT }}> min</span>
@@ -620,7 +665,26 @@ function TimeSlide({ minutes, setMinutes, slot, setSlot }: { minutes: number; se
           )
         })}
       </div>
-      <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 14, background: "rgba(200,0,0,.05)", border: "1px solid rgba(200,0,0,.14)", font: `500 13px/1.45 ${SANS}`, color: "#8A2222" }}>
+      <div style={{ marginTop: 11, display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${isCustom ? RED : BORDER}`, background: isCustom ? "rgba(200,0,0,.05)" : "#fff", transition: "all .18s" }}>
+        <span style={{ font: `600 12.5px/1.3 ${SANS}`, color: isCustom ? RED : META, flex: 1 }}>My own number:</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={5}
+          max={240}
+          placeholder="e.g. 35"
+          value={customMin}
+          onChange={(e) => {
+            const raw = e.target.value
+            setCustomMin(raw)
+            const n = Math.round(Number(raw))
+            if (Number.isFinite(n) && n >= 5) setMinutes(Math.min(240, n))
+          }}
+          style={{ width: 84, padding: "10px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: PAGE, color: INK, font: `800 15px/1 ${SANS}`, textAlign: "center" }}
+        />
+        <span style={{ font: `600 12px/1 ${MONO}`, color: FAINT }}>min/day</span>
+      </div>
+      <div style={{ marginTop: 11, padding: "14px 16px", borderRadius: 14, background: "rgba(200,0,0,.05)", border: "1px solid rgba(200,0,0,.14)", font: `500 13px/1.45 ${SANS}`, color: "#8A2222" }}>
         {micro}
       </div>
       <div style={{ marginTop: 22, font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>My daily slot</div>
@@ -746,7 +810,7 @@ function GoalSlide({
 }
 
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, onDiagnostic, onSkip, isMobile,
+  paper, minutes, slot, examDate, sitting, goal, onDiagnostic, onSkip, onZero, isMobile,
 }: {
   paper: string
   minutes: number
@@ -756,6 +820,7 @@ function ReadySlide({
   goal: Goal | null
   onDiagnostic: () => void
   onSkip: () => void
+  onZero: () => void
   isMobile: boolean
 }) {
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
@@ -789,12 +854,18 @@ function ReadySlide({
         </span>
       </div>
       {!isMobile && (
-        <div style={{ marginTop: 32, display: "flex", gap: 12 }}>
-          <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-            Find my pass probability
-          </motion.button>
-          <button onClick={onSkip} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
-            Skip for now
+        <div style={{ marginTop: 28 }}>
+          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+            <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
+              Find my pass probability
+            </motion.button>
+            <button onClick={onSkip} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
+              Skip for now
+            </button>
+          </div>
+          <button onClick={onZero} style={{ display: "flex", alignItems: "center", gap: 9, padding: "13px 18px", borderRadius: 13, background: "#fff", border: `1.5px dashed ${BORDER}`, color: META, font: `650 13.5px/1.35 ${SANS}`, cursor: "pointer", textAlign: "left" }}>
+            <Icon name="learn" size={16} color={RED} />
+            <span><b style={{ color: INK }}>Brand new to {paper}?</b> Learn the basics first — the diagnostic will unlock once you've covered them.</span>
           </button>
         </div>
       )}

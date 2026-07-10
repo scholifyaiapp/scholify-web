@@ -610,9 +610,26 @@ function DiagnosticTimer({ secondsLeft, total }: { secondsLeft: number; total: n
 /* ── Lara's plan — operational · tactical · strategic ─────────── */
 
 function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb: number }) {
+  const navigate = useNavigate()
   const plan = getPlan(result.paperId)
   const study = generateStudyPlan(result.paperId)
   const qual = qualificationProgress()
+
+  // The generation moment: Lara "builds" the plan in front of the learner.
+  const BUILD_STEPS = [
+    "Reading your weakest areas",
+    "Weighting the " + result.paperId + " syllabus",
+    "Sizing your daily block",
+    "Dating the road to your sitting",
+  ]
+  const [built, setBuilt] = useState(0)
+  useEffect(() => {
+    if (built >= BUILD_STEPS.length) return
+    const t = setTimeout(() => setBuilt((b) => b + 1), 620)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [built])
+  const ready = built >= BUILD_STEPS.length
 
   // Strategic pace: months per paper scales with the daily commitment.
   const monthsPerPaper = plan.dailyMinutes >= 60 ? 2.5 : plan.dailyMinutes >= 40 ? 3 : plan.dailyMinutes >= 25 ? 3.5 : 4.5
@@ -622,23 +639,23 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
   const doneLabel = done.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
 
   const firstPhases = study.phases.slice(0, 2)
-  const focus = result.weakest[0]?.label ?? "your weakest areas"
+  const weakQueue = result.weakest.slice(0, 3)
 
   const tiers: { icon: Parameters<typeof Icon>[0]["name"]; k: string; title: string; body: string }[] = [
     {
       icon: "mission",
       k: "OPERATIONAL · EVERY DAY",
       title: `${plan.dailyGoal} questions · ${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}`,
-      body: `Daily missions start on ${focus} — the fastest points first. Every answer moves your probability.`,
+      body: "Same time, same block, every day — consistency is the whole trick.",
     },
     {
       icon: "calendar",
       k: "TACTICAL · THIS MONTH",
       title: firstPhases.length
-        ? firstPhases.map((p) => `${p.label} ${p.range}`).join(" → ")
+        ? firstPhases.map((ph) => `${ph.label} ${ph.range}`).join(" → ")
         : "Learn phase — cover every syllabus area, topic by topic",
       body: firstPhases.length
-        ? `Phase by phase to exam week: ${study.phases.map((p) => p.label).join(" → ")}.`
+        ? `Phase by phase to exam week: ${study.phases.map((ph) => ph.label).join(" → ")}.`
         : "Set your exam date in Settings and this becomes a dated, week-by-week schedule.",
     },
     {
@@ -649,36 +666,128 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
     },
   ]
 
+  // The daily block structure — the founder's method, drawn.
+  const dailyBlock: { icon: Parameters<typeof Icon>[0]["name"]; label: string }[] = [
+    { icon: "learn", label: "Brief" },
+    { icon: "practice", label: "Practice" },
+    { icon: "flashcards", label: "Cards" },
+    { icon: "check", label: "Bank" },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
-      style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}
+      style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16, overflow: "hidden" }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: C.brand, letterSpacing: 0.4, marginBottom: 12 }}>
         <Icon name="tutor" size={15} color={C.brand} /> LARA'S PLAN TO {targetProb}%
       </div>
-      <div style={{ display: "grid", gap: 12 }}>
-        {tiers.map((t, i) => (
-          <motion.div
-            key={t.k}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 + i * 0.12 }}
-            style={{ display: "flex", gap: 12, alignItems: "flex-start" }}
-          >
-            <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: C.brandSoft, display: "grid", placeItems: "center" }}>
-              <Icon name={t.icon} size={16} color={C.brand} />
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 2 }}>{t.k}</div>
-              <div style={{ fontSize: 14, fontWeight: 750, color: TEXT, lineHeight: 1.35 }}>{t.title}</div>
-              <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginTop: 2 }}>{t.body}</div>
-            </div>
-          </motion.div>
-        ))}
+
+      {/* the build-up — checklist ticking in */}
+      <div style={{ display: "grid", gap: 7, marginBottom: ready ? 16 : 4 }}>
+        {BUILD_STEPS.map((step, i) => {
+          const done_ = i < built
+          const active = i === built
+          return (
+            <motion.div key={step} initial={{ opacity: 0, x: -10 }} animate={{ opacity: i <= built ? 1 : 0.3, x: 0 }} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              {done_ ? (
+                <motion.span initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 18 }}>
+                  <Icon name="done" size={15} color={GREEN} />
+                </motion.span>
+              ) : active ? (
+                <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }} style={{ width: 15, height: 15, borderRadius: 999, border: `2px solid ${CARD2}`, borderTopColor: C.brand, display: "inline-block" }} />
+              ) : (
+                <span style={{ width: 15, height: 15, borderRadius: 999, border: `2px solid ${CARD2}`, display: "inline-block" }} />
+              )}
+              <span style={{ fontSize: 13, fontWeight: done_ ? 700 : 500, color: done_ ? TEXT : MUTED }}>{step}</span>
+            </motion.div>
+          )
+        })}
       </div>
+
+      <AnimatePresence>
+        {ready && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+            {/* your daily block — the structured method */}
+            <div style={{ padding: "14px 16px", borderRadius: 14, background: CARD2, marginBottom: 14 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 10 }}>
+                YOUR DAILY BLOCK{plan.studyTime ? ` · ${plan.studyTime}` : ""} · {plan.dailyMinutes} MIN
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {dailyBlock.map((b, i) => (
+                  <motion.span key={b.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.1 }} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 999, background: CARD, border: `1px solid ${BORDER}`, fontSize: 12, fontWeight: 750, color: TEXT }}>
+                      <Icon name={b.icon} size={13} color={C.brand} /> {b.label}
+                    </span>
+                    {i < dailyBlock.length - 1 && <Icon name="arrow" size={11} color={DIM} />}
+                  </motion.span>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, color: MUTED, marginTop: 9, lineHeight: 1.5 }}>
+                Concepts & formulas first, then questions, then recall, then the clock — every day, in that order.
+              </div>
+            </div>
+
+            {/* the weak-area queue — where the marks come back from */}
+            {weakQueue.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 8 }}>FIRST TARGETS — YOUR FASTEST MARKS</div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {weakQueue.map((a, i) => (
+                    <motion.div key={a.code} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.12 }} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ flex: "none", width: 22, height: 22, borderRadius: 999, background: i === 0 ? C.brand : CARD2, color: i === 0 ? "#fff" : MUTED, display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800 }}>{i + 1}</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: TEXT }}>{a.code} · {a.label}</span>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: a.score < 0.4 ? RED : AMBER, fontVariantNumeric: "tabular-nums" }}>{Math.round(a.score * 100)}%</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* the road to the mock gate */}
+            <div style={{ padding: "13px 16px", borderRadius: 14, border: `1px solid ${BORDER}`, marginBottom: 16 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 9 }}>THE ROAD FROM {result.passProbability}%</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 11.5, fontWeight: 750, color: MUTED }}>
+                <span style={{ color: TEXT }}>Topics</span><Icon name="chevron" size={12} color={DIM} />
+                <span style={{ color: TEXT }}>Bank runs</span><Icon name="chevron" size={12} color={DIM} />
+                <span style={{ padding: "3px 9px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: C.brand }}>60% unlocks MOCK</span><Icon name="chevron" size={12} color={DIM} />
+                <span style={{ color: TEXT }}>Mock 1·2·3</span><Icon name="chevron" size={12} color={DIM} />
+                <span style={{ padding: "3px 9px", borderRadius: 999, background: "rgba(14,159,110,0.1)", color: GREEN }}>{targetProb}% → exam day</span>
+              </div>
+            </div>
+
+            {/* the three horizons */}
+            <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+              {tiers.map((t, i) => (
+                <motion.div key={t.k} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.45 + i * 0.12 }} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: C.brandSoft, display: "grid", placeItems: "center" }}>
+                    <Icon name={t.icon} size={16} color={C.brand} />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 2 }}>{t.k}</div>
+                    <div style={{ fontSize: 14, fontWeight: 750, color: TEXT, lineHeight: 1.35 }}>{t.title}</div>
+                    <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginTop: 2 }}>{t.body}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* day 1 starts NOW */}
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/study?do=weak")}
+              style={{ width: "100%", padding: "15px 20px", borderRadius: 13, border: `1.5px solid ${C.brand}`, background: "rgba(200,0,0,0.05)", color: C.brand, fontWeight: 800, fontSize: 14.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              <Icon name="mission" size={16} color={C.brand} /> Start day 1 now — {weakQueue[0] ? `drill ${weakQueue[0].code}` : "first mission"}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
