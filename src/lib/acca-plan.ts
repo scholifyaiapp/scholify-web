@@ -22,11 +22,17 @@ export interface PaperPlan {
   studyTime: string | null
   /** Minutes the learner committed to per day. */
   dailyMinutes: number
+  /**
+   * Target pass probability before exam day (the learner's ambition, set at
+   * onboarding: 65 pass-ready · 75 confident · 85 bulletproof). The
+   * diagnostic "wow" moment and Lara's plan are framed against this number.
+   */
+  targetProb: number
 }
 
 type Store = Record<string, PaperPlan>
 
-const DEFAULT_PLAN: PaperPlan = { examDate: null, dailyGoal: 15, studyTime: null, dailyMinutes: 25 }
+const DEFAULT_PLAN: PaperPlan = { examDate: null, dailyGoal: 15, studyTime: null, dailyMinutes: 25, targetProb: 75 }
 
 function read(): Store {
   try {

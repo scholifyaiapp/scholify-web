@@ -17,9 +17,12 @@ import {
   scoreDiagnostic,
   passBand,
   getLatestDiagnostic,
+  diagnosticSeconds,
   type DiagnosticResult,
   type AnsweredDiagnostic,
 } from "@/lib/acca-diagnostic"
+import { getPlan, generateStudyPlan } from "@/lib/acca-plan"
+import { qualificationProgress } from "@/lib/acca-qualification"
 import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { MOCK_PASS } from "@/lib/acca-loop"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
@@ -182,6 +185,24 @@ export default function AccaDiagnostic() {
   const answersRef = useRef<AnsweredDiagnostic[]>([])
   const [result, setResult] = useState<DiagnosticResult | null>(null)
   const [prior, setPrior] = useState<DiagnosticResult | null>(() => getLatestDiagnostic(defaultPaper))
+  // Exam-style countdown: 100s per question (24 questions → 40:00). At 0 the
+  // form auto-submits — what's answered is scored, honestly.
+  const [timeLeft, setTimeLeft] = useState(0)
+
+  useEffect(() => {
+    if (phase !== "assessing") return
+    const t = setInterval(() => {
+      setTimeLeft((s) => {
+        if (s <= 1) {
+          clearInterval(t)
+          setPhase("analyzing")
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [phase])
 
   const paper = getPaper(paperId)
 
@@ -204,6 +225,7 @@ export default function AccaDiagnostic() {
     answersRef.current = []
     setQuestions(qs)
     setIdx(0)
+    setTimeLeft(diagnosticSeconds(qs.length))
     setPhase("assessing")
   }
 
@@ -260,9 +282,9 @@ export default function AccaDiagnostic() {
                 Know your real <span style={iriText}>chance to pass</span>.
               </h1>
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
-                A short, syllabus-spanning check — around {Math.min(20, questions.length || 16)} questions. No streaks, no
-                hints. At the end you get a pass probability, an estimated exam score, your weakest areas, and the exact
-                lift that gets you over the line.
+                A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to 25
+                questions, <strong style={{ color: TEXT }}>timed like the real exam</strong> (100 seconds each, ~40 minutes).
+                No hints. At the end: your pass probability, estimated score, weakest areas, and Lara's plan to your target.
               </p>
 
               <Card style={{ marginBottom: 16 }}>
@@ -308,10 +330,11 @@ export default function AccaDiagnostic() {
 
           {phase === "assessing" && questions[idx] && (
             <motion.div key="assessing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 10 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: MUTED }}>
                   Question {idx + 1} / {questions.length}
                 </span>
+                <DiagnosticTimer secondsLeft={timeLeft} total={diagnosticSeconds(questions.length)} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: DIM, background: CARD2, padding: "3px 9px", borderRadius: 999 }}>
                   {paper?.code} · Area {questions[idx].area}
                 </span>
@@ -410,6 +433,8 @@ function ResultsView({
   const band = passBand(result.passProbability)
   const lift = result.target.projectedPassProbability - result.passProbability
   const confidencePct = Math.round(result.confidence * 100)
+  const plan = getPlan(result.paperId)
+  const gap = Math.max(0, plan.targetProb - result.passProbability)
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
@@ -418,13 +443,32 @@ function ResultsView({
       </div>
 
       {/* Headline */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 0 26px" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 0 18px" }}>
         <RingGauge value={result.passProbability} size={200} stroke={14} color={band.color} label="chance to pass" target={MOCK_PASS} />
         <div style={{ marginTop: 14, fontSize: 17, fontWeight: 700, color: band.color }}>{band.label}</div>
         <div style={{ marginTop: 4, fontSize: 13.5, color: MUTED }}>
           Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark {MOCK_PASS}%
         </div>
       </div>
+
+      {/* The target gap — the number the whole plan chases */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 22, flexWrap: "wrap" }}
+      >
+        <span style={{ fontSize: 22, fontWeight: 800, color: band.color, fontVariantNumeric: "tabular-nums" }}>{result.passProbability}%</span>
+        <span style={{ flex: "none", width: 60, height: 2, background: `linear-gradient(90deg, ${band.color}, ${GREEN})`, borderRadius: 999, position: "relative" }}>
+          <Icon name="arrow" size={14} color={GREEN} style={{ position: "absolute", right: -7, top: -6 }} />
+        </span>
+        <span style={{ fontSize: 22, fontWeight: 800, color: GREEN, fontVariantNumeric: "tabular-nums" }}>{plan.targetProb}%</span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, background: CARD2, padding: "5px 12px", borderRadius: 999 }}>
+          your target · {gap > 0 ? `${gap} points to build` : "already there — let's prove it"}
+        </span>
+      </motion.div>
+
+      <LaraPlan result={result} targetProb={plan.targetProb} />
 
       {/* The promise */}
       {lift > 0 && result.target.focusAreas.length > 0 && (
@@ -534,3 +578,107 @@ const backLink = {
   cursor: "pointer",
   padding: 0,
 } as const
+
+/* ── Exam-style countdown (100s/question) ─────────────────────── */
+
+function DiagnosticTimer({ secondsLeft, total }: { secondsLeft: number; total: number }) {
+  const mm = Math.floor(secondsLeft / 60)
+  const ss = `${secondsLeft % 60}`.padStart(2, "0")
+  const frac = total > 0 ? secondsLeft / total : 0
+  const low = secondsLeft <= 300 // final five minutes
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 11px", borderRadius: 999, background: low ? "rgba(239,68,68,0.09)" : CARD2, border: `1px solid ${low ? "rgba(239,68,68,0.35)" : "transparent"}` }}>
+      <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden>
+        <circle cx="10" cy="10" r="8" fill="none" stroke="var(--sch-border)" strokeWidth="2.5" />
+        <circle
+          cx="10" cy="10" r="8" fill="none"
+          stroke={low ? RED : C.brand}
+          strokeWidth="2.5" strokeLinecap="round"
+          strokeDasharray={2 * Math.PI * 8}
+          strokeDashoffset={2 * Math.PI * 8 * (1 - frac)}
+          transform="rotate(-90 10 10)"
+          style={{ transition: "stroke-dashoffset 1s linear, stroke .3s" }}
+        />
+      </svg>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: low ? RED : TEXT, fontVariantNumeric: "tabular-nums" }}>
+        {mm}:{ss}
+      </span>
+    </span>
+  )
+}
+
+/* ── Lara's plan — operational · tactical · strategic ─────────── */
+
+function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb: number }) {
+  const plan = getPlan(result.paperId)
+  const study = generateStudyPlan(result.paperId)
+  const qual = qualificationProgress()
+
+  // Strategic pace: months per paper scales with the daily commitment.
+  const monthsPerPaper = plan.dailyMinutes >= 60 ? 2.5 : plan.dailyMinutes >= 40 ? 3 : plan.dailyMinutes >= 25 ? 3.5 : 4.5
+  const remaining = Math.max(0, qual.totalExams - qual.passedCount - 1)
+  const done = new Date()
+  done.setMonth(done.getMonth() + Math.round((remaining + 1) * monthsPerPaper))
+  const doneLabel = done.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+
+  const firstPhases = study.phases.slice(0, 2)
+  const focus = result.weakest[0]?.label ?? "your weakest areas"
+
+  const tiers: { icon: Parameters<typeof Icon>[0]["name"]; k: string; title: string; body: string }[] = [
+    {
+      icon: "mission",
+      k: "OPERATIONAL · EVERY DAY",
+      title: `${plan.dailyGoal} questions · ${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}`,
+      body: `Daily missions start on ${focus} — the fastest points first. Every answer moves your probability.`,
+    },
+    {
+      icon: "calendar",
+      k: "TACTICAL · THIS MONTH",
+      title: firstPhases.length
+        ? firstPhases.map((p) => `${p.label} ${p.range}`).join(" → ")
+        : "Learn phase — cover every syllabus area, topic by topic",
+      body: firstPhases.length
+        ? `Phase by phase to exam week: ${study.phases.map((p) => p.label).join(" → ")}.`
+        : "Set your exam date in Settings and this becomes a dated, week-by-week schedule.",
+    },
+    {
+      icon: "roadmap",
+      k: "STRATEGIC · THE QUALIFICATION",
+      title: `${result.paperId} now · ${remaining} paper${remaining === 1 ? "" : "s"} after it`,
+      body: `At your pace (~${monthsPerPaper} months a paper), membership lands around ${doneLabel}. Every pass re-dates the road.`,
+    },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+      style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: C.brand, letterSpacing: 0.4, marginBottom: 12 }}>
+        <Icon name="tutor" size={15} color={C.brand} /> LARA'S PLAN TO {targetProb}%
+      </div>
+      <div style={{ display: "grid", gap: 12 }}>
+        {tiers.map((t, i) => (
+          <motion.div
+            key={t.k}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 + i * 0.12 }}
+            style={{ display: "flex", gap: 12, alignItems: "flex-start" }}
+          >
+            <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: C.brandSoft, display: "grid", placeItems: "center" }}>
+              <Icon name={t.icon} size={16} color={C.brand} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 2 }}>{t.k}</div>
+              <div style={{ fontSize: 14, fontWeight: 750, color: TEXT, lineHeight: 1.35 }}>{t.title}</div>
+              <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginTop: 2 }}>{t.body}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}

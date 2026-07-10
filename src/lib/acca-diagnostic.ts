@@ -42,7 +42,7 @@ const LOGISTIC_K = 0.11
 /** Questions sampled per syllabus area (capped by what the bank holds). */
 const PER_AREA = 3
 /** Hard ceiling on diagnostic length so it stays ~15–20 min. */
-const MAX_QUESTIONS = 20
+const MAX_QUESTIONS = 25
 /** The improvement target we coach toward for weak areas. */
 export const TARGET_AREA_SCORE = 0.7
 
@@ -107,34 +107,41 @@ function shuffle<T>(arr: T[], seed: number): T[] {
   return a
 }
 
-/** Pick up to `n` questions from a pool, spread across difficulty for a fair read. */
-function pickSpread(pool: AccaQuestion[], n: number, seed: number): AccaQuestion[] {
+/**
+ * Pick a stratified difficulty ladder from a pool: exactly one easy, one
+ * medium, one hard when available — falling back to the nearest difficulty
+ * so every area still contributes PER_AREA questions on a thin bank.
+ */
+function pickLadder(pool: AccaQuestion[], seed: number): AccaQuestion[] {
   const buckets: Record<Difficulty, AccaQuestion[]> = {
     easy: shuffle(pool.filter((q) => q.difficulty === "easy"), seed),
     medium: shuffle(pool.filter((q) => q.difficulty === "medium"), seed + 1),
     hard: shuffle(pool.filter((q) => q.difficulty === "hard"), seed + 2),
   }
-  const order: Difficulty[] = ["medium", "easy", "hard"]
+  const fallback: Record<Difficulty, Difficulty[]> = {
+    easy: ["easy", "medium", "hard"],
+    medium: ["medium", "easy", "hard"],
+    hard: ["hard", "medium", "easy"],
+  }
   const out: AccaQuestion[] = []
-  while (out.length < n) {
-    let progressed = false
-    for (const d of order) {
-      if (out.length >= n) break
+  for (const want of ["easy", "medium", "hard"] as Difficulty[]) {
+    for (const d of fallback[want]) {
       const next = buckets[d].shift()
       if (next) {
         out.push(next)
-        progressed = true
+        break
       }
     }
-    if (!progressed) break
   }
   return out
 }
 
 /**
- * Build a syllabus-spanning diagnostic: up to PER_AREA questions from every
- * area that has content, difficulty-balanced, capped at MAX_QUESTIONS. Returns
- * [] when the paper has no seed bank.
+ * Build the diagnostic form: a stratified difficulty ladder — one easy, one
+ * medium, one hard — from EVERY syllabus area (fair, syllabus-spanning, and
+ * comparable between takes), capped at MAX_QUESTIONS. FA's 8 areas → 24
+ * questions; the exam-style budget is 100 seconds per question (see
+ * diagnosticSeconds). Returns [] when the paper has no seed bank.
  */
 export function buildDiagnostic(paperId: string, seed = Date.now()): AccaQuestion[] {
   const paper = getPaper(paperId)
@@ -151,12 +158,17 @@ export function buildDiagnostic(paperId: string, seed = Date.now()): AccaQuestio
   const picked: AccaQuestion[] = []
   for (const area of paper.areas) {
     const pool = byArea.get(area.code)
-    if (pool && pool.length) picked.push(...pickSpread(pool, PER_AREA, seed))
+    if (pool && pool.length) picked.push(...pickLadder(pool, seed + area.code.charCodeAt(0)))
   }
 
   // If we're under the cap and the bank has spares, that's fine — a shorter
   // diagnostic on a thin paper still reports honestly (lower confidence).
   return shuffle(picked.slice(0, MAX_QUESTIONS), seed + 7)
+}
+
+/** Exam-style time budget for a diagnostic form: 100s per question (24 → 40 min). */
+export function diagnosticSeconds(questionCount: number): number {
+  return questionCount * 100
 }
 
 /* ── Scoring & the pass-probability model ─────────────────────── */

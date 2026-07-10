@@ -98,6 +98,13 @@ const GOAL_ICON: Record<Goal, IconName> = {
   career: "study",
 }
 
+/** Target pass probability before exam day — the ambition the plan aims at. */
+const TARGET_OPTIONS: { v: number; label: string; blurb: string }[] = [
+  { v: 65, label: "65%", blurb: "Pass-ready" },
+  { v: 75, label: "75%", blurb: "Confident · recommended" },
+  { v: 85, label: "85%", blurb: "Bulletproof" },
+]
+
 const TOTAL = 6
 
 // The split-screen needs real width; below 1080 the phone layout reads better.
@@ -148,6 +155,7 @@ export default function Welcome() {
   const [examDate, setExamDate] = useState("")
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
   const [goal, setGoalState] = useState<Goal | null>(null)
+  const [target, setTarget] = useState(75)
 
   const levels = useMemo(() => paperLevels(), [])
   const sittings = useMemo(() => nextSittings(3), [])
@@ -186,7 +194,7 @@ export default function Welcome() {
     if (goal) setGoal(goal)
     if (goal === "career") setExperience("professional")
     const questionsPerDay = minutes >= 60 ? 30 : minutes >= 40 ? 22 : minutes >= 25 ? 15 : 10
-    setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, dailyGoal: questionsPerDay })
+    setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, dailyGoal: questionsPerDay, targetProb: target })
     setDailyGoal(questionsPerDay)
     markAccaOnboarded()
   }
@@ -228,7 +236,7 @@ export default function Welcome() {
         setExamDate={setExamDate}
       />
     ),
-    4: <GoalSlide goal={goal} setGoal={setGoalState} />,
+    4: <GoalSlide goal={goal} setGoal={setGoalState} target={target} setTarget={setTarget} />,
     5: (
       <ReadySlide
         paper={paper ?? ""}
@@ -684,7 +692,14 @@ function SittingSlide({
   )
 }
 
-function GoalSlide({ goal, setGoal: set }: { goal: Goal | null; setGoal: (g: Goal) => void }) {
+function GoalSlide({
+  goal, setGoal: set, target, setTarget,
+}: {
+  goal: Goal | null
+  setGoal: (g: Goal) => void
+  target: number
+  setTarget: (n: number) => void
+}) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 11, maxWidth: 500 }}>
       {GOAL_OPTIONS.map((o) => {
@@ -701,6 +716,31 @@ function GoalSlide({ goal, setGoal: set }: { goal: Goal | null; setGoal: (g: Goa
           </button>
         )
       })}
+
+      {/* target pass probability — the number the whole plan will chase */}
+      <div style={{ marginTop: 10 }}>
+        <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>
+          Your target before exam day
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {TARGET_OPTIONS.map((t) => {
+            const on = target === t.v
+            return (
+              <button
+                key={t.v}
+                onClick={() => setTarget(t.v)}
+                style={{ flex: 1, padding: "13px 6px", borderRadius: 12, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", textAlign: "center" }}
+              >
+                <span style={{ display: "block", font: `800 17px/1 ${SANS}`, color: on ? RED : INK }}>{t.label}</span>
+                <span style={{ display: "block", marginTop: 4, font: `600 10.5px/1.2 ${SANS}`, color: on ? "#8A2222" : META }}>{t.blurb}</span>
+              </button>
+            )
+          })}
+        </div>
+        <p style={{ margin: "8px 0 0", font: `500 12px/1.4 ${SANS}`, color: MUTE }}>
+          Pass probability — the number your diagnostic sets and your plan pushes to this line.
+        </p>
+      </div>
     </div>
   )
 }
