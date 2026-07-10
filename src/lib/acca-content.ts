@@ -1,5 +1,7 @@
 import { FA_WAVE2 } from "@/lib/acca-content-fa2"
 import { FR_WAVE2 } from "@/lib/acca-content-fr2"
+import { TX_WAVE2A } from "@/lib/acca-content-tx2"
+import { TX_WAVE2B } from "@/lib/acca-content-tx3"
 /*
  * Scholify — ACCA content: papers, syllabus areas, and a seed question bank.
  *
@@ -1488,4 +1490,6 @@ export const QUESTIONS: AccaQuestion[] = [
   },
   ...FA_WAVE2,
   ...FR_WAVE2,
+  ...TX_WAVE2A,
+  ...TX_WAVE2B,
 ]
