@@ -998,11 +998,15 @@ Confusing mark-up with margin — 20% mark-up on a $24,000 sale is $4,000, but a
 ]
 
 import { SKILLS_BRIEFS } from "@/lib/acca-briefs-skills"
+import { AAFM_BRIEFS } from "@/lib/acca-briefs-aafm"
+import { KNOWLEDGE_BRIEFS } from "@/lib/acca-briefs-knowledge"
 
 /** Look up the brief for a paper + syllabus area, if one exists. */
 export function getTopicBrief(paperId: string, area: string): TopicBrief | undefined {
   return (
     TOPIC_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
-    SKILLS_BRIEFS.find((b) => b.paper === paperId && b.area === area)
+    SKILLS_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
+    AAFM_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
+    KNOWLEDGE_BRIEFS.find((b) => b.paper === paperId && b.area === area)
   )
 }
