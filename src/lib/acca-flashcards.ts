@@ -1,3 +1,4 @@
+import { FLASHCARDS_WAVE2 } from "@/lib/acca-flashcards-wave2"
 /*
  * Scholify — ACCA flashcards + a lightweight spaced-repetition layer.
  *
@@ -109,6 +110,7 @@ export const FLASHCARDS: Flashcard[] = [
   { id: "SBL-FC-3", paper: "SBL", area: "B", front: "Mendelow's matrix quadrants", back: "Key players (manage closely), keep satisfied (high power), keep informed (high interest), minimal effort (low/low). Axes: power × interest." },
   { id: "SBL-FC-4", paper: "SBL", area: "C", front: "TARA risk responses", back: "Transfer (insure/outsource), Avoid (exit the activity), Reduce (controls), Accept (retain low/low risks)." },
   { id: "SBL-FC-5", paper: "SBL", area: "A", front: "The three key board committees", back: "Audit (financial reporting & controls), remuneration (executive pay), nomination (board appointments & succession) — staffed by NEDs." },
+  ...FLASHCARDS_WAVE2,
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {
