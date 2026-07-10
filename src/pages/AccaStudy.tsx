@@ -50,8 +50,10 @@ import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAct
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
 import { isAccaOnboarded } from "@/lib/acca-profile"
+import { getTopicBrief } from "@/lib/acca-briefs"
+import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
 import type { PostMortemAction } from "@/lib/acca-ai"
-import { Icon, IconBadge, Badge, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
+import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
 
 /* ──────────────────────────────────────────────────────────────
@@ -71,9 +73,10 @@ const BORDER = "var(--sch-border)"
 const GREEN = "#10B981"
 const RED = "#EF4444"
 
-type Mode = "onboarding" | "picker" | "overview" | "topic" | "session" | "examiner" | "flashcards" | "generate" | "results" | "journey"
+type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "examiner" | "flashcards" | "generate" | "results" | "journey"
 
 const SESSION_SIZE = 8
+const LEARN_SIZE = 5 // the guided first questions after a Topic Brief
 const MOCK_SIZE = 12
 const MOCK_SECONDS_PER_Q = 90
 // Single source of truth for the onboarding flag (shared with Dashboard).
@@ -114,6 +117,7 @@ export default function AccaStudy() {
   const [correctCount, setCorrectCount] = useState(0)
   const [log, setLog] = useState<{ area: string; correct: boolean }[]>([])
   const [isMock, setIsMock] = useState(false)
+  const [isBankRun, setIsBankRun] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
 
   // topic path (Kaplan-style chapter flow)
@@ -186,7 +190,7 @@ export default function AccaStudy() {
   // mock countdown
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    if (mode === "session" && isMock) {
+    if (mode === "session" && (isMock || isBankRun)) {
       timerRef.current = setInterval(() => {
         setTimeLeft((t) => {
           if (t <= 1) {
@@ -201,13 +205,18 @@ export default function AccaStudy() {
         if (timerRef.current) clearInterval(timerRef.current)
       }
     }
-  }, [mode, isMock])
+  }, [mode, isMock, isBankRun])
 
   // Record a mock / knowledge check the moment its results screen appears.
   useEffect(() => {
     if (mode === "results" && paperId && questions.length) {
       if (isTopicTest && topicArea) {
         recordTopicTest(paperId, topicArea, correctCount / questions.length)
+      } else if (isBankRun) {
+        recordBankRun(paperId, correctCount, questions.length)
+        if (timeLeft === 0 && log.length < questions.length) {
+          recordMistake(paperId, "time", questions.length - log.length)
+        }
       } else if (isMock) {
         recordMock(paperId, correctCount, questions.length)
         // Questions the clock took are lost-to-time marks, not knowledge gaps.
@@ -257,6 +266,7 @@ export default function AccaStudy() {
     setCorrectCount(0)
     setLog([])
     setIsMock(mock)
+    setIsBankRun(false)
     setIsTopicTest(false)
     setTopicArea(null)
     setTimeLeft(mock ? qs.length * MOCK_SECONDS_PER_Q : 0)
@@ -265,10 +275,10 @@ export default function AccaStudy() {
   }
 
   /** Topic flow: practise one syllabus area, or sit its knowledge check. */
-  function startTopicSession(area: string, test: boolean) {
+  function startTopicSession(area: string, test: boolean, size = SESSION_SIZE) {
     if (!paperId) return
     const seed = (Date.now() % 100000) + 1
-    const qs = buildSession(paperId, test ? TOPIC_TEST_SIZE : SESSION_SIZE, { area }, seed)
+    const qs = buildSession(paperId, test ? TOPIC_TEST_SIZE : size, { area }, seed)
     if (qs.length === 0) {
       toast.info("No curated questions for this topic yet — try Custom practice.")
       return
@@ -278,9 +288,33 @@ export default function AccaStudy() {
     setCorrectCount(0)
     setLog([])
     setIsMock(test) // knowledge checks run under exam conditions: timed, no hints
+    setIsBankRun(false)
     setIsTopicTest(test)
     setTopicArea(area)
     setTimeLeft(test ? qs.length * MOCK_SECONDS_PER_Q : 0)
+    resetQuestion()
+    setMode("session")
+  }
+
+  /** Bank Run — 50 whole-paper questions under the clock (75 min). Free,
+   * pre-gate: the bridge from Learn to the Mock room. */
+  function startBankRun() {
+    if (!paperId) return
+    const seed = (Date.now() % 100000) + 1
+    const qs = buildSession(paperId, BANK_RUN_SIZE, {}, seed)
+    if (qs.length < 10) {
+      toast.info("Not enough questions in this paper's bank yet for a bank run.")
+      return
+    }
+    setQuestions(qs)
+    setIdx(0)
+    setCorrectCount(0)
+    setLog([])
+    setIsMock(false)
+    setIsBankRun(true)
+    setIsTopicTest(false)
+    setTopicArea(null)
+    setTimeLeft(qs.length * BANK_RUN_SECONDS_PER_Q)
     resetQuestion()
     setMode("session")
   }
@@ -395,6 +429,7 @@ export default function AccaStudy() {
               isPro={isPro}
               onBack={() => { setPaperId(null); setMode("picker") }}
               onPractice={() => startSession(false, false)}
+              onBankRun={startBankRun}
               onWeak={() => startSession(true, false)}
               onMock={() => startSession(false, true)}
               onExaminer={openExaminer}
@@ -412,13 +447,25 @@ export default function AccaStudy() {
             <JourneyMap key="journey" paperId={paperId} onBack={() => setMode("overview")} />
           )}
 
+          {mode === "brief" && paper && topicArea && (
+            <BriefReader
+              key={`brief-${topicArea}`}
+              paper={paper}
+              area={topicArea}
+              onBack={() => setMode("topic")}
+              onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+            />
+          )}
+
           {mode === "topic" && paper && topicArea && (
             <TopicView
               key={`topic-${topicArea}`}
               paper={paper}
               area={topicArea}
               onBack={() => { setTopicArea(null); setTick((t) => t + 1); setMode("overview") }}
-              onLearn={() => startTopicSession(topicArea, false)}
+              onBrief={() => setMode("brief")}
+              onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+              onDrill={() => startTopicSession(topicArea, false)}
               onTest={() => startTopicSession(topicArea, true)}
               onFlashcards={() => setMode("flashcards")}
             />
@@ -435,7 +482,7 @@ export default function AccaStudy() {
               graded={graded}
               wasCorrect={wasCorrect}
               canSubmit={canSubmit}
-              isMock={isMock}
+              isMock={isMock || isBankRun}
               timeLeft={timeLeft}
               onChoice={setChoice}
               onNum={setNumInput}
@@ -470,10 +517,11 @@ export default function AccaStudy() {
               correct={correctCount}
               total={questions.length}
               isMock={isMock}
+              isBankRun={isBankRun}
               isTopicTest={isTopicTest}
               topicArea={topicArea}
               log={log}
-              onAgain={() => (isTopicTest && topicArea ? startTopicSession(topicArea, true) : startSession(false, isMock))}
+              onAgain={() => (isTopicTest && topicArea ? startTopicSession(topicArea, true) : isBankRun ? startBankRun() : startSession(false, isMock))}
               onOverview={leaveSession}
               onAction={runLoopAction}
             />
@@ -789,6 +837,7 @@ function Overview({
   isPro,
   onBack,
   onPractice,
+  onBankRun,
   onWeak,
   onMock,
   onExaminer,
@@ -804,6 +853,7 @@ function Overview({
   isPro: boolean
   onBack: () => void
   onPractice: () => void
+  onBankRun: () => void
   onWeak: () => void
   onMock: () => void
   onExaminer: () => void
@@ -1160,6 +1210,18 @@ function Overview({
 
       <SectionHead icon="mock">Exam room</SectionHead>
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+        {curated && (() => {
+          const br = bankRunProgress(paper.id)
+          return (
+            <ModeTile
+              icon="check"
+              title={br.done >= BANK_RUNS_TARGET ? "Bank run — stay sharp" : `Bank run ${br.done + 1} of ${BANK_RUNS_TARGET} · ${BANK_RUN_SIZE} questions`}
+              sub={`The whole paper under the clock (${Math.round((BANK_RUN_SIZE * BANK_RUN_SECONDS_PER_Q) / 60)} min) — the bridge from Learn to the mock gate${br.best !== null ? ` · best ${br.best}%` : ""}`}
+              onClick={onBankRun}
+              primary={!gate.unlocked && br.done < BANK_RUNS_TARGET && phase.key !== "learn"}
+            />
+          )
+        })()}
         {curated && (
           gate.unlocked ? (
             <ModeTile
@@ -1377,12 +1439,14 @@ function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; cura
 /* ── Topic hub: learn → flashcards → knowledge check ──────────── */
 
 function TopicView({
-  paper, area, onBack, onLearn, onTest, onFlashcards,
+  paper, area, onBack, onBrief, onLearn, onDrill, onTest, onFlashcards,
 }: {
   paper: AccaPaper
   area: string
   onBack: () => void
+  onBrief: () => void
   onLearn: () => void
+  onDrill: () => void
   onTest: () => void
   onFlashcards: () => void
 }) {
@@ -1391,6 +1455,7 @@ function TopicView({
   const stats = getPaperStats(paper.id)
   const areaStats = stats.areas.find((a) => a.code === area)
   const areaCards = getFlashcards(paper.id).filter((c) => c.area === area).length
+  const brief = getTopicBrief(paper.id, area)
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
@@ -1425,18 +1490,29 @@ function TopicView({
         />
       </div>
 
-      {/* the topic loop */}
-      <h3 style={sectionH}>1 · LEARN</h3>
+      {/* the topic loop — understand → learn 5 → memorise → prove → drill */}
+      <h3 style={sectionH}>1 · UNDERSTAND</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-        <ModeTile icon="learn" title={`Practise this topic · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & Ask Lara — questions from this topic only" onClick={onLearn} primary={!result.mastered} />
+        <ModeTile
+          icon="learn"
+          title={brief ? `Topic brief · ${brief.minutes} min read` : "Topic brief"}
+          sub="The concept, the formulas, one worked example, and the classic traps — read this first"
+          onClick={onBrief}
+          primary={(areaStats?.seen ?? 0) === 0}
+        />
       </div>
 
-      <h3 style={sectionH}>2 · MEMORISE</h3>
+      <h3 style={sectionH}>2 · LEARN THE ESSENTIALS</h3>
+      <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+        <ModeTile icon="practice" title={`First ${LEARN_SIZE} questions — guided`} sub="Instant marking, explanations & Ask Lara — the essentials of this topic only" onClick={onLearn} primary={!result.mastered && (areaStats?.seen ?? 0) > 0 && (areaStats?.seen ?? 0) < LEARN_SIZE} />
+      </div>
+
+      <h3 style={sectionH}>3 · MEMORISE</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
         <ModeTile icon="flashcards" title="Topic flashcards" sub={areaCards > 0 ? `${areaCards} card${areaCards === 1 ? "" : "s"} for this topic — swipe to review` : "No cards for this topic yet — practice still counts"} onClick={onFlashcards} />
       </div>
 
-      <h3 style={sectionH}>3 · PROVE IT</h3>
+      <h3 style={sectionH}>4 · PROVE IT</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 8 }}>
         <ModeTile
           icon="check"
@@ -1446,9 +1522,110 @@ function TopicView({
           primary={result.mastered ? false : (areaStats?.seen ?? 0) >= 4}
         />
       </div>
+      <h3 style={{ ...sectionH, marginTop: 16 }}>5 · DRILL TO DEPTH</h3>
+      <div style={{ ...card({ padding: 16 }), marginBottom: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 750, color: TEXT }}>Practice ladder</span>
+          <span style={{ fontSize: 12.5, fontWeight: 800, color: (areaStats?.seen ?? 0) >= 65 ? GREEN : TEXT, fontVariantNumeric: "tabular-nums" }}>{Math.min(65, areaStats?.seen ?? 0)} / 65</span>
+        </div>
+        <div style={{ height: 7, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
+          <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, ((areaStats?.seen ?? 0) / 65) * 100)}%` }} transition={{ duration: 0.8 }} style={{ height: "100%", background: (areaStats?.seen ?? 0) >= 65 ? GREEN : IRIDESCENT, borderRadius: 999 }} />
+        </div>
+        <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, margin: "0 0 12px" }}>
+          {(areaStats?.seen ?? 0) >= 65
+            ? "Depth reached — this topic can carry exam marks. Keep it warm with flashcards."
+            : "Mastery is proven at the check — depth is built here. 65 questions on one topic is where passers live."}
+        </p>
+        <ModeTile icon="weak" title={`Drill ${SESSION_SIZE} more`} sub="Fresh questions from this topic — Custom practice (Pro) adds unlimited more" onClick={onDrill} primary={result.mastered && (areaStats?.seen ?? 0) < 65} />
+      </div>
       <p style={{ fontSize: 11.5, color: DIM, lineHeight: 1.5, margin: 0 }}>
-        The tuition-provider loop: learn the chapter, check your knowledge, only then move on. Retakes are unlimited — the best score counts.
+        The tuition-provider loop: understand the chapter, learn by doing, check your knowledge, then drill to depth. Retakes are unlimited — the best score counts.
       </p>
+    </motion.div>
+  )
+}
+
+/** The Topic Brief — the "understand first" layer of the Learn stage. */
+const BRIEF_SECTION_META: Record<string, { icon: IconName; label: string }> = {
+  concept: { icon: "learn", label: "THE IDEA" },
+  structure: { icon: "stats", label: "RULES & FORMULAS" },
+  example: { icon: "practice", label: "WORKED EXAMPLE" },
+  traps: { icon: "weak", label: "CLASSIC TRAPS" },
+}
+
+function BriefReader({
+  paper, area, onBack, onLearn,
+}: {
+  paper: AccaPaper
+  area: string
+  onBack: () => void
+  onLearn: () => void
+}) {
+  const brief = getTopicBrief(paper.id, area)
+  if (!brief) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <button onClick={onBack} style={backBtn}>← Topic</button>
+        <p style={{ color: MUTED, fontSize: 14 }}>No brief for this topic yet — jump straight into the guided questions.</p>
+        <Button onClick={onLearn} size="lg" full>Start the first {LEARN_SIZE} questions</Button>
+      </motion.div>
+    )
+  }
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      <button onClick={onBack} style={backBtn}>← Topic</button>
+      <p style={{ color: DIM, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, margin: "0 0 4px" }}>
+        {paper.id} · TOPIC {area} · {brief.minutes} MIN READ
+      </p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 18px", color: TEXT, lineHeight: 1.25 }}>{brief.title}</h1>
+
+      <div style={{ display: "grid", gap: 14 }}>
+        {brief.sections.map((sec, i) => {
+          const meta = BRIEF_SECTION_META[sec.kind] ?? BRIEF_SECTION_META.concept
+          const isStructure = sec.kind === "structure"
+          return (
+            <motion.div
+              key={sec.kind + i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 * i }}
+              style={card({ padding: 18, borderLeft: sec.kind === "traps" ? "3px solid #C80000" : undefined })}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: sec.kind === "traps" ? RED : C.brand, marginBottom: 8 }}>
+                <Icon name={meta.icon} size={14} color={sec.kind === "traps" ? RED : C.brand} /> {meta.label}
+              </div>
+              <div style={{ fontSize: 13.5, fontWeight: 750, color: TEXT, marginBottom: 6 }}>{sec.heading}</div>
+              {sec.body.split("\n\n").map((para, j) => (
+                <p
+                  key={j}
+                  style={{
+                    fontSize: isStructure ? 13 : 14,
+                    color: isStructure ? TEXT : MUTED,
+                    lineHeight: 1.65,
+                    margin: j === 0 ? 0 : "10px 0 0",
+                    fontFamily: isStructure ? "'JetBrains Mono', ui-monospace, monospace" : undefined,
+                    background: isStructure ? "var(--sch-card-2)" : undefined,
+                    padding: isStructure ? "10px 12px" : undefined,
+                    borderRadius: isStructure ? 10 : undefined,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {para}
+                </p>
+              ))}
+            </motion.div>
+          )
+        })}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Button onClick={onLearn} size="lg" full>
+          Got it — first {LEARN_SIZE} questions <Icon name="arrow" size={17} color="#fff" />
+        </Button>
+        <p style={{ fontSize: 11.5, color: DIM, textAlign: "center", margin: "10px 0 0" }}>
+          Learn by doing: the questions teach the rest.
+        </p>
+      </div>
     </motion.div>
   )
 }
@@ -1831,12 +2008,13 @@ function actionBtn(active: boolean): CSSProperties {
 /* ── Results ──────────────────────────────────────────────────── */
 
 function Results({
-  paper, correct, total, isMock, isTopicTest, topicArea, log, onAgain, onOverview, onAction,
+  paper, correct, total, isMock, isBankRun = false, isTopicTest, topicArea, log, onAgain, onOverview, onAction,
 }: {
   paper: AccaPaper
   correct: number
   total: number
   isMock: boolean
+  isBankRun?: boolean
   isTopicTest?: boolean
   topicArea?: string | null
   log: { area: string; correct: boolean }[]
@@ -1867,7 +2045,7 @@ function Results({
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
       <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600, marginBottom: 14 }}>
-        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : "PRACTICE COMPLETE"}
+        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunProgress(paper.id).done} OF ${BANK_RUNS_TARGET} COMPLETE` : "PRACTICE COMPLETE"}
       </div>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
@@ -1974,7 +2152,7 @@ function Results({
 
       <div style={{ display: "grid", gap: 10, maxWidth: 340, margin: "0 auto" }}>
         <motion.button whileTap={{ scale: 0.99 }} onClick={onAgain} style={{ padding: 16, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 16, cursor: "pointer" }}>
-          {isMock ? "New mock" : "Practise again"}
+          {isMock ? "New mock" : isBankRun ? "Another bank run" : "Practise again"}
         </motion.button>
         <button onClick={onOverview} style={{ padding: 16, borderRadius: 14, border: `1px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 650, fontSize: 15, cursor: "pointer" }}>
           Back to {paper.id} overview

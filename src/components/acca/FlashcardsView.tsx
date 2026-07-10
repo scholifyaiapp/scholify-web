@@ -1,146 +1,205 @@
-import { useMemo, useState, type CSSProperties } from "react"
-import { motion, AnimatePresence } from "motion/react"
-import { iriText } from "@/components/dashboard-layout"
-import { Icon, IconBadge, Button, C, SP, R, SHADOW } from "@/components/acca/ui"
+import { useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence, useReducedMotion } from "motion/react"
+import { Icon, IconBadge, Button, C } from "@/components/acca/ui"
+import { ScholifyMark } from "@/components/brand"
 import { getDueFlashcards, getFlashcards, reviewFlashcard, type Flashcard } from "@/lib/acca-flashcards"
 
 /*
- * Flashcards — Leitner spaced repetition over the paper's key facts. Flip a
- * card, then SWIPE: right = got it, left = review again (buttons work too).
- * With an `area`, reviews that topic's whole deck (the topic-path loop);
- * without, reviews today's due cards across the paper.
+ * Flashcards — the reels experience. Full-screen, one card at a time:
+ * tap to flip, then SWIPE UP = got it, SWIPE DOWN = review again
+ * (buttons work too, and ← exits anytime).
+ *
+ * Deck sizing is knowledge-based: with an `area` it's that topic's whole
+ * deck (the topic-path loop); without, it's today's SRS-due cards — the
+ * spaced-repetition engine decides how many you need, not a fixed number.
  */
 
-function cardStyle(extra?: CSSProperties): CSSProperties {
-  return {
-    background: C.card,
-    border: `1px solid ${C.border}`,
-    borderRadius: R["2xl"],
-    padding: SP.xl,
-    boxShadow: SHADOW.sm,
-    ...extra,
-  }
-}
+const INK = "#14141A"
+const SANS = "'Plus Jakarta Sans', sans-serif"
+const MONO = "'JetBrains Mono', ui-monospace, monospace"
 
 export default function FlashcardsView({ paperId, area, onBack }: { paperId: string; area?: string; onBack: () => void }) {
+  const reduced = useReducedMotion()
   const [queue] = useState<Flashcard[]>(() =>
     area ? getFlashcards(paperId).filter((c) => c.area === area) : getDueFlashcards(paperId),
   )
   const [idx, setIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [reviewed, setReviewed] = useState(0)
-  const [exitX, setExitX] = useState(0)
+  const [gotIt, setGotIt] = useState(0)
+  const [exitY, setExitY] = useState(0)
 
   const total = useMemo(() => queue.length, [queue])
   const cardItem = queue[idx]
+  const done = !cardItem
 
   function grade(known: boolean) {
     if (!cardItem) return
     reviewFlashcard(cardItem.id, known)
     setReviewed((r) => r + 1)
-    setExitX(known ? 320 : -320)
-    if (idx + 1 >= queue.length) {
-      setIdx(queue.length) // done
-    } else {
-      setIdx((i) => i + 1)
-      setFlipped(false)
-    }
+    if (known) setGotIt((g) => g + 1)
+    setExitY(known ? -420 : 420)
+    setIdx((i) => i + 1)
+    setFlipped(false)
   }
 
-  const done = !cardItem
+  // Keyboard: space/enter flips, ↑ got it, ↓ review again, Esc exits.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onBack()
+      if (done) return
+      if ((e.key === " " || e.key === "Enter") && !flipped) { e.preventDefault(); setFlipped(true) }
+      if (flipped && e.key === "ArrowUp") grade(true)
+      if (flipped && e.key === "ArrowDown") grade(false)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  })
 
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-      <Button variant="ghost" onClick={onBack} style={{ minHeight: 40, padding: "6px 0", marginBottom: SP.md }}>
-        <Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} /> Back
-      </Button>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SP.lg }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: C.text }}>
-          <span style={iriText}>{area ? `Topic ${area} cards` : "Flashcards"}</span>
-        </h1>
-        {!done && <span style={{ color: C.faint, fontSize: 13 }}>{idx + 1} / {total}</span>}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        background: `radial-gradient(120% 90% at 80% 10%, rgba(200,0,0,0.16), transparent 55%), radial-gradient(90% 80% at 10% 95%, rgba(244,164,5,0.10), transparent 55%), ${INK}`,
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: SANS,
+      }}
+    >
+      {/* top bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 20px 0" }}>
+        <button onClick={onBack} aria-label="Exit" style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", borderRadius: 999, padding: "8px 14px", font: `700 12.5px/1 ${SANS}`, cursor: "pointer" }}>
+          <Icon name="arrow" size={14} color="#fff" style={{ transform: "rotate(180deg)" }} /> Exit
+        </button>
+        <div style={{ flex: 1, display: "flex", gap: 4 }}>
+          {Array.from({ length: Math.min(total, 40) }, (_, i) => (
+            <div key={i} style={{ flex: 1, height: 3, borderRadius: 999, background: i < idx ? "#C80000" : "rgba(255,255,255,0.18)", transition: "background .2s" }} />
+          ))}
+        </div>
+        <span style={{ font: `600 12px/1 ${MONO}`, color: "rgba(255,255,255,0.55)", fontVariantNumeric: "tabular-nums" }}>
+          {done ? total : idx + 1}/{total}
+        </span>
       </div>
 
-      {done ? (
-        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", paddingTop: SP["2xl"] }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: SP.md }}>
-            <IconBadge name="flashcards" tone="brand" size={64} />
-          </div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 4px" }}>
-            {reviewed > 0 ? `${reviewed} cards reviewed` : "All caught up!"}
-          </h2>
-          <p style={{ color: C.soft, margin: "0 0 24px", fontSize: 15 }}>
-            {reviewed > 0 ? "Nice work — come back tomorrow for the next batch." : "No cards are due right now. Check back later."}
-          </p>
-          <Button onClick={onBack} size="lg">Back to {paperId}</Button>
-        </motion.div>
-      ) : (
-        <>
-          <div style={{ perspective: 1200, overflow: "visible" }}>
-            <AnimatePresence mode="wait">
+      {/* the deck */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "18px 20px calc(20px + env(safe-area-inset-bottom))", minHeight: 0 }}>
+        {done ? (
+          <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", color: "#fff", maxWidth: 380 }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <ScholifyMark size={54} variant="white" />
+            </div>
+            <h2 style={{ font: `800 26px/1.2 ${SANS}`, margin: "0 0 8px" }}>
+              {reviewed > 0 ? `${reviewed} cards down.` : total === 0 ? "All caught up." : "Deck done."}
+            </h2>
+            <p style={{ font: `400 14.5px/1.6 ${SANS}`, color: "rgba(255,255,255,0.65)", margin: "0 0 22px" }}>
+              {reviewed > 0
+                ? `${gotIt} known · ${reviewed - gotIt} coming back sooner. Spaced repetition decides when you see each one again.`
+                : "No cards are due right now — the schedule will call you back when memory starts to fade."}
+            </p>
+            <Button onClick={onBack} size="lg">Back to {area ? `topic ${area}` : paperId}</Button>
+          </motion.div>
+        ) : (
+          <div style={{ width: "100%", maxWidth: 460, height: "100%", maxHeight: 620, position: "relative" }}>
+            {/* next-card peek */}
+            {queue[idx + 1] && (
+              <div aria-hidden style={{ position: "absolute", inset: "14px 10px -6px", borderRadius: 26, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", transform: "scale(0.96) translateY(14px)" }} />
+            )}
+            <AnimatePresence mode="popLayout">
               <motion.div
-                key={cardItem.id + (flipped ? "-b" : "-f")}
+                key={cardItem.id}
                 onClick={() => { if (!flipped) setFlipped(true) }}
-                drag={flipped ? "x" : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.8}
+                drag={reduced ? false : "y"}
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.7}
                 onDragEnd={(_, info) => {
-                  if (info.offset.x > 90) grade(true)
-                  else if (info.offset.x < -90) grade(false)
+                  if (!flipped) {
+                    if (Math.abs(info.offset.y) > 70) setFlipped(true)
+                    return
+                  }
+                  if (info.offset.y < -80) grade(true)
+                  else if (info.offset.y > 80) grade(false)
                 }}
-                whileDrag={{ rotate: 3, cursor: "grabbing" }}
-                initial={{ rotateY: flipped ? -90 : 0, opacity: flipped ? 0 : 1, x: 0 }}
-                animate={{ rotateY: 0, opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: exitX, rotate: exitX > 0 ? 8 : exitX < 0 ? -8 : 0 }}
-                transition={{ duration: 0.25 }}
+                whileDrag={{ scale: 0.98, cursor: "grabbing" }}
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 120, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: exitY, rotate: exitY < 0 ? -3 : 3 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                 style={{
-                  width: "100%",
-                  minHeight: 240,
-                  boxSizing: "border-box",
-                  ...cardStyle({ cursor: flipped ? "grab" : "pointer" }),
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 26,
+                  background: "#FAFAF7",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  boxShadow: "0 40px 90px -30px rgba(0,0,0,0.7)",
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  gap: SP.md,
-                  padding: SP["3xl"] - 4,
-                  border: flipped ? `1px solid ${C.green}` : `1px solid ${C.border}`,
-                  touchAction: "pan-y",
+                  padding: "22px 24px",
+                  cursor: flipped ? "grab" : "pointer",
+                  touchAction: "none",
+                  overflow: "hidden",
                 }}
               >
-                <span style={{ fontSize: 11, letterSpacing: 0.5, color: C.faint, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  {flipped ? (
-                    <>
-                      <Icon name="arrow" size={13} color={C.red} style={{ transform: "rotate(180deg)" }} />
-                      REVIEW · SWIPE · GOT IT
-                      <Icon name="arrow" size={13} color={C.green} />
-                    </>
-                  ) : (
-                    `AREA ${cardItem.area} · TAP TO FLIP`
-                  )}
-                </span>
-                <span style={{ fontSize: flipped ? 16 : 19, fontWeight: flipped ? 500 : 700, lineHeight: 1.5, color: C.text }}>
-                  {flipped ? cardItem.back : cardItem.front}
-                </span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ font: `700 10.5px/1 ${MONO}`, letterSpacing: "0.12em", color: "#C80000" }}>
+                    {cardItem.paper} · AREA {cardItem.area}
+                  </span>
+                  <span style={{ font: `600 10.5px/1 ${MONO}`, letterSpacing: "0.1em", color: "#A79E96" }}>
+                    {flipped ? "ANSWER" : "TAP TO FLIP"}
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 14, minHeight: 0 }}>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={flipped ? "back" : "front"}
+                      initial={{ opacity: 0, rotateX: reduced ? 0 : -70 }}
+                      animate={{ opacity: 1, rotateX: 0 }}
+                      exit={{ opacity: 0, rotateX: reduced ? 0 : 70 }}
+                      transition={{ duration: 0.22 }}
+                      style={{
+                        font: flipped ? `500 16.5px/1.6 ${SANS}` : `800 21px/1.4 ${SANS}`,
+                        color: "#14141A",
+                        overflowY: "auto",
+                        maxHeight: "100%",
+                        letterSpacing: flipped ? 0 : "-0.3px",
+                      }}
+                    >
+                      {flipped ? cardItem.back : cardItem.front}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+
+                {/* bottom hint / actions */}
+                {flipped ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <button onClick={(e) => { e.stopPropagation(); grade(false) }} style={{ padding: "13px 8px", borderRadius: 13, border: "1.5px solid #ECE4DE", background: "#fff", color: "#C80000", font: `750 13px/1 ${SANS}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <Icon name="arrow" size={14} color="#C80000" style={{ transform: "rotate(90deg)" }} /> Again soon
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); grade(true) }} style={{ padding: "13px 8px", borderRadius: 13, border: "none", background: "#0E9F6E", color: "#fff", font: `750 13px/1 ${SANS}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 10px 22px -10px rgba(14,159,110,0.6)" }}>
+                      Got it <Icon name="arrow" size={14} color="#fff" style={{ transform: "rotate(-90deg)" }} />
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "center", font: `600 10.5px/1 ${MONO}`, letterSpacing: "0.16em", color: "#C3BAB2", textTransform: "uppercase" }}>
+                    tap or swipe to reveal
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
+        )}
+      </div>
 
-          {flipped ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.sm, marginTop: SP.lg }}>
-              <Button variant="secondary" full onClick={() => grade(false)} style={{ color: C.red, borderColor: C.red }}>
-                <Icon name="arrow" size={16} style={{ transform: "rotate(180deg)" }} /> Review again
-              </Button>
-              <Button variant="secondary" full onClick={() => grade(true)} style={{ color: C.green, borderColor: C.green }}>
-                Got it <Icon name="arrow" size={16} />
-              </Button>
-            </div>
-          ) : (
-            <Button full onClick={() => setFlipped(true)} style={{ marginTop: SP.lg }}>Show answer</Button>
-          )}
-        </>
+      {/* swipe legend */}
+      {!done && flipped && (
+        <div style={{ position: "absolute", bottom: "calc(10px + env(safe-area-inset-bottom))", left: 0, right: 0, textAlign: "center", font: `600 10px/1 ${MONO}`, letterSpacing: "0.18em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", pointerEvents: "none" }}>
+          swipe up · got it&nbsp;&nbsp;·&nbsp;&nbsp;swipe down · again
+        </div>
       )}
     </motion.div>
   )
