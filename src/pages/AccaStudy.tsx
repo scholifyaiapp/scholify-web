@@ -2022,6 +2022,14 @@ function Results({
   onOverview: () => void
   onAction: (a: PostMortemAction) => void
 }) {
+  // Bank-run number: the parent records the run in an effect AFTER first
+  // paint, so a live read here would show the PREVIOUS count. Capture the
+  // pre-record count at mount: this run is number (done + 1).
+  const bankRunNo = useMemo(
+    () => (isBankRun ? Math.min(bankRunProgress(paper.id).done + 1, BANK_RUNS_TARGET) : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
   const passLine = isTopicTest ? Math.round(TOPIC_PASS * 100) : MOCK_PASS
   const passed = pct >= passLine
@@ -2045,7 +2053,7 @@ function Results({
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
       <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600, marginBottom: 14 }}>
-        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunProgress(paper.id).done} OF ${BANK_RUNS_TARGET} COMPLETE` : "PRACTICE COMPLETE"}
+        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunNo} OF ${BANK_RUNS_TARGET} COMPLETE` : "PRACTICE COMPLETE"}
       </div>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}

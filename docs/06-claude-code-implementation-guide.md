@@ -471,3 +471,10 @@ dashboard too — flag that for the user rather than guessing.
 
 *v1.0 — 2026-07-08. Verified against `origin/main` @ `8c52a8a`. Update this guide in the
 same commit when you change any law it states.*
+
+
+---
+
+## Addendum — Loop v2 modules (2026-07-10)
+
+New invariants: PaperPlan.targetProb is the plan's ambition (65/75/85, default 75) — the diagnostic gap strip and LaraPlan read it; StartMode (acca-profile) gates the Dashboard diagnostic CTA for zero-start learners (15 answers, DIAG_UNLOCK_ANSWERS); bank runs live in acca-bankruns.ts (BANK_RUN_SIZE 50, 90s/q, BANK_RUNS_TARGET 3) and record via recordBankRun in AccaStudy's results effect — note the effect fires AFTER first paint, so any "run N" display must capture its number at mount, not live-read; topic briefs: getTopicBrief falls back TOPIC_BRIEFS → SKILLS_BRIEFS — add new papers' briefs as new modules in that chain; question banks are modules spread into QUESTIONS (acca-content-<paper><n>.ts) — always run the dup-id check after wiring; funnel events (analytics.ts): onboarding_step/complete, diagnostic_started/completed, paywall_shown/dismissed/checkout_clicked — keep firing on any funnel change.

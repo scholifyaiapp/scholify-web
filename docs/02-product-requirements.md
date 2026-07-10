@@ -388,3 +388,18 @@ Aligned to the learning-OS layer map; none of these block the shipped loop:
 ---
 
 *Companion document: `docs/03-design-bible.md` — the UI/UX system this PRD's screens are built from.*
+
+
+---
+
+## Addendum — Loop v2 (2026-07-10, commits 2e4a655…95e91d0)
+
+**Onboarding additions:** target pass probability chips (65/75/85 → PaperPlan.targetProb, default 75); custom daily minutes input (5–240); ValueTrio on the hero; StartMode ("zero"|"assess") — the ready slide's "Brand new to {paper}?" exit sends zero-start learners to /dashboard where the diagnostic is gated behind 15 answered questions (DIAG_UNLOCK_ANSWERS, Dashboard.tsx) with a progress meter.
+
+**Diagnostic v2:** stratified ladder (1 easy + 1 medium + 1 hard from EVERY area, cap 25; FA 8 areas → 24), exam-style countdown 100s/question with auto-submit; results show the current→target gap strip then LaraPlan — a staged generation scene (4 build steps) revealing: the daily block (Brief → Practice → Cards → Bank at studyTime), the top-3 weak-area queue, the road strip (Topics → Bank runs → 60% MOCK gate → Mock 1·2·3 → target% → exam), three horizons (operational/tactical/strategic incl. estimated membership date), and "Start day 1" → /study?do=weak.
+
+**Topic flow (5 steps):** UNDERSTAND (Topic Brief: concept/structure/example/traps — acca-briefs.ts + acca-briefs-skills.ts, 22 briefs FA/FR/PM/TX) → LEARN THE ESSENTIALS (5 guided) → MEMORISE (reels flashcards: full-screen, swipe up=got it/down=again, story progress bar) → PROVE IT (65% check) → DRILL TO DEPTH (N/65 practice ladder).
+
+**Bank Runs (acca-bankruns.ts):** 3 × 50-question whole-paper timed sessions (90s/q = 75 min), free, pre-gate; last-10 history, best %; Exam-room tile "Bank run N of 3"; results title "BANK RUN N OF 3 COMPLETE" (run number captured at mount — the record effect fires after first paint).
+
+**Examiner Intelligence (acca-examiner.ts):** official per-sitting pass rates (Dec 24–Dec 25), per-area hotspots, paraphrased examiner themes — card in Analytics → Exam. Content program spec = docs/09.
