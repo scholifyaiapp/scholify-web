@@ -16,6 +16,7 @@ import { PM_WAVE2A } from "@/lib/acca-content-pm2"
 import { PM_WAVE2B } from "@/lib/acca-content-pm3"
 import { TX_WAVE2A } from "@/lib/acca-content-tx2"
 import { TX_WAVE2B } from "@/lib/acca-content-tx3"
+import { TX_WAVE3A } from "@/lib/acca-content-tx4"
 /*
  * Scholify — ACCA content: papers, syllabus areas, and a seed question bank.
  *
@@ -1520,4 +1521,5 @@ export const QUESTIONS: AccaQuestion[] = [
   ...PM_WAVE2B,
   ...TX_WAVE2A,
   ...TX_WAVE2B,
+  ...TX_WAVE3A,
 ]
