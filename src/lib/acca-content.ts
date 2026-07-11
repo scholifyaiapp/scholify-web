@@ -1,5 +1,6 @@
 import { FA_WAVE2 } from "@/lib/acca-content-fa2"
 import { FR_WAVE2 } from "@/lib/acca-content-fr2"
+import { FR_WAVE3A } from "@/lib/acca-content-fr3"
 import { FR_WAVE3B } from "@/lib/acca-content-fr4"
 import { AA_WAVE2 } from "@/lib/acca-content-aa2"
 import { BT_WAVE2 } from "@/lib/acca-content-bt2"
@@ -1498,6 +1499,7 @@ export const QUESTIONS: AccaQuestion[] = [
   },
   ...FA_WAVE2,
   ...FR_WAVE2,
+  ...FR_WAVE3A,
   ...FR_WAVE3B,
   ...AA_WAVE2,
   ...BT_WAVE2,
