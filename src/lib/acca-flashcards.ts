@@ -1,6 +1,7 @@
 import { FLASHCARDS_WAVE2 } from "@/lib/acca-flashcards-wave2"
 import { FLASHCARDS_WAVE3 } from "@/lib/acca-flashcards-wave3"
 import { FLASHCARDS_WAVE4 } from "@/lib/acca-flashcards-wave4"
+import { FLASHCARDS_WAVE5 } from "@/lib/acca-flashcards-wave5"
 /*
  * Scholify — ACCA flashcards + a lightweight spaced-repetition layer.
  *
@@ -115,6 +116,7 @@ export const FLASHCARDS: Flashcard[] = [
   ...FLASHCARDS_WAVE2,
   ...FLASHCARDS_WAVE3,
   ...FLASHCARDS_WAVE4,
+  ...FLASHCARDS_WAVE5,
 ]
 
 export function getFlashcards(paperId: string): Flashcard[] {
