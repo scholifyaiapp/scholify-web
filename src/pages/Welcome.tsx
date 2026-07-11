@@ -921,6 +921,7 @@ function VisualPanel({
   sittings: Sitting[]
   levels: ReturnType<typeof paperLevels>
 }) {
+  const reducedLoop = useReducedMotion()
   /* 0 · welcome photo + brand chip */
   if (step === 0) {
     return (
@@ -1031,41 +1032,74 @@ function VisualPanel({
     )
   }
 
-  /* 5 · the loop */
-  const orbit: { label: string; icon: IconName; left: number; top: number }[] = [
-    { label: "Diagnose", icon: "diagnostic", left: 210, top: 40 },
-    { label: "Learn", icon: "learn", left: 371, top: 157 },
-    { label: "Practise", icon: "practice", left: 310, top: 347 },
-    { label: "Mock", icon: "check", left: 110, top: 347 },
-    { label: "Exam", icon: "study", left: 49, top: 157 },
+  /* 5 · the loop — the REAL structure, six waypoints (matches the
+     hexagonal brand mark), positioned trigonometrically so the ring
+     scales with the panel instead of clipping at hardcoded pixels. */
+  const LOOP_STAGES: { label: string; sub: string; icon: IconName; gate?: boolean; win?: boolean }[] = [
+    { label: "Diagnose", sub: "40-min baseline", icon: "diagnostic" },
+    { label: "Learn", sub: "brief · 5 Qs · cards", icon: "learn" },
+    { label: "Drill", sub: "65 per topic", icon: "practice" },
+    { label: "Bank runs", sub: "3 × 50 timed", icon: "check" },
+    { label: "Mock 1·2·3", sub: "opens at 60%", icon: "mock", gate: true },
+    { label: "Exam day", sub: "pass → next paper", icon: "celebrate", win: true },
   ]
   return (
     <IllusBase>
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ position: "relative", width: 420, height: 420 }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ position: "relative", width: "min(78%, 440px)", aspectRatio: "1", maxHeight: "78%" }}>
           <motion.div
-            animate={{ rotate: 360 }}
+            animate={reducedLoop ? undefined : { rotate: 360 }}
             transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
-            style={{ position: "absolute", inset: 34, borderRadius: "50%", border: "2px dashed #E0C9C3" }}
+            style={{ position: "absolute", inset: "12%", borderRadius: "50%", border: "2px dashed #E0C9C3" }}
           />
-          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 118, height: 118, borderRadius: "50%", background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 16px 40px -18px rgba(200,0,0,.5)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
-            <ScholifyMark size={34} />
-            <span style={{ font: `800 18px/1 ${MONO}`, color: RED, letterSpacing: "0.02em" }}>{paper ?? "FR"}</span>
+          {/* flow direction hint on the ring */}
+          <div style={{ position: "absolute", left: "50%", top: "12%", transform: "translate(-50%,-50%) rotate(90deg)", color: "#D5B8B1", fontSize: 13, fontWeight: 800 }}>›</div>
+          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "30%", aspectRatio: "1", borderRadius: "50%", background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 16px 40px -18px rgba(200,0,0,.5)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
+            <ScholifyMark size={30} />
+            <span style={{ font: `800 17px/1 ${MONO}`, color: RED, letterSpacing: "0.02em" }}>{paper ?? "FR"}</span>
           </div>
-          {orbit.map((o, i) => (
-            <motion.div
-              key={o.label}
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15 + i * 0.1 }}
-              style={{ position: "absolute", left: o.left, top: o.top, transform: "translate(-50%,-50%)", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px 9px 10px", borderRadius: 99, background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 10px 24px -14px rgba(20,20,26,.5)" }}
-            >
-              <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(200,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name={o.icon} size={15} color={RED} />
-              </span>
-              <span style={{ font: `700 12px/1 ${SANS}`, color: INK }}>{o.label}</span>
-            </motion.div>
-          ))}
+          {LOOP_STAGES.map((o, i) => {
+            // 6 waypoints, clockwise from the top (-90°), 60° apart — the
+            // same geometry as the brand's hexagonal circuit.
+            const angle = ((-90 + i * 60) * Math.PI) / 180
+            const R = 44 // % of container
+            const left = 50 + R * Math.cos(angle)
+            const top = 50 + R * Math.sin(angle)
+            return (
+              <motion.div
+                key={o.label}
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 + i * 0.1 }}
+                style={{
+                  position: "absolute",
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  transform: "translate(-50%,-50%)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "8px 12px 8px 9px",
+                  borderRadius: 99,
+                  background: o.win ? "rgba(14,159,110,0.1)" : o.gate ? "rgba(200,0,0,0.06)" : "#fff",
+                  border: o.win ? "1.5px solid #0E9F6E" : o.gate ? `1.5px dashed ${RED}` : `1px solid ${BORDER}`,
+                  boxShadow: "0 10px 24px -14px rgba(20,20,26,.5)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span style={{ width: 24, height: 24, borderRadius: "50%", background: o.win ? "rgba(14,159,110,0.14)" : "rgba(200,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon name={o.icon} size={14} color={o.win ? GREEN : RED} />
+                </span>
+                <span>
+                  <span style={{ display: "block", font: `750 11.5px/1.1 ${SANS}`, color: INK }}>{o.label}</span>
+                  <span style={{ display: "block", font: `600 9px/1.2 ${MONO}`, color: o.gate ? RED : FAINT, letterSpacing: "0.04em", marginTop: 1 }}>{o.sub}</span>
+                </span>
+              </motion.div>
+            )
+          })}
+        </div>
+        <div style={{ marginTop: 18, font: `500 11.5px/1.5 ${SANS}`, color: "#9A8F86", maxWidth: 300, textAlign: "center" }}>
+          The loop never stops until you pass — a stumble becomes a recovery run, not an ending.
         </div>
       </div>
     </IllusBase>
