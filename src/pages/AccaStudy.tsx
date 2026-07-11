@@ -52,6 +52,7 @@ import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbabilit
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
+import { buildMockForm, nextMockForm } from "@/lib/acca-mockforms"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
@@ -267,7 +268,11 @@ export default function AccaStudy() {
     const size = mock ? mockSize(paperId) : SESSION_SIZE
     // "Target my weak areas" uses the adaptive engine (weak areas + matched
     // difficulty + spaced reinforcement); plain practice stays a fresh shuffle.
-    const qs = weakFirst && !mock ? buildAdaptiveSession(paperId, size, seed) : buildSession(paperId, size, { weakFirst }, seed)
+    const qs = mock
+      ? buildMockForm(paperId, nextMockForm(mockProgress(paperId).attempts), size)
+      : weakFirst
+        ? buildAdaptiveSession(paperId, size, seed)
+        : buildSession(paperId, size, { weakFirst }, seed)
     if (qs.length === 0) {
       toast.info("No questions available yet for this paper.")
       return
@@ -1237,7 +1242,7 @@ function Overview({
           gate.unlocked ? (
             <ModeTile
               icon="mock"
-              title={mockProgress(paper.id).examReady ? "Mock exam — keep it warm" : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED}`}
+              title={mockProgress(paper.id).examReady ? `Mock exam — keep it warm · Form ${nextMockForm(mockProgress(paper.id).attempts)}` : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED} · Form ${nextMockForm(mockProgress(paper.id).attempts)}`}
               sub={`${mockSize(paper.id)} questions · ${Math.round((mockSize(paper.id) * MOCK_SECONDS_PER_Q) / 60)} min, timed, no hints — pass line ${MOCK_PASS}%`}
               onClick={onMock}
               locked={!isPro}
