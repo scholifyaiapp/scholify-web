@@ -121,12 +121,23 @@ import { BT_A } from "@/lib/acca-study-bt-a"
 import { BT_B } from "@/lib/acca-study-bt-b"
 import { BT_C } from "@/lib/acca-study-bt-c"
 import { BT_D } from "@/lib/acca-study-bt-d"
+import { TX_A } from "@/lib/acca-study-tx-a"
+import { TX_B } from "@/lib/acca-study-tx-b"
+import { TX_C } from "@/lib/acca-study-tx-c"
+import { TX_D } from "@/lib/acca-study-tx-d"
+import { TX_E } from "@/lib/acca-study-tx-e"
+import { LW_A } from "@/lib/acca-study-lw-a"
+import { LW_B } from "@/lib/acca-study-lw-b"
+import { LW_C } from "@/lib/acca-study-lw-c"
+import { LW_D } from "@/lib/acca-study-lw-d"
 
 const REGISTRY: Record<string, StudyChapter[]> = {
   FA: [FA_A, FA_B, FA_C, FA_D, FA_E, FA_F, FA_G, FA_H],
   FR: [FR_A, FR_B, FR_C, FR_D, FR_E],
   MA: [MA_A, MA_B, MA_C, MA_D, MA_E],
   BT: [BT_A, BT_B, BT_C, BT_D],
+  TX: [TX_A, TX_B, TX_C, TX_D, TX_E],
+  LW: [LW_A, LW_B, LW_C, LW_D],
 }
 
 /** The rich study chapter for a paper + area, if one exists. */
