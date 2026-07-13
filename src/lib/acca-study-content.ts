@@ -112,10 +112,21 @@ import { FR_B } from "@/lib/acca-study-fr-b"
 import { FR_C } from "@/lib/acca-study-fr-c"
 import { FR_D } from "@/lib/acca-study-fr-d"
 import { FR_E } from "@/lib/acca-study-fr-e"
+import { MA_A } from "@/lib/acca-study-ma-a"
+import { MA_B } from "@/lib/acca-study-ma-b"
+import { MA_C } from "@/lib/acca-study-ma-c"
+import { MA_D } from "@/lib/acca-study-ma-d"
+import { MA_E } from "@/lib/acca-study-ma-e"
+import { BT_A } from "@/lib/acca-study-bt-a"
+import { BT_B } from "@/lib/acca-study-bt-b"
+import { BT_C } from "@/lib/acca-study-bt-c"
+import { BT_D } from "@/lib/acca-study-bt-d"
 
 const REGISTRY: Record<string, StudyChapter[]> = {
   FA: [FA_A, FA_B, FA_C, FA_D, FA_E, FA_F, FA_G, FA_H],
   FR: [FR_A, FR_B, FR_C, FR_D, FR_E],
+  MA: [MA_A, MA_B, MA_C, MA_D, MA_E],
+  BT: [BT_A, BT_B, BT_C, BT_D],
 }
 
 /** The rich study chapter for a paper + area, if one exists. */

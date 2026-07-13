@@ -218,27 +218,40 @@ function Waterfall({ d }: { d: { unit?: string; items: { label: string; value: n
     if (isAbs) running = it.value; else running += it.value
     return { ...it, base, top }
   })
-  const max = Math.max(...bars.map((b) => Math.max(b.base, b.top)), 1)
+  // Zero-baseline scale so bars that cross below zero (e.g. an overdraft month
+  // in a cash budget) render correctly beneath the axis.
+  const vals = bars.flatMap((b) => [b.base, b.top])
+  const hiV = Math.max(0, ...vals)
+  const loV = Math.min(0, ...vals)
+  const range = hiV - loV || 1
   const H = 150
+  const yOf = (v: number) => ((hiV - v) / range) * H // px from top of the plot
+  const showZero = loV < 0
   return (
     <div style={{ overflowX: "auto" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: H + 40, minWidth: bars.length * 62 }}>
+      <div style={{ display: "flex", alignItems: "stretch", gap: 8, minWidth: bars.length * 62 }}>
         {bars.map((b, i) => {
-          const lo = Math.min(b.base, b.top), hi = Math.max(b.base, b.top)
-          const y = (hi / max) * H, h = Math.max(3, ((hi - lo) / max) * H)
+          const yTop = yOf(Math.max(b.base, b.top))
+          const barH = Math.max(3, yOf(Math.min(b.base, b.top)) - yTop)
           const tint = b.kind === "start" || b.kind === "total" ? C.brand : b.value >= 0 ? C.green : C.amber
+          const above = b.top >= b.base
           return (
-            <div key={i} style={{ flex: 1, minWidth: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, color: C.text, marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>{b.value >= 0 || b.kind ? "" : "−"}{fmt(Math.abs(b.value))}</div>
-              <div style={{ width: "100%", height: H, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-                <motion.div initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.05 }}
-                  style={{ transformOrigin: "bottom", height: h, marginBottom: (lo / max) * H, background: tint, borderRadius: 5 }} />
+            <div key={i} style={{ flex: 1, minWidth: 48, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {/* value label sits just above/below the bar */}
+              <div style={{ height: yTop, display: "flex", flexDirection: "column", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums", paddingBottom: 2 }}>
+                {above ? `${b.value < 0 ? "−" : ""}${fmt(Math.abs(b.value))}` : ""}
               </div>
+              <div style={{ position: "relative", width: "100%", height: barH }}>
+                <motion.div initial={{ scaleY: 0 }} whileInView={{ scaleY: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.05 }}
+                  style={{ transformOrigin: above ? "top" : "bottom", height: "100%", background: tint, borderRadius: 5 }} />
+              </div>
+              <div style={{ height: H - yTop - barH }} />
               <div style={{ fontSize: 10, color: C.muted, marginTop: 6, textAlign: "center", lineHeight: 1.3, fontWeight: 600 }}>{b.label}</div>
             </div>
           )
         })}
       </div>
+      {showZero && <div style={{ fontSize: 9.5, color: C.faint, marginTop: 4, textAlign: "right" }}>bars below the line are negative (e.g. an overdraft)</div>}
     </div>
   )
 }
