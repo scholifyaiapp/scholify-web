@@ -48,6 +48,8 @@ import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAction } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
+import { getStudyChapter } from "@/lib/acca-study-content"
+import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
 import { isAccaOnboarded } from "@/lib/acca-profile"
@@ -469,13 +471,22 @@ export default function AccaStudy() {
           )}
 
           {mode === "brief" && paper && topicArea && (
-            <BriefReader
-              key={`brief-${topicArea}`}
-              paper={paper}
-              area={topicArea}
-              onBack={() => setMode("topic")}
-              onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
-            />
+            getStudyChapter(paper.id, topicArea) ? (
+              <StudyChapterReader
+                key={`chapter-${topicArea}`}
+                chapter={getStudyChapter(paper.id, topicArea)!}
+                onBack={() => setMode("topic")}
+                onPractice={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+              />
+            ) : (
+              <BriefReader
+                key={`brief-${topicArea}`}
+                paper={paper}
+                area={topicArea}
+                onBack={() => setMode("topic")}
+                onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+              />
+            )
           )}
 
           {mode === "topic" && paper && topicArea && (
@@ -1479,6 +1490,7 @@ function TopicView({
   const areaStats = stats.areas.find((a) => a.code === area)
   const areaCards = getFlashcards(paper.id).filter((c) => c.area === area).length
   const brief = getTopicBrief(paper.id, area)
+  const chapter = getStudyChapter(paper.id, area)
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
@@ -1518,8 +1530,8 @@ function TopicView({
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
         <ModeTile
           icon="learn"
-          title={brief ? `Topic brief · ${brief.minutes} min read` : "Topic brief"}
-          sub="The concept, the formulas, one worked example, and the classic traps — read this first"
+          title={chapter ? `Study chapter · ${chapter.minutes} min` : brief ? `Topic brief · ${brief.minutes} min read` : "Topic brief"}
+          sub={chapter ? "Full theory, worked examples, interactive diagrams, exam traps and quick checks — learn every aspect here first" : "The concept, the formulas, one worked example, and the classic traps — read this first"}
           onClick={onBrief}
           primary={(areaStats?.seen ?? 0) === 0}
         />

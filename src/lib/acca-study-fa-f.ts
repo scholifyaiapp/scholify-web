@@ -1,0 +1,283 @@
+import type { StudyChapter } from "@/lib/acca-study-content"
+
+/*
+ * FA · Area F — Preparing basic financial statements.
+ * Rich study chapter: builds the statement of profit or loss and the statement
+ * of financial position from a trial balance, works four year-end adjustments,
+ * and ties both together through the statement of changes in equity. All figures
+ * are original, internally consistent and re-added to balance. Syllabus-aligned;
+ * no ACCA/Kaplan/BPP text.
+ */
+
+export const FA_F: StudyChapter = {
+  paper: "FA",
+  area: "F",
+  title: "Preparing basic financial statements",
+  minutes: 17,
+  intro: "This is where all of FA arrives. Every debit, credit and adjustment you have learned funnels into two documents: a statement of performance and a statement of position — and if your work is right, the second one balances to the penny.",
+  outcomes: [
+    "Lay out a statement of profit or loss from revenue down to profit for the year",
+    "Lay out a statement of financial position and prove that assets equal equity plus liabilities",
+    "Take a trial balance through closing inventory, depreciation, accruals, prepayments and irrecoverable debts",
+    "Prepare a statement of changes in equity linking opening equity to closing equity",
+    "Explain how a company's equity (share capital and retained earnings) differs from a sole trader's capital account",
+  ],
+  sections: [
+    {
+      id: "two-statements",
+      heading: "The two headline statements",
+      blocks: [
+        { kind: "text", md: "Preparing financial statements sounds like an ending, but it is really an act of translation. A trial balance is a long list of ledger balances that only a bookkeeper loves. Nobody makes an investment decision by reading it. So we reshape those balances into two documents anyone can read: one that answers **how did the business perform this year?** and one that answers **what does it own and owe right now?**" },
+        { kind: "text", md: "The first is the **statement of profit or loss** (SoPL) — a film of the whole year, from **revenue** at the top to **profit for the year** at the bottom. The second is the **statement of financial position** (SoFP) — a photograph taken on the last day, showing **assets**, **liabilities** and **equity**. A third short statement, the **statement of changes in equity** (SOCE), is the bridge that carries the year's profit from the first document into the second." },
+        { kind: "diagram", diagram: {
+          type: "cards",
+          title: "What each statement answers",
+          caption: "The SoPL is a period; the SoFP is a point in time; the SOCE joins them.",
+          data: {
+            items: [
+              { title: "Statement of profit or loss", sub: "Performance over the year — did it make a profit?" },
+              { title: "Statement of financial position", sub: "Position at the year-end — what it owns and owes" },
+              { title: "Statement of changes in equity", sub: "How the owners' stake moved over the year" },
+            ],
+          },
+        } },
+        { kind: "callout", tone: "key", title: "The one idea", md: "Two statements, two questions. The SoPL measures a **period** of performance; the SoFP captures a single **moment** of position. Get clear which one you are building and half the layout errors disappear." },
+      ],
+    },
+    {
+      id: "sopl",
+      heading: "The statement of profit or loss",
+      blocks: [
+        { kind: "text", md: "The SoPL is a controlled fall. You start at **revenue** — the sales earned in the year — and subtract costs in a deliberate order so that two subtotals appear on the way down. First you take off the **cost of sales** (what the goods you sold actually cost you) to reach **gross profit** — the raw margin from trading. Then you take off all the other running costs of the business to reach **profit for the year** — what is left for the owners." },
+        { kind: "formula", name: "Cost of sales", expr: "Opening inventory + Purchases − Closing inventory", note: "You bought inventory and started with some; whatever is left unsold at the year-end is carried forward, so only the rest was truly a cost of this year's sales." },
+        { kind: "text", md: "That closing-inventory subtraction is the single most important idea in the SoPL. The unsold goods have not become an expense yet — they are still an **asset**. So they leave the cost of sales and reappear on the SoFP. One adjustment, two statements: a pattern you will see again and again." },
+        { kind: "diagram", diagram: {
+          type: "waterfall",
+          title: "From revenue to profit for the year",
+          caption: "Two subtotals fall out on the way down: gross profit, then profit for the year.",
+          data: {
+            unit: "$",
+            items: [
+              { label: "Revenue", value: 520000, kind: "start" },
+              { label: "Cost of sales", value: -265000, kind: "delta" },
+              { label: "Gross profit", value: 255000, kind: "total" },
+              { label: "Total expenses", value: -93800, kind: "delta" },
+              { label: "Profit for the year", value: 161200, kind: "total" },
+            ],
+          },
+        } },
+        { kind: "text", md: "Below gross profit sit the everyday costs: distribution costs, administrative expenses, **depreciation**, **irrecoverable debts** and any finance costs. Each is deducted, and the last line — **profit for the year** — is the figure the owners have actually earned. For a company, tax would come off just above that line; for a sole trader there is no tax in the accounts at all." },
+      ],
+      check: {
+        q: "A business has opening inventory $50,000, purchases $270,000 and closing inventory $55,000, on revenue of $520,000. What is gross profit?",
+        options: ["$255,000", "$200,000", "$145,000", "$265,000"],
+        correct: 0,
+        explain: "Cost of sales = 50,000 + 270,000 − 55,000 = 265,000, so gross profit = 520,000 − 265,000 = 255,000. Choosing $200,000 forgets to deduct the closing inventory (leaving cost of sales at 320,000); $145,000 wrongly ADDS the closing inventory; $265,000 is the cost of sales itself, not the gross profit.",
+      },
+    },
+    {
+      id: "sofp",
+      heading: "The statement of financial position",
+      blocks: [
+        { kind: "text", md: "The SoFP has one job: prove that everything the business controls was funded by someone. Everything it owns (**assets**) must equal everything it owes to outsiders (**liabilities**) plus everything it owes to its owners (**equity**). That is the accounting equation, and it is not a target you aim for — it is a fact that must hold if your bookkeeping is sound." },
+        { kind: "formula", name: "The accounting equation", expr: "Assets = Equity + Liabilities", note: "Rearranged: Equity = Assets − Liabilities. Equity is simply the owners' residual claim once outsiders are paid." },
+        { kind: "text", md: "Both assets and liabilities are split by time. **Non-current** items last beyond a year (property, plant and equipment; long-term loans). **Current** items turn over within a year (inventory, receivables, cash; payables and accruals). Assets are usually listed non-current first, then current; the two add to **total assets**. On the other side, **equity** sits above **non-current liabilities** and **current liabilities**, and the three add to the same total." },
+        { kind: "table", caption: "The pro-forma shape of a statement of financial position", head: ["Section", "Typical contents", "Where it sits"], rows: [
+          ["Non-current assets", "Land and buildings, plant and equipment (at carrying amount)", "Top of the assets side"],
+          ["Current assets", "Inventory, trade receivables, prepayments, cash", "Below non-current assets"],
+          ["Equity", "Share capital, retained earnings (company); capital (sole trader)", "Top of the funding side"],
+          ["Non-current liabilities", "Bank loans repayable after more than a year", "Below equity"],
+          ["Current liabilities", "Trade payables, accruals, tax due", "Bottom of the funding side"],
+        ] },
+        { kind: "callout", tone: "rule", title: "Carrying amount, not cost", md: "Non-current assets appear at **carrying amount** = cost − accumulated depreciation. The original cost never changes in the ledger; each year's depreciation piles up in a separate accumulated-depreciation account that is netted off on the face of the SoFP." },
+      ],
+    },
+    {
+      id: "adjustments",
+      heading: "From trial balance to statements: the year-end adjustments",
+      blocks: [
+        { kind: "text", md: "A trial balance proves the ledger is arithmetically balanced, but it is not yet ready to publish. Several things have happened by the year-end that the day-to-day bookkeeping has not yet captured. We slot in a short list of **year-end adjustments**, and only then do the two statements emerge. The beautiful part: because every adjustment is a double entry, each one lands in **both** statements — so the SoFP keeps balancing." },
+        { kind: "diagram", diagram: {
+          type: "flow",
+          title: "The route the numbers travel",
+          caption: "Adjustments feed the SoPL and the SoFP at the same time.",
+          data: {
+            steps: [
+              { label: "Trial balance", sub: "Every ledger balance; debits = credits" },
+              { label: "Year-end adjustments", sub: "Inventory, depreciation, accruals/prepayments, bad debts" },
+              { label: "Statement of profit or loss", sub: "Revenue down to profit for the year" },
+              { label: "Statement of financial position", sub: "Assets = equity + liabilities" },
+            ],
+          },
+        } },
+        { kind: "table", caption: "The four workhorse adjustments — and where each lands", head: ["Adjustment", "Effect on the SoPL", "Effect on the SoFP"], rows: [
+          ["Closing inventory", "Reduces cost of sales", "Adds a current asset (inventory)"],
+          ["Depreciation", "Adds an expense (the charge)", "Reduces the asset's carrying amount"],
+          ["Accrual", "Adds to the expense", "Adds a current liability"],
+          ["Prepayment", "Reduces the expense", "Adds a current asset"],
+          ["Irrecoverable debt", "Adds an expense", "Reduces trade receivables"],
+        ] },
+        { kind: "text", md: "**Accruals and prepayments** exist to force each expense to match the year, not the cash. If you have used something but not yet paid for it, **accrue** it — raise the expense and record a liability. If you have paid in advance for something you will use next year, **prepay** it — cut this year's expense and record an asset. **Irrecoverable debts** deal with customers who will never pay: write the debt off as an expense and remove it from receivables, and set an **allowance** for the ones who merely might not pay." },
+      ],
+      check: {
+        q: "At the year end a business has paid $30,000 of insurance, but $5,000 of it relates to next year. How is the $5,000 treated?",
+        options: [
+          "As a prepayment: a current asset, and this year's expense is reduced to $25,000",
+          "As an accrual: a current liability, and the expense rises to $35,000",
+          "Ignored until next year when the cover is used",
+          "As revenue of $5,000 because the money has been paid",
+        ],
+        correct: 0,
+        explain: "Cover paid for but not yet used belongs to next year, so it is a PREPAYMENT: strip $5,000 out of this year's expense (leaving $25,000) and carry it forward as a current asset. An accrual is the opposite case — used but not yet paid. It is never simply ignored, and it is certainly not revenue.",
+      },
+    },
+    {
+      id: "worked-example",
+      heading: "Full worked example: trial balance to statements",
+      blocks: [
+        { kind: "text", md: "Here is the whole machine running end to end. Kestrel Trading Co is a small company. Below is its trial balance at 31 December 20X5, followed by six adjustments and the finished statements. Follow every figure — nothing is rounded or fudged, and the SoFP balances exactly." },
+        { kind: "table", caption: "Kestrel Trading Co — trial balance at 31 December 20X5 (before adjustments)", head: ["Account", "Debit $", "Credit $"], rows: [
+          ["Land and buildings — cost", "300,000", ""],
+          ["Plant and equipment — cost", "120,000", ""],
+          ["Inventory at 1 January", "50,000", ""],
+          ["Trade receivables", "80,000", ""],
+          ["Cash at bank", "76,000", ""],
+          ["Dividends paid", "20,000", ""],
+          ["Purchases", "270,000", ""],
+          ["Distribution costs", "40,000", ""],
+          ["Administrative expenses", "30,000", ""],
+          ["Ordinary share capital ($1 shares)", "", "200,000"],
+          ["Retained earnings at 1 January", "", "90,000"],
+          ["Revenue", "", "520,000"],
+          ["Bank loan (repayable 20X9)", "", "50,000"],
+          ["Trade payables", "", "60,000"],
+          ["Accumulated depreciation — buildings", "", "24,000"],
+          ["Accumulated depreciation — plant and equipment", "", "40,000"],
+          ["Allowance for receivables", "", "2,000"],
+          ["", "986,000", "986,000"],
+        ] },
+        { kind: "example", title: "Working the six adjustments", scenario: "Adjustments still to make: (a) closing inventory is valued at $55,000; (b) of the land and buildings, land is $100,000 (not depreciated) and buildings $200,000, depreciated at 2% straight-line, while plant is depreciated at 20% reducing balance; (c) $5,000 of administrative expenses is prepaid; (d) $3,000 of distribution costs is accrued; (e) a $4,000 receivable is irrecoverable and is written off; (f) the allowance for receivables is set to 5% of the receivables that remain.", steps: [
+          { label: "(a) Closing inventory", detail: "Cost of sales = opening 50,000 + purchases 270,000 − closing 55,000 = 265,000. The 55,000 also becomes a current asset." },
+          { label: "(b) Depreciation", detail: "Buildings 2% × 200,000 = 4,000; plant 20% × (120,000 − 40,000) = 16,000. Total 20,000 to the SoPL. Land and buildings carrying amount = 300,000 − (24,000 + 4,000) = 272,000; plant = 120,000 − (40,000 + 16,000) = 64,000." },
+          { label: "(c) Prepayment", detail: "Cut admin expenses to 30,000 − 5,000 = 25,000; show 5,000 as a prepayment (current asset)." },
+          { label: "(d) Accrual", detail: "Raise distribution costs to 40,000 + 3,000 = 43,000; show 3,000 as an accrual (current liability)." },
+          { label: "(e) Irrecoverable debt", detail: "Expense 4,000; reduce receivables from 80,000 to 76,000." },
+          { label: "(f) Allowance for receivables", detail: "Required = 5% × 76,000 = 3,800; it was 2,000, so charge the 1,800 increase. Receivables shown net = 76,000 − 3,800 = 72,200." },
+        ], result: "Gross profit is $255,000 and profit for the year is $161,200. In the SoFP, total assets of $544,200 equal equity $431,200 + non-current liabilities $50,000 + current liabilities $63,000. It balances." },
+        { kind: "table", caption: "Kestrel Trading Co — statement of profit or loss for the year ended 31 December 20X5", head: ["", "$", "$"], rows: [
+          ["Revenue", "", "520,000"],
+          ["Opening inventory", "50,000", ""],
+          ["Purchases", "270,000", ""],
+          ["Closing inventory", "(55,000)", ""],
+          ["Cost of sales", "", "(265,000)"],
+          ["Gross profit", "", "255,000"],
+          ["Distribution costs", "(43,000)", ""],
+          ["Administrative expenses", "(25,000)", ""],
+          ["Depreciation — buildings", "(4,000)", ""],
+          ["Depreciation — plant and equipment", "(16,000)", ""],
+          ["Irrecoverable debts", "(4,000)", ""],
+          ["Increase in allowance for receivables", "(1,800)", ""],
+          ["Total expenses", "", "(93,800)"],
+          ["Profit for the year", "", "161,200"],
+        ] },
+        { kind: "table", caption: "Kestrel Trading Co — statement of changes in equity for the year ended 31 December 20X5", head: ["", "Share capital $", "Retained earnings $", "Total $"], rows: [
+          ["Balance at 1 January 20X5", "200,000", "90,000", "290,000"],
+          ["Profit for the year", "—", "161,200", "161,200"],
+          ["Dividends paid", "—", "(20,000)", "(20,000)"],
+          ["Balance at 31 December 20X5", "200,000", "231,200", "431,200"],
+        ] },
+        { kind: "table", caption: "Kestrel Trading Co — statement of financial position as at 31 December 20X5", head: ["", "$", "$"], rows: [
+          ["Non-current assets", "", ""],
+          ["Land and buildings", "", "272,000"],
+          ["Plant and equipment", "", "64,000"],
+          ["", "", "336,000"],
+          ["Current assets", "", ""],
+          ["Inventory", "55,000", ""],
+          ["Trade receivables (net of allowance)", "72,200", ""],
+          ["Prepayments", "5,000", ""],
+          ["Cash at bank", "76,000", ""],
+          ["", "", "208,200"],
+          ["Total assets", "", "544,200"],
+          ["Equity", "", ""],
+          ["Ordinary share capital", "", "200,000"],
+          ["Retained earnings", "", "231,200"],
+          ["Total equity", "", "431,200"],
+          ["Non-current liabilities", "", ""],
+          ["Bank loan (repayable 20X9)", "", "50,000"],
+          ["Current liabilities", "", ""],
+          ["Trade payables", "60,000", ""],
+          ["Accruals", "3,000", ""],
+          ["", "", "63,000"],
+          ["Total equity and liabilities", "", "544,200"],
+        ] },
+        { kind: "diagram", diagram: {
+          type: "scale",
+          title: "And it balances",
+          caption: "Total assets equal equity plus all liabilities — the equation holds.",
+          data: {
+            assets: "Total assets $544,200",
+            liabilities: "Liabilities $113,000",
+            equity: "Equity $431,200",
+          },
+        } },
+        { kind: "callout", tone: "tip", title: "How to check yourself", md: "If the SoFP does not balance, the difference is your clue. A difference equal to a whole adjustment (say 5,000) means you posted only one side of it. A difference that is **twice** a figure means you added where you should have subtracted. Hunt the number, not the whole statement." },
+      ],
+    },
+    {
+      id: "equity",
+      heading: "Changes in equity, and company vs sole trader",
+      blocks: [
+        { kind: "text", md: "The **statement of changes in equity** is the quiet hero that stops the two big statements from drifting apart. It takes the owners' opening stake, adds the **profit for the year** from the SoPL, subtracts anything the owners took out, and produces the closing equity that appears on the SoFP. For Kestrel: 290,000 opening + 161,200 profit − 20,000 dividends = 431,200 closing. That closing figure is exactly the total equity on the SoFP — the loop closes." },
+        { kind: "text", md: "The mechanics differ by business type, though the logic is identical. A **sole trader** has a single **capital account**: opening capital + profit − **drawings** = closing capital. A **company** splits the owners' stake into **share capital** (the money shareholders originally put in) and **retained earnings** (all profits kept in the business over time). A company's profit goes into retained earnings, and money returned to owners is called a **dividend**, not drawings." },
+        { kind: "diagram", diagram: {
+          type: "compare",
+          title: "Sole trader vs company — the equity section",
+          data: {
+            leftTitle: "Sole trader",
+            rightTitle: "Company",
+            rows: [
+              { aspect: "Owners' stake is called", left: "Capital account", right: "Share capital + retained earnings" },
+              { aspect: "Profit for the year is", left: "Added to capital", right: "Added to retained earnings" },
+              { aspect: "Owner withdrawals are", left: "Drawings (reduce capital)", right: "Dividends (reduce retained earnings)" },
+              { aspect: "Tax in the accounts", left: "None — owner taxed personally", right: "Income tax expense is shown" },
+              { aspect: "Top line of the equity section", left: "Opening capital", right: "Share capital" },
+            ],
+          },
+        } },
+        { kind: "callout", tone: "warn", title: "Two classic mix-ups", md: "**Drawings and dividends are never expenses** — they are distributions of profit, so they belong in the equity movement, never in the SoPL. And a sole trader's accounts show **no tax charge**: the trader pays income tax personally, outside the business." },
+      ],
+      check: {
+        q: "In a company's financial statements, where does the profit for the year ultimately increase the owners' interest?",
+        options: [
+          "Retained earnings, via the statement of changes in equity",
+          "Share capital, because profit belongs to shareholders",
+          "Revenue, since that is where profit starts",
+          "Trade payables, as an amount owed to owners",
+        ],
+        correct: 0,
+        explain: "Profit for the year flows through the statement of changes in equity into RETAINED EARNINGS, which then appears on the SoFP. Share capital only changes when new shares are issued — profit never touches it. Revenue is the top of the SoPL, not part of equity, and payables are amounts owed to outside suppliers.",
+      },
+    },
+  ],
+  examTraps: [
+    { trap: "Adding closing inventory in the cost of sales instead of subtracting it.", fix: "Cost of sales = opening + purchases − closing. Unsold goods are an asset, so they LEAVE cost of sales and appear on the SoFP." },
+    { trap: "Posting only one side of an accrual or prepayment.", fix: "Each is a double entry. Accrual: raise the expense AND add a current liability. Prepayment: cut the expense AND add a current asset." },
+    { trap: "Forgetting that depreciation hits two statements.", fix: "The charge is an expense in the SoPL; the accumulated total reduces the asset's carrying amount in the SoFP. Miss one side and the SoFP won't balance." },
+    { trap: "Showing trade receivables at full value after a write-off or allowance.", fix: "Remove irrecoverable debts from receivables entirely, then present the rest NET of the allowance for receivables." },
+    { trap: "Putting drawings or dividends through the statement of profit or loss.", fix: "They are distributions of profit, not expenses — they belong only in the equity movement (capital account or SOCE)." },
+  ],
+  keyTerms: [
+    { term: "Cost of sales", def: "The cost of the goods actually sold in the period: opening inventory + purchases − closing inventory." },
+    { term: "Gross profit", def: "Revenue less cost of sales — the raw margin from trading, before other running costs." },
+    { term: "Carrying amount", def: "A non-current asset's cost less its accumulated depreciation — the value shown on the SoFP." },
+    { term: "Accrual", def: "An expense incurred but not yet paid or invoiced; raises the expense and creates a current liability." },
+    { term: "Retained earnings", def: "The cumulative profits a company has kept rather than paid out; increased by profit, reduced by dividends." },
+  ],
+  summary: [
+    "The SoPL runs revenue − cost of sales = gross profit, then − expenses = profit for the year.",
+    "The SoFP is a snapshot where non-current + current assets = equity + non-current + current liabilities.",
+    "Before the statements, adjust the trial balance for closing inventory, depreciation, accruals, prepayments and irrecoverable debts.",
+    "Every adjustment is a double entry, so it lands in both statements — which is why the SoFP still balances.",
+    "The SOCE links the two: opening equity + profit − distributions = closing equity; a company shows share capital + retained earnings where a sole trader shows a single capital account.",
+  ],
+}
