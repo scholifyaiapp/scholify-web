@@ -1,0 +1,288 @@
+import type { StudyChapter } from "@/lib/acca-study-content"
+
+/*
+ * FM · Area B — Investment appraisal.
+ * Original, syllabus-aligned; no ACCA/Kaplan/BPP text. Every figure is
+ * re-solved from first principles so the numbers in the diagrams, tables and
+ * examples all reconcile.
+ */
+
+export const FM_B: StudyChapter = {
+  paper: "FM",
+  area: "B",
+  title: "Investment appraisal",
+  minutes: 19,
+  intro: "A business has one pot of cash and a queue of projects competing for it. Investment appraisal is the discipline that answers the only question that matters: will this project leave shareholders richer than they are today?",
+  outcomes: [
+    "Identify the relevant cash flows of a project — incremental only, ignoring sunk and financing costs",
+    "Apply payback and ARR, and explain why neither is enough on its own",
+    "Discount cash flows and compute a net present value (NPV)",
+    "Estimate the internal rate of return (IRR) by interpolation and contrast it with NPV",
+    "Build a full NPV that incorporates tax, tax-allowable depreciation, inflation and working capital",
+    "Handle asset replacement with equivalent annual cost, and rank projects under capital rationing",
+  ],
+  sections: [
+    {
+      id: "relevant",
+      heading: "Relevant cash flows — the foundation",
+      blocks: [
+        { kind: "text", md: "Every appraisal technique in this area works on the same raw material: **relevant cash flows**. Get these wrong and even a perfect discounting calculation gives the wrong answer. A cash flow is relevant only if it is **future**, **incremental** and an actual movement of **cash** that arises **because of** the decision." },
+        { kind: "text", md: "The three classic traps are the mirror image of that rule. **Sunk costs** (money already spent, such as past research) are not future, so they are ignored. **Committed costs** would happen anyway, so they are not incremental. **Financing cash flows** — interest, dividends, loan repayments — are excluded from the project flows because the **cost of capital already reflects the cost of finance**; putting them in the flows too would double-count. Non-cash book entries such as **depreciation** are also excluded (though the **tax** it saves is very much relevant — see later)." },
+        { kind: "callout", tone: "rule", title: "The relevance test", md: "Include a cash flow only if the answer to all three is yes: Is it in the **future**? Does it **change** because of this decision (incremental)? Is it real **cash** (not a book entry)? Financing flows fail because they belong in the discount rate, not the project." },
+        { kind: "table", caption: "Relevant or not?", head: ["Item", "Treatment", "Why"], rows: [
+          ["Past market research", "Ignore", "Sunk — already spent, not future"],
+          ["Extra materials the project needs", "Include", "Future and incremental"],
+          ["Loan interest to fund the machine", "Ignore in flows", "Financing — captured in the discount rate"],
+          ["Depreciation of the new machine", "Ignore the charge", "Non-cash book entry"],
+          ["Tax saved by that depreciation", "Include", "A real, incremental cash flow"],
+          ["Head-office rent reapportioned", "Ignore", "Would be incurred anyway — not incremental"],
+        ] },
+      ],
+      check: {
+        q: "A company spent $30,000 last year on market research. It must now decide whether to launch the product. How is the $30,000 treated in the launch appraisal?",
+        options: [
+          "Included as a Year 0 cash outflow",
+          "Ignored — it is a sunk cost",
+          "Spread evenly over the product's life",
+          "Added to the project's working capital",
+        ],
+        correct: 1,
+        explain: "The $30,000 is already spent regardless of whether the product launches, so it is a sunk cost — not a future, incremental flow. It fails the relevance test and is ignored. Only cash flows that change because of the launch decision belong in the appraisal.",
+      },
+    },
+    {
+      id: "payback-arr",
+      heading: "Payback and ARR — the simple screens",
+      blocks: [
+        { kind: "text", md: "Two techniques survive from before discounting became routine. They are quick and intuitive, which is exactly why examiners test whether you know their **weaknesses**." },
+        { kind: "text", md: "**Payback** measures how long the project takes to recover its initial outlay in cash. **Accounting rate of return (ARR)** — also called return on capital employed — expresses average **accounting profit** as a percentage of the investment. Notice ARR uses profit (after depreciation), not cash." },
+        { kind: "formula", name: "Payback period", expr: "Payback = full years before recovery + (unrecovered cost ÷ next year's cash flow)" },
+        { kind: "formula", name: "Accounting rate of return", expr: "ARR = average annual accounting profit ÷ average investment", note: "Average investment = (initial cost + residual value) ÷ 2" },
+        { kind: "example", title: "Worked example — Project X on both screens", scenario: "Project X costs $100,000 now and generates net cash inflows of $40,000, $40,000, $40,000 then $20,000 over four years. The asset has a four-year life and nil residual value. Find the payback period and the ARR (average-investment basis).", steps: [
+          { label: "Cumulative cash", detail: "End of Yr1 $40,000; Yr2 $80,000; Yr3 $120,000. The $100,000 is recovered during Year 3." },
+          { label: "Payback fraction", detail: "After Year 2, $100,000 − $80,000 = $20,000 is still to recover; Year 3 brings in $40,000, so 20,000 ÷ 40,000 = 0.5 of a year." },
+          { label: "Payback", detail: "2 + 0.5 = **2.5 years**." },
+          { label: "Total accounting profit", detail: "Total cash $140,000 − total depreciation $100,000 (cost − nil residual) = $40,000 profit over four years → average profit $40,000 ÷ 4 = $10,000." },
+          { label: "Average investment", detail: "(100,000 + 0) ÷ 2 = $50,000." },
+          { label: "ARR", detail: "10,000 ÷ 50,000 = **20%**." },
+        ], result: "Payback 2.5 years; ARR 20%. Neither figure discounts, so both flatter the project by treating a dollar in Year 4 as equal to a dollar today." },
+        { kind: "callout", tone: "warn", title: "Why they are not enough", md: "**Payback** ignores the time value of money and everything that happens **after** the cut-off — a project could pay back fast then collapse. **ARR** uses accounting profit not cash, ignores timing, and has no logical hurdle rate. Both are useful first screens, but the accept/reject decision should rest on **NPV**." },
+      ],
+    },
+    {
+      id: "tvm-npv",
+      heading: "The time value of money and NPV",
+      blocks: [
+        { kind: "text", md: "A dollar today is worth more than a dollar next year: it can be invested to earn a return, inflation erodes future dollars, and future cash carries risk. **Discounting** reverses compounding — it converts a future cash flow back into its worth **today**, its present value, using the investor's required return (the **cost of capital**)." },
+        { kind: "formula", name: "Discount factor", expr: "DF = 1 ÷ (1 + r)^n", note: "r = cost of capital per period; n = number of periods away" },
+        { kind: "formula", name: "Present value", expr: "PV = future cash flow × DF" },
+        { kind: "formula", name: "Net present value", expr: "NPV = Σ [ CFt ÷ (1 + r)^t ]  −  initial outlay" },
+        { kind: "callout", tone: "key", title: "The NPV decision rule", md: "**Accept a project if its NPV is positive.** A positive NPV means the project earns more than the cost of capital, so it adds that many dollars of value to shareholders **today**. When ranking, prefer the **higher** NPV." },
+        { kind: "diagram", diagram: {
+          type: "flow",
+          title: "The NPV method in six steps",
+          caption: "The same routine underlies every NPV question, however much tax and inflation are bolted on.",
+          data: {
+            steps: [
+              { label: "1 · Identify relevant flows", sub: "incremental, after tax" },
+              { label: "2 · Inflate to money terms", sub: "apply each flow's inflation" },
+              { label: "3 · Find discount factors", sub: "at the money cost of capital" },
+              { label: "4 · Discount to PV", sub: "cash flow × DF" },
+              { label: "5 · Sum − outlay", sub: "= NPV" },
+              { label: "6 · Decide", sub: "accept if NPV > 0" },
+            ],
+          },
+        } },
+        { kind: "example", title: "Worked example — Project X at 10%", scenario: "Discount Project X (outlay $100,000; inflows $40,000, $40,000, $40,000, $20,000) at a cost of capital of 10%.", steps: [
+          { label: "Year 1", detail: "40,000 × 1/1.10 = 40,000 × 0.909 = $36,360." },
+          { label: "Year 2", detail: "40,000 × 1/1.10^2 = 40,000 × 0.826 = $33,040." },
+          { label: "Year 3", detail: "40,000 × 1/1.10^3 = 40,000 × 0.751 = $30,040." },
+          { label: "Year 4", detail: "20,000 × 1/1.10^4 = 20,000 × 0.683 = $13,660." },
+          { label: "PV of inflows", detail: "36,360 + 33,040 + 30,040 + 13,660 = $113,100." },
+          { label: "NPV", detail: "113,100 − 100,000 = **+$13,100**." },
+        ], result: "NPV is +$13,100, so Project X earns more than 10% and should be accepted — a conclusion payback and ARR could not give us on their own." },
+      ],
+      check: {
+        q: "A project's only cash inflow is $50,000 received in exactly three years. At a cost of capital of 8% (3-year discount factor 0.794), its present value is:",
+        options: ["$50,000", "$39,700", "$63,000", "$46,300"],
+        correct: 1,
+        explain: "PV = future cash flow × discount factor = 50,000 × 0.794 = $39,700. Discounting brings the future $50,000 back to what it is worth today; it must be less than $50,000 because money has time value.",
+      },
+    },
+    {
+      id: "irr",
+      heading: "IRR by interpolation, and NPV vs IRR",
+      blocks: [
+        { kind: "text", md: "The **internal rate of return** is the discount rate at which a project's NPV is exactly **zero** — the project's own break-even return. Decision rule: **accept if IRR exceeds the cost of capital**. Because solving for it algebraically is hard, we estimate it by **linear interpolation** between one rate that gives a positive NPV and one that gives a negative NPV." },
+        { kind: "formula", name: "IRR by interpolation", expr: "IRR ≈ L + [ NPVl ÷ (NPVl − NPVh) ] × (H − L)", note: "L, H = the lower and higher rates; NPVl, NPVh = the NPVs at those rates" },
+        { kind: "example", title: "Worked example — IRR of Project X", scenario: "We already know Project X (outlay $100,000; inflows $40,000, $40,000, $40,000, $20,000) has a positive NPV at 10%. Estimate its IRR by discounting again at 20% and interpolating.", steps: [
+          { label: "NPV at 10%", detail: "From the previous section, NPV(10%) = +$13,100." },
+          { label: "Discount at 20%", detail: "40,000×0.833 + 40,000×0.694 + 40,000×0.579 + 20,000×0.482 = 33,320 + 27,760 + 23,160 + 9,640 = $93,880." },
+          { label: "NPV at 20%", detail: "93,880 − 100,000 = −$6,120 (now negative — the IRR lies between 10% and 20%)." },
+          { label: "Interpolate", detail: "IRR ≈ 10 + [13,100 ÷ (13,100 − (−6,120))] × (20 − 10) = 10 + (13,100 ÷ 19,220) × 10." },
+          { label: "Compute", detail: "13,100 ÷ 19,220 = 0.6816; × 10 = 6.82; 10 + 6.82 = **16.8%**." },
+        ], result: "IRR ≈ 16.8%. As this comfortably exceeds the 10% cost of capital, IRR agrees with NPV: accept the project." },
+        { kind: "diagram", diagram: {
+          type: "compare",
+          title: "NPV vs IRR",
+          caption: "Both use discounted cash flows, but they answer different questions — and can disagree.",
+          data: {
+            leftTitle: "NPV",
+            rightTitle: "IRR",
+            rows: [
+              { aspect: "Measures", left: "Absolute $ added to wealth", right: "The % return where NPV = 0" },
+              { aspect: "Decision rule", left: "Accept if NPV > 0", right: "Accept if IRR > cost of capital" },
+              { aspect: "Reinvestment", left: "Assumes reinvest at cost of capital", right: "Assumes reinvest at the IRR — often too high" },
+              { aspect: "Unconventional flows", left: "One clear NPV", right: "Can give multiple IRRs" },
+              { aspect: "Ranking projects", left: "Reliable — pick the highest NPV", right: "Can mis-rank mutually exclusive projects" },
+              { aspect: "If they conflict", left: "Follow NPV", right: "Defer to NPV" },
+            ],
+          },
+        } },
+        { kind: "callout", tone: "tip", title: "When they clash, NPV wins", md: "For **mutually exclusive** projects or unusual cash-flow patterns, NPV and IRR can rank projects differently. NPV measures actual wealth created and makes the realistic reinvestment assumption, so it is the **superior** rule whenever the two conflict." },
+      ],
+      check: {
+        q: "A project's NPV is +$5,000 at 10% and −$1,000 at 14%. Its IRR is closest to:",
+        options: ["11.3%", "13.3%", "12.0%", "14.8%"],
+        correct: 1,
+        explain: "IRR ≈ 10 + [5,000 ÷ (5,000 − (−1,000))] × (14 − 10) = 10 + (5,000 ÷ 6,000) × 4 = 10 + 3.33 = 13.3%. The IRR sits nearer the higher rate because the positive NPV is much larger than the negative one, so the zero-NPV point is closer to 14%.",
+      },
+    },
+    {
+      id: "tax-inflation",
+      heading: "The full picture — tax and inflation",
+      blocks: [
+        { kind: "text", md: "Real exam NPVs layer in two complications: **tax** and **inflation**. Handle them wrongly and everything downstream collapses, so treat each carefully." },
+        { kind: "text", md: "**Tax** hits a project two ways. First, operating cash flows are **taxed** — an outflow of (operating flow × tax rate). Second, the tax authority grants **tax-allowable depreciation** (capital allowances) on the asset; this is not itself a cash flow, but the **tax it saves** is. On the straight-line basis the annual allowance is (cost − residual) ÷ life, and the saving is that allowance × the tax rate." },
+        { kind: "formula", name: "Tax saving on allowances", expr: "Tax saving = tax-allowable depreciation × tax rate" },
+        { kind: "text", md: "**Inflation** means we must distinguish **money (nominal)** cash flows — the actual dollars changing hands — from **real** cash flows in today's prices. A real amount is turned into a money amount by inflating it: money = real × (1 + inflation)^n. The two costs of capital are linked by the **Fisher equation**." },
+        { kind: "formula", name: "Fisher equation", expr: "(1 + m) = (1 + r) × (1 + i)", note: "m = money (nominal) rate; r = real rate; i = general inflation rate" },
+        { kind: "callout", tone: "rule", title: "Golden consistency rule", md: "Discount **money** cash flows at the **money** cost of capital; discount **real** cash flows at the **real** cost of capital. Never mix them. Because tax and capital allowances are always money flows, the **money method** is the safe default." },
+        { kind: "text", md: "**Worked NPV — the Delta machine.** A machine costs **$400,000** now. It runs for four years with **nil** residual value. It needs **$50,000** of working capital now, released at the end of Year 4. Operating cash inflows are **$200,000 a year in today's (real) prices**, expected to inflate at **5%** a year. Tax is **30%**, paid in the same year. Tax-allowable depreciation is straight-line. The **money** cost of capital is **12%**." },
+        { kind: "text", md: "**Step 1 — inflate the operating flows to money terms.** 200,000 × 1.05 = 210,000 (Yr1); × 1.05^2 = 220,500 (Yr2); × 1.05^3 = 231,525 (Yr3); × 1.05^4 = 243,101 (Yr4)." },
+        { kind: "diagram", diagram: {
+          type: "bars",
+          title: "After-tax money cash inflows by year",
+          caption: "Inflation lifts each year's inflow; Year 4 also returns the $50,000 of working capital.",
+          data: {
+            unit: "$",
+            items: [
+              { label: "Yr 1", value: 177000 },
+              { label: "Yr 2", value: 184350 },
+              { label: "Yr 3", value: 192067 },
+              { label: "Yr 4", value: 250171 },
+            ],
+          },
+        } },
+        { kind: "text", md: "**Step 2 — the tax saving on allowances.** Annual allowance = (400,000 − 0) ÷ 4 = 100,000, so the tax saving each year = 100,000 × 30% = **$30,000**." },
+        { kind: "table", caption: "The full money cash flows (all figures $)", head: ["Item", "T0", "T1", "T2", "T3", "T4"], rows: [
+          ["Operating cash flow", "—", "210,000", "220,500", "231,525", "243,101"],
+          ["Tax @ 30%", "—", "(63,000)", "(66,150)", "(69,458)", "(72,930)"],
+          ["Tax saving on allowances", "—", "30,000", "30,000", "30,000", "30,000"],
+          ["Machine", "(400,000)", "—", "—", "—", "—"],
+          ["Working capital", "(50,000)", "—", "—", "—", "50,000"],
+          ["Net cash flow", "(450,000)", "177,000", "184,350", "192,067", "250,171"],
+          ["Discount factor @ 12%", "1.000", "0.893", "0.797", "0.712", "0.636"],
+          ["Present value", "(450,000)", "158,061", "146,927", "136,752", "159,109"],
+        ] },
+        { kind: "text", md: "**Step 3 — sum the present values.** NPV = −450,000 + 158,061 + 146,927 + 136,752 + 159,109 = **+$150,849**. The NPV is strongly positive, so the machine should be bought. Because we inflated the flows to money terms, we correctly discounted at the **12% money rate** — the consistency rule in action." },
+        { kind: "diagram", diagram: {
+          type: "waterfall",
+          title: "From outlay to NPV",
+          caption: "Each year's present value bridges the T0 outlay up to the final net present value.",
+          data: {
+            unit: "$",
+            items: [
+              { label: "T0 outlay", value: -450000, kind: "start" },
+              { label: "PV Yr 1", value: 158061, kind: "delta" },
+              { label: "PV Yr 2", value: 146927, kind: "delta" },
+              { label: "PV Yr 3", value: 136752, kind: "delta" },
+              { label: "PV Yr 4", value: 159109, kind: "delta" },
+              { label: "NPV", value: 150849, kind: "total" },
+            ],
+          },
+        } },
+        { kind: "diagram", diagram: {
+          type: "compare",
+          title: "Money method vs real method",
+          caption: "Two consistent routes to the same NPV — pick money once tax enters.",
+          data: {
+            leftTitle: "Money (nominal) method",
+            rightTitle: "Real method",
+            rows: [
+              { aspect: "Cash flows", left: "Inflated to actual dollars of the day", right: "Kept in today's prices" },
+              { aspect: "Discount rate", left: "Money cost of capital", right: "Real cost of capital" },
+              { aspect: "Link", left: "(1+m) = (1+r)(1+i)", right: "Same Fisher link" },
+              { aspect: "With tax / allowances", left: "Preferred — these are money flows", right: "Awkward once tax enters" },
+              { aspect: "Final NPV", left: "Same answer", right: "Same answer" },
+            ],
+          },
+        } },
+        { kind: "callout", tone: "tip", title: "Fisher in practice", md: "If a real return of **8%** is required and inflation is **4%**, the money rate is (1.08)(1.04) = 1.1232, i.e. **12.32%** — not simply 8% + 4% = 12%. The cross-term (0.08 × 0.04) is why the shortcut of adding the two rates is only ever an approximation." },
+      ],
+      check: {
+        q: "You have inflated a project's cash flows to their actual money amount in each year. Which discount rate keeps the NPV correct?",
+        options: [
+          "The real cost of capital",
+          "The money (nominal) cost of capital",
+          "The general inflation rate",
+          "The risk-free rate",
+        ],
+        correct: 1,
+        explain: "Money cash flows must be discounted at the money (nominal) cost of capital — that is the consistency rule. Using the real rate on money flows would double-count inflation and understate the discounting, giving a wrong NPV.",
+      },
+    },
+    {
+      id: "replacement-rationing",
+      heading: "Replacement cycles and capital rationing",
+      blocks: [
+        { kind: "text", md: "Two specialised NPV applications round out the area. Both reuse everything above; only the decision being made changes." },
+        { kind: "text", md: "**Asset replacement.** When an asset is replaced on a regular cycle, the cycles differ in length, so their raw NPVs of cost are not comparable. We convert each cycle's PV of costs into an **equivalent annual cost (EAC)** — the level yearly charge with the same present value — and choose the cycle with the **lowest** EAC." },
+        { kind: "formula", name: "Equivalent annual cost", expr: "EAC = PV of costs over one cycle ÷ annuity factor for the cycle length" },
+        { kind: "example", title: "Worked example — a two-year replacement cycle", scenario: "A machine costs $20,000 now, has running costs of $5,000 in Year 1 and $7,000 in Year 2, and is sold for $10,000 at the end of Year 2. Cost of capital 10% (annuity factor for 2 years = 1.736). Find the EAC of this cycle.", steps: [
+          { label: "PV of purchase", detail: "20,000 at T0 = $20,000." },
+          { label: "PV of running costs", detail: "5,000 × 0.909 + 7,000 × 0.826 = 4,545 + 5,782 = $10,327." },
+          { label: "PV of resale", detail: "10,000 × 0.826 = 8,260 inflow, so −$8,260 against the costs." },
+          { label: "PV of net cost", detail: "20,000 + 10,327 − 8,260 = $22,067." },
+          { label: "EAC", detail: "22,067 ÷ 1.736 = **$12,711 a year**." },
+        ], result: "This cycle costs the equivalent of $12,711 every year. Compare it against the EAC of a one-year or three-year cycle and keep the machine for whichever length gives the lowest EAC." },
+        { kind: "text", md: "**Capital rationing.** Sometimes not every positive-NPV project can be funded because capital is capped for a period. With **single-period** rationing and **divisible** projects (you can take a fraction and get a proportional NPV), rank by the **profitability index** — NPV or PV generated per dollar invested — and work down the list until the budget is exhausted." },
+        { kind: "formula", name: "Profitability index", expr: "Profitability index = PV of future cash flows ÷ initial investment" },
+        { kind: "example", title: "Worked example — single-period rationing", scenario: "Only $100,000 of capital is available now. Four divisible projects are on offer. A: outlay 40,000, PV of inflows 60,000. B: outlay 30,000, PV 42,000. C: outlay 50,000, PV 65,000. D: outlay 20,000, PV 24,000. Allocate the budget.", steps: [
+          { label: "Profitability indices", detail: "A: 60,000/40,000 = 1.50; B: 42,000/30,000 = 1.40; C: 65,000/50,000 = 1.30; D: 24,000/20,000 = 1.20." },
+          { label: "Rank", detail: "A (1.50), then B (1.40), then C (1.30), then D (1.20)." },
+          { label: "Fund A then B", detail: "A uses 40,000, B uses 30,000 → 70,000 spent, $30,000 left." },
+          { label: "Part-fund C", detail: "C needs 50,000 but only 30,000 remains → take 30,000/50,000 = 60% of C. NPV of C = 65,000 − 50,000 = 15,000, so 60% × 15,000 = $9,000." },
+          { label: "Total NPV", detail: "NPV A (20,000) + B (12,000) + 60% of C (9,000) = **$41,000**." },
+        ], result: "Ranking by profitability index and part-funding the marginal project delivers $41,000 of NPV from the $100,000 budget — more than any NPV-ranked ordering would." },
+        { kind: "callout", tone: "warn", title: "Divisible vs indivisible", md: "The profitability index only works when projects are **divisible**. If projects are **indivisible** (all-or-nothing), you cannot part-fund C — instead you must **trial whole combinations** that fit the budget and pick the highest total NPV. Here A+B+D costs exactly $90,000 for an NPV of 20,000 + 12,000 + 4,000 = $36,000, the best indivisible mix, which is less than the $41,000 available when fractions are allowed." },
+      ],
+    },
+  ],
+  examTraps: [
+    { trap: "Including sunk costs such as past research in the appraisal.", fix: "Ignore anything already spent. Only future, incremental cash flows are relevant." },
+    { trap: "Deducting loan interest or repayments as project cash flows.", fix: "Financing costs are captured in the discount rate — never put them in the flows, or you double-count." },
+    { trap: "Discounting money cash flows at the real rate (or vice versa).", fix: "Match them: money flows with the money rate, real flows with the real rate. Use (1+m)=(1+r)(1+i) to convert." },
+    { trap: "Charging tax-allowable depreciation as a cash outflow.", fix: "Depreciation is a non-cash book entry. Only the tax it SAVES (allowance × tax rate) is a cash flow." },
+    { trap: "Ranking divisible projects by NPV under capital rationing.", fix: "With limited single-period capital and divisible projects, rank by the profitability index — value per dollar invested, not total NPV." },
+  ],
+  keyTerms: [
+    { term: "Relevant cash flow", def: "A future, incremental movement of cash arising because of the decision — the only kind that enters an appraisal." },
+    { term: "Sunk cost", def: "Money already spent; it is not future or incremental, so it is ignored." },
+    { term: "Time value of money", def: "The principle that a dollar today is worth more than a dollar later, because it can earn a return and inflation and risk erode future dollars." },
+    { term: "Net present value (NPV)", def: "The sum of a project's discounted cash flows less its outlay; positive NPV means value is added, so accept." },
+    { term: "Internal rate of return (IRR)", def: "The discount rate at which NPV is zero — the project's break-even return; accept if it exceeds the cost of capital." },
+    { term: "Tax-allowable depreciation", def: "Capital allowances the tax authority grants on an asset; not a cash flow itself, but the tax it saves is." },
+    { term: "Fisher equation", def: "The link between money and real rates: (1+m) = (1+r)(1+i), where i is inflation." },
+    { term: "Equivalent annual cost (EAC)", def: "A replacement cycle's PV of costs spread as a level annual charge, used to compare cycles of different lengths." },
+    { term: "Profitability index", def: "PV of future cash flows per dollar invested; the ranking tool for divisible projects under single-period capital rationing." },
+  ],
+  summary: [
+    "Only future, incremental cash flows are relevant; ignore sunk costs, committed costs, depreciation and financing flows.",
+    "Payback and ARR are quick screens but ignore the time value of money (and ARR uses profit, not cash) — decide on NPV.",
+    "NPV discounts every relevant flow at the cost of capital; accept if positive, and prefer the higher NPV when ranking.",
+    "IRR is the zero-NPV rate found by interpolation: L + NPVl/(NPVl−NPVh) × (H−L); where NPV and IRR conflict, follow NPV.",
+    "Bring in tax on operating flows plus the tax saving on allowances, and discount money flows at the money rate ((1+m)=(1+r)(1+i)).",
+    "Compare replacement cycles by equivalent annual cost, and ration divisible capital by the profitability index.",
+  ],
+}

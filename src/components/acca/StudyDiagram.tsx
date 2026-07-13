@@ -258,19 +258,24 @@ function Waterfall({ d }: { d: { unit?: string; items: { label: string; value: n
 
 /* ── Bars ─────────────────────────────────────────────────────── */
 function Bars({ d }: { d: { unit?: string; items: { label: string; value: number }[] } }) {
-  const max = Math.max(...d.items.map((i) => i.value), 1)
+  // Scale on magnitude so negative values (e.g. a loss region of a P/V profile)
+  // render as a proportional bar rather than a broken negative width.
+  const scale = Math.max(...d.items.map((i) => Math.abs(i.value)), 1)
   return (
     <div style={{ display: "grid", gap: 9 }}>
-      {d.items.map((it, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 96, fontSize: 11.5, color: C.muted, fontWeight: 600, textAlign: "right", flex: "none" }}>{it.label}</div>
-          <div style={{ flex: 1, height: 22, background: C.card2, borderRadius: 6, overflow: "hidden" }}>
-            <motion.div initial={{ width: 0 }} whileInView={{ width: `${(it.value / max) * 100}%` }} viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.05 }}
-              style={{ height: "100%", background: PALETTE[i % PALETTE.length], borderRadius: 6 }} />
+      {d.items.map((it, i) => {
+        const neg = it.value < 0
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 96, fontSize: 11.5, color: C.muted, fontWeight: 600, textAlign: "right", flex: "none" }}>{it.label}</div>
+            <div style={{ flex: 1, height: 22, background: C.card2, borderRadius: 6, overflow: "hidden" }}>
+              <motion.div initial={{ width: 0 }} whileInView={{ width: `${(Math.abs(it.value) / scale) * 100}%` }} viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.05 }}
+                style={{ height: "100%", background: neg ? C.amber : PALETTE[i % PALETTE.length], borderRadius: 6 }} />
+            </div>
+            <div style={{ width: 54, fontSize: 12, fontWeight: 800, color: neg ? C.amber : C.text, fontVariantNumeric: "tabular-nums", flex: "none" }}>{neg ? "−" : ""}{fmt(Math.abs(it.value))}{d.unit ?? ""}</div>
           </div>
-          <div style={{ width: 54, fontSize: 12, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums", flex: "none" }}>{fmt(it.value)}{d.unit ?? ""}</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

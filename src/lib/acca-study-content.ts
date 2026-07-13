@@ -130,6 +130,15 @@ import { LW_A } from "@/lib/acca-study-lw-a"
 import { LW_B } from "@/lib/acca-study-lw-b"
 import { LW_C } from "@/lib/acca-study-lw-c"
 import { LW_D } from "@/lib/acca-study-lw-d"
+import { PM_A } from "@/lib/acca-study-pm-a"
+import { PM_B } from "@/lib/acca-study-pm-b"
+import { PM_C } from "@/lib/acca-study-pm-c"
+import { PM_D } from "@/lib/acca-study-pm-d"
+import { FM_A } from "@/lib/acca-study-fm-a"
+import { FM_B } from "@/lib/acca-study-fm-b"
+import { FM_C } from "@/lib/acca-study-fm-c"
+import { FM_D } from "@/lib/acca-study-fm-d"
+import { FM_E } from "@/lib/acca-study-fm-e"
 
 const REGISTRY: Record<string, StudyChapter[]> = {
   FA: [FA_A, FA_B, FA_C, FA_D, FA_E, FA_F, FA_G, FA_H],
@@ -138,6 +147,8 @@ const REGISTRY: Record<string, StudyChapter[]> = {
   BT: [BT_A, BT_B, BT_C, BT_D],
   TX: [TX_A, TX_B, TX_C, TX_D, TX_E],
   LW: [LW_A, LW_B, LW_C, LW_D],
+  PM: [PM_A, PM_B, PM_C, PM_D],
+  FM: [FM_A, FM_B, FM_C, FM_D, FM_E],
 }
 
 /** The rich study chapter for a paper + area, if one exists. */
