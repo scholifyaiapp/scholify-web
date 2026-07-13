@@ -47,6 +47,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAction } from "@/lib/acca-today"
+import { recordDayActive } from "@/lib/acca-schedule"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
 import { isAccaOnboarded } from "@/lib/acca-profile"
@@ -196,6 +197,8 @@ export default function AccaStudy() {
     else if (action === "practice") startSession(false, false)
     else if (action === "mock") startSession(false, true)
     else if (action === "flashcards") setMode("flashcards")
+    else if (action === "bank") startBankRun()
+    // action === "study" falls through → the study hub / topic path is shown
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -379,6 +382,7 @@ export default function AccaStudy() {
     if (!q) return
     const result = gradeQuestion(q, currentResponse(q))
     recordAnswer(q.paper, q, result.correct)
+    recordDayActive(q.paper)
     queueAccaProgressPush()
     setLog((l) => [...l, { area: q.area, correct: result.correct }])
     setWasCorrect(result.correct)
@@ -392,6 +396,7 @@ export default function AccaStudy() {
     if (!q) return
     const result = gradeQuestion(q, currentResponse(q))
     recordAnswer(q.paper, q, result.correct)
+    recordDayActive(q.paper)
     queueAccaProgressPush()
     setLog((l) => [...l, { area: q.area, correct: result.correct }])
     if (result.correct) setCorrectCount((c) => c + 1)
@@ -918,9 +923,11 @@ function Overview({
     practice: onPractice,
     flashcards: onFlashcards,
     mock: onMock,
+    study: onPractice,
+    bank: startBankRun,
   }
   const todayIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock",
+    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
 
   // Keep the Pass Momentum trend fed even on read-only visits.

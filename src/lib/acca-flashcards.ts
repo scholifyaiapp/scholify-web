@@ -198,3 +198,18 @@ export function flashcardStats(paperId: string): { total: number; due: number; m
   for (const c of cards) if ((store[c.id]?.box ?? 0) >= 4) mastered += 1
   return { total: cards.length, due: getDueFlashcards(paperId).length, mastered }
 }
+
+/** Have any flashcards in this paper's syllabus area been reviewed at least once?
+ *  Powers the "studied A·B·C" diagnostic gate for brand-new learners. */
+export function areaReviewed(paperId: string, area: string): boolean {
+  const store = read()
+  return getFlashcards(paperId).some((c) => c.area === area && store[c.id] !== undefined)
+}
+
+/** Count of areas in this paper that have at least one reviewed card. */
+export function reviewedAreaCount(paperId: string): number {
+  const store = read()
+  const seen = new Set<string>()
+  for (const c of getFlashcards(paperId)) if (store[c.id] !== undefined) seen.add(c.area)
+  return seen.size
+}

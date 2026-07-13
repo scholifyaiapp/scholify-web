@@ -17,6 +17,8 @@ import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
+import { diagnosticGate } from "@/lib/acca-schedule"
+import { PlanRoute } from "@/components/acca/PlanRoute"
 import { format } from "date-fns"
 
 /*
@@ -31,10 +33,10 @@ import { format } from "date-fns"
  */
 
 const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30,
+  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 const MISSION_ICONS: Record<TodayAction, IconName> = {
-  diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock",
+  diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
 }
 
 export default function Dashboard() {
@@ -74,10 +76,11 @@ export default function Dashboard() {
   if (!paper) return null
   const noDiag = prob === null
   // Brand-new learners (start mode "zero") learn the basics BEFORE the
-  // diagnostic: the gate opens at 15 answered questions on this paper.
+  // diagnostic: it unlocks only once sections A·B·C are each studied,
+  // practised and revised — the point where a pass probability means something.
   const stats = getPaperStats(paperId)
-  const DIAG_UNLOCK_ANSWERS = 15
-  const zeroStart = noDiag && getStartMode() === "zero" && stats.answered < DIAG_UNLOCK_ANSWERS
+  const gateS = diagnosticGate(paperId)
+  const zeroStart = noDiag && getStartMode() === "zero" && !gateS.unlocked
 
   return (
     <DashboardLayout>
@@ -116,22 +119,31 @@ export default function Dashboard() {
               </span>
               <div style={{ flex: 1, minWidth: 240 }}>
                 <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Start here — learn the basics</div>
-                <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>New to {paper.id}? Perfect. We start with the first topic.</h2>
+                <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>New to {paper.id}? Perfect. We start with the first topics.</h2>
                 <p style={{ ...TYPE.body, color: C.soft, margin: "0 0 14px", lineHeight: 1.6 }}>
-                  Read the topic brief, try the first guided questions, flip the flashcards. Once you've answered{" "}
-                  <strong style={{ color: C.text }}>{DIAG_UNLOCK_ANSWERS} questions</strong>, the diagnostic unlocks and sets your
-                  starting pass probability — measured fairly, after you've met the basics.
+                  For each of the first three sections: read the topic brief, practise the guided questions, flip the flashcards.
+                  Once <strong style={{ color: C.text }}>sections A·B·C</strong> are covered, the diagnostic unlocks and sets your
+                  first pass probability — measured fairly, after you've actually learned something.
                 </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, maxWidth: 380 }}>
-                  <div style={{ flex: 1, height: 8, background: C.card2, borderRadius: R.pill, overflow: "hidden" }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (stats.answered / DIAG_UNLOCK_ANSWERS) * 100)}%` }} transition={{ duration: 0.8 }} style={{ height: "100%", background: IRIDESCENT, borderRadius: R.pill }} />
-                  </div>
-                  <span style={{ fontSize: 12.5, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                    {stats.answered} / {DIAG_UNLOCK_ANSWERS} <span style={{ color: C.faint, fontWeight: 600 }}>to diagnostic</span>
+                {/* per-section checklist: studied · practised · revised */}
+                <div style={{ display: "grid", gap: 7, marginBottom: 16, maxWidth: 420 }}>
+                  {gateS.sections.map((s) => (
+                    <div key={s.area} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: R.md, background: s.done ? C.greenSoft : C.card2, border: `1px solid ${s.done ? C.green : C.border}` }}>
+                      <span style={{ flex: "none", width: 22, height: 22, borderRadius: 7, background: s.done ? C.green : C.card, display: "grid", placeItems: "center", fontWeight: 800, fontSize: 11, color: s.done ? "#fff" : C.faint }}>{s.done ? "✓" : s.area}</span>
+                      <span style={{ flex: 1, fontSize: 12.5, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
+                      <span style={{ display: "inline-flex", gap: 6, fontSize: 10.5, fontWeight: 700, color: C.faint }}>
+                        <span style={{ color: s.studied ? C.green : C.faint }}>study</span>
+                        <span style={{ color: s.practised ? C.green : C.faint }}>practise</span>
+                        <span style={{ color: s.revised ? C.green : C.faint }}>revise</span>
+                      </span>
+                    </div>
+                  ))}
+                  <span style={{ fontSize: 12, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums" }}>
+                    {gateS.done} / {gateS.total} sections <span style={{ color: C.faint, fontWeight: 600 }}>to your diagnostic</span>
                   </span>
                 </div>
                 <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate("/study")} style={{ padding: "14px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15, cursor: "pointer" }}>
-                  Open topic 1 — the brief & first questions
+                  Continue your plan — today's tasks
                 </motion.button>
               </div>
             </div>
@@ -258,6 +270,9 @@ export default function Dashboard() {
             ))}
           </Card>
         )}
+
+        {/* the distributed route to exam day + shield status */}
+        {!examDue && <PlanRoute paperId={paperId} />}
 
         {/* vitals — four glanceable tiles */}
         {!noDiag && (

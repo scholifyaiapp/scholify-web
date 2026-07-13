@@ -675,7 +675,7 @@ function StudySection({ paperId }: { paperId: string }) {
   }
 
   const missionIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock",
+    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
 
   return (

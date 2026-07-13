@@ -14,16 +14,15 @@
  * Kept to 3 tasks max so it never feels like a wall.
  */
 
-import { getPaperStats, getPaper } from "@/lib/acca"
-import { getLatestDiagnostic, estimateFromPractice } from "@/lib/acca-diagnostic"
-import { flashcardStats } from "@/lib/acca-flashcards"
-import { MOCK_GATE, mockGate, passProbability, recoveryState } from "@/lib/acca-loop"
+import { getPaper } from "@/lib/acca"
+import { passProbability, recoveryState } from "@/lib/acca-loop"
+import { buildDailyTasks } from "@/lib/acca-schedule"
 
-export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock"
+export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock" | "study" | "bank"
 
 /** Rough per-task durations — the single source for "~25 min" labels. */
 export const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30,
+  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 
 export interface TodayTask {
@@ -55,78 +54,18 @@ export function todayHeadline(paperId: string): string {
   return `You're at ${prob}% to pass ${name}. Finish today's plan to push it higher.`
 }
 
-/** Build today's ordered plan for a paper (max 3 tasks). */
+/**
+ * Build today's ordered plan for a paper. Delegates to the distributed
+ * schedule engine (acca-schedule) — which handles the zero/assess personas,
+ * the A·B·C deferred-diagnostic gate, the current method phase, the daily time
+ * budget and the target %, and self-heals around missed days.
+ */
 export function buildTodayPlan(paperId: string): TodayTask[] {
-  const diag = getLatestDiagnostic(paperId)
-  const live = estimateFromPractice(paperId)
-  const stats = getPaperStats(paperId)
-  const fc = flashcardStats(paperId)
-  const est = live ?? diag
-
-  // 1. No baseline → diagnose first, and nothing else (keep it focused).
-  if (!diag && stats.answered < 5) {
-    return [
-      {
-        id: "diagnostic",
-        icon: "🎯",
-        title: "Take your diagnostic",
-        detail: "~15 min · get your pass probability and your weak areas",
-        action: "diagnostic",
-      },
-    ]
-  }
-
-  const tasks: TodayTask[] = []
-  const rec = recoveryState(paperId)
-
-  // 2. Strengthen the weakest area — during a retake run this IS the mission:
-  //    the marks were lost somewhere specific, so that's where we go.
-  const weakest = est?.weakest?.[0]
-  if (weakest) {
-    tasks.push({
-      id: "weak",
-      icon: "💪",
-      title: rec.active ? `Recover the marks in ${weakest.label}` : `Strengthen ${weakest.label}`,
-      detail: rec.active
-        ? `Where the sitting hurt most (${Math.round(weakest.score * 100)}%) — a targeted drill wins those marks back`
-        : `Your weakest area (${Math.round(weakest.score * 100)}%) — a targeted, adaptive drill`,
-      action: "weak",
-    })
-  }
-
-  // 3. Spaced revision when cards are due.
-  if (fc.due > 0) {
-    tasks.push({
-      id: "flashcards",
-      icon: "🧠",
-      title: `Review ${fc.due} flashcard${fc.due === 1 ? "" : "s"}`,
-      detail: "Spaced repetition — lock in what you've already learned",
-      action: "flashcards",
-    })
-  }
-
-  // 4. Gate earned (≥MOCK_GATE% or the room already opened) → mock;
-  //    otherwise keep practising to build coverage toward the unlock.
-  if (mockGate(paperId).unlocked && stats.answered >= 20) {
-    tasks.push({
-      id: "mock",
-      icon: "⏱️",
-      title: rec.active && !rec.provenAgain ? "Prove it again — fresh timed mock" : "Sit a timed mock",
-      detail:
-        rec.active && !rec.provenAgain
-          ? "A pass here says the gaps from the sitting are closed — the retake gets booked from strength"
-          : `Exam room unlocked at ${MOCK_GATE}% — confirm it under exam conditions`,
-      action: "mock",
-    })
-  } else if (tasks.length < 2) {
-    tasks.push({
-      id: "practice",
-      icon: "✏️",
-      title: "Practice questions",
-      detail: "Build coverage across the syllabus with instant marking",
-      action: "practice",
-    })
-  }
-
-  return tasks.slice(0, 3)
+  return buildDailyTasks(paperId).map((t) => ({
+    id: t.id,
+    icon: t.icon,
+    title: t.title,
+    detail: t.detail,
+    action: t.action,
+  }))
 }
