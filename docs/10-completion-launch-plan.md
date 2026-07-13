@@ -21,7 +21,7 @@ The definition of done for this document: **a student in Uzbekistan can sign up,
 | AI architecture | **Sound** | Server-only key (no client exposure), correct model-mix (Haiku 4.5 for volume, Sonnet 5 for marking/generation), model IDs **verified current**, careful per-plan metering that fails closed. |
 | Backend / RLS / billing | **Launch-grade** | Real HMAC webhook signature verification, complete RLS on every user-data table, `?action=` dispatcher keeps 5/12 serverless functions. |
 | Content — 9 Applied papers | **Launch-ready** | Banks 150–239 each, full flashcard decks (62+), syllabus briefs, examiner intelligence on all 15 papers. |
-| Content — 6 Strategic papers | **Thin** | SBL/SBR banks 10/14; AFM/APM/ATX/AAA empty. Written/constructed-response sets thin (needed for AI Examiner). |
+| Content — 6 Strategic papers | **Launch-ready** (2026-07-13) | All six (SBL, SBR, AFM, APM, ATX, AAA) at full parity: 150-question banks (900 total, independently re-solved), briefs per area, 60 flashcards, 15 written each. |
 | Security hard-gates | **3 critical, fixable in code** | Entitlement privilege-escalation; unmetered legacy AI endpoints; no cost kill-switch. (All addressed in Phase 0 — see §4.) |
 | Tests | **Absent** | No suite. Grading, metering, JSON-parse guards, billing untested. |
 | Ops (prod env) | **Not started** | `/api/health` reports zero keys. Nothing transacts live until env + migrations land. |
@@ -77,8 +77,8 @@ Phases 0–3 are code (co-founder-executed). Phase 4 is content (authoring waves
 
 | Item | Priority | Acceptance |
 |---|---|---|
-| SBR + SBL launch content | HIGH | Seed banks (≥60 each toward 150), syllabus briefs (one per area), flashcard decks (≥60) — the two Strategic Essentials papers become studyable offline, matching the wave pipeline (blueprint → author → independent re-solve → balance → merge). |
-| Written/constructed-response expansion | MEDIUM | AI Examiner has rubric-backed written sets for every promoted paper, not just AA/FR/SBL/SBR. |
+| ~~SBR + SBL launch content~~ | ~~HIGH~~ | **DONE 2026-07-13** — superseded: all six Strategic papers shipped at full parity (150 bank + briefs + 60 cards + 15 written each), not just the two Essentials. |
+| Written/constructed-response expansion | MEDIUM | Every Strategic paper now has a 15-question rubric-backed written set; still thin on some Applied papers (only AA/FR beyond Strategic). |
 | FR / TX / PM → 300 | LOW (stretch) | The three most-sat Skills banks reach exam-kit depth. |
 | Options papers (AFM/APM/ATX/AAA) | On demand | Authored when student demand appears (ATX/AAA first for the UZ market), per Doc 9. |
 

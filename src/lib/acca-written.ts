@@ -1,4 +1,7 @@
 import { WRITTEN_WAVE2 } from "@/lib/acca-written-wave2"
+import { WRITTEN_S1 } from "@/lib/acca-written-s1"
+import { WRITTEN_S2 } from "@/lib/acca-written-s2"
+import { WRITTEN_S3 } from "@/lib/acca-written-s3"
 /*
  * Scholify — ACCA written (constructed-response) questions for the AI Examiner.
  *
@@ -319,6 +322,9 @@ export const WRITTEN_QUESTIONS: WrittenQuestion[] = [
     ],
   },
   ...WRITTEN_WAVE2,
+  ...WRITTEN_S1,
+  ...WRITTEN_S2,
+  ...WRITTEN_S3,
 ]
 
 export function getWrittenQuestions(paperId: string): WrittenQuestion[] {

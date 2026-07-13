@@ -1000,6 +1000,21 @@ Confusing mark-up with margin — 20% mark-up on a $24,000 sale is $4,000, but a
 import { SKILLS_BRIEFS } from "@/lib/acca-briefs-skills"
 import { AAFM_BRIEFS } from "@/lib/acca-briefs-aafm"
 import { KNOWLEDGE_BRIEFS } from "@/lib/acca-briefs-knowledge"
+import { SBL_BRIEFS } from "@/lib/acca-briefs-sbl"
+import { SBR_BRIEFS } from "@/lib/acca-briefs-sbr"
+import { AFM_BRIEFS } from "@/lib/acca-briefs-afm"
+import { APM_BRIEFS } from "@/lib/acca-briefs-apm"
+import { ATX_BRIEFS } from "@/lib/acca-briefs-atx"
+import { AAA_BRIEFS } from "@/lib/acca-briefs-aaa"
+
+const STRATEGIC_BRIEFS: TopicBrief[] = [
+  ...SBL_BRIEFS,
+  ...SBR_BRIEFS,
+  ...AFM_BRIEFS,
+  ...APM_BRIEFS,
+  ...ATX_BRIEFS,
+  ...AAA_BRIEFS,
+]
 
 /** Look up the brief for a paper + syllabus area, if one exists. */
 export function getTopicBrief(paperId: string, area: string): TopicBrief | undefined {
@@ -1007,6 +1022,7 @@ export function getTopicBrief(paperId: string, area: string): TopicBrief | undef
     TOPIC_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
     SKILLS_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
     AAFM_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
-    KNOWLEDGE_BRIEFS.find((b) => b.paper === paperId && b.area === area)
+    KNOWLEDGE_BRIEFS.find((b) => b.paper === paperId && b.area === area) ??
+    STRATEGIC_BRIEFS.find((b) => b.paper === paperId && b.area === area)
   )
 }

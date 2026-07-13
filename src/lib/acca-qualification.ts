@@ -94,7 +94,7 @@ const OTHER_PAPERS: AccaPaper[] = [
   },
   // Strategic Professional — Essentials
   {
-    id: "SBL", code: "SBL", name: "Strategic Business Leader", level: "Strategic Professional",
+    id: "SBL", code: "SBL", name: "Strategic Business Leader", level: "Strategic Professional", hasCuratedContent: true,
     blurb: "The integrated case-study exam: leadership, governance, strategy, risk and professional skills.",
     areas: [
       { code: "A", label: "Leadership & governance" },
@@ -105,7 +105,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "SBR", code: "SBR", name: "Strategic Business Reporting", level: "Strategic Professional",
+    id: "SBR", code: "SBR", name: "Strategic Business Reporting", level: "Strategic Professional", hasCuratedContent: true,
     blurb: "Applying and appraising IFRS across complex transactions, groups and current issues.",
     areas: [
       { code: "A", label: "Conceptual & regulatory framework" },
@@ -117,7 +117,7 @@ const OTHER_PAPERS: AccaPaper[] = [
   },
   // Strategic Professional — Options (choose 2)
   {
-    id: "AFM", code: "AFM (P4)", name: "Advanced Financial Management", level: "Strategic Professional", isOption: true,
+    id: "AFM", code: "AFM (P4)", name: "Advanced Financial Management", level: "Strategic Professional", isOption: true, hasCuratedContent: true,
     blurb: "The senior adviser's role: advanced appraisal, mergers, reconstruction, treasury & risk.",
     areas: [
       { code: "A", label: "Role of the senior financial adviser" },
@@ -128,7 +128,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "APM", code: "APM (P5)", name: "Advanced Performance Management", level: "Strategic Professional", isOption: true,
+    id: "APM", code: "APM (P5)", name: "Advanced Performance Management", level: "Strategic Professional", isOption: true, hasCuratedContent: true,
     blurb: "Designing and evaluating strategic performance management systems.",
     areas: [
       { code: "A", label: "Strategic planning & control" },
@@ -138,7 +138,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "ATX", code: "ATX (P6)", name: "Advanced Taxation", level: "Strategic Professional", isOption: true,
+    id: "ATX", code: "ATX (P6)", name: "Advanced Taxation", level: "Strategic Professional", isOption: true, hasCuratedContent: true,
     blurb: "Advanced UK tax planning across taxes, with ethics and adviser communication.",
     areas: [
       { code: "A", label: "Income tax & NIC (advanced)" },
@@ -149,7 +149,7 @@ const OTHER_PAPERS: AccaPaper[] = [
     ],
   },
   {
-    id: "AAA", code: "AAA (P7)", name: "Advanced Audit and Assurance", level: "Strategic Professional", isOption: true,
+    id: "AAA", code: "AAA (P7)", name: "Advanced Audit and Assurance", level: "Strategic Professional", isOption: true, hasCuratedContent: true,
     blurb: "Advanced audit: ethics, quality management, complex planning, evidence and reporting.",
     areas: [
       { code: "A", label: "Regulatory environment" },

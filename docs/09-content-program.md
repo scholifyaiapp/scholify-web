@@ -37,10 +37,11 @@ A paper is **content-complete** when it has:
 | 3 | PM, TX | Briefs + banks + intel | **Shipped** — PM 168, TX 225 (→300 target open) |
 | 5 | BT, MA, LW | Knowledge set (150 q, briefs, cards) | **Shipped** — all at 150 |
 | 8b | AA, FM | Skills banks 80 → 150 | **Shipped** (2026-07-13) — both at 150, blueprint-balanced, independently re-solved |
-| 6 | SBR, SBL | Written-heavy: rubrics-first + briefs | Next — banks 14/10 seeded |
-| 7 | Options (AFM/APM/ATX/AAA) | On student demand, ATX/AAA first (UZ market) | — |
+| S1–S5 | SBL, SBR, AFM, APM, ATX, AAA | Full stack: 150 bank + briefs + 60 cards + written | **Shipped** (2026-07-13) — all 6 Strategic papers at parity (see below) |
 
-**Applied Skills + Knowledge banks are all at the 150 practice-ladder floor.** Open depth work: push the three most-sat Skills banks (FR/TX/PM) toward the 300 exam-kit target.
+**Every ACCA paper with curated content is now at the full stack.** All 15 papers (3 Knowledge + 6 Applied Skills + 2 Strategic Essentials + 4 Options) have: 150+ question bank (blueprinted per area × difficulty, independently re-solved — every numeric recomputed digit-by-digit), one topic brief per syllabus area, a 60+ flashcard deck, and a rubric-backed written set. Open depth work: push the three most-sat Skills banks (FR/TX/PM) toward the 300 exam-kit target.
+
+**Strategic wave (2026-07-13) — the numbers:** 6 banks × 150 = 900 verified questions (each paper PASS on an independent re-solve pass; SBL/AFM/AAA/ATX had only cosmetic explanation-numbering slips, all fixed), 29 briefs, 360 flashcards, 90 written questions. All original, syllabus-aligned, zero ACCA/Kaplan/BPP reproduction. Model IDs verified current.
 
 Authoring method (proven in waves 1–2, held through 8b): blueprint → parallel agent authoring → **mandatory independent re-solve verification** (every numeric recomputed digit-by-digit) → balanced answer positions → merge. Every wave updates docs and the practice-ladder targets.
 

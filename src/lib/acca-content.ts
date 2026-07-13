@@ -21,6 +21,18 @@ import { PM_WAVE2B } from "@/lib/acca-content-pm3"
 import { TX_WAVE2A } from "@/lib/acca-content-tx2"
 import { TX_WAVE2B } from "@/lib/acca-content-tx3"
 import { TX_WAVE3A } from "@/lib/acca-content-tx4"
+import { SBL_WAVE1A } from "@/lib/acca-content-sbl2"
+import { SBL_WAVE1B } from "@/lib/acca-content-sbl3"
+import { SBR_WAVE1A } from "@/lib/acca-content-sbr2"
+import { SBR_WAVE1B } from "@/lib/acca-content-sbr3"
+import { AFM_WAVE1A } from "@/lib/acca-content-afm2"
+import { AFM_WAVE1B } from "@/lib/acca-content-afm3"
+import { APM_WAVE1A } from "@/lib/acca-content-apm2"
+import { APM_WAVE1B } from "@/lib/acca-content-apm3"
+import { ATX_WAVE1A } from "@/lib/acca-content-atx2"
+import { ATX_WAVE1B } from "@/lib/acca-content-atx3"
+import { AAA_WAVE1A } from "@/lib/acca-content-aaa2"
+import { AAA_WAVE1B } from "@/lib/acca-content-aaa3"
 /*
  * Scholify — ACCA content: papers, syllabus areas, and a seed question bank.
  *
@@ -1530,4 +1542,16 @@ export const QUESTIONS: AccaQuestion[] = [
   ...TX_WAVE2A,
   ...TX_WAVE2B,
   ...TX_WAVE3A,
+  ...SBL_WAVE1A,
+  ...SBL_WAVE1B,
+  ...SBR_WAVE1A,
+  ...SBR_WAVE1B,
+  ...AFM_WAVE1A,
+  ...AFM_WAVE1B,
+  ...APM_WAVE1A,
+  ...APM_WAVE1B,
+  ...ATX_WAVE1A,
+  ...ATX_WAVE1B,
+  ...AAA_WAVE1A,
+  ...AAA_WAVE1B,
 ]
