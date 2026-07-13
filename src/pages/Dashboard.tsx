@@ -61,7 +61,7 @@ export default function Dashboard() {
   const weakest = palestArea(paperId)
   const momentum = probabilityMomentum(paperId)
   const mission = buildTodayPlan(paperId)
-  const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
+  const isPro = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
 
   useEffect(() => {
     snapshotProbability(paperId)

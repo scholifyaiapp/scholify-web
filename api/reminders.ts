@@ -71,10 +71,15 @@ async function handleSync(req: VercelRequest, res: VercelResponse): Promise<void
 }
 
 async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void> {
-  // Protect the cron endpoint if a secret is configured.
+  // Fail closed: the send path (emails = cost + spam surface) unlocks ONLY with
+  // a valid CRON_SECRET. If the secret is unset, the endpoint refuses rather
+  // than running unauthenticated. Configure CRON_SECRET on the Vercel cron.
   const secret = process.env.CRON_SECRET
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
-    res.status(401).json({ error: "Unauthorized." })
+  const authed = Boolean(secret) && req.headers.authorization === `Bearer ${secret}`
+  if (!authed) {
+    res.status(secret ? 401 : 403).json({
+      error: secret ? "Unauthorized." : "CRON_SECRET not configured.",
+    })
     return
   }
 

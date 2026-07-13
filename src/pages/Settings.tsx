@@ -583,7 +583,7 @@ export default function Settings() {
   const [dialog, setDialog] = useState<"cancel" | "reset" | "delete" | null>(null)
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Learner"
-  const isPaid = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
+  const isPaid = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "2026"
 
   /* Referrals */

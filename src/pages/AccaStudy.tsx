@@ -102,7 +102,7 @@ export default function AccaStudy() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
+  const isPro = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
 
   // Land where the loop is: the current paper's overview. The picker stays
@@ -164,7 +164,7 @@ export default function AccaStudy() {
     const attempt = async (retriesLeft: number) => {
       try {
         const { data } = await supabase.auth.refreshSession()
-        const plan = data.session?.user?.user_metadata?.plan
+        const plan = data.session?.user?.app_metadata?.plan
         if (plan && plan !== "free") return
       } catch {
         /* transient — retry below */

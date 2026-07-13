@@ -73,9 +73,19 @@ function todayUtc(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+/** Global cost circuit-breaker: set AI_KILL_SWITCH=1 in the env to force every
+ *  AI action to the deterministic fallback instantly, without a redeploy —
+ *  the CFO's emergency brake if spend spikes. */
+function aiKilled(): boolean {
+  const v = String(process.env.AI_KILL_SWITCH || "").toLowerCase()
+  return v === "1" || v === "true" || v === "on"
+}
+
 async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter> {
   // No API key → handlers return free fallbacks anyway; nothing to meter.
   if (!process.env.ANTHROPIC_API_KEY) return METER_PASS
+  // Emergency brake: treat as a metering outage so every action fails closed.
+  if (aiKilled()) return { allowed: false, reason: "metering_unavailable", record: () => {} }
 
   const supa = meteringAdmin()
   if (!supa) return { allowed: false, reason: "metering_unavailable", record: () => {} }
@@ -86,7 +96,9 @@ async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter>
   const user = data?.user
   if (error || !user) return { allowed: false, reason: "auth_required", record: () => {} }
 
-  const rawPlan = String(user.user_metadata?.plan || "free")
+  // Entitlement is read from app_metadata (service-role-only) — never
+  // user_metadata, which the user can self-write to forge a higher plan.
+  const rawPlan = String(user.app_metadata?.plan || "free")
   const tier: Tier = rawPlan === "beginner" ? "beginner" : rawPlan !== "free" ? "pro" : "free"
   const cap = DAILY_CAPS[tier][action]
   if (cap === 0) return { allowed: false, reason: "plan_required", record: () => {} }
@@ -151,25 +163,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const action = String((req.query.action || body.action) || "").trim().toLowerCase()
-  if (action === "message") return handleMessage(body, res)
-  if (action === "chat") return handleChat(body, res)
-  if (action === "analyze-patterns") return handleAnalyze(body, res)
-  if (action === "analyze-difficulty") return handleDifficulty(body, res)
-  if (action === "analyze-photo") return handlePhoto(body, res)
-  if (action === "generate-tree") return handleTree(body, res)
-  if (action === "vocab") return handleVocab(body, res)
-  if (action === "placement") return handlePlacement(body, res)
-  if (action === "extract") return handleExtract(body, res)
-  if (action === "fetch-url") return handleFetchUrl(body, res)
+
+  // Retired vocab-pivot endpoints. These called Claude with NO auth and NO
+  // metering — an open, uncapped spend vector the moment ANTHROPIC_API_KEY is
+  // live. The current ACCA app never calls them (see src/lib/acca-ai.ts, which
+  // only uses the four acca-* actions), so they are disabled outright. Their
+  // handler functions remain below, dead but harmless, for reference.
+  if (RETIRED_ACTIONS.has(action)) {
+    res.status(410).json({ error: "This endpoint has been retired.", isFallback: true })
+    return
+  }
+
   if (action === "acca-tutor") return handleAccaTutor(req, body, res)
   if (action === "acca-examiner") return handleAccaExaminer(req, body, res)
   if (action === "acca-generate") return handleAccaGenerate(req, body, res)
   if (action === "acca-postmortem") return handleAccaPostmortem(req, body, res)
   res.status(400).json({
-    error:
-      "Unknown action. Use ?action=message | chat | analyze-patterns | analyze-difficulty | analyze-photo | generate-tree | vocab | extract | fetch-url | acca-tutor | acca-examiner | acca-generate | acca-postmortem.",
+    error: "Unknown action. Use ?action=acca-tutor | acca-examiner | acca-generate | acca-postmortem.",
   })
 }
+
+/** Unauthenticated/unmetered legacy actions — hard-disabled (see dispatcher). */
+const RETIRED_ACTIONS = new Set([
+  "message", "chat", "analyze-patterns", "analyze-difficulty", "analyze-photo",
+  "generate-tree", "vocab", "placement", "extract", "fetch-url",
+])
 
 /* ── ACCA question generator — MCQs from a topic / notes (Sonnet) ──────── */
 

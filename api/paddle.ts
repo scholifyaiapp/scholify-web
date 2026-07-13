@@ -137,22 +137,29 @@ async function webhook(req: VercelRequest, res: VercelResponse, rawBody: string)
       // subscription.updated with status "canceled" is the terminal event
       // when a scheduled cancellation lands.
       const canceled = type === "subscription.updated" && status === "canceled"
+      // past_due keeps access during Paddle's dunning window but flags the UI;
+      // the terminal subscription.canceled event is what revokes the plan.
+      const pastDue = type === "subscription.updated" && status === "past_due"
       const meta: Record<string, unknown> = canceled
         ? { plan: "free", plan_status: "canceled" }
-        : {
-            ...(plan ? { plan } : {}),
-            plan_status: "active",
-            ...(subscriptionId ? { paddle_subscription_id: subscriptionId } : {}),
-            ...(data.customer_id ? { paddle_customer_id: data.customer_id } : {}),
-          }
-      await supa.auth.admin.updateUserById(userId, { user_metadata: meta })
+        : pastDue
+          ? { plan_status: "past_due" }
+          : {
+              ...(plan ? { plan } : {}),
+              plan_status: "active",
+              ...(subscriptionId ? { paddle_subscription_id: subscriptionId } : {}),
+              ...(data.customer_id ? { paddle_customer_id: data.customer_id } : {}),
+            }
+      // Entitlement MUST live in app_metadata: it is writable only by the
+      // service role, so a user cannot self-grant Pro via auth.updateUser().
+      await supa.auth.admin.updateUserById(userId, { app_metadata: meta })
       res.status(200).json({ ok: true, applied: type })
       return
     }
 
     if (type === "subscription.canceled") {
       await supa.auth.admin.updateUserById(userId, {
-        user_metadata: { plan: "free", plan_status: "canceled" },
+        app_metadata: { plan: "free", plan_status: "canceled" },
       })
       res.status(200).json({ ok: true, applied: type })
       return
@@ -188,7 +195,7 @@ async function cancel(req: VercelRequest, res: VercelResponse, _rawBody: string)
     return
   }
 
-  const subscriptionId = user.user_metadata?.paddle_subscription_id as string | undefined
+  const subscriptionId = user.app_metadata?.paddle_subscription_id as string | undefined
   if (!subscriptionId) {
     res.status(200).json({ ok: false, reason: "no_subscription" })
     return
@@ -206,7 +213,7 @@ async function cancel(req: VercelRequest, res: VercelResponse, _rawBody: string)
     }
     // Keep access until period end; the subscription.updated/canceled
     // webhook flips plan to "free" when it actually lapses.
-    await supa.auth.admin.updateUserById(user.id, { user_metadata: { plan_status: "canceling" } })
+    await supa.auth.admin.updateUserById(user.id, { app_metadata: { plan_status: "canceling" } })
     res.status(200).json({ ok: true })
   } catch {
     res.status(200).json({ ok: false, reason: "paddle_unreachable" })

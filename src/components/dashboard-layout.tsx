@@ -163,7 +163,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
-  const isPro = Boolean(user?.user_metadata?.plan && user.user_metadata.plan !== "free")
+  const isPro = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>
