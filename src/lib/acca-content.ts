@@ -5,6 +5,8 @@ import { FR_WAVE3A } from "@/lib/acca-content-fr3"
 import { FR_WAVE3B } from "@/lib/acca-content-fr4"
 import { FR_WAVE4A } from "@/lib/acca-content-fr5"
 import { AA_WAVE2 } from "@/lib/acca-content-aa2"
+import { AA_WAVE3A } from "@/lib/acca-content-aa3"
+import { AA_WAVE3B } from "@/lib/acca-content-aa4"
 import { BT_WAVE2 } from "@/lib/acca-content-bt2"
 import { BT_WAVE3 } from "@/lib/acca-content-bt3"
 import { LW_WAVE2 } from "@/lib/acca-content-lw2"
@@ -12,6 +14,8 @@ import { LW_WAVE3 } from "@/lib/acca-content-lw3"
 import { MA_WAVE2 } from "@/lib/acca-content-ma2"
 import { MA_WAVE3 } from "@/lib/acca-content-ma3"
 import { FM_WAVE2 } from "@/lib/acca-content-fm2"
+import { FM_WAVE3A } from "@/lib/acca-content-fm3"
+import { FM_WAVE3B } from "@/lib/acca-content-fm4"
 import { PM_WAVE2A } from "@/lib/acca-content-pm2"
 import { PM_WAVE2B } from "@/lib/acca-content-pm3"
 import { TX_WAVE2A } from "@/lib/acca-content-tx2"
@@ -1510,6 +1514,8 @@ export const QUESTIONS: AccaQuestion[] = [
   ...FR_WAVE3B,
   ...FR_WAVE4A,
   ...AA_WAVE2,
+  ...AA_WAVE3A,
+  ...AA_WAVE3B,
   ...BT_WAVE2,
   ...BT_WAVE3,
   ...LW_WAVE2,
@@ -1517,6 +1523,8 @@ export const QUESTIONS: AccaQuestion[] = [
   ...MA_WAVE2,
   ...MA_WAVE3,
   ...FM_WAVE2,
+  ...FM_WAVE3A,
+  ...FM_WAVE3B,
   ...PM_WAVE2A,
   ...PM_WAVE2B,
   ...TX_WAVE2A,

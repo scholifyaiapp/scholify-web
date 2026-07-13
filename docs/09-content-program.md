@@ -33,14 +33,16 @@ A paper is **content-complete** when it has:
 
 | Wave | Papers | Scope | Status |
 |---|---|---|---|
-| 1–2 | FA, FR | Briefs ✅ · banks 80/60 ✅ · intel ✅ | **Shipped** (target: banks → 300) |
-| 3 | PM, TX | Briefs + banks → 150 + intel ✅ | Next |
-| 4 | AA, FM | Same | — |
-| 5 | BT, MA, LW | Knowledge set (150 q, briefs, cards) | — |
-| 6 | SBR, SBL | Written-heavy: rubrics-first + briefs | — |
+| 1–2 | FA, FR | Briefs ✅ · banks ✅ · intel ✅ | **Shipped** — FR now 239, en route to 300 |
+| 3 | PM, TX | Briefs + banks + intel | **Shipped** — PM 168, TX 225 (→300 target open) |
+| 5 | BT, MA, LW | Knowledge set (150 q, briefs, cards) | **Shipped** — all at 150 |
+| 8b | AA, FM | Skills banks 80 → 150 | **Shipped** (2026-07-13) — both at 150, blueprint-balanced, independently re-solved |
+| 6 | SBR, SBL | Written-heavy: rubrics-first + briefs | Next — banks 14/10 seeded |
 | 7 | Options (AFM/APM/ATX/AAA) | On student demand, ATX/AAA first (UZ market) | — |
 
-Authoring method (proven in waves 1–2): blueprint → agent authoring → **mandatory independent re-solve verification** → balanced answer positions → merge. Every wave updates docs and the practice-ladder targets.
+**Applied Skills + Knowledge banks are all at the 150 practice-ladder floor.** Open depth work: push the three most-sat Skills banks (FR/TX/PM) toward the 300 exam-kit target.
+
+Authoring method (proven in waves 1–2, held through 8b): blueprint → parallel agent authoring → **mandatory independent re-solve verification** (every numeric recomputed digit-by-digit) → balanced answer positions → merge. Every wave updates docs and the practice-ladder targets.
 
 ## 4. Examiner Intelligence (shipped v1)
 
