@@ -70,6 +70,13 @@ export interface AccaPaper {
   isOption?: boolean
   /** True once a curated question bank exists (vs AI-generated practice only). */
   hasCuratedContent?: boolean
+  /**
+   * The real ACCA exam for this paper is 100% objective-test — BT, MA, FA and LW
+   * have no constructed-response section at all. Written marking is therefore
+   * not "coming soon" for them; it is not part of their exam, and promising it
+   * would be teaching the wrong thing. The AI Examiner is hidden for these.
+   */
+  objectiveOnly?: boolean
 }
 
 export interface AccaQuestion {
@@ -107,6 +114,7 @@ export const PAPERS: AccaPaper[] = [
     name: "Financial Accounting",
     level: "Applied Knowledge",
     hasCuratedContent: true,
+    objectiveOnly: true,
     blurb:
       "The foundations: double-entry, recording transactions, trial balance, and preparing basic financial statements.",
     areas: [

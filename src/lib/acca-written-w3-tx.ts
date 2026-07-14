@@ -1,0 +1,312 @@
+import type { WrittenQuestion } from "@/lib/acca-written"
+
+/*
+ * Scholify — ACCA written (constructed-response) questions, wave 3: TX.
+ *
+ * TX (Taxation, UK — FA2024 for the 2024/25 tax year and FY2024 for companies)
+ * Section C style questions for the AI Examiner. Rates and thresholds match the
+ * TX study chapters exactly: PA £12,570 (tapered above £100,000), basic/higher/
+ * additional 20/40/45%, dividend allowance £500, Class 1 employee 8%/2% and
+ * employer 13.8%, Class 2/4 6%/2%, CGT AEA £3,000 with 18%/24% rates and BADR
+ * at 10% up to £1m, AIA £1,000,000 with 18%/6% WDAs, CT 19%/25% with the
+ * £50,000/£250,000 limits and the 3/200 fraction, VAT registration £90,000 /
+ * deregistration £88,000, IHT NRB £325,000 and RNRB £175,000.
+ *
+ * Every scenario, name, company and figure is INVENTED; all technical content
+ * is drawn from the public syllabus only. No ACCA, Kaplan or BPP material is
+ * reproduced. Each carries a rubric of marking points (~1 mark each), and the
+ * rubric credits the REASONING and TREATMENTS in words, not just final figures.
+ */
+
+export const WRITTEN_W3_TX: WrittenQuestion[] = [
+  // ==================== A — Income tax & NIC (5) ====================
+  {
+    id: "TX-W-01",
+    paper: "TX",
+    area: "A",
+    topic: "Employment vs self-employment & NIC classes",
+    stem: "Calder Grove Veterinary Ltd engages Rowan Pike to run its Saturday clinics. Rowan works the hours the practice sets, uses the practice's equipment and premises, is paid £1,900 each month whether or not clients attend, cannot send anyone in his place, and does no veterinary work elsewhere. The practice pays him gross and treats him as self-employed. Explain the factors that determine whether Rowan is employed or self-employed, state your conclusion, and set out the national insurance consequences for Rowan and for Calder Grove Veterinary Ltd under each status. (9 marks)",
+    maxMarks: 9,
+    rubric: [
+      "Status is decided on the overall picture of the working relationship, not on the label the parties choose to give it.",
+      "Control is a key indicator: the practice dictates what work is done, when and where, which points to employment.",
+      "There is no right of substitution — the obligation of personal service is a strong pointer to a contract of service.",
+      "Mutuality of obligation is present: Rowan is paid a fixed monthly amount regardless of client numbers, so he takes no financial risk.",
+      "Other pointers the same way: he uses the engager's equipment and premises, is integrated into the business and has no other clients; the conclusion is that Rowan is an employee.",
+      "If self-employed, Rowan would pay Class 2 (treated as paid where profits are at least £6,725) and Class 4 at 6% on profits between £12,570 and £50,270, then 2% above, collected through self-assessment.",
+      "If employed, his earnings are subject to employee (primary) Class 1 NIC at 8% on earnings between £12,570 and £50,270 and 2% above that, deducted at source.",
+      "The employer becomes liable to secondary Class 1 NIC at 13.8% on earnings above the secondary threshold — a cost the practice does not bear at all if he is genuinely self-employed.",
+      "On reclassification the practice must account for PAYE income tax and both classes of Class 1 NIC on amounts already paid, with interest and penalties for failing to operate PAYE.",
+    ],
+  },
+  {
+    id: "TX-W-02",
+    paper: "TX",
+    area: "A",
+    topic: "Employment income — benefits",
+    stem: "Marguerite Osei is a marketing director of Halloway Foods Ltd. During 2024/25 the company provided her with: a petrol company car available all year which she also uses privately (the company pays for all her fuel, including private fuel); an interest-free loan of £22,000 made to help her buy a boat; a mobile phone for both business and private use; a £45 hamper at Christmas; and payment of the annual subscription to her professional marketing institute. Explain, for each item, how it is treated for employment income purposes in Marguerite's income tax computation for 2024/25. (10 marks)",
+    maxMarks: 10,
+    rubric: [
+      "Employment income is taxed on the receipts basis and includes the cash equivalent of taxable benefits provided by reason of the employment.",
+      "The company car is a taxable benefit measured as the list price of the car multiplied by an appropriate percentage based on the car's CO2 emissions.",
+      "The car benefit is time-apportioned if the car is unavailable for part of the year and is reduced by any contribution the employee makes for private use — here it is available all year.",
+      "Because private fuel is provided, a separate car fuel benefit arises: the same CO2 percentage is applied to the fixed fuel benefit base figure of £27,800 for 2024/25.",
+      "The fuel benefit is not reduced unless the employee reimburses the full cost of all private fuel — a partial reimbursement gives no reduction at all.",
+      "The £22,000 interest-free loan is a taxable beneficial loan because it exceeds the £10,000 de minimis limit for cheap loans.",
+      "The beneficial loan benefit is the official rate of interest applied to the loan balance, less any interest actually paid by the employee (nil here); it can be computed using the average or the strict method.",
+      "The mobile phone is an exempt benefit: one mobile phone provided to an employee is exempt even where there is private use.",
+      "The £45 hamper is within the trivial benefits exemption (not cash, not a reward for services, cost £50 or less), so it is exempt.",
+      "The professional subscription to a body relevant to her duties is an allowable deduction, so although the payment is taxable as earnings it is effectively cancelled by the deduction; the taxable benefits are then added to her employment income and Class 1A NIC at 13.8% is payable by the employer on them.",
+    ],
+  },
+  {
+    id: "TX-W-03",
+    paper: "TX",
+    area: "A",
+    topic: "Tax-adjusted trading profit & capital allowances",
+    stem: "Sabine Vance is a self-employed furniture maker preparing accounts to 31 March 2025 using the accruals basis. Her accounts show a net profit of £84,000 after charging: depreciation; her own salary; a client-entertaining bill; a fine for parking her van on double yellow lines while making a delivery; the full running costs of a van used 30% privately; and a general provision for warranty claims. She also took a bookcase from stock for her own home at cost. During the year she bought a new workshop lathe, air-conditioning ducting for the workshop, and a car with high CO2 emissions used 40% privately. Explain how you would adjust her accounting profit to arrive at the tax-adjusted trading profit and how each capital item is dealt with in the capital allowances computation. (10 marks)",
+    maxMarks: 10,
+    rubric: [
+      "The starting point is net profit per the accounts, to which disallowable expenditure is added back and from which non-trading income and further tax-only deductions are removed.",
+      "Depreciation is added back because it is an accounting charge, not a tax deduction (relief for capital expenditure comes only through capital allowances), and so is the proprietor's own salary, since a sole trader cannot be an employee of her own business.",
+      "Client entertaining is added back as it is specifically disallowed (staff entertaining would be allowable).",
+      "The parking fine is added back: fines and penalties for breaking the law are not incurred wholly and exclusively for the purposes of the trade.",
+      "The private-use adjustment on the van is made by adding back 30% of the van running costs, because only the business proportion of the expense is deductible.",
+      "The general warranty provision is added back because only a specific provision reflecting a probable, reliably estimated obligation is allowable; and the bookcase taken for own use is treated as a sale at market value, so the excess of market value over the cost charged in the accounts is added to profit.",
+      "The lathe is main-pool plant qualifying for the annual investment allowance (AIA) of £1,000,000, which gives 100% relief in the year of purchase; the air-conditioning ducting is an integral feature and so a special rate asset attracting a WDA of only 6%.",
+      "AIA should therefore be allocated to the special rate ducting FIRST, because relief on it would otherwise crawl at 6% a year, while the main-pool lathe would in any event obtain an 18% WDA.",
+      "A car never qualifies for AIA; a high-emission car attracts only a 6% writing down allowance at the special rate, and because it is used 40% privately by the proprietor it is kept in a separate single-asset pool with only the 60% business proportion of the WDA deducted.",
+      "The total capital allowances are then deducted from the adjusted profit, and the resulting tax-adjusted trading profit is the figure taxed as trading income and used as the basis for Class 4 NIC.",
+    ],
+  },
+  {
+    id: "TX-W-04",
+    paper: "TX",
+    area: "A",
+    topic: "Property income & self-assessment obligations",
+    stem: "Delphine Marsh, an employee taxed under PAYE, began letting a flat on 6 May 2024. In 2024/25 she received rents of £14,400, paid mortgage interest of £5,200, paid letting agent's fees and insurance of £1,900, replaced the old sofa with an equivalent new one, and installed a new fitted kitchen where none existed before. She has never filed a tax return. Explain how her property income for 2024/25 is computed, including the treatment of the mortgage interest and the two items of expenditure on the flat, and state the self-assessment obligations and deadlines she must now meet and the penalties she risks. (10 marks)",
+    maxMarks: 10,
+    rubric: [
+      "Property income is computed for the tax year on the cash basis by default for individual landlords, with rents received less allowable expenses incurred wholly and exclusively for the letting.",
+      "Agent's fees and insurance of £1,900 are revenue expenses of the letting and are deductible in full.",
+      "Mortgage interest on a residential let is NOT deductible from property income; relief is instead given as a basic rate (20%) tax reducer on the finance costs.",
+      "The tax reducer is applied against her income tax liability, so a higher-rate taxpayer obtains relief for the interest only at 20%, not at her marginal rate.",
+      "Replacing the sofa with an equivalent new one qualifies for replacement of domestic items relief, so the cost (restricted to a like-for-like replacement, net of any proceeds of the old item) is deductible.",
+      "The new fitted kitchen where none existed before is an improvement — it is capital expenditure and is not deductible from property income (it may form part of the base cost for CGT on a later disposal).",
+      "She could alternatively claim the £1,000 property allowance instead of actual expenses, but this would be worse here because her deductible expenses exceed £1,000.",
+      "Delphine must notify HMRC of her chargeability to tax by 5 October following the end of the tax year — 5 October 2025 for 2024/25 — or face a failure to notify penalty based on the potential lost revenue.",
+      "The 2024/25 return must be filed online by 31 January 2026 (or by 31 October 2025 if filed on paper), and the balancing payment is due by 31 January 2026.",
+      "Late filing triggers an immediate £100 penalty with further penalties as the delay lengthens; late payment attracts interest plus penalties of 5% of the unpaid tax at 30 days, 6 months and 12 months, and records must be retained (for a taxpayer with a business, five years from 31 January following the tax year).",
+    ],
+  },
+  {
+    id: "TX-W-05",
+    paper: "TX",
+    area: "A",
+    topic: "The income tax computation, pensions and reliefs",
+    stem: "Elias Bonner has employment income of £108,000, bank interest of £3,000 and dividends of £6,000 for 2024/25. He made a gross personal pension contribution of £10,000 into a personal pension scheme and a gift aid donation of £800 (net) to a registered charity. He is unsure why his accountant says the pension contribution 'saves him tax twice'. Explain how Elias's income tax liability for 2024/25 is built up, the order in which his income is taxed, and how the pension contribution and the gift aid donation affect the computation. (9 marks)",
+    maxMarks: 9,
+    rubric: [
+      "Income is pooled by type in the computation: non-savings income first, then savings income, then dividend income last, because each has its own rates.",
+      "The personal allowance of £12,570 is deducted from net income and is set against non-savings income first, as this wastes the least relief.",
+      "The personal allowance is tapered by £1 for every £2 by which adjusted net income exceeds £100,000, and is lost entirely once adjusted net income reaches £125,140.",
+      "Gross personal pension contributions and gross gift aid donations are deducted in arriving at adjusted net income, so they can restore part of the personal allowance — this is the 'second' saving on the pension contribution.",
+      "Relief for a personal pension contribution is given at source: the individual pays net and the scheme reclaims basic rate relief, so tax is effectively saved at 20% within the payment itself.",
+      "Higher and additional rate relief is given by extending the basic rate band (and higher rate threshold) by the gross contribution, so more income is taxed at 20% rather than 40%.",
+      "The gift aid donation is grossed up by 100/80 and extends the bands in exactly the same way as the pension contribution.",
+      "Savings income benefits from the personal savings allowance — £1,000 for a basic rate taxpayer but only £500 for a higher rate taxpayer (nil for an additional rate taxpayer) — and the starting rate band for savings is only available if non-savings taxable income does not exceed £5,000.",
+      "Dividends are taxed after the £500 dividend allowance at 8.75%, 33.75% and 39.35%, and the amounts covered by the dividend and savings allowances still use up the relevant tax band.",
+    ],
+  },
+
+  // ==================== B — Chargeable gains (3) ====================
+  {
+    id: "TX-W-06",
+    paper: "TX",
+    area: "B",
+    topic: "BADR and gift relief on shares",
+    stem: "Fenella Trask has been finance director of Ardmore Kilns Ltd, an unquoted trading company, for six years and has held 12% of its ordinary shares (with matching voting rights) throughout. She will realise a gain of roughly £450,000 and has made no previous claims for business asset disposal relief. She is choosing between selling the shares to a third party and giving them to her son, who will run the company. Explain the conditions for business asset disposal relief and its effect if she sells, and explain how gift relief would instead apply if she gives the shares to her son. (8 marks)",
+    maxMarks: 8,
+    rubric: [
+      "Business asset disposal relief (BADR) applies to a disposal of shares in the individual's personal trading company.",
+      "A personal company requires at least a 5% holding of ordinary share capital and voting rights — Fenella's 12% satisfies this.",
+      "The individual must also be an officer or employee of the company; as finance director she qualifies.",
+      "The conditions must be met throughout the two years ending on the date of disposal, which her six-year holding satisfies.",
+      "A successful BADR claim taxes the qualifying gain at 10%, instead of the normal 20% (or 18%/24% rates for later disposals), subject to a lifetime limit of £1,000,000 of qualifying gains — her £450,000 gain is within it.",
+      "The claim must be made by the first anniversary of the 31 January following the tax year of disposal.",
+      "If instead she gives the shares to her son, the gift is still a disposal at market value for CGT, but gift (holdover) relief is available because they are shares in an unquoted trading company and a joint claim by donor and donee can be made.",
+      "The effect of gift relief is that no CGT is payable now and the held-over gain is deducted from the son's base cost, so the gain is deferred and taxed on him when he later disposes of the shares — she should weigh a 10% charge now against full deferral with a lower base cost for her son.",
+    ],
+  },
+  {
+    id: "TX-W-07",
+    paper: "TX",
+    area: "B",
+    topic: "Principal private residence relief",
+    stem: "Rufus Quill is selling a house he has owned for twelve years. He lived in it as his only home for the first three years; he was then posted by his employer to a UK office 200 miles away and lived in rented accommodation there for four years; he returned and lived in the house for a further three years; for the final two years he let the whole house to tenants while living with his partner elsewhere. Explain how principal private residence relief applies to the gain, identifying which periods of ownership are exempt and which are chargeable, and state how the chargeable proportion is calculated. (7 marks)",
+    maxMarks: 7,
+    rubric: [
+      "PPR relief exempts the proportion of the gain relating to periods in which the property was the taxpayer's only or main residence.",
+      "Periods of actual occupation are exempt: the first three years and the later three years after he returned.",
+      "Deemed occupation rules can exempt certain absences, including up to four years of absence while working elsewhere in the UK.",
+      "Deemed occupation requires actual occupation both before and after the absence — satisfied here because he lived in the house before the posting and after returning, so the four-year posting is exempt.",
+      "The last nine months of ownership are always treated as a period of occupation, whatever the property is actually used for, so nine months of the final letting period are exempt.",
+      "The balance of the final letting period (fifteen months) is a chargeable period of non-occupation because he was not living there and it is not covered by any deemed occupation rule.",
+      "The chargeable gain is the total gain multiplied by the chargeable months over total months of ownership, and the annual exempt amount of £3,000 is then set against it, with any remaining residential gain taxed at 18% and/or 24%.",
+    ],
+  },
+  {
+    id: "TX-W-08",
+    paper: "TX",
+    area: "B",
+    topic: "Chattels and share matching rules",
+    stem: "In 2024/25 Nadia Kolar made two disposals. First, she sold an antique clock for £7,200 which she had bought for £2,000. Second, she sold 3,000 shares in Pelham Wharf plc on 14 June 2024; she had acquired 1,000 shares on 14 June 2024 itself, 500 shares on 30 June 2024, and 4,000 shares in various purchases over the previous ten years. Explain the chattels rules as they apply to the clock, and explain the order in which her share disposal must be matched with her acquisitions and why that order matters. (8 marks)",
+    maxMarks: 8,
+    rubric: [
+      "A chattel is tangible movable property; a non-wasting chattel such as an antique clock is chargeable but benefits from special rules.",
+      "A chattel bought and sold for £6,000 or less is entirely exempt from CGT; the clock is not exempt because gross proceeds exceed £6,000.",
+      "Where the cost is £6,000 or less but the proceeds exceed £6,000, the gain is capped at 5/3 x (gross proceeds − £6,000), and the taxpayer takes the LOWER of that figure and the gain computed normally.",
+      "So the clock's normal gain (proceeds less cost) is compared with the 5/3 marginal calculation and the smaller amount is the chargeable gain.",
+      "For shares of the same class in the same company, disposals must be matched with acquisitions in a fixed statutory order, because otherwise a taxpayer could pick whichever cost gave the best answer.",
+      "The first match is with acquisitions made on the SAME DAY as the disposal — here the 1,000 shares bought on 14 June 2024.",
+      "The second match is with acquisitions made in the NEXT 30 DAYS after the disposal — here the 500 shares bought on 30 June 2024 (the 'bed and breakfasting' rule that stops artificial loss creation).",
+      "The balance (1,500 shares) is matched against the s104 pool, taking the average cost per share of the pooled holding, and the pool must then be reduced by the shares and cost removed.",
+    ],
+  },
+
+  // ==================== C — Corporation tax (4) ====================
+  {
+    id: "TX-W-09",
+    paper: "TX",
+    area: "C",
+    topic: "Long period of account, rates and marginal relief",
+    stem: "Brightmoor Optics Ltd, which has always prepared accounts to 31 December, changed its year end and prepared one set of accounts for the 16-month period ended 30 April 2025. Its director expects taxable total profits for the whole period of around £190,000 and is unsure how many corporation tax returns are needed or what rate applies. He also mentions that he controls two other trading companies. Explain how the long period of account is dealt with for corporation tax, how the rate of tax and marginal relief operate for the periods concerned, and the effect of the other companies he controls. (8 marks)",
+    maxMarks: 8,
+    rubric: [
+      "A chargeable accounting period can never exceed 12 months, so a 16-month period of account must be split into two chargeable accounting periods.",
+      "The first chargeable accounting period is the first 12 months (to 31 December 2024) and the second is the remaining 4 months (to 30 April 2025), with a corporation tax return required for each.",
+      "Trading profit before capital allowances is time-apportioned between the two periods, while capital allowances are computed separately for each period (with the AIA and WDA scaled for the 4-month period).",
+      "Property income is time-apportioned but chargeable gains are allocated to the period in which the disposal actually falls.",
+      "For financial year 2024 the main rate is 25% and the small profits rate is 19%; the small profits rate applies where augmented profits do not exceed £50,000 and the main rate applies above £250,000.",
+      "Where augmented profits fall between the limits, the main rate applies but marginal relief reduces the liability, computed using the standard fraction of 3/200 on the shortfall of augmented profits below the upper limit.",
+      "The £50,000 and £250,000 limits are divided by the number of associated companies plus one — with two other companies under his control the limits fall to £16,667 and £83,333.",
+      "The limits are also proportionately reduced for the short 4-month accounting period, so both the associated companies and the short period make it far more likely that profits are taxed at the full 25% main rate.",
+    ],
+  },
+  {
+    id: "TX-W-10",
+    paper: "TX",
+    area: "C",
+    topic: "Company trading losses",
+    stem: "Wexley Coatings Ltd made a substantial trading loss in the year ended 31 March 2025. In the previous year it was profitable, with trading profits, property income and a chargeable gain. The company expects to return to profit next year. The finance director wants to know what he can do with the loss and whether he must use all of it now. Explain the reliefs available for a company's trading loss, the order and time limits in which they may be claimed, and the factors the company should weigh in deciding which claims to make. (9 marks)",
+    maxMarks: 9,
+    rubric: [
+      "A trading loss may first be set against the company's total profits (all income and gains) of the SAME accounting period in which the loss arose.",
+      "A current-period claim must be made against total profits before any carry back is possible.",
+      "The loss may then be carried back against total profits of the previous 12 months, but only if a current-period claim has been made first.",
+      "Both the current-period and carry-back claims are ALL-OR-NOTHING against the profits available: the company cannot restrict the claim to preserve its qualifying charitable donations or to keep profits within a lower rate band.",
+      "Any remaining loss is carried forward and can be set against total profits of future periods (not just future trading profits) under the post-April 2017 rules.",
+      "The carry-forward claim is flexible: it can be restricted to any amount the company chooses, so it can be tailored to leave profits covered by other reliefs.",
+      "Claims for current-period and carry-back relief must be made within two years of the end of the accounting period in which the loss arose.",
+      "The company should consider cash flow: a carry back generates an immediate repayment of corporation tax already paid, whereas a carry forward only saves tax in the future.",
+      "It should also consider the rate at which relief is obtained — relieving profits that fall in the marginal relief band (an effective rate above 25%) saves more tax than relieving profits taxed at the 19% small profits rate.",
+    ],
+  },
+  {
+    id: "TX-W-11",
+    paper: "TX",
+    area: "C",
+    topic: "Group relief and chargeable gains groups",
+    stem: "Ashgrove Holdings Ltd owns 90% of Ashgrove Print Ltd and 80% of Ashgrove Packaging Ltd; Ashgrove Print in turn owns 85% of Kirkby Labels Ltd. Ashgrove Packaging has made a large trading loss this year while the other companies are profitable, and the group also wants to move a freehold warehouse from Ashgrove Print to Ashgrove Holdings before selling it to an outside buyer. Explain the group relief rules for the loss and the chargeable gains group rules for the warehouse, applying them to this group structure. (8 marks)",
+    maxMarks: 8,
+    rubric: [
+      "Group relief allows one group company to surrender its current-period trading loss to another group company to set against that company's taxable total profits.",
+      "A group relief group requires a 75% relationship: one company must be a 75% subsidiary of another, or both must be 75% subsidiaries of a third company.",
+      "The test looks at ordinary share capital plus entitlement to distributable profits and to assets on a winding up.",
+      "For indirect holdings the effective interest is multiplied down the chain — Ashgrove Holdings' effective interest in Kirkby Labels is 90% x 85% = 76.5%, which still exceeds 75%, so Kirkby is in the group relief group.",
+      "The surrendering company may surrender all or part of its loss, and the claimant company may claim only up to its own taxable total profits, so the claim can be tailored.",
+      "A chargeable gains group requires each company to be a 75% direct subsidiary of its parent AND the top company to have an effective interest of more than 50% in every member.",
+      "Assets transferred between members of a chargeable gains group are treated as transferred at no gain, no loss, so the warehouse can be moved to Ashgrove Holdings without triggering a gain — the transferee simply inherits the original cost.",
+      "The gain is therefore deferred, not eliminated: it crystallises in the transferee company when the warehouse is sold outside the group, and the group can use the no gain/no loss rule to place the gain in the company with capital losses or with the most favourable rate position.",
+    ],
+  },
+  {
+    id: "TX-W-12",
+    paper: "TX",
+    area: "C",
+    topic: "Rollover relief on replacement of business assets",
+    stem: "Denholm Tanneries Ltd sold a freehold factory it had used in its trade for many years, realising a large chargeable gain, and reinvested most (but not all) of the proceeds in a new freehold factory eight months later. It also spent a further sum on a fixed plant installation with an expected life of 40 years. Explain how rollover relief (replacement of business assets) works, the conditions Denholm must satisfy, the consequences of not reinvesting all the proceeds, and how the relief differs where the replacement asset is a depreciating asset. (7 marks)",
+    maxMarks: 7,
+    rubric: [
+      "Rollover relief allows the gain on the disposal of a qualifying business asset to be deferred where the proceeds are reinvested in another qualifying business asset.",
+      "Both the old and new assets must be qualifying assets (such as land and buildings and fixed plant and machinery) used in the trade of the company.",
+      "The reinvestment must take place in the period from 12 months before to 36 months after the disposal — the eight-month reinvestment is within this window.",
+      "The gain is not exempted: it is deducted from the base cost of the replacement asset, so it crystallises on the eventual disposal of that asset.",
+      "Where not all of the proceeds are reinvested, the amount NOT reinvested is chargeable immediately, restricted to a maximum of the gain — so a partial reinvestment leaves part of the gain taxable now.",
+      "A depreciating asset is one with an expected life of 60 years or less, such as fixed plant, or a leasehold with 60 years or less to run.",
+      "Where the replacement is a depreciating asset the gain is not deducted from its base cost but is instead frozen and becomes chargeable on the earliest of: disposal of the replacement asset, its ceasing to be used in the trade, or ten years after its acquisition.",
+    ],
+  },
+
+  // ==================== D — VAT (2) ====================
+  {
+    id: "TX-W-13",
+    paper: "TX",
+    area: "D",
+    topic: "VAT registration and special schemes",
+    stem: "Tamsin Reid runs an unregistered graphic-design business. Her taxable supplies have grown steadily and her rolling 12-month turnover reached £91,000 at the end of March 2025. Almost all of her customers are large VAT-registered companies. She is also expecting a one-off contract that will push turnover higher next year, and she is worried about the administrative burden. Advise Tamsin on when she must register for VAT, whether voluntary registration would have been worthwhile, and how the cash accounting, annual accounting and flat rate schemes could help her. (9 marks)",
+    maxMarks: 9,
+    rubric: [
+      "Compulsory registration is triggered under the historic test when taxable supplies in the previous 12 months exceed the £90,000 registration threshold.",
+      "She must notify HMRC within 30 days of the end of the month in which the threshold was exceeded, and registration takes effect from the first day of the month after that.",
+      "Registration is also triggered under the future test if taxable supplies in the NEXT 30 days alone are expected to exceed £90,000, in which case notification is required within those 30 days and registration is immediate.",
+      "Voluntary registration would have allowed her to recover input tax on her costs; because her customers are VAT-registered they can recover the output tax she charges, so registering does not make her uncompetitive.",
+      "Voluntary registration would have been less attractive if her customers were private consumers, because they cannot recover the VAT and her prices would effectively rise by 20%.",
+      "The cash accounting scheme accounts for output and input tax by reference to payments made and received rather than invoice dates, giving automatic bad debt relief and a cash flow benefit if customers pay slowly.",
+      "The annual accounting scheme requires only one VAT return a year, with interim payments on account during the year, reducing the administrative burden.",
+      "Cash accounting and annual accounting are available where expected taxable turnover for the next 12 months does not exceed £1,350,000.",
+      "The flat rate scheme (available where expected taxable turnover excluding VAT is no more than £150,000) applies a flat percentage to VAT-inclusive turnover, simplifying record-keeping but preventing recovery of input tax on most purchases — so it suits a business with few costs, and she must weigh it against her actual input tax.",
+    ],
+  },
+  {
+    id: "TX-W-14",
+    paper: "TX",
+    area: "D",
+    topic: "Input tax recovery, exempt supplies and VAT penalties",
+    stem: "Coldharbour Clinics Ltd makes both standard-rated supplies of cosmetic treatments and exempt supplies of medical care. In its latest VAT quarter it incurred input tax on: supplies used only for the cosmetic business; supplies used only for the exempt medical business; general overheads used for both; a new car for a director who uses it privately; and entertaining a group of prospective corporate clients. The company also submitted its last two VAT returns late. Explain which input tax the company can recover and how the position differs from that of a zero-rated business, and explain the penalties that can arise from its late returns and late payment. (9 marks)",
+    maxMarks: 9,
+    rubric: [
+      "A zero-rated supply is a TAXABLE supply at a rate of 0%, so the trader charges no output tax but can still recover all related input tax.",
+      "An exempt supply is outside the scope of VAT charging, so no output tax is charged AND the input tax attributable to it cannot be recovered — this is the crucial distinction for Coldharbour.",
+      "A business making both taxable and exempt supplies is partially exempt: input tax wholly attributable to the taxable (cosmetic) supplies is recoverable in full.",
+      "Input tax wholly attributable to the exempt (medical) supplies is irrecoverable, and becomes an absorbed cost of the business.",
+      "Input tax on general overheads is apportioned, normally by reference to the proportion that taxable supplies bear to total supplies; if the irrecoverable amount falls within the de minimis limits, all input tax can be recovered.",
+      "Input tax on a car available for private use is specifically blocked and cannot be recovered at all, whatever the level of business use.",
+      "Input tax on business (customer) entertaining is also blocked and irrecoverable; entertaining staff would be recoverable.",
+      "Late VAT returns are dealt with under the penalty points regime: a point is given for each late submission, and a fixed £200 penalty arises once the points threshold for the return frequency is reached, with a further £200 for each subsequent late return.",
+      "Late PAYMENT of VAT attracts separate late payment penalties which increase the longer the tax is outstanding, plus late payment interest running from the due date until payment.",
+    ],
+  },
+
+  // ==================== E — Inheritance tax (1) ====================
+  {
+    id: "TX-W-15",
+    paper: "TX",
+    area: "E",
+    topic: "Lifetime transfers, the nil rate band and the death estate",
+    stem: "Ottoline Bragg died in February 2025, leaving a gross estate of £780,000 which includes her main residence (worth £400,000) left to her daughter, with the residue left to her son. During her lifetime she had made a cash gift of £250,000 to a trust in August 2018 (on which the trustees paid the lifetime tax) and an outright cash gift of £200,000 to her son in November 2020. She had made no other gifts and had used no annual exemptions. Her husband had died some years earlier having left his entire estate to Ottoline. Explain the inheritance tax consequences of the two lifetime gifts and of her death estate, covering the exemptions, the nil rate band and the residence nil rate band, and state who bears the tax. (12 marks)",
+    maxMarks: 12,
+    rubric: [
+      "A gift into a trust is a chargeable lifetime transfer (CLT) and is chargeable to IHT immediately, whereas an outright gift to another individual is a potentially exempt transfer (PET) that is only chargeable if the donor dies within seven years.",
+      "The annual exemption of £3,000 for the tax year of the gift, plus any unused annual exemption brought forward from the previous year only, is deducted from each gift in chronological order.",
+      "The lifetime tax on the CLT was borne by the trustees, so it is charged at 20% on the excess of the transfer over the available nil rate band of £325,000 (grossing up would have applied only if Ottoline had paid the tax herself).",
+      "On death, gifts made within the seven years before death are re-examined; the August 2018 CLT was made more than seven years before her February 2025 death, so no additional death tax arises on it, but it still matters through cumulation because transfers in the seven years before any chargeable transfer use up the nil rate band available to that transfer.",
+      "The November 2020 PET fails because Ottoline died within seven years of it, so it becomes chargeable, and death tax at 40% is charged on the amount exceeding the nil rate band available to it.",
+      "Taper relief reduces the TAX (not the transfer of value) where death occurs more than three years after the gift: the gift was made four to five years before death, so the tax is reduced by 40%.",
+      "The tax on a failed PET is primarily payable by the DONEE (her son), whereas the tax on the death estate is payable by the personal representatives out of the estate.",
+      "The death estate is charged at 40% on the value exceeding the nil rate band remaining after the cumulative chargeable transfers in the seven years before death, and the tax is due six months after the end of the month of death.",
+      "The nil rate band is £325,000, and because her husband left his entire estate to her (a fully exempt spouse transfer), 100% of his unused nil rate band can be transferred, potentially doubling it to £650,000 on a claim by her personal representatives.",
+      "The residence nil rate band of £175,000 is available because her main residence passes to a direct descendant (her daughter); her husband's unused RNRB may also be claimed, and the RNRB is tapered by £1 for every £2 by which the estate exceeds £2,000,000.",
+    ],
+  },
+]

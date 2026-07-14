@@ -43,16 +43,17 @@ Phases 0–3 are code (co-founder-executed). Phase 4 is content (authoring waves
 | Cron send path fails closed | ✅ Done | `/api/reminders?action=send` refuses without a valid `CRON_SECRET` (403), never runs unauthenticated. |
 | `past_due` dunning status | ✅ Done | Failed renewals flag `plan_status: past_due` during Paddle's dunning window; terminal `subscription.canceled` revokes. |
 
-### Phase 1 — Revenue & data-integrity correctness · **Next (code)**
+### Phase 1 — Revenue & data-integrity correctness · **EXECUTED 2026-07-14**
 
-| Item | Priority | Acceptance |
+| Item | Status | Acceptance |
 |---|---|---|
-| Entitlement source-of-truth hardening | HIGH | Optionally verify plan against a service-role `subscriptions` row, not just `app_metadata`, for defense-in-depth + audit trail. |
-| `/api/health` checks the 3 Paddle price-id env vars | HIGH | Health goes 503 if billing is half-configured (price ids are `VITE_`-named but required server-side — the easiest go-live mistake). |
-| Global daily token/$ budget (org-wide) | HIGH | A counter beyond per-user request caps; when the org daily token budget is hit, all AI fails closed. Backstops the launch spike. |
-| Duplicate `0011` migration prefix renamed → `0014` | MEDIUM | `supabase db push` works; no silently-skipped migration. |
-| `vocab_reminders` table migration (or retire the cron) | MEDIUM | Daily reminder cron stops hitting its dead fallback path. |
-| Per-minute rate limit on AI actions | MEDIUM | Burst abuse within the daily cap is throttled. |
+| Entitlement source-of-truth hardening | ✅ Done | `subscriptions` table (migration `0015`) written by the webhook and the in-app cancel. The AI meter cross-checks the JWT's plan against that row and takes the **lower** of the two, so neither a stale JWT nor a half-applied webhook grants a plan nobody paid for. |
+| `/api/health` checks the 3 Paddle price-id env vars | ✅ Done | Billing is all-or-nothing: nothing set = pre-launch, everything set = live, **anything in between = 503**. Half-configured is the dangerous state (checkout opens, fulfilment silently can't). |
+| Global daily token/$ budget (org-wide) | ✅ Done | `AI_DAILY_TOKEN_BUDGET` (default 5M tokens/day) in `ai_usage_global`. Once spent, every AI action falls back deterministically until midnight UTC. |
+| Duplicate `0011` migration prefix renamed → `0014` | ✅ Done | `supabase db push` no longer silently skips a migration. |
+| `vocab_reminders` table migration (or retire the cron) | ✅ Done | The cron had always upserted into a table **no migration ever created** — so the Settings toggle silently no-opped and the cron always found zero rows. Now `study_reminders` (0015), with ACCA copy pointing at `/study`, not the dead `/learn`. |
+| Per-minute rate limit on AI actions | ✅ Done | `AI_PER_MINUTE_LIMIT` (default 8), atomic via the `bump_ai_rate` RPC so concurrent requests can't both read "under the limit". |
+| *(added)* `api/` covered by typecheck | ✅ Done | `api/` was the one directory no typecheck covered — Vercel compiles it at deploy time, where a type error becomes a broken webhook rather than a failed build. `tsconfig.api.json` closes it. It immediately surfaced the 10 retired vocab handlers, now deleted (−928 lines); the 410 gate stays. |
 
 ### Phase 2 — Journey correctness for every paper · **Next (code)**
 

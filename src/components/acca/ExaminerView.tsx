@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { iriText } from "@/components/dashboard-layout"
 import { Icon, Card, Button, C, SP, R, SHADOW } from "@/components/acca/ui"
 import { getWrittenQuestions, type WrittenQuestion } from "@/lib/acca-written"
+import { getPaper } from "@/lib/acca"
 import { markAnswer, type ExaminerResult } from "@/lib/acca-ai"
 
 /*
@@ -13,6 +14,7 @@ import { markAnswer, type ExaminerResult } from "@/lib/acca-ai"
 
 export default function ExaminerView({ paperId, onBack }: { paperId: string; onBack: () => void }) {
   const questions = useMemo(() => getWrittenQuestions(paperId), [paperId])
+  const objectiveOnly = getPaper(paperId)?.objectiveOnly ?? false
   const [active, setActive] = useState<WrittenQuestion | null>(null)
   const [answer, setAnswer] = useState("")
   const [marking, setMarking] = useState(false)
@@ -53,7 +55,12 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
         </p>
         {questions.length === 0 ? (
           <Card>
-            <p style={{ color: C.soft, margin: 0 }}>Written questions for this paper are coming soon.</p>
+            {/* Never promise written marking on a paper whose exam has none. */}
+            <p style={{ color: C.soft, margin: 0 }}>
+              {objectiveOnly
+                ? `The real ${paperId} exam is entirely objective-test — there is no written section to mark, so your time is better spent in the question bank and mocks.`
+                : "Written questions for this paper are coming soon."}
+            </p>
           </Card>
         ) : (
           <div style={{ display: "grid", gap: SP.md }}>

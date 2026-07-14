@@ -2,14 +2,27 @@ import { WRITTEN_WAVE2 } from "@/lib/acca-written-wave2"
 import { WRITTEN_S1 } from "@/lib/acca-written-s1"
 import { WRITTEN_S2 } from "@/lib/acca-written-s2"
 import { WRITTEN_S3 } from "@/lib/acca-written-s3"
+// Wave 3 — the Applied Skills papers whose real exam HAS a constructed-response
+// section (PM, TX, FM, AA, FR). Before this, the AI Examiner was advertised to
+// them with an empty bank behind it.
+import { WRITTEN_W3_PM } from "@/lib/acca-written-w3-pm"
+import { WRITTEN_W3_TX } from "@/lib/acca-written-w3-tx"
+import { WRITTEN_W3_FM } from "@/lib/acca-written-w3-fm"
+import { WRITTEN_W3_AA } from "@/lib/acca-written-w3-aa"
+import { WRITTEN_W3_FR } from "@/lib/acca-written-w3-fr"
 /*
  * Scholify — ACCA written (constructed-response) questions for the AI Examiner.
  *
- * These are the questions the giants can't give instant feedback on:
- * discursive answers (FR + Strategic Professional Essentials: SBR and SBL)
- * marked per valid point. Each carries a rubric (marking points) the AI
+ * These are the questions the giants can't give instant feedback on: discursive
+ * answers marked per valid point. Each carries a rubric (marking points) the AI
  * Examiner marks against. All ORIGINAL and syllabus-aligned — no ACCA IP
  * reproduced.
+ *
+ * Coverage follows the real exams: every paper with a constructed-response
+ * section (FR, PM, TX, FM, AA and all six Strategic Professional papers) has a
+ * written set. BT, MA, FA and LW are 100% objective-test exams — they carry no
+ * written questions BY DESIGN, and the app hides the AI Examiner for them
+ * rather than promising marking their exam will never ask for.
  */
 
 export interface WrittenQuestion {
@@ -325,6 +338,11 @@ export const WRITTEN_QUESTIONS: WrittenQuestion[] = [
   ...WRITTEN_S1,
   ...WRITTEN_S2,
   ...WRITTEN_S3,
+  ...WRITTEN_W3_PM,
+  ...WRITTEN_W3_TX,
+  ...WRITTEN_W3_FM,
+  ...WRITTEN_W3_AA,
+  ...WRITTEN_W3_FR,
 ]
 
 export function getWrittenQuestions(paperId: string): WrittenQuestion[] {

@@ -1270,7 +1270,17 @@ function Overview({
             <MockGateTile prob={gate.prob} onWeak={onWeak} />
           )
         )}
-        <ModeTile icon="examiner" title="AI Examiner" sub={writtenCount ? `Mark a written answer · ${writtenCount} questions` : "Written marking — coming soon"} onClick={onExaminer} locked={!isPro} />
+        {/* BT/MA/FA/LW are 100% objective-test exams — there is no written section
+            to mark, so we hide the Examiner rather than promise it forever. */}
+        {!paper.objectiveOnly && writtenCount > 0 && (
+          <ModeTile
+            icon="examiner"
+            title="AI Examiner"
+            sub={`Mark a written answer · ${writtenCount} questions`}
+            onClick={onExaminer}
+            locked={!isPro}
+          />
+        )}
       </div>
 
       {/* mock history — score trend against the pass line, then the receipts */}

@@ -19,7 +19,13 @@ import { chaptersForPaper } from "@/lib/acca-study-content"
 /** The practice-ladder floor a promoted paper must clear. */
 const MIN_BANK = 150
 const MIN_CARDS = 40
-const MIN_WRITTEN = 1
+/**
+ * A paper whose real exam HAS a constructed-response section must have written
+ * questions to practise against — anything less and we advertise an AI Examiner
+ * we can't feed. Papers flagged objectiveOnly (BT/MA/FA/LW) are exempt: their
+ * exams are 100% objective-test, so zero written questions is the correct number.
+ */
+const MIN_WRITTEN = 15
 /** A diagnostic that samples fewer areas than this can't speak honestly. */
 const MIN_DIAGNOSTIC = 8
 
@@ -49,7 +55,15 @@ for (const paper of getPapers()) {
 
   if (bank.length < MIN_BANK) blocking.push(`${id}: bank ${bank.length} < ${MIN_BANK}`)
   if (cards.length < MIN_CARDS) blocking.push(`${id}: flashcards ${cards.length} < ${MIN_CARDS}`)
-  if (written.length < MIN_WRITTEN) blocking.push(`${id}: no written questions — the AI Examiner tile would read "coming soon"`)
+  if (paper.objectiveOnly) {
+    // The exam has no written section; the AI Examiner is hidden for this paper.
+    if (written.length > 0)
+      warnings.push(`${id}: flagged objectiveOnly but has ${written.length} written question(s) — one of the two is wrong`)
+  } else if (written.length < MIN_WRITTEN) {
+    blocking.push(
+      `${id}: ${written.length} written question(s) < ${MIN_WRITTEN} — its exam HAS a constructed-response section, so the AI Examiner is underfed`,
+    )
+  }
   if (diagnostic.length < MIN_DIAGNOSTIC) blocking.push(`${id}: diagnostic only ${diagnostic.length} questions`)
   if (foreign.length) blocking.push(`${id}: diagnostic contains ${foreign.length} question(s) from another paper`)
   if (wrongPaper.length) blocking.push(`${id}: ${wrongPaper.length} bank question(s) tagged to another paper`)
@@ -64,7 +78,7 @@ for (const paper of getPapers()) {
     String(bank.length).padStart(4),
     `${diagnostic.length}q/${diagAreas.size}of${areas.length}`.padStart(12),
     String(cards.length).padStart(6),
-    String(written.length).padStart(8),
+    (paper.objectiveOnly ? "n/a" : String(written.length)).padStart(8),
     `${briefs.length}/${areas.length}`.padStart(7),
     `${chapters.length}/${areas.length}`.padStart(9),
   ])
@@ -84,4 +98,7 @@ if (blocking.length) {
   process.exit(1)
 }
 
-console.log(`\n✓ All ${rows.length} papers clear the launch floor (bank ≥ ${MIN_BANK}, cards ≥ ${MIN_CARDS}, written ≥ ${MIN_WRITTEN}, full-syllabus diagnostic).`)
+console.log(
+  `\n✓ All ${rows.length} papers clear the launch floor (bank ≥ ${MIN_BANK}, cards ≥ ${MIN_CARDS}, ` +
+    `written ≥ ${MIN_WRITTEN} where the exam has a written section, full-syllabus diagnostic).`,
+)
