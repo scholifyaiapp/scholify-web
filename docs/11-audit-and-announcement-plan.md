@@ -47,8 +47,8 @@ Worth recording, because it is the kind of thing that survives review by looking
 | Security & billing | **Solid.** Entitlement can't be self-granted; AI genuinely fails closed; the relay is deleted; webhooks are replay-proof. |
 | Honesty of claims | **Clean.** Every advertised feature now exists. Invented social proof removed. |
 | Observability | **Minimum bar met** (error capture + branded boundaries). Still needs a real alerting story. |
-| Tests | **Still absent.** The largest remaining engineering gap — every bug above was found by an auditor, not a test suite. |
-| Performance | **Not launch-blocking, but felt.** Every page downloads all 15 papers (~93% waste); ~8–15s to interactive on a mid-range Android on 4G in Tashkent. |
+| Tests | **55 tests, gating the build** (was: absent). Each one pins a real bug this audit found, and the suite is proven to fail when a bug is reintroduced. |
+| Performance | **Fixed.** `/study` down 85% (1,408 → 227 kB gzip): a student now loads one paper, not fifteen. |
 | **Ops (production env)** | **Not started. THE ONLY THING BLOCKING REVENUE.** |
 
 ---
@@ -97,14 +97,20 @@ The long pole is **not engineering — it is the beta**, and shortening it is th
 
 ---
 
-## 5. What we are choosing NOT to do before announcing
+## 5. Done since the audit (2026-07-14, after the fixes)
+
+Two of the three deferred items were closed immediately, because both are Gate-4 insurance and neither needed the founder:
+
+- **A test suite — 55 tests, gating the build** (`e7d10bb`). Every bug the audit found had been found by a human reading code; there was no suite at all. The tests are aimed at the money and trust paths, and each one pins a real, observed failure: the skipped answer that graded correct, the mock gate that opened on two answers, the two models that disagreed on the same student, the replayed webhook, the flashcard where "Know" and "Don't know" did the same thing. **The suite is proven to have teeth** — reintroducing the exact pre-audit grading bug fails the test that names it. `npm test` now gates `npm run build`, like typecheck.
+- **Content code-splitting** (`9caaf26`). A student studies one paper; they were downloading all fifteen. **`/study` fell 85%** (1,408 → 227 kB gzip), `/dashboard` 70%, the `AccaStudy` chunk from 2,584 kB to 107 kB. This was the single biggest activation risk for a beta running on mid-range Androids in Tashkent. Also added `npm run verify:loading`, because the test suite *could not* have caught the failure that matters: Node fills the registry eagerly, so a broken dynamic import would leave every test green while a real student got a blank study screen.
+
+## 6. What we are still choosing NOT to do before announcing
 
 Stated explicitly, so it is a decision and not an oversight:
 
-- **A test suite** (Phase 3). Every bug in this audit was found by an auditor, not a test. This is the largest remaining engineering gap and should start during Gate 4 — but a beachhead of 30 hand-watched students does not need CI to be safe.
-- **Content code-splitting.** ~93% of the content payload is waste on every page load. It hurts activation, not correctness. Fix it if Gate 4 shows load time killing the funnel — that is exactly the kind of thing the beta is for.
 - **Unifying the two streak stores.** `acca-schedule.ts` has a real shield mechanic; `acca.ts` has the headline streak that resets regardless. We removed the *claim* rather than shipping a rushed merge of two stores. Do it properly, later.
 - **FA2025 tax year.** TX/ATX are internally consistent on FA2024, which ACCA examines through the March 2026 sitting. For sittings after that, the corpus is one Finance Act behind. **Either refresh to FA2025 or label the basis explicitly in the TX/ATX UI** — an unlabelled stale tax year teaches someone the wrong NIC rate. This is a real decision with a real deadline, not a nice-to-have.
+- **The 7-day trial** (see Gate 3) — removed, not built. It needs a decision before it needs code.
 
 ---
 
@@ -112,8 +118,10 @@ Stated explicitly, so it is a decision and not an oversight:
 
 Every claim in this document is checked by something that will fail loudly if it stops being true:
 
-- `npm run typecheck` — now covers `api/` too, where a type error becomes a broken webhook rather than a failed build.
+- `npm test` — 55 tests on grading, the pass probability, the mock gate, option bias, spaced repetition and billing. **Gates the build.**
+- `npm run typecheck` — covers `api/` too, where a type error becomes a broken webhook rather than a failed build. **Gates the build.**
 - `npm run audit:content` — fails if any promoted paper has an empty tile behind it.
+- `npm run verify:loading` — loads every paper the way the browser does, and fails if one comes back empty. (The test suite cannot see this: Node fills the registry eagerly, so a broken dynamic import would leave every test green and every student staring at a blank screen.)
 - `npm run validate:chapters` — fails on any crash-causing content shape.
 - `/api/health` — 503s on a half-configured billing stack.
 
