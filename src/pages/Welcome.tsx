@@ -142,9 +142,6 @@ export default function Welcome() {
   const { user } = useAuth()
   const reduced = useReducedMotion()
   const isMobile = useIsMobile()
-  const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0]
-    || user?.email?.split("@")[0]
-    || null
 
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState(1)
@@ -334,7 +331,7 @@ export default function Welcome() {
               {step === 0 ? (
                 <>
                   <h1 style={{ margin: 0, font: `800 32px/1.06 ${SANS}`, letterSpacing: "-1px", color: INK }}>
-                    Welcome{firstName ? `, ${firstName}` : ""}.<br />Let's pass your<br />next paper.
+                    Welcome to Scholify.<br />Let's pass your<br />next paper.
                   </h1>
                   <p style={{ margin: "16px 0 0", font: `400 15px/1.5 ${SANS}`, color: BODY, maxWidth: 300 }}>
                     A GPS for ACCA: it measures where you are, hands you the next task daily, and recalculates until you pass.
@@ -430,7 +427,7 @@ export default function Welcome() {
                 <div style={{ margin: "auto 0", paddingBottom: 12 }}>
                   <div style={kicker}>A GPS for ACCA</div>
                   <h1 style={{ margin: 0, font: `800 clamp(32px, 3vw, 43px)/1.05 ${SANS}`, letterSpacing: "-1.4px", color: INK }}>
-                    Welcome{firstName ? `, ${firstName}` : ""}. Let's pass your next paper.
+                    Welcome to Scholify. Let's pass your next paper.
                   </h1>
                   <p style={{ margin: "20px 0 0", font: `400 18px/1.5 ${SANS}`, color: BODY, maxWidth: 460 }}>
                     It measures where you are, hands you the next task daily, and recalculates until you pass.
