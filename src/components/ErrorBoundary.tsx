@@ -1,4 +1,6 @@
 import { Component, type ReactNode } from "react"
+import { IconBadge, Icon } from "@/components/acca/ui"
+import { captureError } from "@/lib/analytics"
 
 /*
  * Per-page error boundary with a polished, user-facing fallback.
@@ -30,8 +32,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
-    console.error(`[${this.props.pageName ?? "app"}] Error:`, error, info)
-    // In production this is where an error-tracking call would go.
+    captureError(error, {
+      boundary: "page",
+      page: this.props.pageName ?? "app",
+      componentStack: info.componentStack ?? "",
+    })
   }
 
   render() {
@@ -49,7 +54,9 @@ export class ErrorBoundary extends Component<Props, State> {
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: "40px", marginBottom: "16px" }}>⚡</div>
+          <div style={{ marginBottom: "16px" }}>
+            <IconBadge name="mission" tone="brand" size={48} />
+          </div>
           <h2
             style={{
               fontSize: "18px",
@@ -77,6 +84,9 @@ export class ErrorBoundary extends Component<Props, State> {
             type="button"
             onClick={() => window.location.reload()}
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
               background: "linear-gradient(135deg, rgba(200,0,0,0.8), rgba(99,102,241,0.8))",
               color: "white",
               border: "none",
@@ -88,6 +98,7 @@ export class ErrorBoundary extends Component<Props, State> {
               boxShadow: "0 0 24px rgba(200,0,0,0.25)",
             }}
           >
+            <Icon name="loop" size={15} color="#fff" />
             Reload page
           </button>
         </div>

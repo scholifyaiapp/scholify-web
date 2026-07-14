@@ -12,13 +12,13 @@ const en: PageContent = {
   title: "Privacy Policy",
   updated: "May 20, 2026",
   intro:
-    "Scholify helps you build a daily learning habit. To do that well, we collect a small amount of information about you and how you use the app. This page explains exactly what we collect, why, and the control you have over it.",
+    "Scholify helps you prepare for the ACCA exams. To do that well, we collect a small amount of information about you and how you use the app. This page explains exactly what we collect, why, and the control you have over it.",
   sections: [
     {
       heading: "Information we collect",
       body: [
         "Account details: your name, email address, and password (stored encrypted) when you create an account.",
-        "Learning data: the goals you set, your study plans, streaks, Life Shields, and progress — this is what powers your personalized experience.",
+        "Learning data: the papers and exam dates you set, your study plans, answers, mock results, streaks and readiness scores — this is what powers your personalized experience.",
         "Conversations with Lara: messages you exchange with your AI learning partner, so she can give you relevant, continuous support.",
         "Usage and device data: basic analytics such as which features you use, app version, and device type, used only to improve Scholify.",
       ],
@@ -49,7 +49,7 @@ const en: PageContent = {
       heading: "Your rights",
       body: [
         "You can view and edit your account information at any time inside the app.",
-        "You can request a copy of your data, or ask us to delete your account and associated data, by emailing support@scholify.app.",
+        "You can request a copy of your data, or ask us to delete your account and associated data, by emailing support@scholifyapp.com.",
       ],
     },
     {
@@ -71,13 +71,13 @@ const ru: PageContent = {
   title: "Политика конфиденциальности",
   updated: "20 мая 2026",
   intro:
-    "Scholify помогает вырабатывать ежедневную привычку учиться. Чтобы делать это хорошо, мы собираем небольшой объём информации о вас и о том, как вы пользуетесь приложением. На этой странице подробно описано, что именно мы собираем, зачем и как вы можете этим управлять.",
+    "Scholify помогает готовиться к экзаменам ACCA. Чтобы делать это хорошо, мы собираем небольшой объём информации о вас и о том, как вы пользуетесь приложением. На этой странице подробно описано, что именно мы собираем, зачем и как вы можете этим управлять.",
   sections: [
     {
       heading: "Какие данные мы собираем",
       body: [
         "Данные аккаунта: ваше имя, адрес электронной почты и пароль (хранится в зашифрованном виде) при создании аккаунта.",
-        "Данные об обучении: поставленные цели, ваши планы занятий, серии, щиты жизни и прогресс — именно это обеспечивает персональный опыт.",
+        "Данные об обучении: выбранные экзамены и их даты, планы занятий, ответы, результаты пробных экзаменов, серии и показатели готовности — именно это обеспечивает персональный опыт.",
         "Разговоры с Ларой: сообщения, которыми вы обмениваетесь с вашим ИИ-партнёром по обучению, чтобы она могла давать актуальную и постоянную поддержку.",
         "Данные об использовании и устройстве: базовая аналитика — какими функциями вы пользуетесь, версия приложения и тип устройства — используется только для улучшения Scholify.",
       ],
@@ -108,7 +108,7 @@ const ru: PageContent = {
       heading: "Ваши права",
       body: [
         "Вы можете просматривать и изменять данные своего аккаунта в любое время прямо в приложении.",
-        "Вы можете запросить копию своих данных или попросить удалить аккаунт и связанные с ним данные, написав на support@scholify.app.",
+        "Вы можете запросить копию своих данных или попросить удалить аккаунт и связанные с ним данные, написав на support@scholifyapp.com.",
       ],
     },
     {

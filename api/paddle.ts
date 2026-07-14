@@ -92,19 +92,57 @@ async function recordSubscription(
   }
 }
 
-/** Verify `Paddle-Signature: ts=...;h1=...` over the raw body. */
+/** How far out of date a signed webhook may be before we reject it as a replay. */
+const SIGNATURE_TOLERANCE_SECONDS = 5 * 60
+
+/**
+ * Verify `Paddle-Signature: ts=...;h1=...` over the raw body.
+ *
+ * The HMAC alone proves Paddle signed *a* payload — not that it signed it just
+ * now. Without a freshness window, anyone who ever captures one signed
+ * `subscription.activated` body (a log, a proxy, Paddle's own webhook history)
+ * can replay it verbatim, forever, to re-grant a plan after cancellation. So the
+ * timestamp is part of the signature and must also be part of the check.
+ */
 function verifySignature(rawBody: string, header: string | undefined, secret: string): boolean {
   if (!header) return false
   const parts = Object.fromEntries(header.split(";").map((p) => p.split("=") as [string, string]))
   const ts = parts.ts
   const h1 = parts.h1
   if (!ts || !h1) return false
+
+  const signedAt = Number(ts)
+  if (!Number.isFinite(signedAt)) return false
+  const ageSeconds = Math.abs(Date.now() / 1000 - signedAt)
+  if (ageSeconds > SIGNATURE_TOLERANCE_SECONDS) return false
+
   const expected = crypto.createHmac("sha256", secret).update(`${ts}:${rawBody}`).digest("hex")
   try {
     return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(h1, "hex"))
   } catch {
     return false
   }
+}
+
+/**
+ * Idempotency: has this exact Paddle event already been applied?
+ *
+ * Paddle retries on any non-2xx, and a captured payload can be replayed inside
+ * the freshness window. Recording the event id makes application exactly-once.
+ * Returns true if this event is NEW (and claims it); false if already seen.
+ */
+async function claimEvent(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  eventId: string | undefined,
+): Promise<boolean> {
+  if (!eventId) return true // Nothing to dedupe on — proceed (signature already checked).
+  const { error } = await supa.from("paddle_events").insert({ event_id: eventId })
+  if (!error) return true
+  // 23505 = unique_violation → we have applied this event before.
+  if ((error as { code?: string }).code === "23505") return false
+  // Table missing (0017 not applied) or transient error: fall through rather than
+  // drop a real payment. Dedupe is defence in depth, not the gate.
+  return true
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -154,6 +192,18 @@ async function webhook(req: VercelRequest, res: VercelResponse, rawBody: string)
   if (!userId) {
     // A checkout made outside the app (no custom_data) — nothing to map to.
     res.status(200).json({ ok: false, reason: "no_user_id" })
+    return
+  }
+  // A user id is client-supplied at checkout, so a malformed one must not reach
+  // updateUserById (it throws → 500 → Paddle retry storm).
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) {
+    res.status(200).json({ ok: false, reason: "bad_user_id" })
+    return
+  }
+
+  if (!(await claimEvent(supa, event.event_id))) {
+    // Already applied — acknowledge so Paddle stops retrying, change nothing.
+    res.status(200).json({ ok: true, duplicate: true })
     return
   }
 

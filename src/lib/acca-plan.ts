@@ -16,7 +16,7 @@ export interface PaperPlan {
   /** Target questions to attempt per day. */
   dailyGoal: number
   /**
-   * Shield time — the protected daily study slot ("19:00"), or null.
+   * Study time — the protected daily study slot ("19:00"), or null.
    * The commitment device: same time every day, life plans around it.
    */
   studyTime: string | null

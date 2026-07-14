@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase"
-import { readVocabProgress } from "@/lib/vocab"
+import { getOverallProgress } from "@/lib/acca"
 
 /*
  * Daily email reminders — client. Pushes the learner's opt-in + last activity
@@ -25,7 +25,8 @@ export async function syncReminder(optIn: boolean, reminderTime = "08:00"): Prom
         optIn,
         email,
         reminderTime,
-        lastSessionDate: readVocabProgress().lastSessionDate,
+        // The real study signal: the last day an ACCA question was answered.
+        lastSessionDate: getOverallProgress().lastStudied,
       }),
     })
   } catch {

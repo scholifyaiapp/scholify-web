@@ -15,7 +15,7 @@
  */
 
 import { getPaper } from "@/lib/acca"
-import { passProbability, recoveryState } from "@/lib/acca-loop"
+import { readinessState, recoveryState } from "@/lib/acca-loop"
 import { buildDailyTasks } from "@/lib/acca-schedule"
 
 export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock" | "study" | "bank"
@@ -45,8 +45,14 @@ export function greeting(name?: string): string {
 export function todayHeadline(paperId: string): string {
   const paper = getPaper(paperId)
   const name = paper?.id ?? "this paper"
-  const prob = passProbability(paperId)
-  if (prob === null) return `Let's find out where you stand on ${name}.`
+  const { prob, measuring, answered, answersNeeded, areasSeen, areasTotal } = readinessState(paperId)
+  // No number until the evidence earns one. A handful of answers in one corner of
+  // the syllabus sits near the 50% prior by construction — quoting it would be a
+  // confident claim we haven't measured. Say what's still missing instead.
+  if (measuring) {
+    if (answered === 0) return `Let's find out where you stand on ${name}.`
+    return `Still measuring you on ${name} — ${answered} of ${answersNeeded} answers in, ${areasSeen}/${areasTotal} syllabus areas touched. Keep going and your pass number appears.`
+  }
   const rec = recoveryState(paperId)
   if (rec.active) {
     return `Retake run on ${name}: you're at ${prob}% and every answer recovers lost marks. Today's plan is the way back.`

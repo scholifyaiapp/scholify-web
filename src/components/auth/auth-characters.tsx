@@ -475,7 +475,7 @@ export function CharacterLeftPanel(props: AuthCharactersProps) {
           <span style={{ fontSize: 22, fontWeight: 800, color: "var(--sch-text)" }}>Scholify</span>
         </div>
         <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 12 }}>
-          Turn any goal into a daily habit.
+          Know your chance of passing ACCA — and how to raise it.
         </p>
       </div>
 

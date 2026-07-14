@@ -17,7 +17,7 @@ const en: PageContent = {
     {
       heading: "Email us",
       body: [
-        "The quickest way to reach a human is email: support@scholify.app.",
+        "The quickest way to reach a human is email: support@scholifyapp.com.",
         "We answer most messages within 24 hours on weekdays. Tell us your account email and what is happening, and we will jump in.",
       ],
     },
@@ -30,16 +30,16 @@ const en: PageContent = {
     {
       heading: "Common questions",
       body: [
-        "Lost your streak? Life Shields automatically protect your streak when you miss a day, so a single slip never sends you back to zero.",
+        "Lost your streak? A streak counts the consecutive days you answer questions — miss a day and it restarts, but every answer, readiness score and mock result you have earned is kept.",
         "Need to change your plan? Open Settings to adjust your goal, daily minutes, or deadline, and Lara will rebuild your plan around it.",
         "Billing or subscription help? Manage or cancel your plan in account settings, or email us and we will sort it out.",
-        "Forgot your password? Use the \"Forgot password\" link on the sign-in page to reset it.",
+        "Forgot your password? Click \"Forgot password?\" on the sign-in page and we will email you a reset link. Open it and you are signed in — then set a new password under Settings → Account.",
       ],
     },
     {
       heading: "Report a bug or suggest a feature",
       body: [
-        "Found something broken, or have an idea that would make Scholify better? Email support@scholify.app with the details — screenshots help a lot. Your feedback genuinely shapes what we build next.",
+        "Found something broken, or have an idea that would make Scholify better? Email support@scholifyapp.com with the details — screenshots help a lot. Your feedback genuinely shapes what we build next.",
       ],
     },
     {
@@ -60,7 +60,7 @@ const ru: PageContent = {
     {
       heading: "Напишите нам",
       body: [
-        "Быстрее всего связаться с человеком по электронной почте: support@scholify.app.",
+        "Быстрее всего связаться с человеком по электронной почте: support@scholifyapp.com.",
         "В будни мы отвечаем на большинство сообщений в течение 24 часов. Укажите email вашего аккаунта и опишите, что происходит, — и мы подключимся.",
       ],
     },
@@ -73,16 +73,16 @@ const ru: PageContent = {
     {
       heading: "Частые вопросы",
       body: [
-        "Потеряли серию? Щиты жизни автоматически защищают вашу серию при пропуске дня, поэтому одна осечка никогда не отбрасывает вас к нулю.",
+        "Потеряли серию? Серия — это подряд идущие дни, когда вы отвечали на вопросы: пропустили день — счёт начинается заново, но все ваши ответы, показатели готовности и результаты пробных экзаменов сохраняются.",
         "Нужно изменить план? Откройте «Настройки», чтобы изменить цель, ежедневные минуты или срок, — и Лара перестроит ваш план.",
         "Вопросы по оплате или подписке? Управляйте тарифом или отмените его в настройках аккаунта либо напишите нам, и мы всё уладим.",
-        "Забыли пароль? Воспользуйтесь ссылкой «Забыли пароль?» на странице входа, чтобы сбросить его.",
+        "Забыли пароль? Нажмите «Забыли пароль?» на странице входа — мы пришлём ссылку для сброса. Откройте её, и вы войдёте в аккаунт; затем задайте новый пароль в «Настройки → Аккаунт».",
       ],
     },
     {
       heading: "Сообщить об ошибке или предложить функцию",
       body: [
-        "Нашли что-то сломанное или есть идея, которая сделает Scholify лучше? Напишите на support@scholify.app с подробностями — скриншоты очень помогают. Ваши отзывы по-настоящему определяют, что мы создадим дальше.",
+        "Нашли что-то сломанное или есть идея, которая сделает Scholify лучше? Напишите на support@scholifyapp.com с подробностями — скриншоты очень помогают. Ваши отзывы по-настоящему определяют, что мы создадим дальше.",
       ],
     },
     {

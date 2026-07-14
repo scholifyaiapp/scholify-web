@@ -60,13 +60,16 @@ export type MeterReason =
 interface Meter {
   allowed: boolean
   reason?: MeterReason
-  /** Fire-and-forget usage write after a successful model call. */
-  record: (tokensIn: number, tokensOut: number) => void
+  /**
+   * Usage write after a successful model call. MUST be awaited before the
+   * handler responds — see the note on the implementation in `meterAcca`.
+   */
+  record: (tokensIn: number, tokensOut: number) => Promise<void>
 }
 
-const METER_PASS: Meter = { allowed: true, record: () => {} }
+const METER_PASS: Meter = { allowed: true, record: async () => {} }
 
-const DENY = (reason: MeterReason): Meter => ({ allowed: false, reason, record: () => {} })
+const DENY = (reason: MeterReason): Meter => ({ allowed: false, reason, record: async () => {} })
 
 /* ── Org-wide guardrails (beyond the per-user daily caps) ─────────────────
  *
@@ -138,20 +141,20 @@ async function resolveTier(
   const claimed = toTier(String(user.app_metadata?.plan || "free"))
   if (claimed === "free") return "free"
 
-  try {
-    const { data: row } = await supa
-      .from("subscriptions")
-      .select("plan, status")
-      .eq("user_id", user.id)
-      .maybeSingle()
-    if (!row) return claimed
-    // A canceled/expired subscription row overrides an optimistic JWT claim.
-    const active = row.status === "active" || row.status === "past_due" || row.status === "canceling"
-    const recorded: Tier = active ? toTier(String(row.plan || "free")) : "free"
-    return rank[recorded] < rank[claimed] ? recorded : claimed
-  } catch {
-    return claimed
-  }
+  const { data: row, error } = await supa
+    .from("subscriptions")
+    .select("plan, status")
+    .eq("user_id", user.id)
+    .maybeSingle()
+  // No row, or the table isn't there yet (0015 not applied): app_metadata stays
+  // in charge. This check is defence in depth, not a gate — unlike the usage
+  // reads below, a failure here must not lock a paying customer out.
+  if (error || !row) return claimed
+
+  // A canceled/expired subscription row overrides an optimistic JWT claim.
+  const active = row.status === "active" || row.status === "past_due" || row.status === "canceling"
+  const recorded: Tier = active ? toTier(String(row.plan || "free")) : "free"
+  return rank[recorded] < rank[claimed] ? recorded : claimed
 }
 
 async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter> {
@@ -178,68 +181,70 @@ async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter>
 
   const day = todayUtc()
 
+  // ── Fail CLOSED, for real ────────────────────────────────────────────────
+  // supabase-js NEVER throws on a query error: it resolves with { data, error }.
+  // So a try/catch around these reads is dead code — a missing table or a
+  // transient DB fault would yield `data: null`, read as "0 spent, 0 used", and
+  // every cap would silently pass. Each read below must therefore inspect
+  // `error` explicitly and deny on it. This is the difference between a cost
+  // ceiling and the appearance of one.
+
   // Org-wide budget first: it protects the company, so it outranks any plan.
   const budget = envInt("AI_DAILY_TOKEN_BUDGET", DEFAULT_DAILY_TOKEN_BUDGET)
-  try {
-    const { data: global } = await supa
-      .from("ai_usage_global")
-      .select("tokens_in, tokens_out")
-      .eq("day", day)
-      .maybeSingle()
-    const spent = (global?.tokens_in ?? 0) + (global?.tokens_out ?? 0)
-    if (spent >= budget) return DENY("budget_exhausted")
-  } catch {
-    // Table missing (0015 not run) → fail closed, never unbudgeted.
-    return DENY("metering_unavailable")
-  }
+  const { data: global, error: globalErr } = await supa
+    .from("ai_usage_global")
+    .select("tokens_in, tokens_out")
+    .eq("day", day)
+    .maybeSingle()
+  // Missing table (0015 not applied) or any read failure → no budget ceiling
+  // can be enforced, so refuse rather than spend blind.
+  if (globalErr) return DENY("metering_unavailable")
+  const spent = (global?.tokens_in ?? 0) + (global?.tokens_out ?? 0)
+  if (spent >= budget) return DENY("budget_exhausted")
 
-  try {
-    const { data: row } = await supa
-      .from("ai_usage")
-      .select("count")
-      .eq("user_id", user.id)
-      .eq("day", day)
-      .eq("action", action)
-      .maybeSingle()
-    if ((row?.count ?? 0) >= cap) return DENY("limit_reached")
-  } catch {
-    // Table missing (migration 0013 not run) → fail closed, never unmetered.
-    return DENY("metering_unavailable")
-  }
+  const { data: row, error: usageErr } = await supa
+    .from("ai_usage")
+    .select("count")
+    .eq("user_id", user.id)
+    .eq("day", day)
+    .eq("action", action)
+    .maybeSingle()
+  // Missing table (0013 not applied) → the per-user cap cannot be enforced.
+  if (usageErr) return DENY("metering_unavailable")
+  if ((row?.count ?? 0) >= cap) return DENY("limit_reached")
 
   // Burst throttle, checked last so it only counts calls that would otherwise
   // have been served. Atomic: the RPC increments and returns in one round trip,
   // so two concurrent requests cannot both read "under the limit".
   const perMinute = envInt("AI_PER_MINUTE_LIMIT", DEFAULT_PER_MINUTE_LIMIT)
-  try {
-    const { data: count, error: rateErr } = await supa.rpc("bump_ai_rate", {
-      p_user: user.id,
-      p_minute: minuteBucket(),
-    })
-    if (rateErr) return DENY("metering_unavailable")
-    if (Number(count ?? 0) > perMinute) return DENY("rate_limited")
-  } catch {
-    return DENY("metering_unavailable")
-  }
+  const { data: rateCount, error: rateErr } = await supa.rpc("bump_ai_rate", {
+    p_user: user.id,
+    p_minute: minuteBucket(),
+  })
+  if (rateErr) return DENY("metering_unavailable")
+  if (Number(rateCount ?? 0) > perMinute) return DENY("rate_limited")
 
   return {
     allowed: true,
-    record: (tokensIn, tokensOut) => {
+    // AWAITED, not fire-and-forget: Vercel freezes the instance the moment the
+    // response is flushed, so a detached RPC can be dropped in flight. If the
+    // increments never land, `count` and the org ledger stay at 0 forever and
+    // the caps and budget above never trip — the ceiling would exist only on
+    // paper. Callers must await this before responding.
+    record: async (tokensIn, tokensOut) => {
       const p_tokens_in = Math.max(0, Math.round(tokensIn))
       const p_tokens_out = Math.max(0, Math.round(tokensOut))
-      void supa
-        .rpc("increment_ai_usage", {
+      await Promise.allSettled([
+        supa.rpc("increment_ai_usage", {
           p_user: user.id,
           p_day: day,
           p_action: action,
           p_tokens_in,
           p_tokens_out,
-        })
-        .then(undefined, () => {})
-      // The org-wide ledger the budget check above reads.
-      void supa
-        .rpc("increment_ai_global", { p_day: day, p_tokens_in, p_tokens_out })
-        .then(undefined, () => {})
+        }),
+        // The org-wide ledger the budget check above reads.
+        supa.rpc("increment_ai_global", { p_day: day, p_tokens_in, p_tokens_out }),
+      ])
     },
   }
 }
@@ -348,7 +353,7 @@ Each question: a clear stem, exactly 4 options, one correct answer (correctIndex
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     })
-    m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
+    await m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
     const questions = parseGeneratedQuestions(raw)
     if (questions.length > 0) {
@@ -462,7 +467,7 @@ Student asks: ${question || "Explain this in a simpler way."}`
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     })
-    m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
+    await m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     const text =
       completion.content[0]?.type === "text" ? completion.content[0].text.trim() : fallback
     res.status(200).json({ answer: text })
@@ -555,7 +560,7 @@ ${learnerContext ? `\nStudent's learning profile:\n${learnerContext}` : ""}`
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     })
-    mtr.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
+    await mtr.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
     const parsed = safePostmortemJson(raw)
     if (parsed) {
@@ -726,7 +731,7 @@ ${answer || "(no answer given)"}`
     const raw =
       completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
     const parsed = safeExaminerJson(raw, maxMarks)
-    m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
+    await m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
     if (parsed) {
       res.status(200).json(parsed)
       return

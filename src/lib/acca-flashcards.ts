@@ -132,7 +132,11 @@ export function getFlashcards(paperId: string): Flashcard[] {
 /* ── Leitner scheduling (localStorage) ────────────────────────── */
 
 const KEY = "scholify-acca-flashcards"
-/** Days until a card in each box is due again. */
+/**
+ * Days until a card in each box is due again. Box 0 is the RELEARNING box — due
+ * again the same day, which is what makes a lapse cost something. Boxes 1–5 are
+ * the Leitner ladder; box ≥ 4 counts as mastered (flashcardStats).
+ */
 const BOX_INTERVAL_DAYS = [0, 1, 3, 7, 16, 35]
 
 interface CardState {
@@ -156,7 +160,19 @@ function addDaysStr(days: number): string {
 function read(): Store {
   try {
     const raw = window.localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw) as Store
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      // Type-check field-wise: a wrong-typed row must degrade to "new card",
+      // never poison the box arithmetic or throw on a read.
+      const out: Store = {}
+      for (const [id, st] of Object.entries(parsed as Record<string, unknown>)) {
+        if (!st || typeof st !== "object" || Array.isArray(st)) continue
+        const { box, due } = st as { box?: unknown; due?: unknown }
+        const b = typeof box === "number" && Number.isFinite(box) ? Math.max(0, Math.min(BOX_INTERVAL_DAYS.length - 1, Math.round(box))) : 0
+        out[id] = { box: b, due: typeof due === "string" ? due : todayStr() }
+      }
+      return out
+    }
   } catch {
     /* ignore */
   }
@@ -182,13 +198,28 @@ export function getDueFlashcards(paperId: string): Flashcard[] {
   })
 }
 
-/** Grade a card: known → advance a box; unknown → back to box 1. Persists. */
-export function reviewFlashcard(cardId: string, known: boolean): void {
+/** The state a card landed in after grading — `relearn` means it's due again today. */
+export interface CardReview {
+  box: number
+  due: string
+  /** True when the card must come back in THIS session (a lapse). */
+  relearn: boolean
+}
+
+/**
+ * Grade a card: known → advance a box; unknown → the relearning box, due again
+ * TODAY. A miss used to send a brand-new card to box 1 / tomorrow — byte-identical
+ * to a hit, so "Know" and "Don't know" did the same thing and a lapsed card never
+ * came back in the session. Failing must cost the interval and repeat the card.
+ */
+export function reviewFlashcard(cardId: string, known: boolean): CardReview {
   const store = read()
-  const prev = store[cardId] ?? { box: 0, due: todayStr() }
-  const box = known ? Math.min(BOX_INTERVAL_DAYS.length - 1, prev.box + 1) : 1
-  store[cardId] = { box, due: addDaysStr(BOX_INTERVAL_DAYS[box]) }
+  const prevBox = store[cardId]?.box ?? 0
+  const box = known ? Math.min(BOX_INTERVAL_DAYS.length - 1, prevBox + 1) : 0
+  const state: CardState = { box, due: addDaysStr(BOX_INTERVAL_DAYS[box]) }
+  store[cardId] = state
   write(store)
+  return { ...state, relearn: box === 0 }
 }
 
 export function flashcardStats(paperId: string): { total: number; due: number; mastered: number } {

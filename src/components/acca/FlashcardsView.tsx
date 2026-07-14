@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { Icon, IconBadge, Button, C } from "@/components/acca/ui"
 import { ScholifyMark } from "@/components/brand"
@@ -20,7 +20,7 @@ const MONO = "'JetBrains Mono', ui-monospace, monospace"
 
 export default function FlashcardsView({ paperId, area, onBack }: { paperId: string; area?: string; onBack: () => void }) {
   const reduced = useReducedMotion()
-  const [queue] = useState<Flashcard[]>(() =>
+  const [queue, setQueue] = useState<Flashcard[]>(() =>
     area ? getFlashcards(paperId).filter((c) => c.area === area) : getDueFlashcards(paperId),
   )
   const [idx, setIdx] = useState(0)
@@ -29,15 +29,20 @@ export default function FlashcardsView({ paperId, area, onBack }: { paperId: str
   const [gotIt, setGotIt] = useState(0)
   const [exitY, setExitY] = useState(0)
 
-  const total = useMemo(() => queue.length, [queue])
+  // The cards originally dealt — the progress denominator. A card sent back for
+  // relearning must not inflate it, or the counter reads "3 of 12" on a 10-card deck.
+  const [total] = useState(() => queue.length)
   const cardItem = queue[idx]
   const done = !cardItem
 
   function grade(known: boolean) {
     if (!cardItem) return
-    reviewFlashcard(cardItem.id, known)
+    const review = reviewFlashcard(cardItem.id, known)
     setReviewed((r) => r + 1)
     if (known) setGotIt((g) => g + 1)
+    // A card you didn't know comes back before the session ends — that's the
+    // relearning loop. Without it, "Don't know" just deferred the card a day.
+    if (review.relearn) setQueue((q) => [...q, cardItem])
     setExitY(known ? -420 : 420)
     setIdx((i) => i + 1)
     setFlipped(false)

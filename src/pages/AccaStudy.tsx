@@ -56,6 +56,7 @@ import { isAccaOnboarded } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
 import { buildMockForm, nextMockForm } from "@/lib/acca-mockforms"
+import { withShuffledOptions } from "@/lib/acca-options"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
@@ -124,6 +125,13 @@ export default function AccaStudy() {
 
   // session state
   const [questions, setQuestions] = useState<AccaQuestion[]>([])
+
+  /* Every question enters the session de-biased: options deterministically
+   * shuffled, `correct` remapped. Render and grading both use these clones, so
+   * "always pick A" stops paying. */
+  function loadQuestions(qs: AccaQuestion[]) {
+    setQuestions(qs.map((q) => withShuffledOptions(q)))
+  }
   const [idx, setIdx] = useState(0)
   const [choice, setChoice] = useState<number | null>(null)
   const [numInput, setNumInput] = useState("")
@@ -282,7 +290,7 @@ export default function AccaStudy() {
       toast.info("No questions available yet for this paper.")
       return
     }
-    setQuestions(qs)
+    loadQuestions(qs)
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -304,7 +312,7 @@ export default function AccaStudy() {
       toast.info("No curated questions for this topic yet — try Custom practice.")
       return
     }
-    setQuestions(qs)
+    loadQuestions(qs)
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -327,7 +335,7 @@ export default function AccaStudy() {
       toast.info("Not enough questions in this paper's bank yet for a bank run.")
       return
     }
-    setQuestions(qs)
+    loadQuestions(qs)
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -358,7 +366,7 @@ export default function AccaStudy() {
 
   /** Start a practice session from an externally-supplied set (AI-generated). */
   function startCustomSession(qs: AccaQuestion[]) {
-    setQuestions(qs)
+    loadQuestions(qs)
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -659,7 +667,7 @@ function ContinueCard({ pid, onPick }: { pid: string; onPick: (id: string) => vo
 function TodayCard() {
   const t = getTodayStats()
   const currentPid = getCurrentPaper()
-  const shieldTime = currentPid ? getPlan(currentPid).studyTime : null
+  const studyTime = currentPid ? getPlan(currentPid).studyTime : null
   const r = 26
   const circ = 2 * Math.PI * r
   const dash = circ * t.progress
@@ -693,12 +701,12 @@ function TodayCard() {
         </div>
         <div style={{ color: DIM, fontSize: 11 }}>day streak</div>
       </div>
-      {shieldTime && (
+      {studyTime && (
         <div style={{ textAlign: "center", flexShrink: 0, paddingLeft: 12, borderLeft: `1px solid ${BORDER}` }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 15, color: "#C80000" }}>
-            <Icon name="shield" size={15} color="#C80000" /> {shieldTime}
+            <Icon name="time" size={15} color="#C80000" /> {studyTime}
           </div>
-          <div style={{ color: DIM, fontSize: 11 }}>shield time</div>
+          <div style={{ color: DIM, fontSize: 11 }}>study time</div>
         </div>
       )}
     </motion.div>

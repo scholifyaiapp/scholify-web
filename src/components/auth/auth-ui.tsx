@@ -2,6 +2,7 @@ import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from "
 import { Link } from "react-router-dom"
 import { motion, type Variants } from "motion/react"
 import { ScholifyMark } from "@/components/brand"
+import { Icon, type IconName } from "@/components/acca/ui"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared building blocks for the SignIn / SignUp pages.
@@ -299,10 +300,11 @@ export function SubmitButton({
 
 /* ── Left brand / social-proof panel ─────────────────────────── */
 
-const socialProof = [
-  { icon: "⚡", text: "AI plan in 15 seconds" },
-  { icon: "🛡", text: "Life Shields protect your streak" },
-  { icon: "📈", text: "A live pass probability from day one" },
+/** Only claims the app actually delivers today. */
+const productProof: { icon: IconName; text: string }[] = [
+  { icon: "practice", text: "2,418 expert-written practice questions" },
+  { icon: "examiner", text: "190 written questions with examiner rubrics" },
+  { icon: "stats", text: "A pass probability with an honest ± margin" },
 ]
 
 function LeftPanel() {
@@ -333,12 +335,12 @@ function LeftPanel() {
         transition={{ duration: 0.6, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
         style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 12 }}
       >
-        Turn any goal into a daily habit.
+        AI exam prep for the ACCA qualification.
       </motion.p>
 
-      {/* Social proof */}
+      {/* What's actually in the app — no invented social proof. */}
       <div style={{ marginTop: 48, display: "flex", flexDirection: "column", gap: 16 }}>
-        {socialProof.map((item, i) => (
+        {productProof.map((item, i) => (
           <motion.div
             key={item.text}
             initial={{ opacity: 0, x: -12 }}
@@ -354,33 +356,33 @@ function LeftPanel() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 15,
                 borderRadius: "50%",
                 background: "var(--sch-border)",
                 border: "1px solid var(--sch-border-2)",
+                color: "#C80000",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
             >
-              {item.icon}
+              <Icon name={item.icon} size={15} strokeWidth={2.2} />
             </span>
             <span style={{ fontSize: 13, color: "var(--sch-tx-2)" }}>{item.text}</span>
           </motion.div>
         ))}
       </div>
 
-      {/* Quote */}
+      {/* Honest note — we have no student results to quote yet. */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.6 }}
         style={{ marginTop: 56 }}
       >
-        <p style={{ fontStyle: "italic", fontSize: 13, color: "var(--sch-tx-3)" }}>
-          “The only app that forgave my missed days.”
+        <p style={{ fontSize: 13, color: "var(--sch-tx-3)", lineHeight: 1.6 }}>
+          All 15 ACCA papers, from BT to AAA — with ACCA's published pass rates for each one.
         </p>
         <p style={{ fontSize: 11, color: "var(--sch-tx-3)", marginTop: 6 }}>
-          — Dilnoza M., IELTS 7.0
+          Scholify is new. No borrowed testimonials — just the question banks.
         </p>
       </motion.div>
     </div>

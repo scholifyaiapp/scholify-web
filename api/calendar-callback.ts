@@ -50,6 +50,30 @@ interface GoogleTokenResponse {
   error_description?: string
 }
 
+/**
+ * Verify the caller's Supabase JWT and return THEIR user id.
+ *
+ * SECURITY: this endpoint writes Google credentials with the service-role key
+ * (RLS bypassed). It used to key that write on a `user_id` taken from the
+ * REQUEST BODY, with no auth at all — so anyone could POST their own Google
+ * refresh token against a victim's id and hijack the victim's calendar sync
+ * (and use us as a free proxy to Google's token endpoint). The id must come
+ * from the token, and the body's `user_id` is now ignored entirely.
+ */
+async function authedUserId(req: VercelRequest): Promise<string | null> {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) return null
+
+  const supa = createClient(url, key, { auth: { persistSession: false } })
+  const { data, error } = await supa.auth.getUser(token)
+  if (error || !data?.user) return null
+  return data.user.id
+}
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
@@ -63,6 +87,12 @@ export default async function handler(
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
   if (!clientId || !clientSecret) {
     res.status(503).json({ error: "Google Calendar not configured on server." })
+    return
+  }
+
+  const userId = await authedUserId(req)
+  if (!userId) {
+    res.status(401).json({ error: "Sign in to connect a calendar." })
     return
   }
 
@@ -92,7 +122,7 @@ export default async function handler(
         clientSecret,
         redirectUri,
       })
-      await persistTokens(body.user_id, tokens)
+      await persistTokens(userId, tokens)
       res.status(200).json({
         success: true,
         access_token: tokens.access_token,
@@ -111,7 +141,7 @@ export default async function handler(
         clientId,
         clientSecret,
       })
-      await persistTokens(body.user_id, {
+      await persistTokens(userId, {
         access_token: tokens.access_token,
         refresh_token: body.refresh_token,
         expires_in: tokens.expires_in,

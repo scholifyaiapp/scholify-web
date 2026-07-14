@@ -8,7 +8,14 @@ import {
   type ReactNode,
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
-import { supabase, isSupabaseConfigured } from "./supabase"
+import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
+
+/*
+ * A production build with no Supabase must NOT mint fake accounts (see the note
+ * in supabase.ts). It says so, once, in one place.
+ */
+const ACCOUNTS_CLOSED =
+  "Accounts aren't open yet — we're putting the finishing touches to Scholify. Email support@scholifyapp.com and we'll tell you the moment they are."
 
 /* ──────────────────────────────────────────────────────────────
  *  AuthContext — wraps Supabase auth.
@@ -56,6 +63,8 @@ interface AuthContextValue {
   signUp: (input: SignUpInput) => Promise<AuthResult>
   signInWithGoogle: () => Promise<AuthResult>
   signOut: () => Promise<void>
+  /** Email a password-reset link. Errors honestly when Supabase isn't configured. */
+  resetPassword: (email: string) => Promise<AuthResult>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -130,7 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
-    if (!isSupabaseConfigured) {
+    if (authUnavailable) return { error: ACCOUNTS_CLOSED, isNewUser: false }
+    if (isDemoAuthAllowed) {
       const demo = makeDemoUser(email)
       writeDemoUser(demo)
       setUser(demo)
@@ -148,7 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (input: SignUpInput): Promise<AuthResult> => {
     const { firstName, lastName, email, password } = input
-    if (!isSupabaseConfigured) {
+    if (authUnavailable) return { error: ACCOUNTS_CLOSED, isNewUser: true }
+    if (isDemoAuthAllowed) {
       const demo = makeDemoUser(email, firstName, lastName)
       writeDemoUser(demo)
       setUser(demo)
@@ -170,7 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
-    if (!isSupabaseConfigured) {
+    if (authUnavailable) return { error: ACCOUNTS_CLOSED, isNewUser: false }
+    if (isDemoAuthAllowed) {
       const demo = makeDemoUser("you@gmail.com", "Google", "User")
       writeDemoUser(demo)
       setUser(demo)
@@ -207,9 +219,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }, [])
 
+  const resetPassword = useCallback(async (email: string): Promise<AuthResult> => {
+    // Demo mode has no mail server — say so rather than fake a sent email.
+    if (!isSupabaseConfigured) {
+      return {
+        error:
+          "Password reset isn't available on this build. Email support@scholifyapp.com and we'll reset it for you.",
+      }
+    }
+    const siteUrl =
+      (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) ||
+      window.location.origin
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/auth/callback`,
+    })
+    return { error: error ? friendlyError(error.message) : null }
+  }, [])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut }),
-    [user, session, loading, signIn, signUp, signInWithGoogle, signOut],
+    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword }),
+    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

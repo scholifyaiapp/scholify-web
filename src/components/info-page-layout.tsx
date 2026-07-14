@@ -94,8 +94,8 @@ export default function InfoPageLayout({ title, intro, updated, sections }: Info
           style={{ borderColor: BORDER, color: INK_MUTED }}
         >
           {t("Questions? Email us at")}{" "}
-          <a href="mailto:support@scholify.app" style={{ color: BRAND_500, fontWeight: 600 }}>
-            support@scholify.app
+          <a href="mailto:support@scholifyapp.com" style={{ color: BRAND_500, fontWeight: 600 }}>
+            support@scholifyapp.com
           </a>
           .
         </div>

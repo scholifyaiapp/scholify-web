@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Signed-in app surfaces — nothing to index, and they redirect to sign-in anyway.
+Disallow: /dashboard
+Disallow: /study
+Disallow: /settings
+Disallow: /welcome
+Disallow: /auth/
+Disallow: /api/
+
+Sitemap: https://www.scholifyapp.com/sitemap.xml

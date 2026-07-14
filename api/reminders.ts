@@ -54,7 +54,14 @@ async function handleSync(req: VercelRequest, res: VercelResponse): Promise<void
       return
     }
     const body = (req.body || {}) as Record<string, unknown>
-    const email = String(body.email || userData.user.email || "").trim().slice(0, 200)
+    // The address comes from the VERIFIED token, never the body: a body-supplied
+    // email lets any signed-in user sign a stranger up for daily mail from our
+    // domain — spam we'd be sending, with our sending reputation behind it.
+    const email = String(userData.user.email || "").trim().slice(0, 200)
+    if (!email) {
+      res.status(400).json({ ok: false, reason: "no_verified_email" })
+      return
+    }
     const row = {
       user_id: userData.user.id,
       email,

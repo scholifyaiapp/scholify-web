@@ -19,7 +19,13 @@
  */
 
 import { getPaperStats, getMockHistory, getDailyActivity } from "@/lib/acca"
-import { getLatestDiagnostic, estimateFromPractice } from "@/lib/acca-diagnostic"
+import {
+  getLatestDiagnostic,
+  estimateFromPractice,
+  diagnosticRange,
+  PRACTICE_MIN_ANSWERED,
+  type ProbabilityRange,
+} from "@/lib/acca-diagnostic"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import {
   getPassedPapers,
@@ -44,8 +50,17 @@ function todayStr(): string {
 
 /**
  * The learner's current pass probability on a paper: the live practice
- * estimate when they've practised, else their latest formal diagnostic —
+ * estimate when they've practised ENOUGH, else their latest formal diagnostic —
  * recalibrated by a failed real sitting when one is on record (below).
+ *
+ * "Enough" is the point: a provisional estimate (a handful of answers, most of
+ * the syllabus untouched) sits near the 50% prior by construction, which is most
+ * of the way to the 60% mock gate. Publishing it would unlock the mock room — and
+ * headline "you're at 61% to pass FA" — after two correct answers. So thin
+ * evidence yields NULL, not a confident number: callers already treat null as
+ * "no read yet", and readinessState() below gives the UI the "still measuring"
+ * detail. The gate is still reachable the intended way (diagnostic, or ≥20
+ * answers spanning ≥half the syllabus).
  *
  * A real exam result is the strongest evidence the model ever gets. After a
  * fail, the estimate anchors toward the real mark, and every question
@@ -55,7 +70,8 @@ function todayStr(): string {
 export function passProbability(paperId: string): number | null {
   const live = estimateFromPractice(paperId)
   const diag = getLatestDiagnostic(paperId)
-  const base = live ? live.passProbability : diag ? diag.passProbability : null
+  const measured = live && !live.provisional ? live : null
+  const base = measured ? measured.passProbability : diag ? diag.passProbability : null
 
   const rec = recoveryState(paperId)
   if (!rec.active || !rec.outcome) return base
@@ -68,6 +84,49 @@ export function passProbability(paperId: string): number | null {
   // Exam evidence starts at 65% weight and washes out over ~260 answers.
   const w = Math.max(0, 0.65 - rec.answeredSince / 400)
   return Math.round(w * examProb + (1 - w) * base)
+}
+
+/** What the UI needs to render the pass number honestly — including "we don't have one yet". */
+export interface ReadinessState {
+  /** Pass probability 0–100, or null when the evidence doesn't support one. */
+  prob: number | null
+  /** True when we're still gathering evidence — show "still measuring", not a number. */
+  measuring: boolean
+  /** Answers on record for this paper, and the minimum a practice-only read needs. */
+  answered: number
+  answersNeeded: number
+  /** Syllabus areas touched, out of the paper's total. */
+  areasSeen: number
+  areasTotal: number
+  /** The clamped [lo, hi] interval around `prob` — null while measuring. */
+  range: ProbabilityRange | null
+}
+
+/**
+ * The single honest read of "where am I on this paper", for headlines and gauges.
+ * When `measuring` is true there is no defensible number yet: say so, and show
+ * answered/answersNeeded as the path out of it.
+ */
+export function readinessState(paperId: string): ReadinessState {
+  const stats = getPaperStats(paperId)
+  const prob = passProbability(paperId)
+  const areasSeen = stats.areas.filter((a) => a.seen > 0).length
+  const areasTotal = stats.areas.length
+  const live = estimateFromPractice(paperId)
+  const diag = getLatestDiagnostic(paperId)
+  const source = live && !live.provisional ? live : diag
+  return {
+    prob,
+    measuring: prob === null,
+    answered: stats.answered,
+    answersNeeded: PRACTICE_MIN_ANSWERED,
+    areasSeen,
+    areasTotal,
+    range:
+      prob === null || !source
+        ? null
+        : diagnosticRange(prob, source.questionsAnswered, source.confidence),
+  }
 }
 
 /* ── The 60% gate (MOCK_GATE) on the mock exam room ───────────────────────── */

@@ -25,12 +25,13 @@ export const ru: Record<string, string> = {
 
   /* ── Hero ── */
   "Lara just got 3× smarter": "Лара стала в 3 раза умнее",
-  "— try it free": "— попробуйте бесплатно",
+  "— written answers marked in seconds": "— письменные ответы проверяются за секунды",
   "Welcome to Scholify": "Добро пожаловать в Scholify",
   "Set your goal. Lara builds the plan. You just show up.":
     "Поставьте цель. Лара составит план. Вам остаётся только приходить.",
   "learners": "учеников",
   "Free to start": "Бесплатный старт",
+  "expert-written questions": "вопросов от экспертов",
   "Just start today.": "Просто начните сегодня.",
   "The rest is on Scholify.": "Остальное — забота Scholify.",
 
@@ -60,8 +61,6 @@ export const ru: Record<string, string> = {
     "За 15 секунд Лара создаёт полный план обучения по дням с учётом вашей цели, срока и времени.",
   "RESPONSE → REWARD": "ДЕЙСТВИЕ → НАГРАДА",
   "Show up daily": "Приходите каждый день",
-  "Complete your daily task. Earn your streak. If life happens, your shield protects you. You never start over.":
-    "Выполняйте ежедневное задание. Набирайте серию. Если что-то случится, вас защитит щит. Вам не придётся начинать заново.",
 
   /* ── Features ── */
   "FEATURES": "ВОЗМОЖНОСТИ",
@@ -78,18 +77,6 @@ export const ru: Record<string, string> = {
   "Recalibrates automatically when you miss days":
     "Автоматически перестраивается, когда вы пропускаете дни",
   "Powered by the Scholify learning engine": "Работает на учебном движке Scholify",
-  "LIFE SHIELDS": "ЩИТЫ ЖИЗНИ",
-  "Miss days. Keep your streak.": "Пропускайте дни. Сохраняйте серию.",
-  "The #1 reason people quit: they miss one day and feel like they've failed. Scholify's Life Shields protect your streak when life gets in the way. Two shields per week. Lara adjusts the plan. You never start over.":
-    "Главная причина, по которой бросают: пропустил один день — и кажется, что всё провалено. Щиты жизни Scholify защищают вашу серию, когда вмешивается жизнь. Два щита в неделю. Лара корректирует план. Вам не нужно начинать заново.",
-  "2 Life Shields every week, reset on Monday":
-    "2 щита жизни каждую неделю, обновление по понедельникам",
-  "Streak protected automatically on miss":
-    "Серия защищается автоматически при пропуске",
-  "Plan recalibrates to keep your deadline":
-    "План перестраивается, чтобы уложиться в срок",
-  "Compassion-first: no guilt, just momentum":
-    "С заботой: без чувства вины, только движение вперёд",
   "MEET YOUR AI PARTNER": "ПОЗНАКОМЬТЕСЬ С ИИ-ПАРТНЁРОМ",
   "Your AI Partner.": "Ваш ИИ-партнёр.",
   "Your AI Partner is built into Scholify. It knows your name, your streak, your goal, and today's task. Every message it sends is generated just for you — specific, real, and actually useful.":
@@ -115,20 +102,10 @@ export const ru: Record<string, string> = {
 
   /* ── Features — visual demo cards ── */
   "YOUR GOAL": "ВАША ЦЕЛЬ",
-  "Pass IELTS 7.0 in": "Сдать IELTS 7.0 за",
   "days": "дней",
   "min/day": "мин/день",
   "Lara is generating your plan…": "Лара составляет ваш план…",
   "PLAN READY": "ПЛАН ГОТОВ",
-  "Day 1 · IELTS — Task 1 fundamentals": "День 1 · IELTS — основы Task 1",
-  "Day 2 · Task 1 — line graphs": "День 2 · Task 1 — линейные графики",
-  "Day 3 · Task 2 — argument essays": "День 3 · Task 2 — эссе-аргументация",
-  "Day 4 · Task 2 — structure drills": "День 4 · Task 2 — отработка структуры",
-  "ORDER": "ПОРЯДОК",
-  "STREAK INTACT": "СЕРИЯ ЦЕЛА",
-  "CHAOS": "ХАОС",
-  "Life keeps happening. Your streak doesn't break.":
-    "Жизнь идёт своим чередом. Ваша серия не прерывается.",
   "YOUR AI PARTNER · ONLINE": "ВАШ ИИ-ПАРТНЁР · ОНЛАЙН",
   "Meet Lara.": "Знакомьтесь — Лара.",
   "Your AI Partner. She knows your goal, your streak, and today's task — every message generated just for you.":
@@ -165,86 +142,58 @@ export const ru: Record<string, string> = {
   "A student after 60 days of Scholify — focused, organized, on a streak.":
     "Студент после 60 дней со Scholify — собранный, организованный, с активной серией.",
 
-  /* ── Stories ── */
-  "LEARNER STORIES": "ИСТОРИИ УЧЕНИКОВ",
-  "Real goals.": "Настоящие цели.",
-  "Real results.": "Настоящие результаты.",
-  "Thousands of learners finish what they started — and they tell us why.":
-    "Тысячи учеников доводят начатое до конца — и рассказывают почему.",
-  "IELTS 7.5 · 52-day streak": "IELTS 7.5 · серия 52 дня",
-  "I passed IELTS 7.5 in 52 days. I'd failed twice before.":
-    "Я сдала IELTS на 7.5 за 52 дня. До этого дважды проваливала.",
-  "Python · 84-day streak": "Python · серия 84 дня",
-  "I tried 4 coding courses. Never finished one. With Scholify I actually completed Python.":
-    "Я начинал 4 курса по программированию. Ни один не закончил. Со Scholify я наконец прошёл Python.",
-  "Figma · 121-day streak": "Figma · серия 121 день",
-  "The Life Shields feature is genius. Missing a day no longer means quitting.":
-    "Щиты жизни — гениальная штука. Пропустить день больше не значит всё бросить.",
-  "Spanish · 47-day streak": "Испанский · серия 47 дней",
-  "47-day Spanish streak. My plan survived two business trips.":
-    "Серия 47 дней по испанскому. Мой план выдержал две командировки.",
-  "AWS cert · 60-day streak": "Сертификат AWS · серия 60 дней",
-  "Got my AWS certification in 60 days. Daily tasks were always exactly right.":
-    "Получил сертификат AWS за 60 дней. Ежедневные задания всегда были точно по мне.",
-  "Reading habit · 312-day streak": "Привычка читать · серия 312 дней",
-  "I read 18 books this year. Changed how I think about learning forever.":
-    "В этом году я прочитал 18 книг. Это навсегда изменило моё отношение к обучению.",
-  "UI/UX · 96-day streak": "UI/UX · серия 96 дней",
-  "Built my portfolio in 90 days. Got my first design job last week.":
-    "Собрала портфолио за 90 дней. На прошлой неделе получила первую работу дизайнером.",
-  "Marathon · 142-day streak": "Марафон · серия 142 дня",
-  "Trained for the Berlin marathon. Lara's plan worked around two injuries — I never restarted.":
-    "Готовился к Берлинскому марафону. План Лары пережил две травмы — я ни разу не начинал заново.",
-  "French · 188-day streak": "Французский · серия 188 дней",
-  "Conversational French in 6 months. Lara built the schedule. I just showed up daily.":
-    "Разговорный французский за 6 месяцев. Лара составила расписание. Я просто приходила каждый день.",
+  /* ── Proof (replaces the old testimonials — we have no users to quote yet) ── */
+  "THE RECEIPTS": "ФАКТЫ",
+  "No testimonials.": "Никаких отзывов.",
+  "Just what's inside.": "Только то, что внутри.",
+  "Scholify is new, so we have no student results to quote — and we won't invent any. Here is what you actually get on day one, all of it countable.":
+    "Scholify — новый продукт, поэтому нам нечего цитировать из результатов студентов, и мы не станем ничего выдумывать. Вот что вы получаете в первый же день — всё это можно пересчитать.",
+  "expert-written practice questions": "практических вопросов, написанных экспертами",
+  "Original, syllabus-aligned, every one with a verified answer and a teaching explanation. Count them in the app.":
+    "Оригинальные, по официальной программе — у каждого проверенный ответ и обучающее объяснение. Пересчитайте их в приложении.",
+  "written questions with examiner rubrics": "письменных вопросов с критериями экзаменатора",
+  "Each carries the marking points the AI Examiner scores your answer against — the same way a marker would.":
+    "К каждому приложены баллы разметки, по которым ИИ-экзаменатор оценивает ваш ответ — так же, как это делает проверяющий.",
+  "spaced-repetition flashcards": "карточек с интервальным повторением",
+  "Standards, rules and formulas, scheduled so you meet them again exactly when you're about to forget them.":
+    "Стандарты, правила и формулы — они возвращаются к вам ровно тогда, когда вы вот-вот их забудете.",
+  "papers, BT to AAA": "экзаменов, от BT до AAA",
+  "The whole qualification: study chapters for every paper, plus ACCA's own published pass rate for each one.":
+    "Вся квалификация: учебные главы по каждому экзамену и официальная статистика сдачи ACCA по каждому из них.",
+  "HOW WE MEASURE READINESS": "КАК МЫ ИЗМЕРЯЕМ ГОТОВНОСТЬ",
+  "A pass probability that admits what it doesn't know.":
+    "Вероятность сдачи, которая честно признаёт свою погрешность.",
+  "The diagnostic scores you area by area and returns a pass probability with an honest ± margin — the fewer questions and areas it has seen, the wider that margin gets. It is calibrated against ACCA's own published pass rates for your paper, which we show you in the app alongside the examiner's recurring themes.":
+    "Диагностика оценивает вас по каждому разделу и выдаёт вероятность сдачи с честной погрешностью ±: чем меньше вопросов и разделов она видела, тем шире эта погрешность. Она калибруется по официальной статистике сдачи ACCA для вашего экзамена, которую мы показываем в приложении вместе с повторяющимися темами отчётов экзаменатора.",
+  "PASS RATES: ACCA'S OFFICIAL PUBLISHED FIGURES. SCHOLIFY IS AN INDEPENDENT STUDY TOOL AND IS NOT AFFILIATED WITH ACCA.":
+    "СТАТИСТИКА СДАЧИ — ОФИЦИАЛЬНЫЕ ДАННЫЕ ACCA. SCHOLIFY — НЕЗАВИСИМЫЙ УЧЕБНЫЙ ИНСТРУМЕНТ И НЕ АФФИЛИРОВАН С ACCA.",
+  "flashcards": "карточек",
+  "ACCA papers": "экзаменов ACCA",
 
   /* ── Pricing ── */
   "PRICING": "ЦЕНЫ",
   "Start free.": "Начните бесплатно.",
   "Upgrade when you're ready.": "Перейдите на платный план, когда будете готовы.",
-  "7-day free trial — no credit card required. Annual saves 33%.":
-    "7 дней бесплатно — без привязки карты. Годовой план экономит 33%.",
+  "The free plan has no time limit and no card. Annual saves 33%.":
+    "У бесплатного плана нет ни срока, ни карты. Годовой план экономит 33%.",
   "Beginner": "Новичок",
   "Pro": "Pro",
-  "Start 7-day free trial": "Начать 7-дневный пробный период",
+  "Start free": "Начать бесплатно",
   "WHAT'S INCLUDED": "ЧТО ВХОДИТ",
-  "Every plan. Every day.": "Каждый план. Каждый день.",
-  "Beginner gets you the system. Pro adds Lara's voice and the share-worthy proof.":
-    "Тариф «Новичок» даёт вам систему. Pro добавляет голос Лары и доказательства, которыми хочется делиться.",
-  "No credit card to start the trial. Cancel anytime.":
-    "Для пробного периода карта не нужна. Отмена в любой момент.",
-  "AI-generated personalised daily plan": "Персональный ежедневный план от ИИ",
-  "Daily coach messages from Lara": "Ежедневные сообщения от наставника Лары",
-  "Life Shields streak protection": "Защита серии щитами жизни",
-  "Best Resource Today — live verified links":
-    "Лучший ресурс дня — проверенные актуальные ссылки",
-  "Progress heatmap and weekly reports":
-    "Тепловая карта прогресса и еженедельные отчёты",
-  "Shareable milestone cards": "Карточки достижений для публикации",
-  "Voice coach": "Голосовой наставник",
-  "Speaking practice with AI scoring": "Разговорная практика с оценкой ИИ",
-  "Goal completion certificate": "Сертификат о достижении цели",
+  "No card to start. Payments open soon — until then, the free plan is the whole loop.":
+    "Карта не нужна. Оплата откроется скоро — а пока весь цикл обучения доступен бесплатно.",
   "Google Calendar sync": "Синхронизация с Google Календарём",
 
-  /* ── Awards ── */
-  "AWARDS": "НАГРАДЫ",
-  "Awarded on every store.": "Отмечены наградами во всех магазинах.",
-  "Editors' Choice. Year after year. The system learners actually finish with.":
-    "Выбор редакции. Год за годом. Система, с которой ученики действительно доходят до конца.",
-  "Editors' Choice": "Выбор редакции",
-  "HOVER TO TILT": "НАВЕДИТЕ ДЛЯ НАКЛОНА",
-
   /* ── Footer ── */
-  "Daily Discipline": "Ежедневная дисциплина",
-  "AI Coach Lara": "ИИ-наставник Лара",
-  "Life Shields": "Щиты жизни",
-  "Streak Forever": "Серия навсегда",
-  "5 Minutes a Day": "5 минут в день",
+  "15 ACCA Papers": "15 экзаменов ACCA",
+  "AI Tutor Lara": "ИИ-репетитор Лара",
+  "AI Examiner": "ИИ-экзаменатор",
+  "Daily Goal & Streak": "Дневная цель и серия",
+  "Timed Mocks": "Пробные экзамены на время",
   "Your goal is waiting.": "Ваша цель ждёт.",
   "© 2026 Scholify. All rights reserved.": "© 2026 Scholify. Все права защищены.",
-  "Download iOS": "Скачать для iOS",
-  "Download Android": "Скачать для Android",
+  "Runs in any browser — install it to your home screen from your browser menu.":
+    "Работает в любом браузере — установите на главный экран через меню браузера.",
   "Privacy": "Конфиденциальность",
   "Terms": "Условия",
   "Support": "Поддержка",
@@ -302,8 +251,6 @@ export const ru: Record<string, string> = {
     "Это нормальная часть процесса — ощущение тупика обычно значит, что вы на самом краю освоения нового. Скажите, на чём именно застряли, и мы разобьём это на части поменьше, пока одна из них не станет понятной.",
   "I hear you. Here's the truth: most people quit by day 7 — if you're still showing up, you're already doing better than you think. You don't need motivation today, you need one small win. Give me 10 focused minutes on the tiniest task. What's the smallest next step you could take?":
     "Я вас понимаю. Вот правда: большинство бросают к 7-му дню — если вы всё ещё здесь, вы уже справляетесь лучше, чем думаете. Сегодня вам нужна не мотивация, а одна маленькая победа. Уделите 10 сосредоточенных минут самой крошечной задаче. Какой самый маленький следующий шаг вы могли бы сделать?",
-  "Streaks aren't about being perfect — they're about not letting one missed day become two. If you slip, your Life Shields protect the streak so you never start over. How's your streak looking today?":
-    "Серии — это не про идеальность, а про то, чтобы один пропущенный день не превратился в два. Если вы оступитесь, щиты жизни защитят серию, и вам не придётся начинать заново. Как ваша серия сегодня?",
   "Anytime — that's exactly what I'm here for. Showing up and asking is itself the habit. Come back tomorrow and we'll keep the momentum going.":
     "В любое время — именно для этого я здесь. Приходить и спрашивать — это уже сама привычка. Возвращайтесь завтра, и мы сохраним набранный темп.",
   "Go get some rest — you earned it. Same time tomorrow? Your future self is quietly counting on today's you.":
@@ -488,7 +435,7 @@ export const ru: Record<string, string> = {
     "Экзамены Strategic Professional — письменные, и никто не даёт мгновенной обратной связи по письменным ответам. AI-Экзаменатор Scholify проверяет ваш ответ по схеме оценивания, пункт за пунктом, за секунды. Раньше на это уходили репетитор и неделя.",
   "Type your answer, get your mark in seconds": "Напишите ответ — получите оценку за секунды",
   "Point-by-point feedback against the rubric": "Обратная связь по каждому пункту схемы оценивания",
-  "FR and SBR banks live — more papers coming": "Банки FR и SBR уже работают — впереди новые экзамены",
+  "190 written questions, each with its rubric": "190 письменных вопросов, у каждого свои критерии оценки",
   "Trains the skill OT questions can't teach": "Тренирует навык, который не дают OT-вопросы",
   "MEET YOUR AI TUTOR": "ЗНАКОМЬТЕСЬ: ВАШ AI-РЕПЕТИТОР",
   "Lara is built into Scholify. She knows which papers you've passed, your weak syllabus areas, and today's task. Ask her to explain deferred tax like you're five — she will, at 2am, without judgement.":
@@ -523,38 +470,6 @@ export const ru: Record<string, string> = {
   "get you exam-ready.": "доведут вас до готовности.",
   "You're not just passing exams.": "Вы не просто сдаёте экзамены.",
   "You're becoming an ACCA member.": "Вы становитесь членом ACCA.",
-  "STUDENT STORIES": "ИСТОРИИ СТУДЕНТОВ",
-  "Real papers.": "Настоящие экзамены.",
-  "Real passes.": "Настоящие сдачи.",
-  "ACCA students in 20+ countries prep with Scholify — and they tell us why.":
-    "Студенты ACCA в 20+ странах готовятся со Scholify — и вот почему.",
-  "FR · passed first attempt": "FR · сдала с первого раза",
-  "The AI Examiner rewired how I structure written answers. Passed FR at my first attempt.":
-    "AI-Экзаменатор перестроил то, как я пишу ответы. Сдала FR с первой попытки.",
-  "AA · passed after 2 fails": "AA · сдал после 2 провалов",
-  "I failed AA twice studying from question banks alone. The per-area breakdown showed me exactly what to fix.":
-    "Я дважды провалил AA, готовясь только по банкам вопросов. Разбор по темам показал, что именно чинить.",
-  "FA · 92% readiness": "FA · готовность 92%",
-  "Instant explanations beat waiting a week to ask my tuition class. I finally understand double entry.":
-    "Мгновенные объяснения лучше, чем неделя ожидания вопроса на курсах. Я наконец понимаю двойную запись.",
-  "TX · 47-day streak": "TX · серия 47 дней",
-  "The daily plan survived two business trips. I never fell behind and never restarted.":
-    "Ежедневный план пережил две командировки. Я ни разу не отстал и не начинал заново.",
-  "FM · passed": "FM · сдала",
-  "My mock scores predicted my real FM result within 3%. I walked in knowing I'd pass.":
-    "Пробные экзамены предсказали мой реальный результат FM с точностью до 3%. Я шла на экзамен, зная, что сдам.",
-  "BT + MA + FA in one year": "BT + MA + FA за один год",
-  "Cleared all three Knowledge papers in a year while working full-time. 25 minutes a day.":
-    "Закрыл все три экзамена уровня Knowledge за год, работая фулл-тайм. 25 минут в день.",
-  "PM · passed": "PM · сдала",
-  "Custom practice from my own notes is genius. It quizzed me on exactly what I kept getting wrong.":
-    "Практика по моим конспектам — гениально. Меня спрашивали именно то, что я постоянно путала.",
-  "SBR candidate": "Кандидат SBR",
-  "Written-answer feedback in seconds. Nothing else on the market does this for Strategic Professional.":
-    "Обратная связь по письменным ответам за секунды. Больше никто на рынке не делает этого для Strategic Professional.",
-  "LW · passed": "LW · сдала",
-  "Lara explained consideration and privity better than my lecture notes ever did.":
-    "Лара объяснила consideration и privity лучше любых конспектов лекций.",
 
   /* ── ROI / calculator ── */
   "THE ROI": "ОКУПАЕМОСТЬ",
@@ -571,7 +486,7 @@ export const ru: Record<string, string> = {
   "Written answers marked": "Проверка письменных ответов",
   "Timed mocks + readiness analytics": "Пробные экзамены + аналитика готовности",
   "Personalised daily plan": "Персональный ежедневный план",
-  "Study at your shield time": "Занятия в ваше защищённое время",
+  "Study any hour, from any device": "Занятия в любой час, с любого устройства",
   "Cancel anytime": "Отмена в любой момент",
   "class hours": "по расписанию",
   "email": "по почте",
@@ -608,9 +523,8 @@ export const ru: Record<string, string> = {
   "Timed mock exams": "Пробные экзамены на время",
   "AI Examiner — instant written marking": "AI-Экзаменатор — мгновенная проверка письменных ответов",
   "Custom practice from topics or your notes": "Своя практика по темам или вашим конспектам",
-  "Unlimited Lara tutor": "Безлимитная Лара-репетитор",
-  "Editors' Choice. Year after year. The prep ACCA students actually stick with.":
-    "Выбор редакции. Год за годом. Подготовка, с которой студенты ACCA действительно остаются.",
+  "Lara AI tutor on every plan": "ИИ-репетитор Лара на любом плане",
+  "Mock history & readiness trend": "История пробных экзаменов и динамика готовности",
   "Then the next one.": "А потом следующий.",
   "Pass this paper.": "Сдайте этот экзамен.",
   "Start prepping — free": "Начать подготовку — бесплатно",

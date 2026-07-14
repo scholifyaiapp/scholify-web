@@ -259,7 +259,7 @@ function ConfirmEmailPanel({ email }: { email: string }) {
         We sent a confirmation link to{" "}
         <span style={{ color: "var(--sch-text)", fontWeight: 600 }}>{email}</span>.
         <br />
-        Click it to activate your account and start your 7-day trial.
+        Click it to activate your account and start practising.
       </p>
 
       <Link
@@ -405,7 +405,7 @@ export default function SignUp() {
             Start learning today
           </h1>
           <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 6 }}>
-            Free for 7 days. No credit card required.
+            The free plan has no time limit. No credit card required.
           </p>
         </motion.div>
 

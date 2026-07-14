@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { openCheckout, PADDLE_PRICES } from "@/lib/paddle"
+import { openCheckout, PADDLE_PRICES, isPaddleConfigured } from "@/lib/paddle"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
@@ -15,58 +15,57 @@ import { ScholifyLockup } from "@/components/brand"
 const TEXT2 = "var(--sch-tx-2)"
 const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 
+/* Every claim below is what the app ships today — no trial, no unbuilt features. */
+
 const FREE_FEATURES: PlanFeature[] = [
-  { text: "Curated question banks — 9 papers" },
-  { text: "Practice with instant marking" },
-  { text: "Teaching explanations on every question" },
-  { text: "SRS flashcards" },
-  { text: "Study plan + readiness score" },
-  { text: "Lara AI tutor (limited)" },
-  { text: "Streaks & daily goals" },
+  { text: "2,418 expert-written practice questions" },
+  { text: "Instant marking + teaching explanations" },
+  { text: "929 SRS flashcards" },
+  { text: "Diagnostic with a pass probability (± margin)" },
+  { text: "69 study chapters across all 15 papers" },
+  { text: "Lara AI tutor" },
+  { text: "Daily goal, streak & readiness score" },
   { text: "Full ACCA roadmap BT → AAA" },
 ]
 
 const BEGINNER_FEATURES: PlanFeature[] = [
-  { text: "Unlimited practice sessions" },
-  { text: "Weak-area targeting" },
-  { text: "Per-syllabus-area analytics" },
-  { text: "Study heatmap & progress dashboard" },
-  { text: "Weekly XP leaderboard" },
-  { text: "Daily study reminders" },
-  { text: "Exam-date countdown & phased plan" },
-  { text: "EPSM + PER progress tracker" },
+  { text: "Timed mock exams against the pass line" },
+  { text: "AI Examiner — written answers marked in seconds", badge: "NEW" },
+  { text: "Custom practice from any topic or your notes" },
+  { text: "Mock history & readiness trend" },
 ]
 
 const PRO_FEATURES: PlanFeature[] = [
   { text: "Timed mock exams", badge: "PRO" },
-  { text: "AI Examiner — written answers marked in seconds", badge: "NEW" },
+  { text: "AI Examiner on all 190 written questions", badge: "NEW" },
   { text: "Custom practice from any topic or your notes" },
-  { text: "Unlimited Lara AI tutor" },
-  { text: "Mock history & pass-line tracking" },
-  { text: "Google Calendar sync" },
-  { text: "English & Russian" },
-  { text: "Priority AI generation" },
+  { text: "Mock history & readiness trend" },
+  { text: "Annual option — 33% cheaper" },
 ]
 
+/* Entitlements are Free vs paid today — any paid plan unlocks the same modes. */
 const COMPARISON: Array<[string, string, string, string, string]> = [
-  ["Curated question banks", "✓", "✓", "✓", "✓"],
-  ["Practice sessions", "Limited", "Unlimited", "Unlimited", "Unlimited"],
+  ["Expert-written question banks", "✓", "✓", "✓", "✓"],
+  ["Practice sessions", "✓", "✓", "✓", "✓"],
   ["Instant marking + explanations", "✓", "✓", "✓", "✓"],
   ["SRS flashcards", "✓", "✓", "✓", "✓"],
-  ["Readiness score", "✓", "✓", "✓", "✓"],
-  ["Weak-area analytics", "—", "✓", "✓", "✓"],
-  ["Lara AI tutor", "Limited", "Limited", "Unlimited", "Unlimited"],
-  ["Timed mock exams", "—", "—", "✓", "✓"],
-  ["AI Examiner (written marking)", "—", "—", "✓", "✓"],
-  ["Custom practice from your notes", "—", "—", "✓", "✓"],
-  ["Priority AI", "—", "—", "—", "✓"],
-  ["Calendar sync", "—", "—", "✓", "✓"],
+  ["Diagnostic + pass probability", "✓", "✓", "✓", "✓"],
+  ["Study chapters (all 15 papers)", "✓", "✓", "✓", "✓"],
+  ["Readiness score & weak-area analytics", "✓", "✓", "✓", "✓"],
+  ["Lara AI tutor", "✓", "✓", "✓", "✓"],
+  ["Timed mock exams", "—", "✓", "✓", "✓"],
+  ["AI Examiner (written marking)", "—", "✓", "✓", "✓"],
+  ["Custom practice from your notes", "—", "✓", "✓", "✓"],
 ]
 
 const FAQS: Array<[string, string]> = [
   [
+    "What do I get for free?",
+    "The free plan is the whole study loop: 2,418 expert-written questions, 929 flashcards, 69 study chapters, the diagnostic with its pass probability, your daily goal, streak and readiness score. There is no trial clock — it stays free. Paying unlocks timed mocks, the AI Examiner and custom practice.",
+  ],
+  [
     "Which papers does Scholify cover?",
-    "All 15 papers of the ACCA qualification, BT to AAA. Nine papers (BT, MA, FA, LW, PM, TX, FR, AA, FM) have curated, expert-written question banks; every paper also supports unlimited AI-generated practice, and the AI Examiner marks written answers for FR and SBR today, with more papers coming.",
+    "All 15 papers of the ACCA qualification, BT to AAA. Nine papers (BT, MA, FA, LW, PM, TX, FR, AA, FM) have curated, expert-written question banks; every paper has study chapters and supports AI-generated practice, and the AI Examiner marks 190 written questions against their rubrics.",
   ],
   [
     "What is the AI Examiner?",
@@ -79,10 +78,6 @@ const FAQS: Array<[string, string]> = [
   [
     "Can I cancel anytime?",
     "Yes. Cancel from Settings anytime. Your plan stays active until the period ends. No questions, no forms, no hidden steps.",
-  ],
-  [
-    "What happens after my free trial?",
-    "After 7 days, choose a paid plan or your account switches to the free tier. Your streak, readiness scores and progress are always saved.",
   ],
 ]
 
@@ -157,14 +152,19 @@ export default function Pricing() {
 
   const annual = billing === "annual"
 
+  // Payments are only real when Paddle has a token AND the price ids exist.
+  // Until then the plan buttons say so instead of pretending to fail.
+  const paymentsOpen =
+    isPaddleConfigured() && Boolean(PADDLE_PRICES.proMonthly || PADDLE_PRICES.beginnerMonthly)
+
   const flash = (msg: string) => {
     setNotice(msg)
     setTimeout(() => setNotice(null), 2800)
   }
 
   const checkout = (priceId: string | undefined) => {
-    if (!openCheckout(priceId, user?.email, user?.id)) {
-      flash("Checkout is being set up — coming soon ✦")
+    if (!paymentsOpen || !openCheckout(priceId, user?.email, user?.id)) {
+      flash("Payments aren't open yet — the free plan has no limit in the meantime.")
     }
   }
 
@@ -244,7 +244,8 @@ export default function Pricing() {
             Cheaper than one tutoring hour.
           </h1>
           <p style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 12 }}>
-            Start free for 7 days. Upgrade when you're ready to pass.
+            The free plan has no clock on it. Pay only when you want mocks, the AI Examiner and
+            custom practice.
           </p>
 
           {/* Billing toggle */}
@@ -333,12 +334,12 @@ export default function Pricing() {
           <PricingCard
             index={0}
             variant="free"
-            name="Free Trial"
+            name="Free"
             price="$0"
-            priceUnit="7 days"
-            description="Try everything free. No card needed."
+            priceUnit="forever"
+            description="The whole study loop. No card, no countdown."
             features={FREE_FEATURES}
-            cta="Start free trial"
+            cta={user ? "Go to app →" : "Start free"}
             onCta={() => (window.location.href = user ? "/study" : "/sign-up")}
           />
           <PricingCard
@@ -352,7 +353,8 @@ export default function Pricing() {
             description="For steady daily practice"
             featuresHeader="Everything in Free, plus:"
             features={BEGINNER_FEATURES}
-            cta="Choose Beginner"
+            cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
+            disabled={!paymentsOpen}
             onCta={() => checkout(PADDLE_PRICES.beginnerMonthly)}
           />
           <PricingCard
@@ -363,10 +365,11 @@ export default function Pricing() {
             priceUnit="/mo"
             oldPrice={proCard.oldPrice}
             billedNote={proCard.billedNote}
-            description="Mocks, AI Examiner & unlimited AI"
-            featuresHeader="Everything in Beginner, plus:"
+            description="Mocks, AI Examiner & custom practice"
+            featuresHeader="Everything in Free, plus:"
             features={PRO_FEATURES}
-            cta="Choose Pro →"
+            cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
+            disabled={!paymentsOpen}
             badge="Most Popular"
             onCta={() => checkout(annual ? PADDLE_PRICES.annualPro : PADDLE_PRICES.proMonthly)}
           />
@@ -454,30 +457,33 @@ export default function Pricing() {
           <motion.button
             type="button"
             onClick={() => checkout(PADDLE_PRICES.annualPro)}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={paymentsOpen ? { scale: 1.03 } : undefined}
+            whileTap={paymentsOpen ? { scale: 0.97 } : undefined}
             style={{
               padding: "12px 32px",
               borderRadius: 14,
-              border: "none",
-              background: GOLD,
-              color: "var(--sch-bg-2)",
+              border: paymentsOpen ? "none" : "1px solid var(--sch-border-2)",
+              background: paymentsOpen ? GOLD : "var(--sch-card)",
+              color: paymentsOpen ? "var(--sch-bg-2)" : TEXT2,
               fontWeight: 800,
               fontSize: 15,
               whiteSpace: "nowrap",
-              cursor: "pointer",
-              boxShadow: "0 0 30px rgba(255,215,0,0.2)",
+              cursor: paymentsOpen ? "pointer" : "not-allowed",
+              boxShadow: paymentsOpen ? "0 0 30px rgba(255,215,0,0.2)" : "none",
             }}
           >
-            Choose Annual →
+            {paymentsOpen ? "Choose Annual →" : "Payments open soon"}
           </motion.button>
         </motion.div>
 
-        {/* Trial note */}
+        {/* Honest status — no trial exists, and checkout isn't live yet. */}
         <p style={{ textAlign: "center", fontSize: 13, color: TEXT2, marginTop: 24, lineHeight: 1.7 }}>
-          All plans include a 7-day free trial.
+          {paymentsOpen
+            ? "There's no free trial — the free plan simply stays free. Cancel a paid plan anytime."
+            : "Payments aren't open yet, so nothing is charged today. The free plan stays free, with no trial clock."}
           <br />
-          Cancel anytime. No questions asked.
+          Beginner and Pro unlock the same study modes right now; if that changes, this page changes
+          with it.
         </p>
 
         {/* Comparison table */}

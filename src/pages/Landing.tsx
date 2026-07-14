@@ -20,8 +20,6 @@ import NavHeader from "@/components/ui/nav-header"
 import { GlowCard } from "@/components/ui/spotlight-card"
 import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
-import { StoreBadge } from "@/components/ui/store-badge"
-import { TestimonialsColumns } from "@/components/ui/testimonials-columns"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
 import { AnimatedText } from "@/components/ui/animated-shiny-text"
@@ -292,7 +290,7 @@ function Hero() {
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
           buttonText={t("The AI Examiner is here")}
-          description={t("— try it free")}
+          description={t("— written answers marked in seconds")}
           onClick={() => navigate("/signup")}
         />
 
@@ -324,42 +322,41 @@ function Hero() {
           </PrimaryCTA>
         </motion.div>
 
+        {/* Countable proof, not borrowed faces — Scholify has no users to show yet. */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 1.15 }}
-          style={{ marginTop: 36, display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}
+          style={{ marginTop: 36, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, flexWrap: "wrap" }}
         >
-          <div style={{ display: "flex" }}>
-            {[
-              { src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
-              { src: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
-              { src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
-              { src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=80&h=80", alt: "Learner avatar" },
-            ].map((a, i) => (
-              <img
-                key={i}
-                src={a.src}
-                alt={a.alt}
-                width={32}
-                height={32}
-                decoding="async"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: `2px solid ${BG_PRIMARY}`,
-                  marginLeft: i === 0 ? 0 : -10,
-                  boxShadow: "0 4px 10px -2px rgba(20,20,26,0.15)",
-                  display: "block",
-                }}
-              />
-            ))}
-          </div>
-          <span style={{ color: INK_MUTED, fontSize: 13 }}>
-            {t("Founding cohort now open")} · <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 500 }}>490+</span> {t("expert-written questions")} · {t("Free to start")}
-          </span>
+          {[
+            { n: "2,418", label: t("expert-written questions") },
+            { n: "929", label: t("flashcards") },
+            { n: "15", label: t("ACCA papers") },
+          ].map((s, i) => (
+            <motion.span
+              key={s.label}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 1.2 + i * 0.08, ease: EASE_DECISIVE }}
+              style={{
+                display: "inline-flex",
+                alignItems: "baseline",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 999,
+                border: `1px solid ${HAIR}`,
+                background: "rgba(255,255,255,0.6)",
+                boxShadow: "0 4px 10px -6px rgba(20,20,26,0.18)",
+                color: INK_MUTED,
+                fontSize: 13,
+              }}
+            >
+              <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 600 }}>{s.n}</span>
+              {s.label}
+            </motion.span>
+          ))}
+          <span style={{ color: INK_MUTED, fontSize: 13 }}>· {t("Free to start")}</span>
         </motion.div>
 
         {/* the product itself, staged in 3D — tilt it */}
@@ -670,42 +667,9 @@ function VisualPlanGen() {
   )
 }
 
-/* ── B — Life Shields interactive demo ── */
+/* ── B — AI Examiner: answer in, mark out ── */
 
-function ShieldBurst({ show }: { show: boolean }) {
-  if (!show) return null
-  const dots = Array.from({ length: 10 })
-  return (
-    <>
-      {dots.map((_, i) => {
-        const angle = (i / dots.length) * Math.PI * 2
-        const dx = Math.cos(angle) * 80
-        const dy = Math.sin(angle) * 80
-        return (
-          <motion.span
-            key={i}
-            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-            animate={{ x: dx, y: dy, opacity: 0, scale: 0.4 }}
-            transition={{ duration: 0.7, ease: EASE_DECISIVE }}
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: SHIELD_500,
-              translate: "-50% -50%",
-              pointerEvents: "none",
-            }}
-          />
-        )
-      })}
-    </>
-  )
-}
-
-function VisualShields() {
+function VisualExaminer() {
   const t = useT()
   return (
     <div
@@ -1024,10 +988,10 @@ function Features() {
           bullets={[
             "Type your answer, get your mark in seconds",
             "Point-by-point feedback against the rubric",
-            "FR and SBR banks live — more papers coming",
+            "190 written questions, each with its rubric",
             "Trains the skill OT questions can't teach",
           ]}
-          visual={<VisualShields />}
+          visual={<VisualExaminer />}
         />
 
         <FeatureBlock
@@ -1448,83 +1412,141 @@ function Identity() {
   )
 }
 
-/* ─────────────────────── STORIES ─────────────────────── */
+/* ─────────────────────── PROOF ─────────────────────── */
 
 type GlowTone = "blue" | "purple" | "green" | "red" | "orange"
 
-const learnerTestimonials: { name: string; role: string; text: string; image: string }[] = [
+/*
+ * Scholify has no users yet, so this section carries no testimonials — every
+ * number below is countable in the product (question banks, flashcards, written
+ * rubrics, papers) or published by ACCA. Nothing here is aspirational.
+ */
+const proofItems: {
+  value: string
+  unit?: string
+  title: string
+  desc: string
+  accent: string
+  tone: GlowTone
+}[] = [
   {
-    name: "Dilnoza M.",
-    role: "FR candidate · early user",
-    text: "The AI Examiner rewired how I structure written answers — marking in seconds instead of waiting days.",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200",
+    value: "2,418",
+    title: "expert-written practice questions",
+    desc: "Original, syllabus-aligned, every one with a verified answer and a teaching explanation. Count them in the app.",
+    accent: BRAND_500,
+    tone: "red",
   },
   {
-    name: "Marcus T.",
-    role: "AA · passed after 2 fails",
-    text: "I failed AA twice studying from question banks alone. The per-area breakdown showed me exactly what to fix.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200",
+    value: "190",
+    title: "written questions with examiner rubrics",
+    desc: "Each carries the marking points the AI Examiner scores your answer against — the same way a marker would.",
+    accent: PLUM_500,
+    tone: "purple",
   },
   {
-    name: "Aiko R.",
-    role: "FA · 92% readiness",
-    text: "Instant explanations beat waiting a week to ask my tuition class. I finally understand double entry.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200&h=200",
+    value: "929",
+    title: "spaced-repetition flashcards",
+    desc: "Standards, rules and formulas, scheduled so you meet them again exactly when you're about to forget them.",
+    accent: FIRE_500,
+    tone: "orange",
   },
   {
-    name: "Raj P.",
-    role: "TX · 47-day streak",
-    text: "The daily plan survived two business trips. I never fell behind and never restarted.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200",
-  },
-  {
-    name: "Sarah K.",
-    role: "FM · passed",
-    text: "My mock scores predicted my real FM result within 3%. I walked in knowing I'd pass.",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200",
-  },
-  {
-    name: "Omar F.",
-    role: "BT + MA + FA in one year",
-    text: "Cleared all three Knowledge papers in a year while working full-time. 25 minutes a day.",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200",
-  },
-  {
-    name: "Lila K.",
-    role: "PM · passed",
-    text: "Custom practice from my own notes is genius. It quizzed me on exactly what I kept getting wrong.",
-    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200&h=200",
-  },
-  {
-    name: "Tom B.",
-    role: "SBR candidate",
-    text: "Written-answer feedback in seconds. Nothing else on the market does this for Strategic Professional.",
-    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200&h=200",
-  },
-  {
-    name: "Priya S.",
-    role: "LW · passed",
-    text: "Lara explained consideration and privity better than my lecture notes ever did.",
-    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200",
+    value: "15",
+    title: "papers, BT to AAA",
+    desc: "The whole qualification: study chapters for every paper, plus ACCA's own published pass rate for each one.",
+    accent: SHIELD_500,
+    tone: "green",
   },
 ]
+
+function ProofCard({
+  item,
+  delay,
+}: {
+  item: (typeof proofItems)[number]
+  delay: number
+}) {
+  const { ref, inView } = useInViewOnce<HTMLDivElement>("-80px")
+  const t = useT()
+  const numeric = Number.parseFloat(item.value.replace(/,/g, ""))
+  const animated = useCountUp(numeric, 1400, inView)
+  return (
+    <GlowCard customSize glowColor={item.tone} className="!w-full !p-1 !gap-0 !rounded-3xl !shadow-none">
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 24 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.7, delay, ease: EASE_DECISIVE }}
+        whileHover={{ y: -4, boxShadow: "0 1px 2px rgba(20,20,26,0.04), 0 24px 48px rgba(20,20,26,0.08)" }}
+        className="soft-card"
+        style={{ padding: 30, borderRadius: 18, height: "100%", textAlign: "left" }}
+      >
+        <div
+          className="font-mono-pro tabular"
+          style={{
+            fontSize: "clamp(40px, 4.4vw, 56px)",
+            fontWeight: 500,
+            color: item.accent,
+            letterSpacing: "-0.04em",
+            lineHeight: 1,
+          }}
+        >
+          {Math.round(animated).toLocaleString("en-US")}
+        </div>
+        <div style={{ marginTop: 12, color: INK, fontSize: 15, fontWeight: 600 }}>{t(item.title)}</div>
+        <p style={{ marginTop: 8, color: INK_MUTED, fontSize: 13.5, lineHeight: 1.6 }}>{t(item.desc)}</p>
+      </motion.div>
+    </GlowCard>
+  )
+}
 
 function Stories() {
   const t = useT()
   return (
     <section id="stories" style={{ padding: "96px 24px" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>{t("STUDENT STORIES")}</SectionLabel>
+        <SectionLabel>{t("THE RECEIPTS")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
-          {t("Built with students.")} <em style={{ fontStyle: "italic" }}>{t("For students.")}</em>
+          {t("No testimonials.")} <em style={{ fontStyle: "italic" }}>{t("Just what's inside.")}</em>
         </h2>
-        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 540, margin: "16px auto 0", lineHeight: 1.65 }}>
-          {t("What early users tell us about studying with the loop — join the founding cohort and shape what we build next.")}
+        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 580, margin: "16px auto 0", lineHeight: 1.65 }}>
+          {t("Scholify is new, so we have no student results to quote — and we won't invent any. Here is what you actually get on day one, all of it countable.")}
         </p>
 
-        <TestimonialsColumns
-          testimonials={learnerTestimonials.map((x) => ({ ...x, text: t(x.text), role: t(x.role) }))}
-        />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: 20,
+            marginTop: 56,
+          }}
+        >
+          {proofItems.map((item, i) => (
+            <ProofCard key={item.title} item={item} delay={0.05 + i * 0.08} />
+          ))}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7, ease: EASE_DECISIVE }}
+          className="soft-card"
+          style={{ marginTop: 20, padding: 32, borderRadius: 24, textAlign: "left" }}
+        >
+          <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>
+            {t("HOW WE MEASURE READINESS")}
+          </div>
+          <h3 className="font-display" style={{ color: INK, fontSize: "clamp(22px, 2.6vw, 30px)", margin: "12px 0 0", letterSpacing: "-0.02em" }}>
+            {t("A pass probability that admits what it doesn't know.")}
+          </h3>
+          <p style={{ color: INK_MUTED, fontSize: 15, lineHeight: 1.7, marginTop: 12, maxWidth: 720 }}>
+            {t("The diagnostic scores you area by area and returns a pass probability with an honest ± margin — the fewer questions and areas it has seen, the wider that margin gets. It is calibrated against ACCA's own published pass rates for your paper, which we show you in the app alongside the examiner's recurring themes.")}
+          </p>
+          <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10.5, letterSpacing: "0.1em", marginTop: 16, lineHeight: 1.6 }}>
+            {t("PASS RATES: ACCA'S OFFICIAL PUBLISHED FIGURES. SCHOLIFY IS AN INDEPENDENT STUDY TOOL AND IS NOT AFFILIATED WITH ACCA.")}
+          </p>
+        </motion.div>
       </div>
     </section>
   )
@@ -1541,7 +1563,7 @@ const ROI_ROWS: { label: string; values: [string, string, string, string]; highl
   { label: "Written answers marked", values: ["seconds", "days", "days", "days"] },
   { label: "Timed mocks + readiness analytics", values: ["✓", "some", "✓", "—"] },
   { label: "Personalised daily plan", values: ["✓", "fixed schedule", "self-paced", "✓"] },
-  { label: "Study at your shield time", values: ["✓", "—", "✓", "—"] },
+  { label: "Study any hour, from any device", values: ["✓", "—", "✓", "—"] },
   { label: "Cancel anytime", values: ["✓", "—", "—", "✓"] },
 ]
 
@@ -1790,10 +1812,11 @@ const scholifyFeatures: ScholifyFeature[] = [
   { label: "Personalised study plan to exam day" },
   { label: "Readiness score & per-area analytics" },
   { label: "Full BT → AAA qualification roadmap" },
+  { label: "Lara AI tutor on every plan" },
   { label: "Timed mock exams", pro: true },
   { label: "AI Examiner — instant written marking", pro: true },
   { label: "Custom practice from topics or your notes", pro: true },
-  { label: "Unlimited Lara tutor", pro: true },
+  { label: "Mock history & readiness trend", pro: true },
 ]
 
 function Pricing() {
@@ -1807,7 +1830,7 @@ function Pricing() {
           {t("Start free.")} <em style={{ fontStyle: "italic" }}>{t("Upgrade when you're ready.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 14, maxWidth: 560, marginInline: "auto" }}>
-          {t("7-day free trial — no credit card required. Annual saves 33%.")}
+          {t("The free plan has no time limit and no card. Annual saves 33%.")}
         </p>
 
         <div
@@ -1835,7 +1858,7 @@ function Pricing() {
               proAnnual={10.00}
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
-              ctaLabel={t("Start 7-day free trial")}
+              ctaLabel={t("Start free")}
               onCta={() => navigate("/signup")}
             />
           </div>
@@ -1898,7 +1921,7 @@ function Pricing() {
         </div>
 
         <p style={{ color: INK_MUTED, fontSize: 13, marginTop: 28 }}>
-          {t("No credit card to start the trial. Cancel anytime.")}
+          {t("No card to start. Payments open soon — until then, the free plan is the whole loop.")}
         </p>
       </div>
     </section>

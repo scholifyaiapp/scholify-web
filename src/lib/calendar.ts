@@ -161,13 +161,20 @@ async function ensureFreshAccessToken(
 
   if (!account.google_refresh_token) return account.google_access_token
   try {
+    // The endpoint writes Google credentials with the service role, so it takes
+    // the user id from this token — never from the body.
+    const { data: sess } = await supabase.auth.getSession()
+    const accessToken = sess?.session?.access_token
+    if (!accessToken) return account.google_access_token
     const res = await fetch("/api/calendar-callback", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
       body: JSON.stringify({
         action: "refresh",
         refresh_token: account.google_refresh_token,
-        user_id: account.user_id,
       }),
     })
     if (!res.ok) return account.google_access_token

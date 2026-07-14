@@ -24,14 +24,11 @@
  * learning-data moat) lives in acca-cloud.ts and layers on top of this.
  */
 
-import { getPaper, getQuestions, getPaperStats } from "@/lib/acca"
+import { getPaper, getQuestions, getPaperStats, DIFFICULTY_WEIGHT } from "@/lib/acca"
 import { experienceLine } from "@/lib/acca-profile"
 import type { AccaQuestion, Difficulty } from "@/lib/acca-content"
 
 /* ── Tunables ─────────────────────────────────────────────────── */
-
-/** A correct hard question is stronger evidence of competence than an easy one. */
-const DIFFICULTY_WEIGHT: Record<Difficulty, number> = { easy: 0.8, medium: 1.0, hard: 1.3 }
 
 /** Prior belief before evidence: the pass line. */
 const PRIOR = 0.5
@@ -45,6 +42,27 @@ const PER_AREA = 3
 const MAX_QUESTIONS = 25
 /** The improvement target we coach toward for weak areas. */
 export const TARGET_AREA_SCORE = 0.7
+
+/*
+ * How much evidence the LIVE PRACTICE estimate needs before it is allowed to
+ * speak as a pass probability (headline, mock gate).
+ *
+ * The estimate regresses toward PRIOR (0.5) when syllabus coverage is thin — but
+ * 50 is already most of the way to the 60 mock gate, so on thin evidence the
+ * regression that is supposed to express DOUBT reads as near-readiness instead:
+ * two correct answers in one of eight areas used to land at 61% and unlock the
+ * mock room. Below these thresholds we publish no number at all and the UI says
+ * "still measuring" (see readinessState in acca-loop).
+ *
+ * The formal diagnostic is exempt: it is a stratified, syllabus-spanning
+ * instrument (one easy/medium/hard per area) — a deliberate measurement, not an
+ * accident of what the student happened to click. It is the intended route to a
+ * number, and it clears both bars on any paper with a real bank anyway.
+ */
+/** Answers on record before practice alone can claim a pass probability. */
+export const PRACTICE_MIN_ANSWERED = 20
+/** Fraction of syllabus areas that must have been touched (≥ half the paper). */
+export const PRACTICE_MIN_CONFIDENCE = 0.5
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -79,6 +97,13 @@ export interface DiagnosticResult {
   passProbability: number
   /** 0–1 fraction of the syllabus the diagnostic actually assessed. */
   confidence: number
+  /**
+   * True when the evidence behind this estimate is too thin to publish as a pass
+   * probability — the numbers are still populated (the areas breakdown is useful)
+   * but the headline and the mock gate must ignore them. Absent on results stored
+   * before this flag existed, which were all formal diagnostics → not provisional.
+   */
+  provisional?: boolean
   areas: DiagnosticAreaResult[]
   /** Up to 3 assessed areas, lowest score first. */
   weakest: DiagnosticAreaResult[]
@@ -185,6 +210,30 @@ export function diagnosticMargin(passProbability: number, questionsAnswered: num
   return Math.min(30, Math.max(3, Math.round(100 * 1.28 * se * coveragePenalty)))
 }
 
+/** A pass-probability estimate as an honest interval. */
+export interface ProbabilityRange {
+  /** The point estimate, 0–100. */
+  prob: number
+  /** The ± margin in points (unclamped — what "±N" prints). */
+  margin: number
+  /** Lower bound, clamped into [0, 100]. */
+  lo: number
+  /** Upper bound, clamped into [0, 100]. */
+  hi: number
+}
+
+/**
+ * The interval a student should actually be shown. A probability is bounded by
+ * the scale, so a symmetric ± near the ends spills off it: a perfect diagnostic
+ * printed "98% ±7" (105%) and an all-wrong one "2% ±6" (−4%). Render [lo, hi],
+ * never prob ± margin.
+ */
+export function diagnosticRange(passProbability: number, questionsAnswered: number, coverage: number): ProbabilityRange {
+  const prob = Math.max(0, Math.min(100, Math.round(passProbability)))
+  const margin = diagnosticMargin(prob, questionsAnswered, coverage)
+  return { prob, margin, lo: Math.max(0, prob - margin), hi: Math.min(100, prob + margin) }
+}
+
 /* ── Scoring & the pass-probability model ─────────────────────── */
 
 function logistic(score0to100: number): number {
@@ -210,10 +259,17 @@ function areaScore(answers: AnsweredDiagnostic[]): number {
   return (wCorrect + ALPHA * PRIOR) / (wSum + ALPHA)
 }
 
-/** Prior-shrunk competence from plain seen/correct counts (no difficulty detail). */
-function areaScoreFromCounts(seen: number, correct: number): number {
-  if (seen === 0) return PRIOR
-  return (correct + ALPHA * PRIOR) / (seen + ALPHA)
+/**
+ * Prior-shrunk competence from the stored DIFFICULTY-WEIGHTED sums. Identical
+ * formula to areaScore above — that is the point: practice progress now records
+ * the weighted sums (acca.ts recordAnswer), so the live estimate and the formal
+ * diagnostic score the same answers to the same number. They used to disagree by
+ * up to 14 points on one answer set, which meant the headline moved when the
+ * student merely navigated between the results screen and the dashboard.
+ */
+function areaScoreFromWeighted(weightedSeen: number, weightedCorrect: number): number {
+  if (weightedSeen <= 0) return PRIOR
+  return (weightedCorrect + ALPHA * PRIOR) / (weightedSeen + ALPHA)
 }
 
 /** Mean of assessed-area scores, regressed toward neutral by coverage confidence. */
@@ -236,7 +292,7 @@ function assembleResult(
   paperId: string,
   areas: DiagnosticAreaResult[],
   totalAreas: number,
-  meta: { questionsAnswered: number; rawCorrect: number },
+  meta: { questionsAnswered: number; rawCorrect: number; provisional?: boolean },
 ): DiagnosticResult {
   const assessed = areas.filter((a) => a.seen > 0)
   const confidence = totalAreas > 0 ? assessed.length / totalAreas : 0
@@ -266,6 +322,7 @@ function assembleResult(
     estimatedScore,
     passProbability,
     confidence,
+    provisional: meta.provisional ?? false,
     areas,
     weakest,
     strongest,
@@ -312,23 +369,43 @@ export function scoreDiagnostic(paperId: string, answers: AnsweredDiagnostic[]):
 }
 
 /**
- * A LIVE pass-probability estimate computed from cumulative practice (the same
- * model as the formal diagnostic, minus difficulty weighting since practice
- * counts don't retain it). This is what closes the loop: as the student drills
- * their weak areas, this number moves. Returns null until they've practised.
+ * A LIVE pass-probability estimate computed from cumulative practice — the exact
+ * same model as the formal diagnostic, difficulty weighting included (progress
+ * now stores the weighted sums). This is what closes the loop: as the student
+ * drills their weak areas, this number moves.
+ *
+ * Returns null until they've practised. Below the evidence thresholds the result
+ * is still returned (the per-area breakdown is honest and useful) but flagged
+ * `provisional` — callers that publish a NUMBER must respect that flag; the mock
+ * gate and the headline go through passProbability/readinessState in acca-loop,
+ * which do.
  */
 export function estimateFromPractice(paperId: string): DiagnosticResult | null {
   const stats = getPaperStats(paperId)
   if (stats.answered === 0) return null
 
   const areas: DiagnosticAreaResult[] = stats.areas.map((a) => {
-    const score = areaScoreFromCounts(a.seen, a.correct)
+    const score = areaScoreFromWeighted(a.weightedSeen, a.weightedCorrect)
     return { code: a.code, label: a.label, seen: a.seen, correct: a.correct, score, band: bandFor(score) }
   })
 
-  return assembleResult(paperId, areas, stats.areas.length, {
+  const totalAreas = stats.areas.length
+  const assessedAreas = areas.filter((a) => a.seen > 0).length
+  const confidence = totalAreas > 0 ? assessedAreas / totalAreas : 0
+
+  // Coverage is non-negotiable: you cannot estimate a paper from a corner of it.
+  // The volume bar is waived once a formal diagnostic is on record — that IS the
+  // measurement (a stratified easy/medium/hard ladder across every area, and its
+  // answers are inside these very counts), so practice on top only refines it. A
+  // 4-area paper's diagnostic is 12 questions; without the waiver the number would
+  // freeze at the stored diagnostic until 8 more answers arrived, then jump.
+  const volume = stats.answered >= PRACTICE_MIN_ANSWERED || getLatestDiagnostic(paperId) !== null
+  const provisional = !volume || confidence < PRACTICE_MIN_CONFIDENCE
+
+  return assembleResult(paperId, areas, totalAreas, {
     questionsAnswered: stats.answered,
     rawCorrect: stats.correct,
+    provisional,
   })
 }
 

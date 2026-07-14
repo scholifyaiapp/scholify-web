@@ -18,7 +18,7 @@ import {
   passBand,
   getLatestDiagnostic,
   diagnosticSeconds,
-  diagnosticMargin,
+  diagnosticRange,
   type DiagnosticResult,
   type AnsweredDiagnostic,
 } from "@/lib/acca-diagnostic"
@@ -26,6 +26,7 @@ import { getPlan, generateStudyPlan } from "@/lib/acca-plan"
 import { qualificationProgress } from "@/lib/acca-qualification"
 import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { MOCK_PASS } from "@/lib/acca-loop"
+import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { RingGauge, BreakdownList } from "@/components/acca/charts"
 import PaywallModal from "@/components/PaywallModal"
@@ -225,7 +226,9 @@ export default function AccaDiagnostic() {
     const qs = buildDiagnostic(paperId)
     if (qs.length === 0) return
     answersRef.current = []
-    setQuestions(qs)
+    // De-biased on the way in: options shuffled, `correct` remapped. The
+    // clones are what the learner sees and what gradeQuestion marks against.
+    setQuestions(qs.map((q) => withShuffledOptions(q)))
     setIdx(0)
     setTimeLeft(diagnosticSeconds(qs.length))
     trackEvent("diagnostic_started", { paper: paperId, questions: qs.length, fromOnboarding: fromWelcome })
@@ -453,12 +456,18 @@ function ResultsView({
         <div style={{ marginTop: 4, fontSize: 13.5, color: MUTED }}>
           Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark {MOCK_PASS}%
         </div>
-        <div style={{ marginTop: 6, fontSize: 12, color: DIM, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: MUTED }}>
-            ±{diagnosticMargin(result.passProbability, result.questionsAnswered, result.confidence)} pts
-          </span>
-          · a measurement, not a verdict — it tightens as you answer more
-        </div>
+        {/* The honest interval, clamped to the scale: "98% ±7" implied 105%. */}
+        {(() => {
+          const r = diagnosticRange(result.passProbability, result.questionsAnswered, result.confidence)
+          return (
+            <div style={{ marginTop: 6, fontSize: 12, color: DIM, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: MUTED }}>
+                {r.lo}–{r.hi}%
+              </span>
+              · a measurement, not a verdict — it tightens as you answer more
+            </div>
+          )
+        })()}
       </div>
 
       {/* The target gap — the number the whole plan chases */}

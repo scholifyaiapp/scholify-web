@@ -10,16 +10,208 @@ import {
   SubmitButton,
   GoogleButton,
   OrDivider,
+  Spinner,
   cardVariants,
   itemVariants,
+  IRIDESCENT,
 } from "@/components/auth/auth-ui"
 import { CharacterLeftPanel } from "@/components/auth/auth-characters"
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
+/* ── Forgot-password modal ───────────────────────────────────── */
+
+function ForgotPasswordModal({
+  open,
+  initialEmail,
+  onClose,
+}: {
+  open: boolean
+  initialEmail: string
+  onClose: () => void
+}) {
+  const { resetPassword } = useAuth()
+  const [email, setEmail] = useState(initialEmail)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setEmail(initialEmail)
+    setSent(false)
+    setError(null)
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [open, initialEmail, onClose])
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (sending) return
+    if (!EMAIL_RE.test(email.trim())) {
+      setError("Enter a valid email address.")
+      return
+    }
+    setSending(true)
+    setError(null)
+    const { error: err } = await resetPassword(email.trim())
+    setSending(false)
+    if (err) {
+      setError(err)
+      return
+    }
+    setSent(true)
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            background: "rgba(0,0,0,0.55)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reset your password"
+            onClick={(e) => e.stopPropagation()}
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              padding: 28,
+              borderRadius: 22,
+              background: "var(--sch-bg-2)",
+              border: "1px solid var(--sch-border-2)",
+              boxShadow: "0 40px 120px rgba(0,0,0,0.45)",
+            }}
+          >
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--sch-text)", letterSpacing: "-0.4px" }}>
+              {sent ? "Check your inbox" : "Reset your password"}
+            </h2>
+
+            {sent ? (
+              <>
+                <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 10, lineHeight: 1.6 }}>
+                  If an account exists for <strong style={{ color: "var(--sch-tx-1)" }}>{email.trim()}</strong>,
+                  we've emailed a reset link. Open it and you'll be signed in — then set a new
+                  password in Settings.
+                </p>
+                <motion.button
+                  type="button"
+                  onClick={onClose}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    marginTop: 20,
+                    borderRadius: 12,
+                    border: "none",
+                    background: IRIDESCENT,
+                    color: "#fff",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Done
+                </motion.button>
+              </>
+            ) : (
+              <form onSubmit={submit} noValidate>
+                <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 10, lineHeight: 1.6 }}>
+                  Enter your account email and we'll send you a link to get back in.
+                </p>
+                <div style={{ marginTop: 18 }}>
+                  <AuthInput
+                    id="reset-email"
+                    label="Email address"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    error={error ?? undefined}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 12,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      color: "var(--sch-tx-1)",
+                      background: "var(--sch-card)",
+                      border: "1px solid var(--sch-border-2)",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    type="submit"
+                    disabled={sending}
+                    whileHover={sending ? undefined : { scale: 1.02 }}
+                    whileTap={sending ? undefined : { scale: 0.98 }}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      borderRadius: 12,
+                      border: "none",
+                      background: IRIDESCENT,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: sending ? "not-allowed" : "pointer",
+                      opacity: sending ? 0.7 : 1,
+                    }}
+                  >
+                    {sending && <Spinner size={16} />}
+                    {sending ? "Sending…" : "Send reset link"}
+                  </motion.button>
+                </div>
+              </form>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export default function SignIn() {
   const navigate = useNavigate()
   const { signIn, signInWithGoogle } = useAuth()
+  const [forgotOpen, setForgotOpen] = useState(false)
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -187,12 +379,15 @@ export default function SignIn() {
               }
             />
             <div style={{ textAlign: "right", marginTop: 8 }}>
-              <Link
-                to="/support"
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
                 style={{
                   fontSize: 13,
                   color: "rgba(200,0,0,0.8)",
-                  textDecoration: "none",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
                   cursor: "pointer",
                   transition: "color 0.2s ease",
                 }}
@@ -200,7 +395,7 @@ export default function SignIn() {
                 onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,0,0,0.8)")}
               >
                 Forgot password?
-              </Link>
+              </button>
             </div>
           </motion.div>
 
@@ -274,6 +469,12 @@ export default function SignIn() {
           </Link>
         </motion.div>
       </motion.div>
+
+      <ForgotPasswordModal
+        open={forgotOpen}
+        initialEmail={email}
+        onClose={() => setForgotOpen(false)}
+      />
     </AuthSplitLayout>
   )
 }

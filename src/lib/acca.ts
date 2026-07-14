@@ -73,16 +73,31 @@ export function gradeQuestion(q: AccaQuestion, response: number | number[]): Gra
   }
 
   if (q.type === "multi") {
-    const picked = Array.isArray(response) ? [...response].sort((a, b) => a - b) : []
-    const want = (Array.isArray(q.correct) ? [...q.correct] : []).sort((a, b) => a - b)
+    // A multi MUST carry an array of option indices. A scalar `correct` (a content
+    // typo) is not a gradeable key: coercing it to [] would make an EMPTY selection
+    // grade correct. Same for a scalar response — the answer is simply not gradeable,
+    // and "not gradeable" can only ever mean WRONG, never right.
+    const want = Array.isArray(q.correct) ? [...q.correct].filter(isOptionIndex).sort((a, b) => a - b) : null
+    if (!want || want.length === 0 || !Array.isArray(response)) {
+      return { correct: false, correctText: want ? want.map((i) => q.options?.[i]).filter(Boolean).join(", ") : "" }
+    }
+    const picked = [...new Set(response.filter(isOptionIndex))].sort((a, b) => a - b)
     const correct = picked.length === want.length && picked.every((v, i) => v === want[i])
     return { correct, correctText: want.map((i) => q.options?.[i]).filter(Boolean).join(", ") }
   }
 
-  // mcq
-  const picked = typeof response === "number" ? response : -1
-  const want = Array.isArray(q.correct) ? q.correct[0] : q.correct ?? -1
-  return { correct: picked === want, correctText: q.options?.[want] ?? "" }
+  // mcq. A missing/invalid `correct` (undefined on a malformed question) used to
+  // read as -1 — which the "skipped" sentinel (-1) then MATCHED, grading a blank
+  // as correct. An expected answer that doesn't exist can never be satisfied.
+  const want = Array.isArray(q.correct) ? q.correct[0] : q.correct
+  if (!isOptionIndex(want)) return { correct: false, correctText: "" }
+  const picked = response
+  return { correct: isOptionIndex(picked) && picked === want, correctText: q.options?.[want] ?? "" }
+}
+
+/** A usable option index: a non-negative integer. Rejects -1 (skip), NaN, undefined. */
+function isOptionIndex(v: unknown): v is number {
+  return typeof v === "number" && Number.isInteger(v) && v >= 0
 }
 
 /* ── Session building ─────────────────────────────────────────── */
@@ -123,10 +138,12 @@ export function buildSession(
   if (opts.weakFirst) {
     const stats = getPaperStats(paperId)
     const areaAcc = new Map(stats.areas.map((a) => [a.code, a.accuracy]))
-    pool = [...pool].sort(
-      (a, b) => (areaAcc.get(a.area) ?? 0) - (areaAcc.get(b.area) ?? 0),
-    )
-    return pool.slice(0, count)
+    // Shuffle FIRST so the seed decides which questions surface from each area,
+    // then stable-sort by area accuracy so the weakest areas still lead. Sorting
+    // the raw pool alone is seed-blind: every session would be byte-identical.
+    return shuffle(pool, seed)
+      .sort((a, b) => (areaAcc.get(a.area) ?? 0) - (areaAcc.get(b.area) ?? 0))
+      .slice(0, count)
   }
 
   return shuffle(pool, seed).slice(0, count)
@@ -178,6 +195,14 @@ export function buildAdaptiveSession(paperId: string, count = 8, seed = Date.now
 
 const KEY_PROGRESS = "scholify-acca-progress"
 
+/**
+ * A correct HARD question is stronger evidence of competence than a correct easy
+ * one. This table is the single source of that weighting: the formal diagnostic
+ * (acca-diagnostic) and the live practice estimate both score through it, so the
+ * two models can never disagree on the same answers.
+ */
+export const DIFFICULTY_WEIGHT: Record<Difficulty, number> = { easy: 0.8, medium: 1.0, hard: 1.3 }
+
 export interface AreaStat {
   code: string
   label: string
@@ -185,6 +210,9 @@ export interface AreaStat {
   correct: number
   /** 0–1 accuracy; 0 when unseen. */
   accuracy: number
+  /** Difficulty-weighted sums — what the competence model scores on. */
+  weightedSeen: number
+  weightedCorrect: number
 }
 
 export interface PaperStats {
@@ -199,11 +227,19 @@ export interface PaperStats {
   areas: AreaStat[]
 }
 
+/** Per-area counts. `wSeen`/`wCorrect` are the difficulty-weighted equivalents. */
+interface AreaProgress {
+  seen: number
+  correct: number
+  wSeen: number
+  wCorrect: number
+}
+
 interface RawProgress {
   /** paperId → { questionId → { attempts, correct } } */
   questions: Record<string, Record<string, { attempts: number; correct: number }>>
-  /** paperId → { areaCode → { seen, correct } } */
-  areas: Record<string, Record<string, { seen: number; correct: number }>>
+  /** paperId → { areaCode → AreaProgress } */
+  areas: Record<string, Record<string, AreaProgress>>
   totalAnswered: number
   totalCorrect: number
   lastStudied: string | null
@@ -228,18 +264,82 @@ const EMPTY: RawProgress = {
   dailyCorrect: {},
 }
 
+/*
+ * Progress is read on EVERY render and can arrive from two untrusted places: a
+ * localStorage blob any extension/console can rewrite, and the user-writable
+ * `acca_progress.data` cloud row. A spread-merge only guards MISSING fields —
+ * a field of the WRONG TYPE (`areas: null`) survives it and then throws on the
+ * first read, forever, because the writer that would heal it throws too. So we
+ * validate field-wise and fall back to the empty shape per field: a read can
+ * degrade, but it can never crash.
+ */
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v)
+
+const num = (v: unknown, fallback = 0): number =>
+  typeof v === "number" && Number.isFinite(v) ? v : fallback
+
+function numMap(v: unknown): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (isObj(v)) for (const [k, n] of Object.entries(v)) if (typeof n === "number" && Number.isFinite(n)) out[k] = n
+  return out
+}
+
+function coerceProgress(raw: unknown): RawProgress {
+  const r = isObj(raw) ? raw : {}
+
+  const questions: RawProgress["questions"] = {}
+  if (isObj(r.questions)) {
+    for (const [paperId, byId] of Object.entries(r.questions)) {
+      if (!isObj(byId)) continue
+      const out: Record<string, { attempts: number; correct: number }> = {}
+      for (const [qid, s] of Object.entries(byId)) {
+        if (isObj(s)) out[qid] = { attempts: num(s.attempts), correct: num(s.correct) }
+      }
+      questions[paperId] = out
+    }
+  }
+
+  const areas: RawProgress["areas"] = {}
+  if (isObj(r.areas)) {
+    for (const [paperId, byCode] of Object.entries(r.areas)) {
+      if (!isObj(byCode)) continue
+      const out: Record<string, AreaProgress> = {}
+      for (const [code, s] of Object.entries(byCode)) {
+        if (!isObj(s)) continue
+        const seen = num(s.seen)
+        const correct = num(s.correct)
+        // Rows written before difficulty weighting carry no wSeen/wCorrect. Seed
+        // them from the plain counts (weight 1.0 = "medium") so old progress keeps
+        // its meaning and new answers accumulate on top instead of restarting the
+        // weighted sums at zero — which would read as a sudden competence collapse.
+        out[code] = { seen, correct, wSeen: num(s.wSeen, seen), wCorrect: num(s.wCorrect, correct) }
+      }
+      areas[paperId] = out
+    }
+  }
+
+  return {
+    questions,
+    areas,
+    totalAnswered: num(r.totalAnswered),
+    totalCorrect: num(r.totalCorrect),
+    lastStudied: typeof r.lastStudied === "string" ? r.lastStudied : null,
+    history: Array.isArray(r.history) ? r.history.filter((d): d is string => typeof d === "string") : [],
+    streak: num(r.streak),
+    daily: numMap(r.daily),
+    dailyCorrect: numMap(r.dailyCorrect),
+  }
+}
+
 function readRaw(): RawProgress {
   try {
     const raw = window.localStorage.getItem(KEY_PROGRESS)
-    if (raw) return { ...EMPTY, ...(JSON.parse(raw) as Partial<RawProgress>) }
+    if (raw) return coerceProgress(JSON.parse(raw))
   } catch {
-    /* ignore */
+    /* unparseable / storage unavailable — fall through to a clean slate */
   }
-  return structuredCloneSafe(EMPTY)
-}
-
-function structuredCloneSafe<T>(v: T): T {
-  return JSON.parse(JSON.stringify(v)) as T
+  return coerceProgress(EMPTY)
 }
 
 function writeRaw(p: RawProgress): void {
@@ -267,9 +367,14 @@ export function recordAnswer(paperId: string, q: AccaQuestion, correct: boolean)
   if (correct) qs.correct += 1
 
   const aByPaper = (p.areas[paperId] ??= {})
-  const ar = (aByPaper[q.area] ??= { seen: 0, correct: 0 })
+  const ar = (aByPaper[q.area] ??= { seen: 0, correct: 0, wSeen: 0, wCorrect: 0 })
+  const w = DIFFICULTY_WEIGHT[q.difficulty] ?? 1
   ar.seen += 1
-  if (correct) ar.correct += 1
+  ar.wSeen += w
+  if (correct) {
+    ar.correct += 1
+    ar.wCorrect += w
+  }
 
   p.totalAnswered += 1
   if (correct) p.totalCorrect += 1
@@ -312,13 +417,15 @@ export function getPaperStats(paperId: string): PaperStats {
   const qRaw = p.questions[paperId] ?? {}
 
   const areas: AreaStat[] = areasMeta.map((a) => {
-    const r = areaRaw[a.code] ?? { seen: 0, correct: 0 }
+    const r = areaRaw[a.code] ?? { seen: 0, correct: 0, wSeen: 0, wCorrect: 0 }
     return {
       code: a.code,
       label: a.label,
       seen: r.seen,
       correct: r.correct,
       accuracy: r.seen > 0 ? r.correct / r.seen : 0,
+      weightedSeen: r.wSeen,
+      weightedCorrect: r.wCorrect,
     }
   })
 
@@ -387,9 +494,14 @@ export function snapshotProgress(): AccaProgressSnapshot {
   return readRaw()
 }
 
-/** Overwrite local progress from a cloud snapshot (hydrate a fresh device). */
-export function restoreProgress(raw: Partial<AccaProgressSnapshot>): void {
-  writeRaw({ ...EMPTY, ...raw })
+/**
+ * Overwrite local progress from a cloud snapshot (hydrate a fresh device). The
+ * snapshot comes from a user-writable row, so it is validated, not trusted: a
+ * malformed field is replaced with its empty value rather than persisted as a
+ * time bomb that throws on every later read.
+ */
+export function restoreProgress(raw: unknown): void {
+  writeRaw(coerceProgress(raw))
 }
 
 /** Total questions answered — a monotonic signal for safe cross-device merges. */
@@ -459,7 +571,23 @@ type MockStore = Record<string, MockResult[]>
 function readMocks(): MockStore {
   try {
     const raw = window.localStorage.getItem(KEY_MOCKS)
-    if (raw) return JSON.parse(raw) as MockStore
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    if (!isObj(parsed)) return {}
+    // Same contract as progress: a wrong-typed entry degrades to empty, never
+    // throws — getMockHistory spreads these and the mock gate reads them.
+    const out: MockStore = {}
+    for (const [paperId, list] of Object.entries(parsed)) {
+      if (!Array.isArray(list)) continue
+      out[paperId] = list
+        .filter(isObj)
+        .map((m) => ({
+          date: typeof m.date === "string" ? m.date : "",
+          correct: num(m.correct),
+          total: num(m.total),
+          percent: num(m.percent),
+        }))
+    }
+    return out
   } catch {
     /* ignore */
   }

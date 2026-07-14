@@ -7,10 +7,25 @@ import { LanguageProvider } from "./i18n/LanguageProvider"
 import { AuthProvider } from "./lib/auth"
 import { ToastProvider } from "./components/Toast"
 import { ThemeProvider } from "./lib/theme"
-import { initAnalytics } from "./lib/analytics"
+import { captureError, initAnalytics } from "./lib/analytics"
 import "./index.css"
 
 initAnalytics()
+
+// Crashes outside React's tree (event handlers, async work, rejected promises)
+// never reach an error boundary — catch them here so nothing goes unreported.
+window.addEventListener("error", (e) => {
+  captureError(e.error ?? e.message, {
+    source: "window.onerror",
+    file: e.filename,
+    line: e.lineno,
+    col: e.colno,
+  })
+})
+
+window.addEventListener("unhandledrejection", (e) => {
+  captureError(e.reason, { source: "unhandledrejection" })
+})
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

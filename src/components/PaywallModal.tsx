@@ -1,10 +1,9 @@
 import { useEffect, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
-import { differenceInCalendarDays } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { openCheckout, PADDLE_PRICES } from "@/lib/paddle"
+import { openCheckout, PADDLE_PRICES, isPaddleConfigured } from "@/lib/paddle"
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
@@ -25,41 +24,40 @@ const HEADERS: Record<
     kind: "celebrate",
     icon: "trophy",
     title: "You built a 7-day streak!",
-    sub: "That puts you in the top 3% of ACCA students. Most people quit before day 3. You didn't.",
+    sub: "Seven days of answering questions, in a row. That's the habit the exam rewards.",
   },
   streak14: {
     kind: "celebrate",
     icon: "streak",
     title: "14 days strong.",
-    sub: "Two full weeks of showing up. Students who practise daily pass at nearly twice the average rate.",
+    sub: "Two full weeks of showing up. Your readiness score has the receipts.",
   },
   streak21: {
     kind: "celebrate",
     icon: "gem",
-    title: "21 days — it's a habit now.",
-    sub: "Research says habits take about three weeks to form. You just made exam prep automatic.",
+    title: "21 days in a row.",
+    sub: "Three weeks of daily practice. Exam prep is now part of your day, not a decision.",
   },
   feature: {
     kind: "lock",
     icon: "lock",
-    title: "This is a Pro feature",
-    sub: "Upgrade to unlock timed mocks, the AI Examiner, custom practice and unlimited Lara.",
+    title: "This is a paid feature",
+    sub: "A paid plan unlocks timed mocks, the AI Examiner and custom practice. Everything else stays free.",
   },
   general: {
     kind: "lara",
     icon: "tutor",
     title: "Unlock the full Scholify",
-    sub: "Timed mocks, instant written marking, custom practice — everything you need to pass.",
+    sub: "Timed mocks, instant written marking, custom practice — the three modes the free plan doesn't include.",
   },
 }
 
+/* Only the modes a paid plan actually unlocks — the rest of the app is free. */
 const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
   { text: "Timed mock exams with pass-line tracking", badge: "PRO" },
-  { text: "AI Examiner — written answers marked in seconds", badge: "NEW" },
+  { text: "AI Examiner — 190 written questions, marked in seconds", badge: "NEW" },
   { text: "Custom practice from any topic or your notes", badge: "PRO" },
-  { text: "Unlimited Lara AI tutor" },
-  { text: "Curated banks for all nine OT papers" },
-  { text: "Readiness score & weak-area analytics" },
+  { text: "Mock history & readiness trend" },
 ]
 
 /* ── Celebration particles ───────────────────────────────────── */
@@ -117,12 +115,10 @@ export default function PaywallModal({
   const header = HEADERS[type]
   const email = user?.email
 
-  // Days left in the 7-day free trial (from signup), for the urgency line.
-  const trialDaysLeft = (() => {
-    if (!user?.created_at) return 7
-    const since = Math.max(0, differenceInCalendarDays(new Date(), new Date(user.created_at)))
-    return Math.max(0, 7 - since)
-  })()
+  // Payments only work when Paddle has a token and a price id — otherwise the
+  // buttons say so rather than inviting a retry that can never succeed.
+  const paymentsOpen =
+    isPaddleConfigured() && Boolean(PADDLE_PRICES.proMonthly || PADDLE_PRICES.beginnerMonthly)
 
   // Dialog behavior: Escape closes (when dismissible) + lock body scroll while open.
   useEffect(() => {
@@ -169,10 +165,9 @@ export default function PaywallModal({
   const handleCheckout = (priceId: string | undefined) => {
     trackEvent("upgrade_started", { plan: planFor(priceId) })
     trackEvent("paywall_checkout_clicked", { type })
-    const ok = openCheckout(priceId, email, user?.id)
-    if (!ok) {
-      setNotice("Couldn't open checkout. Please try again.")
-      setTimeout(() => setNotice(null), 2800)
+    if (!paymentsOpen || !openCheckout(priceId, email, user?.id)) {
+      setNotice("Payments aren't open yet — nothing to pay today.")
+      setTimeout(() => setNotice(null), 3200)
     }
   }
 
@@ -368,22 +363,6 @@ export default function PaywallModal({
               ))}
             </div>
 
-            {/* ── Trial urgency (Day-7 paywall only) ── */}
-            {type === "streak7" && (
-              <div
-                style={{
-                  padding: "16px 32px 0",
-                  textAlign: "center",
-                  fontSize: 12,
-                  color: "rgba(255,159,10,0.7)",
-                }}
-              >
-                {trialDaysLeft === 0
-                  ? "Your free trial ends today."
-                  : `Your free trial ends in ${trialDaysLeft} ${trialDaysLeft === 1 ? "day" : "days"}.`}
-              </div>
-            )}
-
             {/* ── Plan cards ── */}
             <div
               style={{
@@ -397,8 +376,9 @@ export default function PaywallModal({
                 name="Beginner"
                 price="$9.99"
                 unit="/month"
-                description="Build the habit"
-                cta="Choose Beginner"
+                description="Steady daily practice"
+                cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
+                disabled={!paymentsOpen}
                 onClick={() => handleCheckout(PADDLE_PRICES.beginnerMonthly)}
               />
               <PlanMini
@@ -406,8 +386,9 @@ export default function PaywallModal({
                 name="Pro"
                 price="$14.99"
                 unit="/month"
-                description="The full experience"
-                cta="Choose Pro →"
+                description="Mocks, Examiner, custom practice"
+                cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
+                disabled={!paymentsOpen}
                 onClick={() => handleCheckout(PADDLE_PRICES.proMonthly)}
               />
             </div>
@@ -417,7 +398,7 @@ export default function PaywallModal({
               <motion.button
                 type="button"
                 onClick={() => handleCheckout(PADDLE_PRICES.annualPro)}
-                whileHover={{ scale: 1.01 }}
+                whileHover={paymentsOpen ? { scale: 1.01 } : undefined}
                 style={{
                   width: "100%",
                   display: "flex",
@@ -427,7 +408,8 @@ export default function PaywallModal({
                   borderRadius: 14,
                   border: "1px solid var(--sch-border)",
                   background: "var(--sch-card)",
-                  cursor: "pointer",
+                  cursor: paymentsOpen ? "pointer" : "not-allowed",
+                  opacity: paymentsOpen ? 1 : 0.55,
                   textAlign: "left",
                 }}
               >
@@ -472,7 +454,9 @@ export default function PaywallModal({
                 )}
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
-                7-day free trial · No credit card required · Cancel anytime
+                {paymentsOpen
+                  ? "Everything else stays free · Cancel anytime"
+                  : "Payments open soon · Everything else stays free"}
               </div>
               {dismissible && (
                 <button
@@ -548,7 +532,7 @@ export default function PaywallModal({
                   transition={{ delay: 0.9, duration: 0.4 }}
                   style={{ fontSize: 16, color: "rgba(240,238,255,0.5)", marginTop: 8 }}
                 >
-                  Most people never make it this far.
+                  A week of questions answered, every single day.
                 </motion.p>
                 <motion.p
                   initial={{ opacity: 0 }}
@@ -561,7 +545,7 @@ export default function PaywallModal({
                     marginTop: 12,
                   }}
                 >
-                  You're in the top 3% of learners.
+                  Keep it going — tomorrow is day eight.
                 </motion.p>
               </motion.div>
             )}
@@ -582,6 +566,7 @@ function PlanMini({
   cta,
   onClick,
   featured,
+  disabled,
 }: {
   name: string
   price: string
@@ -590,6 +575,8 @@ function PlanMini({
   cta: string
   onClick: () => void
   featured?: boolean
+  /** Payments not configured — the button stays visible but is not purchasable. */
+  disabled?: boolean
 }) {
   const cardStyle: CSSProperties = featured
     ? {
@@ -653,8 +640,12 @@ function PlanMini({
       <motion.button
         type="button"
         onClick={onClick}
-        whileHover={{ scale: featured ? 1.02 : 1, boxShadow: featured ? "0 0 50px rgba(200,0,0,0.45)" : undefined }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={
+          disabled
+            ? undefined
+            : { scale: featured ? 1.02 : 1, boxShadow: featured ? "0 0 50px rgba(200,0,0,0.45)" : undefined }
+        }
+        whileTap={disabled ? undefined : { scale: 0.98 }}
         style={{
           width: "100%",
           height: 44,
@@ -662,11 +653,11 @@ function PlanMini({
           borderRadius: 12,
           fontSize: 14,
           fontWeight: featured ? 700 : 600,
-          cursor: "pointer",
-          color: featured ? "#fff" : "var(--sch-tx-1)",
-          background: featured ? IRIDESCENT : "var(--sch-card)",
-          border: featured ? "none" : "1px solid var(--sch-border-2)",
-          boxShadow: featured ? "0 0 30px rgba(200,0,0,0.3)" : "none",
+          cursor: disabled ? "not-allowed" : "pointer",
+          color: disabled ? "var(--sch-tx-2)" : featured ? "#fff" : "var(--sch-tx-1)",
+          background: disabled ? "var(--sch-card)" : featured ? IRIDESCENT : "var(--sch-card)",
+          border: disabled || !featured ? "1px solid var(--sch-border-2)" : "none",
+          boxShadow: !disabled && featured ? "0 0 30px rgba(200,0,0,0.3)" : "none",
         }}
       >
         {cta}

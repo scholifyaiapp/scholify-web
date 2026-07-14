@@ -67,7 +67,7 @@ const en: PageContent = {
       heading: "Changes and contact",
       body: [
         "We may update these terms as Scholify grows. We will notify you of significant changes in the app or by email, and the date above shows the latest version.",
-        "Questions about these terms? Email support@scholify.app.",
+        "Questions about these terms? Email support@scholifyapp.com.",
       ],
     },
   ],
@@ -132,7 +132,7 @@ const ru: PageContent = {
       heading: "Изменения и контакты",
       body: [
         "Мы можем обновлять эти условия по мере развития Scholify. О существенных изменениях мы уведомим вас в приложении или по электронной почте, а дата выше показывает последнюю версию.",
-        "Вопросы по этим условиям? Пишите на support@scholify.app.",
+        "Вопросы по этим условиям? Пишите на support@scholifyapp.com.",
       ],
     },
   ],

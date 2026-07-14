@@ -27,6 +27,8 @@ export interface PricingCardProps {
   badge?: string
   index?: number
   onCta: () => void
+  /** True when the plan cannot actually be bought (payments not configured). */
+  disabled?: boolean
 }
 
 const TEXT2 = "var(--sch-tx-2)"
@@ -45,6 +47,7 @@ export default function PricingCard({
   badge,
   index = 0,
   onCta,
+  disabled = false,
 }: PricingCardProps) {
   const isPro = variant === "pro"
 
@@ -216,12 +219,14 @@ export default function PricingCard({
         ))}
       </div>
 
-      {/* CTA */}
+      {/* CTA — genuinely inert when the plan can't be bought, not just relabelled. */}
       <motion.button
         type="button"
-        onClick={onCta}
-        whileHover={{ scale: isPro ? 1.03 : 1.01 }}
-        whileTap={{ scale: 0.97 }}
+        onClick={disabled ? undefined : onCta}
+        disabled={disabled}
+        aria-disabled={disabled}
+        whileHover={disabled ? undefined : { scale: isPro ? 1.03 : 1.01 }}
+        whileTap={disabled ? undefined : { scale: 0.97 }}
         style={{
           width: "100%",
           height: 52,
@@ -229,13 +234,15 @@ export default function PricingCard({
           borderRadius: 14,
           fontSize: isPro ? 16 : 15,
           fontWeight: isPro ? 700 : 600,
-          cursor: "pointer",
-          color: isPro ? "#fff" : "var(--sch-text)",
-          background: isPro ? IRIDESCENT : "var(--sch-card)",
-          border: isPro
-            ? "none"
-            : `1px solid ${variant === "beginner" ? "rgba(200,0,0,0.2)" : "var(--sch-border-2)"}`,
-          boxShadow: isPro ? "0 0 40px rgba(200,0,0,0.3)" : "none",
+          cursor: disabled ? "not-allowed" : "pointer",
+          color: disabled ? "var(--sch-tx-3)" : isPro ? "#fff" : "var(--sch-text)",
+          background: disabled ? "var(--sch-card-2)" : isPro ? IRIDESCENT : "var(--sch-card)",
+          border: disabled
+            ? "1px solid var(--sch-border)"
+            : isPro
+              ? "none"
+              : `1px solid ${variant === "beginner" ? "rgba(200,0,0,0.2)" : "var(--sch-border-2)"}`,
+          boxShadow: disabled ? "none" : isPro ? "0 0 40px rgba(200,0,0,0.3)" : "none",
         }}
       >
         {cta}

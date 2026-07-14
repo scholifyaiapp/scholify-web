@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "motion/react"
 import { useAuth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
 import { updateCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
@@ -45,13 +46,20 @@ export default function GoogleCalendarCallback() {
       }
 
       try {
+        // The endpoint persists Google credentials with the service role, so it
+        // takes the user id from this token — never from the body.
+        const { data: sess } = await supabase.auth.getSession()
+        const accessToken = sess?.session?.access_token
+        if (!accessToken) throw new Error("Sign in again to connect your calendar.")
         const res = await fetch("/api/calendar-callback", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({
             action: "exchange",
             code,
-            user_id: user?.id,
             redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI,
           }),
         })

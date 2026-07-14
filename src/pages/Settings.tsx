@@ -8,12 +8,11 @@ import {
 } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
-import { format, differenceInCalendarDays } from "date-fns"
+import { format } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { useLanguage } from "@/i18n/LanguageProvider"
-import { readPlan, readProgress, type Progress } from "@/lib/scholify-data"
-import { DashboardLayout, iriText, ProgressBar } from "@/components/dashboard-layout"
+import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
@@ -33,7 +32,14 @@ import {
   SHADOW,
   TYPE,
 } from "@/components/acca/ui"
-import { getPaper, getDailyGoal, setDailyGoal } from "@/lib/acca"
+import {
+  getPaper,
+  getDailyGoal,
+  setDailyGoal,
+  getOverallProgress,
+  snapshotProgress,
+  clearAccaProgress,
+} from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
 
@@ -71,6 +77,46 @@ function readSettings(): AppSettings {
     /* ignore */
   }
   return DEFAULT_SETTINGS
+}
+
+/* ── ACCA study data — the keys export / reset actually operate on ── */
+
+const ACCA_PREFIX = "scholify-acca-"
+
+/** Setup, not progress: a reset keeps these so the learner isn't re-onboarded. */
+const RESET_KEEP = new Set([
+  "scholify-acca-onboarded",
+  "scholify-acca-startmode",
+  "scholify-acca-experience",
+  "scholify-acca-goal",
+  "scholify-acca-current-paper",
+  "scholify-acca-studying",
+  "scholify-acca-passed",
+  "scholify-acca-plan",
+  "scholify-acca-daily-goal",
+])
+
+function accaKeys(): string[] {
+  try {
+    return Object.keys(window.localStorage).filter((k) => k.startsWith(ACCA_PREFIX))
+  } catch {
+    return []
+  }
+}
+
+/** Every ACCA store, parsed — what "Export my data" actually ships. */
+function collectAccaData(): Record<string, unknown> {
+  const out: Record<string, unknown> = { progress: snapshotProgress() }
+  for (const key of accaKeys()) {
+    try {
+      const raw = window.localStorage.getItem(key)
+      if (raw == null) continue
+      out[key.slice(ACCA_PREFIX.length)] = JSON.parse(raw)
+    } catch {
+      out[key.slice(ACCA_PREFIX.length)] = window.localStorage.getItem(key)
+    }
+  }
+  return out
 }
 
 /* ── Reusable bits ───────────────────────────────────────────── */
@@ -551,10 +597,10 @@ function ConfirmDialog({
 
 /* ── Page ────────────────────────────────────────────────────── */
 
-// Only languages that actually work — the app is English-first, landing is EN/RU.
+// Site language only — the study screens are English by design (ACCA's exam language).
 const LANGUAGES = [
-  { value: "en", label: "🇺🇸 English" },
-  { value: "ru", label: "🇷🇺 Russian" },
+  { value: "en", label: "English" },
+  { value: "ru", label: "Russian" },
 ] as const
 
 const THEMES = [
@@ -569,11 +615,12 @@ export default function Settings() {
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
 
-  const plan = useMemo(readPlan, [])
-  const [progress, setProgress] = useState<Progress>(readProgress)
+  const [answered, setAnswered] = useState(() => getOverallProgress().totalAnswered)
   const [settings, setSettings] = useState<AppSettings>(readSettings)
   const [communityOptIn, setCommunityOptIn] = useState(readCommunityOptIn)
 
+  const [newPassword, setNewPassword] = useState("")
+  const [savingPassword, setSavingPassword] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
   const [firstName, setFirstName] = useState((user?.user_metadata?.first_name as string) || "")
   const [lastName, setLastName] = useState((user?.user_metadata?.last_name as string) || "")
@@ -632,12 +679,6 @@ export default function Settings() {
       cancelled = true
     }
   }, [isAdmin])
-
-  /* Trial: 7 days from account creation (same clock as the paywall). */
-  const trialDaysLeft = user?.created_at
-    ? Math.max(0, 7 - differenceInCalendarDays(new Date(), new Date(user.created_at)))
-    : 7
-  const trialPct = Math.round(((7 - trialDaysLeft) / 7) * 100)
 
   /* Auto-saving settings */
   const update = useCallback(
@@ -703,14 +744,35 @@ export default function Settings() {
     }
   }
 
+  const changePassword = async () => {
+    if (newPassword.length < 8) {
+      toast.error("Use at least 8 characters")
+      return
+    }
+    if (!isSupabaseConfigured) {
+      toast.error("Password changes need a connected account — email support@scholifyapp.com")
+      return
+    }
+    setSavingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setNewPassword("")
+      toast.success("Password updated")
+    } catch {
+      toast.error("Couldn't update your password — sign in again and retry")
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
   const exportData = () => {
     toast.info("Preparing export…")
     const payload = {
       exported_at: new Date().toISOString(),
       account: { name: fullName, email: user?.email },
-      plan,
-      progress,
       settings,
+      acca: collectAccaData(),
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -722,51 +784,48 @@ export default function Settings() {
     setTimeout(() => toast.success("Download ready"), 400)
   }
 
-  const lockedUpgrade = () => {
-    toast.info("That's a Pro feature — opening pricing")
-    navigate("/pricing")
-  }
-
   const doReset = () => {
+    // Wipes every ACCA study store (answers, mocks, flashcards, diagnostics,
+    // analytics) but keeps the setup keys, so the learner isn't re-onboarded.
     try {
-      window.localStorage.removeItem("scholify-progress")
+      clearAccaProgress()
+      for (const key of accaKeys()) {
+        if (!RESET_KEEP.has(key)) window.localStorage.removeItem(key)
+      }
       ;[7, 14, 21].forEach((n) => window.localStorage.removeItem(`scholify-paywall-shown-${n}`))
     } catch {
       /* ignore */
     }
-    setProgress(readProgress())
+    setAnswered(getOverallProgress().totalAnswered)
     setDialog(null)
-    toast.success("Progress reset — fresh start!")
+    toast.success("Progress reset — your papers and exam dates are kept")
   }
 
   const doDelete = async () => {
-    // True auth-user deletion needs a server with the service-role key.
-    // Client-side we clear everything and sign the user out.
+    // Deleting the auth user needs the service-role key on a server we don't
+    // have yet, so we say exactly what this does: local wipe + sign out.
     try {
-      window.localStorage.clear()
+      for (const key of Object.keys(window.localStorage)) {
+        if (key.startsWith("scholify-")) window.localStorage.removeItem(key)
+      }
     } catch {
       /* ignore */
     }
     await signOut()
+    toast.info("Signed out and local data erased. Email support@scholifyapp.com to delete the account itself.")
     navigate("/", { replace: true })
   }
 
   const handleSignOut = async () => {
+    // Never wipe study data on sign-out — in demo mode it's the only copy.
     await signOut()
-    try {
-      window.localStorage.clear()
-    } catch {
-      /* ignore */
-    }
     navigate("/", { replace: true })
   }
 
   const handleLanguage = (code: string) => {
     if (code === "en" || code === "ru") {
       setLang(code)
-      toast.success("Language updated")
-    } else {
-      toast.info(`${code.toUpperCase()} is coming soon`)
+      toast.success("Site language updated — app screens stay in English")
     }
   }
 
@@ -883,7 +942,7 @@ export default function Settings() {
                       <Icon name="trophy" size={12} /> Pro
                     </>
                   ) : (
-                    "Free Trial"
+                    "Free plan"
                   )}
                 </Badge>
               </div>
@@ -931,6 +990,41 @@ export default function Settings() {
                       Your sign-in email — contact support to change it.
                     </div>
                   </div>
+
+                  {/* Where a password-reset link lands you: set the new password here. */}
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: TEXT2, marginBottom: 5 }}>
+                      New password
+                    </div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        autoComplete="new-password"
+                        placeholder="At least 8 characters"
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        style={{
+                          flex: "1 1 200px",
+                          height: 44,
+                          padding: "0 14px",
+                          borderRadius: 10,
+                          fontSize: 14,
+                          color: "var(--sch-text)",
+                          background: "var(--sch-card-2)",
+                          border: "1px solid var(--sch-border-2)",
+                          outline: "none",
+                        }}
+                      />
+                      <Button
+                        variant="secondary"
+                        onClick={changePassword}
+                        disabled={savingPassword || newPassword.length === 0}
+                      >
+                        {savingPassword ? "Updating…" : "Update password"}
+                      </Button>
+                    </div>
+                  </div>
+
                   <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
                     <Button
                       onClick={saveProfile}
@@ -963,34 +1057,22 @@ export default function Settings() {
             <div>
               <div style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="trophy" size={18} color={C.brand} />
-                {isPaid ? "Pro" : "Free Trial"}
+                {isPaid ? "Pro" : "Free plan"}
               </div>
-              <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: TEXT2, marginTop: 4, lineHeight: 1.6 }}>
                 {isPaid
                   ? "Billed monthly · $14.99/month"
-                  : trialDaysLeft > 0
-                    ? `${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} remaining in your trial`
-                    : "Trial ended — upgrade to keep Pro features"}
+                  : "No time limit. Timed mocks, the AI Examiner and custom practice are the paid modes."}
               </div>
               {!isPaid && (
-                <div
-                  style={{
-                    width: 180,
-                    height: 4,
-                    borderRadius: 2,
-                    marginTop: 8,
-                    background: "var(--sch-border)",
-                    overflow: "hidden",
-                  }}
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ fontSize: 12, color: "var(--sch-tx-4)", marginTop: 8 }}
                 >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${trialPct}%`,
-                      background: "linear-gradient(90deg,#FF9F0A,#FF453A)",
-                    }}
-                  />
-                </div>
+                  {answered.toLocaleString()} question{answered === 1 ? "" : "s"} answered so far
+                </motion.div>
               )}
             </div>
             {isPaid ? (
@@ -1004,7 +1086,7 @@ export default function Settings() {
               </div>
             ) : (
               <Button onClick={() => navigate("/pricing")}>
-                Upgrade to Pro
+                See plans
                 <Icon name="arrow" size={16} />
               </Button>
             )}
@@ -1057,7 +1139,7 @@ export default function Settings() {
         <Section>
           <SectionHead icon="support">Invite Friends</SectionHead>
           <p style={{ fontSize: 13, color: TEXT2, marginTop: 6, lineHeight: 1.6 }}>
-            Share your link and earn rewards when friends build their habits.
+            Share your link — anyone who joins gets the full free plan, no card needed.
           </p>
 
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>
@@ -1107,7 +1189,8 @@ export default function Settings() {
           </div>
 
           <p style={{ fontSize: 12, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>
-            You earn: 1 extra Life Shield per referral who completes 7 days.
+            We count invites here so we know who to thank — there's no referral reward scheme yet,
+            and we won't pretend there is.
           </p>
         </Section>
 
@@ -1298,20 +1381,18 @@ export default function Settings() {
               )
             })}
           </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginTop: 20,
-            }}
-          >
-            <span style={{ fontSize: 14, color: "var(--sch-text)" }}>Language</span>
-            <Dropdown
-              value={lang === "ru" ? "ru" : "en"}
-              options={LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
-              onChange={handleLanguage}
-            />
+          <div style={{ marginTop: 20 }}>
+            <SettingRow
+              name="Site language"
+              desc="Applies to the landing, pricing and legal pages. Study screens stay in English — that's ACCA's exam language."
+              last
+            >
+              <Dropdown
+                value={lang === "ru" ? "ru" : "en"}
+                options={LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
+                onChange={handleLanguage}
+              />
+            </SettingRow>
           </div>
         </Section>
 
@@ -1320,7 +1401,10 @@ export default function Settings() {
         <Section>
           <SectionHead icon="lock">Data &amp; Privacy</SectionHead>
           <div style={{ marginTop: 8 }}>
-            <SettingRow name="Export my data" desc="Download all your progress and plan data">
+            <SettingRow
+              name="Export my data"
+              desc="Download every answer, mock, flashcard review, diagnostic and plan as JSON"
+            >
               <button type="button" onClick={exportData} style={ghostBtn}>
                 Export
                 <Icon name="arrow" size={15} />
@@ -1387,19 +1471,19 @@ export default function Settings() {
           <div style={{ marginTop: 8 }}>
             <SettingRow
               name="Reset progress"
-              desc="Delete all sessions and start your streak over. Account and plan are kept."
+              desc="Erases every answer, mock, flashcard review and diagnostic. Your papers, exam dates and plan are kept."
             >
               <button type="button" onClick={() => setDialog("reset")} style={redGhost}>
                 Reset
               </button>
             </SettingRow>
             <SettingRow
-              name="Delete account"
-              desc="Permanently delete your account and all data. This cannot be undone."
+              name="Erase local data & sign out"
+              desc="Removes all Scholify data from this device and signs you out. Deleting the account record itself needs a request to support."
               last
             >
               <button type="button" onClick={() => setDialog("delete")} style={redGhost}>
-                Delete account
+                Erase & sign out
               </button>
             </SettingRow>
           </div>
@@ -1473,16 +1557,16 @@ export default function Settings() {
       <ConfirmDialog
         open={dialog === "reset"}
         title="Reset all progress?"
-        body="This deletes every completed session and resets your streak to zero. Your account, plan and goal are kept."
+        body="This erases every answered question, mock result, flashcard review and diagnostic, and resets your streak to zero. Your account, papers, exam dates and plan are kept. It cannot be undone — export your data first if you want a copy."
         confirmLabel="Reset progress"
         onConfirm={doReset}
         onCancel={() => setDialog(null)}
       />
       <ConfirmDialog
         open={dialog === "delete"}
-        title="Delete account"
-        body="This permanently deletes your account and all data. This cannot be undone. Type DELETE to confirm."
-        confirmLabel="Permanently delete"
+        title="Erase local data & sign out"
+        body="This removes all Scholify data from this device and signs you out. It does not delete your account record — email support@scholifyapp.com from your registered address and we'll delete it. Type DELETE to confirm."
+        confirmLabel="Erase & sign out"
         requireText="DELETE"
         onConfirm={doDelete}
         onCancel={() => setDialog(null)}
