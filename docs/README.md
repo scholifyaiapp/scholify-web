@@ -4,6 +4,7 @@ The complete company and product documentation set, written 2026-07-08 against t
 
 | # | Document | What it answers |
 |---|---|---|
+| 0 | [The Master Prompt](00-master-prompt.md) | The whole project in one read — hand this to any new engineer, AI session, or analyst first |
 | 1 | [Vision & Founder PRD](01-vision-founder-prd.md) | Why Scholify exists, the Loop philosophy and its five laws, who it serves, what success means |
 | 2 | [Complete Product Requirements](02-product-requirements.md) | Every screen, state, metric formula, gate constant, and acceptance criterion in the product |
 | 3 | [UI/UX Design Bible](03-design-bible.md) | Tokens, components, chart rules, motion, voice — how anything new must look and speak |
@@ -15,4 +16,4 @@ The complete company and product documentation set, written 2026-07-08 against t
 | 9 | [The Content Program](09-content-program.md) | BT→Professional content pipeline: sources policy, Kaplan-equal stack, wave plan, Examiner Intelligence |
 | 10 | [The Completion & Launch Plan](10-completion-launch-plan.md) | Audit-grounded build→live→sell→scale plan: launch-readiness scorecard, six phases, security hard-gates, go-live runbook |
 
-**Reading order for a new team member:** 1 → 6 → 2 → 3 (builders) or 1 → 8 → 7 (business).
+**Reading order for a new team member:** 0 first, always. Then 1 → 6 → 2 → 3 (builders) or 1 → 8 → 7 (business).
