@@ -149,6 +149,16 @@ import { SBR_B } from "@/lib/acca-study-sbr-b"
 import { SBR_C } from "@/lib/acca-study-sbr-c"
 import { SBR_D } from "@/lib/acca-study-sbr-d"
 import { SBR_E } from "@/lib/acca-study-sbr-e"
+import { SBL_A } from "@/lib/acca-study-sbl-a"
+import { SBL_B } from "@/lib/acca-study-sbl-b"
+import { SBL_C } from "@/lib/acca-study-sbl-c"
+import { SBL_D } from "@/lib/acca-study-sbl-d"
+import { SBL_E } from "@/lib/acca-study-sbl-e"
+import { AFM_A } from "@/lib/acca-study-afm-a"
+import { AFM_B } from "@/lib/acca-study-afm-b"
+import { AFM_C } from "@/lib/acca-study-afm-c"
+import { AFM_D } from "@/lib/acca-study-afm-d"
+import { AFM_E } from "@/lib/acca-study-afm-e"
 
 const REGISTRY: Record<string, StudyChapter[]> = {
   FA: [FA_A, FA_B, FA_C, FA_D, FA_E, FA_F, FA_G, FA_H],
@@ -161,6 +171,8 @@ const REGISTRY: Record<string, StudyChapter[]> = {
   FM: [FM_A, FM_B, FM_C, FM_D, FM_E],
   AA: [AA_A, AA_B, AA_C, AA_D, AA_E],
   SBR: [SBR_A, SBR_B, SBR_C, SBR_D, SBR_E],
+  SBL: [SBL_A, SBL_B, SBL_C, SBL_D, SBL_E],
+  AFM: [AFM_A, AFM_B, AFM_C, AFM_D, AFM_E],
 }
 
 /** The rich study chapter for a paper + area, if one exists. */
