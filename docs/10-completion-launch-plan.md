@@ -2,6 +2,14 @@
 
 **Document 10 · v1.0 · 2026-07-13 · Co-founder-authored, audit-grounded**
 
+> **⚠ SUPERSEDED IN PART — read [Doc 11](11-audit-and-announcement-plan.md) first.**
+> This document declared every code gate to revenue closed on 2026-07-14. A
+> five-front adversarial audit that same day disproved it: production was minting
+> fake accounts, the AI meter failed *open* rather than closed, an unauthenticated
+> endpoint could send mail from our domain, and the advertised 7-day trial did not
+> exist in code. All are now fixed (`593e8db`), but the gate list below was written
+> against a state that was not real. **Doc 11 is the current plan.**
+
 This plan is the bridge from *"the product is built"* (Documents 1–9) to *"the product is live, selling, and safe to scale."* It is grounded in a full three-front launch-readiness audit of the codebase conducted 2026-07-13 (product surface, backend/data/billing, AI layer + production hardening), not in aspiration. Where the audit contradicted an assumption, the audit wins.
 
 ---

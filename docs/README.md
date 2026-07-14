@@ -15,5 +15,6 @@ The complete company and product documentation set, written 2026-07-08 against t
 | 8 | [Investor Pitch & Business Plan](08-investor-pitch-business-plan.md) | The fundable story: market, unit economics, 18-month financial scenarios, ask & risks |
 | 9 | [The Content Program](09-content-program.md) | BT→Professional content pipeline: sources policy, Kaplan-equal stack, wave plan, Examiner Intelligence |
 | 10 | [The Completion & Launch Plan](10-completion-launch-plan.md) | Audit-grounded build→live→sell→scale plan: launch-readiness scorecard, six phases, security hard-gates, go-live runbook |
+| 11 | [Pre-Announcement Audit & Launch Plan](11-audit-and-announcement-plan.md) | **CURRENT.** What a five-front adversarial audit found, what was fixed, and the five gates to a public announcement |
 
 **Reading order for a new team member:** 0 first, always. Then 1 → 6 → 2 → 3 (builders) or 1 → 8 → 7 (business).

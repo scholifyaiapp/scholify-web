@@ -91,14 +91,19 @@ These are the guardrails that make it safe to attach a live Anthropic key and li
 9. **Billing config is all-or-nothing:** `/api/health` returns 503 on a half-configured Paddle stack — the state where checkout opens but fulfilment silently can't.
 10. **`npm run typecheck` covers `api/` too** (`tsconfig.api.json`) — a type error in the money paths fails the build instead of breaking a webhook in production.
 
-## 8. Current status & what remains (mirrors Doc 10)
+## 8. Current status & what remains (see **Doc 11**, the current plan)
 
-**Every code gate on the critical path to revenue is closed** (Phases 0, 1, 2, 4 — shipped 2026-07-13/14).
+A five-front adversarial audit on 2026-07-14 found the code was in better shape than the packaging and the plumbing — and disproved Doc 10's claim that all gates were closed. Everything it found in code is now fixed (`593e8db`): fake accounts in production, an AI meter that failed *open*, an unauthenticated email relay, a 7-day trial that was advertised but never built, and a question bank keyed 45% to option "A" with no option shuffling.
 
-Remaining:
-- **Phase 5 — ops go-live. The ONLY thing blocking revenue.** Founder-gated (credentials): Supabase project + migrations `0001`–`0015` (**`0013` and `0015` are mandatory** — the AI meter fails closed without them), `ANTHROPIC_API_KEY`, Paddle token + 3 price ids (client **and** server) + webhook secret + API key, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`. Full runbook: Doc 10 §6. Verify with `/api/health` → `status: ok`, `billing: "live"`.
-- **Phase 3 — hardening (quality, not a gate):** vitest suite on the money logic (grading, `safe*Json` parsers, metering arithmetic, `planForPrice`), error tracking (Sentry/PostHog), global ACCA-independence disclaimer in the shared footer, code-splitting the ~2.5 MB study bundle into per-paper dynamic imports, robots.txt + sitemap.
-- **Stretch content:** FR/TX/PM banks → 300 (TX and FR already at 225).
+**Five gates to a public announcement. We are at Gate 3.**
+
+1. **Stop lying** ✅ done — every advertised feature now exists; invented social proof removed.
+2. **Close the security holes** ✅ done — metering genuinely fails closed; relay deleted; webhooks replay-proof.
+3. **Turn the product on** ⬅ **NOW, FOUNDER-GATED. The only thing blocking revenue.** `/api/health` reports every key false. Needs: Supabase + migrations `0001`–`0017` (`0013`/`0015`/`0016`/`0017` mandatory), `ANTHROPIC_API_KEY`, Paddle token + webhook secret + API key + the 3 price ids **server-side too**, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `VITE_POSTHOG_KEY`. Also: **decide the 7-day trial** (removed, not built — Doc 7's funnel and Doc 8's model both assume it).
+4. **Private beta, 20–30 real students** (2–3 weeks) — the activation gate, and the only honest source of testimonials.
+5. **Announce.**
+
+Not doing before the announcement (deliberately): a test suite (the largest engineering gap — every bug above was found by an auditor, not a test), content code-splitting (~93% of the content payload is waste per page load), unifying the two streak stores, and the FA2025 tax-year refresh (TX/ATX are one Finance Act behind for sittings after March 2026 — **label the basis or refresh it**).
 
 ## 9. How we work (non-negotiable conventions)
 
