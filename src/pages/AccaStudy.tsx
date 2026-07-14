@@ -935,7 +935,7 @@ function Overview({
     flashcards: onFlashcards,
     mock: onMock,
     study: onPractice,
-    bank: startBankRun,
+    bank: onBankRun,
   }
   const todayIcons: Record<TodayAction, IconName> = {
     diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",

@@ -46,14 +46,14 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
         {chapter.paper} · Area {chapter.area} · {chapter.minutes} min
       </div>
       <h1 style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", color: C.text, margin: "8px 0 8px", lineHeight: 1.2 }}>{chapter.title}</h1>
-      <p style={{ fontSize: 15, color: C.body, lineHeight: 1.6, margin: "0 0 18px" }}>{chapter.intro}</p>
+      <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.6, margin: "0 0 18px" }}>{chapter.intro}</p>
 
       {/* outcomes */}
       <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 14, padding: "15px 17px", marginBottom: 26 }}>
         <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: C.muted, marginBottom: 9 }}>By the end you can</div>
         <div style={{ display: "grid", gap: 7 }}>
           {chapter.outcomes.map((o, i) => (
-            <div key={i} style={{ display: "flex", gap: 9, fontSize: 13, color: C.body, lineHeight: 1.5 }}>
+            <div key={i} style={{ display: "flex", gap: 9, fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
               <span style={{ flex: "none", width: 18, height: 18, borderRadius: 6, background: C.brandSoft, color: C.brand, fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center" }}>{i + 1}</span>
               <span>{o}</span>
             </div>
@@ -71,8 +71,8 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
           <div style={{ display: "grid", gap: 10 }}>
             {chapter.examTraps.map((t, i) => (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr", gap: 6, background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.amber}`, borderRadius: 11, padding: "12px 14px" }}>
-                <div style={{ fontSize: 12.5, color: C.body }}><span style={{ fontWeight: 800, color: C.amber }}>Trap · </span>{t.trap}</div>
-                <div style={{ fontSize: 12.5, color: C.body }}><span style={{ fontWeight: 800, color: C.green }}>Fix · </span>{t.fix}</div>
+                <div style={{ fontSize: 12.5, color: C.muted }}><span style={{ fontWeight: 800, color: C.amber }}>Trap · </span>{t.trap}</div>
+                <div style={{ fontSize: 12.5, color: C.muted }}><span style={{ fontWeight: 800, color: C.green }}>Fix · </span>{t.fix}</div>
               </div>
             ))}
           </div>
@@ -95,7 +95,7 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
         <div style={{ background: `linear-gradient(135deg, ${C.brandSoft}, ${C.card2})`, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px 18px" }}>
           <div style={{ display: "grid", gap: 8 }}>
             {chapter.summary.map((s, i) => (
-              <div key={i} style={{ display: "flex", gap: 9, fontSize: 13, color: C.body, lineHeight: 1.5 }}>
+              <div key={i} style={{ display: "flex", gap: 9, fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
                 <span style={{ color: C.brand, fontWeight: 800 }}>›</span><span>{s}</span>
               </div>
             ))}
@@ -146,7 +146,7 @@ function Section({ section, index }: { section: StudySection; index: number }) {
 function Block({ block }: { block: StudyBlock }) {
   switch (block.kind) {
     case "text":
-      return <div style={{ display: "grid", gap: 12, margin: "0 0 12px" }}>{block.md.split("\n\n").map((p, i) => <p key={i} style={{ margin: 0, fontSize: 14.5, color: C.body, lineHeight: 1.68 }}>{rich(p)}</p>)}</div>
+      return <div style={{ display: "grid", gap: 12, margin: "0 0 12px" }}>{block.md.split("\n\n").map((p, i) => <p key={i} style={{ margin: 0, fontSize: 14.5, color: C.muted, lineHeight: 1.68 }}>{rich(p)}</p>)}</div>
     case "callout": {
       const t = TONE[block.tone] ?? TONE.key
       return (
@@ -154,7 +154,7 @@ function Block({ block }: { block: StudyBlock }) {
           <span style={{ flex: "none", width: 24, height: 24, borderRadius: 7, background: t.fg, color: "#fff", fontSize: 13, fontWeight: 800, display: "grid", placeItems: "center" }}>{t.icon}</span>
           <div>
             <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: t.fg, marginBottom: 3 }}>{block.title ?? t.label}</div>
-            <div style={{ fontSize: 13.5, color: C.body, lineHeight: 1.6 }}>{rich(block.md)}</div>
+            <div style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.6 }}>{rich(block.md)}</div>
           </div>
         </div>
       )
@@ -173,7 +173,7 @@ function Block({ block }: { block: StudyBlock }) {
           {block.caption && <div style={{ fontSize: 11.5, fontWeight: 700, color: C.muted, marginBottom: 7 }}>{block.caption}</div>}
           <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 340, fontSize: 12.5 }}>
             <thead><tr>{block.head.map((h, i) => <th key={i} style={{ textAlign: "left", padding: "9px 12px", background: C.card2, color: C.muted, fontWeight: 800, fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `2px solid ${C.border}` }}>{h}</th>)}</tr></thead>
-            <tbody>{block.rows.map((r, ri) => <tr key={ri}>{r.map((c, ci) => <td key={ci} style={{ padding: "9px 12px", color: ci === 0 ? C.text : C.body, fontWeight: ci === 0 ? 700 : 400, borderBottom: `1px solid ${C.border}`, lineHeight: 1.45 }}>{c}</td>)}</tr>)}</tbody>
+            <tbody>{block.rows.map((r, ri) => <tr key={ri}>{r.map((c, ci) => <td key={ci} style={{ padding: "9px 12px", color: ci === 0 ? C.text : C.muted, fontWeight: ci === 0 ? 700 : 400, borderBottom: `1px solid ${C.border}`, lineHeight: 1.45 }}>{c}</td>)}</tr>)}</tbody>
           </table>
         </div>
       )
@@ -193,13 +193,13 @@ function ExampleBlock({ title, scenario, steps, result }: { title: string; scena
       <div style={{ padding: "13px 16px", background: C.card2, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.brand, marginBottom: 4 }}>Worked example</div>
         <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text, marginBottom: 5 }}>{title}</div>
-        <div style={{ fontSize: 12.5, color: C.body, lineHeight: 1.55 }}>{scenario}</div>
+        <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.55 }}>{scenario}</div>
       </div>
       <div style={{ padding: "12px 16px" }}>
         {steps.slice(0, shown).map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} style={{ display: "flex", gap: 11, padding: "8px 0", borderBottom: i < shown - 1 ? `1px solid ${C.border}` : "none" }}>
             <span style={{ flex: "none", width: 22, height: 22, borderRadius: 99, background: C.brand, color: "#fff", fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center" }}>{i + 1}</span>
-            <div><div style={{ fontSize: 12.5, fontWeight: 800, color: C.text }}>{s.label}</div><div style={{ fontSize: 12.5, color: C.body, marginTop: 2, lineHeight: 1.55 }}>{s.detail}</div></div>
+            <div><div style={{ fontSize: 12.5, fontWeight: 800, color: C.text }}>{s.label}</div><div style={{ fontSize: 12.5, color: C.muted, marginTop: 2, lineHeight: 1.55 }}>{s.detail}</div></div>
           </motion.div>
         ))}
         {shown < steps.length ? (
@@ -243,7 +243,7 @@ function CheckBlock({ check }: { check: MiniCheck }) {
       <AnimatePresence>
         {picked !== null && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} style={{ overflow: "hidden" }}>
-            <div style={{ marginTop: 12, padding: "11px 14px", borderRadius: 11, background: picked === check.correct ? C.greenSoft : C.card2, fontSize: 12.5, color: C.body, lineHeight: 1.6 }}>
+            <div style={{ marginTop: 12, padding: "11px 14px", borderRadius: 11, background: picked === check.correct ? C.greenSoft : C.card2, fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
               <span style={{ fontWeight: 800, color: picked === check.correct ? C.green : C.brand }}>{picked === check.correct ? "Correct. " : "Not quite. "}</span>{check.explain}
             </div>
           </motion.div>

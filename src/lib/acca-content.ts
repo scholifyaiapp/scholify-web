@@ -18,6 +18,7 @@ import { FM_WAVE3A } from "@/lib/acca-content-fm3"
 import { FM_WAVE3B } from "@/lib/acca-content-fm4"
 import { PM_WAVE2A } from "@/lib/acca-content-pm2"
 import { PM_WAVE2B } from "@/lib/acca-content-pm3"
+import { PM_WAVE3A } from "@/lib/acca-content-pm4"
 import { TX_WAVE2A } from "@/lib/acca-content-tx2"
 import { TX_WAVE2B } from "@/lib/acca-content-tx3"
 import { TX_WAVE3A } from "@/lib/acca-content-tx4"
@@ -1539,6 +1540,7 @@ export const QUESTIONS: AccaQuestion[] = [
   ...FM_WAVE3B,
   ...PM_WAVE2A,
   ...PM_WAVE2B,
+  ...PM_WAVE3A,
   ...TX_WAVE2A,
   ...TX_WAVE2B,
   ...TX_WAVE3A,

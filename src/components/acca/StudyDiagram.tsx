@@ -78,7 +78,7 @@ function TAccount({ d }: { d: { name: string; debits: { label: string; amount: n
     <div style={{ flex: 1, minWidth: 150 }}>
       <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: tint, borderBottom: `2px solid ${C.border}`, paddingBottom: 6, marginBottom: 6 }}>{title}</div>
       {rows.map((r, i) => (
-        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, color: C.body, padding: "3px 0" }}>
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, color: C.muted, padding: "3px 0" }}>
           <span>{r.label}</span><span style={{ fontVariantNumeric: "tabular-nums", color: C.text }}>{fmt(r.amount)}</span>
         </div>
       ))}
@@ -146,8 +146,8 @@ function FragmentRow({ aspect, left, right }: { aspect: string; left: string; ri
   return (
     <>
       <div style={{ background: C.card2, padding: "9px 12px", fontSize: 11, fontWeight: 800, color: C.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>{aspect}</div>
-      <div style={{ background: C.card, padding: "9px 12px", fontSize: 12.5, color: C.body, lineHeight: 1.45 }}>{left}</div>
-      <div style={{ background: C.card, padding: "9px 12px", fontSize: 12.5, color: C.body, lineHeight: 1.45 }}>{right}</div>
+      <div style={{ background: C.card, padding: "9px 12px", fontSize: 12.5, color: C.muted, lineHeight: 1.45 }}>{left}</div>
+      <div style={{ background: C.card, padding: "9px 12px", fontSize: 12.5, color: C.muted, lineHeight: 1.45 }}>{right}</div>
     </>
   )
 }
@@ -303,7 +303,7 @@ function Donut({ d }: { d: { items: { label: string; value: number }[] } }) {
         {d.items.map((it, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
             <span style={{ width: 10, height: 10, borderRadius: 3, background: PALETTE[i % PALETTE.length], flex: "none" }} />
-            <span style={{ color: C.body }}>{it.label}</span>
+            <span style={{ color: C.muted }}>{it.label}</span>
             <span style={{ color: C.faint, fontWeight: 700 }}>{Math.round((it.value / total) * 100)}%</span>
           </div>
         ))}
