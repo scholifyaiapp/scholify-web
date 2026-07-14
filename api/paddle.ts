@@ -48,7 +48,7 @@ function readRawBody(req: VercelRequest): Promise<string> {
 }
 
 /** Map a Paddle price id to the app's plan string. */
-function planForPrice(priceId: string | undefined): string | null {
+export function planForPrice(priceId: string | undefined): string | null {
   if (!priceId) return null
   if (priceId === process.env.VITE_PADDLE_BEGINNER_MONTHLY) return "beginner"
   if (priceId === process.env.VITE_PADDLE_PRO_MONTHLY) return "pro"
@@ -104,7 +104,7 @@ const SIGNATURE_TOLERANCE_SECONDS = 5 * 60
  * can replay it verbatim, forever, to re-grant a plan after cancellation. So the
  * timestamp is part of the signature and must also be part of the check.
  */
-function verifySignature(rawBody: string, header: string | undefined, secret: string): boolean {
+export function verifySignature(rawBody: string, header: string | undefined, secret: string): boolean {
   if (!header) return false
   const parts = Object.fromEntries(header.split(";").map((p) => p.split("=") as [string, string]))
   const ts = parts.ts
