@@ -22,11 +22,13 @@ The definition of done for this document: **a student in Uzbekistan can sign up,
 | Backend / RLS / billing | **Launch-grade** | Real HMAC webhook signature verification, complete RLS on every user-data table, `?action=` dispatcher keeps 5/12 serverless functions. |
 | Content — 9 Applied papers | **Launch-ready** | Banks 150–239 each, full flashcard decks (62+), syllabus briefs, examiner intelligence on all 15 papers. |
 | Content — 6 Strategic papers | **Launch-ready** (2026-07-13) | All six (SBL, SBR, AFM, APM, ATX, AAA) at full parity: 150-question banks (900 total, independently re-solved), briefs per area, 60 flashcards, 15 written each. |
-| Security hard-gates | **3 critical, fixable in code** | Entitlement privilege-escalation; unmetered legacy AI endpoints; no cost kill-switch. (All addressed in Phase 0 — see §4.) |
-| Tests | **Absent** | No suite. Grading, metering, JSON-parse guards, billing untested. |
-| Ops (prod env) | **Not started** | `/api/health` reports zero keys. Nothing transacts live until env + migrations land. |
+| Security hard-gates | **Closed** (2026-07-13) | Entitlement privilege-escalation, unmetered legacy AI endpoints, and the missing cost kill-switch — all fixed in Phase 0. |
+| Revenue & cost guardrails | **Closed** (2026-07-14) | Billing config is all-or-nothing; org-wide token budget + per-minute throttle; `subscriptions` audit trail. Phase 1. |
+| Written content | **Closed** (2026-07-14) | 190 rubric-backed written questions. Every paper with a constructed-response exam has ≥15; the four objective-test papers have none *by design*. Phase 2/4. |
+| Tests | **Absent** | No suite. Grading, metering, JSON-parse guards, billing untested. **Now the largest remaining quality gap** (Phase 3). |
+| Ops (prod env) | **Not started** | `/api/health` reports zero keys. Nothing transacts live until env + migrations land. **This is the only thing left on the critical path.** |
 
-**Bottom line: the blockers are security hard-gates, config/ops, and Strategic-paper content — not engineering quality.**
+**Bottom line: every code gate is closed. The one remaining blocker to revenue is ops/config (Phase 5) — which needs credentials only the founder holds.**
 
 ## 3. The plan — six phases
 
@@ -55,13 +57,15 @@ Phases 0–3 are code (co-founder-executed). Phase 4 is content (authoring waves
 | Per-minute rate limit on AI actions | ✅ Done | `AI_PER_MINUTE_LIMIT` (default 8), atomic via the `bump_ai_rate` RPC so concurrent requests can't both read "under the limit". |
 | *(added)* `api/` covered by typecheck | ✅ Done | `api/` was the one directory no typecheck covered — Vercel compiles it at deploy time, where a type error becomes a broken webhook rather than a failed build. `tsconfig.api.json` closes it. It immediately surfaced the 10 retired vocab handlers, now deleted (−928 lines); the 410 gate stays. |
 
-### Phase 2 — Journey correctness for every paper · **Next (code)**
+### Phase 2 — Journey correctness for every paper · **EXECUTED 2026-07-14**
 
-| Item | Priority | Acceptance |
+Phase 2 was written when the Strategic papers were empty. Content landing changed the answer: the fix was **not** to mark papers "coming soon", it was to prove the journey is real for all 15. `npm run audit:content` (new, CI-runnable) is that proof, and it is what found the items below.
+
+| Item | Status | Acceptance |
 |---|---|---|
-| Fix the Strategic-paper diagnostic trap | HIGH | An SBL/SBR student is never silently given an FA diagnostic. Either the diagnostic supports their paper or the UI states "diagnostic available once content lands." (`AccaDiagnostic.tsx:172`) |
-| Strategic-paper onboarding honesty | HIGH | The paper picker marks SBL/SBR/AFM/APM/ATX/AAA "content coming" so no student onboards into a near-empty experience. (`Welcome.tsx` PaperSlide) |
-| No launch paper shows "coming soon" for its own cards/written | MEDIUM | Every promoted paper has non-zero flashcards and (if the feature is advertised for it) written questions. |
+| Fix the Strategic-paper diagnostic trap | ✅ Moot — verified gone | Every one of the 15 papers builds a diagnostic from its **own** bank covering **100%** of its own syllabus areas (see the audit table). The FA fallback can no longer fire. No code change was needed — content closed it. |
+| Strategic-paper onboarding honesty | ✅ Moot — verified gone | No paper is near-empty: every one carries a 150+ bank, 60+ cards, briefs and chapters on every area. Marking them "content coming" would now be the dishonest option. |
+| No launch paper shows "coming soon" for its own cards/written | ✅ Done | The audit found the real gap: 7 papers with zero written questions. **Two different problems:** BT/MA/FA/LW are 100% objective-test exams (no constructed-response section exists to prepare for) → flagged `objectiveOnly`, Examiner hidden, and the screen says so plainly. PM/TX/FM/AA genuinely have written sections and were advertising an AI Examiner with an empty bank → **56 new rubric-backed written questions** (PM 15, TX 15, FM 15, AA +11, FR +2). |
 
 ### Phase 3 — Production hardening · **Then (code)**
 
@@ -72,38 +76,46 @@ Phases 0–3 are code (co-founder-executed). Phase 4 is content (authoring waves
 | Global ACCA-independence disclaimer | MEDIUM | Present in the shared footer (`motion-footer.tsx`) so it covers every ACCA screen, per the content policy. |
 | Content code-splitting | MEDIUM | The 1.2 MB eager `acca-content` barrel becomes per-paper dynamic imports; only the active paper's bank loads. |
 | `robots.txt` + `sitemap.xml` | LOW | Marketing landing is crawlable. |
-| Prune retired vocab-pivot handler code | LOW | Dead handlers removed after the 410 gate proves stable; shrinks the endpoint surface. |
+| ~~Prune retired vocab-pivot handler code~~ | ✅ Done 2026-07-14 | Deleted (−928 lines) once `tsconfig.api.json` made them visible as dead. The 410 gate stays, so an old client still gets a clean answer. |
 
 ### Phase 4 — Content depth · **Parallel authoring waves**
 
 | Item | Priority | Acceptance |
 |---|---|---|
 | ~~SBR + SBL launch content~~ | ~~HIGH~~ | **DONE 2026-07-13** — superseded: all six Strategic papers shipped at full parity (150 bank + briefs + 60 cards + 15 written each), not just the two Essentials. |
-| Written/constructed-response expansion | MEDIUM | Every Strategic paper now has a 15-question rubric-backed written set; still thin on some Applied papers (only AA/FR beyond Strategic). |
-| FR / TX / PM → 300 | LOW (stretch) | The three most-sat Skills banks reach exam-kit depth. |
-| Options papers (AFM/APM/ATX/AAA) | On demand | Authored when student demand appears (ATX/AAA first for the UZ market), per Doc 9. |
+| ~~Written/constructed-response expansion~~ | ~~MEDIUM~~ | **DONE 2026-07-14** — every paper whose real exam has a constructed-response section now carries ≥15 rubric-backed written questions (190 total). The four objective-test papers carry none *by design*. |
+| FR / TX / PM → 300 | LOW (stretch) | The three most-sat Skills banks reach exam-kit depth. (TX and FR are already at 225.) |
+| Options papers (AFM/APM/ATX/AAA) | On demand | ✅ Already authored at full parity — this line is now historical. |
 
 ### Phase 5 — Operational go-live · **Founder-gated (runbook in §6)**
 
 The product does nothing live until this lands. It is deliberately last because everything above must be true first. See §6 for the exact runbook.
 
-## 4. What was executed this session (2026-07-13)
+## 4. What was executed (2026-07-13 → 07-14)
 
+**2026-07-13**
 - **Content:** AA + FM question banks brought 80 → 150 (wave 8b, +140 originals, independently re-solved, deployed and verified live). All 9 Applied papers now at the 150 practice-ladder floor.
-- **Phase 0 security & cost hard-gates — all five items above.** These were the highest-severity findings in the audit and every one is pure code, so they were closed immediately. The product is now **safe to attach a live Anthropic key and live Paddle keys to** without the privilege-escalation, unmetered-spend, or open-cron risks.
+- **Phase 0 security & cost hard-gates — all five items.** The highest-severity findings in the audit, all pure code, so they were closed immediately. The product became **safe to attach a live Anthropic key and live Paddle keys to** without the privilege-escalation, unmetered-spend, or open-cron risks.
+
+**2026-07-14**
+- **Phase 1 — all six items.** Billing config is now all-or-nothing (half-configured → 503); the `subscriptions` table is the audit trail behind `app_metadata` and the AI meter takes the *lower* of the two; an org-wide daily token budget and a per-minute throttle backstop the launch spike; the duplicate migration prefix and the reminder cron's phantom table are fixed.
+- **`api/` is now typechecked** (`tsconfig.api.json`) — it was the one directory nothing covered, and it is where a type error becomes a broken webhook rather than a failed build. That immediately exposed the 10 retired vocab handlers, now deleted.
+- **Phase 2 — closed, but not as written.** `npm run audit:content` proved the diagnostic trap is gone (all 15 papers get a full-syllabus diagnostic from their own bank) and found the actual gap instead: written questions.
+- **Phase 4 written expansion — closed.** 56 new rubric-backed written questions (PM 15, TX 15, FM 15, AA +11, FR +2). BT/MA/FA/LW are flagged `objectiveOnly` and the AI Examiner is hidden for them — their exams have no written section, so "coming soon" was a promise we should never keep.
+
+**A note on method:** every claim above is checked by a script, not by inspection. `npm run audit:content` fails if any promoted paper has an empty tile behind it, and `npm run typecheck` now covers the money paths.
 
 ## 5. Critical path to launch
 
 ```
-Phase 0 (security gates) ──DONE──┐
-                                 ├─► Phase 5 (ops go-live) ─► SELLING
-Phase 1 (revenue correctness) ───┤        ▲
-Phase 2 (journey correctness) ───┘        │
+Phase 0 (security gates) ──────DONE──┐
+Phase 1 (revenue correctness) ──DONE──┼─► Phase 5 (ops go-live) ─► SELLING
+Phase 2 (journey correctness) ──DONE──┘        ▲
 Phase 3 (hardening) ───────────► raises quality, not a hard gate
-Phase 4 (Strategic content) ───► widens the sellable surface (parallel)
+Phase 4 (content depth) ───────DONE──► the sellable surface is all 15 papers
 ```
 
-The shortest safe path to first revenue is **Phase 0 (done) → Phase 1 items HIGH → Phase 2 HIGH → Phase 5**. Phases 3 and 4 raise quality and widen the market but do not gate a Knowledge/Skills-first beachhead launch.
+**Every code gate on the critical path is now closed. The only thing standing between the product and first revenue is Phase 5 — the founder-gated ops go-live in §6.** Phase 3 (tests, error tracking, code-splitting, the global disclaimer) raises quality and should follow, but it does not gate the beachhead.
 
 ## 6. Go-live runbook (founder-gated ops — Phase 5)
 
@@ -111,23 +123,39 @@ Everything below needs credentials or a dashboard only the founder holds; it is 
 
 **A. Supabase**
 1. Create the project; copy the URL + anon key + service-role key.
-2. Apply migrations in order (SQL editor): `0001`–`0010`, `0011_acca_diagnostics`, `0011_retention` (→ rename to `0014` after Phase 1), `0012_acca_progress`, `0013_ai_usage`. **`0013` is mandatory** — without the `ai_usage` table + `increment_ai_usage` RPC, all AI silently fails closed to fallback.
+2. Apply migrations **in numeric order, `0001` → `0015`** (SQL editor). The prefixes are now unique, so `supabase db push` also works — it previously skipped one of the two `0011`s silently.
+   - **`0013_ai_usage` is mandatory** — without the `ai_usage` table + `increment_ai_usage` RPC, all AI fails closed to fallback.
+   - **`0015_billing_ai_guardrails` is mandatory** — it carries `ai_usage_global` (the org budget), `ai_rate` (the throttle), `subscriptions` (the billing audit trail) and `study_reminders`. The AI meter fails closed without the first two, so **skipping 0015 means no AI works at all.**
 3. Create storage buckets `study-photos`, `streak-trees`; toggle Realtime replication per `SUPABASE_SETUP.md`.
 
 **B. Anthropic** — set `ANTHROPIC_API_KEY` (server). Confirm `/api/health` `anthropic: true`. Model IDs are already current (`claude-haiku-4-5`, `claude-sonnet-5`).
 
-**C. Paddle** — set `VITE_PADDLE_TOKEN` + the three price ids **both client- and server-side** (they are `VITE_`-named but the webhook's `planForPrice` reads them server-side — the single easiest go-live mistake). Set `PADDLE_WEBHOOK_SECRET`, `PADDLE_API_KEY`. Point the Paddle webhook at `/api/paddle?action=webhook`. Do a sandbox checkout end-to-end and confirm the plan lands in `app_metadata`.
+**C. Paddle** — set `VITE_PADDLE_TOKEN` + the three price ids **both client- and server-side** (they are `VITE_`-named but the webhook's `planForPrice` reads them server-side — the single easiest go-live mistake). Set `PADDLE_WEBHOOK_SECRET`, `PADDLE_API_KEY`. Point the Paddle webhook at `/api/paddle?action=webhook`. Do a sandbox checkout end-to-end and confirm the plan lands in `app_metadata` **and** in the `subscriptions` table.
+> `/api/health` now enforces this: billing must be **fully** configured or **not at all**. A half-configured stack returns **503** with `billing: "half_configured"` — because that is the state where checkout opens and fulfilment silently cannot.
 
-**D. Ops** — set `SUPABASE_SERVICE_ROLE_KEY` (webhook + metering), `CRON_SECRET` (now required for the reminder cron), optional `RESEND_API_KEY`, `VITE_POSTHOG_KEY`.
+**D. Ops** — set `SUPABASE_SERVICE_ROLE_KEY` (webhook + metering), `CRON_SECRET` (required for the reminder cron), optional `RESEND_API_KEY`, `VITE_POSTHOG_KEY`.
 
-**E. Verify** — `/api/health` reports `status: ok` with `anthropic + supabase_* + paddle` all true; run one real diagnostic, one AI tutor call (metered), one sandbox subscription round-trip.
+Optional AI cost dials (safe defaults ship in code, no redeploy needed to change them):
+
+| Env var | Default | Effect |
+|---|---|---|
+| `AI_DAILY_TOKEN_BUDGET` | `5000000` | Org-wide tokens/day. Once spent, all AI falls back until midnight UTC. |
+| `AI_PER_MINUTE_LIMIT` | `8` | AI calls per user per minute. |
+| `AI_KILL_SWITCH` | off | `=1` forces every AI action to fallback **instantly**. The emergency brake. |
+
+**E. Verify** — `/api/health` reports `status: ok`, `billing: "live"`, and `anthropic + supabase_* + paddle*` all true; then run one real diagnostic, one AI tutor call (confirm a row appears in `ai_usage` **and** `ai_usage_global`), and one sandbox subscription round-trip.
 
 ## 7. Decisions the founder owns
 
-1. **Strategic papers at launch:** ship SBR/SBL seed content now (Phase 4 HIGH), or launch Knowledge/Skills-only and mark Strategic "coming soon" (Phase 2)? Recommendation: **launch Applied-first, author SBR/SBL in parallel** — the beachhead (first-timers, retakers) starts on Applied papers.
-2. **Entitlement store:** `app_metadata` alone (done, sufficient) vs a dedicated `subscriptions` table (Phase 1, adds audit trail). Recommendation: ship on `app_metadata`, add the table before scaling.
-3. **AI cost ceiling posture:** per-user caps (done) are enough for a controlled beachhead; the org-wide token budget (Phase 1) matters more as free-tier volume grows. Recommendation: land it before any paid-marketing spike.
+1. ~~**Strategic papers at launch**~~ — **resolved by content.** All 15 papers are at full parity, so there is no Applied-first vs Strategic-first trade-off left to make: launch with the whole qualification.
+2. ~~**Entitlement store**~~ — **resolved:** both. `app_metadata` stays the hot path (it rides in the JWT, so no read costs a round-trip) and `subscriptions` is the durable audit trail behind it. The meter takes the lower of the two.
+3. ~~**AI cost ceiling posture**~~ — **resolved:** the org-wide budget landed with Phase 1, so it is in place *before* any paid-marketing spike rather than after. What the founder still owns is the **number**: `AI_DAILY_TOKEN_BUDGET` defaults to 5M tokens/day (tens of dollars) — raise or lower it to match appetite.
+
+**Still open, and genuinely the founder's:**
+
+4. **When to run the Phase 5 go-live.** It needs credentials only the founder holds (§6). Nothing else blocks revenue.
+5. **Whether to ship tests before or after go-live** (Phase 3). Recommendation: **after** — the beachhead is small enough to watch by hand, and the money paths (metering, `planForPrice`, grading) are the right first suite, not a blocker to opening the doors.
 
 ---
 
-*This document is updated the same day reality diverges from it, per the founder's commitment in Document 1. Next review: after Phase 1–2 land.*
+*This document is updated the same day reality diverges from it, per the founder's commitment in Document 1. Last updated 2026-07-14, when Phases 1, 2 and 4 closed. Next review: after the Phase 5 go-live.*
