@@ -7,6 +7,8 @@ import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
+import { usePaperContent } from "@/hooks/usePaperContent"
+import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import PaywallModal from "@/components/PaywallModal"
 import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
@@ -115,6 +117,16 @@ export default function AccaStudy() {
   const [mode, setMode] = useState<Mode>(() =>
     wasOnboarded() ? (getCurrentPaper() ? "overview" : "picker") : "onboarding",
   )
+
+  /*
+   * The ACTIVE paper's content (questions, chapters, cards, written, briefs) is
+   * fetched on demand — a student downloads their own paper, not all fifteen.
+   * Every synchronous getter below (getQuestions, buildSession, getStudyChapter,
+   * getFlashcards, getTopicBrief …) reads the loaded paper, so this one await is
+   * the only change the study surfaces needed. The PICKER needs no content: it
+   * renders from paper metadata + the eager bank-size counts.
+   */
+  const content = usePaperContent(paperId)
 
   // The onboarding experience lives at /welcome (full-screen flow).
   useEffect(() => {
@@ -445,6 +457,24 @@ export default function AccaStudy() {
       setTopicArea(null)
       setMode("flashcards")
     }
+  }
+
+  // Hold every paper-scoped surface until that paper's content chunk has landed.
+  // Skeleton, never a blank screen; a failed chunk offers a retry.
+  if (paperId && !content.ready) {
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 0 40px" }}>
+          <AnimatePresence mode="wait">
+            {content.error ? (
+              <PaperContentError key="content-error" paperId={paperId} onRetry={content.retry} />
+            ) : (
+              <PaperContentSkeleton key="content-loading" paperId={paperId} />
+            )}
+          </AnimatePresence>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (

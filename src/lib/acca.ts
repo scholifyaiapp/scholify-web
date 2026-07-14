@@ -16,12 +16,23 @@
  */
 
 import type { AccaPaper, AccaQuestion, Difficulty } from "@/lib/acca-content"
-import { QUESTIONS } from "@/lib/acca-content"
+import { paperContent, isPaperContentLoaded } from "@/lib/acca-content-registry"
+// Fills the registry eagerly under Node (tsx scripts + vitest); a no-op in the browser.
+import "@/lib/acca-content-boot"
+import { questionCount } from "@/lib/acca-content-counts"
 import { ALL_PAPERS } from "@/lib/acca-qualification"
 
 export type { AccaPaper, AccaQuestion } from "@/lib/acca-content"
 
 /* ── Content lookup ───────────────────────────────────────────── */
+
+/*
+ * The question BANK is no longer imported here — a student studies one paper and
+ * used to download all fifteen (see acca-content-registry.ts). The paper LIST is
+ * metadata and stays eager; the questions arrive per paper, on demand, and this
+ * getter reads the registry. Everything downstream (buildSession, the adaptive
+ * ranker, the diagnostic, coverage) keeps its synchronous signature unchanged.
+ */
 
 /** Every ACCA paper (full qualification), in official order. */
 export function getPapers(): AccaPaper[] {
@@ -32,13 +43,20 @@ export function getPaper(paperId: string): AccaPaper | undefined {
   return ALL_PAPERS.find((p) => p.id === paperId)
 }
 
-/** True when the paper has a curated seed question bank (vs AI-generated only). */
+/**
+ * True when the paper has a curated seed question bank (vs AI-generated only).
+ *
+ * This is read by the paper PICKER, i.e. before any paper's content has been
+ * downloaded — so it answers from paper metadata, not from the loaded bank. The
+ * flag and the bank are kept honest by `npm run audit:content`, which fails if a
+ * paper claims a curated bank it does not have.
+ */
 export function hasCuratedContent(paperId: string): boolean {
-  return getQuestions(paperId).length > 0
+  return getPaper(paperId)?.hasCuratedContent === true
 }
 
 export function getQuestions(paperId: string): AccaQuestion[] {
-  return QUESTIONS.filter((q) => q.paper === paperId)
+  return paperContent(paperId).questions
 }
 
 export function getSyllabusAreas(paperId: string): string[] {
@@ -437,7 +455,14 @@ export function getPaperStats(paperId: string): PaperStats {
   }
   const accuracy = answered > 0 ? correct / answered : 0
 
-  const totalQuestions = getQuestions(paperId).length
+  // Bank size, for coverage. The paper PICKER renders a readiness % for every
+  // paper the student has touched, and those papers' banks are not downloaded —
+  // reading the (empty) registry there would report coverage 0 and quietly
+  // deflate every readiness score. So use the real bank when it is loaded and
+  // the eager counts map otherwise; audit:content asserts the two agree.
+  const totalQuestions = isPaperContentLoaded(paperId)
+    ? getQuestions(paperId).length
+    : questionCount(paperId)
   // Count only attempts against the seed bank; AI-generated question ids
   // (prefixed "gen-") aren't part of coverage and must not inflate it past 1.
   const distinctAttempted = Object.keys(qRaw).filter((id) => !id.startsWith("gen-")).length

@@ -12,6 +12,8 @@ import {
   type AccaQuestion,
 } from "@/lib/acca"
 import { getCurrentPaper } from "@/lib/acca-qualification"
+import { usePaperContent } from "@/hooks/usePaperContent"
+import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import {
   buildDiagnostic,
   scoreDiagnostic,
@@ -183,6 +185,7 @@ export default function AccaDiagnostic() {
 
   const [phase, setPhase] = useState<Phase>("intro")
   const [paperId, setPaperId] = useState(defaultPaper)
+  const content = usePaperContent(paperId)
   const [questions, setQuestions] = useState<AccaQuestion[]>([])
   const [idx, setIdx] = useState(0)
   const answersRef = useRef<AnsweredDiagnostic[]>([])
@@ -267,6 +270,23 @@ export default function AccaDiagnostic() {
     setResult(null)
     setPhase("intro")
     setPrior(getLatestDiagnostic(paperId))
+  }
+
+  // buildDiagnostic() samples the paper's REAL bank, so the form can only be built
+  // once this paper's content chunk has landed. The paper chooser inside the intro
+  // needs no content — it runs off paper metadata, which is always eager.
+  if (!content.ready) {
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "8px 4px 60px" }}>
+          {content.error ? (
+            <PaperContentError paperId={paperId} onRetry={content.retry} />
+          ) : (
+            <PaperContentSkeleton paperId={paperId} />
+          )}
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (

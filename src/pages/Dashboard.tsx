@@ -19,6 +19,8 @@ import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
 import { diagnosticGate } from "@/lib/acca-schedule"
 import { PlanRoute } from "@/components/acca/PlanRoute"
+import { usePaperContent } from "@/hooks/usePaperContent"
+import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import { format } from "date-fns"
 
 /*
@@ -46,6 +48,10 @@ export default function Dashboard() {
   const [, setTick] = useState(0)
 
   const paperId = getCurrentPaper() ?? getStudyingPapers()[0] ?? "FA"
+  // The dashboard reads the CURRENT paper's bank + deck (flashcard counts, the
+  // mission, coverage), so it waits for that one paper's content chunk — not for
+  // all fifteen, which is what every page used to pull in.
+  const content = usePaperContent(paperId)
   const paper = getPaper(paperId)
   const prob = passProbability(paperId)
   const band = prob !== null ? passBand(prob) : null
@@ -74,6 +80,21 @@ export default function Dashboard() {
   if (!isAccaOnboarded()) return <Navigate to="/welcome" replace />
 
   if (!paper) return null
+
+  if (!content.ready) {
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: 820, margin: "0 auto", padding: "8px 0 48px" }}>
+          {content.error ? (
+            <PaperContentError paperId={paperId} onRetry={content.retry} />
+          ) : (
+            <PaperContentSkeleton paperId={paperId} />
+          )}
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   const noDiag = prob === null
   // Brand-new learners (start mode "zero") learn the basics BEFORE the
   // diagnostic: it unlocks only once sections A·B·C are each studied,

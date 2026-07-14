@@ -15,6 +15,7 @@ import { getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { chaptersForPaper } from "@/lib/acca-study-content"
+import { questionCount } from "@/lib/acca-content-counts"
 
 /** The practice-ladder floor a promoted paper must clear. */
 const MIN_BANK = 150
@@ -54,6 +55,23 @@ for (const paper of getPapers()) {
   const diagAreas = new Set(diagnostic.map((q) => q.area))
 
   if (bank.length < MIN_BANK) blocking.push(`${id}: bank ${bank.length} < ${MIN_BANK}`)
+  /*
+   * Content loads per paper now, so a paper the student has NOT opened has no bank
+   * in memory — and the picker still has to show its readiness %. Coverage there
+   * reads the eager bank-size map in acca-content-counts.ts. If that map drifts
+   * from the real banks, every unloaded paper's readiness silently lies, so the
+   * two are asserted against each other here rather than trusted.
+   */
+  if (questionCount(id) !== bank.length)
+    blocking.push(
+      `${id}: QUESTION_COUNTS says ${questionCount(id)} but the bank holds ${bank.length} — update src/lib/acca-content-counts.ts`,
+    )
+  // A paper that advertises a curated bank must have one: hasCuratedContent() is
+  // answered from this flag now (the picker reads it before any content loads).
+  if (Boolean(paper.hasCuratedContent) !== bank.length > 0)
+    blocking.push(
+      `${id}: hasCuratedContent=${Boolean(paper.hasCuratedContent)} but the bank holds ${bank.length} question(s)`,
+    )
   if (cards.length < MIN_CARDS) blocking.push(`${id}: flashcards ${cards.length} < ${MIN_CARDS}`)
   if (paper.objectiveOnly) {
     // The exam has no written section; the AI Examiner is hidden for this paper.

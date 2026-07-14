@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.api.json",
     "validate:chapters": "tsx --tsconfig tsconfig.app.json scripts/validate-chapters.ts",
     "audit:content": "tsx --tsconfig tsconfig.app.json scripts/audit-content.ts",
+    "verify:loading": "tsx --tsconfig tsconfig.app.json scripts/verify-dynamic-load.ts",
     "build": "npm run typecheck && npm test && vite build",
     "preview": "vite preview"
   },

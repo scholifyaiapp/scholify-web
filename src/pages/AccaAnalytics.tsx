@@ -17,6 +17,8 @@ import { passProbability, recoveryState, getExamOutcomes, MOCK_PASS } from "@/li
 import { buildTodayPlan, type TodayAction } from "@/lib/acca-today"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { getStudyPath, pathProgress } from "@/lib/acca-topics"
+import { usePaperContent } from "@/hooks/usePaperContent"
+import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import {
   probabilityMomentum,
   masteryScore,
@@ -56,6 +58,10 @@ export default function AccaAnalytics() {
   const studying = getStudyingPapers()
   const [paperId, setPaperId] = useState<string>(() => getCurrentPaper() ?? studying[0] ?? "FA")
   const [section, setSection] = useState<Section>("progress")
+  // Analytics reads the SELECTED paper's bank + deck (coverage, the per-area
+  // breakdown, the topic path, flashcard totals) — so it awaits that ONE paper's
+  // content chunk instead of every page dragging in all fifteen papers.
+  const content = usePaperContent(paperId)
   const paper = getPaper(paperId)
 
   const prob = passProbability(paperId)
@@ -64,6 +70,20 @@ export default function AccaAnalytics() {
   const active = SECTIONS.find((s) => s.key === section)!
 
   if (!paper) return null
+
+  if (!content.ready) {
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: 820, margin: "0 auto", padding: "8px 0 48px" }}>
+          {content.error ? (
+            <PaperContentError paperId={paperId} onRetry={content.retry} />
+          ) : (
+            <PaperContentSkeleton paperId={paperId} />
+          )}
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
