@@ -56,6 +56,42 @@ function planForPrice(priceId: string | undefined): string | null {
   return null
 }
 
+/**
+ * Mirror the entitlement into the `subscriptions` table (migration 0015) —
+ * the durable billing record behind app_metadata. app_metadata answers "what
+ * plan does this user have?"; this answers "why, since when, and from which
+ * Paddle event?" — the audit trail a chargeback or a support ticket needs.
+ *
+ * Best-effort by design: the entitlement write is what the student is waiting
+ * on, so a missing table (0015 not applied) must never fail their checkout.
+ */
+async function recordSubscription(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  userId: string,
+  row: {
+    plan?: string
+    status: string
+    price_id?: string
+    paddle_subscription_id?: string
+    paddle_customer_id?: string
+    last_event_type: string
+  },
+): Promise<void> {
+  try {
+    await supa.from("subscriptions").upsert(
+      {
+        user_id: userId,
+        ...row,
+        last_event_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    )
+  } catch {
+    /* audit trail is best-effort — never block fulfilment on it */
+  }
+}
+
 /** Verify `Paddle-Signature: ts=...;h1=...` over the raw body. */
 function verifySignature(rawBody: string, header: string | undefined, secret: string): boolean {
   if (!header) return false
@@ -153,6 +189,14 @@ async function webhook(req: VercelRequest, res: VercelResponse, rawBody: string)
       // Entitlement MUST live in app_metadata: it is writable only by the
       // service role, so a user cannot self-grant Pro via auth.updateUser().
       await supa.auth.admin.updateUserById(userId, { app_metadata: meta })
+      await recordSubscription(supa, userId, {
+        ...(canceled ? { plan: "free" } : plan ? { plan } : {}),
+        status: canceled ? "canceled" : pastDue ? "past_due" : "active",
+        ...(priceId ? { price_id: priceId } : {}),
+        ...(subscriptionId ? { paddle_subscription_id: subscriptionId } : {}),
+        ...(data.customer_id ? { paddle_customer_id: String(data.customer_id) } : {}),
+        last_event_type: type,
+      })
       res.status(200).json({ ok: true, applied: type })
       return
     }
@@ -160,6 +204,12 @@ async function webhook(req: VercelRequest, res: VercelResponse, rawBody: string)
     if (type === "subscription.canceled") {
       await supa.auth.admin.updateUserById(userId, {
         app_metadata: { plan: "free", plan_status: "canceled" },
+      })
+      await recordSubscription(supa, userId, {
+        plan: "free",
+        status: "canceled",
+        ...(data.id ? { paddle_subscription_id: String(data.id) } : {}),
+        last_event_type: type,
       })
       res.status(200).json({ ok: true, applied: type })
       return
@@ -214,6 +264,11 @@ async function cancel(req: VercelRequest, res: VercelResponse, _rawBody: string)
     // Keep access until period end; the subscription.updated/canceled
     // webhook flips plan to "free" when it actually lapses.
     await supa.auth.admin.updateUserById(user.id, { app_metadata: { plan_status: "canceling" } })
+    await recordSubscription(supa, user.id, {
+      status: "canceling",
+      paddle_subscription_id: subscriptionId,
+      last_event_type: "app.cancel_requested",
+    })
     res.status(200).json({ ok: true })
   } catch {
     res.status(200).json({ ok: false, reason: "paddle_unreachable" })

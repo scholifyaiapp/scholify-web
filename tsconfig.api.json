@@ -1,0 +1,26 @@
+{
+  /*
+   * The serverless handlers in api/ were the one part of the codebase no
+   * typecheck covered: tsconfig.app.json owns src/, tsconfig.node.json owns the
+   * Vite config, and Vercel compiles api/ at deploy time — where a type error
+   * becomes a broken webhook, not a failed build. This config closes that gap so
+   * `npm run typecheck` (and therefore `npm run build`) covers the money paths:
+   * billing fulfilment, AI metering, and the cron.
+   */
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["api"]
+}

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { motion } from "motion/react"
 import { iriText } from "@/components/dashboard-layout"
 import { Icon, Card, Button, C, SP, R } from "@/components/acca/ui"
-import { generateQuestions } from "@/lib/acca-ai"
+import { generateQuestions, type GenerateResult } from "@/lib/acca-ai"
 import type { AccaQuestion } from "@/lib/acca"
 
 /*
@@ -10,6 +10,21 @@ import type { AccaQuestion } from "@/lib/acca"
  * notes. The "learn from your world" wedge applied to ACCA: infinite,
  * personalised practice. Needs a live AI key; degrades to a clear prompt.
  */
+
+/** Why generation didn't happen, said plainly — never a raw reason code. */
+const REASON_COPY: Record<NonNullable<GenerateResult["reason"]>, string> = {
+  missing_anthropic_key:
+    "Custom question generation needs a live AI key. Ask the team to connect one, then this feature turns on.",
+  limit_reached: "You've used today's custom-practice allowance — it resets tomorrow.",
+  plan_required: "Custom practice is a Pro feature — upgrade to unlock it.",
+  auth_required: "Please sign in to generate custom questions.",
+  rate_limited: "That's a lot of requests at once — wait a few seconds and try again.",
+  budget_exhausted: "Custom practice is unusually busy right now. Try again shortly.",
+  metering_unavailable: "Custom practice is briefly unavailable. Try again shortly.",
+  no_questions: "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
+  network: "Couldn't reach Lara. Check your connection and try again.",
+  error: "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
+}
 
 export default function GenerateView({
   paperId,
@@ -42,17 +57,7 @@ export default function GenerateView({
       onReady(res.questions)
       return
     }
-    setError(
-      res.reason === "missing_anthropic_key"
-        ? "Custom question generation needs a live AI key. Ask the team to connect one, then this feature turns on."
-        : res.reason === "limit_reached"
-          ? "You've used today's custom-practice allowance — it resets tomorrow."
-          : res.reason === "plan_required"
-            ? "Custom practice is a Pro feature — upgrade to unlock it."
-            : res.reason === "auth_required"
-              ? "Please sign in to generate custom questions."
-              : "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
-    )
+    setError(REASON_COPY[res.reason ?? "error"] ?? REASON_COPY.error)
   }
 
   return (

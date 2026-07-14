@@ -58,13 +58,46 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     paddle: !!process.env.VITE_PADDLE_TOKEN,
     paddle_webhook: !!process.env.PADDLE_WEBHOOK_SECRET,
     paddle_api: !!process.env.PADDLE_API_KEY,
+    // The three price ids are VITE_-named because the checkout needs them in the
+    // client — but api/paddle.ts `planForPrice` also reads them SERVER-side to
+    // turn a webhook into an entitlement. Ship them client-only and every
+    // payment succeeds while no one is ever granted their plan. So they are
+    // health-checked as first-class billing config.
+    paddle_price_beginner_monthly: !!process.env.VITE_PADDLE_BEGINNER_MONTHLY,
+    paddle_price_pro_monthly: !!process.env.VITE_PADDLE_PRO_MONTHLY,
+    paddle_price_annual_pro: !!process.env.VITE_PADDLE_ANNUAL_PRO,
   }
-  const allCriticalPresent =
+
+  const billing = [
+    keys.paddle,
+    keys.paddle_webhook,
+    keys.paddle_api,
+    keys.paddle_price_beginner_monthly,
+    keys.paddle_price_pro_monthly,
+    keys.paddle_price_annual_pro,
+  ]
+  // Billing is all-or-nothing. Nothing set = pre-launch, and the app degrades to
+  // "payments coming soon" by design. Everything set = live. ANYTHING IN BETWEEN
+  // is the dangerous state — checkout renders but fulfilment silently can't —
+  // so a half-configured billing stack fails the health check loudly.
+  const billingConfigured = billing.every(Boolean)
+  const billingHalfConfigured = billing.some(Boolean) && !billingConfigured
+
+  const coreReady =
     keys.anthropic && keys.supabase_url && keys.supabase_anon && keys.supabase_service
-  res.status(allCriticalPresent ? 200 : 503).json({
-    status: allCriticalPresent ? "ok" : "degraded",
+  const ok = coreReady && !billingHalfConfigured
+
+  res.status(ok ? 200 : 503).json({
+    status: ok ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
+    billing: billingConfigured ? "live" : billingHalfConfigured ? "half_configured" : "not_configured",
+    ...(billingHalfConfigured
+      ? {
+          error:
+            "Billing is half-configured: checkout will open but the webhook cannot grant plans. Set every VITE_PADDLE_* price id server-side too.",
+        }
+      : {}),
     keys,
   })
 }

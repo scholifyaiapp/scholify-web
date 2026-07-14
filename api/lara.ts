@@ -4,20 +4,18 @@ import { createClient } from "@supabase/supabase-js"
 
 /*
  * Combined Lara endpoint — dispatches by ?action= to keep us under the
- * 12-Serverless-Function cap on the Hobby plan.
+ * 12-Serverless-Function cap on the Hobby plan. Every action below is
+ * authenticated and metered (see meterAcca); there is no other way to Claude.
  *
- *   POST /api/lara?action=message
- *     Daily coach message (Haiku). Same body + response as the old
- *     /api/lara-message.
+ *   POST /api/lara?action=acca-tutor       Explain a question / concept (Sonnet)
+ *   POST /api/lara?action=acca-generate    Original practice MCQs (Sonnet)
+ *   POST /api/lara?action=acca-examiner    Mark a written answer vs a rubric (Sonnet)
+ *   POST /api/lara?action=acca-postmortem  Mock-failure analysis (Sonnet)
  *
- *   POST /api/lara?action=chat
- *     Conversational tutor (Sonnet). Same body + response as the old
- *     /api/lara-chat.
- *
- *   POST /api/lara?action=analyze-patterns
- *     Returns AI-rewritten plan suggestions using the client's
- *     pre-computed pattern stats. Falls back to the seed suggestions
- *     when no key / on failure.
+ * The ten vocab-pivot actions (message, chat, vocab, extract, …) called Claude
+ * with no auth and no metering. They return 410 (see RETIRED_ACTIONS) and their
+ * handlers have been deleted outright — a retired endpoint you can still call is
+ * not retired.
  */
 
 export const config = { maxDuration: 30 }
@@ -51,7 +49,13 @@ const DAILY_CAPS: Record<Tier, Record<AccaAction, number>> = {
   pro: { "acca-tutor": 100, "acca-generate": 10, "acca-examiner": 20, "acca-postmortem": 10 },
 }
 
-export type MeterReason = "auth_required" | "plan_required" | "limit_reached" | "metering_unavailable"
+export type MeterReason =
+  | "auth_required"
+  | "plan_required"
+  | "limit_reached"
+  | "rate_limited"
+  | "budget_exhausted"
+  | "metering_unavailable"
 
 interface Meter {
   allowed: boolean
@@ -61,6 +65,40 @@ interface Meter {
 }
 
 const METER_PASS: Meter = { allowed: true, record: () => {} }
+
+const DENY = (reason: MeterReason): Meter => ({ allowed: false, reason, record: () => {} })
+
+/* ── Org-wide guardrails (beyond the per-user daily caps) ─────────────────
+ *
+ * Per-user caps bound what ONE abuser can cost. They do not bound what a launch
+ * spike, a bot signup wave, or a retry bug costs the COMPANY in a single day:
+ * 10,000 free users × 5 tutor calls is still 50,000 model calls. These two
+ * limits close that gap.
+ *
+ *   AI_DAILY_TOKEN_BUDGET — total tokens (in + out) the whole org may spend per
+ *     UTC day. Once exhausted, every AI action falls back deterministically
+ *     until midnight. Default 5,000,000 ≈ tens of dollars a day at the current
+ *     Haiku/Sonnet mix — generous for the beachhead, survivable if it all burns.
+ *
+ *   AI_PER_MINUTE_LIMIT — AI calls one user may make per minute. Stops a script
+ *     draining its daily allowance (and our budget) in seconds.
+ *
+ * Both are env-tunable without a redeploy, like AI_KILL_SWITCH.
+ */
+const DEFAULT_DAILY_TOKEN_BUDGET = 5_000_000
+const DEFAULT_PER_MINUTE_LIMIT = 8
+
+function envInt(name: string, fallback: number): number {
+  const n = Number(process.env[name])
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback
+}
+
+/** Start of the current minute, as an ISO timestamp — the rate-limit bucket. */
+function minuteBucket(): string {
+  const d = new Date()
+  d.setUTCSeconds(0, 0)
+  return d.toISOString()
+}
 
 function meteringAdmin() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
@@ -81,29 +119,80 @@ function aiKilled(): boolean {
   return v === "1" || v === "true" || v === "on"
 }
 
+/**
+ * Resolve the caller's tier. app_metadata is the hot path (it rides in the JWT,
+ * and only the service role can write it). The `subscriptions` table is the
+ * durable record the Paddle webhook also writes — when the two disagree we take
+ * the LOWER of the two, so neither a stale JWT nor a half-applied webhook can
+ * hand out a plan nobody paid for. A missing table (migration 0015 not run)
+ * simply leaves app_metadata in charge — it is defence in depth, not a gate.
+ */
+async function resolveTier(
+  supa: ReturnType<typeof meteringAdmin> & object,
+  user: { id: string; app_metadata?: Record<string, unknown> },
+): Promise<Tier> {
+  const rank: Record<Tier, number> = { free: 0, beginner: 1, pro: 2 }
+  const toTier = (raw: string): Tier =>
+    raw === "beginner" ? "beginner" : raw !== "free" ? "pro" : "free"
+
+  const claimed = toTier(String(user.app_metadata?.plan || "free"))
+  if (claimed === "free") return "free"
+
+  try {
+    const { data: row } = await supa
+      .from("subscriptions")
+      .select("plan, status")
+      .eq("user_id", user.id)
+      .maybeSingle()
+    if (!row) return claimed
+    // A canceled/expired subscription row overrides an optimistic JWT claim.
+    const active = row.status === "active" || row.status === "past_due" || row.status === "canceling"
+    const recorded: Tier = active ? toTier(String(row.plan || "free")) : "free"
+    return rank[recorded] < rank[claimed] ? recorded : claimed
+  } catch {
+    return claimed
+  }
+}
+
 async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter> {
   // No API key → handlers return free fallbacks anyway; nothing to meter.
   if (!process.env.ANTHROPIC_API_KEY) return METER_PASS
   // Emergency brake: treat as a metering outage so every action fails closed.
-  if (aiKilled()) return { allowed: false, reason: "metering_unavailable", record: () => {} }
+  if (aiKilled()) return DENY("metering_unavailable")
 
   const supa = meteringAdmin()
-  if (!supa) return { allowed: false, reason: "metering_unavailable", record: () => {} }
+  if (!supa) return DENY("metering_unavailable")
 
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
-  if (!token) return { allowed: false, reason: "auth_required", record: () => {} }
+  if (!token) return DENY("auth_required")
   const { data, error } = await supa.auth.getUser(token)
   const user = data?.user
-  if (error || !user) return { allowed: false, reason: "auth_required", record: () => {} }
+  if (error || !user) return DENY("auth_required")
 
   // Entitlement is read from app_metadata (service-role-only) — never
-  // user_metadata, which the user can self-write to forge a higher plan.
-  const rawPlan = String(user.app_metadata?.plan || "free")
-  const tier: Tier = rawPlan === "beginner" ? "beginner" : rawPlan !== "free" ? "pro" : "free"
+  // user_metadata, which the user can self-write to forge a higher plan —
+  // and cross-checked against the subscriptions row.
+  const tier = await resolveTier(supa, user)
   const cap = DAILY_CAPS[tier][action]
-  if (cap === 0) return { allowed: false, reason: "plan_required", record: () => {} }
+  if (cap === 0) return DENY("plan_required")
 
   const day = todayUtc()
+
+  // Org-wide budget first: it protects the company, so it outranks any plan.
+  const budget = envInt("AI_DAILY_TOKEN_BUDGET", DEFAULT_DAILY_TOKEN_BUDGET)
+  try {
+    const { data: global } = await supa
+      .from("ai_usage_global")
+      .select("tokens_in, tokens_out")
+      .eq("day", day)
+      .maybeSingle()
+    const spent = (global?.tokens_in ?? 0) + (global?.tokens_out ?? 0)
+    if (spent >= budget) return DENY("budget_exhausted")
+  } catch {
+    // Table missing (0015 not run) → fail closed, never unbudgeted.
+    return DENY("metering_unavailable")
+  }
+
   try {
     const { data: row } = await supa
       .from("ai_usage")
@@ -112,23 +201,44 @@ async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter>
       .eq("day", day)
       .eq("action", action)
       .maybeSingle()
-    if ((row?.count ?? 0) >= cap) return { allowed: false, reason: "limit_reached", record: () => {} }
+    if ((row?.count ?? 0) >= cap) return DENY("limit_reached")
   } catch {
     // Table missing (migration 0013 not run) → fail closed, never unmetered.
-    return { allowed: false, reason: "metering_unavailable", record: () => {} }
+    return DENY("metering_unavailable")
+  }
+
+  // Burst throttle, checked last so it only counts calls that would otherwise
+  // have been served. Atomic: the RPC increments and returns in one round trip,
+  // so two concurrent requests cannot both read "under the limit".
+  const perMinute = envInt("AI_PER_MINUTE_LIMIT", DEFAULT_PER_MINUTE_LIMIT)
+  try {
+    const { data: count, error: rateErr } = await supa.rpc("bump_ai_rate", {
+      p_user: user.id,
+      p_minute: minuteBucket(),
+    })
+    if (rateErr) return DENY("metering_unavailable")
+    if (Number(count ?? 0) > perMinute) return DENY("rate_limited")
+  } catch {
+    return DENY("metering_unavailable")
   }
 
   return {
     allowed: true,
     record: (tokensIn, tokensOut) => {
+      const p_tokens_in = Math.max(0, Math.round(tokensIn))
+      const p_tokens_out = Math.max(0, Math.round(tokensOut))
       void supa
         .rpc("increment_ai_usage", {
           p_user: user.id,
           p_day: day,
           p_action: action,
-          p_tokens_in: Math.max(0, Math.round(tokensIn)),
-          p_tokens_out: Math.max(0, Math.round(tokensOut)),
+          p_tokens_in,
+          p_tokens_out,
         })
+        .then(undefined, () => {})
+      // The org-wide ledger the budget check above reads.
+      void supa
+        .rpc("increment_ai_global", { p_day: day, p_tokens_in, p_tokens_out })
         .then(undefined, () => {})
     },
   }
@@ -143,6 +253,11 @@ function meterMessage(reason: MeterReason | undefined, feature: string): string 
       return `${feature[0].toUpperCase()}${feature.slice(1)} is a Pro feature — upgrade to unlock it.`
     case "auth_required":
       return "Please sign in to use Lara's AI features."
+    case "rate_limited":
+      return "That's a lot of questions at once — give Lara a few seconds to catch up, then try again."
+    case "budget_exhausted":
+      // Never blame the student for an org-wide ceiling they didn't cause.
+      return "Lara's AI is unusually busy right now — here's the built-in explanation while she catches up."
     default:
       return "Lara's AI is warming up — using the built-in explanation for now."
   }
@@ -166,9 +281,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   // Retired vocab-pivot endpoints. These called Claude with NO auth and NO
   // metering — an open, uncapped spend vector the moment ANTHROPIC_API_KEY is
-  // live. The current ACCA app never calls them (see src/lib/acca-ai.ts, which
-  // only uses the four acca-* actions), so they are disabled outright. Their
-  // handler functions remain below, dead but harmless, for reference.
+  // live. The gate stays even though the handlers are gone, so an old client
+  // still gets a clean 410 instead of a confusing "unknown action".
   if (RETIRED_ACTIONS.has(action)) {
     res.status(410).json({ error: "This endpoint has been retired.", isFallback: true })
     return
@@ -676,931 +790,3 @@ function localExaminer(
   return { marks: Math.min(maxMarks, marks), hit, missed, feedback }
 }
 
-/* ── Fetch readable text from a URL (for Bring Your Own Content) ──────── */
-
-function htmlToText(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-async function handleFetchUrl(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const url = String(body.url || "").trim()
-  if (!/^https?:\/\/.+/i.test(url)) {
-    res.status(200).json({ text: "", error: "invalid_url" })
-    return
-  }
-  try {
-    const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; ScholifyBot)" } })
-    if (!r.ok) {
-      res.status(200).json({ text: "", error: `status_${r.status}` })
-      return
-    }
-    const html = await r.text()
-    res.status(200).json({ text: htmlToText(html).slice(0, 8000) })
-  } catch {
-    res.status(200).json({ text: "", error: "fetch_failed" })
-  }
-}
-
-/* ── Bring-Your-Own-Content vocabulary extraction (Haiku) ─────────────── */
-
-const EXTRACT_SYSTEM = `You extract the vocabulary a learner needs from text THEY provide. Output STRICTLY valid JSON only — a single array of word objects, no markdown, no commentary. Translations must be accurate; example sentences short and natural.`
-
-/* Small per-language stoplists so mock mode can skip obvious common words. */
-const STOPWORDS: Record<string, string[]> = {
-  en: ["the","a","an","and","or","but","is","are","was","were","be","been","to","of","in","on","at","for","with","as","by","it","this","that","you","i","he","she","we","they","my","your","his","her","our","their","not","no","yes","do","does","did","have","has","had","will","would","can","could","what","when","where","who","how","there","here","from","about","into","than","then"],
-  ru: ["и","в","во","не","на","что","он","с","со","как","а","то","все","она","так","его","но","да","ты","к","у","же","вы","за","бы","по","ее","мне","было","вот","от","меня","еще","нет","о","из","ему","когда","даже","ну","вдруг","ли","если","или","быть","был","него","до","вас"],
-  es: ["el","la","los","las","un","una","y","o","de","que","en","a","por","con","para","es","son","no","sí","se","su","sus","lo","le","me","te","mi","tu","como","más","pero","muy","ya","esta","este"],
-  it: ["il","lo","la","i","gli","le","un","una","e","o","di","che","in","a","da","per","con","è","sono","non","sì","si","su","mi","ti","ci","come","più","ma","molto","questo","questa"],
-  fr: ["le","la","les","un","une","des","et","ou","de","que","en","à","pour","avec","est","sont","ne","pas","oui","se","sa","son","ses","me","te","mon","ton","comme","plus","mais","très","ce","cette"],
-  de: ["der","die","das","ein","eine","und","oder","von","zu","in","im","an","auf","für","mit","ist","sind","nicht","ja","sich","sein","seine","mein","dein","wie","mehr","aber","sehr","dieser","diese"],
-}
-
-function mockExtract(text: string, lang: string): unknown[] {
-  const stop = new Set(STOPWORDS[lang] || [])
-  const minLen = STOPWORDS[lang] ? 4 : 6
-  const sentences = text
-    .split(/(?<=[.!?\n])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-  const seen = new Set<string>()
-  const tokens: string[] = []
-  const matches = text.toLowerCase().match(/[\p{L}'-]{2,}/gu) || []
-  for (const tok of matches) {
-    if (stop.has(tok) || tok.length < minLen || seen.has(tok)) continue
-    seen.add(tok)
-    tokens.push(tok)
-  }
-  const picked = tokens.sort((a, b) => b.length - a.length).slice(0, 10)
-  return picked.map((tok) => ({
-    term: tok,
-    translation: "(translation)",
-    example: sentences.find((s) => s.toLowerCase().includes(tok)) || "",
-    exampleTranslation: "",
-    theme: "Your text",
-  }))
-}
-
-async function handleExtract(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const text = String(body.text || "").slice(0, 4000)
-  const target = String(body.targetLanguage || body.target || "").trim()
-  const targetLabel = String(body.targetLabel || target || "the target language").trim()
-  const native = String(body.nativeLanguage || body.native || "en").trim()
-  const nativeLabel = String(body.nativeLabel || native || "English").trim()
-  const knownLevel = String(body.knownLevel || body.level || "A2").trim()
-
-  if (!text.trim()) {
-    res.status(200).json({ words: [], isMock: false })
-    return
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    res.status(200).json({ words: mockExtract(text, target), isMock: true })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: HAIKU,
-      max_tokens: 3000,
-      system: [{ type: "text", text: EXTRACT_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: `The learner studies ${targetLabel} (native ${nativeLabel}), level ${knownLevel}.
-From the text below, extract 15-30 useful words/phrases AT OR ABOVE their level — skip very common words below their level that they already know. Prefer recurring, useful words and important multi-word phrases/collocations. If the text is in ${nativeLabel} (not ${targetLabel}), translate the KEY CONCEPTS into the ${targetLabel} words they would need.
-
-Return ONLY a JSON array in exactly this shape:
-[{"term":"<word/phrase in ${targetLabel}>","translation":"<meaning in ${nativeLabel}>","example":"<a natural sentence in ${targetLabel}, you may adapt the source>","exampleTranslation":"<that sentence in ${nativeLabel}>","theme":"<short source label>"}]
-
-TEXT:
-"""
-${text}
-"""`,
-        },
-      ],
-    })
-    const out = completion.content[0]?.type === "text" ? completion.content[0].text : "[]"
-    const words = parseVocabJson(out)
-    res.status(200).json({ words: words.length > 0 ? words : mockExtract(text, target), isMock: false })
-  } catch (err) {
-    console.error("lara extract:", err)
-    res.status(200).json({ words: mockExtract(text, target), isMock: true })
-  }
-}
-
-/* ── Vocabulary word generation (Haiku) ──────────────────────────────── */
-
-const VOCAB_SYSTEM = `You are Lara, a language tutor who builds vocabulary lists. Output STRICTLY valid JSON only — a single array of word objects, no markdown, no commentary. Each word must be genuinely useful, correctly translated, and level-appropriate. Keep example sentences short and natural.`
-
-function parseVocabJson(text: string): unknown[] {
-  try {
-    const start = text.indexOf("[")
-    const end = text.lastIndexOf("]")
-    if (start === -1 || end === -1) return []
-    const arr = JSON.parse(text.slice(start, end + 1))
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
-
-async function handleVocab(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const target = String(body.target || "").trim()
-  const targetLabel = String(body.targetLabel || target || "the target language").trim()
-  const native = String(body.native || "en").trim()
-  const nativeLabel = String(body.nativeLabel || native || "English").trim()
-  const goal = String(body.goal || "").trim()
-  const theme = String(body.theme || "").trim()
-  const level = String(body.level || "beginner").trim()
-  const count = Math.max(1, Math.min(20, Number(body.count) || 12))
-  const exclude = Array.isArray(body.exclude)
-    ? (body.exclude as unknown[]).map(String).slice(0, 200)
-    : []
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  // No key (or missing target) → let the client fall back to its seed bank.
-  if (!apiKey || !target) {
-    res.status(200).json({ words: [], isFallback: true })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: HAIKU,
-      max_tokens: 1400,
-      system: [{ type: "text", text: VOCAB_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: `Generate ${count} ${level} ${targetLabel} vocabulary words for a ${nativeLabel} speaker.
-Goal: ${goal || "general everyday fluency"}.
-Theme: ${theme || "mixed everyday topics"}.
-Exclude these already-known words: ${exclude.join(", ") || "(none)"}.
-
-Return ONLY a JSON array in exactly this shape:
-[{"term":"<word in ${targetLabel}>","translation":"<meaning in ${nativeLabel}>","example":"<short sentence in ${targetLabel}>","exampleTranslation":"<that sentence in ${nativeLabel}>","theme":"<one or two word topic>"}]`,
-        },
-      ],
-    })
-    const text = completion.content[0]?.type === "text" ? completion.content[0].text : "[]"
-    res.status(200).json({ words: parseVocabJson(text) })
-  } catch (err) {
-    console.error("lara vocab:", err)
-    res.status(200).json({ words: [], isFallback: true })
-  }
-}
-
-/* ── Placement test (Haiku) ──────────────────────────────────────────── */
-
-const PLACEMENT_SYSTEM = `You are Lara, a language-placement examiner. Output STRICTLY valid JSON only — a single array, no markdown, no commentary. Produce a CEFR-graded recognition test: words a learner either knows or doesn't, spanning the full range. Translations and distractors must be accurate and plausible.`
-
-async function handlePlacement(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const target = String(body.target || "").trim()
-  const targetLabel = String(body.targetLabel || target || "the target language").trim()
-  const nativeLabel = String(body.nativeLabel || "English").trim()
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  // No key (or missing target) → client falls back to manual level selection.
-  if (!apiKey || !target) {
-    res.status(200).json({ items: [], isFallback: true })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: HAIKU,
-      max_tokens: 1500,
-      system: [{ type: "text", text: PLACEMENT_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: `Build a 12-item ${targetLabel} placement test for a ${nativeLabel} speaker — exactly 2 words at each CEFR level (A1, A2, B1, B2, C1, C2), ordered easiest first. For each word give its ${nativeLabel} meaning plus 3 plausible but wrong ${nativeLabel} meanings (distractors).
-
-Return ONLY a JSON array in exactly this shape:
-[{"term":"<word in ${targetLabel}>","translation":"<correct meaning in ${nativeLabel}>","level":"<A1|A2|B1|B2|C1|C2>","distractors":["<wrong1>","<wrong2>","<wrong3>"]}]`,
-        },
-      ],
-    })
-    const text = completion.content[0]?.type === "text" ? completion.content[0].text : "[]"
-    res.status(200).json({ items: parseVocabJson(text) })
-  } catch (err) {
-    console.error("lara placement:", err)
-    res.status(200).json({ items: [], isFallback: true })
-  }
-}
-
-/* ── Daily coach message (Haiku) ─────────────────────────────────────── */
-
-const MESSAGE_SYSTEM = `You are Lara, a learning accountability partner. Your communication style:
-
-RULES (never break these):
-1. Maximum 2-3 sentences. Never more.
-2. ALWAYS use the user's exact name.
-3. ALWAYS reference their specific streak number.
-4. ALWAYS mention today's specific task title.
-5. Be direct and factual, not generic.
-6. Never say "amazing", "fantastic", "incredible", "you got this" or
-   "keep it up" without a specific reason.
-7. Sound like a real person, not a motivational poster.
-8. If streak > 10, acknowledge the rarity of that.
-9. If they already completed today, congratulate specifically and
-   preview tomorrow.
-10. Use their actual data — sessions, minutes, goal.
-
-Tone: warm but direct. Like a coach who respects your intelligence.
-Not a cheerleader.`
-
-const messageCache = new Map<string, string>()
-
-async function handleMessage(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const userName = String(body.userName || "Friend")
-  const streak = Number(body.streak) || 0
-  const goal = String(body.goal || "your goal")
-  const taskTitle = String(body.taskTitle || "today's task")
-  const estimatedMinutes = Number(body.estimatedMinutes) || 20
-  const completedToday = Boolean(body.completedToday)
-  const totalSessions = Number(body.totalSessions) || 0
-  const totalMinutes = Number(body.totalMinutes) || 0
-  const longestStreak = Number(body.longestStreak) || streak
-  const daysRemaining = Number(body.daysRemaining) || 0
-  const yesterdayNote = String(body.yesterdayNote || "").trim()
-  const yesterdayMood = String(body.yesterdayMood || "").trim()
-
-  const fallback = completedToday
-    ? `${userName}, day ${streak} complete — "${taskTitle}" is done. Rest well; tomorrow's task is already waiting.`
-    : `${userName}, day ${streak}. Today it's "${taskTitle}" — ${estimatedMinutes} focused minutes and the chain stays alive.`
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    res.status(200).json({ message: fallback, isFallback: true })
-    return
-  }
-
-  const today = new Date().toISOString().split("T")[0]
-  const cacheKey = `lara_${body.userId || userName}_${today}_${completedToday ? 1 : 0}`
-  const cached = messageCache.get(cacheKey)
-  if (cached) {
-    res.status(200).json({ message: cached, cached: true })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: HAIKU,
-      max_tokens: 200,
-      system: [{ type: "text", text: MESSAGE_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: `Generate Lara's daily message.
-
-User data:
-- Name: ${userName}
-- Current streak: ${streak} days
-- Goal: ${goal}
-- Today's task: "${taskTitle}"
-- Task duration: ${estimatedMinutes} minutes
-- Completed today: ${completedToday}
-- Total sessions completed: ${totalSessions}
-- Total minutes studied: ${totalMinutes}
-- Longest streak ever: ${longestStreak} days
-- Days remaining until deadline: ${daysRemaining}
-- Yesterday's session note: "${yesterdayNote || "none"}"
-- Yesterday's mood: "${yesterdayMood || "unknown"}"
-
-If a yesterday session note exists, acknowledge it briefly and connect
-it to today's task. If the mood was "struggling" or "okay", be a little
-more encouraging without being saccharine. If no note exists, do not
-mention it at all.
-
-Write Lara's message for today. Be specific. Reference their real numbers. Sound human.`,
-        },
-      ],
-    })
-    const text =
-      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : fallback
-    messageCache.set(cacheKey, text)
-    res.status(200).json({ message: text })
-  } catch (err) {
-    console.error("lara message:", err)
-    res.status(200).json({ message: fallback, isFallback: true })
-  }
-}
-
-/* ── Conversational tutor (Sonnet) ───────────────────────────────────── */
-
-interface ChatMessageIn {
-  role: "user" | "lara"
-  content: string
-}
-
-function buildChatSystem(args: {
-  userName: string
-  goal: string
-  weekNumber: number
-  totalWeeks: number
-  taskTitle: string
-  streak: number
-  recentNotes: string[]
-}): string {
-  const notes = args.recentNotes.filter(Boolean).slice(0, 7)
-  const notesBlock = notes.length
-    ? notes.map((n, i) => `- Day ${i + 1}: ${n.slice(0, 200)}`).join("\n")
-    : "- (no recent notes)"
-  return `You are Lara, a focused AI learning coach. You ONLY discuss topics related to the user's learning goal and their current progress.
-
-User context:
-- Name: ${args.userName}
-- Learning goal: ${args.goal}
-- Current week: ${args.weekNumber} of ${args.totalWeeks}
-- Today's task: ${args.taskTitle}
-- Streak: ${args.streak} days
-- Recent session notes:
-${notesBlock}
-
-Rules:
-1. Stay focused on their learning goal — never coach unrelated topics.
-2. Give specific, actionable advice the user can do today.
-3. Reference their actual task, streak, or recent notes when relevant.
-4. Be encouraging but honest. Never use empty phrases like "you got this".
-5. If the message is off-topic, gently redirect to their goal in one sentence.
-6. Keep responses under 150 words. Tighter is better.
-7. Never sound like a generic AI assistant. Write like a real coach who knows them.
-8. Use the user's name sparingly — once at most.`
-}
-
-function softFallback(userMessage: string, userName: string, goal: string): string {
-  const m = userMessage.toLowerCase()
-  if (/struggl|stuck|hard|difficult|frustrat/.test(m)) {
-    return `Slowing down is fine, ${userName}. Pick the smallest unstuck question from your "${goal}" task and answer just that — momentum returns from one concrete move.`
-  }
-  if (/tip|advice|how/.test(m)) {
-    return `For "${goal}": today, before doing anything else, write down the one thing you don't yet know. The answer to that is your real next step.`
-  }
-  if (/focus|today/.test(m)) {
-    return `Focus on today's task only. Twenty minutes of full attention beats two hours of half-attention every time.`
-  }
-  return `Got it. Connect what you're asking back to "${goal}" — what's one tiny experiment you can run today?`
-}
-
-async function handleChat(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const userName = String(body.userName || "Friend")
-  const goal = String(body.goal || "your goal")
-  const weekNumber = Math.max(1, Math.round(Number(body.weekNumber) || 1))
-  const totalWeeks = Math.max(1, Math.round(Number(body.totalWeeks) || 4))
-  const taskTitle = String(body.taskTitle || "today's task")
-  const streak = Math.max(0, Math.round(Number(body.streak) || 0))
-  const recentNotes = Array.isArray(body.recentNotes)
-    ? (body.recentNotes as unknown[]).map((n) => String(n))
-    : []
-  const message = String(body.message || "").trim()
-  if (!message) {
-    res.status(400).json({ error: "Missing message." })
-    return
-  }
-  const history: ChatMessageIn[] = Array.isArray(body.history)
-    ? (body.history as unknown[])
-        .slice(-10)
-        .filter((m): m is ChatMessageIn => typeof m === "object" && m !== null && typeof (m as ChatMessageIn).content === "string")
-    : []
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    res.status(200).json({ message: softFallback(message, userName, goal), isFallback: true })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const conversation: Anthropic.MessageParam[] = [
-      ...history.map<Anthropic.MessageParam>((m) => ({
-        role: m.role === "lara" ? "assistant" : "user",
-        content: m.content,
-      })),
-      { role: "user", content: message },
-    ]
-    const completion = await client.messages.create({
-      model: SONNET,
-      max_tokens: 400,
-      system: [
-        {
-          type: "text",
-          text: buildChatSystem({ userName, goal, weekNumber, totalWeeks, taskTitle, streak, recentNotes }),
-          cache_control: { type: "ephemeral" },
-        },
-      ],
-      messages: conversation,
-    })
-    const text =
-      completion.content[0]?.type === "text"
-        ? completion.content[0].text.trim()
-        : softFallback(message, userName, goal)
-    res.status(200).json({ message: text })
-  } catch (err) {
-    console.error("lara chat:", err)
-    res.status(200).json({
-      message: softFallback(message, userName, goal),
-      isFallback: true,
-    })
-  }
-}
-
-/* ── Pattern analysis → AI-rewritten suggestions ─────────────────────── */
-
-const ANALYZE_SYSTEM = `You are Lara, a learning coach who reviews a learner's
-completion patterns and rewrites flat statistical suggestions into warm,
-goal-aware ones. You NEVER invent new actions — you only rephrase the
-suggestions you are given.
-
-Rules:
-1. Return ONLY valid JSON: { "suggestions": [{ "id": "...", "text": "..." }] }.
-2. One suggestion per id from the input. Same number out as in.
-3. Each text is one short sentence (max 32 words), kind and concrete.
-4. Reference their specific goal and the relevant percentages when useful.
-5. Never use "amazing", "incredible", "you got this", "keep it up".
-6. End with a question OR a clear action — never both.`
-
-async function handleAnalyze(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const goal = String(body.goal || "your goal")
-  const dominantStyle = String(body.dominantStyle || "mixed")
-  const breakdown = Array.isArray(body.breakdown) ? body.breakdown : []
-  const avgActualMinutes = Number(body.avgActualMinutes) || 0
-  const plannedDailyMinutes = Number(body.plannedDailyMinutes) || 0
-  const seed = Array.isArray(body.seedSuggestions) ? body.seedSuggestions : []
-
-  if (seed.length === 0) {
-    res.status(200).json({ suggestions: [], isFallback: true, reason: "no_seed" })
-    return
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    res.status(200).json({
-      suggestions: seed.map((s) => ({ id: (s as { id?: string }).id, text: (s as { text?: string }).text || "" })),
-      isFallback: true,
-      reason: "missing_anthropic_key",
-    })
-    return
-  }
-
-  const breakdownLines = breakdown
-    .map((b) => {
-      const x = b as { type?: string; rate?: number; completed?: number; total?: number; avgMinutes?: number }
-      return `- ${x.type}: ${Math.round((x.rate || 0) * 100)}% (${x.completed}/${x.total}), avg ${x.avgMinutes} min`
-    })
-    .join("\n")
-
-  const seedLines = seed
-    .map((s, i) => {
-      const x = s as { id?: string; type?: string; text?: string }
-      return `${i + 1}. id="${x.id}" type=${x.type}: ${x.text}`
-    })
-    .join("\n")
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: HAIKU,
-      max_tokens: 600,
-      system: [{ type: "text", text: ANALYZE_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: `Goal: ${goal}
-Dominant style detected: ${dominantStyle}
-Average actual minutes per session: ${avgActualMinutes}
-Planned daily minutes: ${plannedDailyMinutes}
-
-Completion breakdown:
-${breakdownLines || "(none)"}
-
-Seed suggestions to rewrite (return EXACTLY one entry per id, same ids):
-${seedLines}
-
-Return ONLY the JSON object.`,
-        },
-      ],
-    })
-
-    const text =
-      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
-    const match = text.match(/\{[\s\S]*\}/)
-    const parsed = match ? safeParse(match[0]) : safeParse(text)
-    if (!parsed || !Array.isArray(parsed.suggestions)) {
-      res.status(200).json({
-        suggestions: seed.map((s) => ({ id: (s as { id?: string }).id, text: (s as { text?: string }).text || "" })),
-        isFallback: true,
-        reason: "parse_failed",
-      })
-      return
-    }
-    res.status(200).json({ suggestions: parsed.suggestions })
-  } catch (err) {
-    console.error("lara analyze:", err)
-    res.status(200).json({
-      suggestions: seed.map((s) => ({ id: (s as { id?: string }).id, text: (s as { text?: string }).text || "" })),
-      isFallback: true,
-      reason: "request_failed",
-    })
-  }
-}
-
-function safeParse(s: string): { suggestions?: Array<{ id?: string; text?: string }> } | null {
-  try {
-    return JSON.parse(s) as { suggestions?: Array<{ id?: string; text?: string }> }
-  } catch {
-    return null
-  }
-}
-
-/* ── Goal difficulty advisor ─────────────────────────────────────────── */
-
-const DIFFICULTY_SYSTEM = `You are Lara, a learning advisor. Decide whether a
-learning goal is realistic given the deadline and daily-minutes budget.
-
-Rules:
-1. Return ONLY a single JSON object. No prose, no markdown.
-2. Shape: { "level": "too_easy"|"realistic"|"ambitious"|"unrealistic",
-            "score": 0-100,
-            "message": "1-2 sentence honest assessment",
-            "suggestion": "1-2 sentence next step",
-            "suggestedDeadline": "YYYY-MM-DD or null",
-            "suggestedGoal": "string or null",
-            "confidence": 0-1 }
-3. Be honest but kind. Never harsh. Never use "amazing", "you got this".
-4. score: ~50 means "right on the edge"; <30 unrealistic; >80 too easy.
-5. If unrealistic, suggestedDeadline MUST be a real ISO date in the
-   future that gives the user enough time.
-6. If too_easy, suggestedGoal MUST be a slightly more ambitious version
-   of the original goal.
-7. Otherwise leave suggestedDeadline and suggestedGoal null.`
-
-interface DifficultyJSON {
-  level?: string
-  score?: number
-  message?: string
-  suggestion?: string
-  suggestedDeadline?: string | null
-  suggestedGoal?: string | null
-  confidence?: number
-}
-
-function neutralDifficulty(daysAvailable: number, dailyMinutes: number): DifficultyJSON {
-  if (daysAvailable < 7) {
-    return {
-      level: "unrealistic",
-      score: 22,
-      message: `${daysAvailable} day${daysAvailable === 1 ? "" : "s"} is very tight for a real learning goal.`,
-      suggestion: "Consider at least 3–4 weeks so Lara can scaffold the plan properly.",
-      suggestedDeadline: new Date(Date.now() + 28 * 86_400_000).toISOString().slice(0, 10),
-      suggestedGoal: null,
-      confidence: 0.6,
-    }
-  }
-  if (daysAvailable >= 365) {
-    return {
-      level: "too_easy",
-      score: 78,
-      message: `A full year is plenty — you could compound this into a much bigger outcome.`,
-      suggestion: "Stack a second related skill or aim for a higher-level outcome.",
-      suggestedDeadline: null,
-      suggestedGoal: null,
-      confidence: 0.55,
-    }
-  }
-  return {
-    level: "realistic",
-    score: 65,
-    message: `${daysAvailable} days at ${dailyMinutes} min/day looks workable.`,
-    suggestion: "Lara will scaffold each week so it builds on the last.",
-    suggestedDeadline: null,
-    suggestedGoal: null,
-    confidence: 0.5,
-  }
-}
-
-async function handleDifficulty(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const goal = String(body.goal || "").trim()
-  const deadline = String(body.deadline || "").trim()
-  const dailyMinutes = Math.max(5, Math.round(Number(body.dailyMinutes) || 20))
-  const daysAvailable = Math.max(1, Math.round(Number(body.daysAvailable) || 0))
-
-  if (!goal || !deadline) {
-    res.status(400).json({ error: "Missing goal or deadline." })
-    return
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    res.status(200).json({ ...neutralDifficulty(daysAvailable, dailyMinutes), isFallback: true, reason: "missing_anthropic_key" })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: HAIKU,
-      max_tokens: 500,
-      system: [{ type: "text", text: DIFFICULTY_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: `Goal: ${goal}
-Deadline: ${deadline}
-Days available: ${daysAvailable}
-Daily minutes: ${dailyMinutes}
-
-Return ONLY the JSON object.`,
-        },
-      ],
-    })
-
-    const text =
-      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
-    const match = text.match(/\{[\s\S]*\}/)
-    const parsed = (match ? safeJSON<DifficultyJSON>(match[0]) : safeJSON<DifficultyJSON>(text)) ?? null
-
-    if (!parsed || !parsed.level) {
-      res.status(200).json({ ...neutralDifficulty(daysAvailable, dailyMinutes), isFallback: true, reason: "parse_failed" })
-      return
-    }
-
-    // Normalize: clamp score, coerce types, accept either ISO date or null.
-    const clean = {
-      level: normalizeLevel(parsed.level),
-      score: clampNumber(parsed.score, 0, 100, 50),
-      message: typeof parsed.message === "string" ? parsed.message.trim() : "",
-      suggestion: typeof parsed.suggestion === "string" ? parsed.suggestion.trim() : "",
-      suggestedDeadline:
-        typeof parsed.suggestedDeadline === "string" && parsed.suggestedDeadline.length >= 10
-          ? new Date(parsed.suggestedDeadline).toISOString()
-          : undefined,
-      suggestedGoal:
-        typeof parsed.suggestedGoal === "string" && parsed.suggestedGoal.length > 0
-          ? parsed.suggestedGoal.trim()
-          : undefined,
-      confidence: clampNumber(parsed.confidence, 0, 1, 0.6),
-    }
-    res.status(200).json(clean)
-  } catch (err) {
-    console.error("lara analyze-difficulty:", err)
-    res.status(200).json({ ...neutralDifficulty(daysAvailable, dailyMinutes), isFallback: true, reason: "request_failed" })
-  }
-}
-
-function safeJSON<T>(s: string): T | null {
-  try {
-    return JSON.parse(s) as T
-  } catch {
-    return null
-  }
-}
-
-function clampNumber(n: unknown, min: number, max: number, fallback: number): number {
-  const v = typeof n === "number" ? n : Number(n)
-  if (!Number.isFinite(v)) return fallback
-  return Math.max(min, Math.min(max, v))
-}
-
-function normalizeLevel(v: unknown): "too_easy" | "realistic" | "ambitious" | "unrealistic" {
-  const s = String(v || "").toLowerCase()
-  if (s === "too_easy" || s === "realistic" || s === "ambitious" || s === "unrealistic") return s
-  return "realistic"
-}
-
-/* ── Streak tree generation (Fal.ai FLUX schnell, optional) ──────────── */
-
-type TreeStageKey =
-  | "seedling"
-  | "sapling"
-  | "young_tree"
-  | "growing"
-  | "blooming"
-  | "mature"
-  | "ancient"
-  | "legendary"
-  | "mythic"
-
-const TREE_PROMPTS: Record<TreeStageKey, string> = {
-  seedling: `Minimalist illustration of a tiny green seedling sprouting from dark soil. Single stem, two small leaves. Clean dark navy background, soft glow. Flat design, gentle colors. Hopeful and small. App icon quality illustration.`,
-  sapling: `Minimalist illustration of a young sapling tree. Small trunk, 6-8 bright green leaves. Visible small roots. Clean dark navy background. Flat design, vibrant greens and earth tones. Growing and promising.`,
-  young_tree: `Minimalist illustration of a young tree, knee-height. Defined trunk with bark texture. Full leafy crown, 15-20 leaves. Deep roots visible. Clean dark navy background. Flat design style. Strong and growing.`,
-  growing: `Minimalist illustration of a growing tree, waist-height. Round full canopy with dozens of leaves. Small flower buds beginning to appear. Clean dark navy background. Flat design, lush greens.`,
-  blooming: `Beautiful minimalist illustration of a full tree in full bloom. Round lush canopy, pink and white flowers mixed with green leaves. Wide trunk, visible root system. Clean dark navy background. Flat design. Joyful and full.`,
-  mature: `Minimalist illustration of a strong mature tree. Thick trunk, wide spread canopy. Deep green leaves, a few fruits beginning. Ancient look but vigorous. Clean dark navy background. Flat design, authoritative.`,
-  ancient: `Minimalist illustration of an ancient oak tree. Massive trunk with character, enormous canopy. Multiple fruit clusters. Deep extensive root system. Clean dark navy background. Flat design. Majestic and wise.`,
-  legendary: `Minimalist illustration of a legendary ancient tree. Enormous gnarled trunk, sky-wide canopy. Golden fruits hanging heavy. Roots spanning wide. Fireflies around the tree. Clean dark navy background. Magical flat design. Extraordinary and mythical.`,
-  mythic: `Minimalist illustration of a mythic world tree. Trunk so wide it fills the frame. Canopy touching clouds. Stars visible through branches. Golden glowing fruits. Clean deep night-sky background. Epic flat design. Once-in-a-lifetime beauty.`,
-}
-
-function normalizeStage(v: unknown): TreeStageKey {
-  const s = String(v || "").toLowerCase()
-  if (
-    s === "seedling" ||
-    s === "sapling" ||
-    s === "young_tree" ||
-    s === "growing" ||
-    s === "blooming" ||
-    s === "mature" ||
-    s === "ancient" ||
-    s === "legendary" ||
-    s === "mythic"
-  )
-    return s
-  return "seedling"
-}
-
-function goalContext(goal: string): string {
-  const g = goal.toLowerCase()
-  if (/ielts|toefl|exam|cefr/.test(g)) return "Academic, studious atmosphere. A faint open book glowing nearby."
-  if (/python|javascript|coding|programming|leetcode/.test(g))
-    return "Subtle circuit patterns etched into the bark. Tech-inspired sparkle."
-  if (/design|figma|ui|ux/.test(g)) return "Geometric perfect symmetry. Designer aesthetic, balanced composition."
-  if (/spanish|french|german|japanese|korean|language/.test(g))
-    return "A trail of small written letters drifting across the wind near the canopy."
-  if (/music|piano|guitar/.test(g)) return "Faint musical notes drifting through the leaves."
-  if (/fitness|run|workout|yoga/.test(g)) return "A path winding past the trunk into the distance."
-  return ""
-}
-
-async function handleTree(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const milestone = Math.max(1, Math.round(Number(body.milestone) || 1))
-  const stage = normalizeStage(body.stage)
-  const userName = String(body.userName || "").trim().slice(0, 40)
-  const goal = String(body.goal || "your goal").slice(0, 200)
-
-  const falKey = process.env.FAL_KEY || process.env.FAL_API_KEY
-  if (!falKey) {
-    res.status(200).json({ url: null, isFallback: true, reason: "missing_fal_key" })
-    return
-  }
-
-  const context = goalContext(goal)
-  const namePlaque =
-    stage === "mythic" && userName
-      ? ` A small name plaque at the base of the trunk reads "${userName}".`
-      : ""
-  const prompt = `${TREE_PROMPTS[stage]}${namePlaque ? namePlaque : ""} ${context} Style: flat design illustration, clean edges, minimal, app icon quality, single subject centered, no text${stage === "mythic" && userName ? ` except the name plaque` : ""}.`
-
-  try {
-    // Direct Fal API call — avoids adding the SDK as a runtime dep.
-    const r = await fetch("https://fal.run/fal-ai/flux/schnell", {
-      method: "POST",
-      headers: {
-        Authorization: `Key ${falKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        image_size: "square_hd",
-        num_inference_steps: 4,
-        num_images: 1,
-        enable_safety_checker: true,
-      }),
-    })
-    if (!r.ok) {
-      const detail = await r.text().catch(() => "")
-      res.status(200).json({ url: null, isFallback: true, reason: `fal_${r.status}`, detail: detail.slice(0, 200) })
-      return
-    }
-    const data = (await r.json().catch(() => null)) as { images?: Array<{ url?: string }> } | null
-    const url = data?.images?.[0]?.url
-    if (!url) {
-      res.status(200).json({ url: null, isFallback: true, reason: "no_image_in_response" })
-      return
-    }
-    res.status(200).json({ url, milestone, stage })
-  } catch (err) {
-    console.error("lara generate-tree:", err)
-    res.status(200).json({ url: null, isFallback: true, reason: "request_failed" })
-  }
-}
-
-/* ── Photo evidence analyzer ─────────────────────────────────────────── */
-
-const PHOTO_SYSTEM = `You are Lara, an honest, warm learning coach reviewing
-a photo a learner uploaded as proof of their daily practice.
-
-Rules:
-1. Reply with 1–2 sentences. Never longer.
-2. Reference one *specific* thing you can see in the photo when possible
-   (the page, the hands, the line of text, the dish, the posture). If
-   the image is unclear, say what you can tell and what you would notice
-   next time.
-3. Connect what you see to the goal and today's task — but only if it
-   honestly matches the photo.
-4. Never use "amazing", "incredible", "you got this", "keep it up".
-5. Sound like a coach who cares about results, not a cheerleader.`
-
-type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif"
-
-function normalizeMedia(v: unknown): ImageMediaType {
-  const s = String(v || "").toLowerCase().trim()
-  if (s === "image/jpeg" || s === "image/jpg") return "image/jpeg"
-  if (s === "image/png") return "image/png"
-  if (s === "image/webp") return "image/webp"
-  if (s === "image/gif") return "image/gif"
-  return "image/jpeg"
-}
-
-function fallbackPhotoComment(goal: string, taskTitle: string, caption: string): string {
-  const cap = caption.trim()
-  if (cap) {
-    return `Logged: "${cap}". The proof matters — showing up beats explaining. Tomorrow's task is already lined up.`
-  }
-  return `Evidence saved for "${taskTitle}". Concrete proof of "${goal}" is the only thing that compounds.`
-}
-
-async function handlePhoto(body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const goal = String(body.goal || "your goal")
-  const taskTitle = String(body.taskTitle || "today's task")
-  const caption = String(body.caption || "").slice(0, 400)
-  const imageBase64Raw = String(body.imageBase64 || "")
-  const mediaType = normalizeMedia(body.mediaType)
-
-  // Strip a "data:image/...;base64," prefix if the client sent one.
-  const imageBase64 = imageBase64Raw.includes(",")
-    ? imageBase64Raw.split(",", 2)[1] || ""
-    : imageBase64Raw
-
-  if (!imageBase64) {
-    res.status(400).json({ error: "Missing imageBase64." })
-    return
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    res.status(200).json({
-      comment: fallbackPhotoComment(goal, taskTitle, caption),
-      isFallback: true,
-      reason: "missing_anthropic_key",
-    })
-    return
-  }
-
-  // Cheap size guard — the SDK will reject huge payloads anyway.
-  if (imageBase64.length > 6_500_000) {
-    res.status(200).json({
-      comment: fallbackPhotoComment(goal, taskTitle, caption),
-      isFallback: true,
-      reason: "image_too_large",
-    })
-    return
-  }
-
-  try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: SONNET,
-      max_tokens: 180,
-      system: [{ type: "text", text: PHOTO_SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: imageBase64 },
-            },
-            {
-              type: "text",
-              text: `Goal: ${goal}
-Today's task: ${taskTitle}
-Learner's caption: "${caption || "(none)"}"
-
-Give your comment now. 1–2 sentences. Specific.`,
-            },
-          ],
-        },
-      ],
-    })
-    const text =
-      completion.content[0]?.type === "text"
-        ? completion.content[0].text.trim()
-        : fallbackPhotoComment(goal, taskTitle, caption)
-    res.status(200).json({ comment: text })
-  } catch (err) {
-    console.error("lara analyze-photo:", err)
-    res.status(200).json({
-      comment: fallbackPhotoComment(goal, taskTitle, caption),
-      isFallback: true,
-      reason: "request_failed",
-    })
-  }
-}

@@ -232,6 +232,8 @@ export interface GenerateResult {
     | "limit_reached"
     | "plan_required"
     | "auth_required"
+    | "rate_limited"
+    | "budget_exhausted"
     | "metering_unavailable"
 }
 

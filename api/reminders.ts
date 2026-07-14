@@ -11,12 +11,13 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
  *   GET  /api/reminders?action=send   (Vercel cron; Authorization: Bearer CRON_SECRET)
  *        → email everyone who opted in and hasn't studied today.
  *
- * Requires a `vocab_reminders` table + RESEND_API_KEY (+ optional CRON_SECRET,
- * REMINDER_FROM). Missing any → graceful no-op ({ disabled: true }), so the
- * in-app toggle and the cron never error before setup is complete.
+ * Requires the `study_reminders` table (migration 0015) + RESEND_API_KEY (+
+ * optional CRON_SECRET, REMINDER_FROM). Missing any → graceful no-op
+ * ({ disabled: true }), so the in-app toggle and the cron never error before
+ * setup is complete.
  */
 
-const TABLE = "vocab_reminders"
+const TABLE = "study_reminders"
 
 function admin() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -125,17 +126,19 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
 }
 
 async function sendEmail(apiKey: string, from: string, to: string): Promise<boolean> {
+  // ACCA brand palette on warm paper — the same accents the app uses.
   const html = `
-  <div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:28px;color:#3B2F45;">
-    <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">Your words are waiting 👋</div>
-    <p style="font-size:15px;line-height:1.6;color:#5b4d68;">
-      A few minutes today keeps your streak — and the 1% — compounding. Your daily session is ready.
+  <div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:28px;color:#2A2320;">
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">Today's session is ready 👋</div>
+    <p style="font-size:15px;line-height:1.6;color:#6B5F58;">
+      Twenty minutes today moves your pass probability more than three hours the night before.
+      Your next questions are picked and waiting.
     </p>
-    <a href="https://scholifyapp.com/learn"
-       style="display:inline-block;margin-top:14px;background:linear-gradient(135deg,#8B5CF6,#818CF8 48%,#38BDF8);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 26px;border-radius:12px;">
+    <a href="https://scholifyapp.com/study"
+       style="display:inline-block;margin-top:14px;background:#C80000;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 26px;border-radius:12px;">
       Start today's session →
     </a>
-    <p style="font-size:12px;color:#9a8fa3;margin-top:22px;">
+    <p style="font-size:12px;color:#9C8F87;margin-top:22px;">
       — Lara · You can turn these off anytime in Settings.
     </p>
   </div>`
@@ -143,7 +146,7 @@ async function sendEmail(apiKey: string, from: string, to: string): Promise<bool
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject: "Your daily words are ready 📚", html }),
+      body: JSON.stringify({ from, to, subject: "Your ACCA session is ready 📘", html }),
     })
     return r.ok
   } catch {
