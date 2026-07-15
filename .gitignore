@@ -147,3 +147,4 @@ vite.config.ts.timestamp-*
 
 # Claude Code skills / local tooling
 .claude/
+.env.local

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { useNavigate } from "react-router-dom"
+import { trackEvent } from "@/lib/analytics"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
@@ -220,7 +221,7 @@ export default function AccaStudy() {
     if (action === "weak") startSession(true, false)
     else if (action === "practice") startSession(false, false)
     else if (action === "mock") startSession(false, true)
-    else if (action === "flashcards") setMode("flashcards")
+    else if (action === "flashcards") { trackEvent("flashcards_opened", { paper: paperId, source: "mission" }); setMode("flashcards") }
     else if (action === "bank") startBankRun()
     // action === "study" falls through → the study hub / topic path is shown
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -267,11 +268,25 @@ export default function AccaStudy() {
       // the Pass Momentum trend.
       snapshotProbability(paperId)
       queueAccaProgressPush()
+      const score = Math.round((correctCount / questions.length) * 100)
+      const sessionType = isMock ? "mock" : isBankRun ? "bank_run" : isTopicTest ? "topic" : "practice"
+      trackEvent("session_completed", {
+        paper: paperId,
+        type: sessionType,
+        questions: questions.length,
+        correct: correctCount,
+        score,
+        ...(topicArea ? { area: topicArea } : {}),
+      })
+      if (isMock) {
+        trackEvent("mock_completed", { paper: paperId, questions: questions.length, correct: correctCount, score, passed: score >= MOCK_PASS })
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
 
   function openPaper(id: string) {
+    trackEvent("paper_selected", { paper: id })
     setPaperId(id)
     setMode("overview")
   }
@@ -314,6 +329,7 @@ export default function AccaStudy() {
     setTopicArea(null)
     setTimeLeft(mock ? qs.length * MOCK_SECONDS_PER_Q : 0)
     resetQuestion()
+    trackEvent("session_started", { paper: paperId, type: mock ? "mock" : weakFirst ? "weak" : "practice", size: qs.length })
     setMode("session")
   }
 
@@ -336,6 +352,8 @@ export default function AccaStudy() {
     setTopicArea(area)
     setTimeLeft(test ? qs.length * MOCK_SECONDS_PER_Q : 0)
     resetQuestion()
+    trackEvent("topic_selected", { paper: paperId, area, type: test ? "knowledge_check" : "practice" })
+    trackEvent("session_started", { paper: paperId, type: "topic", area, size: qs.length })
     setMode("session")
   }
 
@@ -359,6 +377,8 @@ export default function AccaStudy() {
     setTopicArea(null)
     setTimeLeft(qs.length * BANK_RUN_SECONDS_PER_Q)
     resetQuestion()
+    trackEvent("bank_run_started", { paper: paperId, size: qs.length })
+    trackEvent("session_started", { paper: paperId, type: "bank_run", size: qs.length })
     setMode("session")
   }
 
@@ -367,6 +387,7 @@ export default function AccaStudy() {
       triggerFeaturePaywall()
       return
     }
+    trackEvent("examiner_opened", { paper: paperId })
     setMode("examiner")
   }
 
@@ -387,6 +408,7 @@ export default function AccaStudy() {
     setIsMock(false)
     setTimeLeft(0)
     resetQuestion()
+    trackEvent("session_started", { paper: paperId, type: "custom", size: qs.length })
     setMode("session")
   }
 
@@ -457,6 +479,7 @@ export default function AccaStudy() {
     else if (a === "mock") startSession(false, true)
     else {
       setTopicArea(null)
+      trackEvent("flashcards_opened", { paper: paperId, source: "post_mortem" })
       setMode("flashcards")
     }
   }
@@ -497,7 +520,7 @@ export default function AccaStudy() {
               onMock={() => startSession(false, true)}
               onExaminer={openExaminer}
               onGenerate={openGenerate}
-              onFlashcards={() => { setTopicArea(null); setMode("flashcards") }}
+              onFlashcards={() => { setTopicArea(null); trackEvent("flashcards_opened", { paper: paperId, source: "overview" }); setMode("flashcards") }}
               onTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
               onJourney={() => setMode("journey")}
               onLoopAction={runLoopAction}
@@ -539,7 +562,7 @@ export default function AccaStudy() {
               onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
               onDrill={() => startTopicSession(topicArea, false)}
               onTest={() => startTopicSession(topicArea, true)}
-              onFlashcards={() => setMode("flashcards")}
+              onFlashcards={() => { trackEvent("flashcards_opened", { paper: paperId, source: "topic" }); setMode("flashcards") }}
             />
           )}
 
