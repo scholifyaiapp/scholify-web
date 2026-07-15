@@ -40,6 +40,9 @@ function health(_req: VercelRequest, res: VercelResponse): void {
   res.setHeader("Cache-Control", "no-store")
   const keys = {
     anthropic: !!process.env.ANTHROPIC_API_KEY,
+    // OpenAI is only a TEMPORARY bridge for when the Anthropic org is unavailable
+    // (see api/lara.ts callModel). Either provider satisfies the AI requirement.
+    openai: !!process.env.OPENAI_API_KEY,
     supabase_url: !!(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
     supabase_anon: !!(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY),
     supabase_service: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -75,7 +78,7 @@ function health(_req: VercelRequest, res: VercelResponse): void {
   const billingHalfConfigured = billing.some(Boolean) && !billingConfigured
 
   const coreReady =
-    keys.anthropic && keys.supabase_url && keys.supabase_anon && keys.supabase_service
+    (keys.anthropic || keys.openai) && keys.supabase_url && keys.supabase_anon && keys.supabase_service
   const ok = coreReady && !billingHalfConfigured
 
   res.status(ok ? 200 : 503).json({

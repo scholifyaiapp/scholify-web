@@ -24,6 +24,91 @@ const HAIKU = "claude-haiku-4-5"
 // Sonnet 5: better model, intro pricing ($2/$10 per MTok through 2026-08-31).
 const SONNET = "claude-sonnet-5"
 
+/* ── AI provider — Anthropic primary, OpenAI as a TEMPORARY bridge ──────────
+ *
+ * Scholify is built on Claude (the model mix was chosen deliberately: Haiku for
+ * volume, Sonnet for marking/generation). OpenAI is here ONLY as a stopgap for
+ * when the Anthropic org is unavailable — set OPENAI_API_KEY and the four AI
+ * actions route through it instead, with no other change. Anthropic always wins
+ * when its key is present, so restoring it is a one-line env change and the app
+ * reverts to Claude automatically. Remove this path once Anthropic is back.
+ */
+type ModelTier = "haiku" | "sonnet"
+
+/** Which provider serves AI right now, or null when none is configured. */
+function aiProvider(): "anthropic" | "openai" | null {
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic"
+  if (process.env.OPENAI_API_KEY) return "openai"
+  return null
+}
+
+// Closest OpenAI equivalents to the Claude tiers, for the bridge only.
+const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-4o" }
+const ANTHROPIC_MODELS: Record<ModelTier, string> = { haiku: HAIKU, sonnet: SONNET }
+
+interface ModelResult {
+  text: string
+  tokensIn: number
+  tokensOut: number
+}
+
+/**
+ * One model call, provider-agnostic. Returns the completion text and the token
+ * counts the meter records. Throws on a provider error (each handler already
+ * catches and degrades to its deterministic fallback). `jsonOnly` asks OpenAI to
+ * emit strict JSON — the three structured actions rely on it; the tutor doesn't.
+ */
+async function callModel(opts: {
+  tier: ModelTier
+  system: string
+  prompt: string
+  maxTokens: number
+  jsonOnly?: boolean
+}): Promise<ModelResult> {
+  if (aiProvider() === "anthropic") {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const completion = await client.messages.create({
+      model: ANTHROPIC_MODELS[opts.tier],
+      max_tokens: opts.maxTokens,
+      system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: opts.prompt }],
+    })
+    return {
+      text: completion.content[0]?.type === "text" ? completion.content[0].text.trim() : "",
+      tokensIn: completion.usage.input_tokens ?? 0,
+      tokensOut: completion.usage.output_tokens ?? 0,
+    }
+  }
+
+  // OpenAI bridge — Chat Completions over fetch, no extra dependency.
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODELS[opts.tier],
+      max_tokens: opts.maxTokens,
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.prompt },
+      ],
+      ...(opts.jsonOnly ? { response_format: { type: "json_object" } } : {}),
+    }),
+  })
+  if (!res.ok) throw new Error(`openai ${res.status}: ${await res.text().catch(() => "")}`)
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[]
+    usage?: { prompt_tokens?: number; completion_tokens?: number }
+  }
+  return {
+    text: String(data.choices?.[0]?.message?.content ?? "").trim(),
+    tokensIn: data.usage?.prompt_tokens ?? 0,
+    tokensOut: data.usage?.completion_tokens ?? 0,
+  }
+}
+
 /* ── AI metering — auth + per-plan daily caps on the ACCA actions ──────────
  *
  * The CFO guardrail: once ANTHROPIC_API_KEY is live, no unauthenticated or
@@ -174,8 +259,9 @@ async function resolveTier(
 }
 
 async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter> {
-  // No API key → handlers return free fallbacks anyway; nothing to meter.
-  if (!process.env.ANTHROPIC_API_KEY) return METER_PASS
+  // No provider at all → handlers return free fallbacks anyway; nothing to meter.
+  // With EITHER provider configured, metering runs (OpenAI spend is real spend).
+  if (!aiProvider()) return METER_PASS
   // Emergency brake: treat as a metering outage so every action fails closed.
   if (aiKilled()) return DENY("metering_unavailable")
 
@@ -333,8 +419,7 @@ async function handleAccaGenerate(req: VercelRequest, body: Record<string, unkno
   const notes = String(body.notes || "").slice(0, 3000)
   const count = Math.max(1, Math.min(10, Math.round(Number(body.count) || 5)))
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
+  if (!aiProvider()) {
     res.status(200).json({ questions: [], reason: "missing_anthropic_key" })
     return
   }
@@ -361,17 +446,10 @@ Return ONLY valid JSON, no prose, in exactly this shape:
 Each question: a clear stem, exactly 4 options, one correct answer (correctIndex 0-3), and a concise teaching explanation.`
 
   try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: SONNET,
-      // 8-question batches fit comfortably in 1400 — caps the priciest call.
-      max_tokens: 1400,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: prompt }],
-    })
-    await m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
-    const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
-    const questions = parseGeneratedQuestions(raw)
+    // 8-question batches fit comfortably in 1400 — caps the priciest call.
+    const out = await callModel({ tier: "sonnet", system, prompt, maxTokens: 1400, jsonOnly: true })
+    await m.record(out.tokensIn, out.tokensOut)
+    const questions = parseGeneratedQuestions(out.text)
     if (questions.length > 0) {
       res.status(200).json({ questions: questions.slice(0, count) })
       return
@@ -434,8 +512,7 @@ async function handleAccaTutor(req: VercelRequest, body: Record<string, unknown>
     baseExplanation ||
     "Focus on the underlying rule being tested here, then re-read the question to see which figures it gives you."
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
+  if (!aiProvider()) {
     res.status(200).json({ answer: fallback, isFallback: true })
     return
   }
@@ -474,19 +551,11 @@ Model explanation: ${baseExplanation}${profileText}
 Student asks: ${question || "Explain this in a simpler way."}`
 
   try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      // The highest-volume call in the product — Haiku keeps it fast and
-      // ~3× cheaper; explanation quality holds at this scope (≤150 words).
-      model: HAIKU,
-      max_tokens: 400,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: prompt }],
-    })
-    await m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
-    const text =
-      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : fallback
-    res.status(200).json({ answer: text })
+    // The highest-volume call in the product — the Haiku tier keeps it fast and
+    // ~3× cheaper; explanation quality holds at this scope (≤150 words).
+    const out = await callModel({ tier: "haiku", system, prompt, maxTokens: 400 })
+    await m.record(out.tokensIn, out.tokensOut)
+    res.status(200).json({ answer: out.text || fallback })
   } catch (err) {
     console.error("lara acca-tutor:", err)
     res.status(200).json({ answer: fallback, isFallback: true })
@@ -527,8 +596,7 @@ async function handleAccaPostmortem(req: VercelRequest, body: Record<string, unk
       return { date: String(r.date || "").slice(0, 12), percent: Math.round(Number(r.percent) || 0) }
     })
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
+  if (!aiProvider()) {
     res.status(200).json({ ...localPostmortem(kind, percent, areas, mockHistory), isFallback: true })
     return
   }
@@ -569,16 +637,9 @@ ${areaLines}
 ${learnerContext ? `\nStudent's learning profile:\n${learnerContext}` : ""}`
 
   try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: SONNET,
-      max_tokens: 900,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: prompt }],
-    })
-    await mtr.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
-    const raw = completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
-    const parsed = safePostmortemJson(raw)
+    const out = await callModel({ tier: "sonnet", system, prompt, maxTokens: 900, jsonOnly: true })
+    await mtr.record(out.tokensIn, out.tokensOut)
+    const parsed = safePostmortemJson(out.text)
     if (parsed) {
       res.status(200).json(parsed)
       return
@@ -701,8 +762,7 @@ async function handleAccaExaminer(req: VercelRequest, body: Record<string, unkno
   const rubric = Array.isArray(body.rubric) ? (body.rubric as unknown[]).map((r) => String(r)) : []
   const answer = String(body.answer || "").slice(0, 4000)
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
+  if (!aiProvider()) {
     const local = localExaminer(answer, rubric, maxMarks)
     res.status(200).json({ ...local, isFallback: true })
     return
@@ -737,17 +797,9 @@ Student's answer:
 ${answer || "(no answer given)"}`
 
   try {
-    const client = new Anthropic({ apiKey })
-    const completion = await client.messages.create({
-      model: SONNET,
-      max_tokens: 700,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: prompt }],
-    })
-    const raw =
-      completion.content[0]?.type === "text" ? completion.content[0].text.trim() : ""
-    const parsed = safeExaminerJson(raw, maxMarks)
-    await m.record(completion.usage.input_tokens ?? 0, completion.usage.output_tokens ?? 0)
+    const out = await callModel({ tier: "sonnet", system, prompt, maxTokens: 700, jsonOnly: true })
+    const parsed = safeExaminerJson(out.text, maxMarks)
+    await m.record(out.tokensIn, out.tokensOut)
     if (parsed) {
       res.status(200).json(parsed)
       return
