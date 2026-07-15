@@ -176,14 +176,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // REAL mode — hydrate from Supabase and subscribe to changes.
     let active = true
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return
-      trackOpen(data.session?.user ?? null)
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-      maybeGrantTrial(data.session?.user ?? null)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return
+        trackOpen(data.session?.user ?? null)
+        setSession(data.session)
+        setUser(data.session?.user ?? null)
+        setLoading(false)
+        maybeGrantTrial(data.session?.user ?? null)
+      })
+      // If the session check ever rejects (corrupt stored session, a network
+      // blip), loading must still resolve — otherwise every route guard is stuck
+      // on the spinner forever and the whole app looks dead. Treat it as
+      // logged-out and let the user proceed to sign in.
+      .catch(() => {
+        if (active) setLoading(false)
+      })
+    // Absolute backstop: never let the loading gate hang more than 8s, whatever
+    // happens upstream.
+    const failsafe = setTimeout(() => {
+      if (active) setLoading(false)
+    }, 8000)
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
@@ -194,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       active = false
+      clearTimeout(failsafe)
       sub.subscription.unsubscribe()
     }
   }, [])
