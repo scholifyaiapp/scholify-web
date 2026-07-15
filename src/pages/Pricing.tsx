@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { openCheckout, PADDLE_PRICES, isPaddleConfigured } from "@/lib/paddle"
+import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/stripe"
 import { isSupabaseConfigured } from "@/lib/supabase"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
@@ -176,20 +176,23 @@ export default function Pricing() {
 
   const annual = billing === "annual"
 
-  // Payments are only real when Paddle has a token AND the price ids exist.
-  // Until then the plan buttons say so instead of pretending to fail.
-  const paymentsOpen =
-    isPaddleConfigured() && Boolean(PADDLE_PRICES.proMonthly || PADDLE_PRICES.beginnerMonthly)
+  // Payments are only real once Stripe billing is configured. Until then the
+  // plan buttons say so instead of pretending to fail.
+  const paymentsOpen = isStripeConfigured()
 
   const flash = (msg: string) => {
     setNotice(msg)
     setTimeout(() => setNotice(null), 2800)
   }
 
-  const checkout = (priceId: string | undefined) => {
-    if (!paymentsOpen || !openCheckout(priceId, user?.email, user?.id)) {
+  const checkout = (plan: StripePlan) => {
+    if (!paymentsOpen) {
       flash("Payments aren't open yet — the free plan has no limit in the meantime.")
+      return
     }
+    void startStripeCheckout(plan).then((ok) => {
+      if (!ok) flash("Couldn't open checkout — please try again in a moment.")
+    })
   }
 
   const beginnerCard = useMemo(
@@ -379,7 +382,7 @@ export default function Pricing() {
             features={BEGINNER_FEATURES}
             cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
             disabled={!paymentsOpen}
-            onCta={() => checkout(PADDLE_PRICES.beginnerMonthly)}
+            onCta={() => checkout("beginner")}
           />
           <PricingCard
             index={2}
@@ -395,7 +398,7 @@ export default function Pricing() {
             cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
             disabled={!paymentsOpen}
             badge="Most Popular"
-            onCta={() => checkout(annual ? PADDLE_PRICES.annualPro : PADDLE_PRICES.proMonthly)}
+            onCta={() => checkout(annual ? "annual_pro" : "pro")}
           />
         </div>
 
@@ -480,7 +483,7 @@ export default function Pricing() {
 
           <motion.button
             type="button"
-            onClick={() => checkout(PADDLE_PRICES.annualPro)}
+            onClick={() => checkout("annual_pro")}
             whileHover={paymentsOpen ? { scale: 1.03 } : undefined}
             whileTap={paymentsOpen ? { scale: 0.97 } : undefined}
             style={{

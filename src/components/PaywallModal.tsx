@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { useAuth } from "@/lib/auth"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { openCheckout, PADDLE_PRICES, isPaddleConfigured } from "@/lib/paddle"
+import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/stripe"
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
@@ -113,12 +113,10 @@ export default function PaywallModal({
 
   const dismissible = type !== "streak7"
   const header = HEADERS[type]
-  const email = user?.email
 
-  // Payments only work when Paddle has a token and a price id — otherwise the
-  // buttons say so rather than inviting a retry that can never succeed.
-  const paymentsOpen =
-    isPaddleConfigured() && Boolean(PADDLE_PRICES.proMonthly || PADDLE_PRICES.beginnerMonthly)
+  // Payments only work when Stripe billing is configured — otherwise the buttons
+  // say so rather than inviting a retry that can never succeed.
+  const paymentsOpen = isStripeConfigured()
 
   // Dialog behavior: Escape closes (when dismissible) + lock body scroll while open.
   useEffect(() => {
@@ -155,20 +153,20 @@ export default function PaywallModal({
     setCelebrating(false)
   }, [open, type])
 
-  const planFor = (priceId: string | undefined): string => {
-    if (priceId === PADDLE_PRICES.beginnerMonthly) return "beginner"
-    if (priceId === PADDLE_PRICES.proMonthly) return "pro"
-    if (priceId === PADDLE_PRICES.annualPro) return "annual_pro"
-    return "unknown"
-  }
-
-  const handleCheckout = (priceId: string | undefined) => {
-    trackEvent("upgrade_started", { plan: planFor(priceId) })
+  const handleCheckout = (plan: StripePlan) => {
+    trackEvent("upgrade_started", { plan })
     trackEvent("paywall_checkout_clicked", { type })
-    if (!paymentsOpen || !openCheckout(priceId, email, user?.id)) {
+    if (!paymentsOpen) {
       setNotice("Payments aren't open yet — nothing to pay today.")
       setTimeout(() => setNotice(null), 3200)
+      return
     }
+    void startStripeCheckout(plan).then((ok) => {
+      if (!ok) {
+        setNotice("Couldn't open checkout — please try again in a moment.")
+        setTimeout(() => setNotice(null), 3200)
+      }
+    })
   }
 
   const sectionPad = "0 32px"
@@ -379,7 +377,7 @@ export default function PaywallModal({
                 description="Steady daily practice"
                 cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
                 disabled={!paymentsOpen}
-                onClick={() => handleCheckout(PADDLE_PRICES.beginnerMonthly)}
+                onClick={() => handleCheckout("beginner")}
               />
               <PlanMini
                 featured
@@ -389,7 +387,7 @@ export default function PaywallModal({
                 description="Mocks, Examiner, custom practice"
                 cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
                 disabled={!paymentsOpen}
-                onClick={() => handleCheckout(PADDLE_PRICES.proMonthly)}
+                onClick={() => handleCheckout("pro")}
               />
             </div>
 
@@ -397,7 +395,7 @@ export default function PaywallModal({
             <div style={{ padding: "12px 32px 0" }}>
               <motion.button
                 type="button"
-                onClick={() => handleCheckout(PADDLE_PRICES.annualPro)}
+                onClick={() => handleCheckout("annual_pro")}
                 whileHover={paymentsOpen ? { scale: 1.01 } : undefined}
                 style={{
                   width: "100%",

@@ -60,9 +60,28 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     paddle_price_beginner_monthly: !!process.env.VITE_PADDLE_BEGINNER_MONTHLY,
     paddle_price_pro_monthly: !!process.env.VITE_PADDLE_PRO_MONTHLY,
     paddle_price_annual_pro: !!process.env.VITE_PADDLE_ANNUAL_PRO,
+    // Stripe — the international/card rail (Flowlify LLC). The publishable key is
+    // the client's "billing live?" flag; the rest are server-side.
+    stripe_secret: !!process.env.STRIPE_SECRET_KEY,
+    stripe_webhook: !!process.env.STRIPE_WEBHOOK_SECRET,
+    stripe_publishable: !!process.env.VITE_STRIPE_PUBLISHABLE_KEY,
+    stripe_price_beginner: !!process.env.STRIPE_PRICE_BEGINNER,
+    stripe_price_pro: !!process.env.STRIPE_PRICE_PRO,
+    stripe_price_annual: !!process.env.STRIPE_PRICE_ANNUAL,
   }
 
-  const billing = [
+  // A billing rail is "live" only when its WHOLE stack is set — a half-set stack
+  // is the dangerous state (checkout opens, fulfilment silently can't), so it
+  // fails health loudly. Either rail (Stripe or Paddle) fully set = billing live.
+  const stripeStack = [
+    keys.stripe_secret,
+    keys.stripe_webhook,
+    keys.stripe_publishable,
+    keys.stripe_price_beginner,
+    keys.stripe_price_pro,
+    keys.stripe_price_annual,
+  ]
+  const paddleStack = [
     keys.paddle,
     keys.paddle_webhook,
     keys.paddle_api,
@@ -70,12 +89,9 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     keys.paddle_price_pro_monthly,
     keys.paddle_price_annual_pro,
   ]
-  // Billing is all-or-nothing. Nothing set = pre-launch, and the app degrades to
-  // "payments open soon" by design. Everything set = live. ANYTHING IN BETWEEN
-  // is the dangerous state — checkout renders but fulfilment silently can't —
-  // so a half-configured billing stack fails the health check loudly.
-  const billingConfigured = billing.every(Boolean)
-  const billingHalfConfigured = billing.some(Boolean) && !billingConfigured
+  const billingConfigured = stripeStack.every(Boolean) || paddleStack.every(Boolean)
+  const billingHalfConfigured =
+    [...stripeStack, ...paddleStack].some(Boolean) && !billingConfigured
 
   const coreReady =
     (keys.anthropic || keys.openai) && keys.supabase_url && keys.supabase_anon && keys.supabase_service
@@ -89,7 +105,7 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     ...(billingHalfConfigured
       ? {
           error:
-            "Billing is half-configured: checkout will open but the webhook cannot grant plans. Set every VITE_PADDLE_* price id server-side too.",
+            "Billing is half-configured: checkout will open but the webhook cannot grant plans. Set the ENTIRE Stripe (or Paddle) stack — secret + webhook secret + publishable + all 3 price ids.",
         }
       : {}),
     keys,

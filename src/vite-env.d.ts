@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_VAPID_PUBLIC_KEY?: string
   readonly VITE_POSTHOG_KEY?: string
   readonly VITE_POSTHOG_HOST?: string
+  readonly VITE_STRIPE_PUBLISHABLE_KEY?: string
+  readonly VITE_PUBLIC_SITE_URL?: string
 }
 
 interface ImportMeta {
