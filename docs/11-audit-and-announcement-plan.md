@@ -70,10 +70,10 @@ This is the one only the founder can do, and everything downstream is blocked on
 2. **Anthropic** — `ANTHROPIC_API_KEY`.
 3. **Paddle** — token, webhook secret, API key, and the three price ids **server-side as well as client-side** (they're `VITE_`-named but the webhook reads them server-side; ship them client-only and every payment succeeds while nobody is granted their plan). `/api/health` now returns **503 on a half-configured billing stack** to catch exactly this.
 4. **Ops** — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `VITE_POSTHOG_KEY` (error tracking is wired but silent without it), `RESEND_API_KEY`.
-5. **Verify** — `/api/health` → `status: ok`, `billing: "live"`. Then run one real diagnostic, one metered AI call (confirm rows land in `ai_usage` **and** `ai_usage_global`), one sandbox checkout end-to-end (confirm the plan lands in `app_metadata` **and** `subscriptions`).
+5. **Verify** — `/api/health` → `status: ok`, `billing: "live"`. Then: sign up a fresh account and confirm it lands on a **7-day Pro trial** (`app_metadata.trial_ends_at` set, mocks/Examiner unlocked); run one real diagnostic; one metered AI call (confirm rows land in `ai_usage` **and** `ai_usage_global`); one sandbox checkout end-to-end (confirm the plan lands in `app_metadata` **and** `subscriptions`).
 6. **Confirm `support@scholifyapp.com` actually receives mail.** Every support path in the app now points there.
 
-**Decide before this gate:** the **7-day trial**. It is currently removed, not built. Doc 7's entire lifecycle model (trial → paid) and the investor model assume it exists. Either build it properly (server-side grant with expiry) or formally adopt freemium and update Docs 7 and 8. *Do not re-add the claim without the code.*
+**~~Decide before this gate: the 7-day trial.~~ BUILT 2026-07-15 (`3c370ce`).** It is now real: every new account is granted 7 days of Pro server-side (tamper-proof, in service-role-only `app_metadata`, one per account), then keeps the full free plan forever. AI metering grants Pro caps during the trial and reverts to free the moment it lapses. It adds **no new env var** — it activates automatically the moment Supabase is configured (the trial copy is gated on that, so the keyless site never promises it). Doc 7's trial → paid funnel and Doc 8's model are intact. Nothing to decide; verify one trial grants in the Gate-3 smoke test.
 
 ### Gate 4 — Private beta: 20–30 real students (2–3 weeks)
 Doc 7 already gates its soft launch on this, and it is right. Hand-recruited ACCA students, watched closely.
@@ -109,8 +109,9 @@ Two of the three deferred items were closed immediately, because both are Gate-4
 Stated explicitly, so it is a decision and not an oversight:
 
 - **Unifying the two streak stores.** `acca-schedule.ts` has a real shield mechanic; `acca.ts` has the headline streak that resets regardless. We removed the *claim* rather than shipping a rushed merge of two stores. Do it properly, later.
-- **FA2025 tax year.** TX/ATX are internally consistent on FA2024, which ACCA examines through the March 2026 sitting. For sittings after that, the corpus is one Finance Act behind. **Either refresh to FA2025 or label the basis explicitly in the TX/ATX UI** — an unlabelled stale tax year teaches someone the wrong NIC rate. This is a real decision with a real deadline, not a nice-to-have.
-- **The 7-day trial** (see Gate 3) — removed, not built. It needs a decision before it needs code.
+- **Refreshing TX/ATX to FA2025.** The content is now *labelled* honestly (a basis note on the paper overview and in the study reader — `3c370ce`), which removes the harm. The full refresh to Finance Act 2025 is still worth doing before the June-2026-onward sittings dominate, but it is no longer a launch blocker — a student now knows exactly which Finance Act they're on.
+
+Both **the 7-day trial and the tax-basis label are now done** (see Gate 3 / above).
 
 ---
 
