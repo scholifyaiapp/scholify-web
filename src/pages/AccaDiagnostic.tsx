@@ -541,11 +541,14 @@ function ResultsView({
         </motion.div>
       )}
 
-      {/* Weak areas */}
+      {/* Weak areas — framed as the examiner's read of pain points (Doc 12). */}
       {result.weakest.length > 0 && (
         <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: RED, letterSpacing: 0.4, marginBottom: 6 }}>
-            <Icon name="weak" size={15} color={RED} /> WEAKEST AREAS
+            <Icon name="weak" size={15} color={RED} /> YOUR PAIN POINTS
+          </div>
+          <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBottom: 10 }}>
+            Lara's examiner read of where the marks are leaking — your daily plan targets these first.
           </div>
           <BreakdownList
             items={result.weakest.map((a) => ({

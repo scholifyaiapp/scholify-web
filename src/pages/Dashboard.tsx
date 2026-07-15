@@ -18,7 +18,7 @@ import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
-import { diagnosticGate } from "@/lib/acca-schedule"
+import { diagnosticGate, missedDayNote } from "@/lib/acca-schedule"
 import { PlanRoute } from "@/components/acca/PlanRoute"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
@@ -103,6 +103,7 @@ export default function Dashboard() {
   const stats = getPaperStats(paperId)
   const gateS = diagnosticGate(paperId)
   const zeroStart = noDiag && getStartMode() === "zero" && !gateS.unlocked
+  const missedNote = missedDayNote(paperId)
 
   return (
     <DashboardLayout>
@@ -121,6 +122,18 @@ export default function Dashboard() {
             </span>
           )}
         </motion.div>
+
+        {/* Missed-day voice — Lara reassures, never guilts (Doc 12, Phase 3). */}
+        {missedNote && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "13px 16px", borderRadius: R.lg, background: C.brandSoft, border: `1px solid ${C.brandLine}`, marginBottom: SP.lg }}
+          >
+            <Icon name="tutor" size={17} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>{missedNote}</div>
+          </motion.div>
+        )}
 
         {/* exam day — the loop's decision point takes over the hero */}
         {examDue && (

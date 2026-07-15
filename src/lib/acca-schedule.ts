@@ -181,6 +181,22 @@ function shieldStateFrom(rec: ShieldRec, today: string): ShieldState {
   }
 }
 
+/**
+ * The missed-day message — Lara telling the learner, calmly, that a gap was
+ * absorbed and the plan re-spread (Doc 12, Phase 3). The re-spreading already
+ * happens (buildDailyTasks recomputes from what remains); this gives it a voice,
+ * because the reassurance is the point. Returns null when no days were missed.
+ */
+export function missedDayNote(paperId: string): string | null {
+  const s = shieldState(paperId)
+  if (s.missedDays <= 0) return null
+  const gap = s.missedDays === 1 ? "a day" : `${s.missedDays} days`
+  const plan = getPlan(paperId)
+  const days = daysUntilExam(paperId)
+  const tail = days && days > 0 ? ` — still on track for ${plan.targetProb}% by exam day` : ""
+  return `You missed ${gap}, so I've re-spread today's plan across the time that's left${tail}. No backlog to catch up on.`
+}
+
 /** Read-only shield state (does not advance the streak). */
 export function shieldState(paperId: string): ShieldState {
   const store = readShields()
@@ -218,12 +234,45 @@ function nextLearnArea(paperId: string): { code: string; label: string } | null 
   return null
 }
 
-/** The weakest seen area — where the marks are being lost. */
-function weakestArea(paperId: string): { code: string; label: string; acc: number } | null {
+/**
+ * Once an area has this many practised questions, the learner's LIVE accuracy is
+ * a truer signal than the one-off diagnostic, and takes over as the weakness read.
+ */
+const DIAG_OVERRIDE_MIN = 8
+
+export interface FocusArea {
+  code: string
+  label: string
+  /** 0–1 — diagnostic competence, or live practice accuracy. */
+  acc: number
+  source: "diagnostic" | "practice"
+}
+
+/**
+ * The area today's plan should attack — the heart of "the diagnostic drives the
+ * plan." Precedence, matching Doc 12's vision:
+ *   1. the DIAGNOSTIC's pain points — the day after a diagnostic, the plan
+ *      targets exactly what it flagged, and keeps doing so until the learner has
+ *      drilled that area enough (>= DIAG_OVERRIDE_MIN) for live accuracy to lead;
+ *   2. live PRACTICE weakness — the seen area actually being got wrong;
+ *   3. null — the caller falls back to syllabus order.
+ */
+export function focusArea(paperId: string): FocusArea | null {
   const stats = getPaperStats(paperId)
-  const seen = stats.areas.filter((a) => a.seen >= 2).sort((a, b) => a.accuracy - b.accuracy)
-  const w = seen[0]
-  return w ? { code: w.code, label: w.label, acc: w.accuracy } : null
+  const diag = getLatestDiagnostic(paperId)
+
+  if (diag) {
+    for (const w of diag.weakest) {
+      const stat = stats.areas.find((s) => s.code === w.code)
+      if ((stat?.seen ?? 0) < DIAG_OVERRIDE_MIN) {
+        return { code: w.code, label: w.label, acc: w.score, source: "diagnostic" }
+      }
+    }
+  }
+
+  const practised = stats.areas.filter((a) => a.seen >= 2).sort((a, b) => a.accuracy - b.accuracy)
+  const w = practised[0]
+  return w ? { code: w.code, label: w.label, acc: w.accuracy, source: "practice" } : null
 }
 
 /**
@@ -332,7 +381,7 @@ function phaseDay(paperId: string, budget: number, targetProb: number, due: numb
   if (key === "learn") return learnDay(paperId, budget, targetProb, due, false)
 
   if (key === "strengthen") {
-    const weak = weakestArea(paperId)
+    const weak = focusArea(paperId)
     const tasks: SchedTask[] = []
     let left = budget
     if (weak) {
@@ -341,7 +390,10 @@ function phaseDay(paperId: string, budget: number, targetProb: number, due: numb
         id: "weak",
         icon: "💪",
         title: `Drill ${weak.code} · ${weak.label} — at ${Math.round(weak.acc * 100)}%`,
-        detail: "Your weakest area. Adaptive set until the floor lifts above 65%",
+        detail:
+          weak.source === "diagnostic"
+            ? "Your diagnostic flagged this as a pain point. Adaptive set until the floor lifts above 65%"
+            : "Your weakest area in practice. Adaptive set until the floor lifts above 65%",
         action: "weak",
         minutes: Math.round(n * COST.perQ),
         area: weak.code,
@@ -363,8 +415,8 @@ function phaseDay(paperId: string, budget: number, targetProb: number, due: numb
     const tasks: SchedTask[] = [{
       id: "flashcards", icon: "🧠", title: due > 0 ? `Clear ${Math.min(due, 20)} due flashcards` : "Flashcard sweep", detail: "Active recall to zero-due — this is marks on exam day", action: "flashcards", minutes: Math.round(Math.min(due || 15, 20) * COST.perCard),
     }]
-    const weak = weakestArea(paperId)
-    if (weak) tasks.push({ id: "weak", icon: "💪", title: `Second pass on ${weak.code} · ${weak.label}`, detail: "Lock the last soft area before rehearsal", action: "weak", minutes: 20, area: weak.code })
+    const weak = focusArea(paperId)
+    if (weak) tasks.push({ id: "weak", icon: "💪", title: `Second pass on ${weak.code} · ${weak.label}`, detail: weak.source === "diagnostic" ? "The diagnostic's weakest area — lock it before rehearsal" : "Lock the last soft area before rehearsal", action: "weak", minutes: 20, area: weak.code })
     tasks.push({ id: "bank", icon: "📚", title: "Bank run — mixed 50", detail: "Confirm coverage holds across the whole paper", action: "bank", minutes: COST.bank })
     return tasks.slice(0, 3)
   }

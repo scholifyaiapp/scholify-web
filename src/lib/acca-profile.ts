@@ -40,6 +40,19 @@ export function setStartMode(m: StartMode): void {
   try { window.localStorage.setItem(START_KEY, m) } catch { /* ignore */ }
 }
 
+/**
+ * The honest fork (Doc 12, Phase 1): the learner's stated experience decides
+ * how they enter the loop.
+ *  - "new"  → "zero": learn A·B·C first; the diagnostic is deferred until the
+ *              basics are covered (a pass probability now would just be a guess).
+ *  - "some" | "professional" → "assess": the diagnostic is the honest start —
+ *              measure where they stand so the plan targets their weak spots.
+ *  - unset  → "assess": the safe general default (diagnostic recommended).
+ */
+export function startModeForExperience(exp: Experience | null): StartMode {
+  return exp === "new" ? "zero" : "assess"
+}
+
 const KEY = "scholify-acca-experience"
 const ONBOARDED_KEY = "scholify-acca-onboarded"
 const GOAL_KEY = "scholify-acca-goal"

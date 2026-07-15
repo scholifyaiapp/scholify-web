@@ -7,7 +7,7 @@ import { ScholifyMark } from "@/components/brand"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
 import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
-import { GOAL_OPTIONS, setGoal, setExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
+import { GOAL_OPTIONS, setGoal, setExperience, getExperience, startModeForExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
 
 /*
@@ -160,6 +160,17 @@ export default function Welcome() {
   const sittings = useMemo(() => nextSittings(3), [])
   const sessionPaper = paper !== null && !ON_DEMAND.has(paper)
 
+  // The honest fork (Doc 12, Phase 1): decide which path is *recommended* on the
+  // final slide. An explicit experience answer wins; otherwise the goal is a
+  // strong proxy — a "first-pass" learner on this paper starts by LEARNING
+  // (a pass probability now would be a guess), while a retaker / level-climber /
+  // professional has a baseline worth MEASURING with the diagnostic.
+  const recommendZero = useMemo(() => {
+    const exp = getExperience()
+    if (exp) return startModeForExperience(exp) === "zero"
+    return goal === "first-pass"
+  }, [goal])
+
   useEffect(() => {
     if (isAccaOnboarded()) navigate("/dashboard", { replace: true })
     // Decode every photo up front so step changes never flash or stall.
@@ -203,11 +214,13 @@ export default function Welcome() {
   }
 
   const onboardingProps = () => ({ paper, minutes, target, goal, hasExamDate: Boolean(examDate) })
-  const finishToDiagnostic = () => { persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" }); navigate("/study/diagnostic?next=paywall") }
+  // Each finish path IS the experience answer, so the loop knows the persona from
+  // the learner's actual choice (career→professional is already set in persist()).
+  const finishToDiagnostic = () => { if (getExperience() !== "professional") setExperience("some"); persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" }); navigate("/study/diagnostic?next=paywall") }
   const finishSkip = () => { persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "skip" }); navigate("/dashboard") }
   // Brand-new learner: study FIRST — the Dashboard gates the diagnostic
   // behind initial coverage instead of testing zero knowledge.
-  const finishZero = () => { persist(); setStartMode("zero"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "zero_start" }); navigate("/dashboard") }
+  const finishZero = () => { if (getExperience() !== "professional") setExperience("new"); persist(); setStartMode("zero"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "zero_start" }); navigate("/dashboard") }
 
   const slideAnim = {
     variants: reduced ? fadeVariants : slideVariants,
@@ -252,6 +265,7 @@ export default function Welcome() {
         examDate={examDate}
         sitting={sittings.find((s) => s.date === pickedSitting) ?? null}
         goal={goal}
+        recommendZero={recommendZero}
         onDiagnostic={finishToDiagnostic}
         onSkip={finishSkip}
         onZero={finishZero}
@@ -368,15 +382,21 @@ export default function Welcome() {
             <div style={{ marginBottom: 12, font: `500 12px/1.4 ${SANS}`, color: MUTE, textAlign: "center" }}>Not booked yet? I'll pace you by mastery.</div>
           )}
           {step === 5 ? (
-            <>
-              <PrimaryBtn onClick={finishToDiagnostic} big>Find my pass probability</PrimaryBtn>
-              <button onClick={finishZero} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "#fff", color: META, font: `650 12.5px/1.4 ${SANS}`, border: `1.5px dashed ${BORDER}`, cursor: "pointer" }}>
-                <b style={{ color: INK }}>Brand new to {paper}?</b> Learn first — diagnostic unlocks after the basics.
-              </button>
-              <button onClick={finishSkip} style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
-                Skip for now
-              </button>
-            </>
+            recommendZero ? (
+              <>
+                <PrimaryBtn onClick={finishZero} big>Start learning</PrimaryBtn>
+                <button onClick={finishToDiagnostic} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
+                  I'd rather measure first — take the diagnostic
+                </button>
+              </>
+            ) : (
+              <>
+                <PrimaryBtn onClick={finishToDiagnostic} big>Find my pass probability</PrimaryBtn>
+                <button onClick={finishSkip} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
+                  I'd rather just start learning
+                </button>
+              </>
+            )
           ) : (
             <>
               <PrimaryBtn onClick={() => (canAdvance ? go(1) : undefined)} big={step === 0} disabled={!canAdvance}>
@@ -813,7 +833,7 @@ function GoalSlide({
 }
 
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, onDiagnostic, onSkip, onZero, isMobile,
+  paper, minutes, slot, examDate, sitting, goal, recommendZero, onDiagnostic, onSkip, onZero, isMobile,
 }: {
   paper: string
   minutes: number
@@ -821,6 +841,7 @@ function ReadySlide({
   examDate: string
   sitting: Sitting | null
   goal: Goal | null
+  recommendZero: boolean
   onDiagnostic: () => void
   onSkip: () => void
   onZero: () => void
@@ -850,26 +871,43 @@ function ReadySlide({
           </motion.div>
         ))}
       </div>
+      {/* Lara's "why", warm and honest — the reason the recommended path
+          below follows from what the learner just told us about themselves. */}
       <div style={{ marginTop: 18, display: "flex", gap: 12, padding: "16px 18px", borderRadius: 16, background: "rgba(244,164,5,.09)", border: "1px solid rgba(244,164,5,.28)" }}>
-        <Icon name="time" size={18} color="#B37503" style={{ marginTop: 1 }} />
+        <Icon name={recommendZero ? "learn" : "time"} size={18} color="#B37503" style={{ marginTop: 1 }} />
         <span style={{ font: `500 13px/1.45 ${SANS}`, color: "#6B4E12" }}>
-          A 10-minute diagnostic sets your starting <b style={{ fontWeight: 700, color: "#4E3A0D" }}>pass probability</b> — the number your plan steers by.
+          {recommendZero ? (
+            <>
+              New to {paper}? We'll <b style={{ fontWeight: 700, color: "#4E3A0D" }}>teach the foundations first</b>, then measure you once you've covered the basics — a pass probability now would just be a guess.
+            </>
+          ) : (
+            <>
+              Since you've studied {paper} before, let's <b style={{ fontWeight: 700, color: "#4E3A0D" }}>measure where you stand</b> — a 10-minute diagnostic so your plan targets exactly your weak spots.
+            </>
+          )}
         </span>
       </div>
       {!isMobile && (
-        <div style={{ marginTop: 28 }}>
-          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-            <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-              Find my pass probability
-            </motion.button>
-            <button onClick={onSkip} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
-              Skip for now
-            </button>
-          </div>
-          <button onClick={onZero} style={{ display: "flex", alignItems: "center", gap: 9, padding: "13px 18px", borderRadius: 13, background: "#fff", border: `1.5px dashed ${BORDER}`, color: META, font: `650 13.5px/1.35 ${SANS}`, cursor: "pointer", textAlign: "left" }}>
-            <Icon name="learn" size={16} color={RED} />
-            <span><b style={{ color: INK }}>Brand new to {paper}?</b> Learn the basics first — the diagnostic will unlock once you've covered them.</span>
-          </button>
+        <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
+          {recommendZero ? (
+            <>
+              <motion.button whileTap={{ scale: 0.98 }} onClick={onZero} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
+                Start learning
+              </motion.button>
+              <button onClick={onDiagnostic} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
+                I'd rather measure first
+              </button>
+            </>
+          ) : (
+            <>
+              <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
+                Find my pass probability
+              </motion.button>
+              <button onClick={onSkip} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
+                I'd rather just start learning
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
