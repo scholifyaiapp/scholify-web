@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
+import { trackEvent, identifyUser } from "@/lib/analytics"
 import {
   AuthSplitLayout,
   BackToHome,
@@ -272,6 +274,18 @@ export default function SignIn() {
       return
     }
     setAttempts(0)
+    trackEvent("signin_completed", { method: "email" })
+    try {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) {
+        identifyUser(data.user.id, {
+          name: (data.user.user_metadata?.first_name as string | undefined) ?? undefined,
+          email: data.user.email,
+        })
+      }
+    } catch {
+      /* analytics are best-effort */
+    }
     navigate("/dashboard")
   }
 
@@ -285,6 +299,7 @@ export default function SignIn() {
       setGoogleLoading(false)
       return
     }
+    trackEvent("signin_completed", { method: "google" })
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
     navigate("/dashboard")
   }

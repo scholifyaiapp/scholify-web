@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { motion } from "motion/react"
 import { supabase } from "@/lib/supabase"
 import { IRIDESCENT, Spinner } from "@/components/auth/auth-ui"
+import { trackEvent, identifyUser } from "@/lib/analytics"
 
 /*
  * OAuth return handler. Google (and any future provider) redirects here
@@ -35,6 +36,12 @@ export default function AuthCallback() {
       if (cancelled) return
       const { data } = await supabase.auth.getSession()
       if (data.session) {
+        trackEvent("oauth_signin_completed", { provider: "google" })
+        const u = data.session.user
+        identifyUser(u.id, {
+          name: (u.user_metadata?.full_name as string | undefined) ?? undefined,
+          email: u.email,
+        })
         navigate("/dashboard", { replace: true })
         return
       }
