@@ -42,9 +42,20 @@ function aiProvider(): "anthropic" | "openai" | null {
   return null
 }
 
-// Closest OpenAI equivalents to the Claude tiers, for the bridge only.
-const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-4o" }
+// The OpenAI models the bridge uses, mirroring the Claude split: a strong model
+// for marking/generation (the quality-critical tier), a fast/cheap one for the
+// high-volume tutor. gpt-5.5 is a REASONING model — see the token note below.
+const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-5.5" }
 const ANTHROPIC_MODELS: Record<ModelTier, string> = { haiku: HAIKU, sonnet: SONNET }
+
+/** OpenAI's reasoning models (gpt-5+) reject `max_tokens` and spend part of the
+ *  completion budget on hidden reasoning, so they need the newer param AND extra
+ *  headroom or the visible answer gets truncated. The cap is a ceiling, not a
+ *  floor — you're billed for tokens actually used — so padding it is free. */
+function isReasoningModel(model: string): boolean {
+  return /^(o\d|gpt-5)/.test(model)
+}
+const REASONING_HEADROOM = 3000
 
 interface ModelResult {
   text: string
@@ -81,6 +92,8 @@ async function callModel(opts: {
   }
 
   // OpenAI bridge — Chat Completions over fetch, no extra dependency.
+  const model = OPENAI_MODELS[opts.tier]
+  const reasoning = isReasoningModel(model)
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -88,8 +101,12 @@ async function callModel(opts: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: OPENAI_MODELS[opts.tier],
-      max_tokens: opts.maxTokens,
+      model,
+      // Reasoning models use `max_completion_tokens` and need room for hidden
+      // reasoning on top of the visible answer; others use `max_tokens`.
+      ...(reasoning
+        ? { max_completion_tokens: opts.maxTokens + REASONING_HEADROOM }
+        : { max_tokens: opts.maxTokens }),
       messages: [
         { role: "system", content: opts.system },
         { role: "user", content: opts.prompt },
