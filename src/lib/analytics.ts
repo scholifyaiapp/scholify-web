@@ -9,11 +9,16 @@ import posthog from "posthog-js"
  */
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY
+// PostHog US Cloud. The ingestion host is region-specific — `app.posthog.com`
+// silently drops events for US/EU-cloud projects. Overridable per-environment
+// via VITE_POSTHOG_HOST for a self-hosted instance or an EU move.
+const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST || "https://us.i.posthog.com"
 
 export const initAnalytics = () => {
   if (!POSTHOG_KEY) return
   posthog.init(POSTHOG_KEY, {
-    api_host: "https://app.posthog.com",
+    api_host: POSTHOG_HOST,
+    ui_host: "https://us.posthog.com",
     capture_pageview: true,
     persistence: "localStorage",
   })
