@@ -31,6 +31,7 @@ import { MOCK_PASS } from "@/lib/acca-loop"
 import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { RingGauge, BreakdownList } from "@/components/acca/charts"
+import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
 import PaywallModal from "@/components/PaywallModal"
 import { trackEvent } from "@/lib/analytics"
 
@@ -252,19 +253,23 @@ export default function AccaDiagnostic() {
     }
   }
 
-  // Analyzing → score, persist, reveal.
-  useEffect(() => {
-    if (phase !== "analyzing") return
+  // Analyzing → the cinematic sequence drives the timing; its onComplete scores,
+  // persists and reveals. (Score is computed at reveal time from answersRef.)
+  const revealResults = () => {
     const scored = scoreDiagnostic(paperId, answersRef.current)
-    const timer = setTimeout(() => {
-      setResult(scored)
-      setPhase("results")
-      trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome })
-      void persistDiagnostic(scored)
-      queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
-    }, 1600)
-    return () => clearTimeout(timer)
-  }, [phase, paperId])
+    setResult(scored)
+    setPhase("results")
+    trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome })
+    void persistDiagnostic(scored)
+    queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
+  }
+
+  const diagnosticPhases: RevealPhase[] = [
+    { icon: "check", label: "Reading your answers", sub: "Every response, weighted by difficulty — a hard one right counts for more." },
+    { icon: "stats", label: `Mapping your ${paperId} syllabus`, sub: "Scoring you across every syllabus area, A to H." },
+    { icon: "weak", label: "Finding where the marks leak", sub: "The areas dragging your score down — your pain points." },
+    { icon: "tutor", label: "Computing your pass probability", sub: "An honest number, with the margin it deserves." },
+  ]
 
   function retake() {
     setResult(null)
@@ -389,27 +394,8 @@ export default function AccaDiagnostic() {
           )}
 
           {phase === "analyzing" && (
-            <motion.div
-              key="analyzing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ textAlign: "center", padding: "80px 0" }}
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1.1, ease: "linear" }}
-                style={{
-                  width: 56,
-                  height: 56,
-                  margin: "0 auto 24px",
-                  borderRadius: 999,
-                  border: `4px solid ${CARD2}`,
-                  borderTopColor: "#C80000",
-                }}
-              />
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: TEXT, margin: "0 0 6px" }}>Reading your answers…</h2>
-              <p style={{ fontSize: 14, color: MUTED }}>Weighting by difficulty, mapping your syllabus areas, computing your pass probability.</p>
+            <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <CinematicReveal phases={diagnosticPhases} onComplete={revealResults} />
             </motion.div>
           )}
 
@@ -657,21 +643,9 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
   const study = generateStudyPlan(result.paperId)
   const qual = qualificationProgress()
 
-  // The generation moment: Lara "builds" the plan in front of the learner.
-  const BUILD_STEPS = [
-    "Reading your weakest areas",
-    "Weighting the " + result.paperId + " syllabus",
-    "Sizing your daily block",
-    "Dating the road to your sitting",
-  ]
-  const [built, setBuilt] = useState(0)
-  useEffect(() => {
-    if (built >= BUILD_STEPS.length) return
-    const t = setTimeout(() => setBuilt((b) => b + 1), 620)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [built])
-  const ready = built >= BUILD_STEPS.length
+  // The second "wow" — Lara builds the plan behind the cinematic sequence, then
+  // it reveals. `ready` flips when the sequence finishes.
+  const [ready, setReady] = useState(false)
 
   // Strategic pace: months per paper scales with the daily commitment.
   const monthsPerPaper = plan.dailyMinutes >= 60 ? 2.5 : plan.dailyMinutes >= 40 ? 3 : plan.dailyMinutes >= 25 ? 3.5 : 4.5
@@ -682,6 +656,13 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
 
   const firstPhases = study.phases.slice(0, 2)
   const weakQueue = result.weakest.slice(0, 3)
+
+  const planPhases: RevealPhase[] = [
+    { icon: "weak", label: "Reading your pain points", sub: weakQueue.length ? `Starting with ${weakQueue[0].code} · ${weakQueue[0].label}.` : "Where the marks come back fastest." },
+    { icon: "roadmap", label: `Weighting the ${result.paperId} syllabus`, sub: "Every area, by exam weight and your result." },
+    { icon: "mission", label: "Sizing your daily block", sub: `${plan.dailyGoal} questions in ${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}.` },
+    { icon: "calendar", label: "Dating the road to your sitting", sub: "Phase by phase, all the way to exam day." },
+  ]
 
   const tiers: { icon: Parameters<typeof Icon>[0]["name"]; k: string; title: string; body: string }[] = [
     {
@@ -727,27 +708,8 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
         <Icon name="tutor" size={15} color={C.brand} /> LARA'S PLAN TO {targetProb}%
       </div>
 
-      {/* the build-up — checklist ticking in */}
-      <div style={{ display: "grid", gap: 7, marginBottom: ready ? 16 : 4 }}>
-        {BUILD_STEPS.map((step, i) => {
-          const done_ = i < built
-          const active = i === built
-          return (
-            <motion.div key={step} initial={{ opacity: 0, x: -10 }} animate={{ opacity: i <= built ? 1 : 0.3, x: 0 }} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              {done_ ? (
-                <motion.span initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 18 }}>
-                  <Icon name="done" size={15} color={GREEN} />
-                </motion.span>
-              ) : active ? (
-                <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }} style={{ width: 15, height: 15, borderRadius: 999, border: `2px solid ${CARD2}`, borderTopColor: C.brand, display: "inline-block" }} />
-              ) : (
-                <span style={{ width: 15, height: 15, borderRadius: 999, border: `2px solid ${CARD2}`, display: "inline-block" }} />
-              )}
-              <span style={{ fontSize: 13, fontWeight: done_ ? 700 : 500, color: done_ ? TEXT : MUTED }}>{step}</span>
-            </motion.div>
-          )
-        })}
-      </div>
+      {/* the generation moment — cinematic build, then the plan reveals */}
+      {!ready && <CinematicReveal phases={planPhases} accent={C.brand} perPhaseMs={880} onComplete={() => setReady(true)} />}
 
       <AnimatePresence>
         {ready && (
