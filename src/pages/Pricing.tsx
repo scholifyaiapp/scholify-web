@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { openCheckout, PADDLE_PRICES, isPaddleConfigured } from "@/lib/paddle"
+import { isSupabaseConfigured } from "@/lib/supabase"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
@@ -15,7 +16,10 @@ import { ScholifyLockup } from "@/components/brand"
 const TEXT2 = "var(--sch-tx-2)"
 const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 
-/* Every claim below is what the app ships today — no trial, no unbuilt features. */
+/* Every claim below is what the app ships today. The 7-day Pro trial is real
+   (granted server-side on first sign-up) but only once accounts are open, so
+   trial copy is gated on that — the live site never promises what it can't do. */
+const accountsOpen = isSupabaseConfigured
 
 const FREE_FEATURES: PlanFeature[] = [
   { text: "2,418 expert-written practice questions" },
@@ -60,8 +64,10 @@ const COMPARISON: Array<[string, string, string, string, string]> = [
 
 const FAQS: Array<[string, string]> = [
   [
-    "What do I get for free?",
-    "The free plan is the whole study loop: 2,418 expert-written questions, 929 flashcards, 69 study chapters, the diagnostic with its pass probability, your daily goal, streak and readiness score. There is no trial clock — it stays free. Paying unlocks timed mocks, the AI Examiner and custom practice.",
+    "How does the free trial work?",
+    accountsOpen
+      ? "Every new account starts with 7 days of Pro, free and with no card — timed mocks, the AI Examiner and custom practice all unlocked. When the 7 days end you're not cut off: you keep the full free plan (2,418 questions, 929 flashcards, 69 study chapters, the diagnostic and your readiness score) with no clock, forever. Upgrade whenever you want Pro back."
+      : "Accounts aren't open yet. When they are, every new account will start with 7 days of Pro free (no card), then keep the full free plan — 2,418 questions, 929 flashcards, 69 study chapters, the diagnostic and readiness score — with no clock.",
   ],
   [
     "Which papers does Scholify cover?",
@@ -97,25 +103,43 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
     <div
-      onClick={() => setOpen((v) => !v)}
       style={{
         background: "var(--sch-card)",
         border: "1px solid var(--sch-border)",
         borderRadius: 14,
         padding: 20,
         marginBottom: 8,
-        cursor: "pointer",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        style={{
+          display: "flex",
+          width: "100%",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          padding: 0,
+          margin: 0,
+          background: "none",
+          border: "none",
+          font: "inherit",
+          textAlign: "left",
+          cursor: "pointer",
+          color: "inherit",
+        }}
+      >
         <span style={{ fontSize: 15, fontWeight: 600, color: "var(--sch-text)" }}>{q}</span>
         <motion.span
+          aria-hidden
           animate={{ rotate: open ? 45 : 0 }}
           style={{ fontSize: 20, color: TEXT2, flexShrink: 0, lineHeight: 1 }}
         >
           +
         </motion.span>
-      </div>
+      </button>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -476,11 +500,12 @@ export default function Pricing() {
           </motion.button>
         </motion.div>
 
-        {/* Honest status — no trial exists, and checkout isn't live yet. */}
+        {/* Honest status. The trial only exists once accounts are open; the free
+            plan itself never has a clock either way. */}
         <p style={{ textAlign: "center", fontSize: 13, color: TEXT2, marginTop: 24, lineHeight: 1.7 }}>
-          {paymentsOpen
-            ? "There's no free trial — the free plan simply stays free. Cancel a paid plan anytime."
-            : "Payments aren't open yet, so nothing is charged today. The free plan stays free, with no trial clock."}
+          {accountsOpen
+            ? "Every new account starts with 7 days of Pro free — no card. When it ends you keep the full free plan, with no clock. Cancel a paid plan anytime."
+            : "Accounts aren't open yet. When they are, every new account starts with 7 days of Pro free, then keeps the full free plan with no clock."}
           <br />
           Beginner and Pro unlock the same study modes right now; if that changes, this page changes
           with it.

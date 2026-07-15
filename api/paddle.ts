@@ -155,7 +155,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   if (action === "webhook") return webhook(req, res, rawBody)
   if (action === "cancel") return cancel(req, res, rawBody)
-  res.status(400).json({ error: "Unknown action. Use ?action=webhook | cancel." })
+  if (action === "start-trial") return startTrial(req, res)
+  res.status(400).json({ error: "Unknown action. Use ?action=webhook | cancel | start-trial." })
+}
+
+/* ── Start trial: the 7-day Pro trial, granted server-side ───────────────
+ *
+ * The trial MUST be written in app_metadata (service-role-only) for the same
+ * reason the paid plan is: a client that could set its own trial could grant
+ * itself Pro forever. So the client asks; the server decides and writes.
+ *
+ * Idempotent and one-per-account: `trial_started_at` is the permanent marker.
+ * Once set, this refuses — a user cannot loop it for endless Pro, and calling it
+ * twice (e.g. a retry, or the app re-checking on load) is harmless.
+ */
+const TRIAL_DAYS = 7
+
+async function startTrial(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const supa = admin()
+  if (!supa) {
+    res.status(200).json({ ok: false, reason: "not_configured" })
+    return
+  }
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) {
+    res.status(401).json({ ok: false, reason: "no_token" })
+    return
+  }
+  const { data: userData, error: userErr } = await supa.auth.getUser(token)
+  const user = userData?.user
+  if (userErr || !user) {
+    res.status(401).json({ ok: false, reason: "bad_token" })
+    return
+  }
+
+  const meta = user.app_metadata ?? {}
+  const plan = String(meta.plan ?? "free")
+  // A paying customer doesn't need a trial; and a trial is once per account.
+  if (plan !== "free") {
+    res.status(200).json({ ok: false, reason: "already_paid" })
+    return
+  }
+  if (meta.trial_started_at) {
+    res.status(200).json({ ok: true, alreadyStarted: true, trial_ends_at: meta.trial_ends_at ?? null })
+    return
+  }
+
+  const now = new Date()
+  const endsAt = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  try {
+    // Merge, don't replace — never clobber other app_metadata (referral, etc.).
+    await supa.auth.admin.updateUserById(user.id, {
+      app_metadata: { trial_started_at: now.toISOString(), trial_ends_at: endsAt },
+    })
+    res.status(200).json({ ok: true, trial_ends_at: endsAt })
+  } catch {
+    res.status(200).json({ ok: false, reason: "write_failed" })
+  }
 }
 
 /* ── Webhook: Paddle → entitlement ──────────────────────────────────── */

@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from "react"
 import { motion, AnimatePresence, useScroll, useReducedMotion } from "motion/react"
 import { Icon, C, R } from "@/components/acca/ui"
 import { StudyDiagram } from "@/components/acca/StudyDiagram"
+import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import type { StudyChapter, StudyBlock, StudySection, MiniCheck } from "@/lib/acca-study-content"
 
 /*
@@ -47,6 +48,9 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
       </div>
       <h1 style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", color: C.text, margin: "8px 0 8px", lineHeight: 1.2 }}>{chapter.title}</h1>
       <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.6, margin: "0 0 18px" }}>{chapter.intro}</p>
+
+      {/* honest Finance Act basis for TX/ATX chapters (null otherwise) */}
+      <TaxBasisNote paperId={chapter.paper} />
 
       {/* outcomes */}
       <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 14, padding: "15px 17px", marginBottom: 26 }}>

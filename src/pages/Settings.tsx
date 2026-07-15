@@ -1,7 +1,9 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -41,6 +43,7 @@ import {
   clearAccaProgress,
 } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
+import { entitlementOf } from "@/lib/entitlement"
 import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
 
 /* ──────────────────────────────────────────────────────────────
@@ -486,9 +489,26 @@ function ConfirmDialog({
   onCancel: () => void
 }) {
   const [typed, setTyped] = useState("")
+  const panelRef = useRef<HTMLDivElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
+  const titleId = useId()
+  const bodyId = useId()
+
   useEffect(() => {
-    if (!open) setTyped("")
+    if (!open) {
+      setTyped("")
+      return
+    }
+    // Remember where focus was, move it into the dialog, and restore on close.
+    returnFocusRef.current = document.activeElement as HTMLElement | null
+    const raf = requestAnimationFrame(() => panelRef.current?.focus())
+    return () => {
+      cancelAnimationFrame(raf)
+      returnFocusRef.current?.focus?.()
+      returnFocusRef.current = null
+    }
   }, [open])
+
   const canConfirm = !requireText || typed === requireText
 
   return (
@@ -512,7 +532,19 @@ function ConfirmDialog({
           }}
         >
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={bodyId}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation()
+                onCancel()
+              }
+            }}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 30, opacity: 0 }}
@@ -525,10 +557,11 @@ function ConfirmDialog({
               background: "var(--sch-bg-2)",
               border: "1px solid var(--sch-border-2)",
               boxShadow: "0 40px 120px rgba(0,0,0,0.8)",
+              outline: "none",
             }}
           >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--sch-text)" }}>{title}</h3>
-            <p style={{ fontSize: 14, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>{body}</p>
+            <h3 id={titleId} style={{ fontSize: 18, fontWeight: 700, color: "var(--sch-text)" }}>{title}</h3>
+            <p id={bodyId} style={{ fontSize: 14, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>{body}</p>
 
             {requireText && (
               <input
@@ -630,7 +663,8 @@ export default function Settings() {
   const [dialog, setDialog] = useState<"cancel" | "reset" | "delete" | null>(null)
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Learner"
-  const isPaid = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
+  const ent = entitlementOf(user)
+  const isPaid = ent.isPaid
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "2026"
 
   /* Referrals */
@@ -936,10 +970,14 @@ export default function Settings() {
               <div style={{ fontSize: 20, fontWeight: 700, color: "var(--sch-text)" }}>{fullName}</div>
               <div style={{ fontSize: 14, color: TEXT2, marginTop: 4 }}>{user?.email}</div>
               <div style={{ marginTop: 10 }}>
-                <Badge tone={isPaid ? "brand" : "neutral"}>
+                <Badge tone={isPaid || ent.isTrial ? "brand" : "neutral"}>
                   {isPaid ? (
                     <>
                       <Icon name="trophy" size={12} /> Pro
+                    </>
+                  ) : ent.isTrial ? (
+                    <>
+                      <Icon name="trophy" size={12} /> Pro trial · {ent.trialDaysLeft}d left
                     </>
                   ) : (
                     "Free plan"
@@ -1057,12 +1095,14 @@ export default function Settings() {
             <div>
               <div style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="trophy" size={18} color={C.brand} />
-                {isPaid ? "Pro" : "Free plan"}
+                {isPaid ? "Pro" : ent.isTrial ? "Pro trial" : "Free plan"}
               </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4, lineHeight: 1.6 }}>
                 {isPaid
                   ? "Billed monthly · $14.99/month"
-                  : "No time limit. Timed mocks, the AI Examiner and custom practice are the paid modes."}
+                  : ent.isTrial
+                    ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} of Pro left — mocks, the AI Examiner and custom practice are all unlocked. After it ends you keep the full free plan.`
+                    : "No time limit. Timed mocks, the AI Examiner and custom practice are the paid modes."}
               </div>
               {!isPaid && (
                 <motion.div

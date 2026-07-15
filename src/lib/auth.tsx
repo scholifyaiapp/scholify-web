@@ -9,6 +9,7 @@ import {
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
+import { canStartTrial } from "./entitlement"
 
 /*
  * A production build with no Supabase must NOT mint fake accounts (see the note
@@ -105,6 +106,36 @@ function writeDemoUser(user: User | null) {
   }
 }
 
+/**
+ * Grant the 7-day Pro trial to a user who is eligible and hasn't got one.
+ *
+ * This runs on the FIRST authenticated session rather than only at sign-up, so
+ * it covers both paths: instant sign-in (email confirmation off) AND a user who
+ * signs in for the first time after confirming their email. The server is the
+ * gate — it refuses a second trial — so calling it once per fresh account is
+ * safe, and a failure just leaves the user on the free tier (never broken).
+ * Returns the refreshed User when a trial was granted, else null.
+ */
+async function ensureTrial(user: User): Promise<User | null> {
+  if (!isSupabaseConfigured || !canStartTrial(user)) return null
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return null
+    const res = await fetch("/api/paddle?action=start-trial", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const body = (await res.json().catch(() => ({}))) as { ok?: boolean }
+    if (!body.ok) return null
+    // The trial lives in app_metadata → it only reaches the client in a NEW JWT.
+    const { data: refreshed } = await supabase.auth.refreshSession()
+    return refreshed.user ?? null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -118,6 +149,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // Only one trial-grant attempt per app load, whichever path fires first.
+    let trialChecked = false
+    const maybeGrantTrial = (u: User | null) => {
+      if (trialChecked || !u) return
+      trialChecked = true
+      void ensureTrial(u).then((granted) => {
+        if (granted) {
+          setSession((s) => (s ? { ...s, user: granted } : s))
+          setUser(granted)
+        }
+      })
+    }
+
     // REAL mode — hydrate from Supabase and subscribe to changes.
     let active = true
     supabase.auth.getSession().then(({ data }) => {
@@ -125,11 +169,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       setUser(data.session?.user ?? null)
       setLoading(false)
+      maybeGrantTrial(data.session?.user ?? null)
     })
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
+      maybeGrantTrial(nextSession?.user ?? null)
     })
 
     return () => {

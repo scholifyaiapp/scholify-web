@@ -2,6 +2,7 @@ import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from "
 import { Link } from "react-router-dom"
 import { motion, type Variants } from "motion/react"
 import { ScholifyMark } from "@/components/brand"
+import { isSupabaseConfigured } from "@/lib/supabase"
 import { Icon, type IconName } from "@/components/acca/ui"
 
 /* ──────────────────────────────────────────────────────────────
@@ -300,8 +301,12 @@ export function SubmitButton({
 
 /* ── Left brand / social-proof panel ─────────────────────────── */
 
-/** Only claims the app actually delivers today. */
+/** Only claims the app actually delivers today. The trial line shows only when
+ *  accounts are open, so it can't promise what a keyless build can't grant. */
 const productProof: { icon: IconName; text: string }[] = [
+  ...(isSupabaseConfigured
+    ? [{ icon: "trophy" as IconName, text: "7 days of Pro free — no card" }]
+    : []),
   { icon: "practice", text: "2,418 expert-written practice questions" },
   { icon: "examiner", text: "190 written questions with examiner rubrics" },
   { icon: "stats", text: "A pass probability with an honest ± margin" },

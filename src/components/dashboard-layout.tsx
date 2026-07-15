@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
 import { useAuth } from "@/lib/auth"
+import { isProUser } from "@/lib/entitlement"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, type IconName, C, SP, R, SHADOW, GRAD } from "@/components/acca/ui"
@@ -163,7 +164,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
-  const isPro = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
+  const isPro = isProUser(user)
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>

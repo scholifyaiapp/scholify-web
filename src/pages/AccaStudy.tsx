@@ -5,6 +5,7 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
+import { isProUser } from "@/lib/entitlement"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -52,6 +53,7 @@ import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAct
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
+import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
 import { isAccaOnboarded } from "@/lib/acca-profile"
@@ -108,7 +110,7 @@ export default function AccaStudy() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isPro = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
+  const isPro = isProUser(user)
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
 
   // Land where the loop is: the current paper's overview. The picker stays
@@ -993,6 +995,9 @@ function Overview({
       <button onClick={onBack} style={backBtn}>← All papers</button>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
       <p style={{ color: DIM, margin: "0 0 14px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+
+      {/* Tax papers state their Finance Act basis honestly (TX/ATX only) */}
+      <TaxBasisNote paperId={paper.id} />
 
       {/* You are here — the loop as a compact strip (the GPS) */}
       <LoopStrip paperId={paper.id} onJourney={onJourney} />

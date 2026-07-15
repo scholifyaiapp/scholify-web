@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth"
 function AuthLoading() {
   return (
     <div
-      style={{ background: "#050508" }}
+      style={{ background: "var(--sch-bg)" }}
       className="min-h-[100dvh] w-full flex items-center justify-center"
     >
       <style>{`@keyframes auth-guard-spin{to{transform:rotate(360deg)}}`}</style>

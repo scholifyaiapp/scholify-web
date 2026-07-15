@@ -122,6 +122,13 @@ function aiKilled(): boolean {
   return v === "1" || v === "true" || v === "on"
 }
 
+/** Is an app_metadata trial currently active? Mirrors src/lib/entitlement.ts.
+ *  `now` is injectable so the metering tier can be unit-tested. */
+export function trialActive(meta: Record<string, unknown> | undefined, now: number = Date.now()): boolean {
+  const endsAt = typeof meta?.trial_ends_at === "string" ? Date.parse(meta.trial_ends_at) : NaN
+  return Number.isFinite(endsAt) && endsAt > now
+}
+
 /**
  * Resolve the caller's tier. app_metadata is the hot path (it rides in the JWT,
  * and only the service role can write it). The `subscriptions` table is the
@@ -129,6 +136,10 @@ function aiKilled(): boolean {
  * the LOWER of the two, so neither a stale JWT nor a half-applied webhook can
  * hand out a plan nobody paid for. A missing table (migration 0015 not run)
  * simply leaves app_metadata in charge — it is defence in depth, not a gate.
+ *
+ * A user on the free plan may still have Pro-level access from an active 7-day
+ * trial (also server-written in app_metadata). The trial grants Pro caps; when
+ * it lapses, this returns free again with no other action needed.
  */
 async function resolveTier(
   supa: ReturnType<typeof meteringAdmin> & object,
@@ -139,7 +150,10 @@ async function resolveTier(
     raw === "beginner" ? "beginner" : raw !== "free" ? "pro" : "free"
 
   const claimed = toTier(String(user.app_metadata?.plan || "free"))
-  if (claimed === "free") return "free"
+  if (claimed === "free") {
+    // No paid plan — but an active (unexpired) trial grants Pro caps.
+    return trialActive(user.app_metadata) ? "pro" : "free"
+  }
 
   const { data: row, error } = await supa
     .from("subscriptions")
@@ -154,7 +168,9 @@ async function resolveTier(
   // A canceled/expired subscription row overrides an optimistic JWT claim.
   const active = row.status === "active" || row.status === "past_due" || row.status === "canceling"
   const recorded: Tier = active ? toTier(String(row.plan || "free")) : "free"
-  return rank[recorded] < rank[claimed] ? recorded : claimed
+  const paidTier = rank[recorded] < rank[claimed] ? recorded : claimed
+  // Even if a subscription downgraded them, an unexpired trial still grants Pro.
+  return rank[paidTier] < rank.pro && trialActive(user.app_metadata) ? "pro" : paidTier
 }
 
 async function meterAcca(req: VercelRequest, action: AccaAction): Promise<Meter> {

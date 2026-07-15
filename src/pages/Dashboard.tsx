@@ -4,6 +4,7 @@ import { motion } from "motion/react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useAuth } from "@/lib/auth"
+import { isProUser } from "@/lib/entitlement"
 import { Icon, Card, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, bandColor } from "@/components/acca/charts"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
@@ -69,7 +70,7 @@ export default function Dashboard() {
   const weakest = palestArea(paperId)
   const momentum = probabilityMomentum(paperId)
   const mission = buildTodayPlan(paperId)
-  const isPro = Boolean(user?.app_metadata?.plan && user.app_metadata.plan !== "free")
+  const isPro = isProUser(user)
 
   useEffect(() => {
     snapshotProbability(paperId)
