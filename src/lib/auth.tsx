@@ -10,6 +10,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
 import { canStartTrial } from "./entitlement"
+import { trackEvent } from "@/lib/analytics"
 
 /*
  * A production build with no Supabase must NOT mint fake accounts (see the note
@@ -126,8 +127,10 @@ async function ensureTrial(user: User): Promise<User | null> {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     })
-    const body = (await res.json().catch(() => ({}))) as { ok?: boolean }
+    const body = (await res.json().catch(() => ({}))) as { ok?: boolean; alreadyStarted?: boolean }
     if (!body.ok) return null
+    // Count only a FIRST grant as a conversion-funnel "trial_started".
+    if (!body.alreadyStarted) trackEvent("trial_started")
     // The trial lives in app_metadata → it only reaches the client in a NEW JWT.
     const { data: refreshed } = await supabase.auth.refreshSession()
     return refreshed.user ?? null
@@ -162,10 +165,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
     }
 
+    // One authenticated "app_opened" per load — the retention/WAU signal, scoped
+    // to signed-in learners so anonymous landing-page visits don't dilute it.
+    let openedTracked = false
+    const trackOpen = (u: User | null) => {
+      if (openedTracked || !u) return
+      openedTracked = true
+      trackEvent("app_opened")
+    }
+
     // REAL mode — hydrate from Supabase and subscribe to changes.
     let active = true
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return
+      trackOpen(data.session?.user ?? null)
       setSession(data.session)
       setUser(data.session?.user ?? null)
       setLoading(false)
@@ -175,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
+      trackOpen(nextSession?.user ?? null)
       maybeGrantTrial(nextSession?.user ?? null)
     })
 

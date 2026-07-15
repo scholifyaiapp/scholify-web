@@ -49,6 +49,7 @@ import { getWrittenQuestions } from "@/lib/acca-written"
 import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS, TOPIC_TEST_SIZE, type TopicNode } from "@/lib/acca-topics"
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
+import { trackEvent } from "@/lib/analytics"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAction } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
@@ -183,6 +184,7 @@ export default function AccaStudy() {
     const params = new URLSearchParams(window.location.search)
     if (params.get("upgraded") !== "true") return
     window.history.replaceState({}, "", window.location.pathname)
+    trackEvent("subscription_activated")
     toast.success("Payment received — welcome aboard! Unlocking Pro…")
     if (!isSupabaseConfigured) return
     let cancelled = false
@@ -263,6 +265,16 @@ export default function AccaStudy() {
           recordMistake(paperId, "time", questions.length - log.length)
         }
       }
+      // The engagement signal — the north-star is a learner completing a
+      // model-assigned session. Mode + score make the funnel and retention
+      // insights specific.
+      trackEvent("session_completed", {
+        paper: paperId,
+        mode: isTopicTest ? "topic" : isBankRun ? "bank_run" : isMock ? "mock" : "practice",
+        questions: questions.length,
+        correct: correctCount,
+        scorePct: questions.length ? Math.round((correctCount / questions.length) * 100) : 0,
+      })
       // Every finished session updates the learner model — snapshot it for
       // the Pass Momentum trend.
       snapshotProbability(paperId)
