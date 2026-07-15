@@ -32,6 +32,7 @@ import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { RingGauge, BreakdownList } from "@/components/acca/charts"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
+import RevealExperience from "@/components/acca/RevealExperience"
 import PaywallModal from "@/components/PaywallModal"
 import { trackEvent } from "@/lib/analytics"
 
@@ -55,7 +56,7 @@ const GREEN = "#10B981"
 const RED = "#EF4444"
 const AMBER = "#F59E0B"
 
-type Phase = "intro" | "assessing" | "analyzing" | "results"
+type Phase = "intro" | "assessing" | "analyzing" | "results" | "reveal"
 
 /* ── Question card (in-assessment) ────────────────────────────── */
 
@@ -195,6 +196,8 @@ export default function AccaDiagnostic() {
   // Exam-style countdown: 100s per question (24 questions → 40:00). At 0 the
   // form auto-submits — what's answered is scored, honestly.
   const [timeLeft, setTimeLeft] = useState(0)
+  // Lets the timer's interval call the latest handler without a stale closure.
+  const endAssessingRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     if (phase !== "assessing") return
@@ -202,7 +205,7 @@ export default function AccaDiagnostic() {
       setTimeLeft((s) => {
         if (s <= 1) {
           clearInterval(t)
-          setPhase("analyzing")
+          endAssessingRef.current()
           return 0
         }
         return s - 1
@@ -249,20 +252,36 @@ export default function AccaDiagnostic() {
     if (idx + 1 < questions.length) {
       setIdx(idx + 1)
     } else {
-      setPhase("analyzing")
+      endAssessing()
     }
   }
 
-  // Analyzing → the cinematic sequence drives the timing; its onComplete scores,
-  // persists and reveals. (Score is computed at reveal time from answersRef.)
-  const revealResults = () => {
+  // Score, persist, track — the one place the result is finalized.
+  const finalizeDiagnostic = () => {
     const scored = scoreDiagnostic(paperId, answersRef.current)
     setResult(scored)
-    setPhase("results")
     trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome })
     void persistDiagnostic(scored)
     queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
+    return scored
   }
+  // Non-onboarding: the cinematic sequence's onComplete finalizes + reveals.
+  const revealResults = () => {
+    finalizeDiagnostic()
+    setPhase("results")
+  }
+  // When the test ends: onboarding gets the full premium RevealExperience (which
+  // runs its OWN loading choreography), so it skips the analyzing loader. A
+  // retake keeps the lean analyzing → results screen.
+  const endAssessing = () => {
+    if (fromWelcome) {
+      finalizeDiagnostic()
+      setPhase("reveal")
+    } else {
+      setPhase("analyzing")
+    }
+  }
+  endAssessingRef.current = endAssessing
 
   const diagnosticPhases: RevealPhase[] = [
     { icon: "check", label: "Reading your answers", sub: "Every response, weighted by difficulty — a hard one right counts for more." },
@@ -291,6 +310,55 @@ export default function AccaDiagnostic() {
           )}
         </div>
       </DashboardLayout>
+    )
+  }
+
+  // Onboarding: the full premium reveal takes over the screen — both wow moments
+  // (diagnostic gauge + Lara building the plan), driven by the real result.
+  if (phase === "reveal" && result) {
+    const plan = getPlan(paperId)
+    const weak = result.weakest.slice(0, 3).map((w) => ({ code: w.code, name: w.label, pct: Math.round(w.score * 100) }))
+    const examLabel = plan.examDate
+      ? new Date(plan.examDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+      : "your sitting"
+    return (
+      <>
+        <RevealExperience
+          paperId={paperId}
+          passProbability={result.passProbability}
+          weakAreas={weak}
+          dailyBlock={{ questions: plan.dailyGoal, minutes: plan.dailyMinutes, focus: weak.length ? `${weak[0].code}→A` : "A→H", time: plan.studyTime || undefined }}
+          examLabel={examLabel}
+          road={[
+            { phase: "Foundations", when: "This week — rebuild the basics", done: true },
+            { phase: "Weak-area drills", when: `Weeks 2–4 — ${weak.map((w) => w.code).join(", ") || "your gaps"} first`, done: true },
+            { phase: "Full mocks", when: "Weeks 5–6 — timed, marked", done: false },
+            { phase: "Exam day", when: `${examLabel} — you're ready`, done: false },
+          ]}
+          phasesM1={[
+            ["Reading your answers", "Every response, weighted by difficulty.", "check"],
+            [`Mapping your ${paperId} syllabus`, "Scoring you across every area, A to H.", "chart"],
+            ["Finding where the marks leak", "The areas dragging your score down — your pain points.", "drop"],
+            ["Computing your pass probability", "An honest number, with the margin it deserves.", "spark"],
+          ]}
+          phasesM2={[
+            ["Reading your pain points", weak.length ? `Starting with ${weak[0].code} · ${weak[0].name}.` : "Where the marks come back fastest.", "drop"],
+            [`Weighting the ${paperId} syllabus`, "Every area, by exam weight and your result.", "chart"],
+            ["Sizing your daily block", `${plan.dailyGoal} questions in ${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}.`, "spark"],
+            ["Dating the road to your sitting", "Phase by phase, all the way to exam day.", "check"],
+          ]}
+          showControls={false}
+          onContinue={() => setShowTrialPaywall(true)}
+        />
+        <PaywallModal
+          open={showTrialPaywall}
+          type="general"
+          onClose={() => {
+            setShowTrialPaywall(false)
+            navigate("/dashboard")
+          }}
+        />
+      </>
     )
   }
 
