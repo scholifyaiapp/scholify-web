@@ -9,6 +9,7 @@ import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, startModeForExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
+import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -155,6 +156,9 @@ export default function Welcome() {
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
   const [goal, setGoalState] = useState<Goal | null>(null)
   const [target, setTarget] = useState(75)
+  // "Start learning" exit: play the cinematic plan-generation reveal before
+  // handing over to the app (see finishZero).
+  const [zeroReveal, setZeroReveal] = useState(false)
 
   const levels = useMemo(() => paperLevels(), [])
   const sittings = useMemo(() => nextSittings(3), [])
@@ -219,8 +223,10 @@ export default function Welcome() {
   const finishToDiagnostic = () => { if (getExperience() !== "professional") setExperience("some"); persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" }); navigate("/study/diagnostic?next=paywall") }
   const finishSkip = () => { persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "skip" }); navigate("/dashboard") }
   // Brand-new learner: study FIRST — the Dashboard gates the diagnostic
-  // behind initial coverage instead of testing zero knowledge.
-  const finishZero = () => { if (getExperience() !== "professional") setExperience("new"); persist(); setStartMode("zero"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "zero_start" }); navigate("/dashboard") }
+  // behind initial coverage instead of testing zero knowledge. Their wow
+  // moment is the plan-generation reveal (the assess path gets its reveal
+  // after the diagnostic; this one is built from the onboarding answers).
+  const finishZero = () => { if (getExperience() !== "professional") setExperience("new"); persist(); setStartMode("zero"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "zero_start" }); setZeroReveal(true) }
 
   const slideAnim = {
     variants: reduced ? fadeVariants : slideVariants,
@@ -295,6 +301,16 @@ export default function Welcome() {
     "This shapes the tone I'll coach you in.",
     "",
   ]
+
+  /* ═══ The zero-start wow moment: Lara builds the plan on screen ═══ */
+  if (zeroReveal && paper) {
+    return (
+      <ZeroPlanReveal
+        paperId={paper}
+        onDone={(dest) => navigate(dest === "study" ? "/study" : "/dashboard")}
+      />
+    )
+  }
 
   /* ═══ MOBILE ═══ */
   if (isMobile) {

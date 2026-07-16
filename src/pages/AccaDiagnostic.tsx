@@ -30,7 +30,7 @@ import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from 
 import { MOCK_PASS } from "@/lib/acca-loop"
 import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
-import { RingGauge, BreakdownList } from "@/components/acca/charts"
+import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
 import RevealExperience from "@/components/acca/RevealExperience"
 import PaywallModal from "@/components/PaywallModal"
@@ -561,7 +561,11 @@ function ResultsView({
         </span>
       </motion.div>
 
-      <LaraPlan result={result} targetProb={plan.targetProb} />
+      {/* THE STORY, in the order it must land: (1) the score you just saw,
+          (2) the pain points — full, ranked, unmissable — the WHY behind it,
+          (3) the fastest path those pain points imply, and only THEN
+          (4) Lara building the plan that targets exactly those areas. */}
+      <PainPointsPanel result={result} />
 
       {/* The promise */}
       {lift > 0 && result.target.focusAreas.length > 0 && (
@@ -595,26 +599,6 @@ function ResultsView({
         </motion.div>
       )}
 
-      {/* Weak areas — framed as the examiner's read of pain points (Doc 12). */}
-      {result.weakest.length > 0 && (
-        <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: RED, letterSpacing: 0.4, marginBottom: 6 }}>
-            <Icon name="weak" size={15} color={RED} /> YOUR PAIN POINTS
-          </div>
-          <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBottom: 10 }}>
-            Lara's examiner read of where the marks are leaking — your daily plan targets these first.
-          </div>
-          <BreakdownList
-            items={result.weakest.map((a) => ({
-              code: a.code,
-              label: a.label,
-              pct: Math.round(a.score * 100),
-              valueText: `${a.correct}/${a.seen}`,
-            }))}
-          />
-        </div>
-      )}
-
       {/* Strong areas */}
       {result.strongest.length > 0 && (
         <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
@@ -631,6 +615,11 @@ function ResultsView({
           />
         </div>
       )}
+
+      {/* Now — and only now — Lara builds the plan that targets those pain
+          points. The generation scene plays while the reader is still holding
+          their weak areas in mind: the plan visibly answers them. */}
+      <LaraPlan result={result} targetProb={plan.targetProb} />
 
       {confidencePct < 100 && (
         <p style={{ fontSize: 12, color: DIM, textAlign: "center", margin: "0 0 20px", lineHeight: 1.5 }}>
@@ -649,6 +638,135 @@ function ResultsView({
           <Icon name="loop" size={16} /> Retake
         </Button>
       </div>
+    </motion.div>
+  )
+}
+
+/* ── Pain points — the examiner's full read, front and centre ─────
+ *
+ * The founder spec: after the score, the pain points must be CLEAR and
+ * complete — the learner should be able to say their weak areas out loud
+ * before the plan appears. Two layers: the ranked top-3 (severity cards with
+ * the marks each one is worth getting back), then the full syllabus map so
+ * nothing assessed is hidden. Only then does Lara build the plan below.
+ */
+
+const BAND_COLOR: Record<"weak" | "moderate" | "strong", string> = {
+  weak: RED,
+  moderate: "#C2740B",
+  strong: GREEN,
+}
+const BAND_LABEL: Record<"weak" | "moderate" | "strong", string> = {
+  weak: "Weak",
+  moderate: "Shaky",
+  strong: "Strong",
+}
+
+function PainPointsPanel({ result }: { result: DiagnosticResult }) {
+  const assessed = result.areas.filter((a) => a.seen > 0)
+  if (result.weakest.length === 0) return null
+  // Equal-weight read (matching the scoring model): lifting one area to the
+  // coached target moves the estimated exam score by its share of the paper.
+  const marksBack = (score: number) =>
+    Math.max(0, Math.round(((result.target.targetScore - score) * 100) / Math.max(1, assessed.length)))
+  const fullMap = [...assessed].sort((a, b) => a.score - b.score)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.45, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        ...cardStyle,
+        boxShadow: SHADOW.sm,
+        marginBottom: 16,
+        borderTop: `3px solid ${RED}`,
+        background: "linear-gradient(180deg, rgba(220,38,38,0.04), transparent 130px)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: RED, letterSpacing: 0.4, marginBottom: 4 }}>
+        <Icon name="weak" size={15} color={RED} /> YOUR PAIN POINTS
+      </div>
+      <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBottom: 14 }}>
+        Lara's examiner read of where your marks are leaking. Know these three by name — everything below is built to fix them.
+      </div>
+
+      {/* The ranked top-3 — severity cards */}
+      <div style={{ display: "grid", gap: 10, marginBottom: assessed.length > result.weakest.length ? 16 : 4 }}>
+        {result.weakest.map((a, i) => {
+          const pct = Math.round(a.score * 100)
+          const back = marksBack(a.score)
+          return (
+            <motion.div
+              key={a.code}
+              initial={{ opacity: 0, x: -18 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 + i * 0.18, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 14px",
+                borderRadius: 14, border: `1px solid ${i === 0 ? "rgba(220,38,38,0.35)" : "var(--sch-border)"}`,
+                background: "var(--sch-card, #fff)",
+              }}
+            >
+              <span style={{
+                width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: "grid", placeItems: "center",
+                background: i === 0 ? RED : "rgba(220,38,38,0.10)", color: i === 0 ? "#fff" : RED,
+                fontWeight: 850, fontSize: 14,
+              }}>
+                {i + 1}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 800, fontSize: 14.5, color: TEXT }}>{a.code} · {a.label}</span>
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 800, letterSpacing: 0.4, padding: "2px 8px", borderRadius: 999,
+                    background: `${BAND_COLOR[a.band]}18`, color: BAND_COLOR[a.band],
+                  }}>
+                    {BAND_LABEL[a.band].toUpperCase()}
+                  </span>
+                </div>
+                <div style={{ margin: "8px 0 6px" }}>
+                  <MeterBar value={pct} color={BAND_COLOR[a.band]} height={8} />
+                </div>
+                <div style={{ display: "flex", gap: 12, fontSize: 12, color: MUTED, flexWrap: "wrap" }}>
+                  <span><b style={{ color: TEXT, fontVariantNumeric: "tabular-nums" }}>{pct}%</b> competence</span>
+                  <span><b style={{ color: TEXT, fontVariantNumeric: "tabular-nums" }}>{a.correct}/{a.seen}</b> in the diagnostic</span>
+                  {back > 0 && (
+                    <span style={{ color: RED, fontWeight: 700 }}>≈ {back} exam mark{back === 1 ? "" : "s"} to win back</span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* The full map — every assessed area, nothing hidden */}
+      {assessed.length > result.weakest.length && (
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5, color: DIM, marginBottom: 8 }}>
+            THE FULL MAP · ALL {assessed.length} AREAS ASSESSED
+          </div>
+          <div style={{ display: "grid", gap: 7 }}>
+            {fullMap.map((a, i) => (
+              <motion.div
+                key={a.code}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 + i * 0.06 }}
+                style={{ display: "flex", alignItems: "center", gap: 10 }}
+              >
+                <span style={{ width: 18, fontSize: 11.5, fontWeight: 800, color: BAND_COLOR[a.band], flexShrink: 0 }}>{a.code}</span>
+                <span style={{ flex: 1, fontSize: 12, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.label}</span>
+                <MeterBar value={Math.round(a.score * 100)} color={BAND_COLOR[a.band]} height={6} style={{ width: 86, flexShrink: 0 }} />
+                <span style={{ width: 34, textAlign: "right", fontSize: 11.5, fontWeight: 750, color: TEXT, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  {Math.round(a.score * 100)}%
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }
