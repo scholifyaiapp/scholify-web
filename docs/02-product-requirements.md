@@ -418,3 +418,13 @@ Aligned to the learning-OS layer map; none of these block the shipped loop:
 - **Notes account sync (migration `0020_acca_notes.sql` + `acca-notes-cloud.ts`)** — one RLS-guarded JSONB row per user, per-note newest-updatedAt merge with deletion tombstones (120-day TTL); reconciles on session start and on /notes open, debounced push after every local change. localStorage stays authoritative offline.
 
 **Still open (CBE phase 3):** SBL full-case experience with professional-skills marking; case sets for the remaining Skills papers; past-sitting replay.
+
+---
+
+## Addendum — the categorised Study hub (2026-07-16, same-day follow-up)
+
+**Founder spec:** /study organised into clear sub-categories (like Analytics), proportioned from onboarding, daily plan focused on pain points while topic progression continues.
+
+**The categorised day** (`acca-schedule.ts` `categoryDay`, drives both `learn` and `strengthen` phases): 1 · Topic learning (the next area's chapter, `COST.study`) → 2 · Essentials ×5 (`ESSENTIALS_SIZE`, new `essentials` action; deep links carry `&area=`) → 3 · Daily practice (largest block, `focusArea()` pain point first, sized by `dailyMinutes` × `targetProb`) → 4 · Flashcards (due cards). Zero-start gate days pin study+practice to the next A·B·C section. Strengthen days append a bank run when >25 min remain.
+
+**The hub** renders these as numbered sections with live "~N min today" chips (the plan's proportions made visible), the study path under category 1, plus **5 · Official ACCA resources** (`acca-resources.ts`): per-paper technical-articles + examiner-reports links, every URL pattern verified live against accaglobal.com (F-codes for Knowledge/Skills, named slugs for SBL/SBR, P-codes for Options). Exam room follows unchanged. Fix folded in: a "Study X" plan task now opens the chapter, not a practice session.
