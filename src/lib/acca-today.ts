@@ -18,11 +18,11 @@ import { getPaper } from "@/lib/acca"
 import { readinessState, recoveryState } from "@/lib/acca-loop"
 import { buildDailyTasks } from "@/lib/acca-schedule"
 
-export type TodayAction = "diagnostic" | "weak" | "practice" | "flashcards" | "mock" | "study" | "bank"
+export type TodayAction = "diagnostic" | "weak" | "practice" | "essentials" | "flashcards" | "mock" | "study" | "bank"
 
 /** Rough per-task durations — the single source for "~25 min" labels. */
 export const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30, study: 7, bank: 40,
+  diagnostic: 15, weak: 25, practice: 20, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 
 export interface TodayTask {
@@ -31,6 +31,8 @@ export interface TodayTask {
   title: string
   detail: string
   action: TodayAction
+  /** Syllabus area the task targets (essentials/study carry it). */
+  area?: string
 }
 
 /** Time-of-day greeting, personalised when we know the name. */
@@ -73,5 +75,6 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
     title: t.title,
     detail: t.detail,
     action: t.action,
+    area: t.area,
   }))
 }

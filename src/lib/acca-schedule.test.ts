@@ -63,3 +63,71 @@ describe("focusArea", () => {
     expect(focusArea("FA")).toBeNull()
   })
 })
+
+/*
+ * The categorised study day (founder spec): topic learning → essentials ×5 →
+ * daily practice (pain point first) → flashcards — proportioned to the
+ * onboarding answers, progression AND weakness every day.
+ */
+import { buildDailyTasks, ESSENTIALS_SIZE } from "@/lib/acca-schedule"
+import { setPlan } from "@/lib/acca-plan"
+import { setStartMode } from "@/lib/acca-profile"
+
+describe("buildDailyTasks — the categorised day", () => {
+  it("produces the four categories in order once a baseline exists", () => {
+    setStartMode("assess")
+    seedDiagnostic("FA", "D")
+    setPlan("FA", { dailyMinutes: 25, targetProb: 75 })
+    const tasks = buildDailyTasks("FA")
+    const ids = tasks.map((t) => t.id)
+    expect(ids[0]).toBe("study")
+    expect(ids[1]).toBe("essentials")
+    expect(["weak", "practice"]).toContain(ids[2])
+    expect(ids[3]).toBe("flashcards")
+  })
+
+  it("aims daily practice at the diagnostic's pain point while studying a NEW topic", () => {
+    setStartMode("assess")
+    seedDiagnostic("FA", "D")
+    setPlan("FA", { dailyMinutes: 25, targetProb: 75 })
+    const tasks = buildDailyTasks("FA")
+    const study = tasks.find((t) => t.id === "study")!
+    const drill = tasks.find((t) => t.id === "weak")
+    expect(drill, "pain-point drill must exist the day after a diagnostic").toBeDefined()
+    expect(drill!.area).toBe("D")
+    // Progression continues alongside the pain point: study targets an area,
+    // and when it happens to differ from the weakness both run the same day.
+    expect(study.area).toBeTruthy()
+  })
+
+  it("essentials carries the studied area and the ×5 size", () => {
+    setStartMode("assess")
+    seedDiagnostic("FA", "D")
+    const tasks = buildDailyTasks("FA")
+    const study = tasks.find((t) => t.id === "study")!
+    const ess = tasks.find((t) => t.id === "essentials")!
+    expect(ess.area).toBe(study.area)
+    expect(ess.title).toContain(`×${ESSENTIALS_SIZE}`)
+  })
+
+  it("proportions practice volume to the onboarding minutes and target", () => {
+    setStartMode("assess")
+    seedDiagnostic("FA", "D")
+    setPlan("FA", { dailyMinutes: 15, targetProb: 65 })
+    const small = buildDailyTasks("FA").find((t) => t.id === "weak" || t.id === "practice")!
+    setPlan("FA", { dailyMinutes: 60, targetProb: 85 })
+    const large = buildDailyTasks("FA").find((t) => t.id === "weak" || t.id === "practice")!
+    expect(large.minutes).toBeGreaterThan(small.minutes)
+  })
+
+  it("zero-start gate days pin study AND practice to the gate section (no weakness-hunting yet)", () => {
+    setStartMode("zero")
+    setPlan("FA", { dailyMinutes: 25, targetProb: 75 })
+    const tasks = buildDailyTasks("FA")
+    const ids = tasks.map((t) => t.id)
+    expect(ids).toEqual(["study", "essentials", "practice", "flashcards"])
+    const study = tasks.find((t) => t.id === "study")!
+    expect(["A", "B", "C"]).toContain(study.area!)
+    expect(tasks.find((t) => t.id === "practice")!.area).toBe(study.area)
+  })
+})

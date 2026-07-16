@@ -36,10 +36,15 @@ import { format } from "date-fns"
  */
 
 const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, flashcards: 12, mock: 30, study: 7, bank: 40,
+  diagnostic: 15, weak: 25, practice: 20, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 const MISSION_ICONS: Record<TodayAction, IconName> = {
-  diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+  diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+}
+
+/** Deep-link for a mission task — carries the area so study/essentials land on today's topic. */
+function missionHref(t: { action: TodayAction; area?: string }): string {
+  return `/study?do=${t.action}${t.area ? `&area=${t.area}` : ""}`
 }
 
 export default function Dashboard() {
@@ -294,14 +299,14 @@ export default function Dashboard() {
                 <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>① {mission[0].title}</div>
                 <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{mission[0].detail} · ~{MISSION_MINUTES[mission[0].action]} min</div>
               </div>
-              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(`/study?do=${mission[0].action}`)} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
+              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(missionHref(mission[0]))} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
                 Start now
               </motion.button>
             </div>
             {mission.slice(1).map((t, i) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: SP.sm, padding: "9px 12px", borderRadius: R.md, background: C.card2, fontSize: 13, color: C.muted }}>
                 <Icon name={MISSION_ICONS[t.action]} size={14} color={C.faint} />
-                <span style={{ flex: 1 }}>{["②", "③"][i]} {t.title}</span>
+                <span style={{ flex: 1 }}>{["②", "③", "④", "⑤"][i] ?? ""} {t.title}</span>
                 <span style={{ color: C.faint, fontSize: 12 }}>~{MISSION_MINUTES[t.action]} min</span>
               </div>
             ))}

@@ -695,7 +695,7 @@ function StudySection({ paperId }: { paperId: string }) {
   }
 
   const missionIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+    diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
 
   return (
@@ -714,7 +714,7 @@ function StudySection({ paperId }: { paperId: string }) {
               transition={{ delay: i * 0.07 }}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.99 }}
-              onClick={() => navigate(`/study?do=${t.action}`)}
+              onClick={() => navigate(`/study?do=${t.action}${t.area ? `&area=${t.area}` : ""}`)}
               style={{
                 display: "flex",
                 alignItems: "center",

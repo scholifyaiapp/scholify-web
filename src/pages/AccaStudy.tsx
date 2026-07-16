@@ -63,6 +63,7 @@ import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbabilit
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
+import { officialResources } from "@/lib/acca-resources"
 import { nextMockForm } from "@/lib/acca-mockforms"
 import { withShuffledOptions } from "@/lib/acca-options"
 import type { PostMortemAction } from "@/lib/acca-ai"
@@ -205,6 +206,7 @@ export default function AccaStudy() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const action = params.get("do") as TodayAction | null
+    const linkArea = params.get("area")
     if (!action) return
     window.history.replaceState({}, "", window.location.pathname)
     if (!wasOnboarded()) return
@@ -218,7 +220,13 @@ export default function AccaStudy() {
     else if (action === "mock") startSession(false, true)
     else if (action === "flashcards") setMode("flashcards")
     else if (action === "bank") startBankRun()
-    // action === "study" falls through → the study hub / topic path is shown
+    else if (action === "essentials") startEssentials(linkArea)
+    else if (action === "study" && linkArea) {
+      setTopicArea(linkArea)
+      setIsTopicTest(false)
+      setMode("brief")
+    }
+    // action === "study" without an area falls through → the study hub
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -321,6 +329,17 @@ export default function AccaStudy() {
     setTimeLeft(0)
     resetQuestion()
     setMode("session")
+  }
+
+  /** Category 2 — the five essential questions on today's studied topic. */
+  function startEssentials(area?: string | null) {
+    if (!paperId) return
+    const target =
+      area ??
+      buildTodayPlan(paperId).find((t) => t.action === "essentials")?.area ??
+      getPaper(paperId)?.areas[0]?.code
+    if (!target) return
+    startTopicSession(target, false, LEARN_SIZE)
   }
 
   /** Topic flow: practise one syllabus area, or sit its knowledge check. */
@@ -505,6 +524,8 @@ export default function AccaStudy() {
               onGenerate={openGenerate}
               onFlashcards={() => { setTopicArea(null); setMode("flashcards") }}
               onTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
+              onStudyTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("brief") }}
+              onEssentials={startEssentials}
               onJourney={() => setMode("journey")}
               onLoopAction={runLoopAction}
               onRefresh={() => setTick((t) => t + 1)}
@@ -937,6 +958,8 @@ function Overview({
   onGenerate,
   onFlashcards,
   onTopic,
+  onStudyTopic,
+  onEssentials,
   onJourney,
   onLoopAction,
   onRefresh,
@@ -953,6 +976,8 @@ function Overview({
   onGenerate: () => void
   onFlashcards: () => void
   onTopic: (area: string) => void
+  onStudyTopic: (area: string) => void
+  onEssentials: (area?: string | null) => void
   onJourney: () => void
   onLoopAction: (a: PostMortemAction) => void
   onRefresh: () => void
@@ -989,17 +1014,21 @@ function Overview({
   const recovery = recoveryState(paper.id)
   // AI Study OS: today's auto-generated plan — the student never has to choose.
   const todayPlan = buildTodayPlan(paper.id)
-  const todayHandlers: Record<TodayAction, () => void> = {
-    diagnostic: () => navigate("/study/diagnostic"),
-    weak: onWeak,
-    practice: onPractice,
-    flashcards: onFlashcards,
-    mock: onMock,
-    study: onPractice,
-    bank: onBankRun,
+  // Task → surface. Study opens the CHAPTER (the main content), essentials the
+  // 5-question guided set — both carry the plan's area so the tap lands exactly
+  // on today's topic.
+  function runToday(t: (typeof todayPlan)[number]) {
+    if (t.action === "diagnostic") navigate("/study/diagnostic")
+    else if (t.action === "weak") onWeak()
+    else if (t.action === "practice") onPractice()
+    else if (t.action === "essentials") onEssentials(t.area)
+    else if (t.action === "flashcards") onFlashcards()
+    else if (t.action === "mock") onMock()
+    else if (t.action === "study") (t.area ? onStudyTopic(t.area) : onPractice())
+    else if (t.action === "bank") onBankRun()
   }
   const todayIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+    diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
 
   // Keep the Pass Momentum trend fed even on read-only visits.
@@ -1090,7 +1119,7 @@ function Overview({
               transition={{ delay: 0.05 * i }}
               whileHover={{ x: 2 }}
               whileTap={{ scale: 0.99 }}
-              onClick={todayHandlers[t.action]}
+              onClick={() => runToday(t)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -1106,7 +1135,7 @@ function Overview({
               <IconBadge name={todayIcons[t.action]} tone={i === 0 ? "brand" : "neutral"} size={38} />
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-                  {["①", "②", "③"][i] ?? ""} {t.title}
+                  {["①", "②", "③", "④", "⑤"][i] ?? ""} {t.title}
                 </span>
                 <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
                   {t.detail} · ~{MISSION_MINUTES[t.action]} min
@@ -1278,33 +1307,86 @@ function Overview({
         </div>
       )}
 
-      {/* study rooms — grouped by what they're FOR in the method */}
-      <SectionHead icon="learn">Learn & practise</SectionHead>
-      <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-        {curated ? (
+      {/* ── THE STUDY CATEGORIES — the founder's five, in daily order, each
+             proportioned from the onboarding answers (today's plan carries the
+             exact minutes; the chips repeat them here so the weighting is
+             visible, not implied). ─────────────────────────────────────── */}
+      {(() => {
+        const minutesFor = (ids: string[]) => {
+          const m = todayPlan.filter((t) => ids.includes(t.action)).reduce((a, t) => a + MISSION_MINUTES[t.action], 0)
+          return m > 0 ? `~${m} min today` : undefined
+        }
+        const studyTask = todayPlan.find((t) => t.action === "study")
+        const essTask = todayPlan.find((t) => t.action === "essentials")
+        const minChip = (label?: string) =>
+          label ? <span style={{ fontSize: 11, fontWeight: 750, color: DIM, textTransform: "none", letterSpacing: 0 }}>{label}</span> : undefined
+        return (
           <>
-            <ModeTile icon="practice" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn"} />
-            {hasHistory && <ModeTile icon="weak" title="Target my weak areas" sub="Drill your lowest-scoring topics first" onClick={onWeak} primary={phase.key === "strengthen"} />}
-          </>
-        ) : (
-          <>
-            <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
-            <div style={{ ...card({ padding: 14 }), display: "flex", gap: 10, fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-              <Icon name="learn" size={16} color={C.soft} style={{ marginTop: 1 }} />
-              <span>
-                A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice (Pro) generates
-                unlimited AI questions for this paper — or switch to a paper with a full bank from <b style={{ color: TEXT }}>← All papers</b>.
-              </span>
+            {/* 1 · Topic learning — the main content */}
+            <SectionHead icon="learn" right={minChip(minutesFor(["study"]))}>1 · Topic learning</SectionHead>
+            <div style={{ display: "grid", gap: 10, marginBottom: 6 }}>
+              {studyTask?.area ? (
+                <ModeTile
+                  icon="study"
+                  title={`Continue: ${studyTask.area} · ${paper.areas.find((a) => a.code === studyTask.area)?.label ?? "next topic"}`}
+                  sub="Today's chapter — concept, formulas, worked example, the classic traps"
+                  onClick={() => onStudyTopic(studyTask.area!)}
+                  primary={phase.key === "learn"}
+                />
+              ) : (
+                <ModeTile icon="study" title="Continue the study path" sub="Pick up the next topic below" onClick={() => onTopic(paper.areas[0].code)} />
+              )}
             </div>
-          </>
-        )}
-      </div>
+            {/* the full path — topic by topic, Kaplan-style (the main content lives here) */}
+            <StudyPathSection paperId={paper.id} curated={curated} onTopic={onTopic} />
 
-      <SectionHead icon="flashcards">Strengthen & revise</SectionHead>
-      <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-        <ModeTile icon="flashcards" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={phase.key === "revise" && fcStats.due > 0} />
-        {curated && <ModeTile icon="generate" title="Custom practice" sub="Generate questions from a topic or your own notes" onClick={onGenerate} locked={!isPro} />}
-      </div>
+            {/* 2 · Essentials after study */}
+            <SectionHead icon="mission" right={minChip(minutesFor(["essentials"]))}>2 · Essentials after study</SectionHead>
+            <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+              <ModeTile
+                icon="mission"
+                title={`${LEARN_SIZE} essential questions${essTask?.area ? ` — ${essTask.area}` : ""}`}
+                sub="The five most essential points of what you just studied, as guided questions"
+                onClick={() => onEssentials(essTask?.area)}
+                primary={Boolean(essTask) && phase.key === "learn"}
+              />
+            </div>
+
+            {/* 3 · Daily practice — the pain point leads */}
+            <SectionHead icon="practice" right={minChip(minutesFor(["weak", "practice"]))}>3 · Daily practice</SectionHead>
+            <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+              {curated ? (
+                <>
+                  {hasHistory && <ModeTile icon="weak" title="Target my pain points" sub="Adaptive drill on your lowest-scoring areas — the plan's biggest block" onClick={onWeak} primary={phase.key === "strengthen"} />}
+                  <ModeTile icon="practice" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn" && !hasHistory} />
+                  <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} locked={!isPro} />
+                </>
+              ) : (
+                <>
+                  <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
+                  <div style={{ ...card({ padding: 14 }), display: "flex", gap: 10, fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
+                    <Icon name="learn" size={16} color={C.soft} style={{ marginTop: 1 }} />
+                    <span>
+                      A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice (Pro) generates
+                      unlimited AI questions for this paper — or switch to a paper with a full bank from <b style={{ color: TEXT }}>← All papers</b>.
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 4 · Flashcards daily */}
+            <SectionHead icon="flashcards" right={minChip(minutesFor(["flashcards"]))}>4 · Flashcards daily</SectionHead>
+            <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+              <ModeTile icon="flashcards" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={fcStats.due > 0} />
+            </div>
+
+            {/* 5 · Official resources */}
+            <SectionHead icon="exam">5 · Official ACCA resources</SectionHead>
+            <OfficialResourcesSection paperId={paper.id} />
+          </>
+        )
+      })()}
 
       <SectionHead icon="mock">Exam room</SectionHead>
       {/* The official CBE shape of THIS paper — what exam day actually looks
@@ -1386,9 +1468,38 @@ function Overview({
         </div>
       )}
 
-      {/* the study path — topic by topic, Kaplan-style */}
-      <StudyPathSection paperId={paper.id} curated={curated} onTopic={onTopic} />
     </motion.div>
+  )
+}
+
+/* ── Category 5: official ACCA resources — verified links out ──── */
+
+function OfficialResourcesSection({ paperId }: { paperId: string }) {
+  const links = officialResources(paperId)
+  if (!links.length) return null
+  return (
+    <div style={{ display: "grid", gap: 8, marginBottom: 20 }}>
+      {links.map((r, i) => (
+        <motion.a
+          key={r.url}
+          href={r.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 * i }}
+          whileHover={{ x: 2 }}
+          style={{ ...card({ padding: "13px 15px" }), display: "flex", alignItems: "center", gap: 12, textDecoration: "none", cursor: "pointer" }}
+        >
+          <IconBadge name="exam" tone="neutral" size={38} />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: "block", fontWeight: 700, fontSize: 13.5, color: TEXT }}>{r.title}</span>
+            <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1, lineHeight: 1.45 }}>{r.detail}</span>
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 750, color: DIM, flexShrink: 0 }}>accaglobal.com ↗</span>
+        </motion.a>
+      ))}
+    </div>
   )
 }
 

@@ -29,7 +29,7 @@ import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 
 /* ── Task vocabulary ──────────────────────────────────────────── */
 
-export type SchedAction = "study" | "practice" | "weak" | "flashcards" | "bank" | "mock" | "diagnostic"
+export type SchedAction = "study" | "essentials" | "practice" | "weak" | "flashcards" | "bank" | "mock" | "diagnostic"
 
 export interface SchedTask {
   id: string
@@ -209,6 +209,10 @@ export function shieldState(paperId: string): ShieldState {
 
 /* ── Daily task distribution ──────────────────────────────────── */
 
+/** The guided questions that follow every studied topic — the founder's
+ *  "after studying, 5 questions on the most essential things". */
+export const ESSENTIALS_SIZE = 5
+
 /** Scale practice volume by the learner's ambition (65 / 75 / 85). */
 function ambitionFactor(targetProb: number): number {
   if (targetProb >= 85) return 1.35
@@ -302,7 +306,7 @@ export function buildDailyTasks(paperId: string): SchedTask[] {
 
   // Brand-new learner, gate still closed → LEARN the sections, no diagnostic yet.
   if (mode === "zero" && !diag && !diagnosticGate(paperId).unlocked) {
-    return learnDay(paperId, budget, plan.targetProb, fc.due, /*gateFocus*/ true)
+    return categoryDay(paperId, budget, plan.targetProb, fc.due, /*gateFocus*/ true)
   }
 
   // Gate just cleared but no diagnostic taken → the honest "wow" moment.
@@ -322,8 +326,24 @@ export function buildDailyTasks(paperId: string): SchedTask[] {
   return phaseDay(paperId, budget, plan.targetProb, fc.due)
 }
 
-/** A learn-phase day: study the current area, practise it, revise its cards. */
-function learnDay(paperId: string, budget: number, targetProb: number, due: number, gateFocus: boolean): SchedTask[] {
+/**
+ * The categorised study day — the founder's four daily categories, in order,
+ * PROPORTIONED to the onboarding answers (dailyMinutes sets the budget,
+ * targetProb scales practice volume):
+ *
+ *   1 · TOPIC LEARNING  — study the next area's chapter/brief (progression:
+ *       "another topic during learning is also essential")
+ *   2 · ESSENTIALS ×5   — five guided questions on the most essential points
+ *       of what was just studied
+ *   3 · DAILY PRACTICE  — the biggest block, aimed at the PAIN POINT first
+ *       (diagnostic → live practice precedence via focusArea); falls back to
+ *       the studied area while no weakness is measurable yet
+ *   4 · FLASHCARDS      — due spaced-repetition cards fill the remainder
+ *
+ * `gateFocus` (zero-start, A·B·C gate still closed) pins study AND practice to
+ * the next gate section — coverage before weakness-hunting.
+ */
+function categoryDay(paperId: string, budget: number, targetProb: number, due: number, gateFocus: boolean): SchedTask[] {
   const gate = gateFocus ? diagnosticGate(paperId) : null
   const focus = gate?.sections.find((s) => !s.done)
   const area = focus
@@ -331,39 +351,66 @@ function learnDay(paperId: string, budget: number, targetProb: number, due: numb
     : nextLearnArea(paperId) ?? { code: "", label: "the syllabus" }
 
   const tasks: SchedTask[] = []
-  let left = budget
 
-  // 1. Study the topic brief.
+  // 1 · Topic learning — the main content.
   tasks.push({
     id: "study",
     icon: "📖",
     title: `Study ${area.code ? `${area.code} · ` : ""}${area.label}`,
-    detail: "Read the topic brief — concept, formulas, worked example, the classic traps",
+    detail: "Read the topic chapter — concept, formulas, worked example, the classic traps",
     action: "study",
     minutes: COST.study,
     area: area.code || undefined,
   })
-  left -= COST.study
 
-  // 2. Practise the area you just studied.
-  const n = practiceCount(Math.max(10, left - COST.perCard * Math.min(due, 12)), targetProb)
+  // 2 · Essentials — 5 guided questions on what was just studied.
+  const essentialsMin = Math.round(ESSENTIALS_SIZE * COST.perQ)
   tasks.push({
-    id: "practice",
-    icon: "✏️",
-    title: `Practise ${n} questions${area.code ? ` — ${area.code} focus` : ""}`,
-    detail: "Instant marking + Ask Lara — turn the brief into recall",
-    action: "practice",
-    minutes: Math.round(n * COST.perQ),
+    id: "essentials",
+    icon: "🎯",
+    title: `Essentials ×${ESSENTIALS_SIZE}${area.code ? ` — ${area.code}` : ""}`,
+    detail: "The five most essential questions on what you just studied — read the brief, then prove it",
+    action: "essentials",
+    minutes: essentialsMin,
     area: area.code || undefined,
   })
-  left -= n * COST.perQ
 
-  // 3. Revise with flashcards (fills the rest of the budget).
-  const cards = Math.max(6, Math.min(due || 12, Math.round(left / COST.perCard)))
+  // 3 · Daily practice — the pain point leads whenever one is measurable.
+  const weak = gateFocus ? null : focusArea(paperId)
+  const cardsReserve = COST.perCard * Math.max(6, Math.min(due || 8, 12))
+  const left = Math.max(8, budget - COST.study - essentialsMin - cardsReserve)
+  const n = practiceCount(left, targetProb)
+  if (weak && weak.code !== area.code) {
+    tasks.push({
+      id: "weak",
+      icon: "💪",
+      title: `Drill ${weak.code} · ${weak.label} — at ${Math.round(weak.acc * 100)}%`,
+      detail:
+        weak.source === "diagnostic"
+          ? `${n} adaptive questions on your diagnostic's pain point — until the floor lifts above 65%`
+          : `${n} adaptive questions on your weakest practised area — until the floor lifts above 65%`,
+      action: "weak",
+      minutes: Math.round(n * COST.perQ),
+      area: weak.code,
+    })
+  } else {
+    tasks.push({
+      id: "practice",
+      icon: "✏️",
+      title: `Practise ${n} questions${area.code ? ` — ${area.code} focus` : ""}`,
+      detail: "Instant marking + Ask Lara — turn the chapter into recall",
+      action: "practice",
+      minutes: Math.round(n * COST.perQ),
+      area: area.code || undefined,
+    })
+  }
+
+  // 4 · Flashcards — spaced revision closes the day.
+  const cards = Math.max(6, Math.min(due || 12, 15))
   tasks.push({
     id: "flashcards",
     icon: "🧠",
-    title: `Revise ${cards} flashcards`,
+    title: due > 0 ? `Clear ${cards} due flashcards` : `Revise ${cards} flashcards`,
     detail: due > 0 ? "Cards due for spaced repetition — lock in what you learned" : "Warm up the key facts, formulas and thresholds",
     action: "flashcards",
     minutes: Math.round(cards * COST.perCard),
@@ -378,37 +425,18 @@ function phaseDay(paperId: string, budget: number, targetProb: number, due: numb
   const phase = currentPhase(paperId)
   const key = phase.key as MethodPhaseKey
 
-  if (key === "learn") return learnDay(paperId, budget, targetProb, due, false)
+  // Learn AND strengthen run the same four-category day — what changes between
+  // them is where practice lands (categoryDay aims it at the pain point the
+  // moment one is measurable). Strengthen adds a bank run on big-budget days.
+  if (key === "learn") return categoryDay(paperId, budget, targetProb, due, false)
 
   if (key === "strengthen") {
-    const weak = focusArea(paperId)
-    const tasks: SchedTask[] = []
-    let left = budget
-    if (weak) {
-      const n = practiceCount(Math.round(budget * 0.6), targetProb)
-      tasks.push({
-        id: "weak",
-        icon: "💪",
-        title: `Drill ${weak.code} · ${weak.label} — at ${Math.round(weak.acc * 100)}%`,
-        detail:
-          weak.source === "diagnostic"
-            ? "Your diagnostic flagged this as a pain point. Adaptive set until the floor lifts above 65%"
-            : "Your weakest area in practice. Adaptive set until the floor lifts above 65%",
-        action: "weak",
-        minutes: Math.round(n * COST.perQ),
-        area: weak.code,
-      })
-      left -= n * COST.perQ
-    }
-    if (due > 0) {
-      const cards = Math.min(due, 15)
-      tasks.push({ id: "flashcards", icon: "🧠", title: `Clear ${cards} due flashcards`, detail: "Spaced revision keeps mastery warm", action: "flashcards", minutes: Math.round(cards * COST.perCard) })
-      left -= cards * COST.perCard
-    }
-    if (left > 25) {
+    const tasks = categoryDay(paperId, budget, targetProb, due, false)
+    const spent = tasks.reduce((a, t) => a + t.minutes, 0)
+    if (budget - spent > 25) {
       tasks.push({ id: "bank", icon: "📚", title: "Bank run — 50 questions under time", detail: "Whole-paper set against the clock — bridge toward the mock gate", action: "bank", minutes: COST.bank })
     }
-    return tasks.slice(0, 3)
+    return tasks
   }
 
   if (key === "revise") {

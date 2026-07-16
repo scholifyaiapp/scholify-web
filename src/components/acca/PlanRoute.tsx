@@ -14,11 +14,11 @@ import { getPlan, daysUntilExam } from "@/lib/acca-plan"
  */
 
 const KIND_ICON: Record<SchedAction, IconName> = {
-  study: "study", practice: "practice", weak: "weak" as IconName, flashcards: "flashcards" as IconName,
+  study: "study", essentials: "mission", practice: "practice", weak: "weak" as IconName, flashcards: "flashcards" as IconName,
   bank: "practice", mock: "mock" as IconName, diagnostic: "diagnostic",
 }
 const KIND_LABEL: Record<SchedAction, string> = {
-  study: "Study", practice: "Practise", weak: "Drill", flashcards: "Cards", bank: "Bank 50", mock: "Mock", diagnostic: "Diagnostic",
+  study: "Study", essentials: "Essentials", practice: "Practise", weak: "Drill", flashcards: "Cards", bank: "Bank 50", mock: "Mock", diagnostic: "Diagnostic",
 }
 const PHASE_TINT: Record<string, string> = {
   learn: C.brand, strengthen: C.amber, revise: "#7C6BD6", rehearse: C.green,
