@@ -1081,23 +1081,49 @@ function VisualPanel({
   return (
     <IllusBase>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ position: "relative", width: "min(78%, 440px)", aspectRatio: "1", maxHeight: "78%" }}>
+        {/* The stage. Width is ALSO capped by viewport height (60vh) so the
+            square can never be squashed by a short window — aspect-ratio then
+            always holds and the ring is always a true circle, dead-centre of
+            the panel. */}
+        <div style={{ position: "relative", width: "min(76%, 440px, 60vh)", aspectRatio: "1", flexShrink: 0 }}>
+          {/* the track — one shared radius (42%): the waypoints sit exactly
+              ON this line, so the loop reads as stations on one circuit */}
           <motion.div
             animate={reducedLoop ? undefined : { rotate: 360 }}
-            transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
-            style={{ position: "absolute", inset: "12%", borderRadius: "50%", border: "2px dashed #E0C9C3" }}
+            transition={{ duration: 36, repeat: Infinity, ease: "linear" }}
+            style={{ position: "absolute", inset: "8%", borderRadius: "50%", border: "2px dashed #E0C9C3" }}
           />
-          {/* flow direction hint on the ring */}
-          <div style={{ position: "absolute", left: "50%", top: "12%", transform: "translate(-50%,-50%) rotate(90deg)", color: "#D5B8B1", fontSize: 13, fontWeight: 800 }}>›</div>
-          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "30%", aspectRatio: "1", borderRadius: "50%", background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 16px 40px -18px rgba(200,0,0,.5)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
+          {/* the runner — today's mission travelling the loop, clockwise.
+              Anchored to the SAME inset as the track, so its orbit traces the
+              dashed line exactly. */}
+          {reducedLoop ? (
+            <span style={{ position: "absolute", left: "50%", top: "8%", transform: "translate(-50%,-50%)", width: 11, height: 11, borderRadius: "50%", background: RED, boxShadow: "0 0 0 5px rgba(200,0,0,.12)" }} />
+          ) : (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
+              style={{ position: "absolute", inset: "8%", pointerEvents: "none" }}
+            >
+              <span style={{ position: "absolute", left: "50%", top: 0, transform: "translate(-50%,-50%)", width: 11, height: 11, borderRadius: "50%", background: RED, boxShadow: "0 0 0 5px rgba(200,0,0,.12), 0 0 16px 3px rgba(200,0,0,.4)" }} />
+            </motion.div>
+          )}
+          {/* centre medallion — breathes gently. Positioned with left/top
+              maths (35% = 50% − half its 30% size), NOT a translate transform:
+              framer owns the transform once scale animates. */}
+          <motion.div
+            animate={reducedLoop ? undefined : { scale: [1, 1.035, 1] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{ position: "absolute", left: "35%", top: "35%", width: "30%", aspectRatio: "1", borderRadius: "50%", background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 16px 40px -18px rgba(200,0,0,.5)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}
+          >
             <ScholifyMark size={30} />
             <span style={{ font: `800 17px/1 ${MONO}`, color: RED, letterSpacing: "0.02em" }}>{paper ?? "FR"}</span>
-          </div>
+          </motion.div>
           {LOOP_STAGES.map((o, i) => {
             // 6 waypoints, clockwise from the top (-90°), 60° apart — the
-            // same geometry as the brand's hexagonal circuit.
+            // same geometry as the brand's hexagonal circuit, on the SAME
+            // radius as the dashed track.
             const angle = ((-90 + i * 60) * Math.PI) / 180
-            const R = 44 // % of container
+            const R = 42 // % of container — matches the track (inset 8%)
             const left = 50 + R * Math.cos(angle)
             const top = 50 + R * Math.sin(angle)
             return (
@@ -1105,35 +1131,41 @@ function VisualPanel({
                 key={o.label}
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 + i * 0.1 }}
-                style={{
-                  position: "absolute",
-                  left: `${left}%`,
-                  top: `${top}%`,
-                  transform: "translate(-50%,-50%)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                  padding: "8px 12px 8px 9px",
-                  borderRadius: 99,
-                  background: o.win ? "rgba(14,159,110,0.1)" : o.gate ? "rgba(200,0,0,0.06)" : "#fff",
-                  border: o.win ? "1.5px solid #0E9F6E" : o.gate ? `1.5px dashed ${RED}` : `1px solid ${BORDER}`,
-                  boxShadow: "0 10px 24px -14px rgba(20,20,26,.5)",
-                  whiteSpace: "nowrap",
-                }}
+                transition={{ delay: 0.15 + i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                // Centring lives in framer's x/y, NOT style.transform — framer
+                // rebuilds the transform while animating scale and would drop
+                // a hand-written translate, anchoring chips by their corner
+                // (the off-centre skew this replaced).
+                style={{ position: "absolute", left: `${left}%`, top: `${top}%`, x: "-50%", y: "-50%", width: 160, boxSizing: "border-box" }}
               >
-                <span style={{ width: 24, height: 24, borderRadius: "50%", background: o.win ? "rgba(14,159,110,0.14)" : "rgba(200,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon name={o.icon} size={14} color={o.win ? GREEN : RED} />
-                </span>
-                <span>
-                  <span style={{ display: "block", font: `750 11.5px/1.1 ${SANS}`, color: INK }}>{o.label}</span>
-                  <span style={{ display: "block", font: `600 9px/1.2 ${MONO}`, color: o.gate ? RED : FAINT, letterSpacing: "0.04em", marginTop: 1 }}>{o.sub}</span>
-                </span>
+                <motion.div
+                  animate={reducedLoop ? undefined : { y: [0, -3.5, 0] }}
+                  transition={{ duration: 5.2 + i * 0.35, repeat: Infinity, ease: "easeInOut", delay: i * 0.45 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "8px 10px 8px 9px",
+                    borderRadius: 99,
+                    background: o.win ? "rgba(14,159,110,0.1)" : o.gate ? "rgba(200,0,0,0.06)" : "#fff",
+                    border: o.win ? "1.5px solid #0E9F6E" : o.gate ? `1.5px dashed ${RED}` : `1px solid ${BORDER}`,
+                    boxShadow: "0 10px 24px -14px rgba(20,20,26,.5)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: o.win ? "rgba(14,159,110,0.14)" : "rgba(200,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name={o.icon} size={13} color={o.win ? GREEN : RED} />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", font: `750 11.5px/1.1 ${SANS}`, color: INK }}>{o.label}</span>
+                    <span style={{ display: "block", font: `600 8.5px/1.2 ${MONO}`, color: o.gate ? RED : FAINT, letterSpacing: "0.04em", marginTop: 1 }}>{o.sub}</span>
+                  </span>
+                </motion.div>
               </motion.div>
             )
           })}
         </div>
-        <div style={{ marginTop: 18, font: `500 11.5px/1.5 ${SANS}`, color: "#9A8F86", maxWidth: 300, textAlign: "center" }}>
+        <div style={{ marginTop: 22, font: `500 11.5px/1.5 ${SANS}`, color: "#9A8F86", maxWidth: 320, textAlign: "center" }}>
           The loop never stops until you pass — a stumble becomes a recovery run, not an ending.
         </div>
       </div>
