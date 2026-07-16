@@ -18,7 +18,10 @@ import { createClient } from "@supabase/supabase-js"
  * not retired.
  */
 
-export const config = { maxDuration: 30 }
+// 60s ceiling: a reasoning-model marking call must never be killed mid-answer
+// (the 30s cap was clipping gpt-5.5 at its default medium effort — the
+// "Lara is thinking forever, then demo marking" bug of 2026-07-16).
+export const config = { maxDuration: 60 }
 
 const HAIKU = "claude-haiku-4-5"
 // Sonnet 5: better model, intro pricing ($2/$10 per MTok through 2026-08-31).
@@ -44,8 +47,14 @@ function aiProvider(): "anthropic" | "openai" | null {
 
 // The OpenAI models the bridge uses, mirroring the Claude split: a strong model
 // for marking/generation (the quality-critical tier), a fast/cheap one for the
-// high-volume tutor. gpt-5.5 is a REASONING model — see the token note below.
-const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-5.5" }
+// high-volume tutor.
+//
+// Why terra, not gpt-5.5: gpt-5.5 defaults to MEDIUM reasoning effort — tens of
+// seconds of hidden thinking per call at $5/$30 per MTok. In production that
+// read as "Lara is thinking forever", and calls that outran the function cap or
+// spent the whole token budget on reasoning fell back to demo marking.
+// gpt-5.6-terra at LOW effort (set below) answers in seconds at $2.50/$15.
+const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-5.6-terra" }
 const ANTHROPIC_MODELS: Record<ModelTier, string> = { haiku: HAIKU, sonnet: SONNET }
 
 /** OpenAI's reasoning models (gpt-5+) reject `max_tokens` and spend part of the
@@ -105,7 +114,13 @@ async function callModel(opts: {
       // Reasoning models use `max_completion_tokens` and need room for hidden
       // reasoning on top of the visible answer; others use `max_tokens`.
       ...(reasoning
-        ? { max_completion_tokens: opts.maxTokens + REASONING_HEADROOM }
+        ? {
+            max_completion_tokens: opts.maxTokens + REASONING_HEADROOM,
+            // LOW effort: marking against a rubric / emitting structured JSON
+            // needs correctness, not deep deliberation. The default (medium)
+            // is what made Lara feel frozen — and 5-10× the latency and spend.
+            reasoning_effort: "low",
+          }
         : { max_tokens: opts.maxTokens }),
       messages: [
         { role: "system", content: opts.system },
