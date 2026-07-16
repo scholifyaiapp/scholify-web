@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type CSSProperties,
   type ReactNode,
 } from "react"
@@ -33,6 +34,7 @@ import {
   R,
   SHADOW,
   TYPE,
+  GRAD,
 } from "@/components/acca/ui"
 import {
   getPaper,
@@ -44,6 +46,7 @@ import {
 } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { entitlementOf } from "@/lib/entitlement"
+import { avatarUrlOf, onAvatarChange, saveAvatar, removeAvatar, AVATAR_MAX_SOURCE_MB, type AvatarError } from "@/lib/avatar"
 import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
 
 /* ──────────────────────────────────────────────────────────────
@@ -660,6 +663,11 @@ export default function Settings() {
   const email = user?.email || ""
   const [savingProfile, setSavingProfile] = useState(false)
   const [avatarHover, setAvatarHover] = useState(false)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [avatarTick, setAvatarTick] = useState(0)
+  const avatarFileRef = useRef<HTMLInputElement>(null)
+  useEffect(() => onAvatarChange(() => setAvatarTick((t) => t + 1)), [])
+  const avatarSrc = useMemo(() => avatarUrlOf(user), [user, avatarTick])
   const [dialog, setDialog] = useState<"cancel" | "reset" | "delete" | null>(null)
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Learner"
@@ -745,6 +753,41 @@ export default function Settings() {
       toast.error("Couldn't save profile")
     } finally {
       setSavingProfile(false)
+    }
+  }
+
+  const onPickAvatar = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = "" // allow re-picking the same file
+    if (!file || avatarBusy) return
+    setAvatarBusy(true)
+    try {
+      const { mode } = await saveAvatar(user, file)
+      setAvatarTick((t) => t + 1)
+      toast.success(mode === "cloud" ? "Profile photo updated" : "Photo saved on this device")
+    } catch (err) {
+      const code = (err instanceof Error ? err.message : "") as AvatarError
+      toast.error(
+        code === "too_large"
+          ? `Choose an image under ${AVATAR_MAX_SOURCE_MB} MB`
+          : code === "not_image"
+            ? "That file isn't an image"
+            : "Couldn't read that image — try a different one",
+      )
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  const onRemoveAvatar = async () => {
+    if (avatarBusy) return
+    setAvatarBusy(true)
+    try {
+      await removeAvatar(user)
+      setAvatarTick((t) => t + 1)
+      toast.success("Photo removed")
+    } finally {
+      setAvatarBusy(false)
     }
   }
 
@@ -924,46 +967,161 @@ export default function Settings() {
               flexWrap: "wrap",
             }}
           >
-            <div
-              onMouseEnter={() => setAvatarHover(true)}
-              onMouseLeave={() => setAvatarHover(false)}
-              style={{
-                position: "relative",
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                background: IRIDESCENT,
-                border: "3px solid rgba(200,0,0,0.4)",
-                boxShadow: "0 0 30px rgba(200,0,0,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontSize: 32,
-                fontWeight: 800,
-                flexShrink: 0,
-                cursor: "pointer",
-              }}
-              onClick={() => setEditingProfile(true)}
-            >
-              {fullName.charAt(0).toUpperCase()}
-              <div
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, flexShrink: 0 }}>
+              <motion.button
+                type="button"
+                aria-label="Change profile photo"
+                disabled={avatarBusy}
+                onClick={() => avatarFileRef.current?.click()}
+                onMouseEnter={() => setAvatarHover(true)}
+                onMouseLeave={() => setAvatarHover(false)}
+                whileTap={avatarBusy ? undefined : { scale: 0.96 }}
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  background: "rgba(0,0,0,0.5)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  color: "#fff",
-                  opacity: avatarHover ? 1 : 0,
-                  transition: "opacity 0.2s",
+                  position: "relative",
+                  width: 80,
+                  height: 80,
+                  padding: 0,
+                  border: "none",
+                  background: "transparent",
+                  cursor: avatarBusy ? "default" : "pointer",
+                  flexShrink: 0,
                 }}
               >
-                Edit
-              </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    background: IRIDESCENT,
+                    border: "3px solid rgba(200,0,0,0.4)",
+                    boxShadow: "0 0 30px rgba(200,0,0,0.2)",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                  }}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {avatarSrc ? (
+                      <motion.img
+                        key={avatarSrc}
+                        src={avatarSrc}
+                        alt="Your profile photo"
+                        initial={{ opacity: 0, scale: 1.15 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <motion.span
+                        key="initial"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ fontSize: 32, fontWeight: 800 }}
+                      >
+                        {fullName.charAt(0).toUpperCase()}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.5)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 3,
+                      color: "#fff",
+                      opacity: avatarHover && !avatarBusy ? 1 : 0,
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    <Icon name="camera" size={17} color="#fff" />
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.02em" }}>Change</span>
+                  </div>
+                  {avatarBusy && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.45)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          border: "2.5px solid rgba(255,255,255,0.35)",
+                          borderTopColor: "#fff",
+                          display: "block",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                {/* the always-visible affordance — hover isn't a thing on touch */}
+                <span
+                  style={{
+                    position: "absolute",
+                    right: -2,
+                    bottom: -2,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    background: GRAD,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "2.5px solid var(--sch-card)",
+                    boxShadow: "0 4px 10px rgba(200,0,0,0.35)",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <Icon name="camera" size={13} color="#fff" />
+                </span>
+              </motion.button>
+              <input
+                ref={avatarFileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                style={{ display: "none" }}
+                onChange={onPickAvatar}
+              />
+              <AnimatePresence>
+                {avatarSrc && !avatarBusy && (
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    onClick={onRemoveAvatar}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: TEXT2,
+                      cursor: "pointer",
+                      overflow: "hidden",
+                    }}
+                  >
+                    Remove photo
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
 
             <div style={{ minWidth: 0, flex: 1 }}>

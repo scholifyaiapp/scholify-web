@@ -11,6 +11,7 @@ import NotificationBell from "@/components/NotificationBell"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
 import { getTodayStats } from "@/lib/acca"
 import { qualificationProgress } from "@/lib/acca-qualification"
+import { avatarUrlOf, onAvatarChange } from "@/lib/avatar"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in ACCA screens (Study, Progress,
@@ -78,7 +79,23 @@ export function Pill({ children, style }: { children: ReactNode; style?: CSSProp
   )
 }
 
-function Avatar({ initial, size = 38 }: { initial: string; size?: number }) {
+function Avatar({ initial, src, size = 38 }: { initial: string; src?: string | null; size?: number }) {
+  const [broken, setBroken] = useState(false)
+  useEffect(() => setBroken(false), [src])
+  if (src && !broken) {
+    return (
+      <img
+        src={src}
+        alt=""
+        onError={() => setBroken(true)}
+        style={{
+          width: size, height: size, flexShrink: 0, borderRadius: R.md,
+          objectFit: "cover", display: "block", boxShadow: SHADOW.sm,
+          border: "1px solid var(--sch-hairline)",
+        }}
+      />
+    )
+  }
   return (
     <div
       style={{
@@ -166,6 +183,12 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const isPro = isProUser(user)
 
+  // Re-read the avatar when Settings changes it (uploads fire this event;
+  // cloud saves also refresh `user` via USER_UPDATED — either path lands here).
+  const [avatarTick, setAvatarTick] = useState(0)
+  useEffect(() => onAvatarChange(() => setAvatarTick((t) => t + 1)), [])
+  const avatarSrc = useMemo(() => avatarUrlOf(user), [user, avatarTick])
+
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>
       <style>{LAYOUT_CSS}</style>
@@ -186,7 +209,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* User */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 4px" }}>
-          <Avatar initial={firstName.charAt(0).toUpperCase()} />
+          <Avatar initial={firstName.charAt(0).toUpperCase()} src={avatarSrc} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {firstName}

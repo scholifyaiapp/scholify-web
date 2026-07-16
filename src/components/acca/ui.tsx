@@ -15,7 +15,7 @@ import {
   FlaskConical, Sparkles, Flame, Trophy, RotateCw, Lock, CheckCircle2,
   ClipboardCheck, CalendarDays, ShieldCheck, PenLine, Layers, Landmark,
   Stethoscope, HeartHandshake, PartyPopper, ArrowRight, ChevronRight,
-  Pencil, Dumbbell, Map, Zap, BarChart3, Rocket, Gem, Clock, X,
+  Pencil, Dumbbell, Map, Zap, BarChart3, Rocket, Gem, Clock, X, Camera,
   type LucideIcon,
 } from "lucide-react"
 
@@ -99,6 +99,7 @@ const ICONS = {
   celebrate: PartyPopper, arrow: ArrowRight, chevron: ChevronRight,
   practice: Pencil, weak: Dumbbell, roadmap: Map, mission: Zap,
   stats: BarChart3, rocket: Rocket, gem: Gem, time: Clock, close: X,
+  camera: Camera,
 } satisfies Record<string, LucideIcon>
 
 export type IconName = keyof typeof ICONS
