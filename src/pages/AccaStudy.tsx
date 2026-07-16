@@ -13,6 +13,8 @@ import { PaperContentSkeleton, PaperContentError } from "@/components/acca/Paper
 import PaywallModal from "@/components/PaywallModal"
 import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
+import CbeToolsDock, { CbeBlueprintCard } from "@/components/acca/CbeTools"
+import { constructedSectionLabel } from "@/lib/acca-exam-structure"
 import FlashcardsView from "@/components/acca/FlashcardsView"
 import GenerateView from "@/components/acca/GenerateView"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
@@ -612,6 +614,17 @@ export default function AccaStudy() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* The CBE toolbelt — calculator, formulae sheet, quick notes — at the
+          learner's elbow wherever they answer or study. The constructed-
+          response studio mounts its own (with question-area context). */}
+      {(mode === "session" || mode === "topic" || mode === "brief") && paperId && (
+        <CbeToolsDock
+          paperId={paperId}
+          area={mode === "session" ? (questions[idx]?.area ?? topicArea) : topicArea}
+          context={mode === "session" ? (isMock ? "mock" : "practice") : "study"}
+        />
+      )}
 
       <PaywallModal open={showPaywall} type={paywallType} onClose={closePaywall} />
     </DashboardLayout>
@@ -1298,6 +1311,9 @@ function Overview({
       </div>
 
       <SectionHead icon="mock">Exam room</SectionHead>
+      {/* The official CBE shape of THIS paper — what exam day actually looks
+          like, so every rehearsal below is aimed at the real thing. */}
+      <CbeBlueprintCard paperId={paper.id} />
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
         {curated && (() => {
           const br = bankRunProgress(paper.id)
@@ -1330,8 +1346,8 @@ function Overview({
         {!paper.objectiveOnly && writtenCount > 0 && (
           <ModeTile
             icon="examiner"
-            title="AI Examiner"
-            sub={`Mark a written answer · ${writtenCount} questions`}
+            title={`${constructedSectionLabel(paper.id)} studio — CBE`}
+            sub={`Word processor + spreadsheet + exam clock · Lara marks your answer · ${writtenCount} questions`}
             onClick={onExaminer}
             locked={!isPro}
           />

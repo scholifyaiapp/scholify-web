@@ -58,6 +58,7 @@ const AccaAnalytics = lazyWithReload(() => import("@/pages/AccaAnalytics"))
 const Dashboard = lazyWithReload(() => import("@/pages/Dashboard"))
 const Welcome = lazyWithReload(() => import("@/pages/Welcome"))
 const Settings = lazyWithReload(() => import("@/pages/Settings"))
+const NotesHub = lazyWithReload(() => import("@/pages/NotesHub"))
 const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
 const Terms = lazyWithReload(() => import("@/pages/Terms"))
@@ -155,6 +156,7 @@ export default function App() {
         <Route path="/study/diagnostic" element={<ProtectedRoute><Page name="AccaDiagnostic"><AccaDiagnostic /></Page></ProtectedRoute>} />
         <Route path="/study/analytics" element={<ProtectedRoute><Page name="AccaAnalytics"><AccaAnalytics /></Page></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute><Page name="NotesHub"><NotesHub /></Page></ProtectedRoute>} />
 
         {/* Public info */}
         <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
