@@ -1,4 +1,4 @@
-import type { AccaQuestion } from "@/lib/acca-content"
+import type { AccaQuestion, OtCase } from "@/lib/acca-content"
 import type { Flashcard } from "@/lib/acca-flashcards"
 import type { WrittenQuestion } from "@/lib/acca-written"
 import type { TopicBrief } from "@/lib/acca-briefs"
@@ -47,6 +47,8 @@ export interface PaperContent {
   flashcards: Flashcard[]
   written: WrittenQuestion[]
   briefs: TopicBrief[]
+  /** Section-B OT cases: authored scenario blocks with linked questions. */
+  cases: OtCase[]
 }
 
 const EMPTY: PaperContent = Object.freeze({
@@ -55,6 +57,7 @@ const EMPTY: PaperContent = Object.freeze({
   flashcards: [],
   written: [],
   briefs: [],
+  cases: [],
 }) as PaperContent
 
 const REGISTRY: Record<string, PaperContent> = {}

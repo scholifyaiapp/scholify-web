@@ -69,6 +69,32 @@ export interface AccaQuestion {
   difficulty: Difficulty
 }
 
+/*
+ * A Section-B OT case — the real CBE's scenario blocks: one mini-scenario
+ * with a handful of linked objective-test questions read against it
+ * (PM/TX/FR/FM: 5 × 2 marks; FA/MA: multi-task questions whose parts share
+ * one scenario). Authored as REAL cases — a case is written as a unit, never
+ * faked by grouping standalone questions after the fact.
+ */
+export interface OtCase {
+  id: string
+  /** Paper id this belongs to (matches AccaPaper.id). */
+  paper: string
+  /** Syllabus area code the case examines. */
+  area: string
+  /** Short label for lists, e.g. "Halton Co — right-of-use assets". */
+  title: string
+  /** The shared scenario every linked question reads against. */
+  scenario: string
+  /** The linked OT questions, in exam order. Marks live on each question. */
+  questions: AccaQuestion[]
+}
+
+/** Total marks a case is worth — the sum of its linked questions. */
+export function otCaseMarks(c: OtCase): number {
+  return c.questions.reduce((a, q) => a + q.marks, 0)
+}
+
 /* ── Papers ───────────────────────────────────────────────────── */
 
 export const PAPERS: AccaPaper[] = [

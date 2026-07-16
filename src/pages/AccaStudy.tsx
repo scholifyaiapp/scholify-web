@@ -13,8 +13,9 @@ import { PaperContentSkeleton, PaperContentError } from "@/components/acca/Paper
 import PaywallModal from "@/components/PaywallModal"
 import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
+import CbeMockRunner from "@/components/acca/CbeMockRunner"
 import CbeToolsDock, { CbeBlueprintCard } from "@/components/acca/CbeTools"
-import { constructedSectionLabel } from "@/lib/acca-exam-structure"
+import { constructedSectionLabel, examBlueprint } from "@/lib/acca-exam-structure"
 import FlashcardsView from "@/components/acca/FlashcardsView"
 import GenerateView from "@/components/acca/GenerateView"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
@@ -62,7 +63,7 @@ import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbabilit
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
-import { buildMockForm, nextMockForm } from "@/lib/acca-mockforms"
+import { nextMockForm } from "@/lib/acca-mockforms"
 import { withShuffledOptions } from "@/lib/acca-options"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
@@ -85,22 +86,13 @@ const BORDER = "var(--sch-border)"
 const GREEN = "#10B981"
 const RED = "#EF4444"
 
-type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "examiner" | "flashcards" | "generate" | "results" | "journey"
+type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "cbemock" | "examiner" | "flashcards" | "generate" | "results" | "journey"
 
 const SESSION_SIZE = 8
 const LEARN_SIZE = 5 // the guided first questions after a Topic Brief
-const MOCK_SIZE = 12
-/**
- * Exam-scale mock size — with deep banks a mock should feel like the
- * sitting (founder spec): 30 questions (45 min) on 100+ question banks,
- * 20 (30 min) on 60+, else the legacy 12 (18 min).
- */
-function mockSize(paperId: string): number {
-  const bank = getQuestions(paperId).length
-  if (bank >= 100) return 30
-  if (bank >= 60) return 20
-  return MOCK_SIZE
-}
+// Topic knowledge checks run under the clock at exam OT pacing. (The mock
+// itself is the sectioned CBE now — see CbeMockRunner, which prices its one
+// exam clock at the official minutes-per-mark.)
 const MOCK_SECONDS_PER_Q = 90
 // Single source of truth for the onboarding flag (shared with Dashboard).
 const wasOnboarded = isAccaOnboarded
@@ -304,16 +296,16 @@ export default function AccaStudy() {
         triggerFeaturePaywall()
         return
       }
+      // The mock IS the sectioned CBE now — the full exam shape (A → B → C),
+      // one clock, navigator, Lara marking constructed answers into the score.
+      setMode("cbemock")
+      return
     }
     const seed = (Date.now() % 100000) + 1
-    const size = mock ? mockSize(paperId) : SESSION_SIZE
+    const size = SESSION_SIZE
     // "Target my weak areas" uses the adaptive engine (weak areas + matched
     // difficulty + spaced reinforcement); plain practice stays a fresh shuffle.
-    const qs = mock
-      ? buildMockForm(paperId, nextMockForm(mockProgress(paperId).attempts), size)
-      : weakFirst
-        ? buildAdaptiveSession(paperId, size, seed)
-        : buildSession(paperId, size, { weakFirst }, seed)
+    const qs = weakFirst ? buildAdaptiveSession(paperId, size, seed) : buildSession(paperId, size, { weakFirst }, seed)
     if (qs.length === 0) {
       toast.info("No questions available yet for this paper.")
       return
@@ -322,11 +314,11 @@ export default function AccaStudy() {
     setIdx(0)
     setCorrectCount(0)
     setLog([])
-    setIsMock(mock)
+    setIsMock(false)
     setIsBankRun(false)
     setIsTopicTest(false)
     setTopicArea(null)
-    setTimeLeft(mock ? qs.length * MOCK_SECONDS_PER_Q : 0)
+    setTimeLeft(0)
     resetQuestion()
     setMode("session")
   }
@@ -577,6 +569,10 @@ export default function AccaStudy() {
               onMockNext={mockNext}
               onQuit={leaveSession}
             />
+          )}
+
+          {mode === "cbemock" && paperId && (
+            <CbeMockRunner key="cbemock" paperId={paperId} onBack={() => { setTick((t) => t + 1); setMode("overview") }} />
           )}
 
           {mode === "examiner" && paperId && (
@@ -1329,14 +1325,21 @@ function Overview({
         })()}
         {curated && (
           gate.unlocked ? (
-            <ModeTile
-              icon="mock"
-              title={mockProgress(paper.id).examReady ? `Mock exam — keep it warm · Form ${nextMockForm(mockProgress(paper.id).attempts)}` : `Mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED} · Form ${nextMockForm(mockProgress(paper.id).attempts)}`}
-              sub={`${mockSize(paper.id)} questions · ${Math.round((mockSize(paper.id) * MOCK_SECONDS_PER_Q) / 60)} min, timed, no hints — pass line ${MOCK_PASS}%`}
-              onClick={onMock}
-              locked={!isPro}
-              primary={phase.key === "rehearse"}
-            />
+            (() => {
+              const bp = examBlueprint(paper.id)
+              const sectionsLabel = bp ? bp.sections.map((s) => `Section ${s.id}`).join(" → ") : "the official sections"
+              const hours = bp ? `${Math.floor(bp.durationMin / 60)}h${bp.durationMin % 60 ? String(bp.durationMin % 60).padStart(2, "0") : ""}` : ""
+              return (
+                <ModeTile
+                  icon="mock"
+                  title={mockProgress(paper.id).examReady ? `CBE mock — keep it warm · Form ${nextMockForm(mockProgress(paper.id).attempts)}` : `CBE mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED} · Form ${nextMockForm(mockProgress(paper.id).attempts)}`}
+                  sub={`The full sitting: ${sectionsLabel} · ${hours} clock, navigator, flag for review — pass line ${MOCK_PASS}%`}
+                  onClick={onMock}
+                  locked={!isPro}
+                  primary={phase.key === "rehearse"}
+                />
+              )
+            })()
           ) : (
             <MockGateTile prob={gate.prob} onWeak={onWeak} />
           )

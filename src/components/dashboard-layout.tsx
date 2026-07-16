@@ -12,6 +12,7 @@ import { deriveNotifications, subscribeNotifications, type NotificationKind } fr
 import { getTodayStats } from "@/lib/acca"
 import { qualificationProgress } from "@/lib/acca-qualification"
 import { avatarUrlOf, onAvatarChange } from "@/lib/avatar"
+import { initNotesSync } from "@/lib/acca-notes-cloud"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in ACCA screens (Study, Progress,
@@ -160,6 +161,12 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const [calendarConnected, setCalendarConnected] = useState(false)
   const [notifTick, setNotifTick] = useState(0)
   useEffect(() => subscribeNotifications(() => setNotifTick((t) => t + 1)), [])
+
+  // Notes account sync: reconcile once per session, then push (debounced)
+  // after every local change, wherever in the app the note was taken.
+  useEffect(() => {
+    initNotesSync()
+  }, [])
   const notif = useMemo(() => deriveNotifications(user?.id || "demo-user"), [user?.id, notifTick])
 
   // Real ACCA signals (was previously fed by legacy vocab data — wrong numbers).

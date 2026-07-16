@@ -1,5 +1,5 @@
 import { registerPaperContent, isPaperContentLoaded, type PaperContent } from "@/lib/acca-content-registry"
-import type { AccaQuestion } from "@/lib/acca-content"
+import type { AccaQuestion, OtCase } from "@/lib/acca-content"
 import type { Flashcard } from "@/lib/acca-flashcards"
 import type { WrittenQuestion } from "@/lib/acca-written"
 import type { TopicBrief } from "@/lib/acca-briefs"
@@ -172,6 +172,17 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
   AAA: [() => import("@/lib/acca-written-s3")],
 }
 
+/*
+ * Section-B OT cases — authored scenario blocks for the sectioned CBE mock.
+ * Only papers with an authored set appear here; a paper without one composes
+ * its mock's Section B from standalone OTs, honestly labelled (a case is
+ * never faked by grouping loose questions).
+ */
+const CASE_MODULES: Record<string, Loader[]> = {
+  FA: [() => import("@/lib/acca-cases-fa")],
+  FR: [() => import("@/lib/acca-cases-fr")],
+}
+
 const BRIEF_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-briefs-core")],
   FR: [() => import("@/lib/acca-briefs-core")],
@@ -216,12 +227,13 @@ export function loadPaperContent(paperId: string): Promise<void> {
   if (existing) return existing
 
   const job = (async () => {
-    const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods] = await Promise.all([
+    const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods, caseMods] = await Promise.all([
       loadAll(QUESTION_MODULES[paperId]),
       loadAll(CHAPTER_MODULES[paperId]),
       loadAll(FLASHCARD_MODULES[paperId]),
       loadAll(WRITTEN_MODULES[paperId]),
       loadAll(BRIEF_MODULES[paperId]),
+      loadAll(CASE_MODULES[paperId]),
     ])
     const content: PaperContent = {
       questions: collect<AccaQuestion>(questionMods, paperId),
@@ -229,6 +241,7 @@ export function loadPaperContent(paperId: string): Promise<void> {
       flashcards: collect<Flashcard>(flashcardMods, paperId),
       written: collect<WrittenQuestion>(writtenMods, paperId),
       briefs: collect<TopicBrief>(briefMods, paperId),
+      cases: collect<OtCase>(caseMods, paperId),
     }
     registerPaperContent(paperId, content)
   })()

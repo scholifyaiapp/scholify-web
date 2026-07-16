@@ -50,8 +50,8 @@ The loop is owned by `src/lib/acca-loop.ts` and rendered by `getJourneyStages()`
 | `TOPIC_PASS` | **0.65** | `acca-topics.ts` | Knowledge-check score to master a topic (gated above ACCA's 50%). |
 | `TOPIC_TEST_SIZE` | **6** | `acca-topics.ts` | Questions in a knowledge check. |
 | `SESSION_SIZE` | **8** | `AccaStudy.tsx` | Questions per practice session. |
-| `MOCK_SIZE` | **12** | `AccaStudy.tsx` | Questions per timed mock. |
-| `MOCK_SECONDS_PER_Q` | **90** | `AccaStudy.tsx` | Mock timer: `12 × 90s = 18:00` total. |
+| Mock shape | **the paper's official CBE blueprint** | `acca-cbe-mock.ts` | The mock IS the full sitting (Sections A→B→C); clock = `examSecondsFor(paper, composedMarks)` at official min/mark. See the CBE addendum. |
+| `MOCK_SECONDS_PER_Q` | **90** | `AccaStudy.tsx` | Topic knowledge-check timer (per question). |
 | `QUESTION_BUDGET_SEC` | **90** | `acca-analytics.ts` | Per-question exam pace budget (rushed < 30s, on-pace ≤ 90s, overtime > 90s). |
 | `DEFAULT_DAILY_GOAL` | **15** | `acca.ts` | Questions/day (user-set 1–100; presets 10/15/20/30). |
 | `MAX_QUESTIONS` (diagnostic) | **20** | `acca-diagnostic.ts` | Hard cap, ~15–20 min. `PER_AREA = 3` sampled per syllabus area. |
@@ -377,7 +377,7 @@ Aligned to the learning-OS layer map; none of these block the shipped loop:
 
 - **Layer 6 — knowledge graph:** prerequisite-aware topic graph (today's study path is linear syllabus order with soft sequencing).
 - **Layer 7 — whiteboard / worked-solution canvas:** step-by-step numeric working capture; today numeric questions grade final answers only.
-- **Layer 9 — mock telemetry:** per-question mock replay, flag-and-return, section timing (today mocks record aggregate score + the time-expiry mistake tag).
+- **Layer 9 — mock telemetry:** per-question mock replay (flag-for-review, free navigation and the sectioned exam shape SHIPPED in the CBE addendum below; replay of a past sitting is what remains).
 - **Layer 10 — career:** PER employer integrations, job-market signals; today EPSM/PER are self-reported steppers.
 - **myACCA/OAuth sync:** the passed-papers record is self-reported by design; the storage shape is ready for a real sync "without changing callers" (`acca-qualification.ts`).
 - **Mobile app** (RevenueCat billing noted in `paddle.ts` as the mobile path) — web is mobile-responsive today.
@@ -403,3 +403,18 @@ Aligned to the learning-OS layer map; none of these block the shipped loop:
 **Bank Runs (acca-bankruns.ts):** 3 × 50-question whole-paper timed sessions (90s/q = 75 min), free, pre-gate; last-10 history, best %; Exam-room tile "Bank run N of 3"; results title "BANK RUN N OF 3 COMPLETE" (run number captured at mount — the record effect fires after first paint).
 
 **Examiner Intelligence (acca-examiner.ts):** official per-sitting pass rates (Dec 24–Dec 25), per-area hotspots, paraphrased examiner themes — card in Analytics → Exam. Content program spec = docs/09.
+
+---
+
+## Addendum — the CBE platform (2026-07-16, commits cdc9b95 + this one)
+
+**Why:** the real ACCA exam is a computer-based exam with a specific shape per paper. Rehearsing in any other shape teaches the wrong exam. `src/lib/acca-exam-structure.ts` is the specialist layer: official per-paper blueprints (sections, marks, duration, on-screen tools, what ACCA provides), tested invariant marks-sum-100.
+
+**v1 (cdc9b95):** CBE toolbelt (calculator, per-paper formulae sheets, quick notes) docked in every answering surface; the answer spreadsheet (`spreadsheet.ts` + `SpreadsheetPad`, refs/ranges/functions, `serializeForMarking` feeds workings into AI marking); the constructed-response studio (`ExaminerView`) with the exam clock at official min/mark; the `/notes` hub.
+
+**Phase 2 (this commit):**
+- **Sectioned CBE mock (`CbeMockRunner` + `acca-cbe-mock.ts`)** — THE mock is now the full sitting in the paper's official shape: Section A OT → Section B OT cases → Section C constructed, one exam clock priced at official minutes-per-mark, **CBE question navigator** (per-section grid: answered / flagged / current), **flag-for-review**, free navigation, review screen, auto-submit at zero — and Lara marks constructed answers INTO the mock score. Composition is marks-driven off the blueprint and degrades honestly (a section with no content drops; the clock scales to composed marks). Section A keeps the three disjoint mock forms; gating (60% prob + Pro) and `recordMock` semantics unchanged.
+- **Authored OT cases (`acca-cases-*.ts`, `OtCase` type)** — Section B scenario blocks written as UNITS (never faked by grouping bank questions): FR × 3 (leases / consolidation / interpretation, 5 × 2 marks each), FA × 2 MTQ-style (consolidation + interpretation, 5 × 3 marks each). Papers without authored cases run Section B on standalone OTs and say so. Backlog: PM/TX/FM/AA case sets.
+- **Notes account sync (migration `0020_acca_notes.sql` + `acca-notes-cloud.ts`)** — one RLS-guarded JSONB row per user, per-note newest-updatedAt merge with deletion tombstones (120-day TTL); reconciles on session start and on /notes open, debounced push after every local change. localStorage stays authoritative offline.
+
+**Still open (CBE phase 3):** SBL full-case experience with professional-skills marking; case sets for the remaining Skills papers; past-sitting replay.

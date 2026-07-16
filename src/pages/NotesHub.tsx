@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "motion/react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Icon, Card, Button, C, R } from "@/components/acca/ui"
 import { getNotes, updateNote, deleteNote, onNotesChange, CONTEXT_LABEL, type StudyNote } from "@/lib/acca-notes"
+import { syncNotes } from "@/lib/acca-notes-cloud"
+import { useAuth } from "@/lib/auth"
 
 /*
  * The notebook — every note taken anywhere in Scholify (study chapters,
@@ -112,10 +114,23 @@ function NoteCard({ note, index }: { note: StudyNote; index: number }) {
 }
 
 export default function NotesHub() {
+  const { user } = useAuth()
   const [tick, setTick] = useState(0)
   const [query, setQuery] = useState("")
   const [paperFilter, setPaperFilter] = useState<string | null>(null)
   useEffect(() => onNotesChange(() => setTick((t) => t + 1)), [])
+
+  // Pull the account copy when the hub opens — a note taken on another
+  // device appears here without a reload.
+  useEffect(() => {
+    let alive = true
+    void syncNotes().then((hydrated) => {
+      if (hydrated && alive) setTick((t) => t + 1)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const all = useMemo(() => getNotes(), [tick])
   const papers = useMemo(() => Array.from(new Set(all.map((n) => n.paper).filter((p): p is string => !!p))), [all])
@@ -205,7 +220,9 @@ export default function NotesHub() {
 
         {all.length > 0 && (
           <p style={{ fontSize: 11.5, color: C.faint, marginTop: 18, textAlign: "center" }}>
-            Notes are stored on this device. Account sync is on the roadmap.
+            {user
+              ? "Notes are saved on this device and synced to your account."
+              : "Notes are stored on this device — sign in and they sync to your account."}
           </p>
         )}
       </motion.div>
