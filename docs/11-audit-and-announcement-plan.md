@@ -55,7 +55,7 @@ Worth recording, because it is the kind of thing that survives review by looking
 
 ## 3. The five gates to public announcement
 
-Each gate must be true before the next one matters. **We are entering Gate 3.**
+Each gate must be true before the next one matters. **We are at Gate 4 — the private beta.**
 
 ### Gate 1 — Stop lying ✅ DONE (`593e8db`)
 Nothing else counts until the product only says true things. Trial claims, "Life Shields", the IELTS testimonial on the ACCA sign-up page, fabricated testimonials, fake app-store buttons, placebo settings toggles — all gone or made real. In a community as small and tight as ACCA candidates in Tashkent, invented social proof is the one mistake you cannot walk back.
@@ -63,15 +63,26 @@ Nothing else counts until the product only says true things. Trial claims, "Life
 ### Gate 2 — Close the security holes ✅ DONE (`593e8db`)
 Fail-open metering, the open email relay, the calendar hijack, webhook replay, the phantom RLS table. All closed. Migrations `0016` and `0017` added.
 
-### Gate 3 — Turn the product on ⬅ **NOW. FOUNDER-GATED.**
-This is the one only the founder can do, and everything downstream is blocked on it. `/api/health` currently reports **every key false**.
+### Gate 3 — Turn the product on ✅ VERIFIED CLOSED (2026-07-16)
+The founder configured production, and every leg was then verified against the live site — by probe, not by inspection:
 
-1. **Supabase** — project, then migrations **`0001`→`0017` in order**. `0013`, `0015`, `0016`, `0017` are mandatory: without them AI fails closed (correctly, now), Google tokens sit in a table whose RLS is unverified, and webhooks aren't replay-proof.
-2. **Anthropic** — `ANTHROPIC_API_KEY`.
-3. **Paddle** — token, webhook secret, API key, and the three price ids **server-side as well as client-side** (they're `VITE_`-named but the webhook reads them server-side; ship them client-only and every payment succeeds while nobody is granted their plan). `/api/health` now returns **503 on a half-configured billing stack** to catch exactly this.
-4. **Ops** — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `VITE_POSTHOG_KEY` (error tracking is wired but silent without it), `RESEND_API_KEY`.
-5. **Verify** — `/api/health` → `status: ok`, `billing: "live"`. Then: sign up a fresh account and confirm it lands on a **7-day Pro trial** (`app_metadata.trial_ends_at` set, mocks/Examiner unlocked); run one real diagnostic; one metered AI call (confirm rows land in `ai_usage` **and** `ai_usage_global`); one sandbox checkout end-to-end (confirm the plan lands in `app_metadata` **and** `subscriptions`).
-6. **Confirm `support@scholifyapp.com` actually receives mail.** Every support path in the app now points there.
+- **`/api/health`** → `status: ok`, `billing: "live"` — the billing rail is **Stripe** (all six keys), not Paddle (dormant by design since `c667e6e`); Supabase url + anon + service role set; PostHog on.
+- **Fresh signup** created a real Supabase account (email auto-confirm on, Google OAuth also enabled), and the app's `start-trial` path (`src/lib/auth.tsx` → `api/paddle?action=start-trial`) granted the **7-day Pro trial server-side**: `trial_ends_at` exactly 7 days out, written via the service role — which proves `SUPABASE_SERVICE_ROLE_KEY` too.
+- **One metered AI call** (`acca-tutor`) returned a real Lara answer, no `isFallback`. Metering fails closed, so a served answer is also proof the `ai_usage` tables exist and the meter's read/write path works.
+- **Checkout** produced a live `checkout.stripe.com` session for the Pro price (session created, not completed — nobody charged).
+- **All five scripts green the same day:** 82 tests, typecheck (app + api), `audit:content` (15/15 papers clear the launch floor), `verify:loading` (15/15 load only their own content), `validate:chapters` (74 chapters, 2,563 blocks).
+
+**One deliberate substitution:** `ANTHROPIC_API_KEY` is not set; production AI runs on the OpenAI stopgap bridge in `api/lara.ts` (gpt-4o-mini on the volume tier, gpt-5.5 on marking/generation). Anthropic wins automatically the moment its key appears — a one-env-var revert, no deploy.
+
+**Still open, none of it blocking checkout or the beta:**
+1. **Rotate the `sk_live` Stripe secret** (it transited chat on 2026-07-15), then update `STRIPE_SECRET_KEY` in Vercel from the dashboard so the new key never transits chat.
+2. Migration **`0018_stripe_events`** (webhook dedup) — `claimEvent` tolerates the missing table and entitlement writes are idempotent upserts, so apply when convenient.
+3. Stripe **dashboard** branding (logo + `#C80000`) — the API forbids editing your own account; product-level branding is already done.
+4. `CRON_SECRET` + `RESEND_API_KEY` if reminder emails are wanted — the cron fails closed without them.
+5. Confirm **`support@scholifyapp.com` actually receives mail** — every support path in the app points there.
+6. The one unobserved leg: a **real paid checkout** landing the plan in `app_metadata` **and** `subscriptions` (live mode has no sandbox). Either pay with a real card and refund it, or treat the first beta payer as the observation and watch that webhook closely.
+
+The original Gate-3 runbook this section replaced is in git history (pre-2026-07-16).
 
 **~~Decide before this gate: the 7-day trial.~~ BUILT 2026-07-15 (`3c370ce`).** It is now real: every new account is granted 7 days of Pro server-side (tamper-proof, in service-role-only `app_metadata`, one per account), then keeps the full free plan forever. AI metering grants Pro caps during the trial and reverts to free the moment it lapses. It adds **no new env var** — it activates automatically the moment Supabase is configured (the trial copy is gated on that, so the keyless site never promises it). Doc 7's trial → paid funnel and Doc 8's model are intact. Nothing to decide; verify one trial grants in the Gate-3 smoke test.
 
@@ -130,4 +141,4 @@ Every claim in this document is checked by something that will fail loudly if it
 
 ---
 
-*Updated the same day reality diverges from it. Next review: at the Gate 3 → Gate 4 handover.*
+*Updated the same day reality diverges from it. Last review: 2026-07-16, at the Gate 3 → Gate 4 handover (Gate 3 verified closed by live probes). Next review: at the Gate 4 → Gate 5 handover, with the beta's activation and conversion numbers in hand.*
