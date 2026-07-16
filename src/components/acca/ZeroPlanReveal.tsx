@@ -61,7 +61,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
   ]
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "var(--sch-bg, #FAFAF7)", overflowY: "auto", zIndex: 50, fontFamily: "var(--sch-font)" }}>
+    <div style={{ position: "fixed", inset: 0, background: "var(--sch-bg, #FAFAF7)", overflowY: "auto", overflowX: "hidden", zIndex: 50, fontFamily: "var(--sch-font)" }}>
       <AnimatePresence mode="wait">
         {!ready ? (
           <motion.div
@@ -121,7 +121,9 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
             {/* foundations first */}
             <Reveal delay={0.35}>
               <SectionTag>FIRST: THE FOUNDATIONS — THEN YOUR DIAGNOSTIC UNLOCKS</SectionTag>
-              <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
+              {/* minmax(0,1fr): long area labels truncate instead of widening
+                  the track off-screen on a phone. */}
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 8, marginBottom: 10 }}>
                 {foundations.map((a, i) => (
                   <motion.div
                     key={a.code}
@@ -129,7 +131,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.45 + i * 0.14, ease: [0.22, 1, 0.36, 1] }}
                     style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14,
+                      display: "flex", alignItems: "center", gap: 12, minWidth: 0, padding: "12px 14px", borderRadius: 14,
                       border: `1px solid ${C.border}`, background: "var(--sch-card, #fff)",
                     }}
                   >

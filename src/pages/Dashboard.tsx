@@ -161,9 +161,11 @@ export default function Dashboard() {
                   first pass probability — measured fairly, after you've actually learned something.
                 </p>
                 {/* per-section checklist: studied · practised · revised */}
-                <div style={{ display: "grid", gap: 7, marginBottom: 16, maxWidth: 420 }}>
+                {/* minmax(0,1fr): a nowrap label must TRUNCATE, never widen the
+                    track past the viewport (the mobile sideways-scroll bug). */}
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 7, marginBottom: 16, maxWidth: 420 }}>
                   {gateS.sections.map((s) => (
-                    <div key={s.area} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: R.md, background: s.done ? C.greenSoft : C.card2, border: `1px solid ${s.done ? C.green : C.border}` }}>
+                    <div key={s.area} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, padding: "8px 12px", borderRadius: R.md, background: s.done ? C.greenSoft : C.card2, border: `1px solid ${s.done ? C.green : C.border}` }}>
                       <span style={{ flex: "none", width: 22, height: 22, borderRadius: 7, background: s.done ? C.green : C.card, display: "grid", placeItems: "center", fontWeight: 800, fontSize: 11, color: s.done ? "#fff" : C.faint }}>{s.done ? "✓" : s.area}</span>
                       <span style={{ flex: 1, fontSize: 12.5, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
                       <span style={{ display: "inline-flex", gap: 6, fontSize: 10.5, fontWeight: 700, color: C.faint }}>

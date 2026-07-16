@@ -691,8 +691,9 @@ function PainPointsPanel({ result }: { result: DiagnosticResult }) {
         Lara's examiner read of where your marks are leaking. Know these three by name — everything below is built to fix them.
       </div>
 
-      {/* The ranked top-3 — severity cards */}
-      <div style={{ display: "grid", gap: 10, marginBottom: assessed.length > result.weakest.length ? 16 : 4 }}>
+      {/* The ranked top-3 — severity cards. minmax(0,1fr): labels wrap/truncate,
+          never widen the track past a phone's viewport. */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 10, marginBottom: assessed.length > result.weakest.length ? 16 : 4 }}>
         {result.weakest.map((a, i) => {
           const pct = Math.round(a.score * 100)
           const back = marksBack(a.score)
@@ -747,14 +748,14 @@ function PainPointsPanel({ result }: { result: DiagnosticResult }) {
           <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5, color: DIM, marginBottom: 8 }}>
             THE FULL MAP · ALL {assessed.length} AREAS ASSESSED
           </div>
-          <div style={{ display: "grid", gap: 7 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 7 }}>
             {fullMap.map((a, i) => (
               <motion.div
                 key={a.code}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.1 + i * 0.06 }}
-                style={{ display: "flex", alignItems: "center", gap: 10 }}
+                style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}
               >
                 <span style={{ width: 18, fontSize: 11.5, fontWeight: 800, color: BAND_COLOR[a.band], flexShrink: 0 }}>{a.code}</span>
                 <span style={{ flex: 1, fontSize: 12, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.label}</span>
