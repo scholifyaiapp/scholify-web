@@ -1471,45 +1471,50 @@ function ProofCard({
   const numeric = Number.parseFloat(item.value.replace(/,/g, ""))
   const animated = useCountUp(numeric, 1400, inView)
   return (
-    <GlowCard customSize glowColor={item.tone} className="!w-full !p-1 !gap-0 !rounded-3xl !shadow-none">
-      <motion.div
+    <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 24 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.7, delay, ease: EASE_DECISIVE }}
-        whileHover={{ y: -4, boxShadow: "0 1px 2px rgba(20,20,26,0.04), 0 24px 48px rgba(20,20,26,0.08)" }}
-        className="soft-card"
-        style={{ padding: 30, borderRadius: 18, height: "100%", textAlign: "left" }}
+        whileHover={{ y: -6, borderColor: item.accent }}
+        style={{ padding: 30, borderRadius: 26, minHeight: 250, height: "100%", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between", background: "linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0.025))", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)", transition: "border-color 220ms ease" }}
       >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <span className="font-mono-pro" style={{ color: "rgba(250,250,247,0.48)", fontSize: 10, letterSpacing: "0.16em" }}>VERIFIED IN PRODUCT</span>
+          <span style={{ width: 9, height: 9, borderRadius: 99, background: item.accent, boxShadow: `0 0 18px ${item.accent}` }} />
+        </div>
+        <div>
         <div
           className="font-mono-pro tabular"
           style={{
-            fontSize: "clamp(40px, 4.4vw, 56px)",
+            fontSize: "clamp(52px, 5.4vw, 76px)",
             fontWeight: 500,
-            color: item.accent,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
+            color: INK_INVERSE,
+            letterSpacing: "-0.06em",
+            lineHeight: 0.9,
           }}
         >
           {Math.round(animated).toLocaleString("en-US")}
         </div>
-        <div style={{ marginTop: 12, color: INK, fontSize: 15, fontWeight: 600 }}>{t(item.title)}</div>
-        <p style={{ marginTop: 8, color: INK_MUTED, fontSize: 13.5, lineHeight: 1.6 }}>{t(item.desc)}</p>
+        <div style={{ marginTop: 18, color: INK_INVERSE, fontSize: 16, fontWeight: 650 }}>{t(item.title)}</div>
+        <p style={{ marginTop: 8, color: "rgba(250,250,247,0.58)", fontSize: 13.5, lineHeight: 1.65 }}>{t(item.desc)}</p>
+        </div>
       </motion.div>
-    </GlowCard>
   )
 }
 
 function Stories() {
   const t = useT()
   return (
-    <section id="stories" style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>{t("THE RECEIPTS")}</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
+    <section id="stories" style={{ padding: "clamp(72px, 9vw, 128px) 24px", background: BG_DARK, position: "relative", overflow: "hidden" }}>
+      <div aria-hidden="true" style={{ position: "absolute", width: 560, height: 560, borderRadius: "50%", background: "rgba(200,0,0,0.18)", filter: "blur(120px)", top: -260, right: -180 }} />
+      <div aria-hidden="true" style={{ position: "absolute", width: 420, height: 420, borderRadius: "50%", background: "rgba(45,212,191,0.09)", filter: "blur(110px)", bottom: -240, left: -120 }} />
+      <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center", position: "relative" }}>
+        <div className="font-mono-pro" style={{ color: BRAND_400, fontSize: 11, letterSpacing: "0.2em", fontWeight: 650 }}>04 / {t("THE RECEIPTS")}</div>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(44px, 6vw, 82px)", color: INK_INVERSE, margin: "20px 0 0", lineHeight: 0.96 }}>
           {t("No testimonials.")} <em style={{ fontStyle: "italic" }}>{t("Just what's inside.")}</em>
         </h2>
-        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 580, margin: "16px auto 0", lineHeight: 1.65 }}>
+        <p style={{ color: "rgba(250,250,247,0.62)", fontSize: "clamp(16px, 1.8vw, 19px)", maxWidth: 650, margin: "22px auto 0", lineHeight: 1.7 }}>
           {t("Scholify is new, so we have no student results to quote — and we won't invent any. Here is what you actually get on day one, all of it countable.")}
         </p>
 
@@ -1517,8 +1522,8 @@ function Stories() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: 20,
-            marginTop: 56,
+            gap: 14,
+            marginTop: "clamp(48px, 7vw, 78px)",
           }}
         >
           {proofItems.map((item, i) => (
@@ -1531,8 +1536,7 @@ function Stories() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7, ease: EASE_DECISIVE }}
-          className="soft-card"
-          style={{ marginTop: 20, padding: 32, borderRadius: 24, textAlign: "left" }}
+          style={{ marginTop: 14, padding: "clamp(28px, 5vw, 54px)", borderRadius: 28, textAlign: "left", background: INK_INVERSE, border: "1px solid rgba(255,255,255,0.18)" }}
         >
           <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>
             {t("HOW WE MEASURE READINESS")}
