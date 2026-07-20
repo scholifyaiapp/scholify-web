@@ -138,7 +138,7 @@ async function sendEmail(apiKey: string, from: string, to: string): Promise<bool
   <div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:28px;color:#2A2320;">
     <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">Today's session is ready 👋</div>
     <p style="font-size:15px;line-height:1.6;color:#6B5F58;">
-      Twenty minutes today moves your pass probability more than three hours the night before.
+      Twenty minutes today moves your Exam Readiness Score more than three hours the night before.
       Your next questions are picked and waiting.
     </p>
     <a href="https://scholifyapp.com/study"

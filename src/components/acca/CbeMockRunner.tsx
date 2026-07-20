@@ -6,7 +6,7 @@ import { Icon, Card, Button, C, SP, R, type IconName } from "@/components/acca/u
 import { RingGauge, MeterBar, bandColor } from "@/components/acca/charts"
 import { buildCbeMock, type CbeMock, type CbeItem, type CbeSection } from "@/lib/acca-cbe-mock"
 import { nextMockForm } from "@/lib/acca-mockforms"
-import { mockProgress, MOCK_PASS } from "@/lib/acca-loop"
+import { mockProgress, passProbability, MOCK_PASS } from "@/lib/acca-loop"
 import { gradeQuestion, recordAnswer, recordMock, getPaper } from "@/lib/acca"
 import { withShuffledOptions } from "@/lib/acca-options"
 import { recordMistake, recordAnswerTiming, snapshotProbability } from "@/lib/acca-analytics"
@@ -368,6 +368,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
   /* ════ RESULTS ════ */
   if (stage === "results" && outcome) {
     const passed = outcome.percent >= MOCK_PASS
+    const revealedProbability = passProbability(paperId)
     return (
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <BackBtn label="Exam room" onClick={onBack} />
@@ -383,6 +384,12 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
             Form {mock.form} · {fmtClock(outcome.secondsUsed)} used of {fmtClock(mock.seconds)}
             {outcome.unanswered > 0 ? ` · ${outcome.unanswered} unanswered` : ""}
           </div>
+          {revealedProbability !== null && (
+            <div style={{ margin: "14px auto 0", padding: "10px 14px", maxWidth: 320, borderRadius: R.md, background: "var(--sch-card-2)", border: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: C.faint }}>PASS PROBABILITY · UNLOCKED BY MOCK</div>
+              <div style={{ marginTop: 3, fontSize: 24, fontWeight: 850, color: passed ? C.green : C.amber }}>{revealedProbability}%</div>
+            </div>
+          )}
         </Card>
 
         <Card style={{ marginBottom: SP.md }}>

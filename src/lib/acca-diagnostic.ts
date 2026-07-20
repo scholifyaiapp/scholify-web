@@ -421,8 +421,8 @@ export function estimateFromPractice(paperId: string): DiagnosticResult | null {
 
 /** UI band for a pass probability: colour + short verdict. */
 export function passBand(prob: number): { label: string; color: string } {
-  if (prob >= 70) return { label: "On track to pass", color: "#10B981" }
-  if (prob >= 45) return { label: "On the borderline", color: "#F59E0B" }
+  if (prob >= 70) return { label: "Highly ready", color: "#10B981" }
+  if (prob >= 45) return { label: "Building readiness", color: "#F59E0B" }
   if (prob > 0) return { label: "Not ready yet", color: "#EF4444" }
   return { label: "Take the diagnostic", color: "#94A3B8" }
 }
@@ -483,7 +483,7 @@ export function learnerProfileSummary(paperId: string): string {
 
   const diag = getLatestDiagnostic(paperId)
   if (diag) {
-    lines.push(`Latest diagnostic: ${diag.passProbability}% pass probability (estimated exam score ${diag.estimatedScore}%).`)
+    lines.push(`Latest diagnostic: ${diag.passProbability}% Exam Readiness Score (estimated exam score ${diag.estimatedScore}%).`)
     if (diag.weakest.length) {
       lines.push(
         `Weakest areas from that diagnostic: ${diag.weakest

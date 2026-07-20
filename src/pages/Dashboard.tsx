@@ -180,7 +180,7 @@ export default function Dashboard() {
                 <p style={{ ...TYPE.body, color: C.soft, margin: "0 0 14px", lineHeight: 1.6 }}>
                   For each of the first three sections: read the topic brief, practise the guided questions, flip the flashcards.
                   Once <strong style={{ color: C.text }}>sections A·B·C</strong> are covered, the diagnostic unlocks and sets your
-                  first pass probability — measured fairly, after you've actually learned something.
+                  first Exam Readiness Score — measured fairly, after you've actually learned something.
                 </p>
                 {/* per-section checklist: studied · practised · revised */}
                 {/* minmax(0,1fr): a nowrap label must TRUNCATE, never widen the
@@ -218,7 +218,7 @@ export default function Dashboard() {
               </span>
             </motion.div>
             <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Start here</div>
-            <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>Find out your pass probability</h2>
+            <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>Find out your Exam Readiness Score</h2>
             <p style={{ ...TYPE.body, color: C.soft, maxWidth: 460, margin: "0 auto 18px", lineHeight: 1.6 }}>
               A ~15-minute diagnostic reads your current level across every {paper.id} syllabus area — then Scholify builds the roadmap and today's plan around it.
             </p>
@@ -235,7 +235,9 @@ export default function Dashboard() {
             <Card style={{ display: "flex", alignItems: "center", gap: SP.xl, flexWrap: "wrap" }}>
               <RingGauge value={prob!} size={140} stroke={12} color={band?.color} target={MOCK_PASS} />
               <div style={{ flex: 1, minWidth: 150 }}>
-                <div style={{ ...TYPE.label, color: C.faint, marginBottom: 5 }}>Pass probability</div>
+                <div style={{ ...TYPE.label, color: C.faint, marginBottom: 5 }}>
+                  {history.length > 0 ? "Pass Probability" : "Exam Readiness Score"}
+                </div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>{band?.label}</div>
                 <div style={{ ...TYPE.small, color: momentum?.deltaPts != null && momentum.deltaPts !== 0 ? (momentum.deltaPts > 0 ? C.green : C.red) : C.soft, marginTop: 4, fontWeight: 650 }}>
                   {momentum?.deltaPts != null

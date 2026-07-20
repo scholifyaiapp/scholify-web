@@ -392,8 +392,8 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
       emoji: "🎯",
       label: "Initial diagnostic",
       detail: diagnosed
-        ? "Baseline set — your pass probability and weak areas are mapped."
-        : "~15 min to find your pass probability and weak areas.",
+        ? "Baseline set — your Exam Readiness Score and weak areas are mapped."
+        : "~15 min to find your Exam Readiness Score and weak areas.",
       status: diagnosed ? "done" : "current",
     },
     {
@@ -415,7 +415,7 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
     {
       key: "progress",
       emoji: "📈",
-      label: "Progress check — pass probability",
+      label: "Progress check — Exam Readiness Score",
       detail:
         prob === null
           ? "Every answer moves this number."
@@ -432,7 +432,7 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
         ? `All ${mocks.required} mocks sat and the latest passed — proven under exam conditions.`
         : gate.unlocked
           ? `${mocks.attempts} of ${mocks.required} sat${mocks.attempts > 0 && !mocks.latestPassed ? " — last one didn't pass, so it's rehabilitation: post-mortem, drills, retry" : ""}. Timed, no hints.`
-          : `Locked until ${MOCK_GATE}% pass probability.`,
+          : `Locked until a ${MOCK_GATE}% Exam Readiness Score.`,
       status: mocks.examReady ? "done" : gate.unlocked ? "current" : "locked",
     },
     {

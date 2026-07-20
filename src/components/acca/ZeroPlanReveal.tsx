@@ -155,7 +155,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               </div>
               <p style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, margin: "0 0 22px" }}>
                 Testing you on day one would measure nothing but nerves. Cover these three and the diagnostic opens —
-                that's when your pass probability becomes real.
+                that's when your Exam Readiness Score becomes meaningful.
               </p>
             </Reveal>
 

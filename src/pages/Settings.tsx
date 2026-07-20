@@ -200,7 +200,7 @@ function ExamSetupSection() {
           })}
         </span>
       </SettingRow>
-      <SettingRow name="Target before exam day" desc="The pass probability your plan pushes toward">
+      <SettingRow name="Target before exam day" desc="The Exam Readiness Score your plan pushes toward">
         <span style={{ display: "inline-flex", gap: 6 }}>
           {[65, 75, 85].map((v) => {
             const on = plan.targetProb === v

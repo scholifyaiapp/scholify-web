@@ -407,7 +407,7 @@ export default function Welcome() {
               </>
             ) : (
               <>
-                <PrimaryBtn onClick={finishToDiagnostic} big>Find my pass probability</PrimaryBtn>
+                <PrimaryBtn onClick={finishToDiagnostic} big>Find my Exam Readiness Score</PrimaryBtn>
                 <button onClick={finishSkip} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
                   I'd rather just start learning
                 </button>
@@ -548,7 +548,7 @@ const kicker: CSSProperties = {
 /** What Scholify actually gives you — shown on the hero so the value is explicit. */
 function ValueTrio({ style, big }: { style?: CSSProperties; big?: boolean }) {
   const items: { icon: IconName; text: string }[] = [
-    { icon: "diagnostic", text: "A live pass probability — know where you stand every day" },
+    { icon: "diagnostic", text: "A live Exam Readiness Score — know where you stand every day" },
     { icon: "mission", text: "Daily missions built from YOUR weakest areas" },
     { icon: "tutor", text: "Charles: your AI race engineer on every question + examiner-style marking" },
   ]
@@ -841,7 +841,7 @@ function GoalSlide({
           })}
         </div>
         <p style={{ margin: "8px 0 0", font: `500 12px/1.4 ${SANS}`, color: MUTE }}>
-          Pass probability — the number your diagnostic sets and your plan pushes to this line.
+          Exam Readiness Score — the number your diagnostic sets and your plan pushes to this line.
         </p>
       </div>
     </div>
@@ -894,7 +894,7 @@ function ReadySlide({
         <span style={{ font: `500 13px/1.45 ${SANS}`, color: "#6B4E12" }}>
           {recommendZero ? (
             <>
-              New to {paper}? We'll <b style={{ fontWeight: 700, color: "#4E3A0D" }}>teach the foundations first</b>, then measure you once you've covered the basics — a pass probability now would just be a guess.
+              New to {paper}? We'll <b style={{ fontWeight: 700, color: "#4E3A0D" }}>teach the foundations first</b>, then measure you once you've covered the basics. Pass Probability unlocks after your first completed mock.
             </>
           ) : (
             <>
@@ -917,7 +917,7 @@ function ReadySlide({
           ) : (
             <>
               <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-                Find my pass probability
+                Find my Exam Readiness Score
               </motion.button>
               <button onClick={onSkip} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
                 I'd rather just start learning

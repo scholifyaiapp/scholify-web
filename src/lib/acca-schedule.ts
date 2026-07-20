@@ -298,7 +298,7 @@ export function buildDailyTasks(paperId: string): SchedTask[] {
       id: "diagnostic",
       icon: "🎯",
       title: "Set your baseline",
-      detail: "~15 min diagnostic to fix your starting pass probability and weak areas — the honest start for a retake or a return to study",
+      detail: "~15 min diagnostic to set your starting Exam Readiness Score and weak areas — the honest start for a retake or a return to study",
       action: "diagnostic",
       minutes: COST.diagnostic,
     }]
@@ -315,7 +315,7 @@ export function buildDailyTasks(paperId: string): SchedTask[] {
       id: "diagnostic",
       icon: "🎯",
       title: "You've covered A·B·C — see where you stand",
-      detail: "~15 min · your first real pass probability across every section, and the plan re-tunes around it",
+      detail: "~15 min · your first Exam Readiness Score across every section, and the plan re-tunes around it",
       action: "diagnostic",
       minutes: COST.diagnostic,
     }]

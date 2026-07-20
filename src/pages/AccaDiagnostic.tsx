@@ -287,7 +287,7 @@ export default function AccaDiagnostic() {
     { icon: "check", label: "Reading your answers", sub: "Every response, weighted by difficulty — a hard one right counts for more." },
     { icon: "stats", label: `Mapping your ${paperId} syllabus`, sub: "Scoring you across every syllabus area, A to H." },
     { icon: "weak", label: "Finding where the marks leak", sub: "The areas dragging your score down — your pain points." },
-    { icon: "tutor", label: "Computing your pass probability", sub: "An honest number, with the margin it deserves." },
+    { icon: "tutor", label: "Computing your Exam Readiness Score", sub: "An honest number, with the margin it deserves." },
   ]
 
   function retake() {
@@ -339,7 +339,7 @@ export default function AccaDiagnostic() {
             ["Reading your answers", "Every response, weighted by difficulty.", "check"],
             [`Mapping your ${paperId} syllabus`, "Scoring you across every area, A to H.", "chart"],
             ["Finding where the marks leak", "The areas dragging your score down — your pain points.", "drop"],
-            ["Computing your pass probability", "An honest number, with the margin it deserves.", "spark"],
+            ["Computing your Exam Readiness Score", "An honest number, with the margin it deserves.", "spark"],
           ]}
           phasesM2={[
             ["Reading your pain points", weak.length ? `Starting with ${weak[0].code} · ${weak[0].name}.` : "Where the marks come back fastest.", "drop"],
@@ -379,12 +379,12 @@ export default function AccaDiagnostic() {
                 </div>
               </div>
               <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, margin: "12px 0 12px", lineHeight: 1.15 }}>
-                Know your real <span style={iriText}>chance to pass</span>.
+                Know your real <span style={iriText}>Exam Readiness Score</span>.
               </h1>
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
                 A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to 25
                 questions, <strong style={{ color: TEXT }}>timed like the real exam</strong> (100 seconds each, ~40 minutes).
-                No hints. At the end: your pass probability, estimated score, weakest sectors, and Charles's race plan to your target.
+                No hints. At the end: your Exam Readiness Score, estimated score, weakest sectors, and Charles's race plan to your target.
               </p>
 
               <Card style={{ marginBottom: 16 }}>
@@ -414,7 +414,7 @@ export default function AccaDiagnostic() {
                 {prior && (
                   <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: MUTED }}>
                     <span style={{ width: 8, height: 8, borderRadius: 999, background: passBand(prior.passProbability).color }} />
-                    Last diagnostic: <strong style={{ color: TEXT }}>{prior.passProbability}%</strong> — {passBand(prior.passProbability).label.toLowerCase()}. Retake to update.
+                    Last readiness score: <strong style={{ color: TEXT }}>{prior.passProbability}%</strong> — {passBand(prior.passProbability).label.toLowerCase()}. Retake to update.
                   </div>
                 )}
               </Card>
@@ -525,7 +525,7 @@ function ResultsView({
 
       {/* Headline */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 0 18px" }}>
-        <RingGauge value={result.passProbability} size={200} stroke={14} color={band.color} label="chance to pass" target={MOCK_PASS} />
+        <RingGauge value={result.passProbability} size={200} stroke={14} color={band.color} label="exam readiness" target={MOCK_PASS} />
         <div style={{ marginTop: 14, fontSize: 17, fontWeight: 700, color: band.color }}>{band.label}</div>
         <div style={{ marginTop: 4, fontSize: 13.5, color: MUTED }}>
           Estimated exam score <strong style={{ color: TEXT }}>{result.estimatedScore}%</strong> · pass mark {MOCK_PASS}%
@@ -592,7 +592,7 @@ function ResultsView({
                 <strong>{label}</strong>
               </span>
             ))}{" "}
-            up to {Math.round(result.target.targetScore * 100)}% and your pass chance rises from{" "}
+            up to {Math.round(result.target.targetScore * 100)}% and your readiness score rises from{" "}
             <strong>{result.passProbability}%</strong> to{" "}
             <strong style={{ color: GREEN }}>{result.target.projectedPassProbability}%</strong>.
           </p>
@@ -939,7 +939,7 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
 
             {/* the road to the mock gate */}
             <div style={{ padding: "13px 16px", borderRadius: 14, border: `1px solid ${BORDER}`, marginBottom: 16 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 9 }}>THE ROAD FROM {result.passProbability}%</div>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 9 }}>YOUR READINESS ROAD FROM {result.passProbability}%</div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 11.5, fontWeight: 750, color: MUTED }}>
                 <span style={{ color: TEXT }}>Topics</span><Icon name="chevron" size={12} color={DIM} />
                 <span style={{ color: TEXT }}>Bank runs</span><Icon name="chevron" size={12} color={DIM} />

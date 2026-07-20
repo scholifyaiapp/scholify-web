@@ -48,7 +48,7 @@ import {
 type Section = "progress" | "learning" | "study" | "exam"
 
 const SECTIONS: { key: Section; icon: IconName; label: string; question: string }[] = [
-  { key: "progress", icon: "progress", label: "Progress", question: "Am I going to pass?" },
+  { key: "progress", icon: "progress", label: "Progress", question: "How ready am I?" },
   { key: "learning", icon: "flashcards", label: "Learning", question: "What do I actually know?" },
   { key: "study", icon: "learn", label: "Study", question: "What do I do today?" },
   { key: "exam", icon: "exam", label: "Exam", question: "Am I exam-ready?" },
@@ -207,6 +207,7 @@ const grid2: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(aut
 
 function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) {
   const prob = passProbability(paperId)
+  const hasCompletedMock = getMockHistory(paperId).length > 0
   const band = prob !== null ? passBand(prob) : null
   const est = estimateFromPractice(paperId) ?? getLatestDiagnostic(paperId)
   const momentum = probabilityMomentum(paperId)
@@ -219,7 +220,7 @@ function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper
       <>
         <Card style={{ textAlign: "center", padding: SP["3xl"], marginBottom: SP.md }}>
           <Icon name="diagnostic" size={34} color={C.brand} />
-          <h3 style={{ ...TYPE.h3, color: C.text, margin: "12px 0 6px" }}>No pass probability yet</h3>
+          <h3 style={{ ...TYPE.h3, color: C.text, margin: "12px 0 6px" }}>No Exam Readiness Score yet</h3>
           <p style={{ ...TYPE.body, color: C.soft, margin: "0 0 16px" }}>Take the ~15-minute diagnostic and every card on this dashboard comes alive.</p>
           <button onClick={() => navigate("/study/diagnostic")} style={{ padding: "13px 22px", borderRadius: R.lg, border: "none", background: "linear-gradient(135deg,#C80000,#E50068)", color: "#fff", fontWeight: 750, fontSize: 15, cursor: "pointer" }}>
             Take the diagnostic
@@ -236,7 +237,7 @@ function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper
       <Card style={{ display: "flex", alignItems: "center", gap: SP["2xl"], flexWrap: "wrap", marginBottom: SP.md }}>
         <RingGauge value={prob} size={188} stroke={14} color={band?.color} label={band?.label} sublabel="live from your practice" target={MOCK_PASS} />
         <div style={{ flex: 1, minWidth: 220 }}>
-          <CardTitle icon="diagnostic">Pass probability</CardTitle>
+          <CardTitle icon="diagnostic">{hasCompletedMock ? "Pass Probability" : "Exam Readiness Score"}</CardTitle>
           <p style={{ ...TYPE.body, color: C.muted, margin: 0, lineHeight: 1.6 }}>
             {paper.id} — {paper.name} · pass line {MOCK_PASS}%.{" "}
             {rec.active
@@ -265,7 +266,7 @@ function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper
 
       <div style={grid2}>
         <Card>
-          <CardTitle icon="progress">Pass Momentum™</CardTitle>
+          <CardTitle icon="progress">Readiness Momentum™</CardTitle>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: SP.sm }}>
             {momentum?.deltaPts != null ? (
               <>
@@ -282,7 +283,7 @@ function ProgressSection({ paperId, paper }: { paperId: string; paper: AccaPaper
           </div>
           {momentum && momentum.series.length > 1 ? (
             <>
-              <Sparkbars data={momentum.series.map((p) => ({ date: p.date, count: p.prob }))} unit="% probability" height={44} />
+              <Sparkbars data={momentum.series.map((p) => ({ date: p.date, count: p.prob }))} unit="% readiness" height={44} />
               <div style={{ ...TYPE.small, color: C.faint, marginTop: SP.sm }}>
                 {momentum.deltaPts != null
                   ? momentum.deltaPts >= 0

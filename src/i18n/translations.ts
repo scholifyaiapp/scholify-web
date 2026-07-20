@@ -16,7 +16,7 @@
 
 export const ru: Record<string, string> = {
   "Scholify Race Control": "Гоночный центр Scholify",
-  "From the grid to ACCA member.": "Со стартовой решётки — к членству в ACCA.",
+  "From the F1 to ACCA member.": "От F1 до члена ACCA.",
   "Charles is reading your telemetry…": "Чарльз анализирует вашу телеметрию…",
   "A human marker takes days. Charles takes seconds.": "Проверяющему нужны дни. Чарльзу — секунды.",
   "Meet Charles, your race engineer.": "Знакомьтесь: Чарльз, ваш гоночный инженер.",
@@ -171,6 +171,10 @@ export const ru: Record<string, string> = {
   "HOW WE MEASURE READINESS": "КАК МЫ ИЗМЕРЯЕМ ГОТОВНОСТЬ",
   "A pass probability that admits what it doesn't know.":
     "Вероятность сдачи, которая честно признаёт свою погрешность.",
+  "An Exam Readiness Score that admits what it doesn't know.":
+    "Индекс готовности к экзамену, который честно признаёт свою погрешность.",
+  "The diagnostic scores you area by area and returns an Exam Readiness Score with an honest ± margin — the fewer questions and areas it has seen, the wider that margin gets. Pass Probability unlocks only after you complete a mock exam.":
+    "Диагностика оценивает каждый раздел и показывает индекс готовности к экзамену с честной погрешностью ±. Вероятность сдачи открывается только после завершения пробного экзамена.",
   "The diagnostic scores you area by area and returns a pass probability with an honest ± margin — the fewer questions and areas it has seen, the wider that margin gets. It is calibrated against ACCA's own published pass rates for your paper, which we show you in the app alongside the examiner's recurring themes.":
     "Диагностика оценивает вас по каждому разделу и выдаёт вероятность сдачи с честной погрешностью ±: чем меньше вопросов и разделов она видела, тем шире эта погрешность. Она калибруется по официальной статистике сдачи ACCA для вашего экзамена, которую мы показываем в приложении вместе с повторяющимися темами отчётов экзаменатора.",
   "PASS RATES: ACCA'S OFFICIAL PUBLISHED FIGURES. SCHOLIFY IS AN INDEPENDENT STUDY TOOL AND IS NOT AFFILIATED WITH ACCA.":
@@ -565,12 +569,14 @@ export const ru: Record<string, string> = {
   "you get the next best task": "вы получаете лучшую задачу",
   "Diagnostic": "Диагностика",
   "~15 minutes → your real pass probability, area by area.": "~15 минут → ваша реальная вероятность сдачи, по каждой теме.",
+  "~15 minutes → your Exam Readiness Score, area by area.": "~15 минут → ваш индекс готовности к экзамену, по каждой теме.",
   "Roadmap": "Маршрут",
   "Four phases, dated back from your exam day.": "Четыре фазы, рассчитанные от даты вашего экзамена.",
   "Daily mission": "Дневная миссия",
   "Three tasks a day, already chosen. You never decide what to study.": "Три задачи в день, уже выбранные. Вы никогда не решаете, что учить.",
   "Progress check": "Проверка прогресса",
   "Every answer moves your live pass probability.": "Каждый ответ двигает вашу живую вероятность сдачи.",
+  "Every answer moves your Exam Readiness Score.": "Каждый ответ меняет ваш индекс готовности к экзамену.",
   "The 60% gate": "Ворота 60%",
   "Mocks unlock when the model says you're ready — not before.": "Пробные экзамены открываются, когда модель говорит, что вы готовы — не раньше.",
   "Mock 1 → 2 → 3": "Пробный 1 → 2 → 3",
@@ -583,6 +589,8 @@ export const ru: Record<string, string> = {
   "Fail a sitting and it's a stage, not an ending.": "Неудачная попытка — это этап, а не конец.",
   "You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer earns your pass probability back — targeted drills, a fresh mock, then the retake from strength.":
     "Вы будете точно знать, где потерялись баллы. Модель перекалибруется, план перестраивается, и каждый ответ возвращает вашу вероятность сдачи — прицельные тренировки, свежий пробный, затем пересдача с позиции силы.",
+  "You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer improves your Exam Readiness Score — targeted drills, a fresh mock, then the retake from strength.":
+    "Вы будете точно знать, где потерялись баллы. Модель перекалибруется, план перестраивается, и каждый ответ улучшает ваш индекс готовности — прицельные тренировки, свежий пробный, затем пересдача с позиции силы.",
   "Enter the loop — free": "Войти в цикл — бесплатно",
 
   /* ── Store badges / footer ── */

@@ -297,7 +297,7 @@ export default function AccaStudy() {
       // probability has earned them (see acca-loop.ts).
       const gate = mockGate(paperId)
       if (!gate.unlocked) {
-        toast.info(`The mock room unlocks at ${MOCK_GATE}% pass probability — you're at ${gate.prob}%. Today's plan is aimed at getting you there.`)
+        toast.info(`The mock room unlocks at a ${MOCK_GATE}% Exam Readiness Score — you're at ${gate.prob}%. Today's plan is aimed at getting you there.`)
         return
       }
       if (!isPro) {
@@ -728,7 +728,7 @@ function ContinueCard({ pid, onPick }: { pid: string; onPick: (id: string) => vo
         <div style={{ textAlign: "center", flexShrink: 0 }}>
           {/* same canonical number as Dashboard/Analytics/Overview */}
           <div style={{ fontWeight: 800, fontSize: 20, ...iriText }}>{passProbability(current) ?? stats.readiness}%</div>
-          <div style={{ color: DIM, fontSize: 10.5 }}>{passProbability(current) !== null ? "to pass" : "ready"}</div>
+          <div style={{ color: DIM, fontSize: 10.5 }}>exam readiness</div>
         </div>
         <span style={{ fontSize: 20, color: "#C80000", flexShrink: 0 }}>→</span>
       </div>
@@ -1226,7 +1226,7 @@ function Overview({
             <IconBadge name="diagnostic" tone="brand" size={44} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: 14.5, color: "#C80000" }}>What's your chance of passing?</div>
-              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Take the ~15-min diagnostic → pass probability + your weakest areas</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Take the ~15-min diagnostic → Exam Readiness Score + your weakest areas</div>
             </div>
           </>
         )}
@@ -1965,7 +1965,7 @@ function MockGateTile({ prob, onWeak }: { prob: number; onWeak: () => void }) {
           <Badge tone="amber">UNLOCKS AT {MOCK_GATE}%</Badge>
         </div>
         <div style={{ fontSize: 12.5, color: MUTED, margin: "4px 0 8px" }}>
-          You're at <b style={{ color: TEXT }}>{prob}%</b> pass probability — I'm steering your daily plan at your weak
+          You're at <b style={{ color: TEXT }}>{prob}%</b> Exam Readiness Score — I'm steering your daily plan at your weak
           areas to close the gap. Tap to drill them now.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -309,7 +309,7 @@ const productProof: { icon: IconName; text: string }[] = [
     : []),
   { icon: "practice", text: "2,418 expert-written practice questions" },
   { icon: "examiner", text: "190 written questions with examiner rubrics" },
-  { icon: "stats", text: "A pass probability with an honest ± margin" },
+  { icon: "stats", text: "An Exam Readiness Score with an honest ± margin" },
 ]
 
 function LeftPanel() {

@@ -65,7 +65,7 @@ const DEFAULT_PHASES_M1: PhaseTuple[] = [
   ["Reading your answers", "Every response, weighted by difficulty.", "check"],
   ["Mapping your FA syllabus", "Scoring you across every area, A to H.", "chart"],
   ["Finding where the marks leak", "The areas dragging your score down — your pain points.", "drop"],
-  ["Computing your pass probability", "An honest number, with the margin it deserves.", "spark"],
+  ["Computing your Exam Readiness Score", "An honest number, with the margin it deserves.", "spark"],
 ]
 
 const DEFAULT_PHASES_M2: PhaseTuple[] = [
@@ -948,7 +948,7 @@ export default function RevealExperience(props: RevealExperienceProps) {
                     color: "var(--muted2)",
                   }}
                 >
-                  Pass probability
+                  Exam Readiness Score
                 </div>
               </div>
             </div>

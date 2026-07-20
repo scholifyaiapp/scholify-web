@@ -387,10 +387,10 @@ export function TheLoopSection() {
   const navigateToSignup = () => navigate("/signup")
 
   const STAGES: { icon: LucideIcon; tint: string; bg: string; title: string; line: string }[] = [
-    { icon: Target, tint: BRAND, bg: "#FBE7E4", title: t("Diagnostic"), line: t("~15 minutes → your real pass probability, area by area.") },
+    { icon: Target, tint: BRAND, bg: "#FBE7E4", title: t("Diagnostic"), line: t("~15 minutes → your Exam Readiness Score, area by area.") },
     { icon: MapIcon, tint: PLUM, bg: "#FCE4EF", title: t("Roadmap"), line: t("Four phases, dated back from your exam day.") },
     { icon: Zap, tint: FIRE, bg: "#FDF2DC", title: t("Daily mission"), line: t("Three tasks a day, already chosen. You never decide what to study.") },
-    { icon: TrendingUp, tint: GREEN, bg: "#DDFAF4", title: t("Progress check"), line: t("Every answer moves your live pass probability.") },
+    { icon: TrendingUp, tint: GREEN, bg: "#DDFAF4", title: t("Progress check"), line: t("Every answer moves your Exam Readiness Score.") },
     { icon: Lock, tint: AMBER, bg: "#FDF2DC", title: t("The 60% gate"), line: t("Mocks unlock when the model says you're ready — not before.") },
     { icon: Timer, tint: BRAND, bg: "#FBE7E4", title: t("Mock 1 → 2 → 3"), line: t("Timed, no hints. Three passes and you're proven under exam conditions.") },
     { icon: Landmark, tint: INK, bg: "#F1EFEA", title: t("The real exam"), line: t("You walk in rehearsed — the sitting is a repeat of your mocks.") },
@@ -501,7 +501,7 @@ export function TheLoopSection() {
               {t("Fail a sitting and it's a stage, not an ending.")}
             </div>
             <p style={{ fontSize: 14.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, margin: "10px 0 0", maxWidth: 560 }}>
-              {t("You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer earns your pass probability back — targeted drills, a fresh mock, then the retake from strength.")}
+              {t("You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer improves your Exam Readiness Score — targeted drills, a fresh mock, then the retake from strength.")}
             </p>
           </div>
           <motion.button
