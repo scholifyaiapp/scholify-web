@@ -15,6 +15,7 @@ import { daysUntilExam, currentPhase, METHOD_PHASES, getPlan } from "@/lib/acca-
 import { getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
 import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
+import CharlesAvatar from "@/components/LaraAvatar"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
@@ -137,9 +138,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 14px", borderRadius: R.lg, background: C.card, border: `1px solid ${C.border}`, marginBottom: SP.lg }}
           >
-            <span style={{ flex: "none", width: 34, height: 34, borderRadius: 11, background: C.brandSoft, display: "grid", placeItems: "center" }}>
-              <Icon name="mission" size={16} color={C.brand} />
-            </span>
+            <CharlesAvatar size={38} />
             <div style={{ minWidth: 0, fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
               <strong style={{ color: C.text }}>Charles · pit-wall briefing:</strong>{" "}
               recover the lost marks, complete today's race plan, then use every result to adjust the route to your next sitting.

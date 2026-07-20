@@ -28,7 +28,7 @@ import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
-import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
+import { TheLoopSection } from "@/components/landing-3d"
 import { ScholifyLockup } from "@/components/brand"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
@@ -379,7 +379,24 @@ function Hero() {
         </motion.div>
 
         {/* the product itself, staged in 3D — tilt it */}
-        <Hero3DShowcase />
+        <motion.figure
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 1.2, ease: EASE_DECISIVE }}
+          className="race-panel"
+          style={{ maxWidth: 820, margin: "52px auto 0", borderRadius: 28, background: BG_DARK, boxShadow: "0 34px 90px -42px rgba(11,11,15,.78)" }}
+        >
+          <img
+            src="/charles-race-control-hero.png"
+            alt="Charles, Scholify's ACCA race engineer, inside Race Control"
+            width={1536}
+            height={2048}
+            style={{ display: "block", width: "100%", height: "auto", maxHeight: 760, objectFit: "cover", objectPosition: "center top" }}
+          />
+          <figcaption className="race-kicker" style={{ position: "absolute", left: 18, right: 18, bottom: 16, padding: "10px 14px", borderRadius: 12, color: "rgba(250,250,247,.76)", background: "rgba(11,11,15,.76)", backdropFilter: "blur(12px)", textAlign: "left" }}>
+            Charles · Your telemetry, your strategy, your next sitting
+          </figcaption>
+        </motion.figure>
 
         <div style={{ marginTop: 56 }}>
           <HandWrittenTitle
@@ -771,7 +788,7 @@ function VisualAIPartnerWidget() {
           {t("Meet Charles, your race engineer.")}
         </h3>
         <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
-          {t("Your AI tutor. She knows your papers, your readiness, and today's task — every explanation generated just for you.")}
+          {t("Your AI race engineer. He knows your papers, readiness and today's strategy — every explanation is shaped around your telemetry.")}
         </p>
 
         <motion.div
@@ -822,7 +839,7 @@ function VisualAIPartnerWidget() {
             }}
           >
             <img
-              src="https://api.dicebear.com/7.x/notionists/svg?seed=CharlesScholify&backgroundColor=fbe7e4,fafaf7&radius=50"
+              src="/charles-helmet-avatar-512.png"
               alt="Charles — your Scholify race engineer"
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
               loading="lazy"

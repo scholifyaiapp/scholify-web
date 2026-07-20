@@ -4,6 +4,7 @@ import { askTutor } from "@/lib/acca-ai"
 import { learnerProfileSummary } from "@/lib/acca-diagnostic"
 import type { AccaQuestion } from "@/lib/acca"
 import { Button, Icon, C, SP } from "@/components/acca/ui"
+import CharlesAvatar from "@/components/LaraAvatar"
 
 /*
  * Inline "Ask Lara" tutor — appears under a graded question. The learner can
@@ -70,7 +71,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <Icon name="tutor" size={16} color={PURPLE} />
+        <CharlesAvatar size={32} />
         <span style={{ fontWeight: 700, fontSize: 14, color: PURPLE }}>Charles — your ACCA race engineer</span>
       </div>
 
