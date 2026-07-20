@@ -116,6 +116,7 @@ export default function Dashboard() {
         {/* header — the morning briefing */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: SP.md, flexWrap: "wrap", marginBottom: SP.xl }}>
           <div>
+            <div className="race-kicker" style={{ color: C.brand, marginBottom: 7 }}>Race control · {paper.id}</div>
             <h1 style={{ fontSize: 27, fontWeight: 800, margin: 0, color: C.text, letterSpacing: "-0.02em" }}>{greeting(firstName)}</h1>
             <p style={{ ...TYPE.body, color: C.muted, margin: "5px 0 0", lineHeight: 1.5 }}>{todayHeadline(paperId)}</p>
           </div>
@@ -131,6 +132,7 @@ export default function Dashboard() {
         {/* Missed-day voice — Lara reassures, never guilts (Doc 12, Phase 3). */}
         {!examDue && (
           <motion.div
+            className="race-panel"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 14px", borderRadius: R.lg, background: C.card, border: `1px solid ${C.border}`, marginBottom: SP.lg }}

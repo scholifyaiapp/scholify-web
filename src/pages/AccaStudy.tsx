@@ -1961,7 +1961,7 @@ function MockGateTile({ prob, onWeak }: { prob: number; onWeak: () => void }) {
       <IconBadge name="lock" tone="amber" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: TEXT, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          Mock exam
+          Qualifying mock
           <Badge tone="amber">UNLOCKS AT {MOCK_GATE}%</Badge>
         </div>
         <div style={{ fontSize: 12.5, color: MUTED, margin: "4px 0 8px" }}>

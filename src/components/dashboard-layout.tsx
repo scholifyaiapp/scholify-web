@@ -198,7 +198,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const avatarSrc = useMemo(() => avatarUrlOf(user), [user, avatarTick])
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>
+    <div className="scholify-race-shell race-grid-surface" style={{ minHeight: "100dvh", backgroundColor: "var(--sch-bg)", fontFamily: "var(--sch-font)", color: "var(--sch-text)" }}>
       <style>{LAYOUT_CSS}</style>
 
       {/* ── Sidebar (desktop) ── */}
@@ -214,6 +214,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <Link to="/study" style={{ textDecoration: "none", padding: "2px 4px", marginBottom: SP["2xl"] }}>
           <Brand />
         </Link>
+
+        <div className="race-panel" style={{ padding: "10px 12px", borderRadius: R.md, marginBottom: SP.xl }}>
+          <div className="race-kicker" style={{ color: C.brand, display: "flex", alignItems: "center", gap: 7 }}>
+            <span className="race-live-dot" style={{ width: 7, height: 7, borderRadius: 99, background: C.brand }} />
+            Race control · live
+          </div>
+          <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.45, color: C.soft }}>Charles is reading your learning telemetry.</div>
+        </div>
 
         {/* User */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 4px" }}>
@@ -292,7 +300,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <NotificationBell />
         </div>
 
-        <div className="px-4 py-5 lg:px-10 lg:py-8" style={{ paddingBottom: 110 }}>
+        <div className="px-4 py-5 lg:px-10 lg:py-8" style={{ paddingBottom: 110, position: "relative" }}>
           {children}
         </div>
       </main>

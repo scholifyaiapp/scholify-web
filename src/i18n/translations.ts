@@ -15,6 +15,7 @@
  */
 
 export const ru: Record<string, string> = {
+  "Scholify Race Control": "Гоночный центр Scholify",
   "From the grid to ACCA member.": "Со стартовой решётки — к членству в ACCA.",
   "Charles is reading your telemetry…": "Чарльз анализирует вашу телеметрию…",
   "A human marker takes days. Charles takes seconds.": "Проверяющему нужны дни. Чарльзу — секунды.",

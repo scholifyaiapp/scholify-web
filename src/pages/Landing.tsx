@@ -288,7 +288,7 @@ function Hero() {
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
-          buttonText={t("The AI Examiner is here")}
+          buttonText={t("Scholify Race Control")}
           description={t("— written answers marked in seconds")}
           onClick={() => navigate("/signup")}
         />
@@ -1985,7 +1985,7 @@ function FinalCTA() {
 
 export default function Landing() {
   return (
-    <div style={{ background: BG_PRIMARY, color: INK, minHeight: "100vh", overflowX: "hidden" }}>
+    <div className="scholify-race-shell race-grid-surface" style={{ backgroundColor: BG_PRIMARY, color: INK, minHeight: "100vh", overflowX: "hidden" }}>
       <LiquidGlassFilterDefs />
       <Nav />
       <Hero />

@@ -63,7 +63,7 @@ export default function PostMortemPanel({
     >
       <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, marginBottom: 10 }}>
         <Icon name={input.kind === "mock" ? "diagnostic" : "examiner"} size={14} color={RED} strokeWidth={2.4} />
-        {input.kind === "mock" ? "CHARLES · RACE DEBRIEF" : "EXAMINER ANALYSIS"}
+        {input.kind === "mock" ? "CHARLES · QUALIFYING DEBRIEF" : "CHARLES · EXAM TELEMETRY"}
       </div>
 
       {!result ? (
