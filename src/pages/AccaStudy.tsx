@@ -1359,11 +1359,11 @@ function Overview({
                 <>
                   {hasHistory && <ModeTile icon="weak" title="Target my pain points" sub="Adaptive drill on your lowest-scoring areas — the plan's biggest block" onClick={onWeak} primary={phase.key === "strengthen"} />}
                   <ModeTile icon="practice" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn" && !hasHistory} />
-                  <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} locked={!isPro} />
+                  <ModeTile icon="generate" title="Custom practice" sub="Charles generates fresh training laps on any topic — or from your notes" onClick={onGenerate} locked={!isPro} />
                 </>
               ) : (
                 <>
-                  <ModeTile icon="generate" title="Custom practice" sub="Lara writes exam-style questions on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
+                  <ModeTile icon="generate" title="Custom practice" sub="Charles generates fresh training laps on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
                   <div style={{ ...card({ padding: 14 }), display: "flex", gap: 10, fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
                     <Icon name="learn" size={16} color={C.soft} style={{ marginTop: 1 }} />
                     <span>
@@ -1432,7 +1432,7 @@ function Overview({
           <ModeTile
             icon="examiner"
             title={`${constructedSectionLabel(paper.id)} studio — CBE`}
-            sub={`Word processor + spreadsheet + exam clock · Lara marks your answer · ${writtenCount} questions`}
+            sub={`Word processor + spreadsheet + exam clock · Charles debriefs your answer · ${writtenCount} questions`}
             onClick={onExaminer}
             locked={!isPro}
           />
@@ -1734,7 +1734,7 @@ function TopicView({
 
       <h3 style={sectionH}>2 · LEARN THE ESSENTIALS</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-        <ModeTile icon="practice" title={`First ${LEARN_SIZE} questions — guided`} sub="Instant marking, explanations & Ask Lara — the essentials of this topic only" onClick={onLearn} primary={!result.mastered && (areaStats?.seen ?? 0) > 0 && (areaStats?.seen ?? 0) < LEARN_SIZE} />
+        <ModeTile icon="practice" title={`First ${LEARN_SIZE} questions — guided`} sub="Instant marking, explanations & Ask Charles — the essentials of this sector only" onClick={onLearn} primary={!result.mastered && (areaStats?.seen ?? 0) > 0 && (areaStats?.seen ?? 0) < LEARN_SIZE} />
       </div>
 
       <h3 style={sectionH}>3 · MEMORISE</h3>

@@ -180,10 +180,20 @@ export function buildDiagnostic(paperId: string, seed = Date.now()): AccaQuestio
     byArea.set(q.area, list)
   }
 
-  const picked: AccaQuestion[] = []
+  const ladders: AccaQuestion[][] = []
   for (const area of paper.areas) {
     const pool = byArea.get(area.code)
-    if (pool && pool.length) picked.push(...pickLadder(pool, seed + area.code.charCodeAt(0)))
+    if (pool && pool.length) ladders.push(pickLadder(pool, seed + area.code.charCodeAt(0)))
+  }
+
+  // Round-robin by ladder depth so a broad syllabus cannot lose its final
+  // areas when the hard cap is applied (SBL has 10 areas: 3 each would be 30).
+  // Every represented area gets one question before any area gets a second.
+  const picked: AccaQuestion[] = []
+  for (let depth = 0; depth < PER_AREA; depth += 1) {
+    for (const ladder of ladders) {
+      if (ladder[depth]) picked.push(ladder[depth])
+    }
   }
 
   // If we're under the cap and the bank has spares, that's fine — a shorter

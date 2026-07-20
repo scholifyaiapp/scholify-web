@@ -369,8 +369,8 @@ export default function RevealExperience(props: RevealExperienceProps) {
   const phaseSub =
     phase < 0
       ? isM1
-        ? "One moment while Lara loads your paper."
-        : "Lara is turning your score into a plan."
+        ? "One moment while Charles loads your paper telemetry."
+        : "Charles is turning your score into a race plan."
       : cur[1]
 
   const showGauge = revealed && isM1
@@ -379,7 +379,7 @@ export default function RevealExperience(props: RevealExperienceProps) {
   const showStepper = desktop && !revealed
   const showPhase = running || phase < 0
 
-  const label = "Lara · Paper " + paperId
+  const label = "Charles · Race engineer · Paper " + paperId
 
   /* layout style fragments */
   const ambientOpacity = desktop ? 1 : 0

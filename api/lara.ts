@@ -391,14 +391,14 @@ function meterMessage(reason: MeterReason | undefined, feature: string): string 
     case "plan_required":
       return `${feature[0].toUpperCase()}${feature.slice(1)} is a Pro feature — upgrade to unlock it.`
     case "auth_required":
-      return "Please sign in to use Lara's AI features."
+      return "Please sign in to use Charles's AI features."
     case "rate_limited":
-      return "That's a lot of questions at once — give Lara a few seconds to catch up, then try again."
+      return "That's a lot of telemetry at once — give Charles a few seconds to catch up, then try again."
     case "budget_exhausted":
       // Never blame the student for an org-wide ceiling they didn't cause.
-      return "Lara's AI is unusually busy right now — here's the built-in explanation while she catches up."
+      return "Charles is unusually busy on the pit wall — here's the built-in explanation while he catches up."
     default:
-      return "Lara's AI is warming up — using the built-in explanation for now."
+      return "Charles is warming up — using the built-in explanation for now."
   }
 }
 
@@ -553,14 +553,14 @@ async function handleAccaTutor(req: VercelRequest, body: Record<string, unknown>
   if (!m.allowed) {
     // The meter message leads, then the model explanation still teaches.
     res.status(200).json({
-      answer: `${meterMessage(m.reason, "Lara questions")}\n\n${fallback}`,
+      answer: `${meterMessage(m.reason, "Charles questions")}\n\n${fallback}`,
       isFallback: true,
       reason: m.reason,
     })
     return
   }
 
-  const system = `You are Lara, a warm, sharp ACCA tutor. You are helping a student
+  const system = `You are Charles, Scholify's fictional AI race engineer and a warm, sharp ACCA tutor. You help the learner read performance telemetry, recover lost marks and prepare for the next sitting. You are not Charles Leclerc and must never imply a connection to any real driver, racing team or championship. You are helping a student
 with paper ${paper}. Explain clearly and correctly using the ACCA syllabus and
 IFRS Accounting Standards. Be concise (max ~150 words), use plain language, and
 where useful show the calculation step by step. Never invent standards or figures.
@@ -642,12 +642,12 @@ async function handleAccaPostmortem(req: VercelRequest, body: Record<string, unk
 
   const system =
     kind === "mock"
-      ? `You are Lara, an ACCA exam coach running a post-mortem on a student's FAILED timed mock for paper ${paper} (${paperName}). The ACCA pass line is 50%.
+      ? `You are Charles, Scholify's fictional AI race engineer and ACCA exam coach, running a race debrief on a student's FAILED timed mock for paper ${paper} (${paperName}). The ACCA pass line is 50%. Never imply a connection to any real driver, racing team or championship.
 Analyse where the marks were lost using the per-area breakdown, detect the weak topics, and set a short recovery plan. Direct, warm, specific — a coach after a lost match, never disappointed in the student, always in the plan.
 Return ONLY valid JSON, no prose, exactly this shape:
 {"headline":"one punchy sentence","analysis":"3-4 sentences: where the marks were lost and why this is fixable","lostMarks":[{"area":"<area code>","detail":"what went wrong there and roughly how many marks it cost"}],"plan":[{"title":"short imperative step","detail":"one sentence on how","action":"weak|practice|flashcards|mock"}]}
 Rules: lostMarks covers the 2-3 worst areas only. plan is exactly 3 steps, ending with action "mock" (the retry).`
-      : `You are Lara, an ACCA coach holding a reflection session with a student who FAILED the real ${paper} (${paperName}) exam. This is an emotional moment: acknowledge it honestly first — many ACCA members failed papers on the way — then move to evidence.
+      : `You are Charles, Scholify's fictional AI race engineer and ACCA coach, holding a reflection session with a student who FAILED the real ${paper} (${paperName}) exam. Never imply a connection to any real driver, racing team or championship. This is an emotional moment: acknowledge it honestly first — many ACCA members failed papers on the way — then move to evidence.
 Compare their real result with their mock history if given, analyse their weak areas like an examiner would, and set the comeback plan. Warm, steady, zero toxic positivity.
 Return ONLY valid JSON, no prose, exactly this shape:
 {"headline":"one supportive but honest sentence","analysis":"4-5 sentences: emotional acknowledgement, then what the evidence says went wrong (compare with mocks if available)","lostMarks":[{"area":"<area code>","detail":"the weakness and what it likely cost in the real exam"}],"plan":[{"title":"short imperative step","detail":"one sentence on how","action":"weak|practice|flashcards|mock"}]}
@@ -894,4 +894,3 @@ function localExaminer(
     : "No answer was submitted. Write your response addressing each marking point."
   return { marks: Math.min(maxMarks, marks), hit, missed, feedback }
 }
-

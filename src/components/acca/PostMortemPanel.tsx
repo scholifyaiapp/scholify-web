@@ -63,7 +63,7 @@ export default function PostMortemPanel({
     >
       <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: RED, marginBottom: 10 }}>
         <Icon name={input.kind === "mock" ? "diagnostic" : "examiner"} size={14} color={RED} strokeWidth={2.4} />
-        {input.kind === "mock" ? "LARA'S POST-MORTEM" : "EXAMINER ANALYSIS"}
+        {input.kind === "mock" ? "CHARLES · RACE DEBRIEF" : "EXAMINER ANALYSIS"}
       </div>
 
       {!result ? (
@@ -75,7 +75,7 @@ export default function PostMortemPanel({
           >
             <Icon name="tutor" size={18} color={RED} />
           </motion.span>
-          <span style={{ fontSize: 13.5, color: MUTED }}>Lara is going through your paper, mark by mark…</span>
+          <span style={{ fontSize: 13.5, color: MUTED }}>Charles is reading your paper telemetry, mark by mark…</span>
         </div>
       ) : (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -138,7 +138,7 @@ export default function PostMortemPanel({
 
           {result.isFallback && (
             <p style={{ fontSize: 11, color: DIM, margin: "10px 0 0" }}>
-              Offline analysis from your area scores — connect the AI key for Lara's full read.
+              Offline analysis from your area scores — connect the AI key for Charles's full debrief.
             </p>
           )}
         </motion.div>

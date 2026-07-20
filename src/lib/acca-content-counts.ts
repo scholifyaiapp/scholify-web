@@ -13,20 +13,20 @@
  */
 export const QUESTION_COUNTS: Record<string, number> = {
   BT: 150,
-  MA: 150,
+  MA: 162,
   FA: 150,
   LW: 150,
-  PM: 168,
-  TX: 225,
-  FR: 225,
-  AA: 150,
-  FM: 150,
-  SBL: 150,
-  SBR: 150,
-  AFM: 150,
-  APM: 150,
-  ATX: 150,
-  AAA: 150,
+  PM: 174,
+  TX: 219,
+  FR: 228,
+  AA: 153,
+  FM: 156,
+  SBL: 165,
+  SBR: 159,
+  AFM: 156,
+  APM: 159,
+  ATX: 151,
+  AAA: 162,
 }
 
 /** Bank size for a paper — 0 for a paper with no curated bank. */

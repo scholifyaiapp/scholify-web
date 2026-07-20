@@ -85,7 +85,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
             {/* headline */}
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2, color: C.brand, marginBottom: 10 }}>
-                LARA BUILT THIS FROM YOUR ANSWERS
+                CHARLES BUILT THIS FROM YOUR TELEMETRY
               </div>
               <h1 style={{ fontSize: 30, fontWeight: 850, letterSpacing: "-0.8px", color: C.text, margin: "0 0 8px", lineHeight: 1.15 }}>
                 Your {paperId} <span style={iriText}>plan is ready.</span>

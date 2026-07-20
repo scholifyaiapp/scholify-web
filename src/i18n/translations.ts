@@ -15,6 +15,13 @@
  */
 
 export const ru: Record<string, string> = {
+  "From the grid to ACCA member.": "Со стартовой решётки — к членству в ACCA.",
+  "Charles is reading your telemetry…": "Чарльз анализирует вашу телеметрию…",
+  "A human marker takes days. Charles takes seconds.": "Проверяющему нужны дни. Чарльзу — секунды.",
+  "Meet Charles, your race engineer.": "Знакомьтесь: Чарльз, ваш гоночный инженер.",
+  "Charles · AI Race Engineer": "Чарльз · ИИ-гоночный инженер",
+  "Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.":
+    "Scholify показывает, где были потеряны баллы, составляет целевой ежедневный план возвращения и постоянно корректирует его к следующей экзаменационной сессии.",
   /* ── Navigation ── */
   "Features": "Возможности",
   "How it works": "Как это работает",

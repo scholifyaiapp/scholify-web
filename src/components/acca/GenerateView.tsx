@@ -22,7 +22,7 @@ const REASON_COPY: Record<NonNullable<GenerateResult["reason"]>, string> = {
   budget_exhausted: "Custom practice is unusually busy right now. Try again shortly.",
   metering_unavailable: "Custom practice is briefly unavailable. Try again shortly.",
   no_questions: "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
-  network: "Couldn't reach Lara. Check your connection and try again.",
+  network: "Couldn't reach Charles on the pit wall. Check your connection and try again.",
   error: "Couldn't generate questions just now. Try a clearer topic or shorter notes.",
 }
 
@@ -92,7 +92,7 @@ export default function GenerateView({
           disabled={loading}
           onChange={(e) => setNotes(e.target.value)}
           rows={7}
-          placeholder="Paste your study notes here — Lara will turn them into practice questions."
+          placeholder="Paste your study notes here — Charles will turn them into focused training laps."
           style={{ width: "100%", boxSizing: "border-box", padding: SP.lg, fontSize: 15, lineHeight: 1.6, borderRadius: R.md, border: `1px solid ${C.border}`, background: C.bg, color: C.text, outline: "none", resize: "vertical", fontFamily: "inherit" }}
         />
       )}
@@ -126,7 +126,7 @@ export default function GenerateView({
 
       <Button full size="lg" disabled={!canGo || loading} onClick={generate}>
         <Icon name="generate" size={18} color={canGo && !loading ? "#fff" : C.faint} />
-        {loading ? "Lara is writing questions…" : "Generate & practise"}
+        {loading ? "Charles is preparing your next laps…" : "Generate & practise"}
       </Button>
     </motion.div>
   )

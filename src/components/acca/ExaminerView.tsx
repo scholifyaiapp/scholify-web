@@ -95,7 +95,7 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
         </h1>
         <p style={{ color: C.soft, margin: "0 0 8px", fontSize: 15, lineHeight: 1.55 }}>
           The constructed-response room, built like your real CBE: the word processor{hasSheet ? ", the answer spreadsheet" : ""}, the on-screen
-          calculator — and the exam clock at {bp ? (bp.durationMin / 100).toFixed(2).replace(/0$/, "") : "1.8"} minutes a mark. Lara marks your answer
+          calculator — and the exam clock at {bp ? (bp.durationMin / 100).toFixed(2).replace(/0$/, "") : "1.8"} minutes a mark. Charles debriefs your answer
           {hasSheet ? " and your spreadsheet workings" : ""} against the marking points, instantly.
         </p>
         {bp && (
@@ -256,7 +256,7 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
 
       <Button full size="lg" disabled={!canMark} onClick={mark} style={{ marginTop: SP.md }}>
         <Icon name="examiner" size={18} color={canMark ? "#fff" : C.faint} />
-        {marking ? "Lara is marking…" : "Mark my answer"}
+        {marking ? "Charles is analysing your answer…" : "Mark my answer"}
       </Button>
 
       <AnimatePresence>

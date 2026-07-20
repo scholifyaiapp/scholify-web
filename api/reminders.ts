@@ -99,7 +99,7 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
   }
 
   const today = todayUTC()
-  const from = process.env.REMINDER_FROM || "Lara at Scholify <onboarding@resend.dev>"
+  const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
 
   try {
     const { data, error } = await db
@@ -146,7 +146,7 @@ async function sendEmail(apiKey: string, from: string, to: string): Promise<bool
       Start today's session →
     </a>
     <p style="font-size:12px;color:#9C8F87;margin-top:22px;">
-      — Lara · You can turn these off anytime in Settings.
+      — Charles · Your Scholify race engineer · You can turn these off anytime in Settings.
     </p>
   </div>`
   try {

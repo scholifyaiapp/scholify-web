@@ -52,7 +52,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
         }}
       >
         <Icon name="tutor" size={16} color={C.brand} />
-        Ask Lara
+        Ask Charles
       </Button>
     )
   }
@@ -71,7 +71,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <Icon name="tutor" size={16} color={PURPLE} />
-        <span style={{ fontWeight: 700, fontSize: 14, color: PURPLE }}>Lara — your ACCA tutor</span>
+        <span style={{ fontWeight: 700, fontSize: 14, color: PURPLE }}>Charles — your ACCA race engineer</span>
       </div>
 
       <div style={{ minHeight: 24 }}>

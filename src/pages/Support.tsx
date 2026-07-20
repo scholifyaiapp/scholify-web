@@ -22,16 +22,16 @@ const en: PageContent = {
       ],
     },
     {
-      heading: "Ask Lara first",
+      heading: "Ask Charles first",
       body: [
-        "For questions about your study plan, streaks, or how a feature works, Lara — your in-app AI partner — can often help you right away, any time of day.",
+        "For questions about your race plan, progress, or how a feature works, Charles — your in-app AI race engineer — can often help immediately.",
       ],
     },
     {
       heading: "Common questions",
       body: [
         "Lost your streak? A streak counts the consecutive days you answer questions — miss a day and it restarts, but every answer, readiness score and mock result you have earned is kept.",
-        "Need to change your plan? Open Settings to adjust your goal, daily minutes, or deadline, and Lara will rebuild your plan around it.",
+        "Need to change your plan? Open Settings to adjust your goal, daily minutes, or sitting, and Charles will recalculate your route.",
         "Billing or subscription help? Manage or cancel your plan in account settings, or email us and we will sort it out.",
         "Forgot your password? Click \"Forgot password?\" on the sign-in page and we will email you a reset link. Open it and you are signed in — then set a new password under Settings → Account.",
       ],

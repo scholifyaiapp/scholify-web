@@ -112,10 +112,11 @@ export const PAPERS: AccaPaper[] = [
       { code: "B", label: "Qualitative characteristics of financial information" },
       { code: "C", label: "Double-entry & accounting systems" },
       { code: "D", label: "Recording transactions & events" },
-      { code: "E", label: "Preparing a trial balance" },
-      { code: "F", label: "Preparing basic financial statements" },
-      { code: "G", label: "Simple consolidated financial statements" },
-      { code: "H", label: "Interpretation of financial statements" },
+      { code: "E", label: "Reconciliations" },
+      { code: "F", label: "Preparing a trial balance" },
+      { code: "G", label: "Preparing financial statements" },
+      { code: "H", label: "Preparing basic consolidated financial statements" },
+      { code: "I", label: "Interpretation of financial statements" },
     ],
   },
   {
@@ -130,8 +131,8 @@ export const PAPERS: AccaPaper[] = [
       { code: "A", label: "The conceptual & regulatory framework" },
       { code: "B", label: "Accounting for transactions (IFRS)" },
       { code: "C", label: "Analysing & interpreting financial statements" },
-      { code: "D", label: "Preparation of financial statements" },
-      { code: "E", label: "Consolidated financial statements" },
+      { code: "D", label: "Preparation of single-entity & consolidated financial statements" },
+      { code: "E", label: "Employability & technology skills" },
     ],
   },
 ]
@@ -148,4 +149,3 @@ export const PAPERS: AccaPaper[] = [
  * any paper has been chosen. Keep it that way: a single static content import
  * here undoes the whole split.
  */
-

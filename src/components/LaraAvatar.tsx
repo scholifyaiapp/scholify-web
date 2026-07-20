@@ -19,19 +19,25 @@ export default function LaraAvatar({ size = 32 }: { size?: number }) {
         boxShadow: "0 4px 16px rgba(200,0,0,0.4)",
       }}
     >
-      <img
-        src="/lara-avatar.png"
-        alt="Lara"
-        draggable={false}
+      <div
+        role="img"
+        aria-label="Charles, Scholify AI race engineer"
         style={{
           width: "100%",
           height: "100%",
           borderRadius: "50%",
-          objectFit: "cover",
           display: "block",
-          background: "#1a1326",
+          background: "linear-gradient(145deg, #1a1a20 0%, #0b0b0f 58%, #c80000 100%)",
+          color: "#fff",
+          fontSize: Math.max(12, Math.round(size * 0.44)),
+          fontWeight: 900,
+          lineHeight: `${size - ring * 2}px`,
+          textAlign: "center",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
         }}
-      />
+      >
+        C
+      </div>
     </div>
   )
 }

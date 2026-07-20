@@ -17,7 +17,7 @@ const en: PageContent = {
     {
       heading: "Using Scholify",
       body: [
-        "Scholify gives you tools to set learning goals, follow study plans, keep streaks, and get coaching from Lara, our AI learning partner.",
+        "Scholify gives you tools to set learning goals, follow study plans, keep streaks, and get coaching from Charles, our AI race engineer.",
         "You must be at least 13 years old to use Scholify. If you use it on behalf of an organization, you confirm you are authorized to accept these terms for them.",
       ],
     },
@@ -43,10 +43,10 @@ const en: PageContent = {
       ],
     },
     {
-      heading: "AI guidance from Lara",
+      heading: "AI guidance from Charles",
       body: [
-        "Lara is an AI learning partner. Her suggestions, explanations, and study plans are meant to help you learn, but they can be incomplete or wrong.",
-        "Lara does not provide professional, medical, legal, or financial advice. Always use your own judgment for important decisions.",
+        "Charles is a fictional Scholify AI race engineer. His suggestions, explanations, and study plans are meant to help you learn, but they can be incomplete or wrong.",
+        "Charles does not provide professional, medical, legal, or financial advice. Always use your own judgment for important decisions.",
       ],
     },
     {

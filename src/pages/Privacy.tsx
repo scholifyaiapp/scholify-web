@@ -19,14 +19,14 @@ const en: PageContent = {
       body: [
         "Account details: your name, email address, and password (stored encrypted) when you create an account.",
         "Learning data: the papers and exam dates you set, your study plans, answers, mock results, streaks and readiness scores — this is what powers your personalized experience.",
-        "Conversations with Lara: messages you exchange with your AI learning partner, so she can give you relevant, continuous support.",
+        "Conversations with Charles: messages you exchange with your AI race engineer, so he can give you relevant, continuous support.",
         "Usage and device data: basic analytics such as which features you use, app version, and device type, used only to improve Scholify.",
       ],
     },
     {
       heading: "How we use your information",
       body: [
-        "To build your study plans, track streaks, and personalize Lara's coaching.",
+        "To build your study plans, track progress, and personalize Charles's coaching.",
         "To keep your account secure and to provide customer support when you need it.",
         "To understand which features help people learn, so we can make Scholify better.",
         "We do not sell your personal data. Ever.",
@@ -35,7 +35,7 @@ const en: PageContent = {
     {
       heading: "How we share information",
       body: [
-        "We share data only with trusted service providers who help us run Scholify — for example, cloud hosting and the AI provider that powers Lara. They may only use it to deliver their service to us.",
+        "We share data only with trusted service providers who help us run Scholify — for example, cloud hosting and the AI provider that powers Charles. They may only use it to deliver their service to us.",
         "We may disclose information if required by law, or to protect the safety and rights of our users.",
       ],
     },

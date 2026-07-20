@@ -2,9 +2,8 @@ import type { StudyChapter } from "@/lib/acca-study-content"
 
 /*
  * BT · Area A — Business organisation & its environment.
- * A rich, exam-focused chapter: what an organisation is, who has a stake in it,
- * the outside forces acting on it (PESTEL, Porter), and how it is built and
- * behaves inside (structure, configuration, culture). Original, syllabus-aligned;
+ * Source-mapped to ACCA BT/FBT syllabus and study guide, September 2025 to
+ * August 2026, official Area A (topic groups A1-A9). Original Scholify wording;
  * no ACCA/Kaplan/BPP text.
  */
 
@@ -12,15 +11,15 @@ export const BT_A: StudyChapter = {
   paper: "BT",
   area: "A",
   title: "Business organisation & its environment",
-  minutes: 15,
+  minutes: 28,
   intro: "A business is never a closed box. It is a group of people pursuing a shared goal, surrounded by parties who want something from it and by forces it cannot control. Area A is the map of that whole system.",
   outcomes: [
     "Distinguish the main types of business organisation and why the choice matters",
     "Identify internal, connected and external stakeholders and map them with Mendelow's matrix",
-    "Analyse the macro environment using PESTEL and apply it to a scenario",
-    "Assess industry competition using Porter's five forces",
-    "Describe how organisations are structured — Mintzberg's building blocks, tall vs flat, centralisation",
-    "Explain organisational culture using Handy's four cultural types",
+    "Explain how political, legal, macroeconomic, social, demographic and technological forces affect organisations",
+    "Apply demand, supply, elasticity, market structure and cost behaviour to a business scenario",
+    "Explain environmental and sustainability impacts on organisations and their stakeholders",
+    "Assess competitiveness using Porter's value chain, value networks and five forces",
   ],
   sections: [
     {
@@ -206,9 +205,63 @@ export const BT_A: StudyChapter = {
       },
     },
     {
-      id: "structure-culture",
-      heading: "Inside the organisation — structure and culture",
+      id: "economic-environment",
+      heading: "The economic environment — from national policy to customer demand",
       blocks: [
+        { kind: "text", md: "**Macroeconomics** studies the economy as a whole. Governments normally pursue growth, high employment, stable prices and a sustainable external position, but those goals can conflict. Expansion may reduce unemployment while adding inflationary pressure; measures that restrain inflation may slow activity." },
+        { kind: "table", caption: "The two principal policy levers", head: ["", "Fiscal policy", "Monetary policy"], rows: [
+          ["Tools", "Government spending, taxation and borrowing", "Interest rates, money and credit conditions"],
+          ["Expansion", "Higher spending or lower taxes", "Lower rates generally encourage borrowing and demand"],
+          ["Contraction", "Lower spending or higher taxes", "Higher rates generally restrain borrowing and demand"],
+        ] },
+        { kind: "text", md: "At the **microeconomic** level, demand describes how much buyers are willing and able to purchase at different prices; supply describes how much sellers offer. A change in the product's own price normally causes movement along a curve. A change in income, tastes, technology or the price of related goods shifts a whole curve." },
+        { kind: "callout", tone: "key", title: "Elasticity changes the commercial response", md: "Demand is **price elastic** when quantity demanded changes proportionately more than price, and **price inelastic** when it changes less. Substitutes normally increase price sensitivity; necessity, loyalty or few alternatives normally reduce it. Complements are consumed together, so demand for one is linked to demand for the other." },
+        { kind: "diagram", diagram: {
+          type: "cards",
+          title: "Four market structures",
+          caption: "Distinguish them by number of sellers, product differences and barriers to entry.",
+          data: { items: [
+            { title: "Perfect competition", sub: "Many sellers, homogeneous output, easy entry and firms are price takers." },
+            { title: "Monopolistic competition", sub: "Many sellers with differentiated products and some pricing discretion." },
+            { title: "Oligopoly", sub: "A few interdependent firms; each anticipates competitors' reactions." },
+            { title: "Monopoly", sub: "One dominant supplier protected by substantial barriers to entry." },
+          ] },
+        } },
+        { kind: "callout", tone: "tip", title: "Short run versus long run", md: "In the **short run**, at least one factor of production is fixed. In the **long run**, all factors can change and the organisation can alter its scale. The distinction is about flexibility of inputs, not a fixed number of months or years." },
+      ],
+      check: {
+        q: "A product has many close substitutes. All else equal, what is most likely about demand for that product?",
+        options: [
+          "It is relatively price elastic because customers can switch",
+          "It is relatively price inelastic because customers can switch",
+          "Supply must be perfectly inelastic",
+          "Demand cannot respond to a price change",
+        ],
+        correct: 0,
+        explain: "Close substitutes make switching easier, so a price rise is more likely to produce a proportionately large fall in quantity demanded. Demand is therefore relatively price elastic.",
+      },
+    },
+    {
+      id: "change-sustainability",
+      heading: "Social, technological and environmental change",
+      blocks: [
+        { kind: "text", md: "Demographic patterns—age, migration, household composition, education and workforce participation—change both the labour available to organisations and the products households demand. Businesses respond through product design, location, recruitment and working practices; governments may respond through education, pensions, migration and labour-market policy." },
+        { kind: "text", md: "Technology can automate work, reduce layers, enable remote coordination and change the accountant's role from transaction processing toward analysis, control and decision support. **Downsizing** reduces headcount, **delayering** removes management levels, and **outsourcing** transfers an activity to an external provider. They are related responses, not synonyms." },
+        { kind: "callout", tone: "rule", title: "Sustainability is both impact and dependency", md: "An organisation affects the physical environment through resource use, emissions, waste and products; it also depends on climate, energy, water, ecosystems and regulation. A complete answer considers both directions and connects them to stakeholder expectations, cost, resilience and reputation." },
+        { kind: "text", md: "Porter's **value chain** separates primary activities— inbound logistics, operations, outbound logistics, marketing and sales, and service—from support activities such as infrastructure, human resources, technology development and procurement. A **value network** extends the view beyond one organisation to the suppliers, partners and channels that jointly create value." },
+      ],
+      check: {
+        q: "A company contracts an independent specialist to operate its payroll function. Which change is this?",
+        options: ["Delayering", "Downsizing only", "Outsourcing", "Centralisation"],
+        correct: 2,
+        explain: "The activity is transferred to an external provider, so this is outsourcing. Headcount reduction alone describes downsizing; delayering specifically removes management levels.",
+      },
+    },
+    {
+      id: "area-b-preview",
+      heading: "Bridge to Area B — structure and culture",
+      blocks: [
+        { kind: "callout", tone: "tip", title: "Next syllabus area", md: "The official Area A ends with competitiveness. This short bridge previews **official Area B**, where organisational structure, culture, governance and sustainability are studied and assessed in their own right." },
         { kind: "text", md: "Having looked outward, we turn inward: **how the organisation is built** and **how it behaves**. Structure is the formal skeleton — who reports to whom; culture is the informal personality — \"the way we do things around here\"." },
         { kind: "text", md: "**Mintzberg** described any organisation as five **building blocks**. The **strategic apex** (senior management) sets direction; the **operating core** does the basic work; the **middle line** links the two; the **technostructure** designs systems and standards (analysts, planners); and the **support staff** provide indirect services (HR, legal, catering). Different organisations lean on different blocks — a consultancy is dominated by its operating core of professionals, a mass factory by its technostructure." },
         { kind: "diagram", diagram: {
@@ -264,6 +317,8 @@ export const BT_A: StudyChapter = {
     { trap: "Filing a factor under the wrong PESTEL letter — classifying a new law as 'Economic' or 'Political'.", fix: "Classify by what the factor IS. A binding law = Legal; a government stance/policy = Political; wage/price/rate effects = Economic." },
     { trap: "Confusing Porter's 'substitutes' with 'competitive rivalry', or inventing a sixth force.", fix: "There are exactly five forces. Substitutes come from a DIFFERENT industry meeting the same need; rivalry is competition among existing firms in the same industry." },
     { trap: "Reading a 'strong' Porter force as good for the industry.", fix: "Every strong force squeezes industry profit. An attractive, profitable industry is one where the five forces are WEAK." },
+    { trap: "Treating fiscal and monetary policy as interchangeable.", fix: "Fiscal policy uses government spending, taxation and borrowing; monetary policy primarily uses interest rates and monetary or credit conditions." },
+    { trap: "Calling every reduction in staff 'delayering'.", fix: "Downsizing reduces headcount; delayering removes management levels; outsourcing transfers an activity to an external provider." },
   ],
   keyTerms: [
     { term: "Separate legal personality", def: "The status of a company as a legal person distinct from its owners, able to own assets, owe debts and be sued in its own name — the basis of limited liability." },
@@ -271,12 +326,19 @@ export const BT_A: StudyChapter = {
     { term: "Mendelow's matrix", def: "A tool that maps stakeholders by power and interest into four quadrants (key players, keep satisfied, keep informed, minimal effort) to decide how to manage each." },
     { term: "PESTEL analysis", def: "A framework for scanning the macro environment across six factors: Political, Economic, Social, Technological, Environmental and Legal." },
     { term: "Porter's five forces", def: "A model assessing industry attractiveness through five forces: threat of new entrants, supplier power, buyer power, threat of substitutes and competitive rivalry." },
+    { term: "Fiscal policy", def: "Government decisions on expenditure, taxation and borrowing used to influence economic activity and welfare." },
+    { term: "Price elasticity of demand", def: "The responsiveness of quantity demanded to a change in price; demand is elastic when the proportionate quantity response is greater than the proportionate price change." },
+    { term: "Value chain", def: "Porter's model of the linked primary and support activities through which an organisation creates value." },
   ],
   summary: [
     "Business forms differ by ownership and liability: only a limited company is a separate legal person with limited liability; sole traders and partnerships carry unlimited liability.",
     "Stakeholders are internal, connected (contractual link) or external, and their interests conflict — Mendelow's power–interest matrix decides how to manage each of the four quadrants.",
     "PESTEL scans the macro environment across Political, Economic, Social, Technological, Environmental and Legal factors; classify each factor by what it is.",
     "Porter's five forces judge industry attractiveness — new entrants, supplier power, buyer power, substitutes and rivalry; strong forces erode profit.",
+    "Macroeconomic policy affects overall activity: fiscal policy changes spending, taxation and borrowing, while monetary policy works mainly through interest rates and credit conditions.",
+    "Demand, supply, elasticity, costs and market structure explain how customers and competitors respond at business level.",
+    "Social, demographic, technological and environmental changes alter demand, work, organisational design and long-term resilience.",
+    "Porter's value chain explains internal value creation; a value network extends the analysis across connected organisations.",
     "Internally, Mintzberg's five building blocks, tall vs flat structures and centralisation describe the skeleton, while Handy's four cultures (power, role, task, person) describe the personality — and the two must fit.",
   ],
 }

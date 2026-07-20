@@ -4,6 +4,18 @@ import type { Flashcard } from "@/lib/acca-flashcards"
 import type { WrittenQuestion } from "@/lib/acca-written"
 import type { TopicBrief } from "@/lib/acca-briefs"
 import type { StudyChapter } from "@/lib/acca-study-content"
+import { mapBtFlashcardsToOfficialSyllabus, mapBtQuestionsToOfficialSyllabus } from "@/lib/acca-bt-syllabus-map"
+import { mapMaFlashcardsToOfficialSyllabus, mapMaQuestionsToOfficialSyllabus } from "@/lib/acca-ma-syllabus-map"
+import { mapFaFlashcardsToOfficialSyllabus, mapFaQuestionsToOfficialSyllabus } from "@/lib/acca-fa-syllabus-map"
+import { mapLwFlashcardsToOfficialSyllabus, mapLwQuestionsToOfficialSyllabus } from "@/lib/acca-lw-syllabus-map"
+import { mapPmFlashcardsToOfficialSyllabus, mapPmQuestionsToOfficialSyllabus, mapPmWrittenToOfficialSyllabus } from "@/lib/acca-pm-syllabus-map"
+import { mapTxFlashcardsToOfficialSyllabus, mapTxQuestionsToOfficialSyllabus, mapTxWrittenToOfficialSyllabus } from "@/lib/acca-tx-syllabus-map"
+import { mapFrFlashcardsToOfficialSyllabus, mapFrQuestionsToOfficialSyllabus, mapFrWrittenToOfficialSyllabus } from "@/lib/acca-fr-syllabus-map"
+import { mapFmFlashcardsToOfficialSyllabus, mapFmQuestionsToOfficialSyllabus, mapFmWrittenToOfficialSyllabus } from "@/lib/acca-fm-syllabus-map"
+import { mapSblFlashcardsToOfficialSyllabus, mapSblQuestionsToOfficialSyllabus, mapSblWrittenToOfficialSyllabus } from "@/lib/acca-sbl-syllabus-map"
+import { mapSbrFlashcardsToOfficialSyllabus, mapSbrQuestionsToOfficialSyllabus, mapSbrWrittenToOfficialSyllabus } from "@/lib/acca-sbr-syllabus-map"
+import { mapApmFlashcardsToOfficialSyllabus, mapApmQuestionsToOfficialSyllabus, mapApmWrittenToOfficialSyllabus } from "@/lib/acca-apm-syllabus-map"
+import { mapAtxFlashcardsToOfficialSyllabus, mapAtxQuestionsToOfficialSyllabus, mapAtxWrittenToOfficialSyllabus } from "@/lib/acca-atx-syllabus-map"
 
 /*
  * Scholify — the per-paper CONTENT LOADER. Read acca-content-registry.ts first:
@@ -56,102 +68,60 @@ function collect<T extends Owned>(mods: ContentModule[], paperId: string): T[] {
 
 const QUESTION_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fa2"), () => import("@/lib/acca-content-fa3")],
-  FR: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fr2"), () => import("@/lib/acca-content-fr3"), () => import("@/lib/acca-content-fr4"), () => import("@/lib/acca-content-fr5")],
-  MA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-ma2"), () => import("@/lib/acca-content-ma3")],
+  FR: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fr2"), () => import("@/lib/acca-content-fr3"), () => import("@/lib/acca-content-fr4"), () => import("@/lib/acca-content-fr5"), () => import("@/lib/acca-content-fr-official")],
+  MA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-ma2"), () => import("@/lib/acca-content-ma3"), () => import("@/lib/acca-content-ma-official")],
   BT: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-bt2"), () => import("@/lib/acca-content-bt3")],
   LW: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-lw2"), () => import("@/lib/acca-content-lw3")],
-  PM: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-pm2"), () => import("@/lib/acca-content-pm3"), () => import("@/lib/acca-content-pm4")],
-  TX: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-tx2"), () => import("@/lib/acca-content-tx3"), () => import("@/lib/acca-content-tx4")],
-  AA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-aa2"), () => import("@/lib/acca-content-aa3"), () => import("@/lib/acca-content-aa4")],
-  FM: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fm2"), () => import("@/lib/acca-content-fm3"), () => import("@/lib/acca-content-fm4")],
-  SBL: [() => import("@/lib/acca-content-sbl2"), () => import("@/lib/acca-content-sbl3")],
-  SBR: [() => import("@/lib/acca-content-sbr2"), () => import("@/lib/acca-content-sbr3")],
-  AFM: [() => import("@/lib/acca-content-afm2"), () => import("@/lib/acca-content-afm3")],
-  APM: [() => import("@/lib/acca-content-apm2"), () => import("@/lib/acca-content-apm3")],
-  ATX: [() => import("@/lib/acca-content-atx2"), () => import("@/lib/acca-content-atx3")],
-  AAA: [() => import("@/lib/acca-content-aaa2"), () => import("@/lib/acca-content-aaa3")],
+  PM: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-pm2"), () => import("@/lib/acca-content-pm3"), () => import("@/lib/acca-content-pm4"), () => import("@/lib/acca-content-pm-official")],
+  TX: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-tx2"), () => import("@/lib/acca-content-tx3"), () => import("@/lib/acca-content-tx4"), () => import("@/lib/acca-content-tx-official")],
+  AA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-aa2"), () => import("@/lib/acca-content-aa3"), () => import("@/lib/acca-content-aa4"), () => import("@/lib/acca-content-aa-official")],
+  FM: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fm2"), () => import("@/lib/acca-content-fm3"), () => import("@/lib/acca-content-fm4"), () => import("@/lib/acca-content-fm-official")],
+  SBL: [() => import("@/lib/acca-content-sbl2"), () => import("@/lib/acca-content-sbl3"), () => import("@/lib/acca-content-sbl-official")],
+  SBR: [() => import("@/lib/acca-content-sbr2"), () => import("@/lib/acca-content-sbr3"), () => import("@/lib/acca-content-sbr-official")],
+  AFM: [() => import("@/lib/acca-content-afm2"), () => import("@/lib/acca-content-afm3"), () => import("@/lib/acca-content-afm-official")],
+  APM: [() => import("@/lib/acca-content-apm2"), () => import("@/lib/acca-content-apm3"), () => import("@/lib/acca-content-apm-official")],
+  ATX: [() => import("@/lib/acca-content-atx2"), () => import("@/lib/acca-content-atx3"), () => import("@/lib/acca-content-atx-official")],
+  AAA: [() => import("@/lib/acca-content-aaa2"), () => import("@/lib/acca-content-aaa3"), () => import("@/lib/acca-content-aaa-official")],
 }
 
 const CHAPTER_MODULES: Record<string, Loader[]> = {
-  FA: [
-    () => import("@/lib/acca-study-fa-a"), () => import("@/lib/acca-study-fa-b"), () => import("@/lib/acca-study-fa-c"),
-    () => import("@/lib/acca-study-fa-d"), () => import("@/lib/acca-study-fa-e"), () => import("@/lib/acca-study-fa-f"),
-    () => import("@/lib/acca-study-fa-g"), () => import("@/lib/acca-study-fa-h"),
-  ],
-  FR: [
-    () => import("@/lib/acca-study-fr-a"), () => import("@/lib/acca-study-fr-b"), () => import("@/lib/acca-study-fr-c"),
-    () => import("@/lib/acca-study-fr-d"), () => import("@/lib/acca-study-fr-e"),
-  ],
+  FA: [() => import("@/lib/acca-study-fa-official")],
+  FR: [() => import("@/lib/acca-study-fr-official")],
   MA: [
-    () => import("@/lib/acca-study-ma-a"), () => import("@/lib/acca-study-ma-b"), () => import("@/lib/acca-study-ma-c"),
-    () => import("@/lib/acca-study-ma-d"), () => import("@/lib/acca-study-ma-e"),
+    () => import("@/lib/acca-study-ma-official"),
   ],
   BT: [
-    () => import("@/lib/acca-study-bt-a"), () => import("@/lib/acca-study-bt-b"), () => import("@/lib/acca-study-bt-c"),
-    () => import("@/lib/acca-study-bt-d"),
+    () => import("@/lib/acca-study-bt-official"),
   ],
-  TX: [
-    () => import("@/lib/acca-study-tx-a"), () => import("@/lib/acca-study-tx-b"), () => import("@/lib/acca-study-tx-c"),
-    () => import("@/lib/acca-study-tx-d"), () => import("@/lib/acca-study-tx-e"),
-  ],
-  LW: [
-    () => import("@/lib/acca-study-lw-a"), () => import("@/lib/acca-study-lw-b"), () => import("@/lib/acca-study-lw-c"),
-    () => import("@/lib/acca-study-lw-d"),
-  ],
-  PM: [
-    () => import("@/lib/acca-study-pm-a"), () => import("@/lib/acca-study-pm-b"), () => import("@/lib/acca-study-pm-c"),
-    () => import("@/lib/acca-study-pm-d"),
-  ],
-  FM: [
-    () => import("@/lib/acca-study-fm-a"), () => import("@/lib/acca-study-fm-b"), () => import("@/lib/acca-study-fm-c"),
-    () => import("@/lib/acca-study-fm-d"), () => import("@/lib/acca-study-fm-e"),
-  ],
-  AA: [
-    () => import("@/lib/acca-study-aa-a"), () => import("@/lib/acca-study-aa-b"), () => import("@/lib/acca-study-aa-c"),
-    () => import("@/lib/acca-study-aa-d"), () => import("@/lib/acca-study-aa-e"),
-  ],
-  SBR: [
-    () => import("@/lib/acca-study-sbr-a"), () => import("@/lib/acca-study-sbr-b"), () => import("@/lib/acca-study-sbr-c"),
-    () => import("@/lib/acca-study-sbr-d"), () => import("@/lib/acca-study-sbr-e"),
-  ],
-  SBL: [
-    () => import("@/lib/acca-study-sbl-a"), () => import("@/lib/acca-study-sbl-b"), () => import("@/lib/acca-study-sbl-c"),
-    () => import("@/lib/acca-study-sbl-d"), () => import("@/lib/acca-study-sbl-e"),
-  ],
-  AFM: [
-    () => import("@/lib/acca-study-afm-a"), () => import("@/lib/acca-study-afm-b"), () => import("@/lib/acca-study-afm-c"),
-    () => import("@/lib/acca-study-afm-d"), () => import("@/lib/acca-study-afm-e"),
-  ],
-  APM: [
-    () => import("@/lib/acca-study-apm-a"), () => import("@/lib/acca-study-apm-b"), () => import("@/lib/acca-study-apm-c"),
-    () => import("@/lib/acca-study-apm-d"),
-  ],
-  ATX: [
-    () => import("@/lib/acca-study-atx-a"), () => import("@/lib/acca-study-atx-b"), () => import("@/lib/acca-study-atx-c"),
-    () => import("@/lib/acca-study-atx-d"), () => import("@/lib/acca-study-atx-e"),
-  ],
-  AAA: [
-    () => import("@/lib/acca-study-aaa-a"), () => import("@/lib/acca-study-aaa-b"), () => import("@/lib/acca-study-aaa-c"),
-    () => import("@/lib/acca-study-aaa-d"), () => import("@/lib/acca-study-aaa-e"),
-  ],
+  TX: [() => import("@/lib/acca-study-tx-official")],
+  LW: [() => import("@/lib/acca-study-lw-official")],
+  PM: [() => import("@/lib/acca-study-pm-official")],
+  AA: [() => import("@/lib/acca-study-aa-official")],
+  FM: [() => import("@/lib/acca-study-fm-official")],
+  SBR: [() => import("@/lib/acca-study-sbr-official")],
+  SBL: [() => import("@/lib/acca-study-sbl-official")],
+  AFM: [() => import("@/lib/acca-study-afm-official")],
+  APM: [() => import("@/lib/acca-study-apm-official")],
+  ATX: [() => import("@/lib/acca-study-atx-official")],
+  AAA: [() => import("@/lib/acca-study-aaa-official")],
 }
 
 const FLASHCARD_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5")],
-  FR: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5")],
-  PM: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5")],
-  TX: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5")],
-  AA: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave3"), () => import("@/lib/acca-flashcards-wave5")],
-  FM: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave3"), () => import("@/lib/acca-flashcards-wave5")],
-  MA: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave3"), () => import("@/lib/acca-flashcards-wave5")],
-  BT: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave4"), () => import("@/lib/acca-flashcards-wave5")],
+  FR: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-fr-official")],
+  PM: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-pm-official")],
+  TX: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave2"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-tx-official")],
+  AA: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave3"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-aa-official")],
+  FM: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave3"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-fm-official")],
+  MA: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave3"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-ma-official")],
+  BT: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave4"), () => import("@/lib/acca-flashcards-wave5"), () => import("@/lib/acca-flashcards-bt-official")],
   LW: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-wave4"), () => import("@/lib/acca-flashcards-wave5")],
-  SBL: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-s1")],
-  SBR: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-s1")],
-  AFM: [() => import("@/lib/acca-flashcards-s2")],
-  APM: [() => import("@/lib/acca-flashcards-s2")],
-  ATX: [() => import("@/lib/acca-flashcards-s3")],
-  AAA: [() => import("@/lib/acca-flashcards-s3")],
+  SBL: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-s1"), () => import("@/lib/acca-flashcards-sbl-official")],
+  SBR: [() => import("@/lib/acca-flashcards-core"), () => import("@/lib/acca-flashcards-s1"), () => import("@/lib/acca-flashcards-sbr-official")],
+  AFM: [() => import("@/lib/acca-flashcards-s2"), () => import("@/lib/acca-flashcards-afm-official")],
+  APM: [() => import("@/lib/acca-flashcards-s2"), () => import("@/lib/acca-flashcards-apm-official")],
+  ATX: [() => import("@/lib/acca-flashcards-s3"), () => import("@/lib/acca-flashcards-atx-official")],
+  AAA: [() => import("@/lib/acca-flashcards-s3"), () => import("@/lib/acca-flashcards-aaa-official")],
 }
 
 /*
@@ -164,12 +134,12 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
   PM: [() => import("@/lib/acca-written-w3-pm")],
   TX: [() => import("@/lib/acca-written-w3-tx")],
   FM: [() => import("@/lib/acca-written-w3-fm")],
-  SBL: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1")],
-  SBR: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1")],
-  AFM: [() => import("@/lib/acca-written-s2")],
-  APM: [() => import("@/lib/acca-written-s2")],
-  ATX: [() => import("@/lib/acca-written-s3")],
-  AAA: [() => import("@/lib/acca-written-s3")],
+  SBL: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbl-official")],
+  SBR: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbr-official")],
+  AFM: [() => import("@/lib/acca-written-s2"), () => import("@/lib/acca-written-afm-official")],
+  APM: [() => import("@/lib/acca-written-s2"), () => import("@/lib/acca-written-apm-official")],
+  ATX: [() => import("@/lib/acca-written-s3"), () => import("@/lib/acca-written-atx-official")],
+  AAA: [() => import("@/lib/acca-written-s3"), () => import("@/lib/acca-written-aaa-official")],
 }
 
 /*
@@ -184,21 +154,21 @@ const CASE_MODULES: Record<string, Loader[]> = {
 }
 
 const BRIEF_MODULES: Record<string, Loader[]> = {
-  FA: [() => import("@/lib/acca-briefs-core")],
-  FR: [() => import("@/lib/acca-briefs-core")],
-  PM: [() => import("@/lib/acca-briefs-skills")],
-  TX: [() => import("@/lib/acca-briefs-skills")],
-  AA: [() => import("@/lib/acca-briefs-aafm")],
-  FM: [() => import("@/lib/acca-briefs-aafm")],
-  BT: [() => import("@/lib/acca-briefs-knowledge")],
-  MA: [() => import("@/lib/acca-briefs-knowledge")],
-  LW: [() => import("@/lib/acca-briefs-knowledge")],
-  SBL: [() => import("@/lib/acca-briefs-sbl")],
-  SBR: [() => import("@/lib/acca-briefs-sbr")],
-  AFM: [() => import("@/lib/acca-briefs-afm")],
-  APM: [() => import("@/lib/acca-briefs-apm")],
-  ATX: [() => import("@/lib/acca-briefs-atx")],
-  AAA: [() => import("@/lib/acca-briefs-aaa")],
+  FA: [() => import("@/lib/acca-briefs-fa-official")],
+  FR: [() => import("@/lib/acca-briefs-fr-official")],
+  PM: [() => import("@/lib/acca-briefs-pm-official")],
+  TX: [() => import("@/lib/acca-briefs-tx-official")],
+  AA: [() => import("@/lib/acca-briefs-aa-official")],
+  FM: [() => import("@/lib/acca-briefs-fm-official")],
+  BT: [() => import("@/lib/acca-briefs-bt-official")],
+  MA: [() => import("@/lib/acca-briefs-ma-official")],
+  LW: [() => import("@/lib/acca-briefs-lw-official")],
+  SBL: [() => import("@/lib/acca-briefs-sbl-official")],
+  SBR: [() => import("@/lib/acca-briefs-sbr-official")],
+  AFM: [() => import("@/lib/acca-briefs-afm-official")],
+  APM: [() => import("@/lib/acca-briefs-apm-official")],
+  ATX: [() => import("@/lib/acca-briefs-atx-official")],
+  AAA: [() => import("@/lib/acca-briefs-aaa-official")],
 }
 
 /** Every paper that has downloadable content. */
@@ -235,11 +205,61 @@ export function loadPaperContent(paperId: string): Promise<void> {
       loadAll(BRIEF_MODULES[paperId]),
       loadAll(CASE_MODULES[paperId]),
     ])
+    const collectedQuestions = collect<AccaQuestion>(questionMods, paperId)
+    const questions = paperId === "BT"
+      ? mapBtQuestionsToOfficialSyllabus(collectedQuestions)
+      : paperId === "MA"
+        ? mapMaQuestionsToOfficialSyllabus(collectedQuestions)
+        : paperId === "FA"
+          ? mapFaQuestionsToOfficialSyllabus(collectedQuestions)
+          : paperId === "LW"
+            ? mapLwQuestionsToOfficialSyllabus(collectedQuestions)
+            : paperId === "PM"
+              ? mapPmQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "TX"
+                ? mapTxQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "FR"
+                ? mapFrQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "FM"
+                ? mapFmQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "SBL"
+                ? mapSblQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "SBR"
+                ? mapSbrQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "APM"
+                ? mapApmQuestionsToOfficialSyllabus(collectedQuestions)
+              : paperId === "ATX"
+                ? mapAtxQuestionsToOfficialSyllabus(collectedQuestions)
+        : collectedQuestions
     const content: PaperContent = {
-      questions: collect<AccaQuestion>(questionMods, paperId),
+      questions,
       chapters: collect<StudyChapter>(chapterMods, paperId),
-      flashcards: collect<Flashcard>(flashcardMods, paperId),
-      written: collect<WrittenQuestion>(writtenMods, paperId),
+      flashcards: paperId === "BT"
+        ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+        : paperId === "MA"
+          ? mapMaFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+          : paperId === "FA"
+            ? mapFaFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+            : paperId === "LW"
+              ? mapLwFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "PM"
+                ? mapPmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "TX"
+                  ? mapTxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "FR"
+                  ? mapFrFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "FM"
+                  ? mapFmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "SBL"
+                  ? mapSblFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "SBR"
+                  ? mapSbrFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "APM"
+                  ? mapApmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+                : paperId === "ATX"
+                  ? mapAtxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+            : collect<Flashcard>(flashcardMods, paperId),
+      written: paperId === "PM" ? mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "TX" ? mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FR" ? mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "SBL" ? mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId),
       briefs: collect<TopicBrief>(briefMods, paperId),
       cases: collect<OtCase>(caseMods, paperId),
     }

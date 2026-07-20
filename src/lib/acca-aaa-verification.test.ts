@@ -1,0 +1,6 @@
+import{describe,expect,it}from"vitest";import{getQuestions}from"@/lib/acca";import{chaptersForPaper}from"@/lib/acca-study-content";import{getWrittenQuestions}from"@/lib/acca-written";
+describe("AAA-INT September 2026–June 2027 official structure",()=>{const areas=["A","B","C","D","E","F","G","H","I"];
+it("covers all nine official capabilities",()=>{expect(new Set(getQuestions("AAA").map(x=>x.area))).toEqual(new Set(areas));expect(chaptersForPaper("AAA").map(x=>x.area).sort()).toEqual(areas)});
+it("includes written practice for all newly represented capabilities",()=>{const represented=new Set(getWrittenQuestions("AAA").map(x=>x.area));for(const area of ["F","G","H","I"])expect(represented.has(area)).toBe(true)});
+it("covers sustainability assurance and technology audit quality",()=>{const text=JSON.stringify(chaptersForPaper("AAA")).toLowerCase();for(const term of ["sustainability assurance","suitable criteria","automation bias","human judgement"])expect(text).toContain(term)});
+it("preserves four professional-skill lenses",()=>{const text=JSON.stringify(chaptersForPaper("AAA").find(x=>x.area==="H")).toLowerCase();for(const term of ["communication","analysis and evaluation","scepticism","commercial acumen"])expect(text).toContain(term)})});

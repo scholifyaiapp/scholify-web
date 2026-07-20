@@ -384,7 +384,7 @@ export default function AccaDiagnostic() {
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
                 A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to 25
                 questions, <strong style={{ color: TEXT }}>timed like the real exam</strong> (100 seconds each, ~40 minutes).
-                No hints. At the end: your pass probability, estimated score, weakest areas, and Lara's plan to your target.
+                No hints. At the end: your pass probability, estimated score, weakest sectors, and Charles's race plan to your target.
               </p>
 
               <Card style={{ marginBottom: 16 }}>
@@ -688,7 +688,7 @@ function PainPointsPanel({ result }: { result: DiagnosticResult }) {
         <Icon name="weak" size={15} color={RED} /> YOUR PAIN POINTS
       </div>
       <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBottom: 14 }}>
-        Lara's examiner read of where your marks are leaking. Know these three by name — everything below is built to fix them.
+        Charles's telemetry read of where your marks are leaking. Know these sectors by name — the comeback strategy is built to recover them.
       </div>
 
       {/* The ranked top-3 — severity cards. minmax(0,1fr): labels wrap/truncate,
@@ -892,7 +892,7 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
       style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16, overflow: "hidden" }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: C.brand, letterSpacing: 0.4, marginBottom: 12 }}>
-        <Icon name="tutor" size={15} color={C.brand} /> LARA'S PLAN TO {targetProb}%
+        <Icon name="tutor" size={15} color={C.brand} /> CHARLES · RACE PLAN TO {targetProb}%
       </div>
 
       {/* the generation moment — cinematic build, then the plan reveals */}

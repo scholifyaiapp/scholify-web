@@ -1,0 +1,6 @@
+import{describe,expect,it}from"vitest";import{getQuestions}from"@/lib/acca";import{chaptersForPaper}from"@/lib/acca-study-content";import{getFlashcards}from"@/lib/acca-flashcards";
+describe("ATX-UK June 2026–June 2027 Finance Act 2025",()=>{const areas=["A","B","C","D","E"];
+it("covers all five official capabilities",()=>{expect(new Set(getQuestions("ATX").map(x=>x.area))).toEqual(new Set(areas));expect(chaptersForPaper("ATX").map(x=>x.area).sort()).toEqual(areas)});
+it("uses the current four-year FIG regime",()=>{const text=JSON.stringify(chaptersForPaper("ATX")).toLowerCase();expect(text).toContain("four-year foreign income and gains");expect(text).toContain("ten consecutive tax years")});
+it("removes obsolete remittance-basis and domicile practice items",()=>{const active=JSON.stringify({questions:getQuestions("ATX"),cards:getFlashcards("ATX")}).toLowerCase();expect(active).not.toContain("remittance basis");expect(active).not.toContain("non-domicil")});
+it("represents interaction, planning, professional and digital capability",()=>{const text=JSON.stringify(chaptersForPaper("ATX")).toLowerCase();for(const term of ["tax interaction","tax planning","professional skills","employability and technology"])expect(text).toContain(term)})});

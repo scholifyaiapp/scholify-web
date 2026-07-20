@@ -129,6 +129,22 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Missed-day voice — Lara reassures, never guilts (Doc 12, Phase 3). */}
+        {!examDue && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 14px", borderRadius: R.lg, background: C.card, border: `1px solid ${C.border}`, marginBottom: SP.lg }}
+          >
+            <span style={{ flex: "none", width: 34, height: 34, borderRadius: 11, background: C.brandSoft, display: "grid", placeItems: "center" }}>
+              <Icon name="mission" size={16} color={C.brand} />
+            </span>
+            <div style={{ minWidth: 0, fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
+              <strong style={{ color: C.text }}>Charles · pit-wall briefing:</strong>{" "}
+              recover the lost marks, complete today's race plan, then use every result to adjust the route to your next sitting.
+            </div>
+          </motion.div>
+        )}
+
         {missedNote && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}

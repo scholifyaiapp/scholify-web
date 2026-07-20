@@ -550,7 +550,7 @@ function ValueTrio({ style, big }: { style?: CSSProperties; big?: boolean }) {
   const items: { icon: IconName; text: string }[] = [
     { icon: "diagnostic", text: "A live pass probability — know where you stand every day" },
     { icon: "mission", text: "Daily missions built from YOUR weakest areas" },
-    { icon: "tutor", text: "Lara: AI tutor on every question + examiner-style marking" },
+    { icon: "tutor", text: "Charles: your AI race engineer on every question + examiner-style marking" },
   ]
   return (
     <div style={{ display: "grid", gap: big ? 9 : 8, ...style }}>

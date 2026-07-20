@@ -27,7 +27,7 @@ const FREE_FEATURES: PlanFeature[] = [
   { text: "929 SRS flashcards" },
   { text: "Diagnostic with a pass probability (± margin)" },
   { text: "69 study chapters across all 15 papers" },
-  { text: "Lara AI tutor" },
+  { text: "Charles AI race engineer" },
   { text: "Daily goal, streak & readiness score" },
   { text: "Full ACCA roadmap BT → AAA" },
 ]
@@ -56,7 +56,7 @@ const COMPARISON: Array<[string, string, string, string, string]> = [
   ["Diagnostic + pass probability", "✓", "✓", "✓", "✓"],
   ["Study chapters (all 15 papers)", "✓", "✓", "✓", "✓"],
   ["Readiness score & weak-area analytics", "✓", "✓", "✓", "✓"],
-  ["Lara AI tutor", "✓", "✓", "✓", "✓"],
+  ["Charles AI race engineer", "✓", "✓", "✓", "✓"],
   ["Timed mock exams", "—", "✓", "✓", "✓"],
   ["AI Examiner (written marking)", "—", "✓", "✓", "✓"],
   ["Custom practice from your notes", "—", "✓", "✓", "✓"],

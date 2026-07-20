@@ -87,7 +87,7 @@ const MarqueeItem = () => {
   return (
     <div className="flex items-center space-x-12 px-6">
       <span>{t("15 ACCA Papers")}</span> <span className="text-primary/60">✦</span>
-      <span>{t("AI Tutor Lara")}</span> <span className="text-secondary/60">✦</span>
+      <span>{t("Charles · AI Race Engineer")}</span> <span className="text-secondary/60">✦</span>
       <span>{t("AI Examiner")}</span> <span className="text-primary/60">✦</span>
       <span>{t("Daily Goal & Streak")}</span> <span className="text-secondary/60">✦</span>
       <span>{t("Timed Mocks")}</span> <span className="text-primary/60">✦</span>

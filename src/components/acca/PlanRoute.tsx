@@ -40,7 +40,7 @@ export function PlanRoute({ paperId }: { paperId: string }) {
         </span>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontWeight: 800, fontSize: 15, color: C.text }}>Set your exam date</div>
-          <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>Give Lara your sitting and daily time — she'll lay out every day from now to exam day.</div>
+          <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>Give Charles your sitting and daily time — he'll map every stage from today to race day.</div>
         </div>
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => navigate("/settings")} style={{ padding: "11px 20px", borderRadius: R.lg, border: `1px solid ${C.border}`, background: C.card, color: C.text, fontWeight: 750, fontSize: 13.5, cursor: "pointer" }}>
           Set date

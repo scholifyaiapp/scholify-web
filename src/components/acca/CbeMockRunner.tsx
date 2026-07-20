@@ -229,7 +229,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         tasks.push({ key: f.key, title: task.topic, maxMarks: task.maxMarks, attempted: false, result: null })
         continue
       }
-      setMarkingNote(`Lara is marking “${task.topic}” — task ${i + 1} of ${taskItems.length}…`)
+      setMarkingNote(`Charles is analysing “${task.topic}” — task ${i + 1} of ${taskItems.length}…`)
       try {
         const workings = serializeForMarking(e.cells)
         const submission = workings ? `${e.text.trim()}\n\n${workings}` : e.text
@@ -299,7 +299,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         </h1>
         <p style={{ color: C.soft, margin: "0 0 16px", fontSize: 15, lineHeight: 1.55 }}>
           The full sitting, in the official shape of your real exam: {mock.sections.map((s) => `Section ${s.id}`).join(" → ")},
-          one clock, free navigation, flag anything for review. {mock.sections.some((s) => s.kind === "constructed") ? "Lara marks your constructed answers as part of the score. " : ""}
+          one clock, free navigation, flag anything for review. {mock.sections.some((s) => s.kind === "constructed") ? "Charles debriefs your constructed answers as part of the score. " : ""}
           Pass line {MOCK_PASS}%.
         </p>
 
@@ -405,7 +405,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
 
         {outcome.tasks.length > 0 && (
           <Card style={{ marginBottom: SP.md }}>
-            <div style={{ fontWeight: 750, fontSize: 13, color: C.faint, marginBottom: 10 }}>CONSTRUCTED TASKS — LARA'S MARKING</div>
+            <div style={{ fontWeight: 750, fontSize: 13, color: C.faint, marginBottom: 10 }}>CONSTRUCTED TASKS · CHARLES'S DEBRIEF</div>
             <div style={{ display: "grid", gap: 10 }}>
               {outcome.tasks.map((t) => (
                 <div key={t.key} style={{ padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-card-2)" }}>

@@ -26,7 +26,6 @@ import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import LazyOnView from "@/components/LazyOnView"
-import LaraLandingWidget from "@/components/lara-landing-widget"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
@@ -260,7 +259,7 @@ function HeroHeadline() {
       }}
     >
       <AnimatedText
-        text={t("From F1 to ACCA member.")}
+        text={t("From the grid to ACCA member.")}
         textClassName="font-display font-normal tracking-[-0.03em]"
         gradientColors="linear-gradient(90deg, #14141A 0%, #C80000 40%, #E50068 50%, #C80000 60%, #14141A 100%)"
         gradientAnimationDuration={3.5}
@@ -308,14 +307,34 @@ function Hero() {
             lineHeight: 1.55,
           }}
         >
-          {t("Tell Lara your next paper and exam date. She builds the plan, marks your answers, and gets you exam-ready.")}
+          {t("Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.")}
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.95, ease: EASE_DECISIVE }}
+          aria-label="Scholify performance telemetry"
+          style={{ maxWidth: 680, margin: "26px auto 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}
+        >
+          {[
+            ["01 · TELEMETRY", "Find lost marks"],
+            ["02 · STRATEGY", "Race today's plan"],
+            ["03 · SITTING", "Recalculate to pass"],
+          ].map(([label, value], index) => (
+            <div key={label} style={{ position: "relative", overflow: "hidden", padding: "13px 15px", textAlign: "left", borderRadius: 14, background: index === 1 ? INK : "rgba(255,255,255,.72)", border: `1px solid ${index === 1 ? INK : HAIR}`, boxShadow: "0 10px 26px -20px rgba(20,20,26,.45)" }}>
+              <span className="font-mono-pro" style={{ display: "block", fontSize: 9.5, letterSpacing: ".13em", color: index === 1 ? "rgba(255,255,255,.55)" : BRAND_500 }}>{label}</span>
+              <strong style={{ display: "block", marginTop: 5, fontSize: 13.5, color: index === 1 ? "#fff" : INK }}>{value}</strong>
+              <span aria-hidden style={{ position: "absolute", right: -9, bottom: -17, width: 42, height: 42, borderRadius: "50%", border: `7px solid ${index === 1 ? BRAND_500 : BRAND_100}` }} />
+            </div>
+          ))}
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1, ease: EASE_DECISIVE }}
-          style={{ marginTop: 40, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
+          style={{ marginTop: 28, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
         >
           <PrimaryCTA onClick={() => navigate("/signup")}>
             {t("Start for free")} <ArrowRight size={18} strokeWidth={2.4} />
@@ -449,9 +468,9 @@ function Problem() {
 /* ─────────────────────── HOW IT WORKS ─────────────────────── */
 
 const steps = [
-  { num: "01", label: "YOUR RECORD", title: "Tell Lara where you are", desc: "Mark the papers you've passed, pick your next one, and set your exam date. Takes a minute.", Icon: Target, accent: BRAND_500 },
-  { num: "02", label: "YOUR PLAN", title: "Get your phased plan", desc: "Lara builds a day-by-day plan to exam day: learn the syllabus, drill your weak areas, then timed mocks.", Icon: Zap, accent: PLUM_500 },
-  { num: "03", label: "THE LOOP", title: "Practise. Review. Pass.", desc: "Every question is marked instantly with a teaching explanation. Your readiness score climbs until you're exam-ready.", Icon: Flame, accent: FIRE_500 },
+  { num: "01", label: "FIND THE MARKS", title: "See exactly what cost you", desc: "A diagnostic or mock breaks performance down by syllabus area, so the marks you lost become a clear recovery queue.", Icon: Target, accent: BRAND_500 },
+  { num: "02", label: "TODAY'S COMEBACK", title: "Do the work that matters today", desc: "Scholify turns your weakest areas, available time, and exam date into one focused daily plan.", Icon: Zap, accent: PLUM_500 },
+  { num: "03", label: "ADAPT TO THE SITTING", title: "Practise. Measure. Recalculate.", desc: "Every result updates your priorities and readiness, continuously steering the next plan toward your sitting.", Icon: Flame, accent: FIRE_500 },
 ]
 
 function HowItWorks() {
@@ -639,7 +658,7 @@ function VisualPlanGen() {
           transition={{ duration: 1.8, repeat: 1, ease: "linear" }}
           style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${BRAND_100}`, borderTopColor: BRAND_500 }}
         />
-        <span style={{ color: INK_MUTED, fontSize: 13 }}>{t("Lara is generating your plan…")}</span>
+        <span style={{ color: INK_MUTED, fontSize: 13 }}>{t("Charles is reading your telemetry…")}</span>
       </div>
       <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
         {tasks.map((task, i) => (
@@ -702,7 +721,7 @@ function VisualExaminer() {
         </span>
       </div>
       <p style={{ marginTop: 12, color: "rgba(250,250,247,0.65)", fontSize: 13, lineHeight: 1.55, fontStyle: "italic", textAlign: "center" }}>
-        {t("A human marker takes days. Lara takes seconds.")}
+        {t("A human marker takes days. Charles takes seconds.")}
       </p>
     </div>
   )
@@ -749,7 +768,7 @@ function VisualAIPartnerWidget() {
             margin: 0,
           }}
         >
-          {t("Meet Lara.")}
+          {t("Meet Charles, your race engineer.")}
         </h3>
         <p style={{ color: INK_MUTED, fontSize: "clamp(13.5px, 1.6vw, 14.5px)", lineHeight: 1.55, margin: 0, maxWidth: 320 }}>
           {t("Your AI tutor. She knows your papers, your readiness, and today's task — every explanation generated just for you.")}
@@ -803,8 +822,8 @@ function VisualAIPartnerWidget() {
             }}
           >
             <img
-              src="https://api.dicebear.com/7.x/lorelei/svg?seed=Lara&backgroundColor=ffd5dc,fde68a,c0aede&radius=50&eyes=variant10&hair=variant44&mouth=happy06"
-              alt="Lara — your AI Partner"
+              src="https://api.dicebear.com/7.x/notionists/svg?seed=CharlesScholify&backgroundColor=fbe7e4,fafaf7&radius=50"
+              alt="Charles — your Scholify race engineer"
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
               loading="lazy"
             />
@@ -969,11 +988,11 @@ function Features() {
           reverse={false}
           tag="QUESTION BANK + AI TUTOR"
           title="Practise like it's the real exam."
-          desc="Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. And when you want more, Lara writes fresh exam-style questions on any topic, even from your own notes."
+          desc="Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. When you need more laps, Charles writes fresh exam-style questions from any topic or your own notes."
           bullets={[
             "Curated banks for all nine OT papers",
             "Instant marking with teaching explanations",
-            "Ask Lara why — on any question, 24/7",
+            "Ask Charles why — on any question, 24/7",
             "Unlimited AI questions from topics or your notes",
           ]}
           visual={<VisualPlanGen />}
@@ -999,7 +1018,7 @@ function Features() {
           reverse={false}
           tag="MEET YOUR AI TUTOR"
           title="Your AI Partner."
-          desc="Lara is built into Scholify. She knows which papers you've passed, your weak syllabus areas, and today's task. Ask her to explain deferred tax like you're five — she will, at 2am, without judgement."
+          desc="Charles is built into Scholify as your race engineer. He reads your paper history, weak syllabus sectors and today's race plan, then explains what will recover the next mark."
           bullets={[
             "Explains any concept — IFRS, audit, tax, costing",
             "Knows your weak areas and today's plan",
@@ -1812,7 +1831,7 @@ const scholifyFeatures: ScholifyFeature[] = [
   { label: "Personalised study plan to exam day" },
   { label: "Readiness score & per-area analytics" },
   { label: "Full BT → AAA qualification roadmap" },
-  { label: "Lara AI tutor on every plan" },
+  { label: "Charles AI race engineer on every plan" },
   { label: "Timed mock exams", pro: true },
   { label: "AI Examiner — instant written marking", pro: true },
   { label: "Custom practice from topics or your notes", pro: true },
@@ -1981,7 +2000,6 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
-      <LaraLandingWidget />
     </div>
   )
 }
