@@ -1288,24 +1288,24 @@ function QualificationRoadmap() {
 /* ─────────────────────── MILESTONE GALLERY ─────────────────────── */
 
 const MILESTONE_PHOTOS: Array<{ id: string; image: string; altKey: string }> = [
-  { id: "achievement", image: "/milestones/cert-achievement.svg", altKey: "Illustrative sample certificate of achievement for a single ACCA paper" },
-  { id: "diploma", image: "/milestones/cert-diploma.svg", altKey: "Illustrative sample Diploma in Accounting and Business certificate" },
-  { id: "advanced-diploma", image: "/milestones/cert-advanced-diploma.svg", altKey: "Illustrative sample Advanced Diploma in Accounting and Business certificate" },
-  { id: "professional", image: "/milestones/cert-professional.svg", altKey: "Illustrative sample Professional Level completion certificate" },
-  { id: "member", image: "/milestones/cert-member.svg", altKey: "Illustrative sample ACCA Member certificate" },
+  { id: "achievement", image: "/milestones/cert-achievement.svg", altKey: "Specimen certificate of achievement for a single ACCA paper" },
+  { id: "diploma", image: "/milestones/cert-diploma.svg", altKey: "Specimen Diploma in Accounting and Business certificate" },
+  { id: "advanced-diploma", image: "/milestones/cert-advanced-diploma.svg", altKey: "Specimen Advanced Diploma in Accounting and Business certificate" },
+  { id: "professional", image: "/milestones/cert-professional.svg", altKey: "Specimen Professional Level completion certificate" },
+  { id: "member", image: "/milestones/cert-member.svg", altKey: "Specimen ACCA Member certificate" },
 ]
 
 function MilestoneGallery() {
   const t = useT()
   return (
-    <section style={{ padding: "96px 24px", background: BG_DARK, color: INK_INVERSE }}>
+    <section style={{ padding: "96px 24px", background: BG_SECONDARY }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel tone="inverse">{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK_INVERSE, margin: "18px 0 0", lineHeight: 1.1 }}>
+        <SectionLabel>{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
           {t("Every paper closes with")}{" "}
           <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("a real document.")}</em>
         </h2>
-        <p style={{ color: "rgba(250,250,247,0.65)", fontSize: 17, maxWidth: 620, margin: "20px auto 0", lineHeight: 1.65 }}>
+        <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 620, margin: "20px auto 0", lineHeight: 1.65 }}>
           {t("From your first paper to full membership, ACCA issues the certificate — Scholify just gets you there. Open the folder to see each milestone.")}
         </p>
 
@@ -1314,10 +1314,6 @@ function MilestoneGallery() {
           dragHintText={t("Drag any card down to close")}
           photos={MILESTONE_PHOTOS.map((p) => ({ id: p.id, image: p.image, alt: t(p.altKey) }))}
         />
-
-        <p className="font-mono-pro" style={{ color: "rgba(250,250,247,0.4)", fontSize: 11, letterSpacing: "0.1em" }}>
-          {t("Illustrative samples, not real students' documents — see each card for details.")}
-        </p>
       </div>
     </section>
   )

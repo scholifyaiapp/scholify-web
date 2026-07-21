@@ -79,7 +79,16 @@ export function InteractiveFolderGallery({
                   }
                   whileHover={isFolderOpen ? { scale: openScale + 0.05, zIndex: 100 } : {}}
                   whileDrag={isFolderOpen ? { scale: openScale + 0.1, rotate: 5, zIndex: 150 } : {}}
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 28,
+                    mass: 0.9,
+                    // A light cascade on open (each card a beat behind the last)
+                    // reads as considered rather than everything snapping at once;
+                    // closing stays instant so a dismissive drag feels immediate.
+                    delay: isFolderOpen ? Math.abs(offset) * 0.045 : 0,
+                  }}
                 >
                   <img src={photo.image} alt={photo.alt} className="w-full h-full object-cover pointer-events-none" />
                 </motion.div>
@@ -96,6 +105,7 @@ export function InteractiveFolderGallery({
               y: hoverFolder ? 10 : 0,
               pointerEvents: isFolderOpen ? "none" : "auto",
             }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             onMouseEnter={() => setHoverFolder(true)}
             onMouseLeave={() => setHoverFolder(false)}
             onClick={() => setIsFolderOpen(true)}

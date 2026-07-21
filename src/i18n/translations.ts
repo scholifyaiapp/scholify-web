@@ -433,17 +433,15 @@ export const ru: Record<string, string> = {
     "От первого экзамена до полного членства сертификат выдаёт ACCA — Scholify лишь помогает вам туда дойти. Откройте папку, чтобы увидеть каждый этап.",
   "Your qualification.folder": "Ваша_квалификация.папка",
   "Drag any card down to close": "Перетащите любую карточку вниз, чтобы закрыть",
-  "Illustrative samples, not real students' documents — see each card for details.":
-    "Иллюстративные образцы, а не документы реальных студентов — подробности на каждой карточке.",
-  "Illustrative sample certificate of achievement for a single ACCA paper":
-    "Иллюстративный образец сертификата о достижении за один экзамен ACCA",
-  "Illustrative sample Diploma in Accounting and Business certificate":
-    "Иллюстративный образец диплома по бухгалтерскому учёту и бизнесу",
-  "Illustrative sample Advanced Diploma in Accounting and Business certificate":
-    "Иллюстративный образец продвинутого диплома по бухгалтерскому учёту и бизнесу",
-  "Illustrative sample Professional Level completion certificate":
-    "Иллюстративный образец сертификата о завершении Professional Level",
-  "Illustrative sample ACCA Member certificate": "Иллюстративный образец сертификата члена ACCA",
+  "Specimen certificate of achievement for a single ACCA paper":
+    "Образец сертификата о достижении за один экзамен ACCA",
+  "Specimen Diploma in Accounting and Business certificate":
+    "Образец диплома по бухгалтерскому учёту и бизнесу",
+  "Specimen Advanced Diploma in Accounting and Business certificate":
+    "Образец продвинутого диплома по бухгалтерскому учёту и бизнесу",
+  "Specimen Professional Level completion certificate":
+    "Образец сертификата о завершении Professional Level",
+  "Specimen ACCA Member certificate": "Образец сертификата члена ACCA",
 
   /* ── 2027 redesign ── */
   "OFFICIAL · THE 2027 REDESIGN": "ОФИЦИАЛЬНО · РЕФОРМА 2027",
