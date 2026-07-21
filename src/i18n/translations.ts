@@ -457,6 +457,10 @@ export const ru: Record<string, string> = {
   "13 papers.": "13 экзаменов.",
   "One qualification, one roadmap — BT all the way to strategic professional.":
     "Одна квалификация, одна дорожная карта — от BT до Strategic Professional.",
+  /* ── Mobile apps teaser ── */
+  "MOBILE APPS — COMING SEPTEMBER 1, 2026": "МОБИЛЬНЫЕ ПРИЛОЖЕНИЯ — С 1 СЕНТЯБРЯ 2026",
+  "Coming soon": "Скоро",
+  "From September 1, 2026": "С 1 сентября 2026",
 
   /* ── 2027 redesign ── */
   "OFFICIAL · THE 2027 REDESIGN": "ОФИЦИАЛЬНО · РЕФОРМА 2027",

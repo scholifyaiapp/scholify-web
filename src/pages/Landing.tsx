@@ -27,6 +27,7 @@ import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import { InteractiveFolderGallery } from "@/components/ui/interactive-folder-gallery"
 import AnimatedCardStack, { type StackFact } from "@/components/ui/animated-card-stack"
+import { StoreBadge } from "@/components/ui/store-badge"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
@@ -2055,6 +2056,24 @@ function FinalCTA() {
   )
 }
 
+/* ─────────────────────── MOBILE APPS TEASER ─────────────────────── */
+
+function MobileAppsTeaser() {
+  const t = useT()
+  return (
+    <section style={{ padding: "56px 24px" }}>
+      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+        <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginBottom: 24 }}>
+          {t("MOBILE APPS — COMING SEPTEMBER 1, 2026")}
+        </p>
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 20 }}>
+          <StoreBadge type="app-store" comingSoonLabel={t("Coming soon")} note={t("From September 1, 2026")} />
+          <StoreBadge type="google-play" comingSoonLabel={t("Coming soon")} note={t("From September 1, 2026")} />
+        </div>
+      </div>
+    </section>
+  )
+}
 
 /* ─────────────────────── PAGE ─────────────────────── */
 
@@ -2076,6 +2095,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
+      <LazyOnView style={{ minHeight: 300 }}><MobileAppsTeaser /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
     </div>
   )
