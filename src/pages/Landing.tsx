@@ -100,16 +100,17 @@ function useInViewOnce<T extends HTMLElement>(margin = "-80px") {
 
 /* ─────────────────────── ATOMS ─────────────────────── */
 
-function ScholifyLogo({ size = 32, wordmark = true }: { size?: number; wordmark?: boolean }) {
+function ScholifyLogo({ size = 32, wordmark = true, weight = 700, className }: { size?: number; wordmark?: boolean; weight?: number; className?: string }) {
   return (
     <a
       href="/"
-      style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", transition: "transform 0.2s ease" }}
+      className={className}
+      style={{ alignItems: "center", textDecoration: "none", transition: "transform 0.2s ease" }}
       onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
       aria-label="Scholify"
     >
-      <ScholifyLockup size={size} color={INK} wordmark={wordmark} />
+      <ScholifyLockup size={size} color={INK} wordmark={wordmark} weight={weight} />
     </a>
   )
 }
@@ -174,7 +175,7 @@ function Nav() {
       initial={{ y: -20, opacity: 0, x: "-50%" }}
       animate={{ y: 0, opacity: 1, x: "-50%" }}
       transition={{ duration: 0.7, ease: EASE_DECISIVE }}
-      className="glass-light"
+      className="glass-light pl-3.5 pr-2.5 sm:pl-5 sm:pr-3"
       style={{
         position: "fixed",
         top: 24,
@@ -183,7 +184,6 @@ function Nav() {
         width: "calc(100% - 32px)",
         maxWidth: 1200,
         height: 60,
-        padding: "0 12px 0 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -193,7 +193,13 @@ function Nav() {
         boxShadow: "0 1px 2px rgba(20,20,26,0.04), 0 12px 32px rgba(20,20,26,0.06)",
       }}
     >
-      <ScholifyLogo size={28} />
+      {/* Bigger + bolder logo, responsive so the enlarged lockup still fits
+          the single-row nav next to the toggle + CTA at every width:
+          ultra-narrow (<360) shows the mark alone, phones show the full
+          lockup at 31, tablet/desktop at 34. */}
+      <ScholifyLogo size={32} weight={800} wordmark={false} className="inline-flex min-[360px]:hidden" />
+      <ScholifyLogo size={31} weight={800} className="hidden min-[360px]:inline-flex sm:hidden" />
+      <ScholifyLogo size={34} weight={800} className="hidden sm:inline-flex" />
 
       <div
         className="md:!block"

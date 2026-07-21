@@ -64,16 +64,18 @@ export function ScholifyMark({
 export function ScholifyWordmark({
   size = 18,
   color = "#14141A",
+  weight = 700,
   style,
 }: {
   size?: number
   color?: string
+  weight?: number
   style?: CSSProperties
 }) {
   return (
     <span
       style={{
-        fontWeight: 700,
+        fontWeight: weight,
         fontSize: size,
         letterSpacing: "-0.02em",
         lineHeight: 1,
@@ -110,18 +112,20 @@ export function ScholifyLockup({
   variant = "red",
   color = "#14141A",
   wordmark = true,
+  weight = 700,
   style,
 }: {
   size?: number
   variant?: MarkVariant
   color?: string
   wordmark?: boolean
+  weight?: number
   style?: CSSProperties
 }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.34), ...style }}>
       <ScholifyMark size={size} variant={variant} />
-      {wordmark && <ScholifyWordmark size={Math.max(15, Math.round(size * 0.68))} color={color} />}
+      {wordmark && <ScholifyWordmark size={Math.max(15, Math.round(size * 0.68))} color={color} weight={weight} />}
     </span>
   )
 }
