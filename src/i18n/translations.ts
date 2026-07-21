@@ -20,6 +20,8 @@ export const ru: Record<string, string> = {
   "Charles is reading your telemetry…": "Чарльз анализирует вашу телеметрию…",
   "A human marker takes days. Charles takes seconds.": "Проверяющему нужны дни. Чарльзу — секунды.",
   "Meet Charles, your race engineer.": "Знакомьтесь: Чарльз, ваш гоночный инженер.",
+  "Your AI race engineer. He knows your papers, readiness and today's strategy — every explanation is shaped around your telemetry.":
+    "Ваш ИИ-гоночный инженер. Он знает ваши экзамены, уровень готовности и сегодняшнюю стратегию — каждое объяснение строится на основе вашей телеметрии.",
   "Charles · AI Race Engineer": "Чарльз · ИИ-гоночный инженер",
   "Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.":
     "Scholify показывает, где были потеряны баллы, составляет целевой ежедневный план возвращения и постоянно корректирует его к следующей экзаменационной сессии.",
@@ -535,7 +537,7 @@ export const ru: Record<string, string> = {
   "Timed mock exams": "Пробные экзамены на время",
   "AI Examiner — instant written marking": "AI-Экзаменатор — мгновенная проверка письменных ответов",
   "Custom practice from topics or your notes": "Своя практика по темам или вашим конспектам",
-  "Lara AI tutor on every plan": "ИИ-репетитор Лара на любом плане",
+  "Charles AI race engineer on every plan": "ИИ-гоночный инженер Чарльз на любом плане",
   "Mock history & readiness trend": "История пробных экзаменов и динамика готовности",
   "Then the next one.": "А потом следующий.",
   "Pass this paper.": "Сдайте этот экзамен.",

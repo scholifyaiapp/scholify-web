@@ -81,13 +81,19 @@ function paperSeed(paperId: string): number {
 }
 
 /** Draw standalone OTs from the pool until `marks` is filled (or pool dry). */
-function drawOts(pool: AccaQuestion[], marks: number): AccaQuestion[] {
+export function drawOts(pool: AccaQuestion[], marks: number): AccaQuestion[] {
   const out: AccaQuestion[] = []
   let sum = 0
   while (pool.length && sum < marks) {
     const q = pool.shift()!
     // Never overshoot the section by more than a question's slack.
-    if (sum + q.marks > marks && out.length > 0) break
+    if (sum + q.marks > marks && out.length > 0) {
+      // Doesn't fit THIS section — return it to the pool rather than
+      // dropping it, since `pool` is shared across every section drawn
+      // from the same call site. Unshift to preserve draw order.
+      pool.unshift(q)
+      break
+    }
     out.push(q)
     sum += q.marks
   }

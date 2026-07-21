@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest"
-import { focusArea } from "@/lib/acca-schedule"
+import { describe, it, expect, vi, afterEach } from "vitest"
+import { focusArea, recordDayActive } from "@/lib/acca-schedule"
 import { scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
 import { getPaper, getQuestions, recordAnswer } from "@/lib/acca"
 
@@ -25,6 +25,61 @@ function seedDiagnostic(paperId: string, weakArea: string) {
   saveDiagnosticLocal(result)
   return result
 }
+
+/*
+ * The shield/streak scheme (recordDayActive) had zero test coverage before
+ * this pass, and a full audit found two real bugs in it:
+ *   · ymd() used toISOString() (the UTC calendar date) while every sibling
+ *     date helper in the codebase (acca.ts, acca-flashcards.ts) uses the
+ *     LOCAL calendar date — a student west of Greenwich studying in their
+ *     own evening could get silently treated as still on "yesterday" or
+ *     already-done-with-"today" depending on the UTC/local skew.
+ *   · a streak break beyond the weekly shield allowance still consumed the
+ *     full remaining allowance for zero protective benefit, breaking the
+ *     very next missed day too.
+ */
+describe("recordDayActive — the shield/streak scheme", () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("treats a late-evening session and the next morning as different days everywhere, not just in UTC", () => {
+    vi.useFakeTimers()
+    // Two real, distinct calendar-day instants, both mid-day UTC so no
+    // plausible host timezone could push them onto the same or a
+    // different date than intended.
+    vi.setSystemTime(new Date("2026-01-05T12:00:00Z")) // Mon 2026-01-05
+    const day1 = recordDayActive("FA")
+    expect(day1.streak).toBe(1)
+
+    vi.setSystemTime(new Date("2026-01-06T12:00:00Z")) // Tue 2026-01-06 — the very next day
+    const day2 = recordDayActive("FA")
+    expect(day2.streak).toBe(2)
+  })
+
+  it("does not burn shields on a streak reset that protected nothing", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-01-05T12:00:00Z")) // Mon — streak starts
+    const day1 = recordDayActive("FA")
+    expect(day1.streak).toBe(1)
+    expect(day1.shieldsLeft).toBe(3)
+
+    // Sat, same week — 4 days missed (Tue-Fri), more than the 3 weekly
+    // shields can cover. The streak must restart, but since nothing was
+    // actually shielded, no shields should be spent either.
+    vi.setSystemTime(new Date("2026-01-10T12:00:00Z"))
+    const afterBreak = recordDayActive("FA")
+    expect(afterBreak.streak).toBe(1)
+    expect(afterBreak.shieldsLeft).toBe(3)
+
+    // Sun, the next day, still the same week — proves the shields are
+    // genuinely still there: the prior bug maxed shieldsUsed out on the
+    // reset above, which would break this streak again immediately.
+    vi.setSystemTime(new Date("2026-01-11T12:00:00Z"))
+    const nextDay = recordDayActive("FA")
+    expect(nextDay.streak).toBe(2)
+  })
+})
 
 describe("focusArea", () => {
   it("targets the diagnostic's weakest area the moment a diagnostic exists", () => {

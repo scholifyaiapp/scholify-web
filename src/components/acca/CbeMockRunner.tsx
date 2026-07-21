@@ -132,6 +132,14 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
 
   /* ── the one exam clock ── */
   const submittingRef = useRef(false)
+  // submit() closes over answers/essays/cursor and is recreated every render;
+  // the interval below must always call the latest one, or a stale closure
+  // from the render that started the timer submits an exam as if it were
+  // still empty. Route every expiry through a ref, not the captured value.
+  const submitRef = useRef(submit)
+  useEffect(() => {
+    submitRef.current = submit
+  })
   useEffect(() => {
     if (stage !== "run" && stage !== "review") return
     const t = setInterval(() => {
@@ -139,15 +147,14 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         if (s <= 1) {
           clearInterval(t)
           // Time: the CBE submits your exam for you.
-          if (!submittingRef.current) void submit(true)
+          if (!submittingRef.current) void submitRef.current(true)
           return 0
         }
         return s - 1
       })
     }, 1000)
     return () => clearInterval(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage === "run" || stage === "review"])
+  }, [stage])
 
   /* ── per-question timing analytics (first leave only) ── */
   const shownAt = useRef(performance.now())

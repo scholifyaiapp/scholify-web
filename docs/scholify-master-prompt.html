@@ -1,0 +1,172 @@
+<title>Scholify — Master Prompt (A–Z)</title>
+<style>
+  :root {
+    --paper: #eeeee6; --paper-raised: #e4e4d4; --ink: #1c201b; --ink-soft: #565c52; --ink-faint: #83887e;
+    --rule: #c6c7b3; --accent: #2b5d50; --sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper:#14160f; --paper-raised:#1c1f16; --ink:#e8e8dd; --ink-soft:#a8ac9c; --ink-faint:#767a6b; --rule:#34382a; --accent:#6fb59c; }
+  }
+  :root[data-theme="dark"] { --paper:#14160f; --paper-raised:#1c1f16; --ink:#e8e8dd; --ink-soft:#a8ac9c; --ink-faint:#767a6b; --rule:#34382a; --accent:#6fb59c; }
+  :root[data-theme="light"] { --paper:#eeeee6; --paper-raised:#e4e4d4; --ink:#1c201b; --ink-soft:#565c52; --ink-faint:#83887e; --rule:#c6c7b3; --accent:#2b5d50; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 3rem 1.6rem 5rem; }
+  .kicker { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+  h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; margin: 0.3rem 0 0.5rem; }
+  .sub { color: var(--ink-soft); max-width: 62ch; margin: 0 0 1.6rem; }
+  .meta { font-family: var(--mono); font-size: 0.76rem; color: var(--ink-soft); margin-bottom: 1.6rem; display:flex; gap:1.4rem; flex-wrap:wrap; }
+  .prompt-wrap { position: relative; }
+  .copy-btn {
+    position: sticky; top: 1rem; float: right; margin: 0 0 0.5rem 0.5rem; font-family: var(--sans); font-size: 0.78rem; font-weight: 700;
+    background: var(--accent); color: var(--paper); border: none; border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; z-index: 2;
+  }
+  .copy-btn:hover { opacity: 0.9; }
+  pre.prompt {
+    clear: both; background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 14px; padding: 1.6rem 1.7rem;
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+  }
+  footer { margin-top: 2rem; font-family: var(--mono); font-size: 0.7rem; color: var(--ink-faint); }
+</style>
+<div class="wrap">
+  <div class="kicker">Master Prompt · A–Z</div>
+  <h1>Scholify — the whole project, in one prompt</h1>
+  <p class="sub">Everything a person or an AI needs to understand, build on, or evaluate Scholify — condensed from docs 00–13, the live codebase, and direct verification (typecheck, tests, content audit) as of this build.</p>
+  <div class="meta">
+    <span>Commit <b>9fa3a83</b></span>
+    <span>Reviewed 2026-07-21</span>
+    <span>scholifyapp.com</span>
+  </div>
+  <div class="prompt-wrap">
+    <button class="copy-btn" onclick="const t=document.getElementById('sch-master').innerText; navigator.clipboard.writeText(t).then(()=>{this.innerText='Copied';setTimeout(()=>this.innerText='Copy full prompt',1400);});">Copy full prompt</button>
+    <pre class="prompt" id="sch-master">SCHOLIFY — FULL PROJECT BRIEF (A–Z)
+
+You are working on Scholify, an AI-tutored ACCA exam-prep web app, live at scholifyapp.com. Read this whole brief before touching product, design, or business decisions — it is the ground truth, assembled from the founder's own docs and verified against the live codebase.
+
+======================================================================
+A. IDENTITY & THESIS
+======================================================================
+- Product: Scholify — "Learn Daily, Grow Steadily." AI persona is Lara: tutor, examiner, coach.
+- Who: ACCA candidates, beachhead market Uzbekistan/CIS.
+- Problem: ACCA pass rates run 40-55%; CIS tuition centres charge EUR300-800/paper; every existing tool (question banks, video courses) goes silent the moment a student fails — no diagnosis, no path back.
+- The pitch, in one line: instead of handing a student 2,000 questions, Scholify says "based on this diagnostic you have a 68% chance of passing FM — here is exactly how we get you to 85%," then walks them there daily.
+- Differentiation vs Kaplan/BPP/OpenTuition/ChatGPT-DIY/local players (e.g. Makon AI): pass-probability recalibration tied to real exam outcomes, a recovery flow for retakers, offline-first delivery for patchy connectivity, and CIS-market pricing.
+- Caveat for anyone using this brief to raise money: "why now" (falling frontier-model costs) and beachhead market size are FOUNDER ASSERTIONS, not independently sourced — flag them as such, don't repeat them as fact.
+
+======================================================================
+B. PRODUCT SURFACE — WHAT'S ACTUALLY SHIPPED
+======================================================================
+All 15 ACCA papers (Applied Knowledge + Applied Skills + Strategic Professional, incl. options AFM/APM/ATX/AAA) are content-complete and launch-ready. Zero stub routes.
+
+Routes:
+  /                     Landing (public, EN/RU)
+  /sign-in /sign-up     Auth (Supabase email + Google OAuth)
+  /welcome              Onboarding
+  /dashboard            Hub: streak, pass probability, today's mission
+  /study                Paper hub: chapters, flashcards, AI tutor, mocks
+  /study/diagnostic     15-25 question calibration engine, full-syllabus coverage per paper
+  /study/analytics      Breakdown by syllabus area, mock trend, knowledge heatmap
+  /notes /settings /pricing /support /privacy /terms
+
+Core loop: diagnostic -> pass-probability estimate -> daily plan (deterministic scheduler, not AI-generated -- see section E) -> practice/flashcards/mocks -> mock gate at 60% readiness -> AI Examiner marks written answers -> pass/fail -> recovery ("postmortem") flow if failed, never framed as failure ("you now know exactly where the marks were lost," never "you failed").
+Offline-first: entire loop runs with zero API keys against local seed content; every AI/payment path degrades to a clear fallback, never crashes.
+
+======================================================================
+C. TECH ARCHITECTURE
+======================================================================
+- Frontend: Vite + React 18 SPA, TypeScript, Tailwind v4, motion/framer-motion, react-router-dom.
+- Hosting: Vercel (Hobby tier — hard 12-serverless-function cap). Backend is deliberately thin: 5 functions total (api/lara.ts, api/stripe.ts, api/paddle.ts, api/social.ts, api/calendar-callback.ts, api/reminders.ts), each multiplexing several operations behind a `?action=` query param dispatcher to stay under the cap. Exceeding 12 functions fails deploys SILENTLY (known historical incident) -- watch this if adding new endpoints.
+- Data: Supabase (Postgres + Auth + RLS + Realtime + Storage). Architecture is LOCAL-FIRST: browser localStorage is the primary store, Supabase is a sync/durability layer, not source of truth. Whole-document merge conflict resolution ("busier device wins") -- accepted tradeoff, not a bug.
+- Migrations: supabase/migrations/0001..0020, apply in numeric order. 0013 (ai_usage) and 0015 (billing_ai_guardrails: ai_usage_global, ai_rate, subscriptions, study_reminders) are MANDATORY -- AI fails closed without them. 0018 (stripe_events) enables webhook dedup.
+- Billing: Stripe is the LIVE rail (Paddle was the original plan, code paths still exist but dormant). Six Stripe env vars required; /api/health returns 503 "half_configured" unless billing is fully configured or not configured at all -- deliberately all-or-nothing.
+- Auth/entitlement: plan stored in service-role-only `app_metadata` (JWT-riding, no round-trip cost) with a durable `subscriptions` table as audit trail; AI meter takes the LOWER of the two so neither a stale JWT nor a half-applied webhook over-grants.
+- Email: Resend, gated behind RESEND_API_KEY + CRON_SECRET for the reminder cron (fails closed without a secret).
+- Testing/CI gates: `npm run build` = typecheck (app + api) -> test -> vite build, in that order -- a failing test or type error blocks the build. Also: `npm run audit:content` (content-floor check per paper), `npm run verify:loading` (every paper's dynamic import actually resolves, catches what tests can't), `npm run validate:chapters`.
+- Verified directly (not just claimed): typecheck clean, 191/191 tests passing, 15/15 papers clear the content-launch floor, as of commit 9fa3a83.
+
+======================================================================
+D. AI ARCHITECTURE
+======================================================================
+- Provider selection is env-driven and automatic: api/lara.ts checks ANTHROPIC_API_KEY first, falls back to OPENAI_API_KEY, refuses (fallback mode) if neither is set. No code change needed to switch -- just set the key.
+- Current model IDs in code: Anthropic haiku = "claude-haiku-4-5", sonnet = "claude-sonnet-5". OpenAI stopgap = "gpt-4o-mini" (volume tier), "gpt-5.6-terra" (marking/generation tier).
+- Model mix by task: Haiku/gpt-4o-mini for high-volume tutor chat; Sonnet/gpt-5.6-terra for AI Examiner marking and content generation (higher-stakes, lower-volume).
+- Cost governance (all fail CLOSED, verified in code, not just comments):
+    - AI_KILL_SWITCH=1 -- instant global fallback, no redeploy.
+    - AI_DAILY_TOKEN_BUDGET (default 5,000,000/day, org-wide) -- once spent, every AI action falls back until midnight UTC.
+    - AI_PER_MINUTE_LIMIT (default 8/user) -- atomic via a `bump_ai_rate` RPC so concurrent requests can't both pass.
+    - Every DB read in the meter path (`meterAcca()`) explicitly checks the `error` field from supabase-js (which never throws) and DENIES on error -- a missing table or failed read cannot silently read as "0 usage."
+- The AI does NOT drive personalization yet: the daily plan is a deterministic scheduler based on live practice accuracy, not the diagnostic's weak-area output, and not LLM-generated. "AI-personalized" in marketing copy currently overstates this -- know the gap before promising more.
+
+======================================================================
+E. SECURITY POSTURE (post-audit, verify before trusting blindly)
+======================================================================
+A founder-run adversarial audit (2026-07-14) found and fixed five serious issues; all five were independently re-verified in the current code (not just the changelog):
+  1. Entitlement could not be self-granted (was: any user could write their own plan via user_metadata) -- now service-role-only app_metadata, checked file:line in api/stripe.ts.
+  2. AI meter now genuinely fails closed (was: fail-open, because supabase-js never throws so try/catch was dead code).
+  3. api/social.ts open email relay removed (was: unauthenticated, could send 100 emails/request from the verified domain).
+  4. api/calendar-callback.ts IDOR fixed -- user id now comes only from the verified JWT, never a body-supplied field.
+  5. FR paper's 45%-biased-to-option-A answer keys fixed with a real mulberry32 seeded shuffle (a first attempt reusing the existing LCG shuffle FAILED silently -- its low bits don't mix on a 4-element array, it just rotated the bias to a different letter). Wired into every render surface (AccaStudy, AccaDiagnostic, CbeMockRunner), not dead code.
+Also closed: Stripe webhook replay protection (stripe_events table, idempotent claim), RLS on every user-data table including calendar_accounts (which stores refresh tokens).
+Landing page now explicitly discloses "no users yet, we won't invent testimonials" instead of the fabricated social proof the audit found.
+Still open as of last review: rotate the sk_live Stripe key (transited chat once), confirm support@scholifyapp.com actually receives mail, watch the first real (non-sandbox) paid checkout closely.
+
+======================================================================
+F. DESIGN SYSTEM (condensed — full bible is a separate document)
+======================================================================
+- Brand mark: hexagonal circuit of 6 rotated waypoints, MONO/DEEP RED #C80000 primary variant. Wordmark: Plus Jakarta Sans Bold, dotless i with a gradient node.
+- Palette: Deep Red #C80000 -> Magenta #E50068 -> Amber #F4A405 gradient (ONE gradient CTA per screen, never on body text). App surfaces run on --sch-* CSS tokens (warm-paper light theme #f7f3f1, dark theme #050508) -- never hardcode hex for surfaces/text.
+- Status color (green/amber/red) means ONLY good/at-risk/behind vs a real target -- bandColor(pct, passLine=60). Brand red is identity, never status.
+- Type: Plus Jakarta Sans app-wide (h1 26/800, body 14/450, uppercase label 11.5/800). Landing runs a SEPARATE system: Instrument Serif (display) + Geist (sans/mono) + Caveat (handwritten) -- landing is visually pinned, changes are additive only.
+- Icons: Lucide only, via a semantic name map -- zero emoji as icons, anywhere in the app.
+- Motion: easing [0.22,1,0.36,1], entrances "rise," list stagger 0.05s, hover never shifts layout, max one ambient motion element per screen, prefers-reduced-motion respected globally.
+- Voice: "a coach with receipts" -- every big claim quotes the student's own number; never say "failed"; empty states teach what starts the measurement, never fake data.
+- Full reference with live token swatches, real icon SVGs, and a standalone paste-ready design prompt: docs/design-bible.html in this repo.
+
+======================================================================
+G. CONTENT
+======================================================================
+- Scale: 15 papers, ~2,400+ original bank questions, 900+ flashcards, 190 rubric-backed written questions (constructed-response papers only -- 4 objective-test-only papers, BT/MA/FA/LW, carry none by design, AI Examiner hidden for those).
+- Production pipeline: blueprint -> parallel AI-assisted authoring -> MANDATORY independent re-solve verification -> balanced answer-key positions -> merge. AI may draft/assist but cannot be the final human reviewer (5-stage lifecycle: draft -> source_checked -> calculation_checked -> independently_reviewed -> verified).
+- Known process gap (self-caught, not hidden): BT/F1 content was found labeled "verified" on an internal dashboard while actually only draft-stage -- the "verified" label needs active policing, it isn't self-enforcing.
+- Recurring cost, not one-time: Examiner Intelligence refreshes every ACCA results week (4x/year x 15 papers); every Finance Act/IFRS change forces re-verification of affected numeric content. Tax content is currently labeled to its Finance Act basis so students know which year they're studying.
+- IP posture: invented companies throughout, no reproduced ACCA/Kaplan/BPP material, independence disclaimer present wherever ACCA is referenced.
+- Moat honesty: the content pipeline is a documented, reproducible prompt-engineering workflow -- a competent competitor with the same AI tools could rebuild comparable volume in weeks; Kaplan/BPP could match depth in under 6 months if motivated. The verification RIGOR is a real quality edge today, not a structural moat.
+
+======================================================================
+H. BUSINESS MODEL & ECONOMICS
+======================================================================
+- Tiers: Free (diagnostic + limited loop) -> Beginner $9.99/mo ($79.99/yr) -> Pro $14.99/mo ($119.99/yr, full loop + AI Examiner). 7-day Pro trial, server-granted, tamper-proof, one per account, active automatically once Supabase is configured.
+- Pro contribution margin ~85% ($12.74 of $14.99, after processing + ~$1 AI cost/user/mo) -- AI cost math is genuinely sane, holds up even under a 3x stress test.
+- KNOWN ARITHMETIC ERROR in the founder's own investor materials: the stated breakeven ("~20 Pro subscribers") doesn't reconcile against the stated ~$46/mo fixed cost and $12.74 contribution margin (actual: ~3.6 subscribers, off by ~5.5x). Also, the flagship LTV/CAC (5.3x) and payback (2.4mo) figures use Pro-only contribution, not the blended 70/30 mix the longer-range model actually runs on (blended: ~4.8x, ~2.6mo). Fix and disclose before this goes in front of any outside investor.
+- Market sizing: TAM ~$72M (500k global ACCA students x $144 blended ARPU -- note this blends ACCA students/affiliates/members, a soft number). SAM ~40% of TAM, no stated derivation. SOM (8,000-15,000 active UZ/CIS students, the number the near-term revenue projection actually depends on) is explicitly self-flagged by the founder as an unvalidated assumption to test in month 1.
+- Conversion target: 2-3% free-to-paid, asserted as a "kill rule" threshold, not benchmarked against comparable consumer-subscription products.
+- Fundraise: pre-seed SAFE, $150-250k, no valuation stated. Use of funds (content/hiring 30%, marketing 25-28%, founder salary 22-24%, infra 6%, legal 5%, reserve ~9-10%) is reasonable for a pre-revenue single-market company.
+
+======================================================================
+I. GO-TO-MARKET
+======================================================================
+Concrete, not vague: Telegram channel-by-channel subscriber/engagement mapping, a quiz-bot funnel, tutor revenue-share (20-30%) with named target universities, 52 programmatic SEO pages, Meta ad creative sequencing with hard $500 test caps and a kill rule below 1.7% conversion. Execution risk: this whole 90-day GTM plan plus finishing go-live ops is scoped for what is effectively a solo founder -- ambitious relative to headcount.
+
+======================================================================
+J. CURRENT STATUS — THE FIVE GATES TO PUBLIC ANNOUNCEMENT
+======================================================================
+Gate 1 -- Stop lying (fabricated trial, invented testimonials, fake social proof removed):  DONE
+Gate 2 -- Close security holes (fail-open metering, open relay, calendar hijack, webhook replay): DONE
+Gate 3 -- Turn the product on (live billing, live AI, verified against production by real probes): DONE
+Gate 4 -- Private beta, 20-30 real students, 2-3 weeks, watching day-one diagnostic completion (target >=60%) and whether anyone actually pays: IN PROGRESS (this is the actual bottleneck -- nothing else substitutes for real usage data)
+Gate 5 -- Public announcement: NOT STARTED, gated on Gate 4 producing real, quotable results
+
+Do not let a calendar deadline push a rush to Gate 5 before Gate 4 has produced real data -- the founder's own framework is right that the beta IS the validation, not a formality to skip.
+
+======================================================================
+K. HOW TO USE THIS BRIEF
+======================================================================
+- Building a new screen/feature -> also read docs/design-bible.html (or docs/03-design-bible.md) for the component/token rules; nothing here overrides that.
+- Evaluating as an investor or advisor -> section H's arithmetic error and section G/H's self-flagged assumptions are the load-bearing caveats; don't repeat the headline numbers without the caveats attached.
+- Extending the AI/backend -> section C/D/E are non-negotiable: stay under the 12-function Vercel cap, keep the meter fail-closed, never trust a body-supplied user id over the JWT.
+- Writing copy -> section F's voice rules (evidence-tied, never "failed," honest empty states) apply everywhere, landing included.
+- Prioritizing the roadmap -> section J is the actual state; everything else is context for decisions made against that state, not a queue of remaining work.</pre>
+  </div>
+  <footer>Assembled from docs/00-13, git commit 9fa3a83, and direct code verification. Companion: docs/design-bible.html (UI system in depth).</footer>
+</div>

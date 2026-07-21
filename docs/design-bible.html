@@ -1,0 +1,593 @@
+<title>Scholify — Design Bible</title>
+<style>
+  :root {
+    /* ---- brand (fixed, does not theme) ---- */
+    --brand-red: #C80000;
+    --brand-magenta: #E50068;
+    --brand-amber: #F4A405;
+    --brand-grad: linear-gradient(135deg, #C80000 0%, #E50068 48%, #F4A405 100%);
+    --status-green: #0E9F6E;
+    --status-amber: #C2740B;
+    --status-red: #DC2626;
+
+    /* ---- real --sch-* app tokens, light (src/index.css) ---- */
+    --sch-bg: #f7f3f1;
+    --sch-bg-2: #ffffff;
+    --sch-bg-grad: linear-gradient(140deg, #fcebe7, #f7f3f1 55%);
+    --sch-card: #ffffff;
+    --sch-card-2: #f7f3f1;
+    --sch-hairline: rgba(51,43,40,0.06);
+    --sch-border: rgba(51,43,40,0.08);
+    --sch-border-2: rgba(51,43,40,0.14);
+    --sch-text: #332b28;
+    --sch-tx-1: #5c4f4a;
+    --sch-tx-2: #8e817b;
+    --sch-tx-3: #a1948d;
+    --sch-tx-4: #b9aca5;
+
+    /* ---- reference-doc chrome (not app tokens — this page's own ink) ---- */
+    --page-bg: var(--sch-bg);
+    --page-card: var(--sch-card);
+    --page-card-2: var(--sch-card-2);
+    --page-text: var(--sch-text);
+    --page-muted: var(--sch-tx-1);
+    --page-soft: var(--sch-tx-2);
+    --page-faint: var(--sch-tx-3);
+    --page-border: var(--sch-border);
+    --page-hairline: var(--sch-hairline);
+    --sans: "Plus Jakarta Sans", "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  /* ---- real --sch-* app tokens, dark (src/index.css html[data-theme=dark]) ---- */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sch-bg: #050508;
+      --sch-bg-2: #0a0a14;
+      --sch-bg-grad: linear-gradient(135deg, #170607, #220a0d);
+      --sch-card: rgba(255,255,255,0.03);
+      --sch-card-2: rgba(255,255,255,0.045);
+      --sch-hairline: rgba(255,255,255,0.055);
+      --sch-border: rgba(255,255,255,0.08);
+      --sch-border-2: rgba(255,255,255,0.13);
+      --sch-text: #f0eeff;
+      --sch-tx-1: rgba(240,238,255,0.72);
+      --sch-tx-2: rgba(240,238,255,0.46);
+      --sch-tx-3: rgba(240,238,255,0.3);
+      --sch-tx-4: rgba(240,238,255,0.17);
+      --page-bg: var(--sch-bg); --page-card: var(--sch-card); --page-card-2: var(--sch-card-2);
+      --page-text: var(--sch-text); --page-muted: var(--sch-tx-1); --page-soft: var(--sch-tx-2);
+      --page-faint: var(--sch-tx-3); --page-border: var(--sch-border); --page-hairline: var(--sch-hairline);
+    }
+  }
+  :root[data-theme="dark"] {
+    --sch-bg: #050508; --sch-bg-2: #0a0a14; --sch-bg-grad: linear-gradient(135deg, #170607, #220a0d);
+    --sch-card: rgba(255,255,255,0.03); --sch-card-2: rgba(255,255,255,0.045);
+    --sch-hairline: rgba(255,255,255,0.055); --sch-border: rgba(255,255,255,0.08); --sch-border-2: rgba(255,255,255,0.13);
+    --sch-text: #f0eeff; --sch-tx-1: rgba(240,238,255,0.72); --sch-tx-2: rgba(240,238,255,0.46);
+    --sch-tx-3: rgba(240,238,255,0.3); --sch-tx-4: rgba(240,238,255,0.17);
+    --page-bg: var(--sch-bg); --page-card: var(--sch-card); --page-card-2: var(--sch-card-2);
+    --page-text: var(--sch-text); --page-muted: var(--sch-tx-1); --page-soft: var(--sch-tx-2);
+    --page-faint: var(--sch-tx-3); --page-border: var(--sch-border); --page-hairline: var(--sch-hairline);
+  }
+  :root[data-theme="light"] {
+    --sch-bg: #f7f3f1; --sch-bg-2: #ffffff; --sch-bg-grad: linear-gradient(140deg, #fcebe7, #f7f3f1 55%);
+    --sch-card: #ffffff; --sch-card-2: #f7f3f1; --sch-hairline: rgba(51,43,40,0.06);
+    --sch-border: rgba(51,43,40,0.08); --sch-border-2: rgba(51,43,40,0.14); --sch-text: #332b28;
+    --sch-tx-1: #5c4f4a; --sch-tx-2: #8e817b; --sch-tx-3: #a1948d; --sch-tx-4: #b9aca5;
+    --page-bg: var(--sch-bg); --page-card: var(--sch-card); --page-card-2: var(--sch-card-2);
+    --page-text: var(--sch-text); --page-muted: var(--sch-tx-1); --page-soft: var(--sch-tx-2);
+    --page-faint: var(--sch-tx-3); --page-border: var(--sch-border); --page-hairline: var(--sch-hairline);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    background-image: var(--sch-bg-grad);
+    background-attachment: fixed;
+    color: var(--page-text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  .shell { display: flex; max-width: 1180px; margin: 0 auto; }
+  .rail {
+    position: sticky; top: 0; align-self: flex-start; height: 100vh;
+    width: 200px; flex-shrink: 0; padding: 2.2rem 1rem 2rem 1.75rem;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 0.15rem;
+  }
+  .rail a {
+    display: block; text-decoration: none; font-size: 0.78rem; color: var(--page-soft);
+    padding: 0.32rem 0.6rem; border-radius: 8px; white-space: nowrap;
+  }
+  .rail a:hover { color: var(--page-text); background: var(--page-card-2); }
+  .rail .mark-mini { display:flex; align-items:center; gap:0.5rem; margin-bottom:1.2rem; }
+  .rail .mark-mini svg { width: 22px; height: 22px; }
+  .rail .mark-mini b { font-size: 0.92rem; font-weight: 800; letter-spacing: -0.01em; }
+
+  main { flex: 1; min-width: 0; padding: 3rem 2.4rem 6rem; }
+  .doc-head { margin-bottom: 3rem; }
+  .doc-head .kicker {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--page-faint); margin-bottom: 0.6rem;
+  }
+  .doc-head h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 0.5rem; text-wrap: balance; }
+  .doc-head p { max-width: 60ch; color: var(--page-muted); font-size: 1.02rem; margin: 0; }
+  .mark-hero { display: flex; align-items: center; gap: 1.4rem; margin-bottom: 1.4rem; }
+  .mark-hero svg { width: 64px; height: 64px; flex-shrink: 0; }
+
+  section { margin-bottom: 3.6rem; scroll-margin-top: 1.5rem; }
+  .sec-label {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--page-faint); font-weight: 700; margin-bottom: 0.5rem;
+  }
+  h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 1.1rem; }
+  h3 { font-size: 0.95rem; font-weight: 700; margin: 1.6rem 0 0.7rem; }
+  p.desc { color: var(--page-muted); max-width: 68ch; font-size: 0.94rem; margin: 0 0 1.1rem; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--page-card-2); padding: 0.1em 0.4em; border-radius: 5px; }
+
+  /* ---- palette ---- */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .swatch {
+    border: 1px solid var(--page-border); border-radius: 14px; overflow: hidden; background: var(--page-card);
+    box-shadow: 0 1px 2px rgba(51,43,40,0.04);
+  }
+  .swatch .chip { height: 64px; }
+  .swatch .meta { padding: 0.6rem 0.75rem; }
+  .swatch .meta .name { font-size: 0.78rem; font-weight: 700; }
+  .swatch .meta .hex { font-family: var(--mono); font-size: 0.72rem; color: var(--page-faint); }
+
+  /* ---- gradient bar ---- */
+  .gradient-bar { height: 56px; border-radius: 16px; background: var(--brand-grad); box-shadow: 0 8px 24px rgba(200,0,0,0.22); }
+
+  /* ---- type scale ---- */
+  .type-row { display: flex; align-items: baseline; gap: 1.2rem; padding: 0.9rem 0; border-bottom: 1px solid var(--page-hairline); }
+  .type-row:last-child { border-bottom: none; }
+  .type-row .tag { font-family: var(--mono); font-size: 0.68rem; color: var(--page-faint); width: 62px; flex-shrink: 0; }
+  .type-row .sample { flex: 1; }
+  .t-h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .t-h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+  .t-h3 { font-size: 16px; font-weight: 750; }
+  .t-body { font-size: 14px; font-weight: 450; }
+  .t-small { font-size: 12.5px; font-weight: 500; color: var(--page-soft); }
+  .t-label { font-size: 11.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--page-faint); }
+
+  /* ---- spacing / radii / shadow ---- */
+  .token-row { display: flex; flex-wrap: wrap; gap: 1.4rem; align-items: flex-end; margin-bottom: 0.6rem; }
+  .sp-box { background: var(--brand-red); opacity: 0.85; border-radius: 4px; }
+  .sp-cell { text-align: center; font-family: var(--mono); font-size: 0.68rem; color: var(--page-faint); }
+  .radius-row { display: flex; flex-wrap: wrap; gap: 1.4rem; }
+  .r-box { width: 56px; height: 56px; background: var(--page-card); border: 1.5px solid var(--brand-red); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 0.65rem; color: var(--page-faint); }
+  .shadow-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 1rem; }
+  .shadow-box { height: 70px; border-radius: 20px; background: var(--page-card); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 0.7rem; color: var(--page-soft); }
+  .shadow-sm { box-shadow: 0 1px 2px rgba(51,43,40,0.04), 0 1px 3px rgba(51,43,40,0.06); }
+  .shadow-md { box-shadow: 0 2px 6px rgba(51,43,40,0.05), 0 8px 24px rgba(51,43,40,0.06); }
+  .shadow-lg { box-shadow: 0 8px 20px rgba(51,43,40,0.08), 0 20px 48px rgba(51,43,40,0.1); }
+  .shadow-brand { box-shadow: 0 8px 24px rgba(200,0,0,0.22); }
+
+  /* ---- icons ---- */
+  .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+  .icon-cell {
+    border: 1px solid var(--page-border); border-radius: 14px; padding: 1rem 0.6rem; text-align: center;
+    background: var(--page-card); display: flex; flex-direction: column; align-items: center; gap: 0.55rem;
+  }
+  .icon-cell svg { width: 22px; height: 22px; color: var(--brand-red); }
+  .icon-cell .nm { font-size: 0.72rem; font-weight: 700; }
+  .icon-cell .mn { font-size: 0.64rem; color: var(--page-faint); }
+  .badge-tone-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  /* ---- components ---- */
+  .demo-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+  .card-demo {
+    background: var(--page-card); border: 1px solid var(--page-border); border-radius: 20px; padding: 20px;
+    box-shadow: 0 1px 2px rgba(51,43,40,0.04), 0 1px 3px rgba(51,43,40,0.06);
+  }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 44px; padding: 0 20px; border-radius: 14px; font-size: 0.88rem; font-weight: 700; border: none; cursor: pointer; font-family: var(--sans); }
+  .btn-primary { background: var(--brand-grad); color: #fff; box-shadow: 0 8px 24px rgba(200,0,0,0.22); }
+  .btn-secondary { background: var(--page-card); color: var(--page-text); border: 1px solid var(--page-border); }
+  .btn-ghost { background: transparent; color: var(--page-muted); }
+  .pill { display: inline-flex; align-items: center; padding: 0.28rem 0.7rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.02em; }
+  .pill-brand { background: rgba(200,0,0,0.08); color: var(--brand-red); }
+  .pill-green { background: rgba(14,159,110,0.1); color: var(--status-green); }
+  .pill-amber { background: rgba(194,116,11,0.1); color: var(--status-amber); }
+  .pill-neutral { background: var(--page-card-2); color: var(--page-soft); }
+
+  .stat-tile { background: var(--page-card); border: 1px solid var(--page-border); border-radius: 16px; padding: 14px 16px; min-width: 120px; text-align: center; }
+  .stat-tile .v { font-size: 22px; font-weight: 800; }
+  .stat-tile .l { font-size: 12px; color: var(--page-faint); }
+
+  .ring-demo { display: flex; align-items: center; gap: 1.6rem; flex-wrap: wrap; }
+  .ring { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+  .ring::before { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--page-bg); }
+  .ring span { position: relative; font-size: 22px; font-weight: 800; font-family: var(--mono); }
+
+  .meter { height: 8px; border-radius: 999px; background: var(--page-card-2); overflow: hidden; margin-bottom: 0.5rem; }
+  .meter > div { height: 100%; border-radius: 999px; }
+
+  .band-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .band-table td, .band-table th { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--page-hairline); text-align: left; }
+  .band-table th { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--page-faint); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 0.4rem; }
+
+  /* ---- voice quotes ---- */
+  .voice-quote { border-left: 3px solid var(--brand-red); padding: 0.2rem 0 0.2rem 1rem; margin: 0.8rem 0; font-size: 0.95rem; max-width: 58ch; }
+  .voice-quote .src { font-family: var(--mono); font-size: 0.66rem; color: var(--page-faint); display: block; margin-top: 0.25rem; }
+
+  /* ---- checklist ---- */
+  .checklist { list-style: none; padding: 0; margin: 0; }
+  .checklist li { display: flex; gap: 0.6rem; padding: 0.45rem 0; border-bottom: 1px solid var(--page-hairline); font-size: 0.9rem; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist .box { width: 16px; height: 16px; border: 1.5px solid var(--brand-red); border-radius: 5px; flex-shrink: 0; margin-top: 2px; }
+
+  /* ---- prompt block ---- */
+  .prompt-wrap { position: relative; }
+  pre.prompt {
+    background: var(--page-card-2); border: 1px solid var(--page-border); border-radius: 16px; padding: 1.4rem 1.5rem;
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+    max-height: 480px; overflow-y: auto;
+  }
+  .copy-btn {
+    position: absolute; top: 0.9rem; right: 0.9rem; font-family: var(--sans); font-size: 0.72rem; font-weight: 700;
+    background: var(--page-card); border: 1px solid var(--page-border); border-radius: 8px; padding: 0.4rem 0.7rem; cursor: pointer;
+    color: var(--page-text);
+  }
+  .copy-btn:hover { background: var(--page-card-2); }
+
+  footer.doc-footer { margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--page-hairline); font-family: var(--mono); font-size: 0.7rem; color: var(--page-faint); }
+
+  @media (max-width: 860px) {
+    .rail { display: none; }
+    main { padding: 2.2rem 1.3rem 5rem; }
+    .doc-head h1 { font-size: 1.9rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="rail">
+    <div class="mark-mini">
+      <svg viewBox="0 0 200 200" fill="none" stroke="var(--brand-red)" stroke-width="7" stroke-linecap="round">
+        <g transform="rotate(0 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+        <g transform="rotate(60 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+        <g transform="rotate(120 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+        <g transform="rotate(180 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+        <g transform="rotate(240 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+        <g transform="rotate(300 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+      </svg>
+      <b>Scholify</b>
+    </div>
+    <a href="#brand">0 · Brand mark</a>
+    <a href="#palette">1 · Palette</a>
+    <a href="#gradient">2 · Gradient</a>
+    <a href="#type">3 · Type scale</a>
+    <a href="#tokens">4 · Spacing &amp; shape</a>
+    <a href="#icons">5 · Iconography</a>
+    <a href="#components">6 · Components</a>
+    <a href="#dataviz">7 · Data-viz rules</a>
+    <a href="#motion">8 · Motion</a>
+    <a href="#voice">9 · Voice &amp; copy</a>
+    <a href="#landing">10 · Landing-only</a>
+    <a href="#checklist">11 · Checklist</a>
+    <a href="#prompt">↳ AI prompt</a>
+  </nav>
+
+  <main>
+    <div class="doc-head">
+      <div class="kicker">Design Bible · v1.1 · reference build</div>
+      <div class="mark-hero">
+        <svg viewBox="0 0 200 200" fill="none" stroke="var(--brand-red)" stroke-width="7" stroke-linecap="round">
+          <g transform="rotate(0 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+          <g transform="rotate(60 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+          <g transform="rotate(120 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+          <g transform="rotate(180 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+          <g transform="rotate(240 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+          <g transform="rotate(300 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+        </svg>
+        <div>
+          <h1 style="margin-bottom:0.2rem;">Scholify Design Bible</h1>
+        </div>
+      </div>
+      <p>The single source of truth for how Scholify looks, moves and speaks — every token, component and rule here is pulled verbatim from the shipped foundation (<code>ui.tsx</code>, <code>charts.tsx</code>, <code>index.css</code>). Toggle your system or in-app theme — every swatch below is wired to the real <code>--sch-*</code> tokens, light and dark.</p>
+    </div>
+
+    <section id="brand">
+      <div class="sec-label">§0</div>
+      <h2>Brand mark &amp; wordmark</h2>
+      <p class="desc">Six rotational circuit traces closing into a hexagon — each terminal a node, each turn a waypoint on the journey to graduation. It is the Loop, drawn. One arm rotated 6×60° around center. <strong>Primary variant: MONO / DEEP RED.</strong> Minimum size 16px absolute floor; clear space of one node diameter on every side.</p>
+      <div class="demo-row">
+        <div class="card-demo" style="text-align:center;">
+          <svg viewBox="0 0 200 200" width="72" height="72" fill="none" stroke="var(--brand-red)" stroke-width="7" stroke-linecap="round">
+            <g transform="rotate(0 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+            <g transform="rotate(60 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+            <g transform="rotate(120 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+            <g transform="rotate(180 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+            <g transform="rotate(240 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+            <g transform="rotate(300 100 100)"><circle cx="71" cy="46" r="5.5" fill="var(--brand-red)" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="var(--brand-red)" stroke="none"/></g>
+          </svg>
+          <div class="t-small" style="margin-top:0.5rem;">red — primary</div>
+        </div>
+        <div class="card-demo" style="text-align:center; background:#14141A;">
+          <svg viewBox="0 0 200 200" width="72" height="72" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round">
+            <g transform="rotate(0 100 100)"><circle cx="71" cy="46" r="5.5" fill="#fff" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="#fff" stroke="none"/></g>
+            <g transform="rotate(60 100 100)"><circle cx="71" cy="46" r="5.5" fill="#fff" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="#fff" stroke="none"/></g>
+            <g transform="rotate(120 100 100)"><circle cx="71" cy="46" r="5.5" fill="#fff" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="#fff" stroke="none"/></g>
+            <g transform="rotate(180 100 100)"><circle cx="71" cy="46" r="5.5" fill="#fff" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="#fff" stroke="none"/></g>
+            <g transform="rotate(240 100 100)"><circle cx="71" cy="46" r="5.5" fill="#fff" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="#fff" stroke="none"/></g>
+            <g transform="rotate(300 100 100)"><circle cx="71" cy="46" r="5.5" fill="#fff" stroke="none"/><path d="M79,46 L123,46 L133,63"/><path d="M89,57 L114,57" stroke-width="4"/><circle cx="133" cy="63" r="4" fill="#fff" stroke="none"/></g>
+          </svg>
+          <div class="t-small" style="margin-top:0.5rem; color:#fff;">white — dark knockout</div>
+        </div>
+        <div class="card-demo" style="text-align:center;">
+          <div style="font-family:var(--sans); font-weight:700; font-size:1.3rem; letter-spacing:-0.02em;">Schol<span style="color:var(--brand-red);">ı</span><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--brand-magenta); vertical-align:6px; margin-left:-11px;"></span>fy</div>
+          <div class="t-small" style="margin-top:0.5rem;">wordmark — Plus Jakarta Sans 700</div>
+        </div>
+      </div>
+      <p class="desc"><strong>Never:</strong> stretch or distort · recolor off-brand · add shadows or 3D · place on low contrast · render below 16px · rebuild the mark by hand.</p>
+    </section>
+
+    <section id="palette">
+      <div class="sec-label">§1</div>
+      <h2>Palette</h2>
+      <h3>Brand (fixed — does not theme)</h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#C80000;"></div><div class="meta"><div class="name">Deep Red</div><div class="hex">#C80000</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#E50068;"></div><div class="meta"><div class="name">Magenta</div><div class="hex">#E50068</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#F4A405;"></div><div class="meta"><div class="name">Amber</div><div class="hex">#F4A405</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#14141A;"></div><div class="meta"><div class="name">Ink</div><div class="hex">#14141A</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#FAFAF7; border-bottom:1px solid var(--page-border);"></div><div class="meta"><div class="name">Off-White</div><div class="hex">#FAFAF7</div></div></div>
+      </div>
+      <h3>App surface tokens — <code>--sch-*</code> (live-themed, toggle to compare)</h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:var(--sch-bg);"></div><div class="meta"><div class="name">bg</div><div class="hex">warm paper</div></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--sch-card); border-bottom:1px solid var(--page-border);"></div><div class="meta"><div class="name">card</div><div class="hex">surface</div></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--sch-card-2);"></div><div class="meta"><div class="name">card-2</div><div class="hex">inset well</div></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--sch-text);"></div><div class="meta"><div class="name">text</div><div class="hex">primary ink</div></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--sch-tx-2);"></div><div class="meta"><div class="name">tx-2</div><div class="hex">soft</div></div></div>
+      </div>
+      <h3>Status (green / amber / red — status only, never identity)</h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#0E9F6E;"></div><div class="meta"><div class="name">Green — good</div><div class="hex">#0E9F6E</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#C2740B;"></div><div class="meta"><div class="name">Amber — at-risk</div><div class="hex">#C2740B</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#DC2626;"></div><div class="meta"><div class="name">Red — behind</div><div class="hex">#DC2626</div></div></div>
+      </div>
+      <h3>Landing-only raw tokens (does not consume <code>--sch-*</code>)</h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#C80000;"></div><div class="meta"><div class="name">brand-500</div><div class="hex">#C80000</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#E50068;"></div><div class="meta"><div class="name">plum-500</div><div class="hex">#E50068</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#F4A405;"></div><div class="meta"><div class="name">fire-500</div><div class="hex">#F4A405</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#2DD4BF;"></div><div class="meta"><div class="name">shield-500</div><div class="hex">#2DD4BF</div></div></div>
+      </div>
+    </section>
+
+    <section id="gradient">
+      <div class="sec-label">§2</div>
+      <h2>The gradient</h2>
+      <p class="desc"><code>linear-gradient(135deg, #C80000 0%, #E50068 48%, #F4A405 100%)</code> — one gradient, three uses: primary buttons/CTAs, active tab/nav pills, gradient-clipped headline words. <strong>One gradient CTA per screen.</strong> Never on body text or data marks.</p>
+      <div class="gradient-bar"></div>
+    </section>
+
+    <section id="type">
+      <div class="sec-label">§3</div>
+      <h2>Type scale</h2>
+      <p class="desc">App font: <code>"Plus Jakarta Sans", "Geist", ui-sans-serif, system-ui, sans-serif</code>. Landing uses Instrument Serif (display) + Geist (sans) + Geist Mono, separately (§10).</p>
+      <div class="type-row"><span class="tag">h1</span><span class="sample t-h1">Pass probability, evidenced</span></div>
+      <div class="type-row"><span class="tag">h2</span><span class="sample t-h2">Today's mission</span></div>
+      <div class="type-row"><span class="tag">h3</span><span class="sample t-h3">Where the marks went</span></div>
+      <div class="type-row"><span class="tag">body</span><span class="sample t-body">You're at 43% to pass FR. Finish today's plan to push it higher.</span></div>
+      <div class="type-row"><span class="tag">small</span><span class="sample t-small">Based on 16 questions covering 80% of the syllabus areas</span></div>
+      <div class="type-row"><span class="tag">label</span><span class="sample t-label">Pass-probability diagnostic</span></div>
+    </section>
+
+    <section id="tokens">
+      <div class="sec-label">§4</div>
+      <h2>Spacing, radii &amp; elevation</h2>
+      <h3>Spacing — 4px grid</h3>
+      <div class="token-row">
+        <div class="sp-cell"><div class="sp-box" style="width:4px; height:4px;"></div>xs 4</div>
+        <div class="sp-cell"><div class="sp-box" style="width:8px; height:8px;"></div>sm 8</div>
+        <div class="sp-cell"><div class="sp-box" style="width:12px; height:12px;"></div>md 12</div>
+        <div class="sp-cell"><div class="sp-box" style="width:16px; height:16px;"></div>lg 16</div>
+        <div class="sp-cell"><div class="sp-box" style="width:20px; height:20px;"></div>xl 20</div>
+        <div class="sp-cell"><div class="sp-box" style="width:24px; height:24px;"></div>2xl 24</div>
+        <div class="sp-cell"><div class="sp-box" style="width:32px; height:32px;"></div>3xl 32</div>
+        <div class="sp-cell"><div class="sp-box" style="width:40px; height:40px;"></div>4xl 40</div>
+      </div>
+      <h3>Radii</h3>
+      <div class="radius-row">
+        <div class="r-box" style="border-radius:10px;">sm 10</div>
+        <div class="r-box" style="border-radius:12px;">md 12</div>
+        <div class="r-box" style="border-radius:14px;">lg 14</div>
+        <div class="r-box" style="border-radius:16px;">xl 16</div>
+        <div class="r-box" style="border-radius:20px;">2xl 20</div>
+        <div class="r-box" style="border-radius:999px;">pill</div>
+      </div>
+      <h3>Elevation (warm-tinted, never black)</h3>
+      <div class="shadow-row">
+        <div class="shadow-box shadow-sm">sm — resting</div>
+        <div class="shadow-box shadow-md">md — hover</div>
+        <div class="shadow-box shadow-lg">lg — modals</div>
+        <div class="shadow-box shadow-brand">brand — CTA</div>
+      </div>
+    </section>
+
+    <section id="icons">
+      <div class="sec-label">§5</div>
+      <h2>Iconography</h2>
+      <p class="desc">Lucide only, through the semantic <code>ICONS</code> map — no emoji as icons, anywhere. A sample of the vocabulary, rendered as the exact shipped glyphs:</p>
+      <div class="icon-grid">
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg><div class="nm">study</div><div class="mn">GraduationCap</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><div class="nm">diagnostic</div><div class="mn">Target</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg><div class="nm">mock</div><div class="mn">Timer</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V5"/><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4"/><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5"/><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77"/><path d="M18 18a4 4 0 0 0 2-7.464"/><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517"/><path d="M6 18a4 4 0 0 1-2-7.464"/><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77"/></svg><div class="nm">flashcards</div><div class="mn">Brain</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg><div class="nm">streak</div><div class="mn">Flame</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg><div class="nm">tutor</div><div class="mn">Sparkles</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 21h8"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg><div class="nm">examiner</div><div class="mn">PenLine</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><div class="nm">shield</div><div class="mn">ShieldCheck</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><div class="nm">mission</div><div class="mn">Zap</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"/><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05"/></svg><div class="nm">rocket</div><div class="mn">Rocket</div></div>
+        <div class="icon-cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg><div class="nm">celebrate</div><div class="mn">PartyPopper</div></div>
+      </div>
+      <h3>IconBadge tones</h3>
+      <div class="badge-tone-row">
+        <div class="pill pill-brand">brand</div>
+        <div class="pill pill-green">green</div>
+        <div class="pill pill-amber">amber</div>
+        <div class="pill pill-neutral">neutral</div>
+      </div>
+    </section>
+
+    <section id="components">
+      <div class="sec-label">§6</div>
+      <h2>Component library</h2>
+      <h3>Card</h3>
+      <div class="card-demo" style="max-width: 360px;">
+        <div class="t-label" style="margin-bottom:0.4rem;">Exam room</div>
+        <div class="t-h3">61% pass probability</div>
+        <div class="t-small" style="margin-top:0.3rem;">7 points above the line and climbing.</div>
+      </div>
+      <h3>Button — the one button</h3>
+      <div class="demo-row">
+        <button class="btn btn-primary">Start now</button>
+        <button class="btn btn-secondary">View plan</button>
+        <button class="btn btn-ghost">Not now</button>
+      </div>
+      <h3>Badge</h3>
+      <div class="badge-tone-row">
+        <div class="pill pill-brand">PRO</div>
+        <div class="pill pill-green">PROVEN AGAIN</div>
+        <div class="pill pill-amber">UNLOCKS AT 60%</div>
+        <div class="pill pill-neutral">SPACED REVIEW</div>
+      </div>
+      <h3>Stat &amp; StatCard</h3>
+      <div class="demo-row">
+        <div class="stat-tile"><div class="v">18</div><div class="l">days to exam</div></div>
+        <div class="stat-tile"><div class="v" style="color:var(--brand-red);">68<span style="font-size:13px;">%</span></div><div class="l">pass probability</div></div>
+      </div>
+      <h3>RingGauge</h3>
+      <div class="ring-demo">
+        <div class="ring" style="background: conic-gradient(#0E9F6E 0 68%, var(--page-card-2) 68% 100%);"><span>68%</span></div>
+        <div style="max-width:34ch;" class="t-small">Track <code>C.card2</code>; fill by <code>bandColor(value, target)</code>; a 2px ink tick marks the target angle; centre number counts up over 1.1s.</div>
+      </div>
+      <h3>MeterBar with target tick</h3>
+      <div style="max-width:420px;">
+        <div class="meter"><div style="width:74%; background:var(--brand-red);"></div></div>
+        <div class="t-small">Financial Reporting — 74%, target 60%</div>
+      </div>
+    </section>
+
+    <section id="dataviz">
+      <div class="sec-label">§7</div>
+      <h2>Data-viz rules</h2>
+      <p class="desc"><code>bandColor(pct, passLine = 60)</code> — the one status formula. Never used for identity, only for a number against a real target.</p>
+      <table class="band-table">
+        <tr><th>Condition</th><th>Color</th><th>Meaning</th></tr>
+        <tr><td>pct ≥ passLine</td><td><span class="dot" style="background:#0E9F6E;"></span>Green</td><td>good</td></tr>
+        <tr><td>pct ≥ passLine − 15</td><td><span class="dot" style="background:#C2740B;"></span>Amber</td><td>at-risk</td></tr>
+        <tr><td>otherwise</td><td><span class="dot" style="background:#DC2626;"></span>Red</td><td>behind</td></tr>
+      </table>
+      <p class="desc" style="margin-top:1rem;">Values are always visible as text — color is never the only channel. Targets are drawn, not implied. Empty states teach (<em>"Sit two timed mocks and the trend… draws itself"</em>) — never a bare dash.</p>
+    </section>
+
+    <section id="motion">
+      <div class="sec-label">§8</div>
+      <h2>Motion</h2>
+      <p class="desc">House easing <code>[0.22, 1, 0.36, 1]</code>. Rings draw in 1.1s, meters 0.8s, list rows stagger by 0.05s. Hover lifts (<code>y:-2</code>) and never shifts layout; tap scales to 0.98–0.99. Maximum one ambient motion element per screen. <code>prefers-reduced-motion</code> zeroes everything, globally.</p>
+      <div class="demo-row" style="align-items:center;">
+        <div class="stat-tile" style="animation: sch-rise 0.6s ease-out;">rise</div>
+        <div class="stat-tile" style="animation: sch-breathe 2s ease-in-out infinite;">breathe</div>
+      </div>
+      <style>
+        @keyframes sch-rise { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
+        @keyframes sch-breathe { 0%,100% { transform:scale(1);} 50% { transform:scale(1.06);} }
+        @media (prefers-reduced-motion: reduce) { [style*="animation"] { animation: none !important; } }
+      </style>
+    </section>
+
+    <section id="voice">
+      <div class="sec-label">§9</div>
+      <h2>Voice &amp; copy</h2>
+      <p class="desc">Lara is a <strong>coach with receipts</strong>: warm, direct, always tying claims to the learner's own numbers. Recovery language — never "failed."</p>
+      <div class="voice-quote">"You're at 43% to pass FR. Finish today's plan to push it higher."<span class="src">evidence-tied headline</span></div>
+      <div class="voice-quote">"You now know exactly where the marks were lost — close those gaps, then prove it with a fresh mock."<span class="src">recovery language, banned word: "failed"</span></div>
+      <div class="voice-quote">"Sit two timed mocks and the trend… draws itself."<span class="src">honest empty state</span></div>
+      <div class="voice-quote">"Get D and E up to 70% and your pass chance rises from 68% to 85%."<span class="src">the plan removes choice</span></div>
+    </section>
+
+    <section id="landing">
+      <div class="sec-label">§10</div>
+      <h2>Landing-only rules</h2>
+      <p class="desc">The landing is <strong>pinned</strong> — layout and section structure are frozen, changes are additive only. It runs its own token set (<code>--bg-primary: #FAFAF7</code>, brand/plum/fire/shield) and its own fonts — <strong>Instrument Serif</strong> (display), <strong>Geist</strong> (sans), <strong>Geist Mono</strong>, <strong>Caveat</strong> (handwritten) — and does not theme dark. EN/RU parity is mandatory for every user-visible string; ACCA paper names and codes stay English in both. Signature effects (mesh background, conic borders, glass pills, marquee, 3D tilt) are landing-only and never migrate into the app shell.</p>
+    </section>
+
+    <section id="checklist">
+      <div class="sec-label">§11</div>
+      <h2>Checklist for any new screen</h2>
+      <ul class="checklist">
+        <li><span class="box"></span>Built from <code>ui.tsx</code> + <code>charts.tsx</code> — no hand-rolled cards, buttons, bars or rings.</li>
+        <li><span class="box"></span>Colors via <code>C</code> / <code>--sch-*</code>; status colors only against a real pass line.</li>
+        <li><span class="box"></span>Spacing on the <code>SP</code> grid; radii from <code>R</code>; shadows from <code>SHADOW</code>.</li>
+        <li><span class="box"></span>Icons via <code>Icon</code>/<code>IconBadge</code> semantic names; zero emoji-as-icons.</li>
+        <li><span class="box"></span>One hero number; values as text; targets drawn and named.</li>
+        <li><span class="box"></span><code>rise</code> on entry, staggered lists, tap feedback, no hover layout shift, reduced-motion safe.</li>
+        <li><span class="box"></span>Honest empty/measuring state; fallback labels for keyless AI.</li>
+        <li><span class="box"></span>44px touch targets; truncation-safe; auto-fit grids; wide content scrolls in its own container.</li>
+        <li><span class="box"></span>Copy: evidence-tied, sentence case, uppercase labels, recovery language — never "you failed."</li>
+      </ul>
+    </section>
+
+    <section id="prompt">
+      <div class="sec-label">↳</div>
+      <h2>AI design prompt</h2>
+      <p class="desc">A condensed version of everything above, meant to be pasted in front of any AI request to generate or review a Scholify screen — the guardrails without the full bible.</p>
+      <div class="prompt-wrap">
+        <button class="copy-btn" onclick="const t=document.getElementById('sch-prompt').innerText; navigator.clipboard.writeText(t).then(()=>{this.innerText='Copied';setTimeout(()=>this.innerText='Copy',1400);});">Copy</button>
+        <pre class="prompt" id="sch-prompt">You are designing/building a screen for Scholify, an ACCA exam-prep app. Follow its shipped design system exactly — do not invent new patterns.
+
+BRAND
+- Mark: hexagonal circuit of 6 rotated waypoints. Primary variant MONO / DEEP RED #C80000. Never distort, recolor, shadow, or rebuild by hand.
+- Gradient: linear-gradient(135deg, #C80000 0%, #E50068 48%, #F4A405 100%) — ONE gradient CTA per screen, on buttons/active-tabs/headline text only. Never on body text or data marks.
+
+COLOR
+- Everything through tokens, never raw hex for surfaces/text: bg, card, card-2 (inset well), text, tx-1..4 (muted→ghost), border, hairline.
+- Brand red = identity/interaction only, NOT status.
+- Status color exists only against a real target: bandColor(pct, passLine=60) → green (pct>=passLine) / amber (pct>=passLine-15) / red (below). Their *Soft tints are the only allowed tinted chip backgrounds.
+
+TYPE — Plus Jakarta Sans (app) / Instrument Serif+Geist (landing only, separate system)
+h1 26/800 -2%   h2 20/800 -1%   h3 16/750   body 14/450   small 12.5/500   label 11.5/800 uppercase +6%
+Sentence case everywhere except uppercase section labels. Never title-case body copy.
+
+SPACING / SHAPE
+4px grid: 4,8,12,16,20,24,32,40. Card padding = 20. Radii: sm10 md12 lg14 xl16 2xl20 pill999. Cards use 2xl, buttons lg, chips pill.
+Shadows are warm-ink-tinted (rgba(51,43,40,..)), never pure black. sm=resting, md=hover, lg=modals, brand=the one CTA on screen.
+
+ICONS
+Lucide only, via a semantic name map (never inline-import a raw icon in a screen). Zero emoji as icons anywhere.
+
+COMPONENTS — reuse, never hand-roll
+Card, Button (primary=gradient/secondary=bordered/ghost=transparent, 44px min-height, tap-scale 0.98, no hover layout shift), Badge (pill status chip), Stat/StatCard, RingGauge (donut + count-up + target tick), MeterBar (target tick), BreakdownList, TrendBars, Sparkbars, DeltaChip.
+
+DATA-VIZ
+One hero number per view. Values always shown as text, color is a second channel only. Targets are physically drawn AND named in text ("pass line 60%"). Empty states teach what starts the measurement — never a bare dash or fake data.
+
+MOTION
+Easing [0.22,1,0.36,1]. Entrances: rise (fade+10px) for sections, staggered 0.05s for list rows. Hover lifts (y:-2) or changes color/shadow — NEVER shifts layout or scales. Tap = scale 0.98-0.99. Data draws in once on mount (rings 1.1s, meters 0.8s). Max ONE ambient/looping motion element per screen. Respect prefers-reduced-motion globally, no exceptions.
+
+VOICE — "a coach with receipts"
+Every big claim quotes the number ("You're at 43% to pass FR"). Never say "failed" — say "you now know exactly where the marks were lost." Emotional support before analysis in any reflection/postmortem flow. Buttons are verbs with direction ("Start closing the gap," not "Continue"). Always disclose ACCA independence near ACCA content.
+
+CHECKLIST before shipping
+[ ] system components only  [ ] tokens not hex  [ ] 4px grid  [ ] semantic icons  [ ] one hero number  [ ] motion + reduced-motion safe  [ ] honest empty states  [ ] 44px touch targets  [ ] evidence-tied, non-judgmental copy</pre>
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      Generated from <code>docs/03-design-bible.md</code> v1.1 and the shipped foundation (<code>src/components/acca/ui.tsx</code>, <code>charts.tsx</code>, <code>src/index.css</code>). Companion: <code>docs/02-product-requirements.md</code>.
+    </footer>
+  </main>
+</div>

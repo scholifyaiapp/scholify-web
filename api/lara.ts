@@ -208,9 +208,13 @@ const DENY = (reason: MeterReason): Meter => ({ allowed: false, reason, record: 
 const DEFAULT_DAILY_TOKEN_BUDGET = 5_000_000
 const DEFAULT_PER_MINUTE_LIMIT = 8
 
-function envInt(name: string, fallback: number): number {
-  const n = Number(process.env[name])
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback
+export function envInt(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (raw === undefined || raw === "") return fallback
+  const n = Number(raw)
+  // n === 0 is a deliberate "hard off" (e.g. AI_DAILY_TOKEN_BUDGET=0 as an
+  // emergency spend-stop) and must be honored, not treated as unset.
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback
 }
 
 /** Start of the current minute, as an ISO timestamp — the rate-limit bucket. */
@@ -445,8 +449,8 @@ const RETIRED_ACTIONS = new Set([
 /* ── ACCA question generator — MCQs from a topic / notes (Sonnet) ──────── */
 
 async function handleAccaGenerate(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const paper = String(body.paper || "ACCA")
-  const paperName = String(body.paperName || paper)
+  const paper = String(body.paper || "ACCA").slice(0, 60)
+  const paperName = String(body.paperName || paper).slice(0, 120)
   const topic = String(body.topic || "").slice(0, 200)
   const notes = String(body.notes || "").slice(0, 3000)
   const count = Math.max(1, Math.min(10, Math.round(Number(body.count) || 5)))
@@ -531,10 +535,15 @@ function parseGeneratedQuestions(
 /* ── ACCA AI Tutor — explain a question / concept (Sonnet) ────────────── */
 
 async function handleAccaTutor(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const paper = String(body.paper || "ACCA")
-  const area = String(body.area || "")
+  const paper = String(body.paper || "ACCA").slice(0, 60)
+  const area = String(body.area || "").slice(0, 200)
   const stem = String(body.stem || "").slice(0, 1200)
-  const options = Array.isArray(body.options) ? (body.options as unknown[]).map((o) => String(o)) : []
+  // Bounded like every other field here — an unbounded options array is a
+  // cost-DoS vector: one oversized call can burn a large slice of the shared
+  // daily token budget without tripping the per-user call-count rate limit.
+  const options = Array.isArray(body.options)
+    ? (body.options as unknown[]).slice(0, 8).map((o) => String(o).slice(0, 300))
+    : []
   const correctText = String(body.correctText || "")
   const baseExplanation = String(body.explanation || "").slice(0, 1200)
   const question = String(body.question || "").slice(0, 500) // the learner's follow-up ("why is B wrong?")
@@ -605,7 +614,7 @@ interface PostmortemArea {
 
 async function handleAccaPostmortem(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
   const kind = body.kind === "exam" ? "exam" : "mock"
-  const paper = String(body.paper || "ACCA")
+  const paper = String(body.paper || "ACCA").slice(0, 60)
   const paperName = String(body.paperName || paper).slice(0, 120)
   const percent = Number.isFinite(Number(body.percent)) ? Math.round(Number(body.percent)) : null
   const learnerContext = String(body.learnerContext || "").slice(0, 800)
@@ -788,10 +797,14 @@ function localPostmortem(
 /* ── ACCA AI Examiner — mark a written answer vs a rubric (Sonnet) ─────── */
 
 async function handleAccaExaminer(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
-  const paper = String(body.paper || "ACCA")
+  const paper = String(body.paper || "ACCA").slice(0, 60)
   const stem = String(body.stem || "").slice(0, 2000)
   const maxMarks = Math.max(1, Math.round(Number(body.maxMarks) || 10))
-  const rubric = Array.isArray(body.rubric) ? (body.rubric as unknown[]).map((r) => String(r)) : []
+  // Same cost-DoS concern as the tutor's options array (see there): bound
+  // both the rubric's length and each point's size.
+  const rubric = Array.isArray(body.rubric)
+    ? (body.rubric as unknown[]).slice(0, 20).map((r) => String(r).slice(0, 300))
+    : []
   const answer = String(body.answer || "").slice(0, 4000)
 
   if (!aiProvider()) {

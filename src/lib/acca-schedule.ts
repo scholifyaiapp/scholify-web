@@ -102,8 +102,14 @@ interface ShieldRec {
   weekAnchor: string // yyyy-mm-dd of the current week's Monday
 }
 
+// Local calendar date, matching acca.ts's todayStr()/acca-flashcards.ts's
+// todayStr() — toISOString() would read the UTC date instead, so a student
+// west of Greenwich studying in their own evening gets stamped with
+// tomorrow's date and desyncs from every other streak/date store in the app.
 function ymd(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const m = `${d.getMonth() + 1}`.padStart(2, "0")
+  const day = `${d.getDate()}`.padStart(2, "0")
+  return `${d.getFullYear()}-${m}-${day}`
 }
 function mondayOf(d: Date): string {
   const x = new Date(d)
@@ -162,7 +168,10 @@ export function recordDayActive(paperId: string): ShieldState {
     rec = { ...rec, streak: rec.streak + 1, shieldsUsed: rec.shieldsUsed + gap, lastActive: today }
   } else if (rec.lastActive && gap > available) {
     // Beyond the shield allowance — streak restarts, but with zero drama.
-    rec = { ...rec, streak: 1, shieldsUsed: Math.min(SHIELDS_PER_WEEK, rec.shieldsUsed + available), lastActive: today }
+    // No shields protected anything here, so none are spent — otherwise a
+    // broken streak would also burn the week's remaining shields for zero
+    // benefit, breaking the *next* streak too on the very first missed day.
+    rec = { ...rec, streak: 1, lastActive: today }
   } else {
     rec = { ...rec, streak: rec.streak + 1, lastActive: today }
   }

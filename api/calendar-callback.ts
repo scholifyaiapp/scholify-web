@@ -122,9 +122,13 @@ export default async function handler(
         clientSecret,
         redirectUri,
       })
-      await persistTokens(userId, tokens)
+      const persisted = await persistTokens(userId, tokens)
       res.status(200).json({
         success: true,
+        // Honest signal: if this is false, nothing was saved server-side (no
+        // Supabase config, or the write failed) — the caller got tokens for
+        // this session only and should not assume cross-device sync.
+        persisted,
         access_token: tokens.access_token,
         expires_in: tokens.expires_in,
       })
@@ -141,13 +145,14 @@ export default async function handler(
         clientId,
         clientSecret,
       })
-      await persistTokens(userId, {
+      const persisted = await persistTokens(userId, {
         access_token: tokens.access_token,
         refresh_token: body.refresh_token,
         expires_in: tokens.expires_in,
       })
       res.status(200).json({
         success: true,
+        persisted,
         access_token: tokens.access_token,
         expires_in: tokens.expires_in,
       })
@@ -156,10 +161,12 @@ export default async function handler(
 
     res.status(400).json({ error: "Unknown action." })
   } catch (err) {
+    // Fixed reason code to the client, like every other endpoint here —
+    // Google's error_description (or a raw thrown value) stays server-side
+    // only, so a misconfigured redirect_uri or client secret never leaks
+    // upstream detail to the caller.
     console.error("calendar-callback:", err)
-    res
-      .status(500)
-      .json({ error: err instanceof Error ? err.message : String(err) })
+    res.status(500).json({ error: "Google Calendar connection failed. Try again." })
   }
 }
 
@@ -214,10 +221,14 @@ async function refreshToken(params: {
 async function persistTokens(
   userId: string | undefined,
   tokens: GoogleTokenResponse,
-): Promise<void> {
-  const url = process.env.VITE_SUPABASE_URL
+): Promise<boolean> {
+  // Same fallback as authedUserId() above — this used to read only
+  // VITE_SUPABASE_URL, so a deployment configured with SUPABASE_URL alone
+  // would auth successfully and then silently fail to save anything here,
+  // while the handler still reported success: true.
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey || !userId || !tokens.access_token) return
+  if (!url || !serviceKey || !userId || !tokens.access_token) return false
   try {
     const admin = createClient(url, serviceKey)
     const expiresAt = new Date(
@@ -237,7 +248,9 @@ async function persistTokens(
       },
       { onConflict: "user_id" },
     )
+    return true
   } catch (err) {
     console.error("calendar-callback persist:", err)
+    return false
   }
 }

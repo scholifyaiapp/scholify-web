@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import type { VercelRequest, VercelResponse } from "@vercel/node"
+import { timingSafeEqual } from "node:crypto"
 
 /*
  * Daily email reminders.
@@ -78,12 +79,19 @@ async function handleSync(req: VercelRequest, res: VercelResponse): Promise<void
   }
 }
 
+/** Constant-time compare — a plain === on a bearer token leaks timing signal. */
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB)
+}
+
 async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void> {
   // Fail closed: the send path (emails = cost + spam surface) unlocks ONLY with
   // a valid CRON_SECRET. If the secret is unset, the endpoint refuses rather
   // than running unauthenticated. Configure CRON_SECRET on the Vercel cron.
   const secret = process.env.CRON_SECRET
-  const authed = Boolean(secret) && req.headers.authorization === `Bearer ${secret}`
+  const authed = Boolean(secret) && safeEqual(String(req.headers.authorization || ""), `Bearer ${secret}`)
   if (!authed) {
     res.status(secret ? 401 : 403).json({
       error: secret ? "Unauthorized." : "CRON_SECRET not configured.",

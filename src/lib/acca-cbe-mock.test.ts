@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest"
-import { buildCbeMock, cbeObjectiveMarks } from "@/lib/acca-cbe-mock"
+import { buildCbeMock, cbeObjectiveMarks, drawOts } from "@/lib/acca-cbe-mock"
 import { EXAM_BLUEPRINTS } from "@/lib/acca-exam-structure"
 import { ALL_PAPERS } from "@/lib/acca-qualification"
 import { getOtCases, otCaseMarks } from "@/lib/acca-cases"
+import type { AccaQuestion } from "@/lib/acca-content"
 
 /*
  * The sectioned CBE mock composer — the invariants that make a composed mock
@@ -115,6 +116,47 @@ describe("buildCbeMock", () => {
 
   it("returns an empty mock for an unknown paper", () => {
     expect(buildCbeMock("XX", 1).itemCount).toBe(0)
+  })
+})
+
+/*
+ * drawOts feeds every section that shares a standalone-OT pool in the same
+ * composed mock. It used to shift a question off the pool to test whether it
+ * overshot the section target, then discard it silently when it did — never
+ * pushed to the section, never returned to the pool — so a later section
+ * drawing from the same pool had strictly less content than the bank
+ * actually had, exactly on the thin-bank papers this is meant to degrade
+ * honestly for.
+ */
+const otq = (id: string, marks: number): AccaQuestion => ({
+  id,
+  paper: "XX",
+  area: "A",
+  type: "mcq",
+  stem: "?",
+  options: ["a", "b", "c", "d"],
+  correct: 0,
+  explanation: "x",
+  marks,
+  difficulty: "easy",
+})
+
+describe("drawOts", () => {
+  it("returns an overshooting question to the pool instead of losing it", () => {
+    const q1 = otq("q1", 3)
+    const q2 = otq("q2", 3)
+    const pool = [q1, q2]
+    const out = drawOts(pool, 5)
+    expect(out).toEqual([q1])
+    // q2 overshot this draw's target and must remain available for whatever
+    // section draws from this same shared pool next.
+    expect(pool).toEqual([q2])
+  })
+
+  it("still draws everything when nothing overshoots", () => {
+    const qs = [otq("a", 2), otq("b", 2), otq("c", 2)]
+    const out = drawOts([...qs], 6)
+    expect(out).toHaveLength(3)
   })
 })
 
