@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="400" height="520">
+  <rect x="1" y="1" width="398" height="518" rx="12" fill="#FFFFFF"/>
+  <rect x="8" y="8" width="384" height="504" rx="10" fill="none" stroke="#C80000" stroke-width="2"/>
+  <rect x="20" y="20" width="360" height="480" rx="6" fill="none" stroke="#EAEAEA" stroke-width="1"/>
+
+  <path d="M200,52 L218,63 L218,85 L200,96 L182,85 L182,63 Z" fill="none" stroke="#C80000" stroke-width="3"/>
+  <circle cx="200" cy="74" r="4" fill="#C80000"/>
+
+  <text x="200" y="140" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" letter-spacing="2" fill="#8E817B">FOUNDATIONS IN ACCOUNTANCY</text>
+  <text x="200" y="178" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="27" fill="#14141A">Certificate of Achievement</text>
+
+  <text x="200" y="222" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" letter-spacing="1.5" fill="#A1948D">THIS CERTIFIES THAT</text>
+  <text x="200" y="256" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="24" fill="#14141A">A. Student</text>
+
+  <text x="200" y="292" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#5C4F4A">has achieved a pass mark of 85% or higher for</text>
+  <text x="200" y="312" text-anchor="middle" font-family="Arial, sans-serif" font-weight="600" font-size="14" fill="#14141A">Financial Accounting</text>
+
+  <text x="200" y="356" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8E817B">Month, 20XX</text>
+
+  <path d="M156,404 Q168,388 180,404 T204,404 T228,404" fill="none" stroke="#5C4F4A" stroke-width="1.5"/>
+  <text x="200" y="426" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" letter-spacing="1" fill="#A1948D">PROGRAM DIRECTOR</text>
+
+  <line x1="140" y1="452" x2="260" y2="452" stroke="#EAEAEA" stroke-width="1"/>
+  <text x="200" y="478" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#B9ACA5">Illustrative sample — not an official ACCA document</text>
+  <text x="200" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="11" letter-spacing="2" fill="#C80000">SCHOLIFY</text>
+</svg>

@@ -25,6 +25,7 @@ import { CinematicFooter } from "@/components/ui/motion-footer"
 import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
+import { InteractiveFolderGallery } from "@/components/ui/interactive-folder-gallery"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
@@ -1284,6 +1285,44 @@ function QualificationRoadmap() {
   )
 }
 
+/* ─────────────────────── MILESTONE GALLERY ─────────────────────── */
+
+const MILESTONE_PHOTOS: Array<{ id: string; image: string; altKey: string }> = [
+  { id: "achievement", image: "/milestones/cert-achievement.svg", altKey: "Illustrative sample certificate of achievement for a single ACCA paper" },
+  { id: "diploma", image: "/milestones/cert-diploma.svg", altKey: "Illustrative sample Diploma in Accounting and Business certificate" },
+  { id: "advanced-diploma", image: "/milestones/cert-advanced-diploma.svg", altKey: "Illustrative sample Advanced Diploma in Accounting and Business certificate" },
+  { id: "professional", image: "/milestones/cert-professional.svg", altKey: "Illustrative sample Professional Level completion certificate" },
+  { id: "member", image: "/milestones/cert-member.svg", altKey: "Illustrative sample ACCA Member certificate" },
+]
+
+function MilestoneGallery() {
+  const t = useT()
+  return (
+    <section style={{ padding: "96px 24px", background: BG_DARK, color: INK_INVERSE }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+        <SectionLabel tone="inverse">{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK_INVERSE, margin: "18px 0 0", lineHeight: 1.1 }}>
+          {t("Every paper closes with")}{" "}
+          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("a real document.")}</em>
+        </h2>
+        <p style={{ color: "rgba(250,250,247,0.65)", fontSize: 17, maxWidth: 620, margin: "20px auto 0", lineHeight: 1.65 }}>
+          {t("From your first paper to full membership, ACCA issues the certificate — Scholify just gets you there. Open the folder to see each milestone.")}
+        </p>
+
+        <InteractiveFolderGallery
+          folderName={t("Your qualification.folder")}
+          dragHintText={t("Drag any card down to close")}
+          photos={MILESTONE_PHOTOS.map((p) => ({ id: p.id, image: p.image, alt: t(p.altKey) }))}
+        />
+
+        <p className="font-mono-pro" style={{ color: "rgba(250,250,247,0.4)", fontSize: 11, letterSpacing: "0.1em" }}>
+          {t("Illustrative samples, not real students' documents — see each card for details.")}
+        </p>
+      </div>
+    </section>
+  )
+}
+
 /* ── The redesigned ACCA Qualification — second roadmap (official, from 2027) ── */
 
 const FUTURE_LEVELS: typeof ROADMAP_LEVELS = [
@@ -1996,6 +2035,7 @@ export default function Landing() {
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
+      <LazyOnView style={{ minHeight: 700 }}><MilestoneGallery /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
