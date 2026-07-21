@@ -26,6 +26,7 @@ import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
 import { InteractiveFolderGallery } from "@/components/ui/interactive-folder-gallery"
+import AnimatedCardStack, { type StackFact } from "@/components/ui/animated-card-stack"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
@@ -1858,6 +1859,42 @@ function SavingsCalculator() {
   )
 }
 
+/* ─────────────────────── ACCA FACTS CTA ─────────────────────── */
+
+const ACCA_FACT_KEYS: Array<{ titleKey: string; descKey: string; image: string }> = [
+  { titleKey: "1.9 million", descKey: "ACCA students and members across more than 180 countries — this qualification travels.", image: "/cta-cards/fact-reach.svg" },
+  { titleKey: "All Big Four.", descKey: "PwC, Deloitte, EY and KPMG all recognise and actively hire ACCA members.", image: "/cta-cards/fact-employers.svg" },
+  { titleKey: "13 papers.", descKey: "One qualification, one roadmap — BT all the way to strategic professional.", image: "/cta-cards/fact-roadmap.svg" },
+]
+
+function AccaFactsCTA() {
+  const t = useT()
+  const navigate = useNavigate()
+  const facts = ACCA_FACT_KEYS.map((f) => ({ title: t(f.titleKey), description: t(f.descKey), image: f.image })) as [StackFact, StackFact, StackFact]
+
+  return (
+    <section style={{ padding: "96px 24px" }}>
+      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+        <SectionLabel>{t("WHY ACCA")}</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 56px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
+          {t("The qualification is the hard part.")}{" "}
+          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("We handle that.")}</em>
+        </h2>
+        <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 480, margin: "20px auto 0", lineHeight: 1.65 }}>
+          {t("A few reasons candidates put in the work.")}
+        </p>
+
+        <AnimatedCardStack
+          facts={facts}
+          ctaLabel={t("Start free")}
+          animateLabel={t("Next")}
+          onCta={() => navigate("/signup")}
+        />
+      </div>
+    </section>
+  )
+}
+
 /* ─────────────────────── PRICING ─────────────────────── */
 
 interface ScholifyFeature {
@@ -2037,6 +2074,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
       <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
+      <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
     </div>

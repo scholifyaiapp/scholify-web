@@ -442,6 +442,21 @@ export const ru: Record<string, string> = {
   "Specimen Professional Level completion certificate":
     "Образец сертификата о завершении Professional Level",
   "Specimen ACCA Member certificate": "Образец сертификата члена ACCA",
+  /* ── ACCA facts CTA ── */
+  "WHY ACCA": "ПОЧЕМУ ACCA",
+  "The qualification is the hard part.": "Квалификация — вот что действительно сложно.",
+  "We handle that.": "Это мы берём на себя.",
+  "A few reasons candidates put in the work.": "Несколько причин, почему кандидаты вкладывают силы в подготовку.",
+  "Next": "Далее",
+  "1.9 million": "1,9 миллиона",
+  "ACCA students and members across more than 180 countries — this qualification travels.":
+    "Студентов и членов ACCA в более чем 180 странах — эта квалификация востребована везде.",
+  "All Big Four.": "Всей Big Four.",
+  "PwC, Deloitte, EY and KPMG all recognise and actively hire ACCA members.":
+    "PwC, Deloitte, EY и KPMG признают квалификацию ACCA и активно нанимают её обладателей.",
+  "13 papers.": "13 экзаменов.",
+  "One qualification, one roadmap — BT all the way to strategic professional.":
+    "Одна квалификация, одна дорожная карта — от BT до Strategic Professional.",
 
   /* ── 2027 redesign ── */
   "OFFICIAL · THE 2027 REDESIGN": "ОФИЦИАЛЬНО · РЕФОРМА 2027",
