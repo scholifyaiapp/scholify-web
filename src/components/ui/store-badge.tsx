@@ -1,4 +1,4 @@
-import { type MouseEvent, useEffect, useRef, useState } from "react"
+import { type MouseEvent, useEffect, useId, useRef, useState } from "react"
 import { Apple, Smartphone } from "lucide-react"
 
 /*
@@ -50,6 +50,23 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
   const leaveTimeout1 = useRef<ReturnType<typeof setTimeout> | null>(null)
   const leaveTimeout2 = useRef<ReturnType<typeof setTimeout> | null>(null)
   const leaveTimeout3 = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const moveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const finishTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const resetTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // SVG def ids must be unique per instance — keying them by `type` alone
+  // would collide if two badges of the same type ever rendered, silently
+  // pointing the second badge's mask/filter/gradient at the first's defs.
+  const uid = useId().replace(/:/g, "")
+
+  // Clear every pending timer on unmount so nothing calls setState after the
+  // component is gone (the reference component tracked none of these).
+  useEffect(() => {
+    return () => {
+      for (const t of [enterTimeout, leaveTimeout1, leaveTimeout2, leaveTimeout3, moveTimeout, finishTimeout, resetTimeout]) {
+        if (t.current) clearTimeout(t.current)
+      }
+    }
+  }, [])
 
   const getDimensions = () => {
     const rect = ref.current?.getBoundingClientRect()
@@ -130,7 +147,8 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
     const m = getMatrix(e.clientX, e.clientY)
     setMatrix(getOppositeMatrix(m, e.clientY, true))
     setIsTimeoutFinished(false)
-    setTimeout(() => setIsTimeoutFinished(true), 200)
+    if (finishTimeout.current) clearTimeout(finishTimeout.current)
+    finishTimeout.current = setTimeout(() => setIsTimeoutFinished(true), 200)
   }
 
   const onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -138,16 +156,21 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
     const xCenter = (left + right) / 2
     const yCenter = (top + bottom) / 2
 
-    setTimeout(() => setFirstOverlayPosition((Math.abs(xCenter - e.clientX) + Math.abs(yCenter - e.clientY)) / 1.5), 150)
+    // One in-flight move timer at a time — without this, every mousemove
+    // queued a new 150ms timeout, flooding hundreds during a hover.
+    if (moveTimeout.current) clearTimeout(moveTimeout.current)
+    moveTimeout.current = setTimeout(() => setFirstOverlayPosition((Math.abs(xCenter - e.clientX) + Math.abs(yCenter - e.clientY)) / 1.5), 150)
     if (isTimeoutFinished) setCurrentMatrix(getMatrix(e.clientX, e.clientY))
   }
 
   const onMouseLeave = (e: MouseEvent<HTMLDivElement>) => {
     const oppositeMatrix = getOppositeMatrix(matrix, e.clientY)
     if (enterTimeout.current) clearTimeout(enterTimeout.current)
+    if (moveTimeout.current) clearTimeout(moveTimeout.current)
 
     setCurrentMatrix(oppositeMatrix)
-    setTimeout(() => setCurrentMatrix(identityMatrix), 200)
+    if (resetTimeout.current) clearTimeout(resetTimeout.current)
+    resetTimeout.current = setTimeout(() => setCurrentMatrix(identityMatrix), 200)
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -198,19 +221,19 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 54" className="w-[220px] sm:w-[260px] h-auto">
           <defs>
-            <filter id={`blur-${type}`}>
+            <filter id={`blur-${uid}`}>
               <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
             </filter>
-            <linearGradient id={`gold-${type}`} x1="0" y1="0" x2="1" y2="0">
+            <linearGradient id={`gold-${uid}`} x1="0" y1="0" x2="1" y2="0">
               <stop offset="0" stopColor="#C80000" />
               <stop offset="1" stopColor="#F4A405" />
             </linearGradient>
-            <mask id={`mask-${type}`}>
+            <mask id={`mask-${uid}`}>
               <rect width="260" height="54" fill="white" rx="10" />
             </mask>
           </defs>
           <rect width="260" height="54" rx="10" fill="#14141A" />
-          <rect x="1" y="1" width="258" height="52" rx="9" fill="none" stroke={`url(#gold-${type})`} strokeWidth="1.5" />
+          <rect x="1" y="1" width="258" height="52" rx="9" fill="none" stroke={`url(#gold-${uid})`} strokeWidth="1.5" />
 
           <foreignObject x="14" y="12" width="30" height="30">
             <Icon size={26} color="#FAFAF7" strokeWidth={1.6} />
@@ -223,7 +246,7 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
             {label[type]}
           </text>
 
-          <g style={{ mixBlendMode: "overlay" }} mask={`url(#mask-${type})`}>
+          <g style={{ mixBlendMode: "overlay" }} mask={`url(#mask-${uid})`}>
             {overlayHues.map((hue, i) => (
               <g
                 key={i}
@@ -238,7 +261,7 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
                 <polygon
                   points="0,0 260,54 260,0 0,54"
                   fill={hue === "transparent" ? "transparent" : hue === "white" ? "white" : `hsl(${hue}, 90%, 55%)`}
-                  filter={`url(#blur-${type})`}
+                  filter={`url(#blur-${uid})`}
                   opacity="0.35"
                 />
               </g>

@@ -33,7 +33,17 @@ export function InteractiveFolderGallery({
   const [hoverFolder, setHoverFolder] = useState(false)
 
   return (
-    <div className={`w-full py-32 relative ${className || ""}`}>
+    <div
+      className={`w-full py-32 relative ${className || ""}`}
+      // Drag-down closes it with a pointer; Escape gives keyboard users the
+      // same exit rather than trapping them in the open state.
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && isFolderOpen) {
+          setIsFolderOpen(false)
+          setHoverFolder(false)
+        }
+      }}
+    >
       <div className="relative w-full min-h-[500px] flex flex-col items-center justify-center">
         <div className="relative w-[400px] h-[500px] flex justify-center pointer-events-none z-0">
           <motion.div
@@ -113,7 +123,10 @@ export function InteractiveFolderGallery({
             tabIndex={0}
             aria-label={folderName}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") setIsFolderOpen(true)
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault() // Space would otherwise scroll the page
+                setIsFolderOpen(true)
+              }
             }}
           >
             <div className="w-full h-full bg-linear-to-b from-[#2a2a2a] to-[#111] rounded-2xl border border-white/20 shadow-[inset_0_2px_10px_rgba(255,255,255,0.1)] relative overflow-hidden flex items-end justify-center pb-8">

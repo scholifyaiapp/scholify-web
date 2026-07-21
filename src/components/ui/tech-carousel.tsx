@@ -99,11 +99,15 @@ export function TechCarousel({ columnCount = 2, items }: { columnCount?: number;
     setItemSets(distributeItems(items, columnCount))
   }, [items, columnCount])
 
+  // A column with no items would divide by zero in TechColumn (NaN index →
+  // reading .name off undefined). Render nothing rather than crash.
+  if (!items?.length) return null
+
   return (
     <div className="flex justify-center gap-6 flex-wrap">
-      {itemSets.map((set, index) => (
-        <TechColumn key={index} items={set} index={index} currentTime={currentTime} />
-      ))}
+      {itemSets.map((set, index) =>
+        set.length ? <TechColumn key={index} items={set} index={index} currentTime={currentTime} /> : null,
+      )}
     </div>
   )
 }

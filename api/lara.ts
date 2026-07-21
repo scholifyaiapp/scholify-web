@@ -544,7 +544,7 @@ async function handleAccaTutor(req: VercelRequest, body: Record<string, unknown>
   const options = Array.isArray(body.options)
     ? (body.options as unknown[]).slice(0, 8).map((o) => String(o).slice(0, 300))
     : []
-  const correctText = String(body.correctText || "")
+  const correctText = String(body.correctText || "").slice(0, 300)
   const baseExplanation = String(body.explanation || "").slice(0, 1200)
   const question = String(body.question || "").slice(0, 500) // the learner's follow-up ("why is B wrong?")
   const learnerContext = String(body.learnerContext || "").slice(0, 800) // the student's known weak areas
