@@ -461,6 +461,11 @@ export const ru: Record<string, string> = {
   "MOBILE APPS — COMING SEPTEMBER 1, 2026": "МОБИЛЬНЫЕ ПРИЛОЖЕНИЯ — С 1 СЕНТЯБРЯ 2026",
   "Coming soon": "Скоро",
   "From September 1, 2026": "С 1 сентября 2026",
+  /* ── Tech stack strip ── */
+  "Built on serious infrastructure": "На серьёзной инфраструктуре",
+  "Not hand-waved AI.": "Никакого ИИ на словах.",
+  "Charles runs on real frontier models, not a chatbot wrapper. Your progress lives on infrastructure built for scale.":
+    "Чарльз работает на реальных передовых моделях, а не на обёртке над чат-ботом. Ваш прогресс хранится на инфраструктуре, рассчитанной на масштаб.",
 
   /* ── 2027 redesign ── */
   "OFFICIAL · THE 2027 REDESIGN": "ОФИЦИАЛЬНО · РЕФОРМА 2027",

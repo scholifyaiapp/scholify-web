@@ -28,6 +28,8 @@ import { ImageSwiper } from "@/components/ui/image-swiper"
 import { InteractiveFolderGallery } from "@/components/ui/interactive-folder-gallery"
 import AnimatedCardStack, { type StackFact } from "@/components/ui/animated-card-stack"
 import { StoreBadge } from "@/components/ui/store-badge"
+import { GradientHeading } from "@/components/ui/gradient-heading"
+import { TechCarousel, type TechItem } from "@/components/ui/tech-carousel"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
@@ -1896,6 +1898,42 @@ function AccaFactsCTA() {
   )
 }
 
+/* ─────────────────────── TECH STACK ─────────────────────── */
+/* Honest "built on" credibility strip -- not a partners wall. Scholify has
+   no confirmed partnership with Anthropic, OpenAI, Supabase or Vercel,
+   only a paying customer/API relationship, so this names the real stack
+   in plain text rather than displaying anyone's logo or claiming
+   endorsement. */
+
+const TECH_ITEMS: TechItem[] = [
+  { id: 1, name: "Claude", sub: "ANTHROPIC" },
+  { id: 2, name: "GPT-4", sub: "OPENAI" },
+  { id: 3, name: "Supabase", sub: "DATA" },
+  { id: 4, name: "Vercel", sub: "HOSTING" },
+]
+
+function TechStackSection() {
+  const t = useT()
+  return (
+    <section style={{ padding: "80px 24px" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
+        <GradientHeading variant="secondary" size="xs">
+          {t("Built on serious infrastructure")}
+        </GradientHeading>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(28px, 4vw, 44px)", color: INK, margin: "0 0 0", lineHeight: 1.15 }}>
+          {t("Not hand-waved AI.")}
+        </h2>
+        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 480, margin: "16px auto 0", lineHeight: 1.6 }}>
+          {t("Charles runs on real frontier models, not a chatbot wrapper. Your progress lives on infrastructure built for scale.")}
+        </p>
+        <div style={{ marginTop: 28 }}>
+          <TechCarousel columnCount={2} items={TECH_ITEMS} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ─────────────────────── PRICING ─────────────────────── */
 
 interface ScholifyFeature {
@@ -2094,6 +2132,7 @@ export default function Landing() {
       <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
+      <LazyOnView style={{ minHeight: 400 }}><TechStackSection /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
       <LazyOnView style={{ minHeight: 300 }}><MobileAppsTeaser /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
