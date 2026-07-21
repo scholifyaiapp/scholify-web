@@ -314,7 +314,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.95, ease: EASE_DECISIVE }}
-          aria-label="Scholify performance telemetry"
+          aria-label={t("Scholify performance telemetry")}
           style={{ maxWidth: 680, margin: "26px auto 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}
         >
           {[
@@ -323,8 +323,8 @@ function Hero() {
             ["03 · SITTING", "Recalculate to pass"],
           ].map(([label, value], index) => (
             <div key={label} style={{ position: "relative", overflow: "hidden", padding: "13px 15px", textAlign: "left", borderRadius: 14, background: index === 1 ? INK : "rgba(255,255,255,.72)", border: `1px solid ${index === 1 ? INK : HAIR}`, boxShadow: "0 10px 26px -20px rgba(20,20,26,.45)" }}>
-              <span className="font-mono-pro" style={{ display: "block", fontSize: 9.5, letterSpacing: ".13em", color: index === 1 ? "rgba(255,255,255,.55)" : BRAND_500 }}>{label}</span>
-              <strong style={{ display: "block", marginTop: 5, fontSize: 13.5, color: index === 1 ? "#fff" : INK }}>{value}</strong>
+              <span className="font-mono-pro" style={{ display: "block", fontSize: 9.5, letterSpacing: ".13em", color: index === 1 ? "rgba(255,255,255,.55)" : BRAND_500 }}>{t(label)}</span>
+              <strong style={{ display: "block", marginTop: 5, fontSize: 13.5, color: index === 1 ? "#fff" : INK }}>{t(value)}</strong>
               <span aria-hidden style={{ position: "absolute", right: -9, bottom: -17, width: 42, height: 42, borderRadius: "50%", border: `7px solid ${index === 1 ? BRAND_500 : BRAND_100}` }} />
             </div>
           ))}
@@ -823,7 +823,7 @@ function VisualAIPartnerWidget() {
           >
             <img
               src="/charles-helmet-avatar-512.png"
-              alt="Charles — your Scholify race engineer"
+              alt={t("Charles — your Scholify race engineer")}
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
               loading="lazy"
             />
@@ -902,8 +902,14 @@ function VisualProgress() {
       </div>
 
       <motion.button
+        type="button"
+        aria-expanded={hovered}
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
+        // Hover alone never fires on touch, so tapping this button did
+        // nothing on mobile — toggle on click too so the preview it reveals
+        // is reachable without a mouse.
+        onClick={() => setHovered((v) => !v)}
         whileTap={{ scale: 0.97 }}
         style={{
           marginTop: 22,
@@ -1946,9 +1952,6 @@ function Pricing() {
     </section>
   )
 }
-
-/* ─────────────────────── AWARDS ─────────────────────── */
-
 
 /* ─────────────────────── FINAL CTA ─────────────────────── */
 

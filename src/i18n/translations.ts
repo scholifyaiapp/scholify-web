@@ -25,6 +25,14 @@ export const ru: Record<string, string> = {
   "Charles · AI Race Engineer": "Чарльз · ИИ-гоночный инженер",
   "Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.":
     "Scholify показывает, где были потеряны баллы, составляет целевой ежедневный план возвращения и постоянно корректирует его к следующей экзаменационной сессии.",
+  "Scholify performance telemetry": "Показатели эффективности Scholify",
+  "01 · TELEMETRY": "01 · ТЕЛЕМЕТРИЯ",
+  "Find lost marks": "Найти потерянные баллы",
+  "02 · STRATEGY": "02 · СТРАТЕГИЯ",
+  "Race today's plan": "План на сегодня",
+  "03 · SITTING": "03 · ЭКЗАМЕН",
+  "Recalculate to pass": "Пересчитать до сдачи",
+  "Charles — your Scholify race engineer": "Чарльз — ваш ИИ-гоночный инженер Scholify",
   /* ── Navigation ── */
   "Features": "Возможности",
   "How it works": "Как это работает",

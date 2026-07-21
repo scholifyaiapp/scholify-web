@@ -9,6 +9,9 @@ interface AnimatedTextProps extends React.HTMLAttributes<HTMLDivElement> {
   underlinePath?: string;
   underlineHoverPath?: string;
   underlineDuration?: number;
+  /** Heading level to render — a page must have exactly one h1, so any
+   * caller after the true page heading needs to pass "h2" (or lower). */
+  as?: "h1" | "h2" | "h3" | "h4";
 }
 
 const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
@@ -20,10 +23,12 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
       underlinePath = "M 0,10 Q 75,0 150,10 Q 225,20 300,10",
       underlineHoverPath = "M 0,10 Q 75,20 150,10 Q 225,0 300,10",
       underlineDuration = 1.5,
+      as = "h2",
       ...props
     },
     ref
   ) => {
+    const HeadingTag = motion[as]
     const pathVariants: Variants = {
       hidden: {
         pathLength: 0,
@@ -45,7 +50,7 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
         className={cn("flex flex-col items-center justify-center gap-2", props.className)}
       >
         <div className="relative">
-          <motion.h1
+          <HeadingTag
             className={cn("text-4xl font-bold text-center", textClassName)}
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -53,7 +58,7 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
             whileHover={{ scale: 1.02 }}
           >
             {text}
-          </motion.h1>
+          </HeadingTag>
 
           <motion.svg
             width="100%"

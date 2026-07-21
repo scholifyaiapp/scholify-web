@@ -42,12 +42,46 @@
     <meta property="og:url" content="https://www.scholifyapp.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Scholify" />
+    <meta property="og:locale" content="en_US" />
+    <!-- The RU translation is served client-side at the same URL (no distinct
+         /ru/ route), so this hints capability without falsely claiming
+         separately-crawlable localized pages. -->
+    <meta property="og:locale:alternate" content="ru_RU" />
 
     <!-- Twitter / X card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Scholify — AI exam prep for ACCA students" />
     <meta name="twitter:description" content="The AI Examiner marks your written answers in seconds. Practice banks for every ACCA paper." />
     <meta name="twitter:image" content="https://www.scholifyapp.com/og-image.png?v=2" />
+
+    <!-- Structured data: only facts that are true today (no ratings/reviews —
+         Scholify has none yet and will not fabricate any, per house policy). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Scholify",
+        "url": "https://www.scholifyapp.com/",
+        "logo": "https://www.scholifyapp.com/logo.svg",
+        "description": "AI-tutored ACCA exam preparation — original question banks, timed mocks, spaced-repetition flashcards, and an AI Examiner that marks written answers in seconds."
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Scholify",
+        "url": "https://www.scholifyapp.com/",
+        "applicationCategory": "EducationApplication",
+        "operatingSystem": "Web",
+        "description": "AI exam prep for every ACCA paper from BT to AAA: original question banks, timed mocks, an AI Examiner for written answers, spaced-repetition flashcards, and a pass-probability diagnostic that builds a daily study plan.",
+        "offers": [
+          { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Beginner", "price": "9.99", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Pro", "price": "14.99", "priceCurrency": "USD" }
+        ]
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -56,7 +90,7 @@
     <!-- Paddle Billing (checkout) — deferred so it never blocks first paint -->
     <script defer src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
-    <title>Scholify — From F1 to ACCA member.</title>
+    <title>Scholify — AI Exam Prep for ACCA | From F1 to ACCA Member</title>
 
     <!-- Apply the saved app theme before paint (light is the default; avoids a flash) -->
     <script>
