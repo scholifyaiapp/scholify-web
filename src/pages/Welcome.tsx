@@ -10,6 +10,7 @@ import { setDailyGoal } from "@/lib/acca"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, startModeForExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
 import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
+import { DurationPicker } from "@/components/ui/duration-picker"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -150,7 +151,6 @@ export default function Welcome() {
   const [showPassed, setShowPassed] = useState(false)
   const [paper, setPaper] = useState<string | null>(null)
   const [minutes, setMinutes] = useState(25)
-  const [customMin, setCustomMin] = useState("")
   const [slot, setSlot] = useState("19:00")
   const [examDate, setExamDate] = useState("")
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
@@ -250,7 +250,7 @@ export default function Welcome() {
         isMobile={isMobile}
       />
     ),
-    2: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} customMin={customMin} setCustomMin={setCustomMin} />,
+    2: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} />,
     3: (
       <SittingSlide
         sessionPaper={sessionPaper}
@@ -673,55 +673,46 @@ function PaperSlide({
 }
 
 function TimeSlide({
-  minutes, setMinutes, slot, setSlot, customMin, setCustomMin,
+  minutes, setMinutes, slot, setSlot,
 }: {
   minutes: number
   setMinutes: (n: number) => void
   slot: string
   setSlot: (s: string) => void
-  customMin: string
-  setCustomMin: (v: string) => void
 }) {
-  const isCustom = customMin !== ""
-  const micro = isCustom
-    ? minutes >= 90
+  const preset = MINUTE_OPTIONS.find((m) => m.v === minutes)
+  const micro =
+    preset?.micro ??
+    (minutes >= 90
       ? "Marathon pace — remember: consistency beats intensity. Daily beats heroic."
-      : `${minutes} minutes, every day, protected — the loop will size your missions to fit.`
-    : MINUTE_OPTIONS.find((m) => m.v === minutes)?.micro ?? ""
+      : `${minutes} minutes, every day, protected — the loop will size your missions to fit.`)
   return (
     <div style={{ maxWidth: 440 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <DurationPicker value={minutes} onChange={setMinutes} min={5} max={240} />
+      </div>
+      <div style={{ marginTop: 4, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
         {MINUTE_OPTIONS.map((m) => {
-          const on = !isCustom && minutes === m.v
+          const on = minutes === m.v
           return (
-            <button key={m.v} onClick={() => { setCustomMin(""); setMinutes(m.v) }} style={{ ...tileStyle(on), padding: "20px 18px" }}>
-              <div style={{ font: `800 34px/1 ${SANS}`, letterSpacing: "-1px", color: INK }}>
-                {m.v}
-                <span style={{ font: `600 13px/1 ${MONO}`, color: FAINT }}> min</span>
-              </div>
-              <div style={{ marginTop: 8, font: `600 12px/1 ${SANS}`, color: RED }}>{m.label}</div>
+            <button
+              key={m.v}
+              onClick={() => setMinutes(m.v)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                font: `600 12.5px/1 ${SANS}`,
+                cursor: "pointer",
+                transition: "all .18s",
+                border: `1.5px solid ${on ? RED : BORDER}`,
+                background: on ? "rgba(200,0,0,.05)" : "#fff",
+                color: on ? RED : INK,
+              }}
+            >
+              {m.v} min · {m.label}
             </button>
           )
         })}
-      </div>
-      <div style={{ marginTop: 11, display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${isCustom ? RED : BORDER}`, background: isCustom ? "rgba(200,0,0,.05)" : "#fff", transition: "all .18s" }}>
-        <span style={{ font: `600 12.5px/1.3 ${SANS}`, color: isCustom ? RED : META, flex: 1 }}>My own number:</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={5}
-          max={240}
-          placeholder="e.g. 35"
-          value={customMin}
-          onChange={(e) => {
-            const raw = e.target.value
-            setCustomMin(raw)
-            const n = Math.round(Number(raw))
-            if (Number.isFinite(n) && n >= 5) setMinutes(Math.min(240, n))
-          }}
-          style={{ width: 84, padding: "10px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: PAGE, color: INK, font: `800 15px/1 ${SANS}`, textAlign: "center" }}
-        />
-        <span style={{ font: `600 12px/1 ${MONO}`, color: FAINT }}>min/day</span>
       </div>
       <div style={{ marginTop: 11, padding: "14px 16px", borderRadius: 14, background: "rgba(200,0,0,.05)", border: "1px solid rgba(200,0,0,.14)", font: `500 13px/1.45 ${SANS}`, color: "#8A2222" }}>
         {micro}
