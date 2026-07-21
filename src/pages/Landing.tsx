@@ -280,6 +280,7 @@ function HeroHeadline() {
 
 function Hero() {
   const navigate = useNavigate()
+  const reduce = useReducedMotion()
   const t = useT()
   return (
     <section
@@ -319,25 +320,37 @@ function Hero() {
           {t("Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.")}
         </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.95, ease: EASE_DECISIVE }}
+        <div
           aria-label={t("Scholify performance telemetry")}
-          style={{ maxWidth: 680, margin: "26px auto 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}
+          className="grid grid-cols-1 sm:grid-cols-3"
+          style={{ maxWidth: 560, margin: "26px auto 0", gap: 8 }}
         >
           {[
             ["01 · TELEMETRY", "Find lost marks"],
             ["02 · STRATEGY", "Race today's plan"],
             ["03 · SITTING", "Recalculate to pass"],
           ].map(([label, value], index) => (
-            <div key={label} style={{ position: "relative", overflow: "hidden", padding: "13px 15px", textAlign: "left", borderRadius: 14, background: index === 1 ? INK : "rgba(255,255,255,.72)", border: `1px solid ${index === 1 ? INK : HAIR}`, boxShadow: "0 10px 26px -20px rgba(20,20,26,.45)" }}>
-              <span className="font-mono-pro" style={{ display: "block", fontSize: 9.5, letterSpacing: ".13em", color: index === 1 ? "rgba(255,255,255,.55)" : BRAND_500 }}>{t(label)}</span>
+            <motion.div
+              key={label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.95 + index * 0.12, ease: EASE_DECISIVE }}
+              style={{ position: "relative", overflow: "hidden", padding: "13px 15px", textAlign: "left", borderRadius: 14, background: index === 1 ? INK : "rgba(255,255,255,.72)", border: `1px solid ${index === 1 ? INK : HAIR}`, boxShadow: "0 10px 26px -20px rgba(20,20,26,.45)" }}
+            >
+              <span className="font-mono-pro" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9.5, letterSpacing: ".13em", color: index === 1 ? "rgba(255,255,255,.55)" : BRAND_500 }}>
+                <motion.span
+                  aria-hidden
+                  animate={reduce ? undefined : { opacity: [1, 0.3, 1], scale: [1, 0.82, 1] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut", delay: index * 0.35 }}
+                  style={{ width: 6, height: 6, borderRadius: "50%", background: index === 1 ? BRAND_400 : BRAND_500, display: "inline-block", flexShrink: 0 }}
+                />
+                {t(label)}
+              </span>
               <strong style={{ display: "block", marginTop: 5, fontSize: 13.5, color: index === 1 ? "#fff" : INK }}>{t(value)}</strong>
               <span aria-hidden style={{ position: "absolute", right: -9, bottom: -17, width: 42, height: 42, borderRadius: "50%", border: `7px solid ${index === 1 ? BRAND_500 : BRAND_100}` }} />
-            </div>
+            </motion.div>
           ))}
-        </motion.div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

@@ -385,6 +385,17 @@ export function TheLoopSection() {
   const t = useT()
   const navigate = useNavigate()
   const navigateToSignup = () => navigate("/signup")
+  const reduce = useReducedMotion()
+
+  // A highlight that travels around the loop steps, conveying "closed loop
+  // until you pass" far better than static arrows (which broke when the
+  // strip wrapped on mobile). Paused entirely under reduced-motion.
+  const [activeStep, setActiveStep] = useState(0)
+  useEffect(() => {
+    if (reduce) return
+    const id = setInterval(() => setActiveStep((s) => (s + 1) % 5), 950)
+    return () => clearInterval(id)
+  }, [reduce])
 
   const STAGES: { icon: LucideIcon; tint: string; bg: string; title: string; line: string }[] = [
     { icon: Target, tint: BRAND, bg: "#FBE7E4", title: t("Diagnostic"), line: t("~15 minutes → your Exam Readiness Score, area by area.") },
@@ -415,34 +426,44 @@ export function TheLoopSection() {
           </p>
         </div>
 
-        {/* the GPS strip */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: EASE }}
-          style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 auto 46px" }}
-        >
-          {GPS.map((step, i) => (
-            <span key={step} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <span
-                style={{
-                  padding: "7px 14px",
-                  borderRadius: 999,
-                  background: i === GPS.length - 1 ? GRAD : "#fff",
-                  color: i === GPS.length - 1 ? "#fff" : INK,
-                  border: `1px solid ${i === GPS.length - 1 ? "transparent" : HAIR}`,
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  whiteSpace: "nowrap",
-                }}
+        {/* the GPS strip — a loop of steps with a travelling highlight.
+            Centred flex-wrap with no inter-pill arrows, so it stays clean
+            whether it sits on one row (desktop) or wraps (mobile). */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 auto 46px", maxWidth: 600 }}>
+          {GPS.map((step, i) => {
+            const isLast = i === GPS.length - 1
+            const on = !reduce && i === activeStep
+            return (
+              <motion.span
+                key={step}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.45, delay: i * 0.08, ease: EASE }}
+                style={{ display: "inline-block" }}
               >
-                {step}
-              </span>
-              {i < GPS.length - 1 && <ArrowRight size={13} color={INK_MUTED} strokeWidth={2.4} />}
-            </span>
-          ))}
-        </motion.div>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "8px 15px",
+                    borderRadius: 999,
+                    background: isLast ? GRAD : "#fff",
+                    color: isLast ? "#fff" : INK,
+                    border: `1px solid ${isLast ? "transparent" : on ? BRAND : HAIR}`,
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                    transform: on ? "scale(1.08)" : "scale(1)",
+                    boxShadow: on ? "0 8px 22px -6px rgba(200,0,0,0.38)" : "0 1px 2px rgba(20,20,26,0.05)",
+                    transition: "transform .35s cubic-bezier(.22,1,.36,1), border-color .3s ease, box-shadow .35s ease",
+                  }}
+                >
+                  {step}
+                </span>
+              </motion.span>
+            )
+          })}
+        </div>
 
         {/* eight stages, 3D-tilted */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
