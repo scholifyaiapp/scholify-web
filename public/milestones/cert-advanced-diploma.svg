@@ -38,7 +38,7 @@
   <text x="200" y="303" text-anchor="middle" font-family="Arial, sans-serif" font-weight="600" font-size="14" fill="#14141A">Advanced Diploma in Accounting</text>
   <text x="200" y="321" text-anchor="middle" font-family="Arial, sans-serif" font-weight="600" font-size="14" fill="#14141A">and Business</text>
 
-  <text x="200" y="362" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8E817B">Month, 20XX</text>
+  <text x="200" y="362" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8E817B">March 2027</text>
 
   <circle cx="200" cy="410" r="26" fill="none" stroke="#C80000" stroke-width="1.5"/>
   <circle cx="200" cy="410" r="21" fill="none" stroke="#F4A405" stroke-width="1"/>
