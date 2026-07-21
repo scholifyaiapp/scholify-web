@@ -15,7 +15,7 @@
  */
 
 export const ru: Record<string, string> = {
-  "Scholify Race Control": "Гоночный центр Scholify",
+  "Meet Charles": "Знакомьтесь: Чарльз",
   "From the F1 to ACCA member.": "От F1 до члена ACCA.",
   "Charles is reading your telemetry…": "Чарльз анализирует вашу телеметрию…",
   "A human marker takes days. Charles takes seconds.": "Проверяющему нужны дни. Чарльзу — секунды.",
@@ -43,7 +43,7 @@ export const ru: Record<string, string> = {
 
   /* ── Hero ── */
   "Lara just got 3× smarter": "Лара стала в 3 раза умнее",
-  "— written answers marked in seconds": "— письменные ответы проверяются за секунды",
+  "— your AI race engineer marks written answers in seconds": "— ваш ИИ-гоночный инженер проверяет письменные ответы за секунды",
   "Welcome to Scholify": "Добро пожаловать в Scholify",
   "Set your goal. Lara builds the plan. You just show up.":
     "Поставьте цель. Лара составит план. Вам остаётся только приходить.",

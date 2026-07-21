@@ -288,8 +288,8 @@ function Hero() {
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
-          buttonText={t("Scholify Race Control")}
-          description={t("— written answers marked in seconds")}
+          buttonText={t("Meet Charles")}
+          description={t("— your AI race engineer marks written answers in seconds")}
           onClick={() => navigate("/signup")}
         />
 
