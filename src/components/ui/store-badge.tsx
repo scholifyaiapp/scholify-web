@@ -34,9 +34,20 @@ const label: Record<StoreBadgeType, string> = {
   "google-play": "Google Play",
 }
 
-// Warm, Scholify-hued sheen (red -> amber -> magenta) instead of a full
-// rainbow, so the shimmer reads as "us," not a generic holographic sticker.
-const overlayHues = [358, 8, 20, 39, 345, 336, 358, "transparent", "transparent", "white"] as const
+// The holographic iridescent sheen from the source award-badge component:
+// rotating rainbow layers over the gold card, blended for a foil shimmer.
+const overlayFills = [
+  "hsl(358, 100%, 62%)",
+  "hsl(30, 100%, 50%)",
+  "hsl(60, 100%, 50%)",
+  "hsl(96, 100%, 50%)",
+  "hsl(233, 85%, 47%)",
+  "hsl(271, 85%, 47%)",
+  "hsl(300, 20%, 35%)",
+  "transparent",
+  "transparent",
+  "white",
+]
 
 export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
   const ref = useRef<HTMLDivElement>(null)
@@ -224,30 +235,31 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
             <filter id={`blur-${uid}`}>
               <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
             </filter>
-            <linearGradient id={`gold-${uid}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#C80000" />
-              <stop offset="1" stopColor="#F4A405" />
+            <linearGradient id={`gold-${uid}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#F6E6B0" />
+              <stop offset="0.5" stopColor="#F1D488" />
+              <stop offset="1" stopColor="#F1CFA6" />
             </linearGradient>
             <mask id={`mask-${uid}`}>
               <rect width="260" height="54" fill="white" rx="10" />
             </mask>
           </defs>
-          <rect width="260" height="54" rx="10" fill="#14141A" />
-          <rect x="1" y="1" width="258" height="52" rx="9" fill="none" stroke={`url(#gold-${uid})`} strokeWidth="1.5" />
+          <rect width="260" height="54" rx="10" fill={`url(#gold-${uid})`} />
+          <rect x="4" y="4" width="252" height="46" rx="8" fill="none" stroke="rgba(120,90,20,0.28)" strokeWidth="1" />
 
           <foreignObject x="14" y="12" width="30" height="30">
-            <Icon size={26} color="#FAFAF7" strokeWidth={1.6} />
+            <Icon size={26} color="#5A4A1E" strokeWidth={1.7} />
           </foreignObject>
 
-          <text fontFamily="Arial, sans-serif" fontSize="9" fontWeight="700" letterSpacing="1.5" fill="#F4A405" x="52" y="21">
+          <text fontFamily="Arial, sans-serif" fontSize="9" fontWeight="700" letterSpacing="1.5" fill="#8A6A12" x="52" y="21">
             {comingSoonLabel.toUpperCase()}
           </text>
-          <text fontFamily="Georgia, 'Times New Roman', serif" fontSize="17" fontWeight="700" fill="#FAFAF7" x="51" y="41">
+          <text fontFamily="Georgia, 'Times New Roman', serif" fontSize="17" fontWeight="700" fill="#3A2E14" x="51" y="41">
             {label[type]}
           </text>
 
           <g style={{ mixBlendMode: "overlay" }} mask={`url(#mask-${uid})`}>
-            {overlayHues.map((hue, i) => (
+            {overlayFills.map((fill, i) => (
               <g
                 key={i}
                 style={{
@@ -260,9 +272,9 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
               >
                 <polygon
                   points="0,0 260,54 260,0 0,54"
-                  fill={hue === "transparent" ? "transparent" : hue === "white" ? "white" : `hsl(${hue}, 90%, 55%)`}
+                  fill={fill}
                   filter={`url(#blur-${uid})`}
-                  opacity="0.35"
+                  opacity="0.5"
                 />
               </g>
             ))}
