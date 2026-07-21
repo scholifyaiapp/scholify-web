@@ -946,6 +946,17 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
 
 /* ── Paper overview (readiness + plan + modes) ────────────────── */
 
+// The study section split into four clear, low-clutter parts, driven by the
+// onboarding results — Today (what to do now), Plan (dates + phases),
+// Practice (every study/drill mode), Progress (readiness + mocks).
+type StudyTab = "today" | "plan" | "practice" | "progress"
+const STUDY_TABS: { key: StudyTab; label: string; icon: IconName }[] = [
+  { key: "today", label: "Today", icon: "mission" },
+  { key: "plan", label: "Plan", icon: "calendar" },
+  { key: "practice", label: "Practice", icon: "practice" },
+  { key: "progress", label: "Progress", icon: "stats" },
+]
+
 function Overview({
   paper,
   isPro,
@@ -1003,6 +1014,7 @@ function Overview({
   const fcStats = flashcardStats(paper.id)
   const writtenCount = getWrittenQuestions(paper.id).length
   const [plan, setPlanState] = useState(() => getPlan(paper.id))
+  const [tab, setTab] = useState<StudyTab>("today")
   const days = daysUntilExam(paper.id)
   const studyPlan = generateStudyPlan(paper.id)
   const mocks = getMockHistory(paper.id)
@@ -1091,6 +1103,25 @@ function Overview({
         </motion.button>
       )}
 
+      {/* study tabs — the section split into Today / Plan / Practice / Progress */}
+      <div style={{ display: "flex", gap: 4, padding: 4, background: "var(--sch-card-2)", borderRadius: 14, marginBottom: 16 }}>
+        {STUDY_TABS.map((tb) => {
+          const on = tab === tb.key
+          return (
+            <button
+              key={tb.key}
+              onClick={() => setTab(tb.key)}
+              style={{ flex: 1, minWidth: 0, padding: "9px 4px", borderRadius: 10, border: "none", cursor: "pointer", background: on ? CARD : "transparent", color: on ? "#C80000" : MUTED, boxShadow: on ? "0 1px 2px rgba(51,43,40,0.07)" : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, transition: "color .15s, background .15s" }}
+            >
+              <Icon name={tb.icon} size={15} color={on ? "#C80000" : DIM} />
+              <span>{tb.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {tab === "today" && (
+      <motion.div key="today-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* AI Study OS — your plan for today */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -1150,7 +1181,11 @@ function Overview({
           ))}
         </div>
       </motion.div>
+      </motion.div>
+      )}
 
+      {tab === "progress" && (
+      <motion.div key="progress-a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* readiness — live pass probability once there's practice, else coverage-based */}
       <SectionHead
         icon="stats"
@@ -1232,7 +1267,11 @@ function Overview({
         )}
         <Icon name="arrow" size={17} color={MUTED} />
       </motion.button>
+      </motion.div>
+      )}
 
+      {tab === "plan" && (
+      <motion.div key="plan-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* the method — where you are in the 4 phases */}
       <MethodTracker activeKey={phase.key} />
 
@@ -1306,7 +1345,11 @@ function Overview({
           </div>
         </div>
       )}
+      </motion.div>
+      )}
 
+      {tab === "practice" && (
+      <motion.div key="practice-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* ── THE STUDY CATEGORIES — the founder's five, in daily order, each
              proportioned from the onboarding answers (today's plan carries the
              exact minutes; the chips repeat them here so the weighting is
@@ -1438,7 +1481,11 @@ function Overview({
           />
         )}
       </div>
+      </motion.div>
+      )}
 
+      {tab === "progress" && (
+      <motion.div key="progress-b" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* mock history — score trend against the pass line, then the receipts */}
       {mocks.length > 0 && (
         <div style={{ marginBottom: 20 }}>
@@ -1466,6 +1513,8 @@ function Overview({
             ))}
           </div>
         </div>
+      )}
+      </motion.div>
       )}
 
     </motion.div>
