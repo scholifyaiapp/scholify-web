@@ -274,12 +274,12 @@ export default function AccaDiagnostic() {
   // runs its OWN loading choreography), so it skips the analyzing loader. A
   // retake keeps the lean analyzing → results screen.
   const endAssessing = () => {
-    if (fromWelcome) {
-      finalizeDiagnostic()
-      setPhase("reveal")
-    } else {
-      setPhase("analyzing")
-    }
+    // Both paths now run the cinematic scan → the pain-points dashboard
+    // (ResultsView), so onboarding gets the full A–H diagnostic dashboard
+    // and, via ResultsView.onContinue, flows on to the trial paywall. The
+    // legacy `reveal`/RevealExperience path is kept in the file but no longer
+    // entered.
+    setPhase("analyzing")
   }
   endAssessingRef.current = endAssessing
 
@@ -735,6 +735,14 @@ function PainPointsPanel({ result }: { result: DiagnosticResult }) {
                   {back > 0 && (
                     <span style={{ color: RED, fontWeight: 700 }}>≈ {back} exam mark{back === 1 ? "" : "s"} to win back</span>
                   )}
+                </div>
+                {/* Every pain point paired with what the plan does about it —
+                    the bridge from "here's the leak" to "here's the fix". */}
+                <div style={{ marginTop: 9, display: "flex", gap: 7, alignItems: "flex-start", fontSize: 12, color: MUTED, lineHeight: 1.45 }}>
+                  <Icon name="tutor" size={13} color={RED} style={{ marginTop: 1, flexShrink: 0 }} />
+                  <span>
+                    <b style={{ color: TEXT }}>Charles's fix:</b> the {a.label} chapter, then adaptive drills until it clears {Math.round(result.target.targetScore * 100)}%.
+                  </span>
                 </div>
               </div>
             </motion.div>
