@@ -11,6 +11,7 @@ import { GOAL_OPTIONS, setGoal, setExperience, getExperience, startModeForExperi
 import { trackEvent } from "@/lib/analytics"
 import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
 import { DurationPicker } from "@/components/ui/duration-picker"
+import { ExamCalendar } from "@/components/ui/exam-calendar"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -767,19 +768,21 @@ function SittingSlide({
               )
             })}
           </div>
+          {/* Once a sitting is chosen, the calendar animates to that month and
+              highlights the exam week the whole plan counts back from. */}
+          {pickedSitting && (
+            <div style={{ marginTop: 14 }}>
+              <ExamCalendar value={pickedSitting} highlightWeek />
+            </div>
+          )}
         </>
       ) : (
-        <div style={{ padding: "15px 16px", borderRadius: 16, border: "1.5px dashed #E1D8D0", background: "#fff" }}>
-          <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.13em", textTransform: "uppercase", color: FAINT, marginBottom: 9 }}>
-            {paper ?? "Your paper"} · on-demand computer exam
+        <div>
+          <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.13em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>
+            {paper ?? "Your paper"} · on-demand computer exam — pick your date
           </div>
-          <input
-            type="date"
-            value={examDate}
-            onChange={(e) => setExamDate(e.target.value)}
-            style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 11, border: `1px solid ${BORDER}`, background: PAGE, color: INK, font: `600 14px/1 ${SANS}`, colorScheme: "light" }}
-          />
-          <div style={{ marginTop: 8, font: `500 12px/1.35 ${SANS}`, color: META }}>Book any date at your local centre.</div>
+          <ExamCalendar value={examDate} onSelect={setExamDate} />
+          <div style={{ marginTop: 10, font: `500 12px/1.35 ${SANS}`, color: META }}>Book any date at your local centre — your plan counts back from it.</div>
         </div>
       )}
     </div>
