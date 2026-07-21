@@ -291,7 +291,7 @@ function Hero() {
         overflow: "hidden",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
           buttonText={t("Meet Charles")}
           description={t("— your AI race engineer marks written answers in seconds")}
