@@ -34,6 +34,7 @@ import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
 import RevealExperience from "@/components/acca/RevealExperience"
 import PaywallModal from "@/components/PaywallModal"
+import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import { trackEvent } from "@/lib/analytics"
 
 /* ──────────────────────────────────────────────────────────────
@@ -615,6 +616,16 @@ function ResultsView({
           />
         </div>
       )}
+
+      {/* The concrete plan the pain points imply — the real next 7 days,
+          each with its topic, minutes and tasks, led by the fix for the
+          weakest area. */}
+      <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.4, color: C.brand, marginBottom: 12, display: "flex", alignItems: "center", gap: 7 }}>
+          <Icon name="loop" size={15} color={C.brand} /> CHARLES'S PLAN — YOUR NEXT 7 DAYS
+        </div>
+        <PlanDashboard paperId={result.paperId} days={7} />
+      </div>
 
       {/* Now — and only now — Lara builds the plan that targets those pain
           points. The generation scene plays while the reader is still holding

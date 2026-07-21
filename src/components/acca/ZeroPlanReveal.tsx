@@ -4,6 +4,8 @@ import { iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, C, type IconName } from "@/components/acca/ui"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
+import { PlanDashboard } from "@/components/acca/PlanDashboard"
+import PaywallModal from "@/components/PaywallModal"
 import { getPaper } from "@/lib/acca"
 import { getPlan, daysUntilExam } from "@/lib/acca-plan"
 import { MOCK_GATE } from "@/lib/acca-loop"
@@ -26,6 +28,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
   const plan = getPlan(paperId)
   const days = daysUntilExam(paperId)
   const [ready, setReady] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
 
   const foundations = (paper?.areas ?? []).slice(0, 3)
   const firstArea = foundations[0]
@@ -118,44 +121,13 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               </div>
             </Reveal>
 
-            {/* foundations first */}
+            {/* the personalised plan — the concrete day-by-day, not just chips */}
             <Reveal delay={0.35}>
-              <SectionTag>FIRST: THE FOUNDATIONS — THEN YOUR DIAGNOSTIC UNLOCKS</SectionTag>
-              {/* minmax(0,1fr): long area labels truncate instead of widening
-                  the track off-screen on a phone. */}
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 8, marginBottom: 10 }}>
-                {foundations.map((a, i) => (
-                  <motion.div
-                    key={a.code}
-                    initial={{ opacity: 0, x: -14 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.45 + i * 0.14, ease: [0.22, 1, 0.36, 1] }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, minWidth: 0, padding: "12px 14px", borderRadius: 14,
-                      border: `1px solid ${C.border}`, background: "var(--sch-card, #fff)",
-                    }}
-                  >
-                    <span style={{
-                      width: 28, height: 28, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
-                      background: i === 0 ? IRIDESCENT : "var(--sch-card-2)", color: i === 0 ? "#fff" : C.soft, fontWeight: 800, fontSize: 13,
-                    }}>
-                      {a.code}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 750, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.label}</div>
-                      <div style={{ fontSize: 11.5, color: C.faint }}>study → practise → revise</div>
-                    </div>
-                    {i === 0 && (
-                      <span style={{ fontSize: 10.5, fontWeight: 800, color: C.brand, background: C.brandSoft, padding: "3px 9px", borderRadius: 999, flexShrink: 0 }}>
-                        DAY 1
-                      </span>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-              <p style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, margin: "0 0 22px" }}>
-                Testing you on day one would measure nothing but nerves. Cover these three and the diagnostic opens —
-                that's when your Exam Readiness Score becomes meaningful.
+              <SectionTag>YOUR PERSONALISED PLAN</SectionTag>
+              <PlanDashboard paperId={paperId} days={7} />
+              <p style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, margin: "12px 0 22px" }}>
+                Testing you on day one would measure nothing but nerves. Cover the foundations and the diagnostic opens —
+                that's when your Exam Readiness Score becomes meaningful, and every day after recalibrates on real evidence.
               </p>
             </Reveal>
 
@@ -195,7 +167,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 whileHover={{ y: -1 }}
-                onClick={() => onDone("study")}
+                onClick={() => setShowPaywall(true)}
                 style={{
                   width: "100%", padding: "16px 18px", borderRadius: 14, border: "none", cursor: "pointer",
                   background: IRIDESCENT, color: "#fff", fontWeight: 800, fontSize: 15.5,
@@ -214,6 +186,10 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* The plan reveal leads to the trial paywall, same as the assess path.
+          Dismissing still drops the learner into their (free) plan. */}
+      <PaywallModal open={showPaywall} type="general" onClose={() => { setShowPaywall(false); onDone("study") }} />
     </div>
   )
 }
