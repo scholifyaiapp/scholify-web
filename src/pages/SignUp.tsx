@@ -17,6 +17,7 @@ import {
   cardVariants,
   itemVariants,
 } from "@/components/auth/auth-ui"
+import { ScholifyLockup } from "@/components/brand"
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
@@ -394,6 +395,7 @@ export default function SignUp() {
 
         {/* Header */}
         <motion.div variants={itemVariants} custom={1} style={{ marginTop: 28 }}>
+          <ScholifyLockup size={30} color="var(--sch-text)" style={{ marginBottom: 20 }} />
           <h1
             style={{
               fontSize: 28,
