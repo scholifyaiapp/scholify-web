@@ -100,8 +100,22 @@ export default function CharlesMascot({
       style={{ display: "inline-block", willChange: "transform", ...style }}
     >
       <motion.div
-        animate={float ? { y: [0, -7, 0] } : { y: 0 }}
-        transition={float ? { duration: 3.4, repeat: Infinity, ease: "easeInOut" } : undefined}
+        animate={
+          float
+            ? { y: [0, -9, 0], scale: [1, 1.025, 1], rotate: [-1.6, 1.6, -1.6] }
+            : { y: 0 }
+        }
+        transition={
+          float
+            ? {
+                // Different periods → organic, never-repeating "alive" idle.
+                y: { duration: 3.1, repeat: Infinity, ease: "easeInOut" },
+                scale: { duration: 4.3, repeat: Infinity, ease: "easeInOut" },
+                rotate: { duration: 5.2, repeat: Infinity, ease: "easeInOut" },
+              }
+            : undefined
+        }
+        style={{ transformOrigin: "50% 85%", willChange: "transform" }}
       >
         {inner}
       </motion.div>

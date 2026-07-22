@@ -798,8 +798,6 @@ function VisualAIPartnerWidget() {
         </p>
 
         <motion.div
-          animate={prefersReduced ? undefined : { y: [0, -6, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           style={{
             position: "relative",
             width: avatarSize,
@@ -833,7 +831,7 @@ function VisualAIPartnerWidget() {
             }}
           />
           <div style={{ position: "relative", zIndex: 1 }}>
-            <CharlesMascot pose="present" size={avatarSize} float={false} />
+            <CharlesMascot pose="wave" size={avatarSize} />
           </div>
         </motion.div>
 
