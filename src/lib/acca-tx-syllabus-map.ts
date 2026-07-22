@@ -8,7 +8,7 @@ function official(area: string): string {
 
 function nextExamYear(text: string): string {
   return text
-    .replace(/\b20(2[0-6])(?:([/-])(2[1-7]))?\b/g, (_, start: string, separator?: string, end?: string) => separator && end ? `${Number(start) + 2001}${separator}${Number(end) + 1}` : String(Number(start) + 2001))
+    .replace(/\b20(2[0-8])(?:([/-])(2[1-9]))?\b/g, (_, start: string, separator?: string, end?: string) => separator && end ? `${Number(start) + 2001}${separator}${Number(end) + 1}` : String(Number(start) + 2001))
     .replace(/FA2024/g, "FA2025")
     .replace(/UK-domiciled/gi, "long-term UK resident")
     .replace(/UK domiciled/gi, "long-term UK resident")

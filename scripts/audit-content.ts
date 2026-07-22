@@ -16,6 +16,7 @@ import { getWrittenQuestions } from "@/lib/acca-written"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { chaptersForPaper } from "@/lib/acca-study-content"
 import { questionCount } from "@/lib/acca-content-counts"
+import { mapTxQuestionsToOfficialSyllabus } from "@/lib/acca-tx-syllabus-map"
 
 /** The practice-ladder floor a promoted paper must clear. */
 const MIN_BANK = 150
@@ -88,6 +89,19 @@ for (const paper of getPapers()) {
   if (orphans.length) blocking.push(`${id}: ${orphans.length} question(s) in an unknown syllabus area`)
   if (diagAreas.size < areas.length)
     blocking.push(`${id}: diagnostic misses ${areas.length - diagAreas.size} of ${areas.length} syllabus areas`)
+
+  // A rendered MCQ must present distinct options. Some papers are transformed at
+  // load time (the TX bank runs through the FA2024→FA2025 date-rebaser), and a
+  // transform can silently collapse a distractor onto the correct answer — a
+  // defect the source-level checks above never see because they read pre-transform
+  // data. Assert on the AS-SERVED bank so post-transform collisions are caught.
+  const served = id === "TX" ? mapTxQuestionsToOfficialSyllabus(bank) : bank
+  for (const q of served) {
+    if (q.type !== "mcq" || !q.options) continue
+    const norm = q.options.map((o) => o.trim().toLowerCase())
+    if (new Set(norm).size !== norm.length)
+      blocking.push(`${id}: question ${q.id} has duplicate options after transform — ${JSON.stringify(q.options)}`)
+  }
   if (briefs.length < areas.length) warnings.push(`${id}: briefs cover ${briefs.length}/${areas.length} areas`)
   if (chapters.length < areas.length) warnings.push(`${id}: study chapters cover ${chapters.length}/${areas.length} areas`)
 

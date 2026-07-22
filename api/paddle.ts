@@ -11,7 +11,7 @@ import crypto from "node:crypto"
  *     HMAC over the raw body, then writes the entitlement to the
  *     user's Supabase auth metadata (`plan`, `paddle_subscription_id`,
  *     `paddle_customer_id`). The client passes the Supabase user id as
- *     checkout `custom_data.userId` (see src/lib/paddle.ts).
+ *     checkout `custom_data.userId`.
  *
  *   POST /api/paddle?action=cancel
  *     Authenticated (Supabase JWT in Authorization: Bearer). Schedules
