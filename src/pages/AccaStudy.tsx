@@ -917,7 +917,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                     whileTap={{ scale: 0.99 }}
                     style={{ ...card({ textAlign: "left", cursor: "pointer", padding: 14, border: `1px solid ${isCurrent ? "#C80000" : BORDER}` }), display: "flex", alignItems: "center", gap: 13 }}
                   >
-                    <div style={{ width: 42, height: 42, borderRadius: 11, background: isPassed ? "var(--sch-card-2)" : IRIDESCENT, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: isPassed ? "#10B981" : "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 11, background: isPassed ? "var(--sch-card-2)" : IRIDESCENT, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: isPassed ? C.green : "#fff", flexShrink: 0 }}>
                       {isPassed ? "✓" : p.id}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -930,7 +930,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       {isPassed ? (
-                        <span style={{ fontSize: 12, color: "#10B981", fontWeight: 700 }}>Passed</span>
+                        <span style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>Passed</span>
                       ) : stats.answered > 0 ? (
                         <span style={{ fontSize: 14, fontWeight: 800, ...iriText }}>{stats.readiness}%</span>
                       ) : (
@@ -1640,7 +1640,7 @@ function LoopStrip({ paperId, onJourney }: { paperId: string; onJourney: () => v
 /* ── Study path (chapters → knowledge checks, like the tuition providers) ── */
 
 function topicVisual(t: TopicNode): { icon: IconName; ring: string; sub: string } {
-  if (t.state === "mastered") return { icon: "done", ring: "#10B981", sub: `Mastered · best ${Math.round(t.best * 100)}%` }
+  if (t.state === "mastered") return { icon: "done", ring: C.green, sub: `Mastered · best ${Math.round(t.best * 100)}%` }
   if (t.state === "in-progress") {
     return {
       icon: "learn",

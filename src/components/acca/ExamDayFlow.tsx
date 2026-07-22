@@ -29,7 +29,7 @@ const DIM = "var(--sch-tx-3)"
 const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
 const RED = "#C80000"
-const GREEN = "#10B981"
+const GREEN = C.green
 
 function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }

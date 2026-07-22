@@ -304,11 +304,13 @@ export function generateStudyPlan(paperId: string): StudyPlan {
   return { hasDate: true, daysLeft: days, dailyTarget, phases }
 }
 
-/** Human label for a readiness band. */
+/** Human label for a readiness band.
+ * Colours mirror the app palette `C` (green/amber/red) — hardcoded here because
+ * `C` lives in a component module (`acca/ui`) we don't import into lib code. */
 export function readinessBand(readiness: number): { label: string; color: string } {
-  if (readiness >= 75) return { label: "On track", color: "#10B981" }
-  if (readiness >= 50) return { label: "Getting there", color: "#F59E0B" }
-  if (readiness > 0) return { label: "Early days", color: "#EF4444" }
+  if (readiness >= 75) return { label: "On track", color: "#0E9F6E" }
+  if (readiness >= 50) return { label: "Getting there", color: "#C2740B" }
+  if (readiness > 0) return { label: "Early days", color: "#DC2626" }
   return { label: "Not started", color: "#94A3B8" }
 }
 

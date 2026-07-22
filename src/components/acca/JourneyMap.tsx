@@ -4,7 +4,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import { getPaper, getMockHistory } from "@/lib/acca"
 import { getJourneyStages, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED, type JourneyStage } from "@/lib/acca-loop"
-import { Icon, type IconName } from "@/components/acca/ui"
+import { Icon, type IconName, C } from "@/components/acca/ui"
 
 const STAGE_ICON: Record<string, IconName> = {
   onboarding: "study",
@@ -31,7 +31,7 @@ const DIM = "var(--sch-tx-3)"
 const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
 const RED = "#C80000"
-const GREEN = "#10B981"
+const GREEN = C.green
 
 function card(extra?: CSSProperties): CSSProperties {
   return { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, ...extra }
@@ -67,11 +67,11 @@ function MockChips({ paperId }: { paperId: string }) {
               padding: "8px 10px",
               borderRadius: 10,
               textAlign: "center",
-              border: `1.5px solid ${m ? (passed ? GREEN : "#EF4444") : BORDER}`,
+              border: `1.5px solid ${m ? (passed ? GREEN : C.red) : BORDER}`,
               background: m ? (passed ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.06)") : "var(--sch-card-2)",
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.4, color: m ? (passed ? GREEN : "#EF4444") : DIM }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.4, color: m ? (passed ? GREEN : C.red) : DIM }}>
               MOCK {i + 1}
             </div>
             <div style={{ fontSize: 12.5, fontWeight: 750, color: m ? TEXT : DIM, marginTop: 2 }}>
@@ -191,9 +191,9 @@ export default function JourneyMap({ paperId, onBack }: { paperId: string; onBac
                       </div>
                       <div style={{ fontSize: 11.5, color: MUTED, marginTop: 2, lineHeight: 1.45 }}>Celebrate · progress updates · next paper unlocks.</div>
                     </div>
-                    <div style={{ ...card({ padding: "10px 12px", borderRadius: 12 }), borderLeft: "3px solid #EF4444" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 800, color: "#EF4444" }}>
-                        <Icon name="support" size={13} color="#EF4444" /> NOT YET
+                    <div style={{ ...card({ padding: "10px 12px", borderRadius: 12 }), borderLeft: `3px solid ${C.red}` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 800, color: C.red }}>
+                        <Icon name="support" size={13} color={C.red} /> NOT YET
                       </div>
                       <div style={{ fontSize: 11.5, color: MUTED, marginTop: 2, lineHeight: 1.45 }}>Reflection session · examiner analysis · new date · new roadmap.</div>
                     </div>

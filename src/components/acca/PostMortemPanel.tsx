@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react"
 import { motion } from "motion/react"
 import { getPostMortem, type PostMortem, type PostMortemAction, type PostMortemInput } from "@/lib/acca-ai"
 import { learnerProfileSummary } from "@/lib/acca-diagnostic"
-import { Icon, type IconName } from "@/components/acca/ui"
+import { Icon, type IconName, C } from "@/components/acca/ui"
 
 /*
  * The AI post-mortem — shown after a FAILED mock (and reused, via kind="exam",
@@ -96,7 +96,7 @@ export default function PostMortemPanel({
                     transition={{ delay: 0.1 + i * 0.08 }}
                     style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", borderRadius: 11, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)" }}
                   >
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#EF4444", padding: "2px 7px", borderRadius: 7, background: "rgba(239,68,68,0.12)", flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: C.red, padding: "2px 7px", borderRadius: 7, background: "rgba(239,68,68,0.12)", flexShrink: 0 }}>
                       {l.area}
                     </span>
                     <span style={{ fontSize: 12.5, color: TEXT, lineHeight: 1.5 }}>{l.detail}</span>

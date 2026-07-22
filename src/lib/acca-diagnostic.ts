@@ -419,11 +419,13 @@ export function estimateFromPractice(paperId: string): DiagnosticResult | null {
   })
 }
 
-/** UI band for a pass probability: colour + short verdict. */
+/** UI band for a pass probability: colour + short verdict.
+ * Colours mirror the app palette `C` (green/amber/red) — hardcoded here because
+ * `C` lives in a component module (`acca/ui`) we don't import into lib code. */
 export function passBand(prob: number): { label: string; color: string } {
-  if (prob >= 70) return { label: "Highly ready", color: "#10B981" }
-  if (prob >= 45) return { label: "Building readiness", color: "#F59E0B" }
-  if (prob > 0) return { label: "Not ready yet", color: "#EF4444" }
+  if (prob >= 70) return { label: "Highly ready", color: "#0E9F6E" }
+  if (prob >= 45) return { label: "Building readiness", color: "#C2740B" }
+  if (prob > 0) return { label: "Not ready yet", color: "#DC2626" }
   return { label: "Take the diagnostic", color: "#94A3B8" }
 }
 
