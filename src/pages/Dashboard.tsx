@@ -96,6 +96,15 @@ export default function Dashboard() {
   // (paper choice, exam date, commitment), never straight to a default "FA".
   if (!isAccaOnboarded()) return <Navigate to="/welcome" replace />
 
+  // A "measure-first" learner must run the diagnostic (→ results → plan reveal)
+  // BEFORE ever reaching the internal app — no slipping into the dashboard first.
+  // Total beginners (startMode "zero") are exempt: their wow is the onboarding
+  // plan-reveal, and forcing a diagnostic on zero knowledge is pointless. Once
+  // the diagnostic is done `prob` is set, so this never loops.
+  if (getStartMode() !== "zero" && prob === null) {
+    return <Navigate to="/study/diagnostic?next=paywall" replace />
+  }
+
   if (!paper) return null
 
   if (!content.ready) {

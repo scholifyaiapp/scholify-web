@@ -225,7 +225,6 @@ export default function Welcome() {
   // Each finish path IS the experience answer, so the loop knows the persona from
   // the learner's actual choice (career→professional is already set in persist()).
   const finishToDiagnostic = () => { if (getExperience() !== "professional") setExperience("some"); persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" }); navigate("/study/diagnostic?next=paywall") }
-  const finishSkip = () => { persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "skip" }); navigate("/dashboard") }
   // Brand-new learner: study FIRST — the Dashboard gates the diagnostic
   // behind initial coverage instead of testing zero knowledge. Their wow
   // moment is the plan-generation reveal (the assess path gets its reveal
@@ -277,7 +276,6 @@ export default function Welcome() {
         goal={goal}
         recommendZero={recommendZero}
         onDiagnostic={finishToDiagnostic}
-        onSkip={finishSkip}
         onZero={finishZero}
         isMobile={isMobile}
       />
@@ -410,12 +408,7 @@ export default function Welcome() {
                 </button>
               </>
             ) : (
-              <>
-                <PrimaryBtn onClick={finishToDiagnostic} big>Find my Exam Readiness Score</PrimaryBtn>
-                <button onClick={finishSkip} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
-                  I'd rather just start learning
-                </button>
-              </>
+              <PrimaryBtn onClick={finishToDiagnostic} big>Find my Exam Readiness Score</PrimaryBtn>
             )
           ) : (
             <>
@@ -847,7 +840,7 @@ function GoalSlide({
 }
 
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, recommendZero, onDiagnostic, onSkip, onZero, isMobile,
+  paper, minutes, slot, examDate, sitting, goal, recommendZero, onDiagnostic, onZero, isMobile,
 }: {
   paper: string
   minutes: number
@@ -857,7 +850,6 @@ function ReadySlide({
   goal: Goal | null
   recommendZero: boolean
   onDiagnostic: () => void
-  onSkip: () => void
   onZero: () => void
   isMobile: boolean
 }) {
@@ -913,14 +905,9 @@ function ReadySlide({
               </button>
             </>
           ) : (
-            <>
-              <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-                Find my Exam Readiness Score
-              </motion.button>
-              <button onClick={onSkip} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
-                I'd rather just start learning
-              </button>
-            </>
+            <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
+              Find my Exam Readiness Score
+            </motion.button>
           )}
         </div>
       )}

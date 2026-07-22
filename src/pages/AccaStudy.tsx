@@ -60,7 +60,7 @@ import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
 import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
-import { isAccaOnboarded } from "@/lib/acca-profile"
+import { isAccaOnboarded, getStartMode } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
 import { officialResources } from "@/lib/acca-resources"
@@ -126,7 +126,18 @@ export default function AccaStudy() {
 
   // The onboarding experience lives at /welcome (full-screen flow).
   useEffect(() => {
-    if (!wasOnboarded()) navigate("/welcome", { replace: true })
+    if (!wasOnboarded()) {
+      navigate("/welcome", { replace: true })
+      return
+    }
+    // A measure-first learner must finish the diagnostic (→ results → plan reveal)
+    // before the study app. Total beginners (startMode "zero") are exempt — their
+    // wow is the onboarding plan-reveal. Once the diagnostic is done passProbability
+    // is set, so this never loops.
+    const pid = getCurrentPaper()
+    if (pid && getStartMode() !== "zero" && passProbability(pid) === null) {
+      navigate("/study/diagnostic?next=paywall", { replace: true })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [tick, setTick] = useState(0) // force stats refresh after a session
