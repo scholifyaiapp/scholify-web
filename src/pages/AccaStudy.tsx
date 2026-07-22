@@ -52,7 +52,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, setPendingTodayTask, resolvePendingTodayTask, type TodayAction } from "@/lib/acca-today"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, type TodayAction } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
@@ -1105,6 +1105,13 @@ function Overview({
           : `You're at ${prob}% vs a ${targetProb}% target. At ${plan.dailyMinutes || 60} min/day, keep the loop — I'll green-light your ${paper.id} sitting the moment your readiness holds there.`
   // ACCA's own technical articles for this paper (examining-team explainers).
   const techArticle = officialResources(paper.id).find((r) => /technical article/i.test(r.title))
+  // Today-mission completion: the plan's tasks (topic learn, essentials, practice,
+  // flashcards…) plus the optional technical article — drives the animated ring.
+  const doneTasks = todayPlan.filter((t) => todayDone.includes(t.id)).length
+  const articleDone = techArticle ? todayDone.includes("article") : false
+  const missionDone = doneTasks + (articleDone ? 1 : 0)
+  const missionTotal = todayPlan.length + (techArticle ? 1 : 0)
+  const missionPct = missionTotal > 0 ? Math.round((missionDone / missionTotal) * 100) : 0
 
   // Keep the Pass Momentum trend fed even on read-only visits.
   useEffect(() => {
@@ -1194,6 +1201,18 @@ function Overview({
         <div style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>{greeting(firstName)}</div>
         <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{todayHeadline(paper.id)}</div>
 
+        {/* Animated today-mission ring — fills as each part of the plan is done */}
+        <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 6px" }}>
+          <RingGauge
+            value={missionPct}
+            size={126}
+            stroke={11}
+            color={missionPct >= 100 ? C.green : "#C80000"}
+            label="TODAY'S MISSION"
+            sublabel={missionPct >= 100 ? "Complete — great work!" : `${missionDone} of ${missionTotal} done`}
+          />
+        </div>
+
         {/* Charles's exam-timing read — honest, tied to readiness + daily pace */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "var(--sch-card-2)" }}>
           <Icon name="tutor" size={15} color="#C80000" style={{ marginTop: 1, flexShrink: 0 }} />
@@ -1211,7 +1230,7 @@ function Overview({
           <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 750, color: DIM }}>
             {(() => {
               const t = getTodayStats()
-              return t.goalMet ? "goal met" : `${todayDone.length} of ${todayPlan.length} done`
+              return t.goalMet ? "goal met" : `${doneTasks} of ${todayPlan.length} done`
             })()}
           </span>
         </div>
@@ -1278,18 +1297,19 @@ function Overview({
             href={techArticle.url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${BORDER}`, background: "var(--sch-bg)" }}
+            style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${articleDone ? C.green : BORDER}`, background: "var(--sch-bg)" }}
           >
-            <IconBadge name="learn" tone="neutral" size={38} />
+            <IconBadge name={articleDone ? "done" : "learn"} tone={articleDone ? "green" : "neutral"} size={38} />
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
                 Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
               </span>
               <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>Examining-team explainer for {paper.id} · optional deepen</span>
             </span>
-            <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />
+            {articleDone ? <Icon name="done" size={16} color={C.green} style={{ flexShrink: 0 }} /> : <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />}
           </motion.a>
         )}
       </motion.div>
