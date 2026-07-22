@@ -128,12 +128,17 @@ export function resolvePendingTodayTask(paperId: string): boolean {
     const raw = window.localStorage.getItem(PENDING_KEY)
     if (!raw) return false
     const p = JSON.parse(raw) as { paperId?: string; taskId?: string; day?: string }
-    window.localStorage.removeItem(PENDING_KEY)
     const today = new Date().toISOString().slice(0, 10)
-    if (p.paperId === paperId && typeof p.taskId === "string" && p.day === today) {
-      markTodayTaskDone(paperId, p.taskId)
-      return true
+    // A stale marker from a previous day is useless — discard it.
+    if (p.day !== today) {
+      window.localStorage.removeItem(PENDING_KEY)
+      return false
     }
+    // Belongs to a different paper — leave it for that paper's tab to resolve.
+    if (p.paperId !== paperId || typeof p.taskId !== "string") return false
+    window.localStorage.removeItem(PENDING_KEY)
+    markTodayTaskDone(paperId, p.taskId)
+    return true
   } catch {
     /* ignore */
   }
