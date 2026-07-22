@@ -48,7 +48,7 @@ function NoteCard({ note, index }: { note: StudyNote; index: number }) {
             </span>
           )}
           {note.area && (
-            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "var(--sch-card2, #F4F1EC)", color: C.soft }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "var(--sch-card-2)", color: C.soft }}>
               Area {note.area}
             </span>
           )}
@@ -149,7 +149,7 @@ export default function NotesHub() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         style={{ maxWidth: 760, margin: "0 auto" }}
       >
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--sch-text)", letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: 10 }}>
+        <h1 style={{ fontSize: 27, fontWeight: 800, color: "var(--sch-text)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: 10 }}>
           <Icon name="notes" size={22} color={C.brand} /> My notes
         </h1>
         <p style={{ fontSize: 14, color: "var(--sch-tx-3)", marginTop: 4 }}>

@@ -8,7 +8,7 @@ import { isProUser } from "@/lib/entitlement"
 import { Icon, Card, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, bandColor } from "@/components/acca/charts"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
-import { getPaper, getPaperStats, getTodayStats, getDailyActivity } from "@/lib/acca"
+import { getPaper, getTodayStats, getDailyActivity } from "@/lib/acca"
 import { getMockHistory } from "@/lib/acca"
 import { passBand } from "@/lib/acca-diagnostic"
 import { daysUntilExam, currentPhase, METHOD_PHASES, getPlan } from "@/lib/acca-plan"
@@ -106,7 +106,6 @@ export default function Dashboard() {
   // Brand-new learners (start mode "zero") learn the basics BEFORE the
   // diagnostic: it unlocks only once sections A·B·C are each studied,
   // practised and revised — the point where a pass probability means something.
-  const stats = getPaperStats(paperId)
   const gateS = diagnosticGate(paperId)
   const zeroStart = noDiag && getStartMode() === "zero" && !gateS.unlocked
   const missedNote = missedDayNote(paperId)
@@ -130,7 +129,10 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* Missed-day voice — Lara reassures, never guilts (Doc 12, Phase 3). */}
+        {/* Charles's pit-wall briefing — reassures, never guilts (Doc 12, Phase 3).
+            The line is state-aware: a brand-new or pre-diagnostic learner has no
+            "lost marks" to recover, so only a learner with a real result hears
+            the recovery framing. */}
         {!examDue && (
           <motion.div
             className="race-panel"
@@ -141,7 +143,11 @@ export default function Dashboard() {
             <CharlesAvatar size={38} />
             <div style={{ minWidth: 0, fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
               <strong style={{ color: C.text }}>Charles · pit-wall briefing:</strong>{" "}
-              recover the lost marks, complete today's race plan, then use every result to adjust the route to your next sitting.
+              {zeroStart
+                ? "learn the first sections, then sit the diagnostic — I'll build your race plan from your real result."
+                : noDiag
+                  ? "sit the diagnostic when you're ready and I'll turn the result into a focused daily race plan."
+                  : "complete today's race plan, then use every result to adjust the route to your next sitting."}
             </div>
           </motion.div>
         )}

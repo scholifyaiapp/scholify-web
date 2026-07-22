@@ -170,7 +170,7 @@ function headlineFor(section: Section, paperId: string, bandLabel: string | null
   const rec = recoveryState(paperId)
   switch (section) {
     case "progress":
-      return bandLabel ? `${bandLabel.replace(/\.$/, "")} ${paperId}`.replace("On track to pass", "On track to pass") : `Where you stand on ${paperId}`
+      return bandLabel ? `${bandLabel.replace(/\.$/, "")} ${paperId}` : `Where you stand on ${paperId}`
     case "learning":
       return "Your knowledge, topic by topic"
     case "study":
@@ -477,8 +477,8 @@ function QualificationBlock({ currentPaperId }: { currentPaperId: string }) {
 function Stepper({ label, value, max, onChange }: { label: string; value: number; max: number; onChange: (v: number) => void }) {
   const pct = Math.min(100, Math.round((value / max) * 100))
   const btn: CSSProperties = {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: R.sm,
     border: `1px solid ${C.border}`,
     background: C.card,

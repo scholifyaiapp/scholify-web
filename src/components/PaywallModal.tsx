@@ -7,7 +7,7 @@ import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
-import LaraAvatar from "@/components/LaraAvatar"
+import CharlesAvatar from "@/components/LaraAvatar"
 import { Icon, type IconName } from "@/components/acca/ui"
 import type { PaywallType } from "@/hooks/usePaywall"
 
@@ -63,7 +63,7 @@ const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
 /* ── Celebration particles ───────────────────────────────────── */
 
 function Particles() {
-  const colors = ["#D92E10", "#E50068", "#F4A405"]
+  const colors = ["#C80000", "#E50068", "#F4A405"]
   return (
     <div
       aria-hidden
@@ -111,7 +111,11 @@ export default function PaywallModal({
   const [notice, setNotice] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
 
-  const dismissible = type !== "streak7"
+  // Every paywall must be dismissible. The streak-7 celebration used to trap
+  // the user (no close, no Escape, no backdrop) — and when payments aren't open
+  // its checkout buttons no-op, so a free user hitting a 7-day streak had no way
+  // back into the app. "Everything else stays free" means they can always leave.
+  const dismissible = true
   const header = HEADERS[type]
 
   // Payments only work when Stripe billing is configured — otherwise the buttons
@@ -142,7 +146,7 @@ export default function PaywallModal({
           particleCount: 140,
           spread: 90,
           origin: { y: 0.5 },
-          colors: ["#D92E10", "#E50068", "#F4A405", "#34D399", "#FBBF24"],
+          colors: ["#C80000", "#E50068", "#F4A405", "#10B981"],
         })
       } catch {
         /* confetti is decorative */
@@ -256,7 +260,7 @@ export default function PaywallModal({
                 {header.kind === "celebrate" && <Particles />}
                 {header.kind === "lara" ? (
                   <div style={{ position: "relative", zIndex: 1 }}>
-                    <LaraAvatar size={48} />
+                    <CharlesAvatar size={48} />
                   </div>
                 ) : (
                   <span style={{ position: "relative", zIndex: 1, display: "inline-flex" }}>
@@ -350,8 +354,8 @@ export default function PaywallModal({
                         padding: "2px 7px",
                         borderRadius: 8,
                         background:
-                          f.badge === "NEW" ? "rgba(52,211,153,0.2)" : "rgba(200,0,0,0.2)",
-                        color: f.badge === "NEW" ? "#34D399" : "#D92E10",
+                          f.badge === "NEW" ? "rgba(14,159,110,0.14)" : "rgba(200,0,0,0.2)",
+                        color: f.badge === "NEW" ? "#0E9F6E" : "#C80000",
                       }}
                     >
                       {f.badge}
@@ -426,9 +430,9 @@ export default function PaywallModal({
                       fontSize: 10,
                       padding: "3px 8px",
                       borderRadius: 8,
-                      background: "rgba(52,211,153,0.1)",
-                      color: "#34D399",
-                      border: "1px solid rgba(52,211,153,0.2)",
+                      background: "rgba(14,159,110,0.10)",
+                      color: "#0E9F6E",
+                      border: "1px solid rgba(14,159,110,0.22)",
                     }}
                   >
                     Save 33%
@@ -445,7 +449,7 @@ export default function PaywallModal({
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    style={{ fontSize: 12, color: "#D92E10", marginBottom: 10 }}
+                    style={{ fontSize: 12, color: "#C80000", marginBottom: 10 }}
                   >
                     {notice}
                   </motion.div>

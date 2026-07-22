@@ -46,6 +46,7 @@ import {
 } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { entitlementOf } from "@/lib/entitlement"
+import { cancelStripeSubscription } from "@/lib/stripe"
 import { avatarUrlOf, onAvatarChange, saveAvatar, removeAvatar, AVATAR_MAX_SOURCE_MB, type AvatarError } from "@/lib/avatar"
 import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
 
@@ -466,7 +467,7 @@ function TimeInput({ value, onChange }: { value: string; onChange: (v: string) =
         color: "var(--sch-text)",
         background: "var(--sch-card)",
         border: "1px solid var(--sch-border)",
-        colorScheme: "dark",
+        colorScheme: "light dark",
       }}
     />
   )
@@ -673,6 +674,15 @@ export default function Settings() {
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Learner"
   const ent = entitlementOf(user)
   const isPaid = ent.isPaid
+  // The label and billing line must reflect the ACTUAL plan — a Beginner or
+  // Annual Pro subscriber was previously shown "Pro · $14.99/month".
+  const planLabel = ent.plan === "beginner" ? "Beginner" : ent.plan === "annual_pro" ? "Annual Pro" : "Pro"
+  const planBilling =
+    ent.plan === "beginner"
+      ? "Billed monthly · $9.99/month"
+      : ent.plan === "annual_pro"
+        ? "Billed annually · $119.99/year"
+        : "Billed monthly · $14.99/month"
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "2026"
 
   /* Referrals */
@@ -799,22 +809,18 @@ export default function Settings() {
     }
     try {
       const { data } = await supabase.auth.getSession()
-      const token = data.session?.access_token
-      if (!token) {
+      if (!data.session?.access_token) {
         toast.error("Please sign in again to manage billing")
         return
       }
-      const res = await fetch("/api/paddle?action=cancel", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; reason?: string }
-      if (body.ok) {
+      // Cancel through the SAME rail we sell on: Stripe. Checkout everywhere
+      // (Pricing + the paywall) uses Stripe, so a subscriber has a Stripe
+      // subscription, not a Paddle one — cancelling via Paddle always missed it.
+      const ok = await cancelStripeSubscription()
+      if (ok) {
         toast.success("Plan will end at the period close — access stays until then")
-      } else if (body.reason === "no_subscription" || body.reason === "not_configured") {
-        toast.info("No active subscription found on this account")
       } else {
-        toast.error("Couldn't cancel right now — please try again or contact support")
+        toast.info("Couldn't find an active subscription to cancel — contact support if this looks wrong")
       }
     } catch {
       toast.error("Couldn't reach billing — please try again")
@@ -1253,11 +1259,11 @@ export default function Settings() {
             <div>
               <div style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="trophy" size={18} color={C.brand} />
-                {isPaid ? "Pro" : ent.isTrial ? "Pro trial" : "Free plan"}
+                {isPaid ? planLabel : ent.isTrial ? "Pro trial" : "Free plan"}
               </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4, lineHeight: 1.6 }}>
                 {isPaid
-                  ? "Billed monthly · $14.99/month"
+                  ? planBilling
                   : ent.isTrial
                     ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} of Pro left — mocks, the AI Examiner and custom practice are all unlocked. After it ends you keep the full free plan.`
                     : "No time limit. Timed mocks, the AI Examiner and custom practice are the paid modes."}

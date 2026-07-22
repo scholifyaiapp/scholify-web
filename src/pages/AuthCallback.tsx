@@ -2,7 +2,8 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion } from "motion/react"
 import { supabase } from "@/lib/supabase"
-import { IRIDESCENT, Spinner } from "@/components/auth/auth-ui"
+import { Spinner } from "@/components/auth/auth-ui"
+import { Icon } from "@/components/acca/ui"
 
 /*
  * OAuth return handler. Google (and any future provider) redirects here
@@ -81,14 +82,14 @@ export default function AuthCallback() {
                 height: 56,
                 margin: "0 auto",
                 borderRadius: "50%",
-                background: IRIDESCENT,
+                background: "rgba(220,38,38,0.08)",
+                border: "1px solid rgba(220,38,38,0.22)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 28,
               }}
             >
-              ⚠️
+              <Icon name="alert" size={26} color="#DC2626" strokeWidth={2} />
             </div>
             <h1
               style={{

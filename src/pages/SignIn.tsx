@@ -119,7 +119,6 @@ function ForgotPasswordModal({
                 <motion.button
                   type="button"
                   onClick={onClose}
-                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   style={{
                     width: "100%",
@@ -176,7 +175,6 @@ function ForgotPasswordModal({
                   <motion.button
                     type="submit"
                     disabled={sending}
-                    whileHover={sending ? undefined : { scale: 1.02 }}
                     whileTap={sending ? undefined : { scale: 0.98 }}
                     style={{
                       flex: 1,

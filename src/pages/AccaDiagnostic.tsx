@@ -53,9 +53,11 @@ const CARD = "var(--sch-card)"
 const CARD2 = "var(--sch-card-2)"
 const BORDER = "var(--sch-border)"
 const BG = "var(--sch-bg)"
-const GREEN = "#10B981"
-const RED = "#EF4444"
-const AMBER = "#F59E0B"
+// Status colors come from the shared token map (bible §2.2) so the diagnostic
+// reads in the same red/green/amber as the rest of the app, in both themes.
+const GREEN = C.green
+const RED = C.red
+const AMBER = C.amber
 
 // The onboarding funnel is two DISTINCT wow moments, each with its own loader,
 // split by a button press — never one continuous scroll:
