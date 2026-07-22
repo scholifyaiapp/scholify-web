@@ -30,6 +30,7 @@ import { persistDiagnostic, fetchLatestDiagnostic, queueAccaProgressPush } from 
 import { MOCK_PASS } from "@/lib/acca-loop"
 import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
+import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
 import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
 import RevealExperience from "@/components/acca/RevealExperience"
@@ -68,25 +69,22 @@ type Phase = "intro" | "assessing" | "analyzing" | "results" | "reveal" | "plan"
 
 /* ── Question card (in-assessment) ────────────────────────────── */
 
+/** A stored diagnostic answer: MCQ index, multi indices, or the raw numeric text. */
+type DiagResponse = number | number[] | string
+
 function QuestionCard({
   q,
-  onAnswer,
+  value,
+  onChange,
 }: {
   q: AccaQuestion
-  onAnswer: (response: number | number[]) => void
+  value: DiagResponse | undefined
+  onChange: (response: DiagResponse) => void
 }) {
-  const [single, setSingle] = useState<number | null>(null)
-  const [multi, setMulti] = useState<number[]>([])
-  const [num, setNum] = useState("")
-
-  const canSubmit =
-    q.type === "mcq" ? single !== null : q.type === "multi" ? multi.length > 0 : num.trim() !== ""
-
-  function submit() {
-    if (q.type === "mcq" && single !== null) onAnswer(single)
-    else if (q.type === "multi") onAnswer([...multi].sort((a, b) => a - b))
-    else if (q.type === "number") onAnswer(parseFloat(num))
-  }
+  // Controlled by the parent's per-index store, so navigating back restores the pick.
+  const numStr = typeof value === "string" ? value : ""
+  const single = typeof value === "number" ? value : null
+  const multi = Array.isArray(value) ? value : []
 
   return (
     <div>
@@ -99,15 +97,11 @@ function QuestionCard({
 
       {q.type === "number" ? (
         <input
-          type="number"
+          type="text"
           inputMode="decimal"
-          value={num}
-          onChange={(e) => setNum(e.target.value)}
+          value={numStr}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={q.unit ? `Enter amount (${q.unit})` : "Enter your answer"}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && canSubmit) submit()
-          }}
           style={{
             width: "100%",
             boxSizing: "border-box",
@@ -128,8 +122,8 @@ function QuestionCard({
               <button
                 key={i}
                 onClick={() => {
-                  if (q.type === "mcq") setSingle(i)
-                  else setMulti((m) => (m.includes(i) ? m.filter((x) => x !== i) : [...m, i]))
+                  if (q.type === "mcq") onChange(i)
+                  else onChange(multi.includes(i) ? multi.filter((x) => x !== i) : [...multi, i].sort((a, b) => a - b))
                 }}
                 style={{
                   textAlign: "left",
@@ -170,10 +164,6 @@ function QuestionCard({
           })}
         </div>
       )}
-
-      <Button onClick={submit} disabled={!canSubmit} size="lg" full style={{ marginTop: 22 }}>
-        Next <Icon name="arrow" size={17} color="#fff" />
-      </Button>
     </div>
   )
 }
@@ -198,6 +188,10 @@ export default function AccaDiagnostic() {
   const content = usePaperContent(paperId)
   const [questions, setQuestions] = useState<AccaQuestion[]>([])
   const [idx, setIdx] = useState(0)
+  // Exam-style: answers live per index so the learner can jump around and change
+  // them; grading happens once, at Finish (or when the clock hits zero).
+  const [responses, setResponses] = useState<Record<number, DiagResponse>>({})
+  const [flags, setFlags] = useState<Record<number, boolean>>({})
   const answersRef = useRef<AnsweredDiagnostic[]>([])
   const [result, setResult] = useState<DiagnosticResult | null>(null)
   const [prior, setPrior] = useState<DiagnosticResult | null>(() => getLatestDiagnostic(defaultPaper))
@@ -248,6 +242,8 @@ export default function AccaDiagnostic() {
     const qs = buildDiagnostic(paperId)
     if (qs.length === 0) return
     answersRef.current = []
+    setResponses({})
+    setFlags({})
     // De-biased on the way in: options shuffled, `correct` remapped. The
     // clones are what the learner sees and what gradeQuestion marks against.
     setQuestions(qs.map((q) => withShuffledOptions(q)))
@@ -257,18 +253,44 @@ export default function AccaDiagnostic() {
     setPhase("assessing")
   }
 
-  function answer(response: number | number[]) {
-    const q = questions[idx]
-    const graded = gradeQuestion(q, response)
-    answersRef.current.push({ q, correct: graded.correct })
-    // The diagnostic is real practice — feed the mastery/streak store too.
-    recordAnswer(paperId, q, graded.correct)
+  // Has index i been given a usable answer? (drives the map + "N done" count)
+  function isAnswered(i: number): boolean {
+    const r = responses[i]
+    const q = questions[i]
+    if (r === undefined || !q) return false
+    if (q.type === "number") return typeof r === "string" && r.trim() !== "" && !Number.isNaN(parseFloat(r.replace(/,/g, "")))
+    if (q.type === "multi") return Array.isArray(r) && r.length > 0
+    return typeof r === "number" && r >= 0
+  }
+  const answeredCount = questions.reduce((n, _q, i) => n + (isAnswered(i) ? 1 : 0), 0)
 
-    if (idx + 1 < questions.length) {
-      setIdx(idx + 1)
-    } else {
-      endAssessing()
-    }
+  // Grade every answered question once, in order, then hand off to the reveal.
+  // Unanswered questions are simply skipped — the score is honest about coverage.
+  function finishAssessing() {
+    const graded: AnsweredDiagnostic[] = []
+    questions.forEach((q, i) => {
+      const r = responses[i]
+      if (r === undefined) return
+      let resp: number | number[]
+      if (q.type === "number") {
+        if (typeof r !== "string" || r.trim() === "") return
+        const n = parseFloat(r.replace(/,/g, ""))
+        if (Number.isNaN(n)) return
+        resp = n
+      } else if (q.type === "multi") {
+        if (!Array.isArray(r) || r.length === 0) return
+        resp = r
+      } else {
+        if (typeof r !== "number") return
+        resp = r
+      }
+      const g = gradeQuestion(q, resp)
+      graded.push({ q, correct: g.correct })
+      // The diagnostic is real practice — feed the mastery/streak store too.
+      recordAnswer(paperId, q, g.correct)
+    })
+    answersRef.current = graded
+    endAssessing()
   }
 
   // Score, persist, track — the one place the result is finalized.
@@ -294,7 +316,8 @@ export default function AccaDiagnostic() {
   const endAssessing = () => {
     setPhase("analyzing")
   }
-  endAssessingRef.current = endAssessing
+  // The clock hitting zero grades whatever's answered, same as tapping Finish.
+  endAssessingRef.current = finishAssessing
 
   const diagnosticPhases: RevealPhase[] = [
     { icon: "check", label: "Reading your answers", sub: "Every response, weighted by difficulty — a hard one right counts for more." },
@@ -468,9 +491,26 @@ export default function AccaDiagnostic() {
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.22 }}
                 >
-                  <QuestionCard q={questions[idx]} onAnswer={answer} />
+                  <QuestionCard
+                    q={questions[idx]}
+                    value={responses[idx]}
+                    onChange={(v) => setResponses((m) => ({ ...m, [idx]: v }))}
+                  />
                 </motion.div>
               </AnimatePresence>
+
+              <QuestionNavBar
+                cursor={idx}
+                total={questions.length}
+                answeredCount={answeredCount}
+                isAnswered={isAnswered}
+                isFlagged={(i) => !!flags[i]}
+                currentFlagged={!!flags[idx]}
+                onGo={setIdx}
+                onToggleFlag={() => setFlags((m) => ({ ...m, [idx]: !m[idx] }))}
+                onFinish={finishAssessing}
+                finishLabel="Finish & see results"
+              />
             </motion.div>
           )}
 
