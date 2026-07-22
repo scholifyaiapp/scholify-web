@@ -82,10 +82,10 @@ function nextSittings(count = 3): Sitting[] {
 }
 
 const MINUTE_OPTIONS: { v: number; label: string; micro: string }[] = [
-  { v: 15, label: "Focused", micro: "Small but daily beats big but rarely — the loop makes every minute count." },
-  { v: 25, label: "Steady", micro: "The sweet spot most passers protect. We'll aim here." },
-  { v: 40, label: "Committed", micro: "Strong pace — steady mastery every week." },
-  { v: 60, label: "All in", micro: "Serious pace — mock-ready weeks early." },
+  { v: 40, label: "Committed", micro: "The honest minimum for real ACCA progress — steady mastery every week." },
+  { v: 60, label: "All in", micro: "The sweet spot most passers protect. We'll aim here." },
+  { v: 90, label: "Intensive", micro: "Serious pace — mock-ready weeks early." },
+  { v: 120, label: "Full throttle", micro: "Maximum push — for a close exam date." },
 ]
 
 const SLOT_OPTIONS: { label: string; time: string }[] = [
@@ -151,7 +151,7 @@ export default function Welcome() {
   const [passed, setPassed] = useState<Set<string>>(new Set())
   const [showPassed, setShowPassed] = useState(false)
   const [paper, setPaper] = useState<string | null>(null)
-  const [minutes, setMinutes] = useState(25)
+  const [minutes, setMinutes] = useState(60)
   const [slot, setSlot] = useState("19:00")
   const [examDate, setExamDate] = useState("")
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
@@ -212,7 +212,7 @@ export default function Welcome() {
     setStudyingPapers([paper])
     if (goal) setGoal(goal)
     if (goal === "career") setExperience("professional")
-    const questionsPerDay = minutes >= 60 ? 30 : minutes >= 40 ? 22 : minutes >= 25 ? 15 : 10
+    const questionsPerDay = minutes >= 120 ? 55 : minutes >= 90 ? 42 : minutes >= 60 ? 30 : 22
     setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, dailyGoal: questionsPerDay, targetProb: target })
     setDailyGoal(questionsPerDay)
     markAccaOnboarded()
@@ -686,7 +686,7 @@ function TimeSlide({
   return (
     <div style={{ maxWidth: 440 }}>
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <DurationPicker value={minutes} onChange={setMinutes} min={5} max={240} />
+        <DurationPicker value={minutes} onChange={setMinutes} min={40} max={240} />
       </div>
       <div style={{ marginTop: 4, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
         {MINUTE_OPTIONS.map((m) => {

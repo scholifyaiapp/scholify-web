@@ -52,7 +52,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, getTodayDone, setPendingTodayTask, resolvePendingTodayTask, type TodayAction } from "@/lib/acca-today"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, setPendingTodayTask, resolvePendingTodayTask, type TodayAction } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
@@ -1091,6 +1091,20 @@ function Overview({
     setTodayDone(getTodayDone(paper.id))
   }, [paper.id])
   const activeTodayIdx = todayPlan.findIndex((t) => !todayDone.includes(t.id))
+  // Split the daily-minutes commitment across today's tasks (≈10/10/20/… of 60).
+  const taskMins = allocateTaskMinutes(todayPlan, plan.dailyMinutes || 60)
+  // Charles's honest exam-timing read, from readiness vs target + daily pace.
+  const targetProb = plan.targetProb ?? 75
+  const examTimingLine =
+    prob === null
+      ? `Do today's plan and take the diagnostic — then I'll tell you when to book ${paper.id}.`
+      : prob >= targetProb && gate.unlocked
+        ? `You're at ${prob}%, above your ${targetProb}% target — you're in sitting range. Prove it across the mocks, then book ${paper.id}.`
+        : prob >= targetProb
+          ? `You're at ${prob}% — above target on knowledge. Clear the mock gate and you're ready to book ${paper.id}.`
+          : `You're at ${prob}% vs a ${targetProb}% target. At ${plan.dailyMinutes || 60} min/day, keep the loop — I'll green-light your ${paper.id} sitting the moment your readiness holds there.`
+  // ACCA's own technical articles for this paper (examining-team explainers).
+  const techArticle = officialResources(paper.id).find((r) => /technical article/i.test(r.title))
 
   // Keep the Pass Momentum trend fed even on read-only visits.
   useEffect(() => {
@@ -1180,6 +1194,17 @@ function Overview({
         <div style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>{greeting(firstName)}</div>
         <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{todayHeadline(paper.id)}</div>
 
+        {/* Charles's exam-timing read — honest, tied to readiness + daily pace */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "var(--sch-card-2)" }}>
+          <Icon name="tutor" size={15} color="#C80000" style={{ marginTop: 1, flexShrink: 0 }} />
+          <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{examTimingLine}</span>
+        </div>
+
+        {/* Daily focus timer — Start, then work the plan within your daily target */}
+        <div style={{ marginTop: 12 }}>
+          <FocusTimer minutes={plan.dailyMinutes || 60} />
+        </div>
+
         <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "16px 0 8px" }}>
           <Icon name="mission" size={14} color="#C80000" strokeWidth={2.4} />
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>TODAY'S PLAN · THE PLAN ALREADY CHOSE FOR YOU</span>
@@ -1229,7 +1254,7 @@ function Overview({
                   {["①", "②", "③", "④", "⑤"][i] ?? ""} {t.title}
                 </span>
                 <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-                  {locked ? "Finish the step above to unlock this" : `${t.detail} · ~${MISSION_MINUTES[t.action]} min`}
+                  {locked ? "Finish the step above to unlock this" : `${t.detail} · ~${taskMins[i] ?? MISSION_MINUTES[t.action]} min`}
                 </span>
               </span>
               {done ? (
@@ -1245,6 +1270,28 @@ function Overview({
             )
           })}
         </div>
+
+        {/* Optional extra: ACCA's own technical article for this paper (examining
+            team explainers). Shown when ACCA publishes them for the paper. */}
+        {techArticle && (
+          <motion.a
+            href={techArticle.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${BORDER}`, background: "var(--sch-bg)" }}
+          >
+            <IconBadge name="learn" tone="neutral" size={38} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
+                Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
+              </span>
+              <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>Examining-team explainer for {paper.id} · optional deepen</span>
+            </span>
+            <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />
+          </motion.a>
+        )}
       </motion.div>
       </motion.div>
       )}
@@ -2107,6 +2154,75 @@ function fmtTime(s: number): string {
   const m = Math.floor(s / 60)
   const sec = s % 60
   return `${m}:${`${sec}`.padStart(2, "0")}`
+}
+
+/* Daily focus timer — press Start and an animated countdown runs for the
+ * learner's onboarding daily-minutes commitment while they work the plan. */
+function FocusTimer({ minutes }: { minutes: number }) {
+  const total = Math.max(1, minutes) * 60
+  const [left, setLeft] = useState(total)
+  const [running, setRunning] = useState(false)
+  useEffect(() => {
+    if (!running) return
+    const id = setInterval(() => setLeft((s) => (s <= 1 ? 0 : s - 1)), 1000)
+    return () => clearInterval(id)
+  }, [running])
+  useEffect(() => {
+    if (left === 0) setRunning(false)
+  }, [left])
+  const pct = total > 0 ? Math.min(100, ((total - left) / total) * 100) : 0
+  const circ = 2 * Math.PI * 20
+  const mm = Math.floor(left / 60)
+  const ss = left % 60
+  const fresh = left === total && !running
+
+  if (fresh) {
+    return (
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setRunning(true)}
+        style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 13.5, cursor: "pointer" }}
+      >
+        <Icon name="mock" size={15} color="#fff" /> Start {minutes}-min focus session
+      </motion.button>
+    )
+  }
+  return (
+    <div style={{ ...card({ padding: 14 }), display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ position: "relative", width: 46, height: 46, flexShrink: 0 }}>
+        <svg width="46" height="46" viewBox="0 0 46 46">
+          <circle cx="23" cy="23" r="20" fill="none" stroke="var(--sch-card-2)" strokeWidth="4" />
+          <motion.circle
+            cx="23" cy="23" r="20" fill="none" stroke={left === 0 ? C.green : "#C80000"} strokeWidth="4" strokeLinecap="round"
+            strokeDasharray={circ}
+            animate={{ strokeDashoffset: circ * (1 - pct / 100) }}
+            transition={{ duration: 0.6, ease: "linear" }}
+            transform="rotate(-90 23 23)"
+          />
+        </svg>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <motion.div
+          animate={running && left <= 60 ? { opacity: [1, 0.45, 1] } : { opacity: 1 }}
+          transition={{ duration: 1, repeat: running && left <= 60 ? Infinity : 0 }}
+          style={{ fontSize: 20, fontWeight: 850, color: left === 0 ? C.green : TEXT, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}
+        >
+          {left === 0 ? "Done!" : `${mm}:${String(ss).padStart(2, "0")}`}
+        </motion.div>
+        <div style={{ fontSize: 11.5, color: DIM, marginTop: 3 }}>
+          {left === 0 ? "Daily target hit — great work." : running ? "Focus — work through your plan" : "Paused"}
+        </div>
+      </div>
+      {left > 0 && (
+        <button onClick={() => setRunning((r) => !r)} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+          {running ? "Pause" : "Resume"}
+        </button>
+      )}
+      <button onClick={() => { setRunning(false); setLeft(total) }} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: CARD, color: DIM, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+        Reset
+      </button>
+    </div>
+  )
 }
 
 function SessionView({

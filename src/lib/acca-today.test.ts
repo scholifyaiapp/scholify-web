@@ -4,7 +4,29 @@ import {
   markTodayTaskDone,
   setPendingTodayTask,
   resolvePendingTodayTask,
+  allocateTaskMinutes,
+  type TodayTask,
 } from "@/lib/acca-today"
+
+const task = (action: TodayTask["action"]): TodayTask => ({ id: action, icon: "", title: action, detail: "", action })
+
+describe("allocateTaskMinutes", () => {
+  it("splits the daily budget across tasks, roughly summing to it", () => {
+    const tasks = [task("study"), task("essentials"), task("practice"), task("flashcards")]
+    const mins = allocateTaskMinutes(tasks, 60)
+    expect(mins).toHaveLength(4)
+    expect(mins.every((m) => m >= 1)).toBe(true)
+    const total = mins.reduce((a, b) => a + b, 0)
+    expect(Math.abs(total - 60)).toBeLessThanOrEqual(tasks.length) // rounding drift only
+    // practice (heaviest weight) gets the biggest slice
+    expect(Math.max(...mins)).toBe(mins[2])
+  })
+
+  it("never returns zero minutes and handles an empty plan", () => {
+    expect(allocateTaskMinutes([], 60)).toEqual([])
+    expect(allocateTaskMinutes([task("study")], 60)).toEqual([60])
+  })
+})
 
 /*
  * Sequential daily-task unlock. The Today tab reveals the next task only once

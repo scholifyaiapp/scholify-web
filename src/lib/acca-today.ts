@@ -25,6 +25,21 @@ export const MISSION_MINUTES: Record<TodayAction, number> = {
   diagnostic: 15, weak: 25, practice: 20, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 
+/**
+ * Split the learner's daily time budget across today's tasks, weighted by each
+ * task's rough duration, so the minutes shown sum to roughly their onboarding
+ * commitment (60 min → ~10 learn / ~10 essentials / ~20 practice / …). The
+ * structure follows whatever tasks the schedule engine built for this paper and
+ * phase, so it naturally shifts between papers and A/B/C section work.
+ */
+export function allocateTaskMinutes(tasks: TodayTask[], dailyMinutes: number): number[] {
+  if (tasks.length === 0) return []
+  const budget = Math.max(tasks.length, dailyMinutes) // at least ~1 min/task
+  const weights = tasks.map((t) => MISSION_MINUTES[t.action] ?? 10)
+  const sum = weights.reduce((a, b) => a + b, 0) || 1
+  return weights.map((w) => Math.max(1, Math.round((w / sum) * budget)))
+}
+
 export interface TodayTask {
   id: string
   icon: string
