@@ -491,7 +491,7 @@ function persistProgress(p: VocabProgress): void {
 
 const KEY_REPORT = "scholify-vocab-last-report"
 
-/** Show Lara's weekly report once a week, after there's enough to report. */
+/** Show Charles's weekly report once a week, after there's enough to report. */
 export function isWeeklyReportDue(p: VocabProgress = readVocabProgress()): boolean {
   if (p.sessionsCompleted < 3) return false
   try {

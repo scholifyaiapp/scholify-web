@@ -32,9 +32,9 @@ async function aiHeaders(): Promise<Record<string, string>> {
 }
 
 /**
- * Ask Lara to explain a question — optionally a specific follow-up.
+ * Ask Charles to explain a question — optionally a specific follow-up.
  * `learnerContext` is a compact summary of the student's weak areas (see
- * learnerProfileSummary) so Lara can tie the explanation to their weaknesses.
+ * learnerProfileSummary) so Charles can tie the explanation to their weaknesses.
  */
 export async function askTutor(
   q: AccaQuestion,
@@ -140,7 +140,7 @@ export interface PostMortemInput {
 }
 
 /**
- * Ask Lara for a post-mortem on a failed mock (lost marks, weak topics, a
+ * Ask Charles for a post-mortem on a failed mock (lost marks, weak topics, a
  * recovery plan) or a reflection session after a failed real exam. Falls back
  * to a client-side deterministic analysis when offline.
  */

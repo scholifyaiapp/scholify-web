@@ -7,7 +7,7 @@ import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
-import CharlesAvatar from "@/components/LaraAvatar"
+import CharlesAvatar from "@/components/CharlesAvatar"
 import { Icon, type IconName } from "@/components/acca/ui"
 import type { PaywallType } from "@/hooks/usePaywall"
 

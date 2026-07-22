@@ -25,7 +25,7 @@ export interface PaperPlan {
   /**
    * Target pass probability before exam day (the learner's ambition, set at
    * onboarding: 65 pass-ready · 75 confident · 85 bulletproof). The
-   * diagnostic "wow" moment and Lara's plan are framed against this number.
+   * diagnostic "wow" moment and Charles's plan are framed against this number.
    */
   targetProb: number
 }
@@ -204,7 +204,7 @@ export function todayMission(paperId: string): Mission {
       phase,
       title: next ? `Learn area ${next.code} — ${next.label}` : `Practise ${plan.dailyGoal} questions`,
       detail: next
-        ? "Work through it question by question — ask Lara the moment anything is unclear."
+        ? "Work through it question by question — ask Charles the moment anything is unclear."
         : "Steady coverage across the syllabus builds the base everything else stands on.",
       action: "practice",
     }
@@ -276,7 +276,7 @@ export function generateStudyPlan(paperId: string): StudyPlan {
   const dailyTarget = days > 60 ? 12 : days > 30 ? 18 : days > 14 ? 25 : 30
 
   const focuses: Record<MethodPhaseKey, string> = {
-    learn: "Work through each syllabus area in order — practice with explanations, Ask Lara on anything unclear.",
+    learn: "Work through each syllabus area in order — practice with explanations, Ask Charles on anything unclear.",
     strengthen: "Drill your weakest areas with targeted sets and custom AI questions until nothing sits below ~65%.",
     revise: "Flashcards to zero-due, written answers with the AI Examiner, and a second pass on your two weakest areas.",
     rehearse: "Timed mocks under exam conditions every 2–3 days. Review every wrong answer in full.",

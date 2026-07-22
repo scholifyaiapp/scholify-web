@@ -15,7 +15,7 @@ import { daysUntilExam, currentPhase, METHOD_PHASES, getPlan } from "@/lib/acca-
 import { getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
 import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
 import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
-import CharlesAvatar from "@/components/LaraAvatar"
+import CharlesAvatar from "@/components/CharlesAvatar"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"

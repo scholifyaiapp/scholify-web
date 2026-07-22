@@ -1,10 +1,10 @@
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 
 /*
- * Lara's avatar — the photo inside an iridescent gradient ring.
- * Use this anywhere Lara is represented instead of a plain "L" letter.
+ * Charles's avatar — the helmet photo inside an iridescent gradient ring.
+ * Use this anywhere Charles is represented instead of a plain letter.
  */
-export default function LaraAvatar({ size = 32 }: { size?: number }) {
+export default function CharlesAvatar({ size = 32 }: { size?: number }) {
   const ring = Math.max(2, Math.round(size * 0.06))
   return (
     <div

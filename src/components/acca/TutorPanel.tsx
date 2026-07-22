@@ -4,11 +4,11 @@ import { askTutor } from "@/lib/acca-ai"
 import { learnerProfileSummary } from "@/lib/acca-diagnostic"
 import type { AccaQuestion } from "@/lib/acca"
 import { Button, Icon, C, SP } from "@/components/acca/ui"
-import CharlesAvatar from "@/components/LaraAvatar"
+import CharlesAvatar from "@/components/CharlesAvatar"
 
 /*
- * Inline "Ask Lara" tutor — appears under a graded question. The learner can
- * ask a follow-up ("why is B wrong?", "explain simpler") and Lara answers,
+ * Inline "Ask Charles" tutor — appears under a graded question. The learner can
+ * ask a follow-up ("why is B wrong?", "explain simpler") and Charles answers,
  * grounded in the question. Degrades to the model explanation with no API key.
  */
 
@@ -25,7 +25,7 @@ export default function TutorPanel({ q, correctText }: { q: AccaQuestion; correc
   const [answer, setAnswer] = useState<string | null>(null)
   const [input, setInput] = useState("")
 
-  // What Lara "remembers" about this student on this paper — weak areas from
+  // What Charles "remembers" about this student on this paper — weak areas from
   // their diagnostic + live practice. Recomputed per question (cheap, local).
   const learnerContext = useMemo(() => learnerProfileSummary(q.paper), [q.paper])
 

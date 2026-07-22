@@ -6,7 +6,7 @@ import { Icon, type IconName } from "@/components/acca/ui"
 
 /*
  * The AI post-mortem — shown after a FAILED mock (and reused, via kind="exam",
- * inside the real-exam reflection). Lara analyses where the marks were lost,
+ * inside the real-exam reflection). Charles analyses where the marks were lost,
  * names the weak topics, and hands back a 3-step recovery plan whose steps are
  * live buttons into the app's practice modes.
  */

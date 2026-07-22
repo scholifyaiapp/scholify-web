@@ -7,7 +7,7 @@
  * functions exam workings actually use (SUM, AVERAGE, MIN, MAX, COUNT,
  * ROUND, ABS). Pure functions — the grid UI renders on top, and the
  * evaluated sheet can be serialised into the AI Examiner submission so
- * Lara marks the workings, not just the words.
+ * Charles marks the workings, not just the words.
  *
  * Model: raw cell inputs keyed by ref ("A1" → "=SUM(A2:A9)"). Anything
  * starting with "=" is a formula; a plain number is numeric; anything else
@@ -322,7 +322,7 @@ export function displayValue(cell: EvalCell | undefined): string {
 
 /**
  * Serialise the sheet for the AI Examiner: every non-empty cell, formulas
- * shown WITH their result, reading order — so Lara can award method marks
+ * shown WITH their result, reading order — so Charles can award method marks
  * for the workings.
  */
 export function serializeForMarking(cells: Cells): string {

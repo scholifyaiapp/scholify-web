@@ -191,7 +191,7 @@ function shieldStateFrom(rec: ShieldRec, today: string): ShieldState {
 }
 
 /**
- * The missed-day message — Lara telling the learner, calmly, that a gap was
+ * The missed-day message — Charles telling the learner, calmly, that a gap was
  * absorbed and the plan re-spread (Doc 12, Phase 3). The re-spreading already
  * happens (buildDailyTasks recomputes from what remains); this gives it a voice,
  * because the reassurance is the point. Returns null when no days were missed.
@@ -407,7 +407,7 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
       id: "practice",
       icon: "✏️",
       title: `Practise ${n} questions${area.code ? ` — ${area.code} focus` : ""}`,
-      detail: "Instant marking + Ask Lara — turn the chapter into recall",
+      detail: "Instant marking + Ask Charles — turn the chapter into recall",
       action: "practice",
       minutes: Math.round(n * COST.perQ),
       area: area.code || undefined,

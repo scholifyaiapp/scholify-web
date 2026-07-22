@@ -6,7 +6,7 @@ import { Icon, type IconName } from "@/components/acca/ui"
  * CinematicReveal — the emotional "wow" loading moment.
  *
  * The two points in onboarding where the learner should FEEL the product's value
- * are (1) the diagnostic reveal and (2) Lara building their plan. This is the
+ * are (1) the diagnostic reveal and (2) Charles building their plan. This is the
  * shared, premium sequence both use: a layered 3D scene (an orb with orbiting
  * rings and floating depth particles, real CSS 3D — perspective + preserve-3d,
  * so it reads as depth, not a flat spinner) choreographed against staged phases
@@ -162,7 +162,7 @@ export function CinematicReveal({
             </div>
           ))}
 
-          {/* the core — Lara's "mind", pulsing with each phase */}
+          {/* the core — Charles's "mind", pulsing with each phase */}
           <motion.div
             style={{
               position: "absolute",

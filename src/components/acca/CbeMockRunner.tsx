@@ -27,7 +27,7 @@ import type { AccaQuestion } from "@/lib/acca-content"
  *   Section A → Section B → Section C, one exam clock across the sitting,
  *   free navigation with the CBE question navigator, flag-for-review,
  *   scenario blocks for OT cases, and the word processor + spreadsheet for
- *   constructed tasks — which Lara marks as part of the mock's score.
+ *   constructed tasks — which Charles marks as part of the mock's score.
  *
  * The flow every real CBE has: intro (exam summary) → the sitting → review
  * screen (unanswered + flagged) → submit → marking → results. Running out of
@@ -194,7 +194,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
     return a?.choice ?? -1
   }
 
-  /* ── submit → grade OTs, Lara marks the constructed tasks, record ── */
+  /* ── submit → grade OTs, Charles marks the constructed tasks, record ── */
   async function submit(expired = false) {
     if (submittingRef.current) return
     submittingRef.current = true

@@ -16,7 +16,7 @@ import { MOCK_GATE } from "@/lib/acca-loop"
  *
  * The assess path already gets a full reveal after the diagnostic; the
  * zero-start learner used to be dropped on the dashboard with no ceremony at
- * all — their plan silently existed. This is their wow moment: Lara visibly
+ * all — their plan silently existed. This is their wow moment: Charles visibly
  * builds the plan from their ONBOARDING answers (paper, minutes, slot,
  * target, exam date) — honest that it's profile-built, not evidence-built —
  * and shows the exact road: learn the foundations → diagnostic unlocks →

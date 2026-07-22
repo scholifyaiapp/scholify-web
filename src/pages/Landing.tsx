@@ -656,7 +656,7 @@ function FeatureBlock({ tag, title, desc, bullets, visual, reverse, index }: { t
   )
 }
 
-/* ── A — AI Brain visual: Lara generating plan ── */
+/* ── A — AI Brain visual: Charles generating plan ── */
 
 function VisualPlanGen() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
@@ -749,7 +749,7 @@ function VisualExaminer() {
   )
 }
 
-/* ── C — Meet Lara ── */
+/* ── C — Meet Charles ── */
 
 function VisualAIPartnerWidget() {
   const prefersReduced = useReducedMotion()

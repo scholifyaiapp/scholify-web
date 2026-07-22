@@ -2,7 +2,7 @@
  * Scholify — learner profile basics captured at onboarding.
  *
  * Kept in its own tiny module (not acca-loop) so acca-diagnostic can feed the
- * experience level into Lara's learner context without an import cycle.
+ * experience level into Charles's learner context without an import cycle.
  */
 
 export type Experience = "new" | "some" | "professional"

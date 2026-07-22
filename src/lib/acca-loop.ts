@@ -384,7 +384,7 @@ export function getJourneyStages(paperId: string): JourneyStage[] {
       key: "onboarding",
       emoji: "🎓",
       label: "AI onboarding",
-      detail: "Exam, date and experience captured — Lara knows your starting point.",
+      detail: "Exam, date and experience captured — Charles knows your starting point.",
       status: "done",
     },
     {

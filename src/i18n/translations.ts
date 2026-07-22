@@ -42,11 +42,11 @@ export const ru: Record<string, string> = {
   "Start for free": "Начать бесплатно",
 
   /* ── Hero ── */
-  "Lara just got 3× smarter": "Лара стала в 3 раза умнее",
+  "Charles just got 3× smarter": "Чарльз стал в 3 раза умнее",
   "— your AI race engineer marks written answers in seconds": "— ваш ИИ-гоночный инженер проверяет письменные ответы за секунды",
   "Welcome to Scholify": "Добро пожаловать в Scholify",
-  "Set your goal. Lara builds the plan. You just show up.":
-    "Поставьте цель. Лара составит план. Вам остаётся только приходить.",
+  "Set your goal. Charles builds the plan. You just show up.":
+    "Поставьте цель. Чарльз составит план. Вам остаётся только приходить.",
   "learners": "учеников",
   "Free to start": "Бесплатный старт",
   "expert-written questions": "вопросов от экспертов",
@@ -71,12 +71,12 @@ export const ru: Record<string, string> = {
   "From goal to habit in 15 seconds": "От цели к привычке за 15 секунд",
   "CUE": "СИГНАЛ",
   "Set your goal": "Поставьте цель",
-  "Type what you want to learn. Add your deadline. Tell Lara how many minutes you have per day. That's it.":
-    "Напишите, что хотите изучить. Укажите срок. Скажите Ларе, сколько минут в день у вас есть. Вот и всё.",
+  "Type what you want to learn. Add your deadline. Tell Charles how many minutes you have per day. That's it.":
+    "Напишите, что хотите изучить. Укажите срок. Скажите Чарльзу, сколько минут в день у вас есть. Вот и всё.",
   "CRAVING": "ЖЕЛАНИЕ",
-  "Lara builds your plan": "Лара составляет ваш план",
-  "In 15 seconds, Lara generates a complete day-by-day learning plan tailored to your goal, deadline, and time.":
-    "За 15 секунд Лара создаёт полный план обучения по дням с учётом вашей цели, срока и времени.",
+  "Charles builds your plan": "Чарльз составляет ваш план",
+  "In 15 seconds, Charles generates a complete day-by-day learning plan tailored to your goal, deadline, and time.":
+    "За 15 секунд Чарльз создаёт полный план обучения по дням с учётом вашей цели, срока и времени.",
   "RESPONSE → REWARD": "ДЕЙСТВИЕ → НАГРАДА",
   "Show up daily": "Приходите каждый день",
 
@@ -85,7 +85,7 @@ export const ru: Record<string, string> = {
   "Everything you need to actually finish.":
     "Всё, что нужно, чтобы действительно дойти до конца.",
   "AI BRAIN": "ИИ-МОЗГ",
-  "Lara knows your goal inside out.": "Лара знает вашу цель досконально.",
+  "Charles knows your goal inside out.": "Чарльз знает вашу цель досконально.",
   "The Scholify AI engine reads your goal, your deadline, and your daily time — then builds a specific, progressive plan that actually matches your life. Not a generic template.":
     "ИИ-движок Scholify учитывает вашу цель, срок и время в день — и строит конкретный, постепенно усложняющийся план, который действительно подходит вашей жизни. Не шаблон.",
   "Generates unique plans for any learning goal":
@@ -122,12 +122,12 @@ export const ru: Record<string, string> = {
   "YOUR GOAL": "ВАША ЦЕЛЬ",
   "days": "дней",
   "min/day": "мин/день",
-  "Lara is generating your plan…": "Лара составляет ваш план…",
+  "Charles is generating your plan…": "Чарльз составляет ваш план…",
   "PLAN READY": "ПЛАН ГОТОВ",
   "YOUR AI PARTNER · ONLINE": "ВАШ ИИ-ПАРТНЁР · ОНЛАЙН",
-  "Meet Lara.": "Знакомьтесь — Лара.",
-  "Your AI Partner. She knows your goal, your streak, and today's task — every message generated just for you.":
-    "Ваш ИИ-партнёр. Она знает вашу цель, вашу серию и сегодняшнее задание — каждое сообщение создано именно для вас.",
+  "Meet Charles.": "Знакомьтесь — Чарльз.",
+  "Your AI Partner. He knows your goal, your streak, and today's task — every message generated just for you.":
+    "Ваш ИИ-партнёр. Он знает вашу цель, вашу серию и сегодняшнее задание — каждое сообщение создано именно для вас.",
   "typing…": "печатает…",
   "Week": "Неделя",
   "Sessions": "Занятия",
@@ -208,7 +208,7 @@ export const ru: Record<string, string> = {
 
   /* ── Footer ── */
   "15 ACCA Papers": "15 экзаменов ACCA",
-  "AI Tutor Lara": "ИИ-репетитор Лара",
+  "AI Tutor Charles": "ИИ-репетитор Чарльз",
   "AI Examiner": "ИИ-экзаменатор",
   "Daily Goal & Streak": "Дневная цель и серия",
   "Timed Mocks": "Пробные экзамены на время",
@@ -240,9 +240,9 @@ export const ru: Record<string, string> = {
   "User growth": "Рост числа пользователей",
   "View more →": "Подробнее →",
 
-  /* ── Chat / Lara ── */
+  /* ── Chat / Charles ── */
   "Back": "Назад",
-  "Lara": "Лара",
+  "Charles": "Чарльз",
   "Your AI learning partner": "Ваш ИИ-партнёр по обучению",
   "Build me a study plan": "Составь мне план обучения",
   "Explain something I'm stuck on": "Объясни то, в чём я застрял",
@@ -253,16 +253,16 @@ export const ru: Record<string, string> = {
   "Quiz me on what I learned today.": "Проверь меня по тому, что я изучил сегодня.",
   "I'm losing motivation — help me stay on track.":
     "Я теряю мотивацию — помоги не сбиться с пути.",
-  "Hi — I'm Lara.": "Привет — я Лара.",
+  "Hi — I'm Charles.": "Привет — я Чарльз.",
   "Your AI learning partner. Ask me to explain something, build a plan, or just talk through what's slowing you down.":
     "Ваш ИИ-партнёр по обучению. Попросите меня что-нибудь объяснить, составить план или просто обсудите, что вам мешает.",
-  "Ask Lara anything about your learning…":
-    "Спросите Лару о чём угодно по вашему обучению…",
+  "Ask Charles anything about your learning…":
+    "Спросите Чарльза о чём угодно по вашему обучению…",
   "Send message": "Отправить сообщение",
-  "Lara is a demo tutor — responses are illustrative for now.":
-    "Лара — демо-репетитор: ответы пока иллюстративные.",
-  "Hey — good to see you here. I'm Lara, your learning partner. Tell me what you're working toward and I'll help you build the habit to actually get there. What are you learning right now?":
-    "Привет — рада видеть вас здесь. Я Лара, ваш партнёр по обучению. Расскажите, к чему вы стремитесь, и я помогу выработать привычку, чтобы действительно этого достичь. Что вы изучаете сейчас?",
+  "Charles is a demo tutor — responses are illustrative for now.":
+    "Чарльз — демо-репетитор: ответы пока иллюстративные.",
+  "Hey — good to see you here. I'm Charles, your learning partner. Tell me what you're working toward and I'll help you build the habit to actually get there. What are you learning right now?":
+    "Привет — рад видеть вас здесь. Я Чарльз, ваш партнёр по обучению. Расскажите, к чему вы стремитесь, и я помогу выработать привычку, чтобы действительно этого достичь. Что вы изучаете сейчас?",
   "Let's build it. I need three things from you: (1) what you want to learn, (2) your deadline, and (3) how many minutes a day you can realistically give me. Share those and I'll turn them into a day-by-day plan you can actually keep.":
     "Давайте составим. Мне нужны три вещи: (1) что вы хотите изучить, (2) ваш срок и (3) сколько минут в день вы реально готовы уделять. Сообщите их — и я превращу это в план по дням, которого вы действительно сможете придерживаться.",
   "Happy to teach it. Drop the exact topic or question, and tell me your level — total beginner or just rusty. I'll explain it in plain language, give you one concrete example, then check you got it with a quick question.":
@@ -278,7 +278,7 @@ export const ru: Record<string, string> = {
   "Go get some rest — you earned it. Same time tomorrow? Your future self is quietly counting on today's you.":
     "Идите отдохните — вы это заслужили. Завтра в это же время? Ваше будущее «я» тихо рассчитывает на сегодняшнего вас.",
   "Got it. Tell me a little more so I can genuinely help — what are you trying to learn, and what's getting in the way right now? The more specific you are, the more useful I can be.":
-    "Поняла. Расскажите чуть больше, чтобы я действительно помогла — что вы пытаетесь изучить и что сейчас мешает? Чем конкретнее, тем полезнее я буду.",
+    "Понял. Расскажите чуть больше, чтобы я действительно помог — что вы пытаетесь изучить и что сейчас мешает? Чем конкретнее, тем полезнее я буду.",
 
   /* ── Sign in ── */
   "Welcome back.": "С возвращением.",
@@ -381,8 +381,8 @@ export const ru: Record<string, string> = {
   /* ── Nav / hero ── */
   "The AI Examiner is here": "AI-Экзаменатор уже здесь",
   "From F1 to ACCA member.": "От F1 до члена ACCA.",
-  "Tell Lara your next paper and exam date. She builds the plan, marks your answers, and gets you exam-ready.":
-    "Скажите Ларе, какой экзамен следующий и когда. Она составит план, проверит ваши ответы и доведёт до готовности к экзамену.",
+  "Tell Charles your next paper and exam date. He builds the plan, marks your answers, and gets you exam-ready.":
+    "Скажите Чарльзу, какой экзамен следующий и когда. Он составит план, проверит ваши ответы и доведёт до готовности к экзамену.",
   "ACCA students": "студентов ACCA",
   "Start. Pass. Repeat.": "Начни. Сдай. Повтори.",
   "Until you're ACCA.": "Пока не станете ACCA.",
@@ -402,13 +402,13 @@ export const ru: Record<string, string> = {
   /* ── How it works ── */
   "Your exam plan in 60 seconds": "Ваш план подготовки за 60 секунд",
   "YOUR RECORD": "ВАШ ПУТЬ",
-  "Tell Lara where you are": "Скажите Ларе, где вы сейчас",
+  "Tell Charles where you are": "Скажите Чарльзу, где вы сейчас",
   "Mark the papers you've passed, pick your next one, and set your exam date. Takes a minute.":
     "Отметьте сданные экзамены, выберите следующий и укажите дату. Это займёт минуту.",
   "YOUR PLAN": "ВАШ ПЛАН",
   "Get your phased plan": "Получите поэтапный план",
-  "Lara builds a day-by-day plan to exam day: learn the syllabus, drill your weak areas, then timed mocks.":
-    "Лара строит план по дням до самого экзамена: изучение программы, проработка слабых мест, затем пробные экзамены на время.",
+  "Charles builds a day-by-day plan to exam day: learn the syllabus, drill your weak areas, then timed mocks.":
+    "Чарльз строит план по дням до самого экзамена: изучение программы, проработка слабых мест, затем пробные экзамены на время.",
   "THE LOOP": "ЦИКЛ",
   "Practise. Review. Pass.": "Практика. Разбор. Сдача.",
   "Every question is marked instantly with a teaching explanation. Your readiness score climbs until you're exam-ready.":
@@ -481,11 +481,11 @@ export const ru: Record<string, string> = {
   "Everything you need to pass — in one place.": "Всё, что нужно для сдачи, — в одном месте.",
   "QUESTION BANK + AI TUTOR": "БАНК ВОПРОСОВ + AI-РЕПЕТИТОР",
   "Practise like it's the real exam.": "Тренируйтесь как на настоящем экзамене.",
-  "Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. And when you want more, Lara writes fresh exam-style questions on any topic, even from your own notes.":
-    "Оригинальные банки вопросов по программе для каждого экзамена Applied Knowledge и Applied Skills — мгновенная проверка и понятные объяснения. А когда хочется больше, Лара пишет новые вопросы экзаменационного формата на любую тему — даже по вашим конспектам.",
+  "Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. And when you want more, Charles writes fresh exam-style questions on any topic, even from your own notes.":
+    "Оригинальные банки вопросов по программе для каждого экзамена Applied Knowledge и Applied Skills — мгновенная проверка и понятные объяснения. А когда хочется больше, Чарльз пишет новые вопросы экзаменационного формата на любую тему — даже по вашим конспектам.",
   "Curated banks for all nine OT papers": "Готовые банки для всех девяти OT-экзаменов",
   "Instant marking with teaching explanations": "Мгновенная проверка с обучающими объяснениями",
-  "Ask Lara why — on any question, 24/7": "Спросите Лару «почему?» — по любому вопросу, 24/7",
+  "Ask Charles why — on any question, 24/7": "Спросите Чарльза «почему?» — по любому вопросу, 24/7",
   "Unlimited AI questions from topics or your notes": "Безлимитные AI-вопросы по темам или вашим конспектам",
   "Written answers, marked in seconds.": "Письменные ответы — проверка за секунды.",
   "Strategic Professional exams are written — and nobody gives you instant feedback on written answers. Scholify's AI Examiner marks your answer against a marking scheme, point by point, in seconds. That loop used to take a tutor and a week.":
@@ -495,14 +495,14 @@ export const ru: Record<string, string> = {
   "190 written questions, each with its rubric": "190 письменных вопросов, у каждого свои критерии оценки",
   "Trains the skill OT questions can't teach": "Тренирует навык, который не дают OT-вопросы",
   "MEET YOUR AI TUTOR": "ЗНАКОМЬТЕСЬ: ВАШ AI-РЕПЕТИТОР",
-  "Lara is built into Scholify. She knows which papers you've passed, your weak syllabus areas, and today's task. Ask her to explain deferred tax like you're five — she will, at 2am, without judgement.":
-    "Лара встроена в Scholify. Она знает, какие экзамены вы сдали, ваши слабые темы и сегодняшнюю задачу. Попросите объяснить отложенный налог «как пятилетнему» — объяснит, хоть в 2 часа ночи, без осуждения.",
+  "Charles is built into Scholify. He knows which papers you've passed, your weak syllabus areas, and today's task. Ask him to explain deferred tax like you're five — he will, at 2am, without judgement.":
+    "Чарльз встроен в Scholify. Он знает, какие экзамены вы сдали, ваши слабые темы и сегодняшнюю задачу. Попросите объяснить отложенный налог «как пятилетнему» — объяснит, хоть в 2 часа ночи, без осуждения.",
   "Explains any concept — IFRS, audit, tax, costing": "Объяснит любую тему — МСФО, аудит, налоги, костинг",
   "Knows your weak areas and today's plan": "Знает ваши слабые места и план на сегодня",
-  "Built into every practice session": "Встроена в каждую тренировку",
+  "Built into every practice session": "Встроен в каждую тренировку",
   "English and Russian": "Английский и русский",
-  "Your AI tutor. She knows your papers, your readiness, and today's task — every explanation generated just for you.":
-    "Ваш AI-репетитор. Она знает ваши экзамены, вашу готовность и сегодняшнюю задачу — каждое объяснение создаётся именно для вас.",
+  "Your AI tutor. He knows your papers, your readiness, and today's task — every explanation generated just for you.":
+    "Ваш AI-репетитор. Он знает ваши экзамены, вашу готовность и сегодняшнюю задачу — каждое объяснение создаётся именно для вас.",
   "READINESS": "ГОТОВНОСТЬ",
   "Know you're ready before you book.": "Знайте, что готовы, ещё до записи на экзамен.",
   "A readiness score per paper. Accuracy per syllabus area. Full mock history against the pass line. A 30-day study heatmap. Exam day should be a formality, not a gamble.":
@@ -512,7 +512,6 @@ export const ru: Record<string, string> = {
   "Timed mock history against the 50% pass line": "История пробных экзаменов и проходной балл 50%",
   "30-day study heatmap": "Тепловая карта занятий за 30 дней",
   "Your full BT → AAA qualification roadmap": "Полная дорожная карта квалификации BT → AAA",
-  "A human marker takes days. Lara takes seconds.": "Проверяющему нужны дни. Ларе — секунды.",
   "YOUR ANSWER": "ВАШ ОТВЕТ",
   "MARKED IN SECONDS": "ПРОВЕРКА ЗА СЕКУНДЫ",
   "YOUR MARK": "ВАША ОЦЕНКА",

@@ -16,7 +16,7 @@ import CbeToolsDock from "@/components/acca/CbeTools"
  * Strategic Professional). The real exam answer tools are here: the word
  * processor, the answer spreadsheet, the calculator/formulae/notes dock,
  * and the exam clock priced at the official minutes-per-mark. Submit and
- * Lara marks the answer AND the spreadsheet workings against the marking
+ * Charles marks the answer AND the spreadsheet workings against the marking
  * points — the feedback loop a paper mock can't give.
  */
 

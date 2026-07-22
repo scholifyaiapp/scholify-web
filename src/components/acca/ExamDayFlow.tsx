@@ -19,7 +19,7 @@ import { RingGauge } from "@/components/acca/charts"
  *     PASS  → confetti celebration, qualification progress updates, the next
  *             paper unlocks and the loop restarts.
  *     FAIL  → reflection session: emotional support, comparison with mocks,
- *             Lara's examiner analysis, a new exam date → new roadmap.
+ *             Charles's examiner analysis, a new exam date → new roadmap.
  *     WAIT  → snooze while results are pending.
  */
 
@@ -401,7 +401,7 @@ function Reflection({
         </div>
       )}
 
-      {/* Lara's examiner analysis + comeback plan */}
+      {/* Charles's examiner analysis + comeback plan */}
       <PostMortemPanel input={pmInput} onAction={onAction} />
 
       {/* new exam date → new roadmap */}

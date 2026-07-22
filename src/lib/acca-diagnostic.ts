@@ -465,12 +465,12 @@ export function mergeDiagnostic(result: DiagnosticResult): void {
   if (!existing || result.answeredAt > existing.answeredAt) saveDiagnosticLocal(result)
 }
 
-/* ── Learner profile (what Lara "remembers" about you) ────────── */
+/* ── Learner profile (what Charles "remembers" about you) ────────── */
 
 /**
  * A compact, prompt-ready summary of a student's weaknesses on a paper — drawn
  * from their latest diagnostic and their live per-area practice accuracy. This
- * is what makes Lara stateful: fed into the tutor, she can tie explanations to
+ * is what makes Charles stateful: fed into the tutor, she can tie explanations to
  * the areas this student actually struggles with, across sessions. Returns ""
  * when there's nothing learned yet.
  */

@@ -327,7 +327,7 @@ export default function AccaDiagnostic() {
   }
 
   // Onboarding: the full premium reveal takes over the screen — both wow moments
-  // (diagnostic gauge + Lara building the plan), driven by the real result.
+  // (diagnostic gauge + Charles building the plan), driven by the real result.
   if (phase === "reveal" && result) {
     const plan = getPlan(paperId)
     const weak = result.weakest.slice(0, 3).map((w) => ({ code: w.code, name: w.label, pct: Math.round(w.score * 100) }))
@@ -585,7 +585,7 @@ function ResultsView({
       {/* THE STORY, in the order it must land: (1) the score you just saw,
           (2) the pain points — full, ranked, unmissable — the WHY behind it,
           (3) the fastest path those pain points imply, and only THEN
-          (4) Lara building the plan that targets exactly those areas. */}
+          (4) Charles building the plan that targets exactly those areas. */}
       <PainPointsPanel result={result} />
 
       {/* The promise */}
@@ -666,7 +666,7 @@ function ResultsView({
  * complete — the learner should be able to say their weak areas out loud
  * before the plan appears. Two layers: the ranked top-3 (severity cards with
  * the marks each one is worth getting back), then the full syllabus map so
- * nothing assessed is hidden. Only then does Lara build the plan below.
+ * nothing assessed is hidden. Only then does Charles build the plan below.
  */
 
 const BAND_COLOR: Record<"weak" | "moderate" | "strong", string> = {
