@@ -125,6 +125,42 @@ export function markTodayTaskDone(paperId: string, taskId: string): void {
   }
 }
 
+/* ── "Locked In" focus session ────────────────────────────────────────────
+ *
+ * The learner presses Start and the app enters full-focus mode: only today's
+ * mission on screen, a countdown in the corner. The session is stored as an END
+ * timestamp so it SURVIVES navigating into a task and back (the Today view
+ * unmounts while they practise) — on return we recompute the time left. It
+ * clears itself when the clock runs out. */
+const FOCUS_KEY = "scholify-focus-session"
+
+export function startFocusSession(minutes: number): void {
+  try {
+    window.localStorage.setItem(FOCUS_KEY, JSON.stringify({ endsAt: Date.now() + Math.max(1, minutes) * 60000 }))
+  } catch {
+    /* ignore */
+  }
+}
+export function clearFocusSession(): void {
+  try {
+    window.localStorage.removeItem(FOCUS_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+/** Whole seconds left in the active focus session, or 0 if none / expired. */
+export function focusSecondsLeft(): number {
+  try {
+    const raw = window.localStorage.getItem(FOCUS_KEY)
+    if (!raw) return 0
+    const { endsAt } = JSON.parse(raw) as { endsAt?: number }
+    if (typeof endsAt !== "number") return 0
+    return Math.max(0, Math.round((endsAt - Date.now()) / 1000))
+  } catch {
+    return 0
+  }
+}
+
 /** Remember which task the learner just launched, so we can complete it on return. */
 export function setPendingTodayTask(paperId: string, taskId: string): void {
   try {

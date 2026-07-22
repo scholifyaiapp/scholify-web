@@ -52,7 +52,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, type TodayAction } from "@/lib/acca-today"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, startFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
@@ -1090,6 +1090,35 @@ function Overview({
     resolvePendingTodayTask(paper.id)
     setTodayDone(getTodayDone(paper.id))
   }, [paper.id])
+
+  // "Locked In" focus mode: full-focus takeover with a countdown. It persists in
+  // localStorage, so launching a task (which unmounts this view) and coming back
+  // keeps the session running; the corner timer resumes from the time left.
+  const [lockedIn, setLockedIn] = useState(() => focusSecondsLeft() > 0)
+  const [focusLeft, setFocusLeft] = useState(() => focusSecondsLeft())
+  useEffect(() => {
+    if (!lockedIn) return
+    const tick = () => {
+      const left = focusSecondsLeft()
+      setFocusLeft(left)
+      if (left <= 0) {
+        clearFocusSession()
+        setLockedIn(false)
+      }
+    }
+    tick()
+    const id = window.setInterval(tick, 1000)
+    return () => window.clearInterval(id)
+  }, [lockedIn])
+  function enterLockedIn() {
+    startFocusSession(plan.dailyMinutes || 60)
+    setFocusLeft((plan.dailyMinutes || 60) * 60)
+    setLockedIn(true)
+  }
+  function exitLockedIn() {
+    clearFocusSession()
+    setLockedIn(false)
+  }
   const activeTodayIdx = todayPlan.findIndex((t) => !todayDone.includes(t.id))
   // Split the daily-minutes commitment across today's tasks (≈10/10/20/… of 60).
   const taskMins = allocateTaskMinutes(todayPlan, plan.dailyMinutes || 60)
@@ -1124,6 +1153,39 @@ function Overview({
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      {/* ── "Locked In" — full-focus takeover: only today's mission on screen,
+          an animated countdown in the corner. Covers the app chrome; returns
+          when the timer's done (or Exit). Persists across launching a task. ── */}
+      {lockedIn && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "var(--sch-bg)", overflowY: "auto" }}>
+          <div style={{ position: "fixed", top: 16, right: 16, zIndex: 1210, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <CircleTimer secondsLeft={focusLeft} totalSeconds={(plan.dailyMinutes || 60) * 60} size={78} />
+            <button onClick={exitLockedIn} style={{ fontSize: 11, fontWeight: 700, color: DIM, background: "transparent", border: "none", cursor: "pointer" }}>Exit</button>
+          </div>
+          <div style={{ width: "100%", maxWidth: 520, margin: "0 auto", padding: "56px 20px 48px" }}>
+            <div style={{ textAlign: "center", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.5, color: "#C80000" }}>🔒 LOCKED IN</div>
+              <div style={{ fontSize: 20, fontWeight: 850, color: TEXT, marginTop: 6 }}>Full focus — today's mission only</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>Work each step. Everything else comes back when the timer's done.</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", margin: "18px 0" }}>
+              <RingGauge value={missionPct} size={120} stroke={11} color={missionPct >= 100 ? C.green : "#C80000"} label="TODAY'S MISSION" sublabel={missionPct >= 100 ? "Complete!" : `${missionDone} of ${missionTotal} done`} />
+            </div>
+            <MissionTasks
+              tasks={todayPlan}
+              done={todayDone}
+              activeIdx={activeTodayIdx}
+              mins={taskMins}
+              icons={todayIcons}
+              onRun={(t) => { setPendingTodayTask(paper.id, t.id); runToday(t) }}
+              techArticle={techArticle}
+              articleDone={articleDone}
+              onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
+              paperId={paper.id}
+            />
+          </div>
+        </div>
+      )}
       <button onClick={onBack} style={backBtn}>← All papers</button>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
       <p style={{ color: DIM, margin: "0 0 14px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
@@ -1219,10 +1281,14 @@ function Overview({
           <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{examTimingLine}</span>
         </div>
 
-        {/* Daily focus timer — Start, then work the plan within your daily target */}
-        <div style={{ marginTop: 12 }}>
-          <FocusTimer minutes={plan.dailyMinutes || 60} />
-        </div>
+        {/* Enter "Locked In" — full-focus takeover for the daily commitment */}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={enterLockedIn}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12, padding: "11px 18px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 800, fontSize: 13.5, cursor: "pointer" }}
+        >
+          <Icon name="mock" size={15} color="#fff" /> Start {plan.dailyMinutes || 60}-min Locked In session
+        </motion.button>
 
         <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "16px 0 8px" }}>
           <Icon name="mission" size={14} color="#C80000" strokeWidth={2.4} />
@@ -1234,84 +1300,18 @@ function Overview({
             })()}
           </span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {todayPlan.map((t, i) => {
-            const done = todayDone.includes(t.id)
-            const isActive = i === activeTodayIdx
-            const locked = activeTodayIdx !== -1 && i > activeTodayIdx
-            return (
-            <motion.button
-              key={t.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.05 * i }}
-              whileHover={locked ? undefined : { x: 2 }}
-              whileTap={locked ? undefined : { scale: 0.99 }}
-              aria-disabled={locked}
-              onClick={() => {
-                if (locked) return
-                // Stamp it pending so returning to this tab completes it (see acca-today).
-                setPendingTodayTask(paper.id, t.id)
-                runToday(t)
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                textAlign: "left",
-                padding: "12px 14px",
-                borderRadius: 12,
-                cursor: locked ? "default" : "pointer",
-                opacity: locked ? 0.6 : 1,
-                border: `1px solid ${isActive ? "rgba(200,0,0,0.3)" : done ? C.green : BORDER}`,
-                background: isActive ? "rgba(200,0,0,0.05)" : "var(--sch-bg)",
-              }}
-            >
-              <IconBadge name={done ? "done" : todayIcons[t.action]} tone={isActive ? "brand" : "neutral"} size={38} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-                  {["①", "②", "③", "④", "⑤"][i] ?? ""} {t.title}
-                </span>
-                <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-                  {locked ? "Finish the step above to unlock this" : `${t.detail} · ~${taskMins[i] ?? MISSION_MINUTES[t.action]} min`}
-                </span>
-              </span>
-              {done ? (
-                <Icon name="done" size={18} color={C.green} style={{ flexShrink: 0 }} />
-              ) : isActive ? (
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: IRIDESCENT, padding: "4px 10px", borderRadius: 999, flexShrink: 0 }}>
-                  START
-                </span>
-              ) : locked ? (
-                <Icon name="lock" size={16} color={DIM} style={{ flexShrink: 0 }} />
-              ) : null}
-            </motion.button>
-            )
-          })}
-        </div>
-
-        {/* Optional extra: ACCA's own technical article for this paper (examining
-            team explainers). Shown when ACCA publishes them for the paper. */}
-        {techArticle && (
-          <motion.a
-            href={techArticle.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${articleDone ? C.green : BORDER}`, background: "var(--sch-bg)" }}
-          >
-            <IconBadge name={articleDone ? "done" : "learn"} tone={articleDone ? "green" : "neutral"} size={38} />
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-                Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
-              </span>
-              <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>Examining-team explainer for {paper.id} · optional deepen</span>
-            </span>
-            {articleDone ? <Icon name="done" size={16} color={C.green} style={{ flexShrink: 0 }} /> : <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />}
-          </motion.a>
-        )}
+        <MissionTasks
+          tasks={todayPlan}
+          done={todayDone}
+          activeIdx={activeTodayIdx}
+          mins={taskMins}
+          icons={todayIcons}
+          onRun={(t) => { setPendingTodayTask(paper.id, t.id); runToday(t) }}
+          techArticle={techArticle}
+          articleDone={articleDone}
+          onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
+          paperId={paper.id}
+        />
       </motion.div>
       </motion.div>
       )}
@@ -2176,72 +2176,121 @@ function fmtTime(s: number): string {
   return `${m}:${`${sec}`.padStart(2, "0")}`
 }
 
-/* Daily focus timer — press Start and an animated countdown runs for the
- * learner's onboarding daily-minutes commitment while they work the plan. */
-function FocusTimer({ minutes }: { minutes: number }) {
-  const total = Math.max(1, minutes) * 60
-  const [left, setLeft] = useState(total)
-  const [running, setRunning] = useState(false)
-  useEffect(() => {
-    if (!running) return
-    const id = setInterval(() => setLeft((s) => (s <= 1 ? 0 : s - 1)), 1000)
-    return () => clearInterval(id)
-  }, [running])
-  useEffect(() => {
-    if (left === 0) setRunning(false)
-  }, [left])
-  const pct = total > 0 ? Math.min(100, ((total - left) / total) * 100) : 0
-  const circ = 2 * Math.PI * 20
-  const mm = Math.floor(left / 60)
-  const ss = left % 60
-  const fresh = left === total && !running
-
-  if (fresh) {
-    return (
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setRunning(true)}
-        style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 13.5, cursor: "pointer" }}
-      >
-        <Icon name="mock" size={15} color="#fff" /> Start {minutes}-min focus session
-      </motion.button>
-    )
-  }
+/* Animated circular countdown — the "Locked In" corner timer. */
+function CircleTimer({ secondsLeft, totalSeconds, size = 72 }: { secondsLeft: number; totalSeconds: number; size?: number }) {
+  const r = (size - 8) / 2
+  const circ = 2 * Math.PI * r
+  const pct = totalSeconds > 0 ? Math.min(1, (totalSeconds - secondsLeft) / totalSeconds) : 0
+  const done = secondsLeft <= 0
+  const mm = Math.floor(secondsLeft / 60)
+  const ss = secondsLeft % 60
+  const low = secondsLeft > 0 && secondsLeft <= 60
   return (
-    <div style={{ ...card({ padding: 14 }), display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ position: "relative", width: 46, height: 46, flexShrink: 0 }}>
-        <svg width="46" height="46" viewBox="0 0 46 46">
-          <circle cx="23" cy="23" r="20" fill="none" stroke="var(--sch-card-2)" strokeWidth="4" />
-          <motion.circle
-            cx="23" cy="23" r="20" fill="none" stroke={left === 0 ? C.green : "#C80000"} strokeWidth="4" strokeLinecap="round"
-            strokeDasharray={circ}
-            animate={{ strokeDashoffset: circ * (1 - pct / 100) }}
-            transition={{ duration: 0.6, ease: "linear" }}
-            transform="rotate(-90 23 23)"
-          />
-        </svg>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <motion.div
-          animate={running && left <= 60 ? { opacity: [1, 0.45, 1] } : { opacity: 1 }}
-          transition={{ duration: 1, repeat: running && left <= 60 ? Infinity : 0 }}
-          style={{ fontSize: 20, fontWeight: 850, color: left === 0 ? C.green : TEXT, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}
-        >
-          {left === 0 ? "Done!" : `${mm}:${String(ss).padStart(2, "0")}`}
-        </motion.div>
-        <div style={{ fontSize: 11.5, color: DIM, marginTop: 3 }}>
-          {left === 0 ? "Daily target hit — great work." : running ? "Focus — work through your plan" : "Paused"}
-        </div>
-      </div>
-      {left > 0 && (
-        <button onClick={() => setRunning((r) => !r)} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: CARD, color: TEXT, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
-          {running ? "Pause" : "Resume"}
-        </button>
-      )}
-      <button onClick={() => { setRunning(false); setLeft(total) }} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: CARD, color: DIM, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
-        Reset
-      </button>
+    <div style={{ position: "relative", width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sch-card-2)" strokeWidth={6} />
+        <motion.circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={done ? C.green : low ? C.red : "#C80000"} strokeWidth={6} strokeLinecap="round"
+          strokeDasharray={circ}
+          animate={{ strokeDashoffset: circ * (1 - pct) }}
+          transition={{ duration: 0.6, ease: "linear" }}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      <motion.div
+        animate={low ? { opacity: [1, 0.5, 1] } : { opacity: 1 }}
+        transition={{ duration: 1, repeat: low ? Infinity : 0 }}
+        style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+      >
+        <span style={{ fontSize: size * 0.24, fontWeight: 850, color: done ? C.green : TEXT, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+          {done ? "✓" : `${mm}:${String(ss).padStart(2, "0")}`}
+        </span>
+      </motion.div>
     </div>
+  )
+}
+
+/* The today-mission task list + optional ACCA technical article — shared by the
+ * normal Today card and the Locked-In focus overlay so both stay in sync. */
+function MissionTasks({
+  tasks, done, activeIdx, mins, icons, onRun, techArticle, articleDone, onArticle, paperId,
+}: {
+  tasks: TodayTask[]
+  done: string[]
+  activeIdx: number
+  mins: number[]
+  icons: Record<TodayAction, IconName>
+  onRun: (t: TodayTask) => void
+  techArticle?: { title: string; detail: string; url: string }
+  articleDone: boolean
+  onArticle: () => void
+  paperId: string
+}) {
+  return (
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {tasks.map((t, i) => {
+          const isDone = done.includes(t.id)
+          const isActive = i === activeIdx
+          const locked = activeIdx !== -1 && i > activeIdx
+          return (
+            <motion.button
+              key={t.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 * i }}
+              whileHover={locked ? undefined : { x: 2 }}
+              whileTap={locked ? undefined : { scale: 0.99 }}
+              aria-disabled={locked}
+              onClick={() => { if (!locked) onRun(t) }}
+              style={{
+                display: "flex", alignItems: "center", gap: 12, textAlign: "left", padding: "12px 14px", borderRadius: 12,
+                cursor: locked ? "default" : "pointer", opacity: locked ? 0.6 : 1,
+                border: `1px solid ${isActive ? "rgba(200,0,0,0.3)" : isDone ? C.green : BORDER}`,
+                background: isActive ? "rgba(200,0,0,0.05)" : "var(--sch-bg)",
+              }}
+            >
+              <IconBadge name={isDone ? "done" : icons[t.action]} tone={isActive ? "brand" : "neutral"} size={38} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
+                  {["①", "②", "③", "④", "⑤"][i] ?? ""} {t.title}
+                </span>
+                <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
+                  {locked ? "Finish the step above to unlock this" : `${t.detail} · ~${mins[i] ?? MISSION_MINUTES[t.action]} min`}
+                </span>
+              </span>
+              {isDone ? (
+                <Icon name="done" size={18} color={C.green} style={{ flexShrink: 0 }} />
+              ) : isActive ? (
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: IRIDESCENT, padding: "4px 10px", borderRadius: 999, flexShrink: 0 }}>START</span>
+              ) : locked ? (
+                <Icon name="lock" size={16} color={DIM} style={{ flexShrink: 0 }} />
+              ) : null}
+            </motion.button>
+          )
+        })}
+      </div>
+      {techArticle && (
+        <motion.a
+          href={techArticle.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onArticle}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${articleDone ? C.green : BORDER}`, background: "var(--sch-bg)" }}
+        >
+          <IconBadge name={articleDone ? "done" : "learn"} tone={articleDone ? "green" : "neutral"} size={38} />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
+              Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
+            </span>
+            <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>Examining-team explainer for {paperId} · optional deepen</span>
+          </span>
+          {articleDone ? <Icon name="done" size={16} color={C.green} style={{ flexShrink: 0 }} /> : <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />}
+        </motion.a>
+      )}
+    </>
   )
 }
 
