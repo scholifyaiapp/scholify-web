@@ -78,3 +78,64 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
     area: t.area,
   }))
 }
+
+/* ── Sequential unlock: one task at a time ────────────────────────────────
+ *
+ * Today's tasks unlock in order — the learner finishes the active one before the
+ * next opens. "Finished" is proved by RETURNING to the plan after doing the task:
+ * runToday() stamps the launched task as pending; when the learner lands back on
+ * the Today tab, the pending task is marked done and the next unlocks. Completion
+ * is per-paper, per-calendar-day, in localStorage (offline-first like the rest).
+ */
+const doneKey = (paperId: string) => `scholify-today-done-${paperId}-${new Date().toISOString().slice(0, 10)}`
+const PENDING_KEY = "scholify-today-pending"
+
+export function getTodayDone(paperId: string): string[] {
+  try {
+    const raw = window.localStorage.getItem(doneKey(paperId))
+    const arr = raw ? (JSON.parse(raw) as unknown) : []
+    return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : []
+  } catch {
+    return []
+  }
+}
+
+export function markTodayTaskDone(paperId: string, taskId: string): void {
+  try {
+    const done = new Set(getTodayDone(paperId))
+    done.add(taskId)
+    window.localStorage.setItem(doneKey(paperId), JSON.stringify([...done]))
+  } catch {
+    /* localStorage unavailable — sequential lock just won't persist */
+  }
+}
+
+/** Remember which task the learner just launched, so we can complete it on return. */
+export function setPendingTodayTask(paperId: string, taskId: string): void {
+  try {
+    window.localStorage.setItem(PENDING_KEY, JSON.stringify({ paperId, taskId, day: new Date().toISOString().slice(0, 10) }))
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Resolve a pending task into "done" (call on Today-tab mount). Returns true if a
+ * task was just completed, so the caller can refresh its view.
+ */
+export function resolvePendingTodayTask(paperId: string): boolean {
+  try {
+    const raw = window.localStorage.getItem(PENDING_KEY)
+    if (!raw) return false
+    const p = JSON.parse(raw) as { paperId?: string; taskId?: string; day?: string }
+    window.localStorage.removeItem(PENDING_KEY)
+    const today = new Date().toISOString().slice(0, 10)
+    if (p.paperId === paperId && typeof p.taskId === "string" && p.day === today) {
+      markTodayTaskDone(paperId, p.taskId)
+      return true
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+}

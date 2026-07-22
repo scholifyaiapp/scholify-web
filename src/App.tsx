@@ -149,14 +149,15 @@ export default function App() {
 
         {/* The product */}
         <Route path="/welcome" element={<ProtectedRoute><Page name="Welcome"><Welcome /></Page></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Page name="Dashboard"><Dashboard /></Page></ProtectedRoute>} />
-        <Route path="/study" element={<ProtectedRoute><Page name="AccaStudy"><AccaStudy /></Page></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute gate><Page name="Dashboard"><Dashboard /></Page></ProtectedRoute>} />
+        <Route path="/study" element={<ProtectedRoute gate><Page name="AccaStudy"><AccaStudy /></Page></ProtectedRoute>} />
         {/* Progress merged into Analytics — keep old links working */}
         <Route path="/study/progress" element={<Navigate to="/study/analytics" replace />} />
-        <Route path="/study/diagnostic" element={<ProtectedRoute><Page name="AccaDiagnostic"><AccaDiagnostic /></Page></ProtectedRoute>} />
-        <Route path="/study/analytics" element={<ProtectedRoute><Page name="AccaAnalytics"><AccaAnalytics /></Page></ProtectedRoute>} />
+        <Route path="/study/diagnostic" element={<ProtectedRoute gate><Page name="AccaDiagnostic"><AccaDiagnostic /></Page></ProtectedRoute>} />
+        <Route path="/study/analytics" element={<ProtectedRoute gate><Page name="AccaAnalytics"><AccaAnalytics /></Page></ProtectedRoute>} />
+        {/* Settings stays ungated so an expired user can still pay / manage / sign out */}
         <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />
-        <Route path="/notes" element={<ProtectedRoute><Page name="NotesHub"><NotesHub /></Page></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute gate><Page name="NotesHub"><NotesHub /></Page></ProtectedRoute>} />
 
         {/* Public info */}
         <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />

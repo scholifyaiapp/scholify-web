@@ -77,6 +77,25 @@ export function isProUser(user: MetaCarrier | null | undefined, now: number = Da
 }
 
 /**
+ * Which papers can this user open?
+ *   - A PAID subscriber: every paper.
+ *   - Everyone else (trial or free): only the paper(s) they onboarded with — the
+ *     "target". A trial grants the Pro *features* (mocks, examiner, generate) but
+ *     still only on the target paper; the other 14 need a paid plan.
+ * `now` is injectable for testing. After the trial expires the app-level gate
+ * blocks the whole app, so this only needs to split paid-vs-target.
+ */
+export function canAccessPaper(
+  user: MetaCarrier | null | undefined,
+  paperId: string,
+  targetPaperIds: readonly string[],
+  now: number = Date.now(),
+): boolean {
+  if (entitlementOf(user, now).isPaid) return true
+  return targetPaperIds.includes(paperId)
+}
+
+/**
  * Is this account eligible to START a trial? Only a brand-new account with no
  * paid plan and no prior trial. The server enforces this too — this is the
  * client-side gate that decides whether to even make the call.
@@ -87,4 +106,4 @@ export function canStartTrial(user: MetaCarrier | null | undefined): boolean {
 }
 
 /** Length of a trial, in days — one constant, shared by copy and the server. */
-export const TRIAL_DAYS = 7
+export const TRIAL_DAYS = 3

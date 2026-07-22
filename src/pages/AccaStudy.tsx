@@ -5,7 +5,7 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
-import { isProUser } from "@/lib/entitlement"
+import { isProUser, canAccessPaper } from "@/lib/entitlement"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -53,7 +53,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, type TodayAction } from "@/lib/acca-today"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, getTodayDone, setPendingTodayTask, resolvePendingTodayTask, type TodayAction } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
@@ -292,6 +292,12 @@ export default function AccaStudy() {
   }, [mode])
 
   function openPaper(id: string) {
+    // Free/trial learners are limited to their onboarding target paper; the
+    // other 14 need a paid plan. Tapping a locked paper offers the upgrade.
+    if (!canAccessPaper(user, id, getStudyingPapers())) {
+      triggerFeaturePaywall()
+      return
+    }
     setPaperId(id)
     setMode("overview")
   }
@@ -867,9 +873,12 @@ function AccaNews() {
 }
 
 function Picker({ onPick }: { onPick: (id: string) => void }) {
+  const { user } = useAuth()
   const levels = paperLevels()
   const passed = new Set(getPassedPapers())
   const current = getCurrentPaper()
+  // Free/trial learners study only their onboarding target; the rest are Pro.
+  const studyingSet = getStudyingPapers()
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <p style={{ color: DIM, fontSize: 13, fontWeight: 600, letterSpacing: 0.4, margin: "0 0 6px" }}>
@@ -909,6 +918,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                 const stats = getPaperStats(p.id)
                 const isPassed = passed.has(p.id)
                 const isCurrent = current === p.id
+                const locked = !isPassed && !canAccessPaper(user, p.id, studyingSet)
                 return (
                   <motion.button
                     key={p.id}
@@ -924,6 +934,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 700, fontSize: 14.5, color: TEXT }}>{p.name}</span>
                         {isCurrent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "rgba(200,0,0,0.08)", color: "#C80000", fontWeight: 700 }}>STUDYING</span>}
+                        {locked && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED, fontWeight: 700 }}><Icon name="lock" size={9} color={MUTED} /> PRO</span>}
                         {p.hasCuratedContent && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "var(--sch-card-2)", color: MUTED, fontWeight: 700 }}>BANK</span>}
                       </div>
                       <div style={{ color: DIM, fontSize: 11.5, marginTop: 1 }}>{p.code}</div>
@@ -931,6 +942,8 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       {isPassed ? (
                         <span style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>Passed</span>
+                      ) : locked ? (
+                        <Icon name="lock" size={15} color={DIM} />
                       ) : stats.answered > 0 ? (
                         <span style={{ fontSize: 14, fontWeight: 800, ...iriText }}>{stats.readiness}%</span>
                       ) : (
@@ -1049,6 +1062,16 @@ function Overview({
     diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
 
+  // Sequential unlock — only the first unfinished task is active; later ones wait.
+  // On mount, resolve any task the learner just returned from (runToday stamped
+  // it "pending" before launching), which marks it done and reveals the next.
+  const [todayDone, setTodayDone] = useState<string[]>(() => getTodayDone(paper.id))
+  useEffect(() => {
+    resolvePendingTodayTask(paper.id)
+    setTodayDone(getTodayDone(paper.id))
+  }, [paper.id])
+  const activeTodayIdx = todayPlan.findIndex((t) => !todayDone.includes(t.id))
+
   // Keep the Pass Momentum trend fed even on read-only visits.
   useEffect(() => {
     snapshotProbability(paper.id)
@@ -1143,20 +1166,30 @@ function Overview({
           <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 750, color: DIM }}>
             {(() => {
               const t = getTodayStats()
-              return t.goalMet ? "goal met" : t.answered > 0 ? `${t.answered}/${t.goal} today` : `0 of ${todayPlan.length} done`
+              return t.goalMet ? "goal met" : `${todayDone.length} of ${todayPlan.length} done`
             })()}
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {todayPlan.map((t, i) => (
+          {todayPlan.map((t, i) => {
+            const done = todayDone.includes(t.id)
+            const isActive = i === activeTodayIdx
+            const locked = activeTodayIdx !== -1 && i > activeTodayIdx
+            return (
             <motion.button
               key={t.id}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.05 * i }}
-              whileHover={{ x: 2 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => runToday(t)}
+              whileHover={locked ? undefined : { x: 2 }}
+              whileTap={locked ? undefined : { scale: 0.99 }}
+              aria-disabled={locked}
+              onClick={() => {
+                if (locked) return
+                // Stamp it pending so returning to this tab completes it (see acca-today).
+                setPendingTodayTask(paper.id, t.id)
+                runToday(t)
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -1164,27 +1197,33 @@ function Overview({
                 textAlign: "left",
                 padding: "12px 14px",
                 borderRadius: 12,
-                cursor: "pointer",
-                border: `1px solid ${i === 0 ? "rgba(200,0,0,0.3)" : BORDER}`,
-                background: i === 0 ? "rgba(200,0,0,0.05)" : "var(--sch-bg)",
+                cursor: locked ? "default" : "pointer",
+                opacity: locked ? 0.6 : 1,
+                border: `1px solid ${isActive ? "rgba(200,0,0,0.3)" : done ? C.green : BORDER}`,
+                background: isActive ? "rgba(200,0,0,0.05)" : "var(--sch-bg)",
               }}
             >
-              <IconBadge name={todayIcons[t.action]} tone={i === 0 ? "brand" : "neutral"} size={38} />
+              <IconBadge name={done ? "done" : todayIcons[t.action]} tone={isActive ? "brand" : "neutral"} size={38} />
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
                   {["①", "②", "③", "④", "⑤"][i] ?? ""} {t.title}
                 </span>
                 <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-                  {t.detail} · ~{MISSION_MINUTES[t.action]} min
+                  {locked ? "Finish the step above to unlock this" : `${t.detail} · ~${MISSION_MINUTES[t.action]} min`}
                 </span>
               </span>
-              {i === 0 && (
+              {done ? (
+                <Icon name="done" size={18} color={C.green} style={{ flexShrink: 0 }} />
+              ) : isActive ? (
                 <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: IRIDESCENT, padding: "4px 10px", borderRadius: 999, flexShrink: 0 }}>
                   START
                 </span>
-              )}
+              ) : locked ? (
+                <Icon name="lock" size={16} color={DIM} style={{ flexShrink: 0 }} />
+              ) : null}
             </motion.button>
-          ))}
+            )
+          })}
         </div>
       </motion.div>
       </motion.div>

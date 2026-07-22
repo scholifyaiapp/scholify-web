@@ -10,6 +10,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
 import { canStartTrial } from "./entitlement"
+import { isAccaOnboarded } from "./acca-profile"
 import { trackEvent } from "@/lib/analytics"
 
 /*
@@ -67,6 +68,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>
   /** Email a password-reset link. Errors honestly when Supabase isn't configured. */
   resetPassword: (email: string) => Promise<AuthResult>
+  /** Start the free trial now (called the moment onboarding completes). Idempotent. */
+  startTrial: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -108,7 +111,7 @@ function writeDemoUser(user: User | null) {
 }
 
 /**
- * Grant the 7-day Pro trial to a user who is eligible and hasn't got one.
+ * Grant the 3-day Pro trial to a user who is eligible and hasn't got one.
  *
  * This runs on the FIRST authenticated session rather than only at sign-up, so
  * it covers both paths: instant sign-in (email confirmation off) AND a user who
@@ -153,9 +156,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Only one trial-grant attempt per app load, whichever path fires first.
+    // Gated on onboarding: the 3-day clock starts when the learner FINISHES the
+    // wizard (Welcome calls startTrial() at that moment), not the instant they
+    // sign up. This auto-grant is the safety net for an already-onboarded user
+    // whose explicit grant didn't land (offline at finish, etc.).
     let trialChecked = false
     const maybeGrantTrial = (u: User | null) => {
-      if (trialChecked || !u) return
+      if (trialChecked || !u || !isAccaOnboarded()) return
       trialChecked = true
       void ensureTrial(u).then((granted) => {
         if (granted) {
@@ -311,9 +318,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? friendlyError(error.message) : null }
   }, [])
 
+  // Called by the onboarding wizard the instant it completes, so the 3-day clock
+  // starts from "finished onboarding". Idempotent (server is one-per-account), so
+  // it's safe alongside the auto-grant safety net in the effect above.
+  const startTrial = useCallback(async () => {
+    if (!user) return
+    const granted = await ensureTrial(user)
+    if (granted) {
+      setSession((s) => (s ? { ...s, user: granted } : s))
+      setUser(granted)
+    }
+  }, [user])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword }),
-    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword],
+    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword, startTrial }),
+    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword, startTrial],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

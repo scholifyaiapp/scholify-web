@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { entitlementOf, isProUser, canStartTrial, TRIAL_DAYS } from "@/lib/entitlement"
+import { entitlementOf, isProUser, canStartTrial, canAccessPaper, TRIAL_DAYS } from "@/lib/entitlement"
 
 /*
  * Entitlement decides who gets Pro. Every case here is a real gate: a wrong
@@ -83,7 +83,36 @@ describe("canStartTrial", () => {
 })
 
 describe("TRIAL_DAYS", () => {
-  it("is the 7 the marketing promises", () => {
-    expect(TRIAL_DAYS).toBe(7)
+  it("is the 3 the marketing promises", () => {
+    expect(TRIAL_DAYS).toBe(3)
+  })
+})
+
+describe("canAccessPaper", () => {
+  const TARGET = ["FA"]
+
+  it("limits a trial user to their onboarding target paper", () => {
+    const trialUser = user({ plan: "free", trial_started_at: inDays(0), trial_ends_at: inDays(3) })
+    expect(canAccessPaper(trialUser, "FA", TARGET, NOW)).toBe(true)
+    expect(canAccessPaper(trialUser, "AA", TARGET, NOW)).toBe(false)
+  })
+
+  it("gives a paid subscriber every paper", () => {
+    const paid = user({ plan: "pro" })
+    expect(canAccessPaper(paid, "FA", TARGET, NOW)).toBe(true)
+    expect(canAccessPaper(paid, "AAA", TARGET, NOW)).toBe(true)
+    expect(canAccessPaper(paid, "AAA", [], NOW)).toBe(true) // paid needs no target
+  })
+
+  it("limits a free / expired-trial user to the target too (the app-level gate blocks the rest)", () => {
+    const expired = user({ plan: "free", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) })
+    expect(canAccessPaper(expired, "FA", TARGET, NOW)).toBe(true)
+    expect(canAccessPaper(expired, "AA", TARGET, NOW)).toBe(false)
+  })
+
+  it("supports two target papers (the studying cap)", () => {
+    const trialUser = user({ trial_ends_at: inDays(3) })
+    expect(canAccessPaper(trialUser, "MA", ["FA", "MA"], NOW)).toBe(true)
+    expect(canAccessPaper(trialUser, "LW", ["FA", "MA"], NOW)).toBe(false)
   })
 })

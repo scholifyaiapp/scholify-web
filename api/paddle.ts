@@ -159,7 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.status(400).json({ error: "Unknown action. Use ?action=webhook | cancel | start-trial." })
 }
 
-/* ── Start trial: the 7-day Pro trial, granted server-side ───────────────
+/* ── Start trial: the 3-day Pro trial, granted server-side ───────────────
  *
  * The trial MUST be written in app_metadata (service-role-only) for the same
  * reason the paid plan is: a client that could set its own trial could grant
@@ -169,7 +169,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
  * Once set, this refuses — a user cannot loop it for endless Pro, and calling it
  * twice (e.g. a retry, or the app re-checking on load) is harmless.
  */
-const TRIAL_DAYS = 7
+const TRIAL_DAYS = 3
 
 async function startTrial(req: VercelRequest, res: VercelResponse): Promise<void> {
   const supa = admin()

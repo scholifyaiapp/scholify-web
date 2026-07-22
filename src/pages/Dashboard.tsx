@@ -4,7 +4,9 @@ import { motion } from "motion/react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useAuth } from "@/lib/auth"
-import { isProUser } from "@/lib/entitlement"
+import { isProUser, entitlementOf } from "@/lib/entitlement"
+import { usePaywall } from "@/hooks/usePaywall"
+import PaywallModal from "@/components/PaywallModal"
 import { Icon, Card, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, bandColor } from "@/components/acca/charts"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
@@ -77,10 +79,18 @@ export default function Dashboard() {
   const momentum = probabilityMomentum(paperId)
   const mission = buildTodayPlan(paperId)
   const isPro = isProUser(user)
+  const { showPaywall, paywallType, maybeShowTrialReminder, closePaywall } = usePaywall()
 
   useEffect(() => {
     snapshotProbability(paperId)
   }, [paperId])
+
+  // Gentle mid-trial nudge: once per day, from day 2 onward (the hook guards
+  // both the cadence and the "not day 1" rule).
+  useEffect(() => {
+    const e = entitlementOf(user)
+    if (e.isTrial) maybeShowTrialReminder(e.trialDaysLeft)
+  }, [user, maybeShowTrialReminder])
 
   // The loop starts at onboarding — a brand-new user goes there first
   // (paper choice, exam date, commitment), never straight to a default "FA".
@@ -436,6 +446,7 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+      <PaywallModal open={showPaywall} type={paywallType} onClose={closePaywall} />
     </DashboardLayout>
   )
 }

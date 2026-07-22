@@ -142,7 +142,7 @@ const fadeVariants = {
 
 export default function Welcome() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, startTrial } = useAuth()
   const reduced = useReducedMotion()
   const isMobile = useIsMobile()
 
@@ -216,6 +216,9 @@ export default function Welcome() {
     setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, dailyGoal: questionsPerDay, targetProb: target })
     setDailyGoal(questionsPerDay)
     markAccaOnboarded()
+    // Onboarding is done → start the 3-day free trial now. Fire-and-forget:
+    // it's idempotent server-side, and the auth effect re-grants as a safety net.
+    void startTrial()
   }
 
   const onboardingProps = () => ({ paper, minutes, target, goal, hasExamDate: Boolean(examDate) })

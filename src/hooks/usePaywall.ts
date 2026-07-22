@@ -2,6 +2,7 @@ import { useCallback, useState } from "react"
 import { readProgress } from "@/lib/scholify-data"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
+import { TRIAL_DAYS } from "@/lib/entitlement"
 
 /*
  * Paywall trigger logic.
@@ -12,7 +13,11 @@ import { trackEvent } from "@/lib/analytics"
  * milestone modal only appears once.
  */
 
-export type PaywallType = "streak7" | "streak14" | "streak21" | "feature" | "general"
+export type PaywallType = "streak7" | "streak14" | "streak21" | "feature" | "general" | "reminder" | "expired"
+
+const TRIAL_REMINDER_KEY = "scholify-trial-reminder-shown"
+
+const todayStamp = () => new Date().toISOString().slice(0, 10)
 
 const shownFlag = (n: number) => `scholify-paywall-shown-${n}`
 
@@ -93,6 +98,24 @@ export function usePaywall() {
     trackEvent("paywall_shown", { trigger: "general" })
   }, [])
 
+  /**
+   * The gentle mid-trial reminder: shown once per calendar day, and only from
+   * day 2 of the trial onward (day 1 stays clean — let them fall in love first).
+   * `trialDaysLeft` comes from the entitlement; on day 1 it equals TRIAL_DAYS.
+   */
+  const maybeShowTrialReminder = useCallback((trialDaysLeft: number) => {
+    if (trialDaysLeft <= 0 || trialDaysLeft >= TRIAL_DAYS) return
+    try {
+      if (window.localStorage.getItem(TRIAL_REMINDER_KEY) === todayStamp()) return
+      window.localStorage.setItem(TRIAL_REMINDER_KEY, todayStamp())
+    } catch {
+      /* localStorage unavailable — just skip the reminder */
+    }
+    setPaywallType("reminder")
+    setShowPaywall(true)
+    trackEvent("paywall_shown", { trigger: "trial_reminder", daysLeft: trialDaysLeft })
+  }, [])
+
   const closePaywall = useCallback(() => {
     setShowPaywall(false)
     trackEvent("paywall_dismissed")
@@ -109,6 +132,7 @@ export function usePaywall() {
     checkPaywallTrigger,
     triggerFeaturePaywall,
     triggerUpgrade,
+    maybeShowTrialReminder,
     closePaywall,
   }
 }

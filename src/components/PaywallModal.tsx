@@ -50,6 +50,18 @@ const HEADERS: Record<
     title: "Unlock the full Scholify",
     sub: "Timed mocks, instant written marking, custom practice — the three modes the free plan doesn't include.",
   },
+  reminder: {
+    kind: "lara",
+    icon: "tutor",
+    title: "Your free trial is running",
+    sub: "You're on the clock — upgrade any time to keep every mode and unlock all 15 papers when the trial ends.",
+  },
+  expired: {
+    kind: "lock",
+    icon: "lock",
+    title: "Your free trial has ended",
+    sub: "Upgrade to keep studying — your plan, progress and readiness are all saved and waiting for you.",
+  },
 }
 
 /* Only the modes a paid plan actually unlocks — the rest of the app is free. */
@@ -106,16 +118,16 @@ export default function PaywallModal({
   type: PaywallType
   onClose: () => void
 }) {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const isMobile = useIsMobile()
   const [notice, setNotice] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
 
-  // Every paywall must be dismissible. The streak-7 celebration used to trap
-  // the user (no close, no Escape, no backdrop) — and when payments aren't open
-  // its checkout buttons no-op, so a free user hitting a 7-day streak had no way
-  // back into the app. "Everything else stays free" means they can always leave.
-  const dismissible = true
+  // Paywalls are dismissible — EXCEPT "expired". Once the 3-day trial ends, the
+  // whole app is gated behind this modal until the learner pays (founder call),
+  // so it has no close / Escape / backdrop-dismiss; the only ways out are to
+  // upgrade, open Settings, or sign out (links in the footer below).
+  const dismissible = type !== "expired"
   const header = HEADERS[type]
 
   // Payments only work when Stripe billing is configured — otherwise the buttons
@@ -477,6 +489,22 @@ export default function PaywallModal({
                 >
                   Maybe later
                 </button>
+              )}
+              {/* Expired trial can't be dismissed into the app — but the learner
+                  must still be able to manage their account or leave. */}
+              {type === "expired" && (
+                <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 18, fontSize: 13 }}>
+                  <a href="/settings" style={{ color: "var(--sch-tx-2)", textDecoration: "none", fontWeight: 600 }}>
+                    Account & billing
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    style={{ background: "transparent", border: "none", fontSize: 13, color: "var(--sch-tx-4)", cursor: "pointer" }}
+                  >
+                    Sign out
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>
