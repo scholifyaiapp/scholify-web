@@ -51,7 +51,7 @@ Every ACCA tool treats a failed sitting as a dead end — you're dumped back at 
 2. **Recovery run** — a first-class product mode for retakers.
 3. **4-question analytics dashboard** — "Am I on track? What's weak? What's next? What changed?"
 4. **AI Examiner** — written answers marked in seconds (SBL/SBR/APM-style constructed responses, the part question banks can't grade).
-5. **Lara**, the stateful AI tutor — remembers your history across sessions.
+5. **Charles**, the stateful AI tutor — remembers your history across sessions.
 6. **Full qualification** — BT→AAA plus EPSM/PER tracking, one subscription.
 7. **Offline-first** — study on the metro, in regions with unreliable connectivity. A genuine feature in UZ/CIS, not a checkbox.
 8. **Price** — $14.99/mo vs €300–800 *per paper per course* at a tuition centre.

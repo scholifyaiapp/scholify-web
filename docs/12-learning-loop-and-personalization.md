@@ -12,11 +12,11 @@ The loop is the whole product. Everything else — the content, the AI, the bill
 
 > A user signs up and goes through **onboarding** — an introduction to the platform, plus the personalization questions Scholify needs to know them.
 >
-> **If the user has sat an exam before, or already has a foundation from a course**, Scholify asks them to take a **diagnostic**. The diagnostic tests **at least 3 verified questions from every syllabus section (A–H)**. When it finishes, Lara **evaluates the answers like an examiner, identifies the learner's pain points**, and — from the **onboarding result + diagnostic result** — builds a **personalized daily plan**. Each day, within the time the learner sets aside, they complete targeted daily tasks that move them, gently, toward their **target pass percentage**. **If the learner misses a day, Lara updates the plan.**
+> **If the user has sat an exam before, or already has a foundation from a course**, Scholify asks them to take a **diagnostic**. The diagnostic tests **at least 3 verified questions from every syllabus section (A–H)**. When it finishes, Charles **evaluates the answers like an examiner, identifies the learner's pain points**, and — from the **onboarding result + diagnostic result** — builds a **personalized daily plan**. Each day, within the time the learner sets aside, they complete targeted daily tasks that move them, gently, toward their **target pass percentage**. **If the learner misses a day, Charles updates the plan.**
 >
 > **If the user is brand new** (no prior exam, no foundation), Scholify does **not** ask for a diagnostic yet. It builds the personalized plan from the **onboarding result alone**, and the daily tasks teach the syllabus in order. **Once the learner has mastered the first third of the paper — sections A·B·C — the diagnostic runs**, and the plan **re-generates once** around the onboarding + diagnostic result.
 
-In one sentence: **onboarding personalizes → the right learners diagnose at the right time → Lara turns that into a daily plan that adapts every day.**
+In one sentence: **onboarding personalizes → the right learners diagnose at the right time → Charles turns that into a daily plan that adapts every day.**
 
 ---
 
@@ -32,7 +32,7 @@ A large part of this is built. The engine is `src/lib/acca-schedule.ts`, consume
 | New learner: **no** diagnostic first, learn A·B·C, **then** diagnose | ✅ Built | `acca-schedule.ts` `diagnosticGate` — the A·B·C gate; `buildDailyTasks` defers the diagnostic |
 | Daily tasks within a time budget, toward the target % | ✅ Built | `buildDailyTasks` — study/practice/flashcards/bank/mock, sized to `dailyMinutes`, scaled by `targetProb` |
 | Missed-day self-healing | ✅ Built | Shield scheme + "recompute from what remains over the days that remain" |
-| Diagnostic result screen with weak areas + a Lara plan | ✅ Built | `AccaDiagnostic.tsx` `LaraPlan` — pass probability, weakest areas, a plan "generated" in front of the learner |
+| Diagnostic result screen with weak areas + a Charles plan | ✅ Built | `AccaDiagnostic.tsx` `CharlesPlan` — pass probability, weakest areas, a plan "generated" in front of the learner |
 | Forward calendar ("the route to exam day") | ✅ Built | `projectPlan` + `PlanRoute.tsx` |
 
 **So the skeleton of the vision is real and shipping.** The problem is not that it's absent — it's that four pieces of connective tissue are missing, and without them the loop doesn't *feel* like the intelligent, personalized system the vision describes.
@@ -48,15 +48,15 @@ The vision is deterministic: *experienced → diagnostic, new → learn-first.* 
 ### Gap 2 — The daily plan targets *practice* weakness, not the *diagnostic's* pain points  **(HIGH)**
 This is the biggest one. After the diagnostic identifies pain points (`result.weakest`), the daily "strengthen" tasks in `acca-schedule.ts` compute weakness from `getPaperStats` — i.e. **live practice accuracy**, not the diagnostic. So a freshly-diagnosed learner whose diagnostic screams "area D is your weakness" gets a generic plan until they happen to practise D and build a practice history. **The diagnostic's pain points never actually drive the plan.** The vision — *"onboarding natijasi va diagnostika natijasiga muvofiq"* (per the onboarding **and** diagnostic result) — is not met.
 
-### Gap 3 — "Lara updates your plan when you miss a day" happens silently  **(MEDIUM)**
-The shield scheme genuinely re-paves the schedule after a missed day — but invisibly. The learner is never *told* "you missed a day, so I've re-spread the work — you're still on track." The vision explicitly wants Lara to **communicate** the update; the reassurance is the point.
+### Gap 3 — "Charles updates your plan when you miss a day" happens silently  **(MEDIUM)**
+The shield scheme genuinely re-paves the schedule after a missed day — but invisibly. The learner is never *told* "you missed a day, so I've re-spread the work — you're still on track." The vision explicitly wants Charles to **communicate** the update; the reassurance is the point.
 
 ### Gap 4 — The "re-generate once after the deferred diagnostic" moment isn't explicit  **(MEDIUM)**
-For a zero-start learner, the engine transitions from `learnDay` to `phaseDay` after the A·B·C diagnostic — but there is no distinct **"Lara has re-tuned your whole plan around what the diagnostic just found"** moment. It should feel like a milestone, because it is one.
+For a zero-start learner, the engine transitions from `learnDay` to `phaseDay` after the A·B·C diagnostic — but there is no distinct **"Charles has re-tuned your whole plan around what the diagnostic just found"** moment. It should feel like a milestone, because it is one.
 
 ### Also worth noting (smaller)
-- **Examiner framing:** the diagnostic result says "weakest areas" and shows a Lara plan, which is good — but it isn't framed as an **examiner's evaluation of pain points**. A light reframe would match the vision's language and raise perceived intelligence. **(LOW)**
-- **"Lara personalized" is deterministic:** the plan is computed, not AI-generated. That is the *right* engineering choice (deterministic = instant, offline, free, testable), but Lara should **narrate** it so it reads as personal. Optionally, one AI-generated paragraph per plan regeneration adds warmth without risking the deterministic core. **(LOW / optional)**
+- **Examiner framing:** the diagnostic result says "weakest areas" and shows a Charles plan, which is good — but it isn't framed as an **examiner's evaluation of pain points**. A light reframe would match the vision's language and raise perceived intelligence. **(LOW)**
+- **"Charles personalized" is deterministic:** the plan is computed, not AI-generated. That is the *right* engineering choice (deterministic = instant, offline, free, testable), but Charles should **narrate** it so it reads as personal. Optionally, one AI-generated paragraph per plan regeneration adds warmth without risking the deterministic core. **(LOW / optional)**
 
 ---
 
@@ -77,13 +77,13 @@ Wire `result.weakest` (and the onboarding goal) into `acca-schedule.ts`.
 - The "strengthen" and "revise" days target those areas by name, so the day after a diagnostic, the plan visibly attacks exactly what the diagnostic flagged.
 - **Acceptance:** immediately after a diagnostic that flags area D weakest, today's plan leads with a D drill — provable in a unit test that stubs a diagnostic and asserts the task's `area`.
 
-### Phase 3 — Give the missed-day update a voice  *(Lara speaks)*
+### Phase 3 — Give the missed-day update a voice  *(Charles speaks)*
 When `recordDayActive`/`shieldState` detects missed days, surface a calm, non-punitive line on the dashboard: *"You missed 2 days — I've re-spread the work across what's left. Still on track for [target]% by [date]."* Drawn from the numbers already computed; no new engine, just a message and a place to show it.
 - **Acceptance:** after a simulated 2-day gap, the dashboard shows the reassurance and the plan is visibly lighter-per-day, not a backlog.
 
 ### Phase 4 — Make the two regeneration moments feel like milestones  *(the "wow")*
-- **Zero learner clears A·B·C:** the deferred diagnostic becomes a celebrated checkpoint ("You've built the foundation — now let's measure it"), and completing it triggers an explicit *"Lara has rebuilt your plan around what we just learned"* transition.
-- **Any diagnostic completes:** reframe the result as an **examiner's read** of pain points feeding the plan, and (optional) let Lara generate **one** personalized sentence tying the onboarding goal to the diagnostic finding. Deterministic plan underneath; AI only for the narration, behind the existing metering + fallback.
+- **Zero learner clears A·B·C:** the deferred diagnostic becomes a celebrated checkpoint ("You've built the foundation — now let's measure it"), and completing it triggers an explicit *"Charles has rebuilt your plan around what we just learned"* transition.
+- **Any diagnostic completes:** reframe the result as an **examiner's read** of pain points feeding the plan, and (optional) let Charles generate **one** personalized sentence tying the onboarding goal to the diagnostic finding. Deterministic plan underneath; AI only for the narration, behind the existing metering + fallback.
 - **Acceptance:** both moments render distinctly from an ordinary day; the AI line degrades to a deterministic sentence with no key.
 
 ---

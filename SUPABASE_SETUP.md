@@ -145,7 +145,7 @@ create trigger on_auth_user_created
 
 ### 5a — Conversational onboarding fields (optional)
 
-The Lara chat onboarding (`/onboarding`) captures two extra fields beyond
+The Charles chat onboarding (`/onboarding`) captures two extra fields beyond
 first/last name: the user's future-self vision and current skill level,
 plus a preferred notification time. To persist them alongside the profile,
 extend the table:
@@ -222,7 +222,7 @@ ANTHROPIC_API_KEY = sk-ant-...
 ### 6b — Session notes (optional)
 
 The Dashboard collects a short reflection + mood after Mark Complete. To
-keep them server-side so Lara can read them from any device, extend
+keep them server-side so Charles can read them from any device, extend
 `progress` (or create it if missing):
 
 ```sql
@@ -254,7 +254,7 @@ To get real Whisper transcripts, add `OPENAI_API_KEY` to Vercel env vars
 (see `.env.example`). Without it the modal scores blind and shows a
 "no transcript" notice on the results screen.
 
-### 6d — Lara chat history (optional)
+### 6d — Charles chat history (optional)
 
 For cross-device chat history at `/chat`, create:
 
@@ -287,7 +287,7 @@ Without the table chat still works — history is held in browser
 
 ### 6c — Resource library (optional)
 
-Lara's "Best resource today" picks are saved client-side automatically.
+Charles's "Best resource today" picks are saved client-side automatically.
 For a queryable server-side mirror, create:
 
 ```sql

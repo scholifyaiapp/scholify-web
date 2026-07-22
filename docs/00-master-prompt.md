@@ -14,7 +14,7 @@ If you are an AI assistant being handed this prompt: **read it fully, then act a
 
 The one-sentence pitch: *instead of handing a student 2,000 questions and a video course, Scholify tells them "based on this diagnostic you have a 68% chance of passing FM — and here is exactly how we get you to 85%," then walks them there.*
 
-- **Brand:** Scholify (scholifyapp.com). The AI persona is **Lara** — tutor, examiner, coach.
+- **Brand:** Scholify (scholifyapp.com). The AI persona is **Charles** — tutor, examiner, coach.
 - **Market:** ACCA candidates, beachhead in Uzbekistan/CIS (first-timers and retakers), modelled on what Makon AI did for local exam prep and ielts.gg did for IELTS.
 - **Scope:** the **full ACCA qualification** — all 15 papers across Applied Knowledge (BT, MA, FA), Applied Skills (LW, PM, TX, FR, AA, FM), and Strategic Professional (SBL, SBR + Options AFM, APM, ATX, AAA).
 - **90-day success definition (Doc 1):** ops live (keys, metering, Paddle); 1,000 free learners in UZ/CIS; ≥2% free→paid; activation = diagnostic completed on day one.
@@ -28,7 +28,7 @@ The one-sentence pitch: *instead of handing a student 2,000 questions and a vide
 4. **Track** (`/study/analytics` + `/dashboard`): live pass probability recomputed from cumulative practice with the *same model* as the diagnostic, per-area accuracy, streaks, daily goals, official ACCA pass-rate context and recurring examiner-report themes per paper.
 5. **Pay** (`/pricing` + in-app paywall): free tier is genuinely useful; Pro unlocks mocks, AI Examiner, custom generation, higher AI caps.
 
-**Lara is stateful.** The tutor receives a learner-profile summary (latest diagnostic, weakest areas, recent practice accuracy, experience level) with every call, so explanations are pitched at the actual student.
+**Charles is stateful.** The tutor receives a learner-profile summary (latest diagnostic, weakest areas, recent practice accuracy, experience level) with every call, so explanations are pitched at the actual student.
 
 **Everything degrades gracefully.** With zero API keys the entire loop — diagnostic, study, practice, flashcards, bank runs, mocks, analytics, journey — runs against local seed content and deterministic fallbacks. No AI/payment path ever hard-crashes the app.
 
@@ -130,7 +130,7 @@ Not doing before the announcement (deliberately): unifying the two streak stores
 
 | Term | Meaning |
 |---|---|
-| **Lara** | The AI persona (tutor, examiner, coach) |
+| **Charles** | The AI persona (tutor, examiner, coach) |
 | **Paper** | One ACCA exam (FA, PM, SBL, …) |
 | **Area** | A syllabus area within a paper (A–H); every question/brief/chapter is area-tagged |
 | **Bank run** | Timed pass through the whole paper's bank — the bridge from practice to the mock gate |

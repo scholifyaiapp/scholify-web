@@ -28,8 +28,8 @@ The product reframe (from `src/lib/acca-diagnostic.ts` header): instead of "here
 
 | Persona | Profile | Product answer |
 |---|---|---|
-| **First-paper beginner** ("New to accounting" in onboarding, `EXPERIENCE_OPTIONS` in `acca-profile.ts`) | Starting at Applied Knowledge (BT/MA/FA); intimidated, doesn't know what to study first. | Onboarding wizard picks the paper, the diagnostic sets a baseline, the Study Path walks topics in order, today's plan removes all choice. Lara explains "from first principles, avoid assumed jargon" (`experienceLine()`). |
-| **Working professional** ("Working in finance") | Time-poor; studies 25–40 min/day; needs efficiency, not volume. | Shield time (protected daily slot, `PaperPlan.studyTime`), daily-minutes commitment mapped to a question goal (60m→30q, 40m→22, 25m→15, 15m→10 — `AccaOnboarding.finish()`), adaptive weak-first drills, pace-vs-90s-budget analytics. Lara focuses "on exam technique over basic concepts." |
+| **First-paper beginner** ("New to accounting" in onboarding, `EXPERIENCE_OPTIONS` in `acca-profile.ts`) | Starting at Applied Knowledge (BT/MA/FA); intimidated, doesn't know what to study first. | Onboarding wizard picks the paper, the diagnostic sets a baseline, the Study Path walks topics in order, today's plan removes all choice. Charles explains "from first principles, avoid assumed jargon" (`experienceLine()`). |
+| **Working professional** ("Working in finance") | Time-poor; studies 25–40 min/day; needs efficiency, not volume. | Shield time (protected daily slot, `PaperPlan.studyTime`), daily-minutes commitment mapped to a question goal (60m→30q, 40m→22, 25m→15, 15m→10 — `AccaOnboarding.finish()`), adaptive weak-first drills, pace-vs-90s-budget analytics. Charles focuses "on exam technique over basic concepts." |
 | **Retaker** (failed a real sitting) | Demoralised; needs a credible path back, not a guilt trip. | The recovery run: mark import → emotional-support-first reflection (`ExamDayFlow.Reflection`) → AI examiner analysis (`PostMortemPanel`, kind="exam") → recalibrated pass probability (`recoveryState()` weighting) → new date → rebuilt roadmap. Every answer "earns the number back." |
 
 Onboarding also supports the **mid-qualification joiner**: step 1 self-reports passed exams (the "myACCA record", `setPassedPapers()`), so a student arriving with 6 passes starts at the right level.
@@ -169,7 +169,7 @@ Per syllabus area: stats row (answered, accuracy, best check vs the 65% bar) and
 
 One question at a time (`SessionView`): progress bar, area chip (practice) or countdown (mock, red under 60s). Question types from `acca-content.ts`: `mcq`, `multi`, `number` (numeric compare with tolerance, default ±0.01 — `gradeQuestion()`).
 
-- **Practice:** Check answer → inline explanation (green/red panel) → **Ask Lara** tutor (TutorPanel) → Next. Optional pre-submit **confidence mark** ("How sure are you?" Sure/Not sure → `recordConfidence()`); on a miss, one-tap **mistake tag** (knowledge · misread · time · slip → `recordMistake()`; untagged misses default to `knowledge` on Next). Every answer records timing (`recordAnswerTiming()`, clamped 1–600s) and progress (`recordAnswer()` → streak/daily/area stores) and queues a cloud push.
+- **Practice:** Check answer → inline explanation (green/red panel) → **Ask Charles** tutor (TutorPanel) → Next. Optional pre-submit **confidence mark** ("How sure are you?" Sure/Not sure → `recordConfidence()`); on a miss, one-tap **mistake tag** (knowledge · misread · time · slip → `recordMistake()`; untagged misses default to `knowledge` on Next). Every answer records timing (`recordAnswerTiming()`, clamped 1–600s) and progress (`recordAnswer()` → streak/daily/area stores) and queues a cloud push.
 - **Mock / knowledge check:** timed, silent grading, no explanations or hints; timer expiry force-finishes and tags the unanswered remainder as `time` mistakes. Adaptive selection for weak-first drills: `buildAdaptiveSession()` ranks by `areaWeakness×2 + difficultyMatch + familiarity` (unseen area = 0.6 weakness; target difficulty easy < 45% / medium < 70% / hard ≥ 70%; unseen question 1.0 > previously-wrong 0.8 > mastered 0.25) with seeded jitter.
 
 **Acceptance:** instrumentation never blocks the flow; exiting a session returns to topic/overview and refreshes stats; the mock room is unreachable for free users (paywall) and for anyone under the gate (toast quotes the exact numbers).
@@ -177,7 +177,7 @@ One question at a time (`SessionView`): progress bar, area chip (practice) or co
 #### 3.2.f Results
 
 `RingGauge` vs the relevant pass line (65% topic check / 50% mock / 50% reference for practice), `correct/total`, per-area `BreakdownList` from the session log (worst first). Mode-specific:
-- **Mock failed** → `PostMortemPanel` (kind "mock"): Lara's post-mortem — headline, analysis, "WHERE THE MARKS WENT" (2–3 worst areas), 3-step **REHABILITATION PLAN** whose steps are live buttons (`weak|practice|flashcards|mock`, always ending in mock = the retry). Offline/keyless fallback is deterministic from area scores.
+- **Mock failed** → `PostMortemPanel` (kind "mock"): Charles's post-mortem — headline, analysis, "WHERE THE MARKS WENT" (2–3 worst areas), 3-step **REHABILITATION PLAN** whose steps are live buttons (`weak|practice|flashcards|mock`, always ending in mock = the retry). Offline/keyless fallback is deterministic from area scores.
 - **Mock passed** → sequence card: "Mock n of 3 passed… sit the next one in 2–3 days" or "sequence complete — the real sitting is next; keep a mock every 2–3 days."
 - **Knowledge check** → "topic mastered!" or "You need 65% to master {topic}. Practise it once more, then retake."
 - Mock trend `TrendBars` when ≥ 2 attempts. CTAs: New mock / Practise again + back to overview.
@@ -255,7 +255,7 @@ An "honest heuristic, not a black box":
 | Counterfactual target | lift the 2 weakest areas to `TARGET_AREA_SCORE = 0.7`, recompute → `projectedPassProbability` (never below current) |
 | UI bands (`passBand`) | ≥ 70 "On track to pass" green · ≥ 45 "On the borderline" amber · > 0 "Not ready yet" red · 0 "Take the diagnostic" grey |
 
-`learnerProfileSummary(paperId)` compiles experience line + latest diagnostic + weakest live-practice areas (seen ≥ 2, accuracy < 70%) into the prompt context that makes Lara stateful.
+`learnerProfileSummary(paperId)` compiles experience line + latest diagnostic + weakest live-practice areas (seen ≥ 2, accuracy < 70%) into the prompt context that makes Charles stateful.
 
 ### 4.2 Practice stats (`acca.ts`)
 
@@ -293,9 +293,9 @@ An "honest heuristic, not a black box":
 
 | Tier | Price | Key entitlements |
 |---|---|---|
-| **Free (7-day trial)** | $0, no card | Curated banks (9 papers), practice + instant marking + explanations, SRS flashcards, study plan + readiness, limited Lara, streaks/goals, full roadmap |
+| **Free (7-day trial)** | $0, no card | Curated banks (9 papers), practice + instant marking + explanations, SRS flashcards, study plan + readiness, limited Charles, streaks/goals, full roadmap |
 | **Beginner** | $9.99/mo · annual $6.67/mo ($79.99/yr) | + unlimited practice, weak-area targeting, per-area analytics, heatmap/dashboard, leaderboard, reminders, countdown & phased plan, EPSM+PER tracker |
-| **Pro** | $14.99/mo · **Annual Pro $119.99/yr (= $10.00/mo, "Save 33%")** | + timed mocks, AI Examiner, custom practice from topic/notes, unlimited Lara, mock history & pass-line tracking, Google Calendar sync, EN & RU, priority AI |
+| **Pro** | $14.99/mo · **Annual Pro $119.99/yr (= $10.00/mo, "Save 33%")** | + timed mocks, AI Examiner, custom practice from topic/notes, unlimited Charles, mock history & pass-line tracking, Google Calendar sync, EN & RU, priority AI |
 
 Positioning line: **"Cheaper than one tutoring hour."** All plans carry the 7-day trial; after it, unpaid accounts drop to free with all progress retained (FAQ). Cancel anytime from Settings.
 
@@ -396,7 +396,7 @@ Aligned to the learning-OS layer map; none of these block the shipped loop:
 
 **Onboarding additions:** target pass probability chips (65/75/85 → PaperPlan.targetProb, default 75); custom daily minutes input (5–240); ValueTrio on the hero; StartMode ("zero"|"assess") — the ready slide's "Brand new to {paper}?" exit sends zero-start learners to /dashboard where the diagnostic is gated behind 15 answered questions (DIAG_UNLOCK_ANSWERS, Dashboard.tsx) with a progress meter.
 
-**Diagnostic v2:** stratified ladder (1 easy + 1 medium + 1 hard from EVERY area, cap 25; FA 8 areas → 24), exam-style countdown 100s/question with auto-submit; results show the current→target gap strip then LaraPlan — a staged generation scene (4 build steps) revealing: the daily block (Brief → Practice → Cards → Bank at studyTime), the top-3 weak-area queue, the road strip (Topics → Bank runs → 60% MOCK gate → Mock 1·2·3 → target% → exam), three horizons (operational/tactical/strategic incl. estimated membership date), and "Start day 1" → /study?do=weak.
+**Diagnostic v2:** stratified ladder (1 easy + 1 medium + 1 hard from EVERY area, cap 25; FA 8 areas → 24), exam-style countdown 100s/question with auto-submit; results show the current→target gap strip then CharlesPlan — a staged generation scene (4 build steps) revealing: the daily block (Brief → Practice → Cards → Bank at studyTime), the top-3 weak-area queue, the road strip (Topics → Bank runs → 60% MOCK gate → Mock 1·2·3 → target% → exam), three horizons (operational/tactical/strategic incl. estimated membership date), and "Start day 1" → /study?do=weak.
 
 **Topic flow (5 steps):** UNDERSTAND (Topic Brief: concept/structure/example/traps — acca-briefs.ts + acca-briefs-skills.ts, 22 briefs FA/FR/PM/TX) → LEARN THE ESSENTIALS (5 guided) → MEMORISE (reels flashcards: full-screen, swipe up=got it/down=again, story progress bar) → PROVE IT (65% check) → DRILL TO DEPTH (N/65 practice ladder).
 
@@ -413,7 +413,7 @@ Aligned to the learning-OS layer map; none of these block the shipped loop:
 **v1 (cdc9b95):** CBE toolbelt (calculator, per-paper formulae sheets, quick notes) docked in every answering surface; the answer spreadsheet (`spreadsheet.ts` + `SpreadsheetPad`, refs/ranges/functions, `serializeForMarking` feeds workings into AI marking); the constructed-response studio (`ExaminerView`) with the exam clock at official min/mark; the `/notes` hub.
 
 **Phase 2 (this commit):**
-- **Sectioned CBE mock (`CbeMockRunner` + `acca-cbe-mock.ts`)** — THE mock is now the full sitting in the paper's official shape: Section A OT → Section B OT cases → Section C constructed, one exam clock priced at official minutes-per-mark, **CBE question navigator** (per-section grid: answered / flagged / current), **flag-for-review**, free navigation, review screen, auto-submit at zero — and Lara marks constructed answers INTO the mock score. Composition is marks-driven off the blueprint and degrades honestly (a section with no content drops; the clock scales to composed marks). Section A keeps the three disjoint mock forms; gating (60% prob + Pro) and `recordMock` semantics unchanged.
+- **Sectioned CBE mock (`CbeMockRunner` + `acca-cbe-mock.ts`)** — THE mock is now the full sitting in the paper's official shape: Section A OT → Section B OT cases → Section C constructed, one exam clock priced at official minutes-per-mark, **CBE question navigator** (per-section grid: answered / flagged / current), **flag-for-review**, free navigation, review screen, auto-submit at zero — and Charles marks constructed answers INTO the mock score. Composition is marks-driven off the blueprint and degrades honestly (a section with no content drops; the clock scales to composed marks). Section A keeps the three disjoint mock forms; gating (60% prob + Pro) and `recordMock` semantics unchanged.
 - **Authored OT cases (`acca-cases-*.ts`, `OtCase` type)** — Section B scenario blocks written as UNITS (never faked by grouping bank questions): FR × 3 (leases / consolidation / interpretation, 5 × 2 marks each), FA × 2 MTQ-style (consolidation + interpretation, 5 × 3 marks each). Papers without authored cases run Section B on standalone OTs and say so. Backlog: PM/TX/FM/AA case sets.
 - **Notes account sync (migration `0020_acca_notes.sql` + `acca-notes-cloud.ts`)** — one RLS-guarded JSONB row per user, per-note newest-updatedAt merge with deletion tombstones (120-day TTL); reconciles on session start and on /notes open, debounced push after every local change. localStorage stays authoritative offline.
 

@@ -40,7 +40,7 @@ Catch-all `*` → `/dashboard` (see `src/App.tsx`).
 - `auth/` — `auth-ui.tsx` (shared auth chrome, IRIDESCENT gradient), `auth-characters.tsx`.
 - `ui/` — landing-page eye-candy primitives (spotlight-card, magnetic-button,
   testimonials-columns, nav-header, motion-footer, …). Landing-only; app screens use `acca/ui.tsx`.
-- Root level — `PaywallModal.tsx`, `PricingCard.tsx`, `Toast.tsx`, `LaraAvatar.tsx`,
+- Root level — `PaywallModal.tsx`, `PricingCard.tsx`, `Toast.tsx`, `CharlesAvatar.tsx`,
   `NotificationBell.tsx`, `CalendarSync.tsx`, `LazyOnView.tsx`, `route-guards.tsx`
   (`ProtectedRoute`/`GuestRoute`), `dashboard-layout.tsx`, `info-page-layout.tsx`,
   `landing-3d.tsx`, `lara-landing-widget.tsx`, `language-toggle.tsx`, `ErrorBoundary.tsx`.
@@ -477,4 +477,4 @@ same commit when you change any law it states.*
 
 ## Addendum — Loop v2 modules (2026-07-10)
 
-New invariants: PaperPlan.targetProb is the plan's ambition (65/75/85, default 75) — the diagnostic gap strip and LaraPlan read it; StartMode (acca-profile) gates the Dashboard diagnostic CTA for zero-start learners (15 answers, DIAG_UNLOCK_ANSWERS); bank runs live in acca-bankruns.ts (BANK_RUN_SIZE 50, 90s/q, BANK_RUNS_TARGET 3) and record via recordBankRun in AccaStudy's results effect — note the effect fires AFTER first paint, so any "run N" display must capture its number at mount, not live-read; topic briefs: getTopicBrief falls back TOPIC_BRIEFS → SKILLS_BRIEFS — add new papers' briefs as new modules in that chain; question banks are modules spread into QUESTIONS (acca-content-<paper><n>.ts) — always run the dup-id check after wiring; funnel events (analytics.ts): onboarding_step/complete, diagnostic_started/completed, paywall_shown/dismissed/checkout_clicked — keep firing on any funnel change.
+New invariants: PaperPlan.targetProb is the plan's ambition (65/75/85, default 75) — the diagnostic gap strip and CharlesPlan read it; StartMode (acca-profile) gates the Dashboard diagnostic CTA for zero-start learners (15 answers, DIAG_UNLOCK_ANSWERS); bank runs live in acca-bankruns.ts (BANK_RUN_SIZE 50, 90s/q, BANK_RUNS_TARGET 3) and record via recordBankRun in AccaStudy's results effect — note the effect fires AFTER first paint, so any "run N" display must capture its number at mount, not live-read; topic briefs: getTopicBrief falls back TOPIC_BRIEFS → SKILLS_BRIEFS — add new papers' briefs as new modules in that chain; question banks are modules spread into QUESTIONS (acca-content-<paper><n>.ts) — always run the dup-id check after wiring; funnel events (analytics.ts): onboarding_step/complete, diagnostic_started/completed, paywall_shown/dismissed/checkout_clicked — keep firing on any funnel change.

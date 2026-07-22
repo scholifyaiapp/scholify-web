@@ -68,7 +68,7 @@ The founder configured production, and every leg was then verified against the l
 
 - **`/api/health`** → `status: ok`, `billing: "live"` — the billing rail is **Stripe** (all six keys), not Paddle (dormant by design since `c667e6e`); Supabase url + anon + service role set; PostHog on.
 - **Fresh signup** created a real Supabase account (email auto-confirm on, Google OAuth also enabled), and the app's `start-trial` path (`src/lib/auth.tsx` → `api/paddle?action=start-trial`) granted the **7-day Pro trial server-side**: `trial_ends_at` exactly 7 days out, written via the service role — which proves `SUPABASE_SERVICE_ROLE_KEY` too.
-- **One metered AI call** (`acca-tutor`) returned a real Lara answer, no `isFallback`. Metering fails closed, so a served answer is also proof the `ai_usage` tables exist and the meter's read/write path works.
+- **One metered AI call** (`acca-tutor`) returned a real Charles answer, no `isFallback`. Metering fails closed, so a served answer is also proof the `ai_usage` tables exist and the meter's read/write path works.
 - **Checkout** produced a live `checkout.stripe.com` session for the Pro price (session created, not completed — nobody charged).
 - **All five scripts green the same day:** 82 tests, typecheck (app + api), `audit:content` (15/15 papers clear the launch floor), `verify:loading` (15/15 load only their own content), `validate:chapters` (74 chapters, 2,563 blocks).
 

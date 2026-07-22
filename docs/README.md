@@ -16,6 +16,6 @@ The complete company and product documentation set, written 2026-07-08 against t
 | 9 | [The Content Program](09-content-program.md) | BT→Professional content pipeline: sources policy, Kaplan-equal stack, wave plan, Examiner Intelligence |
 | 10 | [The Completion & Launch Plan](10-completion-launch-plan.md) | Audit-grounded build→live→sell→scale plan: launch-readiness scorecard, six phases, security hard-gates, go-live runbook |
 | 11 | [Pre-Announcement Audit & Launch Plan](11-audit-and-announcement-plan.md) | What a five-front adversarial audit found, what was fixed, and the five gates to a public announcement |
-| 12 | [The Personalized Learning Loop](12-learning-loop-and-personalization.md) | **CURRENT.** Onboarding → diagnostic → Lara's daily plan: the founder's vision, what's built, the gaps, and the phased plan to close them |
+| 12 | [The Personalized Learning Loop](12-learning-loop-and-personalization.md) | **CURRENT.** Onboarding → diagnostic → Charles's daily plan: the founder's vision, what's built, the gaps, and the phased plan to close them |
 
 **Reading order for a new team member:** 0 first, always. Then 1 → 6 → 2 → 3 (builders) or 1 → 8 → 7 (business).

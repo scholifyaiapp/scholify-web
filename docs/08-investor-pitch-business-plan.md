@@ -41,7 +41,7 @@ Scholify replaces "here's content, good luck" with a **closed control loop per p
 - **Today's mission.** The model — not the student — picks today's work: a mix of drills on the two weakest syllabus areas, one timed section, spaced review of last week's misses, sized to the time the student has. Complete it and the probability visibly moves. That single interaction — *do the work, watch the number respond* — is the habit engine.
 - **The 60% gate and mock ladder.** The loop refuses to let students sleepwalk into an exam: readiness must clear 60% before the mock sequence opens, then Mock 1→2→3 under exam conditions calibrate the probability against full-length performance.
 - **AI Examiner.** The student writes a constructed answer to an SBL-style requirement; it comes back **marked in seconds** — mark allocation, what earned credit, what a real marker would have wanted. This is the tutor-only feedback loop, unbundled to software.
-- **Lara, the stateful AI tutor.** Not a blank chatbot: Lara knows the student's history, weak areas, and mistakes across sessions, and teaches in that context.
+- **Charles, the stateful AI tutor.** Not a blank chatbot: Charles knows the student's history, weak areas, and mistakes across sessions, and teaches in that context.
 - **The recovery run.** Results day, didn't pass. Instead of a dead end, Scholify ingests the actual result, recalibrates the probability model against reality, and opens a recovery run: *"You now know exactly where the marks were lost."* The plan rebuilds around the real gaps. This mechanic — recalibration on **real exam outcomes**, not just practice data — is unique in the category and is our emotional wedge into the retaker segment.
 - **Full qualification & offline-first.** BT→AAA plus EPSM/PER tracking under one subscription; the whole thing works without connectivity, which in Uzbekistan and much of the CIS is a real feature, not a checkbox.
 
@@ -63,7 +63,7 @@ This is not a deck about software we intend to write. **Live at scholifyapp.com 
 - Full learning loop per paper: diagnostic, live pass-probability engine, model-chosen daily missions, 60% readiness gate, Mock 1→2→3 sequence
 - Real-exam result ingestion → probability recalibration → **recovery run** flow
 - 4-question analytics dashboard
-- AI Examiner (written-answer marking) and Lara (stateful AI tutor)
+- AI Examiner (written-answer marking) and Charles (stateful AI tutor)
 - Full qualification coverage BT→AAA + EPSM/PER tracking
 - Offline-first architecture with progress sync
 - Streak system with paywalls at days 7/14/21; email reminder infrastructure
@@ -156,7 +156,7 @@ The strategic point: at 85–87% contribution margin, nearly every subscription 
 | Written-answer marking | **Seconds (AI Examiner)** | Limited | Days, human | No | Unreliable, no mark scheme discipline |
 | Full qualification BT→AAA + EPSM/PER | **Yes, one sub** | Partial | Per-paper purchase | Per-paper purchase | n/a |
 | Offline-first | **Yes** | No | n/a | No | No |
-| Stateful tutor | **Yes (Lara)** | Basic chat | Human (scheduled) | No | Stateless |
+| Stateful tutor | **Yes (Charles)** | Basic chat | Human (scheduled) | No | Stateless |
 | Price | **$9.99–14.99/mo** | Local subscription | **€300–800/paper/course** | £50–150+/paper | $0–20/mo, no structure |
 | Structured content authority | Building | Building | **Strong** | **Strong (brand)** | None |
 
