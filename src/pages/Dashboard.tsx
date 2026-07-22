@@ -159,7 +159,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 14px", borderRadius: R.lg, background: C.card, border: `1px solid ${C.border}`, marginBottom: SP.lg }}
           >
-            <CharlesMascot pose="wave" size={56} float />
+            <CharlesMascot pose="wave" size="clamp(48px, 15vw, 56px)" float />
             <div style={{ minWidth: 0, fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
               <strong style={{ color: C.text }}>Charles · pit-wall briefing:</strong>{" "}
               {zeroStart

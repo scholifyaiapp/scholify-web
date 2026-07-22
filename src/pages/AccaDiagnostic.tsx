@@ -583,7 +583,7 @@ function ResultsView({
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       {/* Charles presents the readiness read */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
-        <CharlesMascot pose="present" size={92} />
+        <CharlesMascot pose="present" size="clamp(76px, 24vw, 92px)" />
       </div>
       <div style={{ textAlign: "center", marginBottom: 6, fontSize: 12, fontWeight: 700, color: DIM, letterSpacing: 0.4 }}>
         {paperCode} · {paperName}

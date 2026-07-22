@@ -1165,7 +1165,7 @@ function Overview({
           </div>
           <div style={{ width: "100%", maxWidth: 520, margin: "0 auto", padding: "44px 20px 48px" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-              <CharlesMascot pose="present" size={92} />
+              <CharlesMascot pose="present" size="clamp(76px, 24vw, 92px)" />
             </div>
             <div style={{ textAlign: "center", marginBottom: 6 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, color: "#C80000" }}><Icon name="lock" size={13} color="#C80000" /> LOCKED IN</div>
@@ -1272,7 +1272,7 @@ function Overview({
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, margin: "18px 0 6px" }}>
           {missionPct >= 100 ? (
             <>
-              <CharlesMascot pose="celebrate" size={132} />
+              <CharlesMascot pose="celebrate" size="clamp(108px, 32vw, 132px)" />
               <div style={{ fontSize: 13, fontWeight: 800, color: C.green }}>Today's mission complete — great work!</div>
             </>
           ) : (
@@ -2472,7 +2472,7 @@ function Results({
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
       {/* Charles reacts to the result — celebrating a pass, steady after a miss */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-        <CharlesMascot pose={passed ? "success" : "calm"} size={96} />
+        <CharlesMascot pose={passed ? "success" : "calm"} size="clamp(80px, 26vw, 96px)" />
       </div>
       <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600, marginBottom: 14 }}>
         {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunNo} OF ${BANK_RUNS_TARGET} COMPLETE` : "PRACTICE COMPLETE"}

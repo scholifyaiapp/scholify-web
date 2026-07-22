@@ -261,8 +261,8 @@ export default function PaywallModal({
               <div
                 style={{
                   position: "relative",
-                  width: 60,
-                  height: 60,
+                  width: header.kind === "lara" ? "auto" : 60,
+                  height: header.kind === "lara" ? "auto" : 60,
                   margin: "0 auto",
                   display: "flex",
                   alignItems: "center",
