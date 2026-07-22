@@ -1,5 +1,6 @@
 import { motion } from "motion/react"
 import { Button, C, R, SHADOW, SP, TYPE, GRAD } from "@/components/acca/ui"
+import { LogoSpinner } from "@/components/brand"
 
 /*
  * The loading + failure treatment for a paper's content chunk.
@@ -62,19 +63,7 @@ export function PaperContentSkeleton({ paperId }: { paperId?: string | null }) {
       style={{ display: "grid", gap: SP.lg }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
-        <motion.span
-          aria-hidden
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
-          style={{
-            width: 15,
-            height: 15,
-            borderRadius: R.pill,
-            border: `2px solid ${C.brandLine}`,
-            borderTopColor: C.brand,
-            display: "inline-block",
-          }}
-        />
+        <LogoSpinner size={18} />
         <span style={{ ...TYPE.small, color: C.soft }}>
           Loading {paperId ? `${paperId} ` : ""}study material…
         </span>

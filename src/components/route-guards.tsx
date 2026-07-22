@@ -5,6 +5,7 @@ import { entitlementOf } from "@/lib/entitlement"
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { isStripeConfigured } from "@/lib/stripe"
 import PaywallModal from "@/components/PaywallModal"
+import { LogoSpinner } from "@/components/brand"
 
 /** Full-screen loader shown while the auth session is being resolved. */
 function AuthLoading() {
@@ -13,18 +14,7 @@ function AuthLoading() {
       style={{ background: "var(--sch-bg)" }}
       className="min-h-[100dvh] w-full flex items-center justify-center"
     >
-      <style>{`@keyframes auth-guard-spin{to{transform:rotate(360deg)}}`}</style>
-      <span
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          border: "2px solid rgba(200,0,0,0.25)",
-          borderTopColor: "rgba(200,0,0,0.9)",
-          animation: "auth-guard-spin 0.7s linear infinite",
-          display: "block",
-        }}
-      />
+      <LogoSpinner size={52} />
     </div>
   )
 }

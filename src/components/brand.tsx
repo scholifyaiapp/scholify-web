@@ -12,6 +12,24 @@ import { useId, type CSSProperties } from "react"
 
 export type MarkVariant = "gradient" | "ink" | "white" | "red"
 
+/**
+ * The loading spinner — our own mark, circulating smoothly right-to-left
+ * (counter-clockwise). Uses a CSS keyframe (not JS) so the app-wide
+ * prefers-reduced-motion rule neutralises it to a still logo for those users.
+ */
+export function LogoSpinner({ size = 44, variant = "red" }: { size?: number; variant?: MarkVariant }) {
+  return (
+    <span
+      aria-label="Loading"
+      role="status"
+      style={{ display: "inline-flex", width: size, height: size, transformOrigin: "center", animation: "sch-logo-spin 1.6s linear infinite" }}
+    >
+      <style>{"@keyframes sch-logo-spin{to{transform:rotate(-360deg)}}"}</style>
+      <ScholifyMark size={size} variant={variant} />
+    </span>
+  )
+}
+
 const VARIANT_COLOR: Record<Exclude<MarkVariant, "gradient">, string> = {
   ink: "#14141A",
   white: "#FAFAF7",
