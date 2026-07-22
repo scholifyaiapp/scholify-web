@@ -35,6 +35,21 @@ const DARK: Record<CharlesPose, boolean> = {
   plan: false, success: false, thinking: false, start: false, run: false, wave2: false,
 }
 
+/*
+ * PLUG-AND-PLAY REAL ANIMATION.
+ * Drop a TRANSPARENT animated file (animated WebP / APNG / GIF) into
+ * public/charles/anim/ and map the pose here. When a pose has an entry, the
+ * mascot plays that file natively (real frame animation — hand wave, blink, …)
+ * and the CSS "float" idle is switched off so the frames do the motion.
+ * Until then, poses fall back to the static render + the lively CSS idle.
+ * Example:  wave: "/charles/anim/wave.webp",
+ */
+const ANIM: Partial<Record<CharlesPose, string>> = {
+  // wave: "/charles/anim/wave.webp",
+  // celebrate: "/charles/anim/celebrate.webp",
+  // thinking: "/charles/anim/thinking.webp",
+}
+
 export default function CharlesMascot({
   pose = "wave",
   size = 120,
@@ -55,10 +70,13 @@ export default function CharlesMascot({
 }) {
   const reduced = useReducedMotion()
   const framed = frame ?? DARK[pose]
+  // Real animated file wins; when present, let the frames animate (no CSS float).
+  const animSrc = ANIM[pose]
+  const doFloat = float && !animSrc
 
   const img = (
     <img
-      src={SRC[pose]}
+      src={animSrc ?? SRC[pose]}
       alt="Charles, your Scholify race engineer"
       loading="lazy"
       style={{
@@ -101,12 +119,12 @@ export default function CharlesMascot({
     >
       <motion.div
         animate={
-          float
+          doFloat
             ? { y: [0, -9, 0], scale: [1, 1.025, 1], rotate: [-1.6, 1.6, -1.6] }
             : { y: 0 }
         }
         transition={
-          float
+          doFloat
             ? {
                 // Different periods → organic, never-repeating "alive" idle.
                 y: { duration: 3.1, repeat: Infinity, ease: "easeInOut" },
