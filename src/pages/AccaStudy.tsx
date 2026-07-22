@@ -11,7 +11,6 @@ import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import PaywallModal from "@/components/PaywallModal"
-import TutorPanel from "@/components/acca/TutorPanel"
 import ExaminerView from "@/components/acca/ExaminerView"
 import CbeMockRunner from "@/components/acca/CbeMockRunner"
 import CbeToolsDock, { CbeBlueprintCard } from "@/components/acca/CbeTools"
@@ -59,7 +58,7 @@ import { getStudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
-import { recordAnswerTiming, recordConfidence, recordMistake, snapshotProbability, MISTAKE_LABELS, type MistakeTag } from "@/lib/acca-analytics"
+import { recordMistake, snapshotProbability } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getStartMode } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
@@ -68,6 +67,7 @@ import { nextMockForm } from "@/lib/acca-mockforms"
 import { withShuffledOptions } from "@/lib/acca-options"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
+import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
 
 /* ──────────────────────────────────────────────────────────────
@@ -152,15 +152,17 @@ export default function AccaStudy() {
     setQuestions(qs.map((q) => withShuffledOptions(q)))
   }
   const [idx, setIdx] = useState(0)
-  const [choice, setChoice] = useState<number | null>(null)
-  const [numInput, setNumInput] = useState("")
-  const [graded, setGraded] = useState(false)
-  const [wasCorrect, setWasCorrect] = useState(false)
+  // Exam-style: answers live per index so the learner can jump around with the
+  // question map and change any answer; grading happens once, at Finish.
+  const [answersMap, setAnswersMap] = useState<Record<number, number | number[] | string>>({})
+  const [flagsMap, setFlagsMap] = useState<Record<number, boolean>>({})
   const [correctCount, setCorrectCount] = useState(0)
   const [log, setLog] = useState<{ area: string; correct: boolean }[]>([])
+  const [reviewItems, setReviewItems] = useState<{ q: AccaQuestion; response: number | number[] | string | undefined; correct: boolean }[]>([])
   const [isMock, setIsMock] = useState(false)
   const [isBankRun, setIsBankRun] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
+  const finishRef = useRef<() => void>(() => {})
 
   // topic path (Kaplan-style chapter flow)
   const [topicArea, setTopicArea] = useState<string | null>(null)
@@ -255,7 +257,7 @@ export default function AccaStudy() {
         setTimeLeft((t) => {
           if (t <= 1) {
             if (timerRef.current) clearInterval(timerRef.current)
-            setMode("results")
+            finishRef.current()
             return 0
           }
           return t - 1
@@ -439,58 +441,66 @@ export default function AccaStudy() {
   }
 
   function resetQuestion() {
-    setChoice(null)
-    setNumInput("")
-    setGraded(false)
-    setWasCorrect(false)
+    setAnswersMap({})
+    setFlagsMap({})
+    setReviewItems([])
   }
 
-  function currentResponse(q: AccaQuestion): number | number[] {
-    return q.type === "number" ? parseFloat(numInput.replace(/,/g, "")) : choice ?? -1
+  function setAnswer(i: number, v: number | number[] | string) {
+    setAnswersMap((m) => ({ ...m, [i]: v }))
   }
+  function toggleFlag(i: number) {
+    setFlagsMap((m) => ({ ...m, [i]: !m[i] }))
+  }
+  function isAnswered(i: number): boolean {
+    const r = answersMap[i]
+    const q = questions[i]
+    if (r === undefined || !q) return false
+    if (q.type === "number") return typeof r === "string" && r.trim() !== "" && !Number.isNaN(parseFloat(r.replace(/,/g, "")))
+    if (q.type === "multi") return Array.isArray(r) && r.length > 0
+    return typeof r === "number" && r >= 0
+  }
+  const answeredCount = questions.reduce((n, _q, i) => n + (isAnswered(i) ? 1 : 0), 0)
 
-  function submit() {
-    const q = questions[idx]
-    if (!q) return
-    const result = gradeQuestion(q, currentResponse(q))
-    recordAnswer(q.paper, q, result.correct)
-    recordDayActive(q.paper)
+  // Exam-style finish: grade every ANSWERED question once, build the score, the
+  // area log (answered-only, so the results effect can still attribute unanswered
+  // questions to the clock), and the explained review, then show results.
+  function finishSession() {
+    if (timerRef.current) clearInterval(timerRef.current)
+    let correct = 0
+    const newLog: { area: string; correct: boolean }[] = []
+    const review: { q: AccaQuestion; response: number | number[] | string | undefined; correct: boolean }[] = []
+    questions.forEach((q, i) => {
+      const r = answersMap[i]
+      let resp: number | number[] | null = null
+      if (q.type === "number") {
+        if (typeof r === "string" && r.trim() !== "") {
+          const n = parseFloat(r.replace(/,/g, ""))
+          if (!Number.isNaN(n)) resp = n
+        }
+      } else if (q.type === "multi") {
+        if (Array.isArray(r) && r.length > 0) resp = r
+      } else if (typeof r === "number") {
+        resp = r
+      }
+      if (resp !== null) {
+        const g = gradeQuestion(q, resp)
+        recordAnswer(q.paper, q, g.correct)
+        recordDayActive(q.paper)
+        if (g.correct) correct++
+        newLog.push({ area: q.area, correct: g.correct })
+        review.push({ q, response: r, correct: g.correct })
+      } else {
+        review.push({ q, response: undefined, correct: false })
+      }
+    })
     queueAccaProgressPush()
-    setLog((l) => [...l, { area: q.area, correct: result.correct }])
-    setWasCorrect(result.correct)
-    setGraded(true)
-    if (result.correct) setCorrectCount((c) => c + 1)
+    setCorrectCount(correct)
+    setLog(newLog)
+    setReviewItems(review)
+    setMode("results")
   }
-
-  // mock: record silently and advance with no feedback
-  function mockNext() {
-    const q = questions[idx]
-    if (!q) return
-    const result = gradeQuestion(q, currentResponse(q))
-    recordAnswer(q.paper, q, result.correct)
-    recordDayActive(q.paper)
-    queueAccaProgressPush()
-    setLog((l) => [...l, { area: q.area, correct: result.correct }])
-    if (result.correct) setCorrectCount((c) => c + 1)
-    advance()
-  }
-
-  function advance() {
-    if (idx + 1 >= questions.length) {
-      if (timerRef.current) clearInterval(timerRef.current)
-      setMode("results")
-      return
-    }
-    setIdx((i) => i + 1)
-    resetQuestion()
-  }
-
-  const canSubmit = useMemo(() => {
-    const q = questions[idx]
-    if (!q) return false
-    if (q.type === "number") return numInput.trim() !== "" && !Number.isNaN(parseFloat(numInput))
-    return choice !== null
-  }, [questions, idx, numInput, choice])
+  finishRef.current = finishSession
 
   function leaveSession() {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -595,22 +605,20 @@ export default function AccaStudy() {
 
           {mode === "session" && questions[idx] && (
             <SessionView
-              key={`q-${idx}`}
               q={questions[idx]}
               index={idx}
               total={questions.length}
-              choice={choice}
-              numInput={numInput}
-              graded={graded}
-              wasCorrect={wasCorrect}
-              canSubmit={canSubmit}
-              isMock={isMock || isBankRun}
+              value={answersMap[idx]}
+              isTimed={isMock || isBankRun}
               timeLeft={timeLeft}
-              onChoice={setChoice}
-              onNum={setNumInput}
-              onSubmit={submit}
-              onNext={advance}
-              onMockNext={mockNext}
+              answeredCount={answeredCount}
+              isAnswered={isAnswered}
+              isFlagged={(i) => !!flagsMap[i]}
+              currentFlagged={!!flagsMap[idx]}
+              onChange={(v) => setAnswer(idx, v)}
+              onGo={(i) => setIdx(Math.max(0, Math.min(questions.length - 1, i)))}
+              onToggleFlag={() => toggleFlag(idx)}
+              onFinish={finishSession}
               onQuit={leaveSession}
             />
           )}
@@ -647,6 +655,7 @@ export default function AccaStudy() {
               isTopicTest={isTopicTest}
               topicArea={topicArea}
               log={log}
+              review={reviewItems}
               onAgain={() => (isTopicTest && topicArea ? startTopicSession(topicArea, true) : isBankRun ? startBankRun() : startSession(false, isMock))}
               onOverview={leaveSession}
               onAction={runLoopAction}
@@ -2101,79 +2110,39 @@ function fmtTime(s: number): string {
 }
 
 function SessionView({
-  q, index, total, choice, numInput, graded, wasCorrect, canSubmit, isMock, timeLeft,
-  onChoice, onNum, onSubmit, onNext, onMockNext, onQuit,
+  q, index, total, value, isTimed, timeLeft, answeredCount,
+  isAnswered, isFlagged, currentFlagged, onChange, onGo, onToggleFlag, onFinish, onQuit,
 }: {
   q: AccaQuestion
   index: number
   total: number
-  choice: number | null
-  numInput: string
-  graded: boolean
-  wasCorrect: boolean
-  canSubmit: boolean
-  isMock: boolean
+  value: number | number[] | string | undefined
+  isTimed: boolean
   timeLeft: number
-  onChoice: (i: number) => void
-  onNum: (v: string) => void
-  onSubmit: () => void
-  onNext: () => void
-  onMockNext: () => void
+  answeredCount: number
+  isAnswered: (i: number) => boolean
+  isFlagged: (i: number) => boolean
+  currentFlagged: boolean
+  onChange: (v: number | number[] | string) => void
+  onGo: (i: number) => void
+  onToggleFlag: () => void
+  onFinish: () => void
   onQuit: () => void
 }) {
-  const correctIdx = Array.isArray(q.correct) ? q.correct[0] : q.correct
-  const pct = (index / total) * 100
-  const lowTime = isMock && timeLeft <= 60
-
-  // ── Analytics instrumentation (all optional, never blocks the flow) ──
-  const shownAtRef = useRef(performance.now())
-  const [sure, setSure] = useState<boolean | null>(null)
-  const [mistakeTag, setMistakeTag] = useState<MistakeTag | null>(null)
-  const confidenceRecorded = useRef(false)
-  useEffect(() => {
-    shownAtRef.current = performance.now()
-    setSure(null)
-    setMistakeTag(null)
-    confidenceRecorded.current = false
-  }, [q.id])
-
-  // Confidence resolves the moment the answer is graded.
-  useEffect(() => {
-    if (graded && sure !== null && !confidenceRecorded.current) {
-      confidenceRecorded.current = true
-      recordConfidence(q.paper, sure, wasCorrect)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graded])
-
-  function recordTiming() {
-    recordAnswerTiming(q.paper, (performance.now() - shownAtRef.current) / 1000)
-  }
-  function handleSubmit() {
-    recordTiming()
-    onSubmit()
-  }
-  function handleMockNext() {
-    recordTiming()
-    onMockNext()
-  }
-  function handleNext() {
-    // A missed question defaults to a knowledge gap unless the learner said why.
-    if (!wasCorrect && mistakeTag === null) recordMistake(q.paper, "knowledge")
-    onNext()
-  }
-  function tagMistake(tag: MistakeTag) {
-    if (mistakeTag !== null) return
-    setMistakeTag(tag)
-    recordMistake(q.paper, tag)
-  }
+  // Controlled by the parent's per-index answer store — jumping back restores
+  // the pick. Exam-style: nothing grades here; the map + Finish do the work.
+  const lowTime = isTimed && timeLeft <= 60
+  const numStr = typeof value === "string" ? value : ""
+  const single = typeof value === "number" ? value : null
+  const multi = Array.isArray(value) ? value : []
+  const pct = total > 0 ? (answeredCount / total) * 100 : 0
 
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <button onClick={onQuit} style={{ ...backBtn, marginBottom: 0 }}>← Exit</button>
         <span style={{ color: DIM, fontSize: 13, fontWeight: 600 }}>Question {index + 1} / {total}</span>
-        {isMock ? (
+        {isTimed ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 14, color: lowTime ? C.red : TEXT, fontVariantNumeric: "tabular-nums" }}><Icon name="mock" size={15} color={lowTime ? C.red : TEXT} /> {fmtTime(timeLeft)}</span>
         ) : (
           <span style={{ color: DIM, fontSize: 12 }}>Area {q.area}</span>
@@ -2185,38 +2154,35 @@ function SessionView({
       </div>
 
       <div style={card({ padding: 22 })}>
+        {q.type === "multi" && (
+          <div style={{ fontSize: 11, fontWeight: 700, color: DIM, marginBottom: 8, letterSpacing: 0.4 }}>SELECT ALL THAT APPLY</div>
+        )}
         <p style={{ fontSize: 17, lineHeight: 1.55, color: TEXT, fontWeight: 550, margin: "0 0 20px" }}>{q.stem}</p>
 
         {q.type === "number" ? (
           <input
             type="text"
             inputMode="decimal"
-            value={numInput}
-            disabled={graded}
-            onChange={(e) => onNum(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && canSubmit && !graded && !isMock && onSubmit()}
+            value={numStr}
+            onChange={(e) => onChange(e.target.value)}
             placeholder={q.unit ? `Enter amount (${q.unit})` : "Enter your answer"}
-            style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", fontSize: 16, borderRadius: 12, border: `1.5px solid ${graded ? (wasCorrect ? C.green : C.red) : BORDER}`, background: "var(--sch-bg)", color: TEXT, outline: "none" }}
+            style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", fontSize: 16, borderRadius: 12, border: `1.5px solid ${BORDER}`, background: "var(--sch-bg)", color: TEXT, outline: "none" }}
           />
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {q.options?.map((opt, i) => {
-              const isChosen = choice === i
-              const isCorrect = i === correctIdx
-              let bd = BORDER
-              let bg = CARD
-              if (graded && isCorrect) { bd = C.green; bg = "rgba(16,185,129,0.08)" }
-              else if (graded && isChosen && !isCorrect) { bd = C.red; bg = "rgba(239,68,68,0.08)" }
-              else if (isChosen) { bd = "#C80000" }
+              const picked = q.type === "multi" ? multi.includes(i) : single === i
               return (
                 <button
                   key={i}
-                  onClick={() => !graded && onChoice(i)}
-                  disabled={graded}
-                  style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${bd}`, background: bg, color: TEXT, fontSize: 15, cursor: graded ? "default" : "pointer", transition: "border-color .15s, background .15s" }}
+                  onClick={() => {
+                    if (q.type === "multi") onChange(multi.includes(i) ? multi.filter((x) => x !== i) : [...multi, i].sort((a, b) => a - b))
+                    else onChange(i)
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${picked ? "#C80000" : BORDER}`, background: picked ? "rgba(200,0,0,0.06)" : CARD, color: TEXT, fontSize: 15, cursor: "pointer", transition: "border-color .15s, background .15s" }}
                 >
-                  <span style={{ width: 26, height: 26, borderRadius: 7, border: `1.5px solid ${bd}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-                    {String.fromCharCode(65 + i)}
+                  <span style={{ width: 26, height: 26, borderRadius: q.type === "multi" ? 7 : 999, border: `1.5px solid ${picked ? "#C80000" : BORDER}`, background: picked && q.type === "multi" ? "#C80000" : "transparent", color: picked && q.type === "multi" ? "#fff" : TEXT, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                    {q.type === "multi" ? (picked ? "✓" : "") : String.fromCharCode(65 + i)}
                   </span>
                   <span style={{ flex: 1 }}>{opt}</span>
                 </button>
@@ -2224,127 +2190,45 @@ function SessionView({
             })}
           </div>
         )}
-
-        {/* optional one-tap confidence mark — feeds calibration analytics */}
-        {!isMock && !graded && canSubmit && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}
-          >
-            <span style={{ fontSize: 11.5, color: DIM, fontWeight: 650 }}>How sure are you?</span>
-            {([true, false] as const).map((v) => {
-              const on = sure === v
-              return (
-                <button
-                  key={String(v)}
-                  onClick={() => setSure(on ? null : v)}
-                  style={{
-                    padding: "5px 12px",
-                    borderRadius: 999,
-                    border: `1.5px solid ${on ? "#C80000" : BORDER}`,
-                    background: on ? "rgba(200,0,0,0.07)" : CARD,
-                    color: on ? "#C80000" : MUTED,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    transition: "border-color .15s, background .15s, color .15s",
-                  }}
-                >
-                  {v ? "Sure" : "Not sure"}
-                </button>
-              )
-            })}
-          </motion.div>
-        )}
-
-        {/* explanation + tutor (practice only) */}
-        <AnimatePresence>
-          {graded && !isMock && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} style={{ overflow: "hidden" }}>
-              <div style={{ marginTop: 18, padding: 16, borderRadius: 12, background: wasCorrect ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.06)", border: `1px solid ${wasCorrect ? C.green : C.red}` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 750, color: wasCorrect ? C.green : C.red, fontSize: 14, marginBottom: 6 }}>
-                  <Icon name={wasCorrect ? "done" : "close"} size={15} color={wasCorrect ? C.green : C.red} />
-                  {wasCorrect ? "Correct" : "Not quite"}
-                </div>
-                <div style={{ fontSize: 14, lineHeight: 1.55, color: TEXT }}>{q.explanation}</div>
-                {!wasCorrect && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
-                    <div style={{ fontSize: 11.5, color: DIM, fontWeight: 700, marginBottom: 7 }}>
-                      {mistakeTag ? "Noted — this sharpens your mistake analysis." : "Why did this one slip? (one tap — improves your plan)"}
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {(Object.keys(MISTAKE_LABELS) as MistakeTag[]).map((tag) => {
-                        const on = mistakeTag === tag
-                        return (
-                          <button
-                            key={tag}
-                            onClick={() => tagMistake(tag)}
-                            disabled={mistakeTag !== null}
-                            style={{
-                              padding: "5px 11px",
-                              borderRadius: 999,
-                              border: `1.5px solid ${on ? C.red : BORDER}`,
-                              background: on ? "rgba(239,68,68,0.08)" : CARD,
-                              color: on ? C.red : mistakeTag !== null ? DIM : MUTED,
-                              fontSize: 12,
-                              fontWeight: 650,
-                              cursor: mistakeTag === null ? "pointer" : "default",
-                              transition: "border-color .15s, background .15s",
-                            }}
-                          >
-                            {MISTAKE_LABELS[tag]}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <TutorPanel q={q} correctText={q.options?.[correctIdx ?? -1] ?? `${q.numericAnswer ?? ""}`} />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
-      {/* action bar */}
-      <div style={{ marginTop: 16 }}>
-        {isMock ? (
-          <motion.button whileTap={{ scale: 0.99 }} disabled={!canSubmit} onClick={handleMockNext} style={actionBtn(canSubmit)}>
-            {index + 1 >= total ? "Finish mock" : "Next →"}
-          </motion.button>
-        ) : !graded ? (
-          <motion.button whileTap={{ scale: 0.99 }} disabled={!canSubmit} onClick={handleSubmit} style={actionBtn(canSubmit)}>
-            Check answer
-          </motion.button>
-        ) : (
-          <motion.button whileTap={{ scale: 0.99 }} onClick={handleNext} style={actionBtn(true)}>
-            {index + 1 >= total ? "See results" : "Next question →"}
-          </motion.button>
-        )}
-      </div>
+      <QuestionNavBar
+        cursor={index}
+        total={total}
+        answeredCount={answeredCount}
+        isAnswered={isAnswered}
+        isFlagged={isFlagged}
+        currentFlagged={currentFlagged}
+        onGo={onGo}
+        onToggleFlag={onToggleFlag}
+        onFinish={onFinish}
+        finishLabel={isTimed ? "Submit" : "Finish & see answers"}
+      />
     </motion.div>
   )
 }
 
-function actionBtn(active: boolean): CSSProperties {
-  return {
-    width: "100%",
-    padding: 16,
-    borderRadius: 14,
-    border: "none",
-    background: active ? IRIDESCENT : "var(--sch-card-2)",
-    color: active ? "#fff" : DIM,
-    fontWeight: 750,
-    fontSize: 16,
-    cursor: active ? "pointer" : "not-allowed",
-  }
-}
-
 /* ── Results ──────────────────────────────────────────────────── */
 
+/** Human text for a learner's stored answer in the review list. */
+function reviewAnswerText(q: AccaQuestion, r: number | number[] | string | undefined): string {
+  if (r === undefined || r === "") return "—"
+  if (q.type === "number") return String(r)
+  if (Array.isArray(r)) return r.map((i) => q.options?.[i] ?? String(i)).join(", ")
+  if (typeof r === "number") return q.options?.[r] ?? String(r)
+  return String(r)
+}
+/** Human text for the correct answer in the review list. */
+function reviewCorrectText(q: AccaQuestion): string {
+  if (q.type === "number") return q.numericAnswer !== undefined && q.numericAnswer !== null ? String(q.numericAnswer) : "—"
+  const c = q.correct
+  if (Array.isArray(c)) return c.map((i) => q.options?.[i] ?? String(i)).join(", ")
+  if (typeof c === "number") return q.options?.[c] ?? String(c)
+  return "—"
+}
+
 function Results({
-  paper, correct, total, isMock, isBankRun = false, isTopicTest, topicArea, log, onAgain, onOverview, onAction,
+  paper, correct, total, isMock, isBankRun = false, isTopicTest, topicArea, log, review = [], onAgain, onOverview, onAction,
 }: {
   paper: AccaPaper
   correct: number
@@ -2354,6 +2238,7 @@ function Results({
   isTopicTest?: boolean
   topicArea?: string | null
   log: { area: string; correct: boolean }[]
+  review?: { q: AccaQuestion; response: number | number[] | string | undefined; correct: boolean }[]
   onAgain: () => void
   onOverview: () => void
   onAction: (a: PostMortemAction) => void
@@ -2493,6 +2378,38 @@ function Results({
           </div>
         )
       })()}
+
+      {/* Answers & explanations — the exam-style review, every question in order */}
+      {review.length > 0 && (
+        <div style={{ maxWidth: 560, margin: "0 auto 24px", textAlign: "left" }}>
+          <h3 style={{ ...sectionH, textAlign: "center" }}>ANSWERS &amp; EXPLANATIONS</h3>
+          <div style={{ display: "grid", gap: 10 }}>
+            {review.map((it, i) => {
+              const answered = it.response !== undefined && it.response !== ""
+              return (
+                <div key={i} style={{ ...card({ padding: 14 }), borderLeft: `3px solid ${it.correct ? C.green : answered ? C.red : BORDER}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <Icon name={it.correct ? "done" : "close"} size={15} color={it.correct ? C.green : answered ? C.red : DIM} />
+                    <span style={{ fontSize: 12, fontWeight: 800, color: it.correct ? C.green : answered ? C.red : DIM }}>
+                      Q{i + 1} · {it.correct ? "Correct" : answered ? "Incorrect" : "Not answered"}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13.5, color: TEXT, lineHeight: 1.5, marginBottom: 6 }}>{it.q.stem}</div>
+                  {answered && !it.correct && (
+                    <div style={{ fontSize: 12.5, color: MUTED }}>Your answer: {reviewAnswerText(it.q, it.response)}</div>
+                  )}
+                  <div style={{ fontSize: 12.5, color: MUTED }}>
+                    Correct answer: <span style={{ color: C.green, fontWeight: 700 }}>{reviewCorrectText(it.q)}</span>
+                  </div>
+                  {it.q.explanation && (
+                    <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginTop: 6 }}>{it.q.explanation}</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gap: 10, maxWidth: 340, margin: "0 auto" }}>
         <motion.button whileTap={{ scale: 0.99 }} onClick={onAgain} style={{ padding: 16, borderRadius: 14, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 16, cursor: "pointer" }}>
