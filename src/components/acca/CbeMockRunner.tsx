@@ -381,7 +381,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         <BackBtn label="Exam room" onClick={onBack} />
         <Card style={{ textAlign: "center", marginBottom: SP.md }}>
           {outcome.expired && (
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.amber, marginBottom: 8 }}>⏱ The clock submitted this exam — just like the real thing.</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.amber, marginBottom: 8 }}><Icon name="mock" size={13} color={C.amber} /> The clock submitted this exam — just like the real thing.</div>
           )}
           <RingGauge value={outcome.percent} size={132} label="mock score" />
           <div style={{ fontSize: 15, fontWeight: 800, color: passed ? C.green : C.red, marginTop: 10 }}>

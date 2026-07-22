@@ -1164,7 +1164,7 @@ function Overview({
           </div>
           <div style={{ width: "100%", maxWidth: 520, margin: "0 auto", padding: "56px 20px 48px" }}>
             <div style={{ textAlign: "center", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.5, color: "#C80000" }}>🔒 LOCKED IN</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, color: "#C80000" }}><Icon name="lock" size={13} color="#C80000" /> LOCKED IN</div>
               <div style={{ fontSize: 20, fontWeight: 850, color: TEXT, marginTop: 6 }}>Full focus — today's mission only</div>
               <div style={{ fontSize: 12.5, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>Work each step. Everything else comes back when the timer's done.</div>
             </div>

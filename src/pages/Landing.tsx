@@ -144,24 +144,24 @@ const MONO_WHITE = "#FFFFFF"
 
 function PrimaryCTA({ children, onClick, large = false }: { children: React.ReactNode; onClick?: () => void; large?: boolean }) {
   return (
-    <span style={{ display: "inline-block" }}>
-      <button
-        type="button"
-        onClick={onClick}
-        className="scholify-glass-pill-primary rounded-full font-bold"
-        style={{
-          padding: large ? "16px 32px" : "12px 24px",
-          fontSize: large ? 17 : 15,
-          gap: 10,
-          display: "inline-flex",
-          alignItems: "center",
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        {children}
-      </button>
-    </span>
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.98 }}
+      transition={CTA_SPRING}
+      className="scholify-glass-pill-primary rounded-full font-bold"
+      style={{
+        padding: large ? "16px 32px" : "12px 24px",
+        fontSize: large ? 17 : 15,
+        gap: 10,
+        display: "inline-flex",
+        alignItems: "center",
+        border: "none",
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </motion.button>
   )
 }
 
