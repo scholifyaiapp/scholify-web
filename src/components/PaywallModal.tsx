@@ -7,7 +7,7 @@ import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
-import CharlesAvatar from "@/components/CharlesAvatar"
+import CharlesMascot from "@/components/CharlesMascot"
 import { Icon, type IconName } from "@/components/acca/ui"
 import type { PaywallType } from "@/hooks/usePaywall"
 
@@ -272,7 +272,7 @@ export default function PaywallModal({
                 {header.kind === "celebrate" && <Particles />}
                 {header.kind === "lara" ? (
                   <div style={{ position: "relative", zIndex: 1 }}>
-                    <CharlesAvatar size={48} />
+                    <CharlesMascot pose="present" size={76} />
                   </div>
                 ) : (
                   <span style={{ position: "relative", zIndex: 1, display: "inline-flex" }}>

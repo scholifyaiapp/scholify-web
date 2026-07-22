@@ -2470,6 +2470,10 @@ function Results({
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", paddingTop: 20 }}>
+      {/* Charles reacts to the result — celebrating a pass, steady after a miss */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+        <CharlesMascot pose={passed ? "success" : "calm"} size={96} />
+      </div>
       <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600, marginBottom: 14 }}>
         {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunNo} OF ${BANK_RUNS_TARGET} COMPLETE` : "PRACTICE COMPLETE"}
       </div>

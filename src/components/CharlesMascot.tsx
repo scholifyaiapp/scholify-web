@@ -10,7 +10,9 @@ import type { CSSProperties } from "react"
  * intentional; transparent poses drop straight onto any surface with a soft
  * brand drop-shadow.
  */
-export type CharlesPose = "wave" | "present" | "chart" | "celebrate" | "idea" | "calm" | "thumbsup"
+export type CharlesPose =
+  | "wave" | "present" | "chart" | "celebrate" | "idea" | "calm" | "thumbsup"
+  | "plan" | "success" | "thinking" | "start" | "run" | "wave2"
 
 const SRC: Record<CharlesPose, string> = {
   wave: "/charles/6.webp", // waving hello — greeting
@@ -18,11 +20,19 @@ const SRC: Record<CharlesPose, string> = {
   chart: "/charles/2.webp", // pointing at a chart — analytics/readiness
   celebrate: "/charles/4.webp", // fists up + confetti — reward
   idea: "/charles/5.webp", // finger up — tip/idea
-  calm: "/charles/3.webp", // arms crossed — steady/empty state
-  thumbsup: "/charles/1.webp", // thumbs up — positive/hero
+  calm: "/charles/3.webp", // arms crossed — steady / empty state
+  thumbsup: "/charles/1.webp", // thumbs up — positive / hero
+  plan: "/charles/8.webp", // presenting a plan board — plan reveal / roadmap
+  success: "/charles/9.webp", // double thumbs + sparkles — correct / passed
+  thinking: "/charles/11.webp", // hand on chin + lightbulb — AI thinking / tip
+  start: "/charles/12.webp", // sprint-ready crouch — begin a session
+  run: "/charles/13.webp", // running + speed lines — momentum / streak
+  wave2: "/charles/10.webp", // waving hello (alt) — greeting
 }
+// Only these three source renders sit on a dark background.
 const DARK: Record<CharlesPose, boolean> = {
   wave: false, present: true, chart: true, celebrate: false, idea: false, calm: false, thumbsup: true,
+  plan: false, success: false, thinking: false, start: false, run: false, wave2: false,
 }
 
 export default function CharlesMascot({

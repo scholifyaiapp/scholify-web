@@ -31,6 +31,7 @@ import { MOCK_PASS } from "@/lib/acca-loop"
 import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
+import CharlesMascot from "@/components/CharlesMascot"
 import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
 import RevealExperience from "@/components/acca/RevealExperience"
@@ -580,6 +581,10 @@ function ResultsView({
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+      {/* Charles presents the readiness read */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
+        <CharlesMascot pose="present" size={92} />
+      </div>
       <div style={{ textAlign: "center", marginBottom: 6, fontSize: 12, fontWeight: 700, color: DIM, letterSpacing: 0.4 }}>
         {paperCode} · {paperName}
       </div>
