@@ -57,7 +57,12 @@ const GREEN = "#10B981"
 const RED = "#EF4444"
 const AMBER = "#F59E0B"
 
-type Phase = "intro" | "assessing" | "analyzing" | "results" | "reveal"
+// The onboarding funnel is two DISTINCT wow moments, each with its own loader,
+// split by a button press — never one continuous scroll:
+//   assessing → analyzing (WOW 1 loader) → results (the pain-points dashboard)
+//   → [press "Start closing the gap"] → generating (WOW 2 loader) → plan
+//   (the personalised race plan) → paywall.
+type Phase = "intro" | "assessing" | "analyzing" | "results" | "reveal" | "plan"
 
 /* ── Question card (in-assessment) ────────────────────────────── */
 
@@ -217,6 +222,13 @@ export default function AccaDiagnostic() {
 
   const paper = getPaper(paperId)
 
+  // Each wow moment opens on its own loader at the top of the viewport — the
+  // second is reached by a button press from the bottom of the results
+  // dashboard, so without this it would start mid-scroll.
+  useEffect(() => {
+    if (phase === "analyzing" || phase === "plan") window.scrollTo({ top: 0, behavior: "auto" })
+  }, [phase])
+
   // Pull any cloud-synced prior result when the paper changes on the intro.
   useEffect(() => {
     if (phase !== "intro") return
@@ -266,20 +278,18 @@ export default function AccaDiagnostic() {
     queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
     return scored
   }
-  // Non-onboarding: the cinematic sequence's onComplete finalizes + reveals.
+  // WOW 1's loader (the analyzing cinematic) finishes here → the pain-points
+  // dashboard. The plan is NOT built yet; that is WOW 2, gated behind the
+  // dashboard's "Start closing the gap" button.
   const revealResults = () => {
     finalizeDiagnostic()
     setPhase("results")
   }
-  // When the test ends: onboarding gets the full premium RevealExperience (which
-  // runs its OWN loading choreography), so it skips the analyzing loader. A
-  // retake keeps the lean analyzing → results screen.
+  // When the test ends, every path runs the same lean scan → dashboard →
+  // (button) → plan → paywall sequence. The legacy `reveal`/RevealExperience
+  // path (which merged both wow moments into one takeover) is kept in the file
+  // but no longer entered.
   const endAssessing = () => {
-    // Both paths now run the cinematic scan → the pain-points dashboard
-    // (ResultsView), so onboarding gets the full A–H diagnostic dashboard
-    // and, via ResultsView.onContinue, flows on to the trial paywall. The
-    // legacy `reveal`/RevealExperience path is kept in the file but no longer
-    // entered.
     setPhase("analyzing")
   }
   endAssessingRef.current = endAssessing
@@ -475,8 +485,16 @@ export default function AccaDiagnostic() {
               paperName={paper?.name ?? paperId}
               paperCode={paper?.code ?? paperId}
               onRetake={retake}
-              onContinue={() => (fromWelcome ? setShowTrialPaywall(true) : navigate("/study"))}
+              onCoverGap={() => setPhase("plan")}
               onProgress={() => navigate("/study/analytics")}
+            />
+          )}
+
+          {phase === "plan" && result && (
+            <PlanReveal
+              key="plan"
+              result={result}
+              onDone={() => (fromWelcome ? setShowTrialPaywall(true) : navigate("/study?do=weak"))}
             />
           )}
         </AnimatePresence>
@@ -502,14 +520,14 @@ function ResultsView({
   paperName,
   paperCode,
   onRetake,
-  onContinue,
+  onCoverGap,
   onProgress,
 }: {
   result: DiagnosticResult
   paperName: string
   paperCode: string
   onRetake: () => void
-  onContinue: () => void
+  onCoverGap: () => void
   onProgress: () => void
 }) {
   const band = passBand(result.passProbability)
@@ -617,21 +635,6 @@ function ResultsView({
         </div>
       )}
 
-      {/* The concrete plan the pain points imply — the real next 7 days,
-          each with its topic, minutes and tasks, led by the fix for the
-          weakest area. */}
-      <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.4, color: C.brand, marginBottom: 12, display: "flex", alignItems: "center", gap: 7 }}>
-          <Icon name="loop" size={15} color={C.brand} /> CHARLES'S PLAN — YOUR NEXT 7 DAYS
-        </div>
-        <PlanDashboard paperId={result.paperId} days={7} />
-      </div>
-
-      {/* Now — and only now — Lara builds the plan that targets those pain
-          points. The generation scene plays while the reader is still holding
-          their weak areas in mind: the plan visibly answers them. */}
-      <LaraPlan result={result} targetProb={plan.targetProb} />
-
       {confidencePct < 100 && (
         <p style={{ fontSize: 12, color: DIM, textAlign: "center", margin: "0 0 20px", lineHeight: 1.5 }}>
           Based on {result.questionsAnswered} questions covering {confidencePct}% of the syllabus areas. Practise more and
@@ -639,8 +642,10 @@ function ResultsView({
         </p>
       )}
 
-      {/* CTAs */}
-      <Button onClick={onContinue} size="lg" full>
+      {/* WOW 1 ends here. The pain points are named and the gap is on the table;
+          the plan is NOT shown yet. Pressing this hands off to WOW 2 — Charles
+          builds the plan that targets exactly those areas — as its own moment. */}
+      <Button onClick={onCoverGap} size="lg" full>
         Start closing the gap <Icon name="arrow" size={18} color="#fff" />
       </Button>
       <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
@@ -841,16 +846,22 @@ function DiagnosticTimer({ secondsLeft, total }: { secondsLeft: number; total: n
   )
 }
 
-/* ── Lara's plan — operational · tactical · strategic ─────────── */
+/* ── WOW 2 · the personalised race plan (its own screen) ─────────
+ *
+ * Reached only by pressing "Start closing the gap" on the results dashboard —
+ * never rendered alongside it. Opens on its OWN cinematic loader (Charles
+ * building the plan), then reveals the plan that targets the exact pain points
+ * the learner just read: operational (daily block), tactical (this month's
+ * phases) and strategic (the qualification). Its CTA hands off to the paywall.
+ */
 
-function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb: number }) {
-  const navigate = useNavigate()
+function PlanReveal({ result, onDone }: { result: DiagnosticResult; onDone: () => void }) {
   const plan = getPlan(result.paperId)
+  const targetProb = plan.targetProb
   const study = generateStudyPlan(result.paperId)
   const qual = qualificationProgress()
 
-  // The second "wow" — Lara builds the plan behind the cinematic sequence, then
-  // it reveals. `ready` flips when the sequence finishes.
+  // `ready` flips when the generation cinematic finishes: loader → the plan.
   const [ready, setReady] = useState(false)
 
   // Strategic pace: months per paper scales with the daily commitment.
@@ -869,6 +880,18 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
     { icon: "mission", label: "Sizing your daily block", sub: `${plan.dailyGoal} questions in ${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}.` },
     { icon: "calendar", label: "Dating the road to your sitting", sub: "Phase by phase, all the way to exam day." },
   ]
+
+  // WOW 2 loader — the generation moment, full-screen; no plan is visible yet.
+  if (!ready) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <div style={{ textAlign: "center", fontSize: 11, fontWeight: 800, letterSpacing: 1, color: C.brand, marginTop: 8 }}>
+          CHARLES · BUILDING YOUR RACE PLAN
+        </div>
+        <CinematicReveal phases={planPhases} accent={C.brand} perPhaseMs={880} onComplete={() => setReady(true)} />
+      </motion.div>
+    )
+  }
 
   const tiers: { icon: Parameters<typeof Icon>[0]["name"]; k: string; title: string; body: string }[] = [
     {
@@ -903,23 +926,22 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
     { icon: "check", label: "Bank" },
   ]
 
+  // WOW 2 reveal — the personalised plan, answering the pain points just read.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16, overflow: "hidden" }}
-    >
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, color: C.brand, letterSpacing: 0.4, marginBottom: 12 }}>
         <Icon name="tutor" size={15} color={C.brand} /> CHARLES · RACE PLAN TO {targetProb}%
       </div>
 
-      {/* the generation moment — cinematic build, then the plan reveals */}
-      {!ready && <CinematicReveal phases={planPhases} accent={C.brand} perPhaseMs={880} onComplete={() => setReady(true)} />}
+      {/* the concrete next 7 days — each with its topic, minutes and tasks */}
+      <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.4, color: C.brand, marginBottom: 12, display: "flex", alignItems: "center", gap: 7 }}>
+          <Icon name="loop" size={15} color={C.brand} /> YOUR NEXT 7 DAYS
+        </div>
+        <PlanDashboard paperId={result.paperId} days={7} />
+      </div>
 
-      <AnimatePresence>
-        {ready && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+      <div style={{ ...cardStyle, boxShadow: SHADOW.sm, marginBottom: 16, overflow: "hidden" }}>
             {/* your daily block — the structured method */}
             <div style={{ padding: "14px 16px", borderRadius: 14, background: CARD2, marginBottom: 14 }}>
               <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: DIM, marginBottom: 10 }}>
@@ -990,14 +1012,12 @@ function LaraPlan({ result, targetProb }: { result: DiagnosticResult; targetProb
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => navigate("/study?do=weak")}
+              onClick={onDone}
               style={{ width: "100%", padding: "15px 20px", borderRadius: 13, border: `1.5px solid ${C.brand}`, background: "rgba(200,0,0,0.05)", color: C.brand, fontWeight: 800, fontSize: 14.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
               <Icon name="mission" size={16} color={C.brand} /> Start day 1 now — {weakQueue[0] ? `drill ${weakQueue[0].code}` : "first mission"}
             </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </motion.div>
   )
 }
