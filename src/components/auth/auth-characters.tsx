@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { IRIDESCENT } from "./auth-ui"
+import { ScholifyLockup } from "@/components/brand"
 
 /* ──────────────────────────────────────────────────────────────
  *  The 4 little "Scholify stones" — purple, dark, orange, yellow.
@@ -458,22 +458,7 @@ export function CharacterLeftPanel(props: AuthCharactersProps) {
     <div className="flex flex-col w-full" style={{ height: "100%" }}>
       {/* Brand header */}
       <div style={{ padding: "44px 48px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span
-            style={{
-              fontSize: 30,
-              lineHeight: 1,
-              background: IRIDESCENT,
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            ✦
-          </span>
-          <span style={{ fontSize: 22, fontWeight: 800, color: "var(--sch-text)" }}>Scholify</span>
-        </div>
+        <ScholifyLockup size={30} color="var(--sch-text)" />
         <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 12 }}>
           Know your chance of passing ACCA — and how to raise it.
         </p>
