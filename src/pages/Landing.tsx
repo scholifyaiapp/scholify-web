@@ -32,7 +32,8 @@ import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
-import { ScholifyLockup, ScholifyMark } from "@/components/brand"
+import { ScholifyLockup } from "@/components/brand"
+import CharlesMascot from "@/components/CharlesMascot"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
@@ -831,25 +832,8 @@ function VisualAIPartnerWidget() {
               border: `2px solid ${PLUM_500}66`,
             }}
           />
-          <div
-            style={{
-              position: "relative",
-              width: "100%",
-              height: "100%",
-              borderRadius: "50%",
-              overflow: "hidden",
-              background: "#FAF3E0",
-              boxShadow: `0 0 0 3px ${BRAND_400}, 0 12px 32px -8px rgba(91,91,245,0.45)`,
-              zIndex: 1,
-            }}
-          >
-            <div
-              aria-label={t("Charles — your Scholify race engineer")}
-              role="img"
-              style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #C80000, #E50068)" }}
-            >
-              <ScholifyMark size={80} variant="white" style={{ width: "60%", height: "60%" }} />
-            </div>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <CharlesMascot pose="present" size={avatarSize} float={false} />
           </div>
         </motion.div>
 

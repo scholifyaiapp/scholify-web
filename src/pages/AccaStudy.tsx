@@ -68,6 +68,7 @@ import { withShuffledOptions } from "@/lib/acca-options"
 import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
+import CharlesMascot from "@/components/CharlesMascot"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
 
 /* ──────────────────────────────────────────────────────────────
@@ -1162,7 +1163,10 @@ function Overview({
             <CircleTimer secondsLeft={focusLeft} totalSeconds={(plan.dailyMinutes || 60) * 60} size={78} />
             <button onClick={exitLockedIn} style={{ fontSize: 11, fontWeight: 700, color: DIM, background: "transparent", border: "none", cursor: "pointer" }}>Exit</button>
           </div>
-          <div style={{ width: "100%", maxWidth: 520, margin: "0 auto", padding: "56px 20px 48px" }}>
+          <div style={{ width: "100%", maxWidth: 520, margin: "0 auto", padding: "44px 20px 48px" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+              <CharlesMascot pose="present" size={92} />
+            </div>
             <div style={{ textAlign: "center", marginBottom: 6 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, color: "#C80000" }}><Icon name="lock" size={13} color="#C80000" /> LOCKED IN</div>
               <div style={{ fontSize: 20, fontWeight: 850, color: TEXT, marginTop: 6 }}>Full focus — today's mission only</div>
@@ -1263,16 +1267,24 @@ function Overview({
         <div style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>{greeting(firstName)}</div>
         <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{todayHeadline(paper.id)}</div>
 
-        {/* Animated today-mission ring — fills as each part of the plan is done */}
-        <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 6px" }}>
-          <RingGauge
-            value={missionPct}
-            size={126}
-            stroke={11}
-            color={missionPct >= 100 ? C.green : "#C80000"}
-            label="TODAY'S MISSION"
-            sublabel={missionPct >= 100 ? "Complete — great work!" : `${missionDone} of ${missionTotal} done`}
-          />
+        {/* Animated today-mission ring — fills as each part of the plan is done.
+            At 100%, Charles takes over to celebrate. */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, margin: "18px 0 6px" }}>
+          {missionPct >= 100 ? (
+            <>
+              <CharlesMascot pose="celebrate" size={132} />
+              <div style={{ fontSize: 13, fontWeight: 800, color: C.green }}>Today's mission complete — great work!</div>
+            </>
+          ) : (
+            <RingGauge
+              value={missionPct}
+              size={126}
+              stroke={11}
+              color="#C80000"
+              label="TODAY'S MISSION"
+              sublabel={`${missionDone} of ${missionTotal} done`}
+            />
+          )}
         </div>
 
         {/* Charles's exam-timing read — honest, tied to readiness + daily pace */}
