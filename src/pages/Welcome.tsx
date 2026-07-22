@@ -303,7 +303,7 @@ export default function Welcome() {
     "",
   ]
 
-  /* ═══ The zero-start wow moment: Lara builds the plan on screen ═══ */
+  /* ═══ The zero-start wow moment: Charles builds the plan on screen ═══ */
   if (zeroReveal && paper) {
     return (
       <ZeroPlanReveal
@@ -631,7 +631,7 @@ function PaperSlide({
                     style={{ ...tileStyle(on), padding: isMobile ? "12px 12px" : "10px 12px", opacity: done ? 0.5 : 1, cursor: done ? "default" : "pointer" }}
                   >
                     <div style={{ font: `700 ${isMobile ? 13 : 12}px/1 ${MONO}`, color: RED, marginBottom: 5 }}>{p.id}</div>
-                    <div style={{ font: `600 ${isMobile ? 11.5 : 11}px/1.25 ${SANS}`, color: INK }}>{done ? "Passed ✓" : p.name}</div>
+                    <div style={{ font: `600 ${isMobile ? 11.5 : 11}px/1.25 ${SANS}`, color: INK }}>{done ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>Passed <Icon name="done" size={12} /></span> : p.name}</div>
                   </button>
                 )
               })}
@@ -700,6 +700,7 @@ function TimeSlide({
               key={m.v}
               onClick={() => setMinutes(m.v)}
               style={{
+                minHeight: 44,
                 padding: "8px 14px",
                 borderRadius: 999,
                 font: `600 12.5px/1 ${SANS}`,
@@ -726,7 +727,7 @@ function TimeSlide({
             <button
               key={s.time}
               onClick={() => setSlot(s.time)}
-              style={{ flex: 1, padding: "12px 6px", borderRadius: 12, font: `600 12px/1.2 ${SANS}`, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", color: on ? RED : INK }}
+              style={{ flex: 1, minHeight: 44, padding: "12px 6px", borderRadius: 12, font: `600 12px/1.2 ${SANS}`, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", color: on ? RED : INK }}
             >
               {s.label}
             </button>
@@ -826,7 +827,7 @@ function GoalSlide({
               <button
                 key={t.v}
                 onClick={() => setTarget(t.v)}
-                style={{ flex: 1, padding: "13px 6px", borderRadius: 12, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", textAlign: "center" }}
+                style={{ flex: 1, minHeight: 44, padding: "13px 6px", borderRadius: 12, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", textAlign: "center" }}
               >
                 <span style={{ display: "block", font: `800 17px/1 ${SANS}`, color: on ? RED : INK }}>{t.label}</span>
                 <span style={{ display: "block", marginTop: 4, font: `600 10.5px/1.2 ${SANS}`, color: on ? "#8A2222" : META }}>{t.blurb}</span>
@@ -881,7 +882,7 @@ function ReadySlide({
           </motion.div>
         ))}
       </div>
-      {/* Lara's "why", warm and honest — the reason the recommended path
+      {/* Charles's "why", warm and honest — the reason the recommended path
           below follows from what the learner just told us about themselves. */}
       <div style={{ marginTop: 18, display: "flex", gap: 12, padding: "16px 18px", borderRadius: 16, background: "rgba(244,164,5,.09)", border: "1px solid rgba(244,164,5,.28)" }}>
         <Icon name={recommendZero ? "learn" : "time"} size={18} color="#B37503" style={{ marginTop: 1 }} />

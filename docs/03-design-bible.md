@@ -179,7 +179,7 @@ Page titles in practice run 26–27px/800 with `-0.02em`. Hero stat numbers: 27�
 | `flashcards` | Brain | flashcards / revision / Learning tab |
 | `learn` | BookOpen | learn / practice content |
 | `generate` | FlaskConical | custom AI practice |
-| `tutor` | Sparkles | Lara AI |
+| `tutor` | Sparkles | Charles AI |
 | `streak` | Flame | streaks |
 | `trophy` | Trophy | achievement / qualification |
 | `loop` | RotateCw | the journey loop / retry |
@@ -282,7 +282,7 @@ Rules, as practiced across the screens:
 1. **Enter:** pages/sections `rise`; list rows `item(i)` (or x: −8..−14 slide-ins for step lists) with 0.04–0.08s stagger. Mode switches use `AnimatePresence mode="wait"`.
 2. **Hover never shifts layout.** Cards/tiles lift `y: -2` + shadow step; buttons change color/shadow only. No scale-on-hover in the app (scale is reserved for `whileTap` 0.98–0.99).
 3. **Data draws itself:** rings 1.1s, meters 0.8s, bars 0.5–0.6s with per-item delay; numbers count up (`useCountUp`). Draw once on mount — don't re-animate on every re-render.
-4. **Ambient motion is rare and meaningful:** the current journey node breathes (`scale [1,1.1,1]`, 2s loop), the loop icon rotates (9s linear), the exam-day badge waves, "Lara is thinking" pulses opacity. Maximum one ambient element per screen.
+4. **Ambient motion is rare and meaningful:** the current journey node breathes (`scale [1,1.1,1]`, 2s loop), the loop icon rotates (9s linear), the exam-day badge waves, "Charles is thinking" pulses opacity. Maximum one ambient element per screen.
 5. **Reduced-motion safety is global:** `@media (prefers-reduced-motion: reduce)` in `index.css` zeroes all animation/transition durations app-wide; landing tilt also checks `useReducedMotion()`.
 6. **3D tilt is landing-only and fine-pointer-only** (`useTilt` in `landing-3d.tsx`): max 9°, spring stiffness 140/damping 18, disabled for `(pointer: coarse)` and reduced-motion — "on touch, tracking pointermove fights the thumb."
 7. **Tab indicators glide:** active pills use `layoutId` shared-layout springs (stiffness 400, damping 34), e.g. the analytics tabs and billing toggle.
@@ -307,7 +307,7 @@ Ship every UI change with its motion. A new list without stagger, or a new meter
 
 ### 8.1 Tone
 
-Lara is a **coach with receipts**: warm, direct, always tying claims to the learner's own numbers. First person from Lara ("I keep adjusting your plan at your weak topics"), second person for the student.
+Charles is an **AI race engineer with receipts**: warm, direct, always tying claims to the learner's own numbers, in an F1 pit-wall voice (laps, race plan, the sitting is race day). First person from Charles ("I keep adjusting your race plan at your weak topics"), second person for the student. *(Renamed from "Lara" — founder decision; Charles + race-engineer voice is canonical across app and landing.)*
 
 ### 8.2 House rules
 

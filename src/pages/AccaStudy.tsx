@@ -84,8 +84,6 @@ const MUTED = "var(--sch-tx-2)"
 const DIM = "var(--sch-tx-3)"
 const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
-const GREEN = "#10B981"
-const RED = "#EF4444"
 
 type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "cbemock" | "examiner" | "flashcards" | "generate" | "results" | "journey"
 
@@ -208,13 +206,21 @@ export default function AccaStudy() {
     const action = params.get("do") as TodayAction | null
     const linkArea = params.get("area")
     if (!action) return
-    window.history.replaceState({}, "", window.location.pathname)
-    if (!wasOnboarded()) return
+    const clearUrl = () => window.history.replaceState({}, "", window.location.pathname)
+    if (!wasOnboarded()) { clearUrl(); return }
     if (action === "diagnostic") {
+      clearUrl()
       navigate("/study/diagnostic")
       return
     }
-    if (!paperId) return
+    if (!paperId) { clearUrl(); return }
+    // Paper-scoped actions read the loaded paper's content (buildSession,
+    // getFlashcards, briefs…). On a cold content chunk this effect fires before
+    // content.ready — acting now would silently drop the intent and show a
+    // spurious "No questions available yet". Wait and re-run when readiness
+    // flips so the deep-linked action always lands.
+    if (!content.ready) return
+    clearUrl()
     if (action === "weak") startSession(true, false)
     else if (action === "practice") startSession(false, false)
     else if (action === "mock") startSession(false, true)
@@ -228,7 +234,7 @@ export default function AccaStudy() {
     }
     // action === "study" without an area falls through → the study hub
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [content.ready, paperId])
 
   // mock countdown
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -305,7 +311,7 @@ export default function AccaStudy() {
         return
       }
       // The mock IS the sectioned CBE now — the full exam shape (A → B → C),
-      // one clock, navigator, Lara marking constructed answers into the score.
+      // one clock, navigator, Charles marking constructed answers into the score.
       setMode("cbemock")
       return
     }
@@ -730,7 +736,7 @@ function ContinueCard({ pid, onPick }: { pid: string; onPick: (id: string) => vo
           <div style={{ fontWeight: 800, fontSize: 20, ...iriText }}>{passProbability(current) ?? stats.readiness}%</div>
           <div style={{ color: DIM, fontSize: 10.5 }}>exam readiness</div>
         </div>
-        <span style={{ fontSize: 20, color: "#C80000", flexShrink: 0 }}>→</span>
+        <Icon name="arrow" size={20} color={C.brand} style={{ flexShrink: 0 }} />
       </div>
     </motion.button>
   )
@@ -849,7 +855,7 @@ function AccaNews() {
               {n.date}
             </span>
             <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: TEXT, lineHeight: 1.45 }}>{n.title}</span>
-            <span aria-hidden style={{ color: DIM, fontSize: 14, flexShrink: 0 }}>↗</span>
+            <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />
           </motion.a>
         ))}
       </div>
@@ -928,7 +934,7 @@ function Picker({ onPick }: { onPick: (id: string) => void }) {
                       ) : stats.answered > 0 ? (
                         <span style={{ fontSize: 14, fontWeight: 800, ...iriText }}>{stats.readiness}%</span>
                       ) : (
-                        <span style={{ fontSize: 16, color: DIM }}>›</span>
+                        <Icon name="chevron" size={16} color={DIM} />
                       )}
                     </div>
                   </motion.button>
@@ -1504,7 +1510,7 @@ function Overview({
           <div style={{ display: "grid", gap: 8 }}>
             {mocks.slice(0, 5).map((m, i) => (
               <div key={i} style={{ ...card({ padding: "12px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
-                <Icon name={m.percent >= MOCK_PASS ? "done" : "stats"} size={17} color={m.percent >= MOCK_PASS ? GREEN : "#C2740B"} />
+                <Icon name={m.percent >= MOCK_PASS ? "done" : "stats"} size={17} color={m.percent >= MOCK_PASS ? C.green : "#C2740B"} />
                 <span style={{ flex: 1, fontSize: 13.5, color: TEXT }}>{m.date}</span>
                 <span style={{ fontSize: 13, color: MUTED }}>{m.correct}/{m.total}</span>
                 <MeterBar value={m.percent} color={bandColor(m.percent, MOCK_PASS)} target={MOCK_PASS} height={6} style={{ width: 56, flexShrink: 0 }} />
@@ -1545,7 +1551,7 @@ function OfficialResourcesSection({ paperId }: { paperId: string }) {
             <span style={{ display: "block", fontWeight: 700, fontSize: 13.5, color: TEXT }}>{r.title}</span>
             <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1, lineHeight: 1.45 }}>{r.detail}</span>
           </span>
-          <span style={{ fontSize: 11, fontWeight: 750, color: DIM, flexShrink: 0 }}>accaglobal.com ↗</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 750, color: DIM, flexShrink: 0 }}>accaglobal.com <Icon name="arrow" size={12} color={DIM} /></span>
         </motion.a>
       ))}
     </div>
@@ -1600,7 +1606,7 @@ function LoopStrip({ paperId, onJourney }: { paperId: string; onJourney: () => v
                   }}
                 >
                   {done ? (
-                    <Icon name="done" size={13} color={GREEN} />
+                    <Icon name="done" size={13} color={C.green} />
                   ) : s.status === "locked" ? (
                     <Icon name="lock" size={10} color={DIM} />
                   ) : (
@@ -1696,7 +1702,7 @@ function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; cura
               >
                 {t.state === "upcoming"
                   ? <span style={{ fontWeight: 800, fontSize: 13, color: DIM }}>{t.code}</span>
-                  : <Icon name={v.icon} size={18} color={t.state === "mastered" ? GREEN : "#C80000"} />}
+                  : <Icon name={v.icon} size={18} color={t.state === "mastered" ? C.green : "#C80000"} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>
@@ -1805,10 +1811,10 @@ function TopicView({
       <div style={{ ...card({ padding: 16 }), marginBottom: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 750, color: TEXT }}>Practice ladder</span>
-          <span style={{ fontSize: 12.5, fontWeight: 800, color: (areaStats?.seen ?? 0) >= 65 ? GREEN : TEXT, fontVariantNumeric: "tabular-nums" }}>{Math.min(65, areaStats?.seen ?? 0)} / 65</span>
+          <span style={{ fontSize: 12.5, fontWeight: 800, color: (areaStats?.seen ?? 0) >= 65 ? C.green : TEXT, fontVariantNumeric: "tabular-nums" }}>{Math.min(65, areaStats?.seen ?? 0)} / 65</span>
         </div>
         <div style={{ height: 7, background: "var(--sch-card-2)", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
-          <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, ((areaStats?.seen ?? 0) / 65) * 100)}%` }} transition={{ duration: 0.8 }} style={{ height: "100%", background: (areaStats?.seen ?? 0) >= 65 ? GREEN : IRIDESCENT, borderRadius: 999 }} />
+          <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, ((areaStats?.seen ?? 0) / 65) * 100)}%` }} transition={{ duration: 0.8 }} style={{ height: "100%", background: (areaStats?.seen ?? 0) >= 65 ? C.green : IRIDESCENT, borderRadius: 999 }} />
         </div>
         <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, margin: "0 0 12px" }}>
           {(areaStats?.seen ?? 0) >= 65
@@ -1870,8 +1876,8 @@ function BriefReader({
               transition={{ delay: 0.08 * i }}
               style={card({ padding: 18, borderLeft: sec.kind === "traps" ? "3px solid #C80000" : undefined })}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: sec.kind === "traps" ? RED : C.brand, marginBottom: 8 }}>
-                <Icon name={meta.icon} size={14} color={sec.kind === "traps" ? RED : C.brand} /> {meta.label}
+              <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: sec.kind === "traps" ? C.red : C.brand, marginBottom: 8 }}>
+                <Icon name={meta.icon} size={14} color={sec.kind === "traps" ? C.red : C.brand} /> {meta.label}
               </div>
               <div style={{ fontSize: 13.5, fontWeight: 750, color: TEXT, marginBottom: 6 }}>{sec.heading}</div>
               {sec.body.split("\n\n").map((para, j) => (
@@ -2031,7 +2037,7 @@ function MockGateTile({ prob, onWeak }: { prob: number; onWeak: () => void }) {
           </span>
         </div>
       </div>
-      <span style={{ color: DIM, fontSize: 18, flexShrink: 0 }}>›</span>
+      <Icon name="chevron" size={18} color={DIM} style={{ flexShrink: 0 }} />
     </motion.button>
   )
 }
@@ -2118,7 +2124,7 @@ function SessionView({
         <button onClick={onQuit} style={{ ...backBtn, marginBottom: 0 }}>← Exit</button>
         <span style={{ color: DIM, fontSize: 13, fontWeight: 600 }}>Question {index + 1} / {total}</span>
         {isMock ? (
-          <span style={{ fontWeight: 800, fontSize: 14, color: lowTime ? RED : TEXT, fontVariantNumeric: "tabular-nums" }}>⏱ {fmtTime(timeLeft)}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 14, color: lowTime ? C.red : TEXT, fontVariantNumeric: "tabular-nums" }}><Icon name="mock" size={15} color={lowTime ? C.red : TEXT} /> {fmtTime(timeLeft)}</span>
         ) : (
           <span style={{ color: DIM, fontSize: 12 }}>Area {q.area}</span>
         )}
@@ -2140,7 +2146,7 @@ function SessionView({
             onChange={(e) => onNum(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && canSubmit && !graded && !isMock && onSubmit()}
             placeholder={q.unit ? `Enter amount (${q.unit})` : "Enter your answer"}
-            style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", fontSize: 16, borderRadius: 12, border: `1.5px solid ${graded ? (wasCorrect ? GREEN : RED) : BORDER}`, background: "var(--sch-bg)", color: TEXT, outline: "none" }}
+            style={{ width: "100%", boxSizing: "border-box", padding: "14px 16px", fontSize: 16, borderRadius: 12, border: `1.5px solid ${graded ? (wasCorrect ? C.green : C.red) : BORDER}`, background: "var(--sch-bg)", color: TEXT, outline: "none" }}
           />
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
@@ -2149,8 +2155,8 @@ function SessionView({
               const isCorrect = i === correctIdx
               let bd = BORDER
               let bg = CARD
-              if (graded && isCorrect) { bd = GREEN; bg = "rgba(16,185,129,0.08)" }
-              else if (graded && isChosen && !isCorrect) { bd = RED; bg = "rgba(239,68,68,0.08)" }
+              if (graded && isCorrect) { bd = C.green; bg = "rgba(16,185,129,0.08)" }
+              else if (graded && isChosen && !isCorrect) { bd = C.red; bg = "rgba(239,68,68,0.08)" }
               else if (isChosen) { bd = "#C80000" }
               return (
                 <button
@@ -2206,9 +2212,10 @@ function SessionView({
         <AnimatePresence>
           {graded && !isMock && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} style={{ overflow: "hidden" }}>
-              <div style={{ marginTop: 18, padding: 16, borderRadius: 12, background: wasCorrect ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.06)", border: `1px solid ${wasCorrect ? GREEN : RED}` }}>
-                <div style={{ fontWeight: 750, color: wasCorrect ? GREEN : RED, fontSize: 14, marginBottom: 6 }}>
-                  {wasCorrect ? "✓ Correct" : "✗ Not quite"}
+              <div style={{ marginTop: 18, padding: 16, borderRadius: 12, background: wasCorrect ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.06)", border: `1px solid ${wasCorrect ? C.green : C.red}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 750, color: wasCorrect ? C.green : C.red, fontSize: 14, marginBottom: 6 }}>
+                  <Icon name={wasCorrect ? "done" : "close"} size={15} color={wasCorrect ? C.green : C.red} />
+                  {wasCorrect ? "Correct" : "Not quite"}
                 </div>
                 <div style={{ fontSize: 14, lineHeight: 1.55, color: TEXT }}>{q.explanation}</div>
                 {!wasCorrect && (
@@ -2227,9 +2234,9 @@ function SessionView({
                             style={{
                               padding: "5px 11px",
                               borderRadius: 999,
-                              border: `1.5px solid ${on ? RED : BORDER}`,
+                              border: `1.5px solid ${on ? C.red : BORDER}`,
                               background: on ? "rgba(239,68,68,0.08)" : CARD,
-                              color: on ? RED : mistakeTag !== null ? DIM : MUTED,
+                              color: on ? C.red : mistakeTag !== null ? DIM : MUTED,
                               fontSize: 12,
                               fontWeight: 650,
                               cursor: mistakeTag === null ? "pointer" : "default",

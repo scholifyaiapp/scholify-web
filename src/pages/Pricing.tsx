@@ -295,7 +295,8 @@ export default function Pricing() {
                   onClick={() => setBilling(b)}
                   style={{
                     position: "relative",
-                    padding: "8px 24px",
+                    padding: "0 24px",
+                    minHeight: 44,
                     borderRadius: 20,
                     border: "none",
                     background: "transparent",
@@ -327,8 +328,8 @@ export default function Pricing() {
                         fontSize: 10,
                         padding: "2px 8px",
                         borderRadius: 8,
-                        background: active ? "rgba(0,0,0,0.2)" : "rgba(52,211,153,0.15)",
-                        color: active ? "#fff" : "#34D399",
+                        background: active ? "rgba(0,0,0,0.2)" : "rgba(14,159,110,0.14)",
+                        color: active ? "#fff" : "#0E9F6E",
                       }}
                     >
                       Save 33%
@@ -345,7 +346,7 @@ export default function Pricing() {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                style={{ fontSize: 13, color: "#D92E10", marginTop: 16 }}
+                style={{ fontSize: 13, color: "#C80000", marginTop: 16 }}
               >
                 {notice}
               </motion.div>
