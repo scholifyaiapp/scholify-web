@@ -32,7 +32,7 @@ import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
-import { ScholifyLockup } from "@/components/brand"
+import { ScholifyLockup, ScholifyMark } from "@/components/brand"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
@@ -843,12 +843,13 @@ function VisualAIPartnerWidget() {
               zIndex: 1,
             }}
           >
-            <img
-              src="/charles-helmet-avatar-512.png"
-              alt={t("Charles — your Scholify race engineer")}
-              style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-              loading="lazy"
-            />
+            <div
+              aria-label={t("Charles — your Scholify race engineer")}
+              role="img"
+              style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #C80000, #E50068)" }}
+            >
+              <ScholifyMark size={80} variant="white" style={{ width: "60%", height: "60%" }} />
+            </div>
           </div>
         </motion.div>
 

@@ -1,37 +1,28 @@
 import { IRIDESCENT } from "@/components/auth/auth-ui"
+import { ScholifyMark } from "@/components/brand"
 
 /*
- * Charles's avatar — the helmet photo inside an iridescent gradient ring.
- * Use this anywhere Charles is represented instead of a plain letter.
+ * Charles's avatar — the Scholify hex mark on the brand gradient. (Replaced the
+ * photoreal F1-driver image; the persona is represented by our own logo.)
  */
 export default function CharlesAvatar({ size = 32 }: { size?: number }) {
-  const ring = Math.max(2, Math.round(size * 0.06))
   return (
     <div
+      role="img"
+      aria-label="Charles, your Scholify AI race engineer"
       style={{
-        position: "relative",
         width: size,
         height: size,
         flexShrink: 0,
         borderRadius: "50%",
-        padding: ring,
         background: IRIDESCENT,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         boxShadow: "0 4px 16px rgba(200,0,0,0.4)",
       }}
     >
-      <img
-        src="/charles-helmet-avatar-512.png"
-        alt="Charles, Scholify AI race engineer"
-        draggable={false}
-        style={{
-          width: "100%",
-          height: "100%",
-          borderRadius: "50%",
-          display: "block",
-          objectFit: "cover",
-          background: "#0b0b0f",
-        }}
-      />
+      <ScholifyMark size={Math.round(size * 0.6)} variant="white" />
     </div>
   )
 }
