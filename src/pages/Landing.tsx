@@ -218,6 +218,7 @@ function Nav() {
             { label: t("How it works"), href: "#how-it-works" },
             { label: t("Pricing"), href: "#pricing" },
             { label: t("Stories"), href: "#stories" },
+            { label: t("Partners"), href: "/partners/apply", onClick: () => navigate("/partners/apply") },
           ]}
         />
       </div>

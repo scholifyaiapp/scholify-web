@@ -97,23 +97,23 @@ const GET: Array<[string, string]> = [
 ]
 
 const PLANS: Array<[string, string, string]> = [
-  ["Beginner", "$9.99/mo", "$2.50 – $3.50"],
-  ["Pro", "$14.99/mo", "$3.75 – $5.25"],
-  ["Annual Pro", "$119.99/yr", "$30 – $42"],
+  ["Beginner", "$9.99/mo", "$2.70"],
+  ["Pro", "$14.99/mo", "$4.05"],
+  ["Annual Pro", "$119.99/yr", "$32.40"],
 ]
 
 const LADDER: Array<[string, string, boolean]> = [
-  ["100", "$375 – $525", false],
-  ["300", "$1,125 – $1,575", false],
-  ["500", "$1,875 – $2,625", false],
-  ["1,000", "$3,750 – $5,250", true],
+  ["100", "$405", false],
+  ["300", "$1,215", false],
+  ["500", "$2,025", false],
+  ["1,000", "$4,050", true],
 ]
 
 const STEPS: Array<[string, string]> = [
   ["Apply & get approved", "We review and activate your preferred-partner account."],
   ["Get your kit", "Unique link, promo code and brand assets land in your dashboard."],
   ["Promote", "Share across networking, LinkedIn, Reddit and social — posts, reels, stories."],
-  ["Earn & get paid", "25–35% per sale, tracked live, paid once it clears (30 days after purchase)."],
+  ["Earn & get paid", "A flat 27% per sale, tracked live, paid once it clears (30 days after purchase)."],
 ]
 
 const CHANNELS: Array<[string, string]> = [
@@ -206,7 +206,7 @@ export default function PartnersApply() {
               maxWidth: 780,
             }}
           >
-            Earn <span style={iriText}>25–35%</span> on every student you bring to Scholify.
+            Earn <span style={iriText}>27%</span> on every student you bring to Scholify.
           </h1>
           <p
             style={{
@@ -223,9 +223,11 @@ export default function PartnersApply() {
             paid on time.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <button
+            <motion.button
               type="button"
               onClick={scrollTo("apply")}
+              whileHover={reduced ? undefined : { scale: 1.03 }}
+              whileTap={reduced ? undefined : { scale: 0.97 }}
               style={{
                 padding: "14px 26px",
                 borderRadius: 14,
@@ -238,10 +240,12 @@ export default function PartnersApply() {
               }}
             >
               Apply to become a partner
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               type="button"
               onClick={scrollTo("how")}
+              whileHover={reduced ? undefined : { scale: 1.03 }}
+              whileTap={reduced ? undefined : { scale: 0.97 }}
               style={{
                 padding: "14px 26px",
                 borderRadius: 14,
@@ -254,7 +258,7 @@ export default function PartnersApply() {
               }}
             >
               See how it works
-            </button>
+            </motion.button>
           </div>
         </motion.div>
 
@@ -291,7 +295,7 @@ export default function PartnersApply() {
           </motion.div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
             {STATS.map(([n, l], i) => (
-              <motion.div key={l} {...rise(i * 0.06)} style={card}>
+              <motion.div key={l} {...rise(i * 0.06)} whileHover={{ y: -4, transition: { duration: 0.2 } }} style={card}>
                 <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 700, letterSpacing: "-0.01em", ...iriText }}>
                   {n}
                 </div>
@@ -314,13 +318,13 @@ export default function PartnersApply() {
                 Your commission
               </motion.div>
               <motion.p {...rise(0.05)} style={{ fontSize: 16, lineHeight: 1.6, color: "var(--sch-tx-1)", fontWeight: 500 }}>
-                You earn <b style={{ color: "var(--sch-text)" }}>25–35% of every Beginner or Pro plan</b> you sell
-                through your link and code. The exact percentage is confirmed at launch on{" "}
+                You earn a <b style={{ color: "var(--sch-text)" }}>flat 27% of every Beginner or Pro plan</b> you sell
+                through your link and code — the same rate for every partner. The program opens on{" "}
                 <b style={{ color: "var(--sch-text)" }}>10 August 2026</b>.
               </motion.p>
 
               <motion.div {...rise(0.1)} style={{ ...card, marginTop: 18, padding: 0, overflow: "hidden" }}>
-                <RowHead a="Plan" b="You earn per sale (25–35%)" />
+                <RowHead a="Plan" b="You earn per sale (27%)" />
                 {PLANS.map(([name, price, earn]) => (
                   <Row
                     key={name}
@@ -350,10 +354,9 @@ export default function PartnersApply() {
                 ))}
               </motion.div>
               <p style={{ fontSize: 11.5, color: "var(--sch-tx-2)", marginTop: 10, lineHeight: 1.5 }}>
-                *Illustrative, at Pro pricing ($14.99) × 25–35%. Annual plans and higher tiers pay considerably more per
-                sale. Plans, prices, discounts and percentages are set by Scholify and may change — the partnership
-                scheme stays exactly as described. Commissions clear 30 days after purchase and are void on refunds or
-                chargebacks.
+                *At Pro pricing ($14.99) × 27%. Annual plans pay considerably more per sale. Plans, prices and discounts
+                are set by Scholify and may change — your 27% partner rate stays the same. Commissions clear 30 days
+                after purchase and are void on refunds or chargebacks.
               </p>
             </div>
 
@@ -377,6 +380,10 @@ export default function PartnersApply() {
                 <h3 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.15, marginTop: 8, letterSpacing: "-0.01em" }}>
                   The more you sell, the bigger the trip — on us.
                 </h3>
+                <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 8, color: "#c9c6bf" }}>
+                  These rewards are <b style={{ color: "#fff" }}>on top of your 27% commission</b>. Fitting, too — your
+                  Scholify coach, Charles, is a race engineer.
+                </p>
 
                 {/* Tier 1 — Podium */}
                 <div style={{ marginTop: 16 }}>
@@ -413,10 +420,28 @@ export default function PartnersApply() {
                     </span>
                   </div>
                   <p style={{ fontSize: 13, lineHeight: 1.45, marginTop: 6, color: "#e7e2dd" }}>
-                    <b style={{ color: "#fff" }}>Return flights (there &amp; back) + Grand Prix tickets</b> to the{" "}
-                    <b style={{ color: "#fff" }}>Formula 1® Abu Dhabi Grand Prix 2026</b> — Yas Marina, 4–6 Dec 2026.
+                    The full trip to the <b style={{ color: "#fff" }}>Formula 1® Abu Dhabi Grand Prix 2026</b> —
+                    Yas Marina, 4–6 Dec 2026:
                   </p>
+                  <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 5 }}>
+                    {[
+                      "Return flights, there & back — we book and pay",
+                      "Grand Prix weekend tickets at Yas Marina",
+                      "Race day at the season finale, on Scholify",
+                    ].map((li) => (
+                      <li key={li} style={{ fontSize: 12.5, lineHeight: 1.4, color: "#e7e2dd", display: "flex", gap: 8 }}>
+                        <span style={{ color: GOLD, flexShrink: 0 }}>✦</span>
+                        <span>{li}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+
+                <div style={{ height: 1, background: "rgba(244,164,5,0.28)", margin: "16px 0" }} />
+                <p style={{ fontSize: 11, lineHeight: 1.45, color: "#c9c6bf" }}>
+                  Your progress toward each reward is tracked in your partner dashboard. Sales counts, dates and
+                  eligibility are verified by Scholify; race dates per the official 2026 F1 calendar.
+                </p>
               </div>
             </motion.div>
           </div>
@@ -430,7 +455,7 @@ export default function PartnersApply() {
           </motion.div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
             {STEPS.map(([t, d], i) => (
-              <motion.div key={t} {...rise(i * 0.06)} style={card}>
+              <motion.div key={t} {...rise(i * 0.06)} whileHover={{ y: -4, transition: { duration: 0.2 } }} style={card}>
                 <div
                   style={{
                     width: 30,
@@ -615,7 +640,7 @@ export default function PartnersApply() {
                     />
                     <span>
                       I agree to the Scholify partner terms: I'll promote honestly, won't bid on Scholify's brand terms
-                      or spam, and understand commissions (25–35%) clear 30 days after purchase and are void on
+                      or spam, and understand the 27% commission clears 30 days after purchase and is void on
                       refunds/chargebacks.
                     </span>
                   </label>
@@ -740,7 +765,12 @@ function CardGrid({ items, rise }: { items: Array<[string, string]>; rise: (d?: 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 12 }}>
       {items.map(([t, d], i) => (
-        <motion.div key={t} {...rise(i * 0.05)} style={card}>
+        <motion.div
+          key={t}
+          {...rise(i * 0.05)}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          style={card}
+        >
           <div style={{ fontSize: 15, fontWeight: 800, ...iriText, marginBottom: 4 }}>{t}</div>
           <div style={{ fontSize: 13, color: "var(--sch-tx-2)", lineHeight: 1.5 }}>{d}</div>
         </motion.div>
