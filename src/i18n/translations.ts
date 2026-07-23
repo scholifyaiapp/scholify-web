@@ -43,7 +43,7 @@ export const ru: Record<string, string> = {
 
   /* ── Hero ── */
   "Charles just got 3× smarter": "Чарльз стал в 3 раза умнее",
-  "— your AI race engineer marks written answers in seconds": "— ваш ИИ-гоночный инженер проверяет письменные ответы за секунды",
+  "— your AI race engineer for ACCA": "— ваш ИИ-гоночный инженер для ACCA",
   "Welcome to Scholify": "Добро пожаловать в Scholify",
   "Set your goal. Charles builds the plan. You just show up.":
     "Поставьте цель. Чарльз составит план. Вам остаётся только приходить.",

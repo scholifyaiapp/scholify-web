@@ -303,7 +303,7 @@ function Hero() {
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
           buttonText={t("Meet Charles")}
-          description={t("— your AI race engineer marks written answers in seconds")}
+          description={t("— your AI race engineer for ACCA")}
           onClick={() => navigate("/signup")}
         />
 
