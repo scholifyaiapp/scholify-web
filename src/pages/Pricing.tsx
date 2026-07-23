@@ -22,9 +22,9 @@ const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 const accountsOpen = isSupabaseConfigured
 
 const FREE_FEATURES: PlanFeature[] = [
-  { text: "2,418 expert-written practice questions" },
+  { text: "2,494 expert-written practice questions" },
   { text: "Instant marking + teaching explanations" },
-  { text: "929 SRS flashcards" },
+  { text: "1,057 SRS flashcards" },
   { text: "Diagnostic with an Exam Readiness Score (± margin)" },
   { text: "69 study chapters across all 15 papers" },
   { text: "Charles AI race engineer" },

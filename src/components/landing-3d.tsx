@@ -398,21 +398,46 @@ export function TheLoopSection() {
   }, [reduce])
 
   const STAGES: { icon: LucideIcon; tint: string; bg: string; title: string; line: string }[] = [
-    { icon: Target, tint: BRAND, bg: "#FBE7E4", title: t("Diagnostic"), line: t("~15 minutes → your Exam Readiness Score, area by area.") },
-    { icon: MapIcon, tint: PLUM, bg: "#FCE4EF", title: t("Roadmap"), line: t("Four phases, dated back from your exam day.") },
-    { icon: Zap, tint: FIRE, bg: "#FDF2DC", title: t("Daily mission"), line: t("Three tasks a day, already chosen. You never decide what to study.") },
-    { icon: TrendingUp, tint: GREEN, bg: "#DDFAF4", title: t("Progress check"), line: t("Every answer moves your Exam Readiness Score.") },
-    { icon: Lock, tint: AMBER, bg: "#FDF2DC", title: t("The 60% gate"), line: t("Mocks unlock when the model says you're ready — not before.") },
-    { icon: Timer, tint: BRAND, bg: "#FBE7E4", title: t("Mock 1 → 2 → 3"), line: t("Timed, no hints. Three passes and you're proven under exam conditions.") },
-    { icon: Landmark, tint: INK, bg: "#F1EFEA", title: t("The real exam"), line: t("You walk in rehearsed — the sitting is a repeat of your mocks.") },
-    { icon: Stethoscope, tint: AMBER, bg: "#FDF2DC", title: t("Recovery run"), line: t("Not this time? Import your mark — we find the lost marks and win them back.") },
+    { icon: Target, tint: BRAND, bg: "#FBE7E4", title: t("Diagnostic"), line: t("~15 min → your Readiness Score, area by area.") },
+    { icon: MapIcon, tint: PLUM, bg: "#FCE4EF", title: t("Roadmap"), line: t("Four phases, dated back from exam day.") },
+    { icon: Zap, tint: FIRE, bg: "#FDF2DC", title: t("Daily mission"), line: t("Three tasks a day, chosen for you.") },
+    { icon: TrendingUp, tint: GREEN, bg: "#DDFAF4", title: t("Progress check"), line: t("Every answer moves your Readiness Score.") },
+    { icon: Lock, tint: AMBER, bg: "#FDF2DC", title: t("The 60% gate"), line: t("Mocks unlock only when you're ready.") },
+    { icon: Timer, tint: BRAND, bg: "#FBE7E4", title: t("Mock 1 → 2 → 3"), line: t("Timed, no hints — proven under exam conditions.") },
+    { icon: Landmark, tint: INK, bg: "#F1EFEA", title: t("The real exam"), line: t("You walk in rehearsed. It's a repeat of your mocks.") },
+    { icon: Stethoscope, tint: AMBER, bg: "#FDF2DC", title: t("Recovery run"), line: t("Missed it? Import your mark — we win the lost marks back.") },
   ]
 
   const GPS = [t("You act"), t("Scholify measures"), t("your model updates"), t("the roadmap recalculates"), t("you get the next best task")]
 
   return (
-    <section style={{ padding: "110px 24px", background: "#F1EFEA", position: "relative", overflow: "hidden" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <section style={{ padding: "90px 24px", background: "#F1EFEA", position: "relative", overflow: "hidden" }}>
+      {/* ambient "closed loop" ring — a slow-rotating conic gradient masked to a
+          thin halo. Pure decoration; paused under reduced-motion. */}
+      <style>{`@keyframes sch-loop-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}@media (prefers-reduced-motion: reduce){.sch-loop-ring{animation:none!important}}`}</style>
+      {!reduce && (
+        <div
+          aria-hidden
+          className="sch-loop-ring"
+          style={{
+            position: "absolute",
+            top: "42%",
+            left: "50%",
+            width: "min(860px, 120vw)",
+            height: "min(860px, 120vw)",
+            transform: "translate(-50%,-50%)",
+            borderRadius: "50%",
+            background:
+              "conic-gradient(from 0deg, transparent 0%, rgba(200,0,0,0.16) 12%, transparent 30%, rgba(229,0,104,0.16) 50%, transparent 66%, rgba(244,164,5,0.18) 84%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(closest-side, transparent 60%, #000 62%, #000 69%, transparent 71%)",
+            maskImage: "radial-gradient(closest-side, transparent 60%, #000 62%, #000 69%, transparent 71%)",
+            animation: "sch-loop-spin 42s linear infinite",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto 26px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", color: BRAND, marginBottom: 14 }}>
             <span style={{ width: 18, height: 2, background: BRAND, display: "inline-block" }} />
@@ -422,7 +447,7 @@ export function TheLoopSection() {
             {t("One closed loop —")} <span style={{ background: GRAD, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{t("until you pass")}</span>
           </h2>
           <p style={{ fontSize: 16.5, color: INK_MUTED, lineHeight: 1.6, margin: "16px 0 0" }}>
-            {t("Scholify isn't a question bank you wander through. It's a GPS: every action you take feeds a learner model, and the model hands you the next best task. There is no \"finished\" until the paper is passed.")}
+            {t("Not a question bank you wander through — a GPS. Every action feeds a learner model that hands you the next best task. No \"finished\" until you pass.")}
           </p>
         </div>
 
@@ -522,7 +547,7 @@ export function TheLoopSection() {
               {t("Fail a sitting and it's a stage, not an ending.")}
             </div>
             <p style={{ fontSize: 14.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, margin: "10px 0 0", maxWidth: 560 }}>
-              {t("You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer improves your Exam Readiness Score — targeted drills, a fresh mock, then the retake from strength.")}
+              {t("You'll see exactly where marks were lost. The model recalibrates, the plan rebuilds — targeted drills, a fresh mock, then the retake from strength.")}
             </p>
           </div>
           <motion.button

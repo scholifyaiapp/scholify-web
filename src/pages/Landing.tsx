@@ -219,7 +219,6 @@ function Nav() {
             { label: t("Features"), href: "#features" },
             { label: t("How it works"), href: "#how-it-works" },
             { label: t("Pricing"), href: "#pricing" },
-            { label: t("Stories"), href: "#stories" },
             { label: t("Partners"), href: "/partners/apply", onClick: () => navigate("/partners/apply") },
           ]}
         />
@@ -375,8 +374,8 @@ function Hero() {
           style={{ marginTop: 36, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, flexWrap: "wrap" }}
         >
           {[
-            { n: "2,418", label: t("expert-written questions") },
-            { n: "929", label: t("flashcards") },
+            { n: "2,494", label: t("expert-written questions") },
+            { n: "1,057", label: t("flashcards") },
             { n: "15", label: t("ACCA papers") },
           ].map((s, i) => (
             <motion.span
@@ -478,7 +477,7 @@ function Problem() {
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 18, maxWidth: 620, margin: "32px auto 0", lineHeight: 1.65 }}>
           <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>~50%</span>{" "}
-          {t("pass a typical Applied Skills sitting. The difference isn't intelligence — it's practice volume, feedback speed, and a plan. Scholify is all three.")}
+          {t("pass a typical Applied Skills exam. The difference isn't brains — it's practice, fast feedback, and a plan. Scholify is all three.")}
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
@@ -1305,15 +1304,15 @@ const MILESTONE_PHOTOS: Array<{ id: string; image: string; altKey: string }> = [
 function MilestoneGallery() {
   const t = useT()
   return (
-    <section style={{ padding: "96px 24px", background: BG_SECONDARY }}>
+    <section style={{ padding: "56px 24px", background: BG_SECONDARY }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(28px, 4vw, 44px)", color: INK, margin: "14px 0 0", lineHeight: 1.12 }}>
           {t("Every paper closes with")}{" "}
           <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("a real document.")}</em>
         </h2>
-        <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 620, margin: "20px auto 0", lineHeight: 1.65 }}>
-          {t("From your first paper to full membership, ACCA issues the certificate — Scholify just gets you there. Open the folder to see each milestone.")}
+        <p style={{ color: INK_MUTED, fontSize: 15, maxWidth: 520, margin: "14px auto 0", lineHeight: 1.6 }}>
+          {t("ACCA issues the certificate. Scholify gets you there.")}
         </p>
 
         <InteractiveFolderGallery
@@ -1482,142 +1481,6 @@ function Identity() {
 /* ─────────────────────── PROOF ─────────────────────── */
 
 type GlowTone = "blue" | "purple" | "green" | "red" | "orange"
-
-/*
- * Scholify has no users yet, so this section carries no testimonials — every
- * number below is countable in the product (question banks, flashcards, written
- * rubrics, papers) or published by ACCA. Nothing here is aspirational.
- */
-const proofItems: {
-  value: string
-  unit?: string
-  title: string
-  desc: string
-  accent: string
-  tone: GlowTone
-}[] = [
-  {
-    value: "2,418",
-    title: "expert-written practice questions",
-    desc: "Original, syllabus-aligned, every one with a verified answer and a teaching explanation. Count them in the app.",
-    accent: BRAND_500,
-    tone: "red",
-  },
-  {
-    value: "190",
-    title: "written questions with examiner rubrics",
-    desc: "Each carries the marking points the AI Examiner scores your answer against — the same way a marker would.",
-    accent: PLUM_500,
-    tone: "purple",
-  },
-  {
-    value: "929",
-    title: "spaced-repetition flashcards",
-    desc: "Standards, rules and formulas, scheduled so you meet them again exactly when you're about to forget them.",
-    accent: FIRE_500,
-    tone: "orange",
-  },
-  {
-    value: "15",
-    title: "papers, BT to AAA",
-    desc: "The whole qualification: study chapters for every paper, plus ACCA's own published pass rate for each one.",
-    accent: SHIELD_500,
-    tone: "green",
-  },
-]
-
-function ProofCard({
-  item,
-  delay,
-}: {
-  item: (typeof proofItems)[number]
-  delay: number
-}) {
-  const { ref, inView } = useInViewOnce<HTMLDivElement>("-80px")
-  const t = useT()
-  const numeric = Number.parseFloat(item.value.replace(/,/g, ""))
-  const animated = useCountUp(numeric, 1400, inView)
-  return (
-    <GlowCard customSize glowColor={item.tone} className="!w-full !p-1 !gap-0 !rounded-3xl !shadow-none">
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 24 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.7, delay, ease: EASE_DECISIVE }}
-        whileHover={{ y: -4, boxShadow: "0 1px 2px rgba(20,20,26,0.04), 0 24px 48px rgba(20,20,26,0.08)" }}
-        className="soft-card"
-        style={{ padding: 30, borderRadius: 18, height: "100%", textAlign: "left" }}
-      >
-        <div
-          className="font-mono-pro tabular"
-          style={{
-            fontSize: "clamp(40px, 4.4vw, 56px)",
-            fontWeight: 500,
-            color: item.accent,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-          }}
-        >
-          {Math.round(animated).toLocaleString("en-US")}
-        </div>
-        <div style={{ marginTop: 12, color: INK, fontSize: 15, fontWeight: 600 }}>{t(item.title)}</div>
-        <p style={{ marginTop: 8, color: INK_MUTED, fontSize: 13.5, lineHeight: 1.6 }}>{t(item.desc)}</p>
-      </motion.div>
-    </GlowCard>
-  )
-}
-
-function Stories() {
-  const t = useT()
-  return (
-    <section id="stories" style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>{t("THE RECEIPTS")}</SectionLabel>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
-          {t("No testimonials.")} <em style={{ fontStyle: "italic" }}>{t("Just what's inside.")}</em>
-        </h2>
-        <p style={{ color: INK_MUTED, fontSize: 16, maxWidth: 580, margin: "16px auto 0", lineHeight: 1.65 }}>
-          {t("Scholify is new, so we have no student results to quote — and we won't invent any. Here is what you actually get on day one, all of it countable.")}
-        </p>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: 20,
-            marginTop: 56,
-          }}
-        >
-          {proofItems.map((item, i) => (
-            <ProofCard key={item.title} item={item} delay={0.05 + i * 0.08} />
-          ))}
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.7, ease: EASE_DECISIVE }}
-          className="soft-card"
-          style={{ marginTop: 20, padding: 32, borderRadius: 24, textAlign: "left" }}
-        >
-          <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 500 }}>
-            {t("HOW WE MEASURE READINESS")}
-          </div>
-          <h3 className="font-display" style={{ color: INK, fontSize: "clamp(22px, 2.6vw, 30px)", margin: "12px 0 0", letterSpacing: "-0.02em" }}>
-            {t("An Exam Readiness Score that admits what it doesn't know.")}
-          </h3>
-          <p style={{ color: INK_MUTED, fontSize: 15, lineHeight: 1.7, marginTop: 12, maxWidth: 720 }}>
-            {t("The diagnostic scores you area by area and returns an Exam Readiness Score with an honest ± margin — the fewer questions and areas it has seen, the wider that margin gets. Pass Probability unlocks only after you complete a mock exam.")}
-          </p>
-          <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 10.5, letterSpacing: "0.1em", marginTop: 16, lineHeight: 1.6 }}>
-            {t("PASS RATES: ACCA'S OFFICIAL PUBLISHED FIGURES. SCHOLIFY IS AN INDEPENDENT STUDY TOOL AND IS NOT AFFILIATED WITH ACCA.")}
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  )
-}
 
 /* ─────────────────────── COMPARE / ROI ─────────────────────── */
 
@@ -2100,7 +1963,6 @@ export default function Landing() {
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
-      <LazyOnView id="stories" style={{ minHeight: 700 }}><Stories /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>

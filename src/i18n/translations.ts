@@ -391,8 +391,8 @@ export const ru: Record<string, string> = {
   /* ── Problem ── */
   "Half of ACCA candidates fail each sitting.": "Половина кандидатов ACCA проваливает каждую сессию.",
   "Scholify exists to put you in the other half.": "Scholify существует, чтобы вы были в другой половине.",
-  "pass a typical Applied Skills sitting. The difference isn't intelligence — it's practice volume, feedback speed, and a plan. Scholify is all three.":
-    "— средняя сдаваемость экзаменов Applied Skills. Разница не в интеллекте, а в объёме практики, скорости обратной связи и плане. Scholify — это всё три.",
+  "pass a typical Applied Skills exam. The difference isn't brains — it's practice, fast feedback, and a plan. Scholify is all three.":
+    "сдают типичный экзамен Applied Skills. Разница не в уме — а в практике, быстрой обратной связи и плане. Scholify — это всё три.",
   "average pass rate on Applied Skills exams": "средняя сдаваемость экзаменов Applied Skills",
   "Published ACCA global pass rates": "Официальная мировая статистика ACCA",
   "exams to qualify — one system for all of them": "экзаменов до квалификации — одна система для всех",
@@ -430,8 +430,8 @@ export const ru: Record<string, string> = {
   "WHERE THE ROADMAP LEADS": "КУДА ВЕДЁТ ДОРОЖНАЯ КАРТА",
   "Every paper closes with": "Каждый экзамен завершается",
   "a real document.": "настоящим документом.",
-  "From your first paper to full membership, ACCA issues the certificate — Scholify just gets you there. Open the folder to see each milestone.":
-    "От первого экзамена до полного членства сертификат выдаёт ACCA — Scholify лишь помогает вам туда дойти. Откройте папку, чтобы увидеть каждый этап.",
+  "ACCA issues the certificate. Scholify gets you there.":
+    "Сертификат выдаёт ACCA. Scholify помогает вам дойти.",
   "Your qualification.folder": "Ваша_квалификация.папка",
   "Drag any card down to close": "Перетащите любую карточку вниз, чтобы закрыть",
   "Specimen certificate of achievement for a single ACCA paper":
@@ -605,8 +605,8 @@ export const ru: Record<string, string> = {
   "THE METHOD": "МЕТОД",
   "One closed loop —": "Один замкнутый цикл —",
   "until you pass": "пока вы не сдадите",
-  'Scholify isn\'t a question bank you wander through. It\'s a GPS: every action you take feeds a learner model, and the model hands you the next best task. There is no "finished" until the paper is passed.':
-    "Scholify — не банк вопросов, по которому вы блуждаете. Это GPS: каждое ваше действие питает модель ученика, а модель выдаёт следующую лучшую задачу. «Готово» не существует, пока экзамен не сдан.",
+  'Not a question bank you wander through — a GPS. Every action feeds a learner model that hands you the next best task. No "finished" until you pass.':
+    "Не банк вопросов, по которому вы блуждаете, — а GPS. Каждое действие питает модель ученика, которая выдаёт следующую лучшую задачу. «Готово» не существует, пока вы не сдадите.",
   "You act": "Вы действуете",
   "Scholify measures": "Scholify измеряет",
   "your model updates": "модель обновляется",
@@ -614,28 +614,28 @@ export const ru: Record<string, string> = {
   "you get the next best task": "вы получаете лучшую задачу",
   "Diagnostic": "Диагностика",
   "~15 minutes → your real pass probability, area by area.": "~15 минут → ваша реальная вероятность сдачи, по каждой теме.",
-  "~15 minutes → your Exam Readiness Score, area by area.": "~15 минут → ваш индекс готовности к экзамену, по каждой теме.",
+  "~15 min → your Readiness Score, area by area.": "~15 мин → ваш индекс готовности, по каждой теме.",
   "Roadmap": "Маршрут",
-  "Four phases, dated back from your exam day.": "Четыре фазы, рассчитанные от даты вашего экзамена.",
+  "Four phases, dated back from exam day.": "Четыре фазы, рассчитанные от даты экзамена.",
   "Daily mission": "Дневная миссия",
-  "Three tasks a day, already chosen. You never decide what to study.": "Три задачи в день, уже выбранные. Вы никогда не решаете, что учить.",
+  "Three tasks a day, chosen for you.": "Три задачи в день, выбранные за вас.",
   "Progress check": "Проверка прогресса",
   "Every answer moves your live pass probability.": "Каждый ответ двигает вашу живую вероятность сдачи.",
-  "Every answer moves your Exam Readiness Score.": "Каждый ответ меняет ваш индекс готовности к экзамену.",
+  "Every answer moves your Readiness Score.": "Каждый ответ меняет ваш индекс готовности.",
   "The 60% gate": "Ворота 60%",
-  "Mocks unlock when the model says you're ready — not before.": "Пробные экзамены открываются, когда модель говорит, что вы готовы — не раньше.",
+  "Mocks unlock only when you're ready.": "Пробные экзамены открываются, только когда вы готовы.",
   "Mock 1 → 2 → 3": "Пробный 1 → 2 → 3",
-  "Timed, no hints. Three passes and you're proven under exam conditions.": "На время, без подсказок. Три сдачи — и вы проверены в экзаменационных условиях.",
+  "Timed, no hints — proven under exam conditions.": "На время, без подсказок — проверено в экзаменационных условиях.",
   "The real exam": "Настоящий экзамен",
-  "You walk in rehearsed — the sitting is a repeat of your mocks.": "Вы входите отрепетированным — экзамен повторяет ваши пробные.",
+  "You walk in rehearsed. It's a repeat of your mocks.": "Вы входите отрепетированным. Это повтор ваших пробных.",
   "Recovery run": "Восстановительный забег",
-  "Not this time? Import your mark — we find the lost marks and win them back.": "Не в этот раз? Внесите свой балл — мы найдём потерянные баллы и вернём их.",
+  "Missed it? Import your mark — we win the lost marks back.": "Не сдали? Внесите свой балл — мы вернём потерянные баллы.",
   "THE PROMISE": "ОБЕЩАНИЕ",
   "Fail a sitting and it's a stage, not an ending.": "Неудачная попытка — это этап, а не конец.",
   "You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer earns your pass probability back — targeted drills, a fresh mock, then the retake from strength.":
     "Вы будете точно знать, где потерялись баллы. Модель перекалибруется, план перестраивается, и каждый ответ возвращает вашу вероятность сдачи — прицельные тренировки, свежий пробный, затем пересдача с позиции силы.",
-  "You'll know exactly where the marks were lost. The model recalibrates, the plan rebuilds, and every answer improves your Exam Readiness Score — targeted drills, a fresh mock, then the retake from strength.":
-    "Вы будете точно знать, где потерялись баллы. Модель перекалибруется, план перестраивается, и каждый ответ улучшает ваш индекс готовности — прицельные тренировки, свежий пробный, затем пересдача с позиции силы.",
+  "You'll see exactly where marks were lost. The model recalibrates, the plan rebuilds — targeted drills, a fresh mock, then the retake from strength.":
+    "Вы точно увидите, где потерялись баллы. Модель перекалибруется, план перестраивается — прицельные тренировки, свежий пробный, затем пересдача с позиции силы.",
   "Enter the loop — free": "Войти в цикл — бесплатно",
 
   /* ── Store badges / footer ── */
