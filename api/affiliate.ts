@@ -183,22 +183,40 @@ async function notifyApplication(app: {
     const v = String(val || "").trim()
     return v ? `<tr><td style="padding:4px 12px 4px 0;color:#8f8c85;font-size:13px;">${label}</td><td style="padding:4px 0;color:#14141A;font-size:13px;font-weight:600;">${v}</td></tr>` : ""
   }
-  const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;">
+  const adminHtml = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;">
     <h2 style="color:#14141A;font-size:18px;margin:0 0 4px;">New partner application</h2>
     <p style="color:#8f8c85;font-size:13px;margin:0 0 16px;">Code <b style="color:#C80000;">${app.code}</b> · status pending · approve it in Settings → Partner applications.</p>
     <table style="border-collapse:collapse;">
       ${row("Name", app.name)}${row("Email", app.email)}${row("University", app.b.university)}${row("Country", app.b.country)}${row("Promotes on", app.b.socials)}${row("Audience", app.b.audienceSize)}${row("Area", app.b.areaOfStudy)}
     </table>
   </div>`
-  try {
-    await fetch("https://api.resend.com/emails", {
+
+  const first = app.name.split(/\s+/)[0] || "there"
+  const applicantHtml = `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#14141A;">
+    <h2 style="font-size:20px;margin:0 0 10px;">Thanks, ${first} — we've got your application 🏁</h2>
+    <p style="font-size:14px;line-height:1.6;color:#33313a;margin:0 0 14px;">
+      You've applied to the <b>Scholify Preferred Partner Program</b>. We review every application personally and will
+      email you as soon as your partner account is live — then you can start earning a flat <b>27%</b> on every plan you sell.
+    </p>
+    <p style="font-size:14px;line-height:1.6;color:#33313a;margin:0 0 14px;">
+      Your partner code will be
+      <span style="font-family:ui-monospace,monospace;font-weight:700;color:#C80000;letter-spacing:.06em;">${app.code}</span>.
+    </p>
+    <p style="font-size:13px;color:#8f8c85;line-height:1.6;margin:18px 0 0;">
+      Questions? Just reply to this email.<br/>— Makhmudov Nuriddin, Founder, Scholify
+    </p>
+  </div>`
+
+  const send = (payload: Record<string, unknown>) =>
+    fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, reply_to: app.email, subject: `New partner application — ${app.name} (${app.code})`, html }),
-    })
-  } catch {
-    /* best-effort */
-  }
+      body: JSON.stringify(payload),
+    }).catch(() => {})
+
+  // 1) Notify the founder. 2) Confirm receipt to the applicant. Both best-effort.
+  await send({ from, to, reply_to: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml })
+  await send({ from, to: app.email, reply_to: to, subject: "We've received your Scholify partner application 🏁", html: applicantHtml })
 }
 
 async function resolve(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
