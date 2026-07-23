@@ -363,8 +363,37 @@ export default function PartnersApply() {
 
             {/* F1 race rewards — two tiers */}
             <motion.div {...rise(0.1)}>
-              <div style={secHead}>Race rewards</div>
-              <div
+              <div style={{ ...secHead, display: "flex", alignItems: "center", gap: 8 }}>
+                {!reduced && (
+                  <motion.span
+                    aria-hidden
+                    animate={{ opacity: [1, 0.3, 1], scale: [1, 1.5, 1] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ width: 7, height: 7, borderRadius: 999, background: GOLD, display: "inline-block", boxShadow: `0 0 8px ${GOLD}` }}
+                  />
+                )}
+                Race rewards — worth the effort
+              </div>
+              <motion.div
+                initial={reduced ? false : { scale: 0.94, opacity: 0 }}
+                whileInView={reduced ? undefined : { scale: 1, opacity: 1 }}
+                viewport={{ once: true, amount: 0.4 }}
+                whileHover={reduced ? undefined : { scale: 1.015 }}
+                animate={
+                  reduced
+                    ? undefined
+                    : {
+                        boxShadow: [
+                          "0 0 0 1px rgba(244,164,5,0.35), 0 10px 30px -14px rgba(244,164,5,0.25)",
+                          "0 0 0 1px rgba(244,164,5,0.85), 0 20px 50px -8px rgba(244,164,5,0.55)",
+                          "0 0 0 1px rgba(244,164,5,0.35), 0 10px 30px -14px rgba(244,164,5,0.25)",
+                        ],
+                      }
+                }
+                transition={{
+                  boxShadow: { duration: 2.8, repeat: Infinity, ease: "easeInOut" },
+                  scale: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                }}
                 style={{
                   borderRadius: 18,
                   padding: 22,
@@ -375,6 +404,26 @@ export default function PartnersApply() {
                   overflow: "hidden",
                 }}
               >
+                {/* periodic gold shimmer sweep (screen-blend gleam) */}
+                {!reduced && (
+                  <motion.div
+                    aria-hidden
+                    initial={{ x: "-130%" }}
+                    animate={{ x: "130%" }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.4, ease: "easeInOut" }}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: "55%",
+                      background:
+                        "linear-gradient(105deg, transparent, rgba(244,164,5,0.22) 45%, rgba(255,255,255,0.32) 50%, rgba(244,164,5,0.22) 55%, transparent)",
+                      mixBlendMode: "screen",
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
                 <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>
                   ◆ Sell more. Go to the race.
                 </div>
@@ -405,7 +454,13 @@ export default function PartnersApply() {
                     <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "#fff" }}>
                       ★ 2,000 PRO SALES · BY 1 NOV 2026
                     </span>
-                    <span
+                    <motion.span
+                      animate={
+                        reduced
+                          ? undefined
+                          : { boxShadow: ["0 0 0 0 rgba(244,164,5,0.7)", "0 0 0 7px rgba(244,164,5,0)"] }
+                      }
+                      transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
                       style={{
                         fontFamily: MONO,
                         fontSize: 9.5,
@@ -418,7 +473,7 @@ export default function PartnersApply() {
                       }}
                     >
                       GRAND PRIZE
-                    </span>
+                    </motion.span>
                   </div>
                   <p style={{ fontSize: 13, lineHeight: 1.45, marginTop: 6, color: "#e7e2dd" }}>
                     The full trip to the <b style={{ color: "#fff" }}>Formula 1® Abu Dhabi Grand Prix 2026</b> —
@@ -443,7 +498,7 @@ export default function PartnersApply() {
                   Your progress toward each reward is tracked in your partner dashboard. Sales counts, dates and
                   eligibility are verified by Scholify; race dates per the official 2026 F1 calendar.
                 </p>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </Section>
