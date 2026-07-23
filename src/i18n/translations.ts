@@ -219,6 +219,7 @@ export const ru: Record<string, string> = {
   "Privacy": "Конфиденциальность",
   "Terms": "Условия",
   "Support": "Поддержка",
+  "Partners": "Партнёрам",
 
   /* ── Dashboard ── */
   "Home": "Главная",

@@ -1393,9 +1393,33 @@ export default function Settings() {
           </div>
 
           <p style={{ fontSize: 12, color: TEXT2, marginTop: 8, lineHeight: 1.6 }}>
-            We count invites here so we know who to thank — there's no referral reward scheme yet,
-            and we won't pretend there is.
+            We count invites here so we know who to thank.
           </p>
+
+          <div
+            style={{
+              marginTop: 16,
+              padding: 16,
+              borderRadius: 14,
+              background: "var(--sch-card-2)",
+              border: "1px solid var(--sch-border)",
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--sch-text)", marginBottom: 4 }}>
+              Want to earn from referrals?
+            </div>
+            <p style={{ fontSize: 12.5, color: TEXT2, lineHeight: 1.6, marginBottom: 12 }}>
+              Join the Scholify partner program and earn 35% on every student you bring in.
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Button variant="secondary" onClick={() => navigate("/partners/apply")} style={{ flexShrink: 0 }}>
+                Become a partner
+              </Button>
+              <Button variant="secondary" onClick={() => navigate("/partners")} style={{ flexShrink: 0 }}>
+                Partner dashboard
+              </Button>
+            </div>
+          </div>
         </Section>
 
         {/* ── Retention (admin only) ── */}
