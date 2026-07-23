@@ -357,9 +357,9 @@ export default function PartnersApply() {
               </p>
             </div>
 
-            {/* F1 bonus */}
+            {/* F1 race rewards — two tiers */}
             <motion.div {...rise(0.1)}>
-              <div style={secHead}>The grand prize</div>
+              <div style={secHead}>Race rewards</div>
               <div
                 style={{
                   borderRadius: 18,
@@ -371,34 +371,52 @@ export default function PartnersApply() {
                   overflow: "hidden",
                 }}
               >
-                <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD }}>
-                  ◆ Podium Bonus
+                <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: GOLD }}>
+                  ◆ Sell more. Go to the race.
                 </div>
-                <h3 style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.1, marginTop: 10, letterSpacing: "-0.01em" }}>
-                  Hit <span style={{ color: GOLD }}>1,000 sales</span> and we fly you to the{" "}
-                  <span style={{ color: GOLD }}>Formula 1® Qatar Grand Prix 2026</span>.
+                <h3 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.15, marginTop: 8, letterSpacing: "-0.01em" }}>
+                  The more you sell, the bigger the trip — on us.
                 </h3>
-                <p style={{ fontSize: 13.5, lineHeight: 1.5, marginTop: 12, color: "#e7e2dd" }}>
-                  Reach 1,000 verified sales and Scholify buys your ticket to the Grand Prix — on us. Fitting, since your
-                  Scholify coach, Charles, is a race engineer.
-                </p>
-                <span
-                  style={{
-                    display: "inline-block",
-                    marginTop: 14,
-                    fontFamily: MONO,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.04em",
-                    padding: "6px 12px",
-                    borderRadius: 999,
-                    background: "rgba(244,164,5,0.16)",
-                    color: GOLD,
-                    border: "1px solid rgba(244,164,5,0.35)",
-                  }}
-                >
-                  DEADLINE · 1 OCTOBER 2026
-                </span>
+
+                {/* Tier 1 — Podium */}
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: GOLD }}>
+                    ◆ 1,000 SALES · BY 1 OCT 2026
+                  </div>
+                  <p style={{ fontSize: 13, lineHeight: 1.45, marginTop: 5, color: "#e7e2dd" }}>
+                    A <b style={{ color: "#fff" }}>Grand Prix ticket</b> to the{" "}
+                    <b style={{ color: "#fff" }}>Formula 1® Qatar Grand Prix 2026</b> — Lusail, 27–29 Nov 2026.
+                  </p>
+                </div>
+
+                <div style={{ height: 1, background: "rgba(244,164,5,0.28)", margin: "16px 0" }} />
+
+                {/* Tier 2 — Grand Prize */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "#fff" }}>
+                      ★ 2,000 PRO SALES · BY 1 NOV 2026
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        letterSpacing: "0.06em",
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: GOLD,
+                        color: "#2a1215",
+                      }}
+                    >
+                      GRAND PRIZE
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, lineHeight: 1.45, marginTop: 6, color: "#e7e2dd" }}>
+                    <b style={{ color: "#fff" }}>Return flights (there &amp; back) + Grand Prix tickets</b> to the{" "}
+                    <b style={{ color: "#fff" }}>Formula 1® Abu Dhabi Grand Prix 2026</b> — Yas Marina, 4–6 Dec 2026.
+                  </p>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -643,9 +661,11 @@ export default function PartnersApply() {
             This is an invitation to join the Scholify Preferred Partner Program and is not a binding contract; final
             terms, the exact commission percentage and reward details are confirmed on activation at launch (10 August
             2026). Scholify is an independent ACCA study tool and is not affiliated with or endorsed by ACCA; ACCA is a
-            registered trademark of the Association of Chartered Certified Accountants. "Formula 1" and "F1" are
-            trademarks of Formula One Licensing BV; the Qatar Grand Prix reward is provided by Scholify and is not
-            sponsored or endorsed by any Formula 1 entity. © 2026 Scholify.
+            registered trademark of the Association of Chartered Certified Accountants. "Formula 1", "F1", "Grand Prix"
+            and related marks are trademarks of Formula One Licensing BV; the Qatar and Abu Dhabi Grand Prix rewards
+            (including flights and tickets) are provided by Scholify and are not sponsored or endorsed by any Formula 1
+            entity. Reward sales counts, dates and eligibility are verified by Scholify; race dates per the official
+            2026 F1 calendar. © 2026 Scholify.
           </p>
         </Section>
       </div>
