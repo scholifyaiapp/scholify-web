@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import { timingSafeEqual } from "node:crypto"
+import { createHmac, timingSafeEqual } from "node:crypto"
 
 /*
  * Daily email reminders.
@@ -20,6 +20,9 @@ import { timingSafeEqual } from "node:crypto"
 
 const TABLE = "study_reminders"
 
+// Canonical origin — the root redirects here (307), so link straight to www.
+const SITE = "https://www.scholifyapp.com"
+
 function admin() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -34,7 +37,50 @@ function todayUTC(): string {
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const action = String(req.query.action || "").toLowerCase()
   if (action === "send") return handleSend(req, res)
+  if (action === "unsubscribe") return handleUnsubscribe(req, res)
   return handleSync(req, res)
+}
+
+/**
+ * Per-user unsubscribe token — HMAC(user_id) keyed by CRON_SECRET. Lets the
+ * emailed one-click link (and the List-Unsubscribe header) turn a learner's
+ * reminders off without a login, while being unforgeable: only the server,
+ * which holds CRON_SECRET, can mint a valid token for a given user_id.
+ */
+function unsubToken(userId: string, secret: string): string {
+  return createHmac("sha256", secret).update(userId).digest("hex")
+}
+
+async function handleUnsubscribe(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const secret = process.env.CRON_SECRET
+  const userId = String(req.query.u || "")
+  const token = String(req.query.t || "")
+  const valid =
+    Boolean(secret) && Boolean(userId) && safeEqual(token, unsubToken(userId, secret as string))
+
+  const db = admin()
+  if (valid && db) {
+    await db.from(TABLE).update({ opt_in: false }).eq("user_id", userId)
+  }
+
+  // Gmail/Yahoo one-click POST (RFC 8058): reply 200, no body needed.
+  if (req.method === "POST") {
+    res.status(200).json({ ok: valid })
+    return
+  }
+  // Browser click (GET): a tiny confirmation page.
+  res.setHeader("Content-Type", "text/html; charset=utf-8")
+  res.status(200).send(
+    `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">` +
+      `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:12vh auto;padding:0 24px;text-align:center;color:#2A2320">` +
+      `<div style="font-size:20px;font-weight:800">${valid ? "You're unsubscribed 👋" : "Link expired"}</div>` +
+      `<p style="color:#6B5F58;line-height:1.6">${
+        valid
+          ? "You won't get study reminders anymore. You can turn them back on anytime in Settings."
+          : "This unsubscribe link isn't valid. You can manage reminders in Settings."
+      }</p>` +
+      `<a href="${SITE}/settings" style="color:#C80000;font-weight:700">Open Settings →</a></div>`,
+  )
 }
 
 async function handleSync(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -127,7 +173,10 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
 
     let sent = 0
     for (const r of due) {
-      const ok = await sendEmail(resendKey, from, r.email as string)
+      const unsubUrl = `${SITE}/api/reminders?action=unsubscribe&u=${encodeURIComponent(
+        r.user_id as string,
+      )}&t=${unsubToken(r.user_id as string, secret as string)}`
+      const ok = await sendEmail(resendKey, from, r.email as string, unsubUrl)
       if (ok) {
         sent += 1
         await db.from(TABLE).update({ last_reminded: today }).eq("user_id", r.user_id)
@@ -140,28 +189,61 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
   }
 }
 
-async function sendEmail(apiKey: string, from: string, to: string): Promise<boolean> {
+async function sendEmail(
+  apiKey: string,
+  from: string,
+  to: string,
+  unsubUrl: string,
+): Promise<boolean> {
+  // Email-safe PNG (Outlook/Apple Mail don't render the app's .webp avatars).
+  const avatar = `${SITE}/charles/email-avatar.png`
   // ACCA brand palette on warm paper — the same accents the app uses.
   const html = `
   <div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:28px;color:#2A2320;">
+    <img src="${avatar}" width="56" height="56" alt="Charles"
+         style="display:block;width:56px;height:56px;border-radius:50%;margin-bottom:16px;" />
     <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">Today's session is ready 👋</div>
     <p style="font-size:15px;line-height:1.6;color:#6B5F58;">
       Twenty minutes today moves your Exam Readiness Score more than three hours the night before.
       Your next questions are picked and waiting.
     </p>
-    <a href="https://scholifyapp.com/study"
+    <a href="${SITE}/study"
        style="display:inline-block;margin-top:14px;background:#C80000;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 26px;border-radius:12px;">
       Start today's session →
     </a>
     <p style="font-size:12px;color:#9C8F87;margin-top:22px;">
-      — Charles · Your Scholify race engineer · You can turn these off anytime in Settings.
+      — Charles · Your Scholify race engineer.<br/>
+      <a href="${unsubUrl}" style="color:#9C8F87;">Unsubscribe</a> · or manage reminders in Settings.
     </p>
   </div>`
+  // Plain-text alternative — lowers spam score and covers text-only clients.
+  const text = [
+    "Today's session is ready.",
+    "",
+    "Twenty minutes today moves your Exam Readiness Score more than three hours the night before. Your next questions are picked and waiting.",
+    "",
+    `Start today's session: ${SITE}/study`,
+    "",
+    "— Charles · Your Scholify race engineer",
+    `Unsubscribe: ${unsubUrl}`,
+  ].join("\n")
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject: "Your ACCA session is ready 📘", html }),
+      body: JSON.stringify({
+        from,
+        to,
+        subject: "Your ACCA session is ready 📘",
+        html,
+        text,
+        // One-click unsubscribe (RFC 8058) — required by Gmail/Yahoo bulk-sender
+        // rules and a strong signal against the spam folder.
+        headers: {
+          "List-Unsubscribe": `<${unsubUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+      }),
     })
     return r.ok
   } catch {
