@@ -33,10 +33,11 @@ const FREE_FEATURES: PlanFeature[] = [
 ]
 
 const BEGINNER_FEATURES: PlanFeature[] = [
-  { text: "Timed mock exams against the pass line" },
-  { text: "AI Examiner — written answers marked in seconds", badge: "NEW" },
-  { text: "Custom practice from any topic or your notes" },
-  { text: "Mock history & readiness trend" },
+  { text: "All 15 papers unlocked — study & practise any of them" },
+  { text: "Unlimited expert-written practice, marked instantly" },
+  { text: "Ask Charles (AI tutor) — daily allowance" },
+  { text: "Flashcards, diagnostic & readiness analytics" },
+  { text: "Upgrade to Pro anytime for mocks, Examiner & custom practice" },
 ]
 
 const PRO_FEATURES: PlanFeature[] = [
@@ -47,7 +48,9 @@ const PRO_FEATURES: PlanFeature[] = [
   { text: "Annual option — 33% cheaper" },
 ]
 
-/* Entitlements are Free vs paid today — any paid plan unlocks the same modes. */
+/* Columns: Feature · Free · Beginner · Pro · Annual Pro.
+ * Beginner is a paying tier (all 15 papers) but NOT the premium modes — those
+ * (timed mocks, AI Examiner, custom practice) are Pro/Annual only. */
 const COMPARISON: Array<[string, string, string, string, string]> = [
   ["Expert-written question banks", "✓", "✓", "✓", "✓"],
   ["Practice sessions", "✓", "✓", "✓", "✓"],
@@ -57,9 +60,9 @@ const COMPARISON: Array<[string, string, string, string, string]> = [
   ["Study chapters (all 15 papers)", "✓", "✓", "✓", "✓"],
   ["Readiness score & weak-area analytics", "✓", "✓", "✓", "✓"],
   ["Charles AI race engineer", "✓", "✓", "✓", "✓"],
-  ["Timed mock exams", "—", "✓", "✓", "✓"],
-  ["AI Examiner (written marking)", "—", "✓", "✓", "✓"],
-  ["Custom practice from your notes", "—", "✓", "✓", "✓"],
+  ["Timed mock exams", "—", "—", "✓", "✓"],
+  ["AI Examiner (written marking)", "—", "—", "✓", "✓"],
+  ["Custom practice from your notes", "—", "—", "✓", "✓"],
 ]
 
 const FAQS: Array<[string, string]> = [
@@ -511,8 +514,8 @@ export default function Pricing() {
             ? "Every new account starts with 7 days of Pro free — no card. When it ends you keep the full free plan, with no clock. Cancel a paid plan anytime."
             : "Accounts aren't open yet. When they are, every new account starts with 7 days of Pro free, then keeps the full free plan with no clock."}
           <br />
-          Beginner and Pro unlock the same study modes right now; if that changes, this page changes
-          with it.
+          Beginner unlocks all 15 papers and unlimited practice; Pro adds timed mocks, the AI Examiner
+          and custom practice. Cancel anytime.
         </p>
 
         {/* Comparison table */}

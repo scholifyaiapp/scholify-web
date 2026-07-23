@@ -11,13 +11,27 @@ const inDays = (d: number) => new Date(NOW + d * 86400000).toISOString()
 const user = (meta: Record<string, unknown>) => ({ app_metadata: meta })
 
 describe("paid plans", () => {
-  it("grants Pro to every paid tier", () => {
-    for (const plan of ["beginner", "pro", "annual_pro"]) {
+  it("grants PRO to the Pro/Annual tiers", () => {
+    for (const plan of ["pro", "annual_pro"]) {
       const e = entitlementOf(user({ plan }), NOW)
       expect(e.isPaid).toBe(true)
       expect(e.isPro).toBe(true)
+      expect(e.isBeginner).toBe(false)
       expect(e.isTrial).toBe(false)
     }
+  })
+
+  it("Beginner is PAID (all papers) but NOT pro (no mocks/examiner/custom)", () => {
+    const e = entitlementOf(user({ plan: "beginner" }), NOW)
+    expect(e.isPaid).toBe(true)
+    expect(e.isBeginner).toBe(true)
+    expect(e.isPro).toBe(false) // premium modes stay locked
+    expect(e.isTrial).toBe(false)
+  })
+
+  it("Beginner still unlocks all papers (canAccessPaper via isPaid)", () => {
+    const beginner = user({ plan: "beginner" })
+    expect(canAccessPaper(beginner, "AAA", ["FA"], NOW)).toBe(true)
   })
 
   it("treats an active subscription as paid even if the plan name wasn't mapped", () => {

@@ -18,19 +18,28 @@
  * stays clean and a real subscription always wins over (and outlives) a trial.
  */
 
-/** The paid tiers, in the shape Paddle writes them. */
+/** Every paying tier. `isPaid` (→ all 15 papers) is true for any of these. */
 const PAID_PLANS = new Set(["beginner", "pro", "annual_pro"])
+/** The PRO tier only — unlocks the premium modes (mocks / examiner / custom). */
+const PRO_PLANS = new Set(["pro", "annual_pro"])
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export interface Entitlement {
-  /** The raw paid plan string ("free" when there is no subscription). */
+  /** The raw plan string ("free" when there is no subscription). */
   plan: string
-  /** A real, paid subscription is active. */
+  /** A paying customer (Beginner, Pro or Annual) — unlocks all 15 papers. */
   isPaid: boolean
+  /** Beginner tier specifically (paid, but NOT the premium modes). */
+  isBeginner: boolean
   /** A free trial is active (and there is no paid plan). */
   isTrial: boolean
-  /** Pro-level access, from EITHER a paid plan or an active trial. */
+  /**
+   * PRO-level access — unlocks timed mocks, the AI Examiner and custom AI
+   * practice. True for the Pro/Annual tier, an active trial, OR an active
+   * subscription whose price id wasn't mapped (unknown tier → grant full rather
+   * than under-serve a paying customer). Beginner is paid but NOT pro.
+   */
   isPro: boolean
   /** ISO end of the trial, or null. */
   trialEndsAt: string | null
@@ -54,7 +63,9 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   // A live subscription counts as paid even if its price id wasn't mapped to a
   // known plan name (mis-provisioned Stripe env) — otherwise a genuinely paying
   // customer would be treated as "free" and trapped behind the expired wall.
-  const isPaid = PAID_PLANS.has(plan) || meta.plan_status === "active"
+  const planStatusActive = meta.plan_status === "active"
+  const isPaid = PAID_PLANS.has(plan) || planStatusActive
+  const isBeginner = plan === "beginner"
 
   const trialEndsAt = typeof meta.trial_ends_at === "string" ? meta.trial_ends_at : null
   const hadTrial = Boolean(meta.trial_started_at)
@@ -63,11 +74,16 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   const trialActive = !isPaid && Number.isFinite(trialEndMs) && trialEndMs > now
   const trialDaysLeft = trialActive ? Math.max(0, Math.ceil((trialEndMs - now) / DAY_MS)) : 0
 
+  // PRO = the Pro/Annual tier, OR an active-but-unmapped subscription (unknown
+  // tier → don't under-serve a payer), OR an active trial. Beginner is excluded.
+  const isPro = PRO_PLANS.has(plan) || (planStatusActive && !PAID_PLANS.has(plan)) || trialActive
+
   return {
     plan,
     isPaid,
+    isBeginner,
     isTrial: trialActive,
-    isPro: isPaid || trialActive,
+    isPro,
     trialEndsAt,
     trialDaysLeft,
     hadTrial,

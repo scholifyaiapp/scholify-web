@@ -4,7 +4,7 @@ import { motion } from "motion/react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useAuth } from "@/lib/auth"
-import { isProUser, entitlementOf } from "@/lib/entitlement"
+import { entitlementOf } from "@/lib/entitlement"
 import { usePaywall } from "@/hooks/usePaywall"
 import PaywallModal from "@/components/PaywallModal"
 import { Icon, Card, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
@@ -78,7 +78,7 @@ export default function Dashboard() {
   const weakest = palestArea(paperId)
   const momentum = probabilityMomentum(paperId)
   const mission = buildTodayPlan(paperId)
-  const isPro = isProUser(user)
+  const ent = entitlementOf(user)
   const { showPaywall, paywallType, maybeShowTrialReminder, closePaywall } = usePaywall()
 
   useEffect(() => {
@@ -429,13 +429,13 @@ export default function Dashboard() {
 
         {/* footer strip — quiet housekeeping */}
         <div style={{ display: "flex", alignItems: "center", gap: SP.md, flexWrap: "wrap", padding: "14px 18px", borderRadius: R.xl, background: C.card, border: `1px solid ${C.border}` }}>
-          {isPro ? (
+          {ent.isPro && !ent.isTrial ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 750, color: C.green }}>
               <Icon name="done" size={14} color={C.green} /> Pro
             </span>
           ) : (
             <Link to="/pricing" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 750, color: C.brand, textDecoration: "none", padding: "6px 12px", borderRadius: R.pill, border: `1.5px solid ${C.brandLine}` }}>
-              Free — Upgrade to Pro
+              {ent.isBeginner ? "Beginner — Upgrade to Pro" : ent.isTrial ? `Trial · ${ent.trialDaysLeft}d — Upgrade` : "Free — Upgrade to Pro"}
             </Link>
           )}
           {fc.due > 0 && (

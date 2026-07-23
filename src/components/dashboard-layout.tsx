@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { isProUser } from "@/lib/entitlement"
+import { entitlementOf } from "@/lib/entitlement"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, type IconName, C, SP, R, SHADOW, GRAD } from "@/components/acca/ui"
@@ -189,7 +189,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user?.id])
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
-  const isPro = isProUser(user)
+  const ent = entitlementOf(user)
+  const planPaidLook = ent.isPaid || ent.isTrial
+  const planLabel = ent.isTrial ? `TRIAL · ${ent.trialDaysLeft}d` : ent.isPro ? "PRO" : ent.isBeginner ? "BEGINNER" : "FREE PLAN"
 
   // Re-read the avatar when Settings changes it (uploads fire this event;
   // cloud saves also refresh `user` via USER_UPDATED — either path lands here).
@@ -234,11 +236,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               style={{
                 display: "inline-block", fontSize: 9.5, fontWeight: 800, letterSpacing: "0.04em",
                 padding: "1.5px 8px", borderRadius: 999, marginTop: 2,
-                background: isPro ? GRAD : C.card2, color: isPro ? "#fff" : C.soft,
-                border: isPro ? "none" : `1px solid ${C.border}`,
+                background: planPaidLook ? GRAD : C.card2, color: planPaidLook ? "#fff" : C.soft,
+                border: planPaidLook ? "none" : `1px solid ${C.border}`,
               }}
             >
-              {isPro ? "PRO" : "FREE PLAN"}
+              {planLabel}
             </span>
           </div>
         </div>
