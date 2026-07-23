@@ -6,6 +6,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import { applyToAffiliate, type AffiliateApplication } from "@/lib/affiliate"
+import PaymentMethods from "@/components/PaymentMethods"
 
 /* ──────────────────────────────────────────────────────────────
  *  /partners/apply — the Scholify Preferred Partner landing.
@@ -503,41 +504,7 @@ export default function PartnersApply() {
 
         {/* ── Secure payments ── */}
         <Section>
-          <motion.div {...rise()} style={{ ...secHead, textAlign: "center" }}>
-            Secure payments, powered by Stripe
-          </motion.div>
-          <motion.div
-            {...rise(0.05)}
-            style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}
-          >
-            <PayChip>
-              <span style={{ fontWeight: 800, fontSize: 20, color: "#635BFF", letterSpacing: "-0.03em" }}>stripe</span>
-            </PayChip>
-            <PayChip>
-              <span style={{ fontWeight: 800, fontStyle: "italic", fontSize: 20, color: "#1A1F71", letterSpacing: "0.02em" }}>
-                VISA
-              </span>
-            </PayChip>
-            <PayChip>
-              <svg width="40" height="25" viewBox="0 0 48 30" aria-label="Mastercard">
-                <defs>
-                  <clipPath id="mcWeb">
-                    <circle cx="19" cy="15" r="13" />
-                  </clipPath>
-                </defs>
-                <circle cx="19" cy="15" r="13" fill="#EB001B" />
-                <circle cx="29" cy="15" r="13" fill="#F79E1B" />
-                <circle cx="29" cy="15" r="13" fill="#FF5F00" clipPath="url(#mcWeb)" />
-              </svg>
-            </PayChip>
-            <PayChip>
-              <svg width="22" height="22" viewBox="0 0 40 40" aria-label="Link">
-                <circle cx="20" cy="20" r="20" fill="#00D66F" />
-                <path d="M15 11 L25 20 L15 29" fill="none" stroke="#011E0F" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span style={{ fontWeight: 800, fontSize: 19, color: "#0A2540", letterSpacing: "-0.02em", marginLeft: 6 }}>link</span>
-            </PayChip>
-          </motion.div>
+          <PaymentMethods />
         </Section>
 
         {/* ── Application form ── */}
@@ -741,25 +708,6 @@ export default function PartnersApply() {
 }
 
 /* ── Small building blocks ───────────────────────────────────── */
-
-function PayChip({ children }: { children: ReactNode }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: 52,
-        padding: "0 20px",
-        background: "#fff",
-        border: "1px solid var(--sch-border)",
-        borderRadius: 12,
-      }}
-    >
-      {children}
-    </span>
-  )
-}
 
 function CardGrid({ items, rise }: { items: Array<[string, string]>; rise: (d?: number) => object }) {
   return (

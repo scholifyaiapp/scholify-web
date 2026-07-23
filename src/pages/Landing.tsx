@@ -22,6 +22,8 @@ import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
 import { CinematicFooter } from "@/components/ui/motion-footer"
+import PartnerLogos from "@/components/ui/partner-logos"
+import PaymentMethods from "@/components/PaymentMethods"
 import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
@@ -2086,6 +2088,10 @@ export default function Landing() {
       <LiquidGlassFilterDefs />
       <Nav />
       <Hero />
+      <PartnerLogos
+        heading="Built for the ACCA world"
+        caption="Scholify prepares you for the ACCA qualification — the pathway studied at the world's leading institutions."
+      />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
@@ -2098,6 +2104,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
+      <PaymentMethods style={{ padding: "56px 24px 8px", maxWidth: 1100, margin: "0 auto" }} />
       <LazyOnView style={{ minHeight: 300 }}><MobileAppsTeaser /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
     </div>
