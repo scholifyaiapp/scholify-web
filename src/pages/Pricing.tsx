@@ -16,7 +16,7 @@ import { ScholifyLockup } from "@/components/brand"
 const TEXT2 = "var(--sch-tx-2)"
 const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 
-/* Every claim below is what the app ships today. The 7-day Pro trial is real
+/* Every claim below is what the app ships today. The 3-day Pro trial is real
    (granted server-side on first sign-up) but only once accounts are open, so
    trial copy is gated on that — the live site never promises what it can't do. */
 const accountsOpen = isSupabaseConfigured
@@ -60,17 +60,17 @@ const COMPARISON: Array<[string, string, string, string, string]> = [
   ["Study chapters (all 15 papers)", "✓", "✓", "✓", "✓"],
   ["Readiness score & weak-area analytics", "✓", "✓", "✓", "✓"],
   ["Charles AI race engineer", "✓", "✓", "✓", "✓"],
-  ["Timed mock exams", "—", "—", "✓", "✓"],
-  ["AI Examiner (written marking)", "—", "—", "✓", "✓"],
-  ["Custom practice from your notes", "—", "—", "✓", "✓"],
+  ["Timed mock exams", "✓", "—", "✓", "✓"],
+  ["AI Examiner (written marking)", "✓", "—", "✓", "✓"],
+  ["Custom practice from your notes", "✓", "—", "✓", "✓"],
 ]
 
 const FAQS: Array<[string, string]> = [
   [
     "How does the free trial work?",
     accountsOpen
-      ? "Every new account starts with 7 days of Pro, free and with no card — timed mocks, the AI Examiner and custom practice all unlocked. When the 7 days end you're not cut off: you keep the full free plan (2,418 questions, 929 flashcards, 69 study chapters, the diagnostic and your readiness score) with no clock, forever. Upgrade whenever you want Pro back."
-      : "Accounts aren't open yet. When they are, every new account will start with 7 days of Pro free (no card), then keep the full free plan — 2,418 questions, 929 flashcards, 69 study chapters, the diagnostic and readiness score — with no clock.",
+      ? "Every new account starts with a 3-day free trial of full Pro — timed mocks, the AI Examiner and custom practice unlocked on your chosen paper, with no card. When the 3 days end, choose Beginner (all 15 papers + unlimited practice) or Pro (adds mocks, the AI Examiner and custom practice) to keep going. Cancel anytime."
+      : "Accounts aren't open yet. When they are, every new account will start with a 3-day free trial of full Pro (no card), then choose Beginner or Pro to continue.",
   ],
   [
     "Which papers does Scholify cover?",
@@ -190,7 +190,7 @@ export default function Pricing() {
 
   const checkout = (plan: StripePlan) => {
     if (!paymentsOpen) {
-      flash("Payments aren't open yet — the free plan has no limit in the meantime.")
+      flash("Payments aren't open yet — hang tight, they're coming soon.")
       return
     }
     void startStripeCheckout(plan).then((ok) => {
@@ -274,8 +274,8 @@ export default function Pricing() {
             Cheaper than one tutoring hour.
           </h1>
           <p style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 12 }}>
-            The free plan has no clock on it. Pay only when you want mocks, the AI Examiner and
-            custom practice.
+            Start with a 3-day free trial of full Pro — no card. Then Beginner for all-papers practice,
+            or Pro for mocks, the AI Examiner and custom practice.
           </p>
 
           {/* Billing toggle */}
@@ -365,10 +365,10 @@ export default function Pricing() {
           <PricingCard
             index={0}
             variant="free"
-            name="Free"
+            name="Free trial"
             price="$0"
-            priceUnit="forever"
-            description="The whole study loop. No card, no countdown."
+            priceUnit="3 days"
+            description="Full Pro to start — no card. Then pick Beginner or Pro."
             features={FREE_FEATURES}
             cta={user ? "Go to app →" : "Start free"}
             onCta={() => (window.location.href = user ? "/study" : "/sign-up")}
@@ -382,7 +382,7 @@ export default function Pricing() {
             oldPrice={beginnerCard.oldPrice}
             billedNote={beginnerCard.billedNote}
             description="For steady daily practice"
-            featuresHeader="Everything in Free, plus:"
+            featuresHeader="The full study loop:"
             features={BEGINNER_FEATURES}
             cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
             disabled={!paymentsOpen}
@@ -397,7 +397,7 @@ export default function Pricing() {
             oldPrice={proCard.oldPrice}
             billedNote={proCard.billedNote}
             description="Mocks, AI Examiner & custom practice"
-            featuresHeader="Everything in Free, plus:"
+            featuresHeader="Everything in Beginner, plus:"
             features={PRO_FEATURES}
             cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
             disabled={!paymentsOpen}
@@ -511,8 +511,8 @@ export default function Pricing() {
             plan itself never has a clock either way. */}
         <p style={{ textAlign: "center", fontSize: 13, color: TEXT2, marginTop: 24, lineHeight: 1.7 }}>
           {accountsOpen
-            ? "Every new account starts with 7 days of Pro free — no card. When it ends you keep the full free plan, with no clock. Cancel a paid plan anytime."
-            : "Accounts aren't open yet. When they are, every new account starts with 7 days of Pro free, then keeps the full free plan with no clock."}
+            ? "Every new account starts with a 3-day free trial of full Pro — no card. When it ends, pick Beginner or Pro. Cancel anytime."
+            : "Accounts aren't open yet. When they are, every new account starts with a 3-day free trial, then Beginner or Pro."}
           <br />
           Beginner unlocks all 15 papers and unlimited practice; Pro adds timed mocks, the AI Examiner
           and custom practice. Cancel anytime.
@@ -555,7 +555,7 @@ export default function Pricing() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
                     <thead>
                       <tr style={{ background: "var(--sch-bg-2)" }}>
-                        {["Feature", "Free", "Beginner", "Pro", "Annual Pro"].map((h, i) => (
+                        {["Feature", "Trial", "Beginner", "Pro", "Annual Pro"].map((h, i) => (
                           <th
                             key={h}
                             style={{

@@ -1930,7 +1930,7 @@ function Pricing() {
           {t("Start free.")} <em style={{ fontStyle: "italic" }}>{t("Upgrade when you're ready.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 14, maxWidth: 560, marginInline: "auto" }}>
-          {t("The free plan has no time limit and no card. Annual saves 33%.")}
+          {t("Start with a 3-day free trial — no card. Annual saves 33%.")}
         </p>
 
         <div
@@ -2021,7 +2021,7 @@ function Pricing() {
         </div>
 
         <p style={{ color: INK_MUTED, fontSize: 13, marginTop: 28 }}>
-          {t("No card to start. Payments open soon — until then, the free plan is the whole loop.")}
+          {t("No card to start. A 3-day free trial, then Beginner or Pro.")}
         </p>
       </div>
     </section>

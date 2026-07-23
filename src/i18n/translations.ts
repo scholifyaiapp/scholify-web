@@ -196,14 +196,14 @@ export const ru: Record<string, string> = {
   "PRICING": "ЦЕНЫ",
   "Start free.": "Начните бесплатно.",
   "Upgrade when you're ready.": "Перейдите на платный план, когда будете готовы.",
-  "The free plan has no time limit and no card. Annual saves 33%.":
-    "У бесплатного плана нет ни срока, ни карты. Годовой план экономит 33%.",
+  "Start with a 3-day free trial — no card. Annual saves 33%.":
+    "Начните с 3-дневного бесплатного пробного периода — без карты. Годовой план экономит 33%.",
   "Beginner": "Новичок",
   "Pro": "Pro",
   "Start free": "Начать бесплатно",
   "WHAT'S INCLUDED": "ЧТО ВХОДИТ",
-  "No card to start. Payments open soon — until then, the free plan is the whole loop.":
-    "Карта не нужна. Оплата откроется скоро — а пока весь цикл обучения доступен бесплатно.",
+  "No card to start. A 3-day free trial, then Beginner or Pro.":
+    "Карта не нужна. 3-дневный бесплатный пробный период, затем Beginner или Pro.",
   "Google Calendar sync": "Синхронизация с Google Календарём",
 
   /* ── Footer ── */

@@ -42,13 +42,13 @@ const HEADERS: Record<
     kind: "lock",
     icon: "lock",
     title: "This is a paid feature",
-    sub: "A paid plan unlocks timed mocks, the AI Examiner and custom practice. Everything else stays free.",
+    sub: "Pro unlocks timed mocks, the AI Examiner and custom practice. Beginner covers everything else.",
   },
   general: {
     kind: "lara",
     icon: "tutor",
     title: "Unlock the full Scholify",
-    sub: "Timed mocks, instant written marking, custom practice — the three modes the free plan doesn't include.",
+    sub: "Timed mocks, instant written marking, custom practice — the three modes only Pro includes.",
   },
   reminder: {
     kind: "lara",
@@ -469,8 +469,8 @@ export default function PaywallModal({
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 {paymentsOpen
-                  ? "Everything else stays free · Cancel anytime"
-                  : "Payments open soon · Everything else stays free"}
+                  ? "3-day free trial · Cancel anytime"
+                  : "Payments open soon · 3-day free trial to start"}
               </div>
               {dismissible && (
                 <button
