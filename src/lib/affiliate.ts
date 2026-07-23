@@ -161,6 +161,65 @@ export async function fetchAffiliateDashboard(): Promise<AffiliateDashboard> {
   }
 }
 
+/* ── Admin (Scholify staff only — server verifies the JWT email) ── */
+
+export interface AdminAffiliate {
+  id: string
+  name: string
+  email: string
+  university: string | null
+  country: string | null
+  socials: string | null
+  audience_size: string | null
+  code: string
+  status: string
+  clicks: number
+  created_at: string
+}
+
+async function adminToken(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null
+  try {
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Admin: fetch all affiliate applications (newest first). */
+export async function listAffiliates(): Promise<AdminAffiliate[]> {
+  const token = await adminToken()
+  if (!token) return []
+  try {
+    const res = await fetch("/api/affiliate?action=list", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    })
+    const json = (await res.json()) as { ok: boolean; affiliates?: AdminAffiliate[] }
+    return json.ok ? json.affiliates ?? [] : []
+  } catch {
+    return []
+  }
+}
+
+/** Admin: set an affiliate's status (active | rejected | pending). */
+export async function setAffiliateStatus(id: string, status: string): Promise<boolean> {
+  const token = await adminToken()
+  if (!token) return false
+  try {
+    const res = await fetch("/api/affiliate?action=approve", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, status }),
+    })
+    const json = (await res.json()) as { ok: boolean }
+    return json.ok
+  } catch {
+    return false
+  }
+}
+
 /** Cents → "$12.34" for display. */
 export function formatMoney(cents: number, currency = "usd"): string {
   try {

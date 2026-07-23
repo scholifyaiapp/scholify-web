@@ -23,6 +23,7 @@ import { syncReminder } from "@/lib/reminders"
 import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
+import { listAffiliates, setAffiliateStatus, type AdminAffiliate } from "@/lib/affiliate"
 import {
   Icon,
   Badge,
@@ -731,6 +732,28 @@ export default function Settings() {
       cancelled = true
     }
   }, [isAdmin])
+
+  /* Admin partner-application review — owner only. */
+  const [partners, setPartners] = useState<AdminAffiliate[] | null>(null)
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+    void listAffiliates().then((list) => {
+      if (!cancelled) setPartners(list)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin])
+
+  const reviewPartner = useCallback(
+    async (id: string, status: string) => {
+      const ok = await setAffiliateStatus(id, status)
+      if (ok) setPartners((prev) => (prev ? prev.map((p) => (p.id === id ? { ...p, status } : p)) : prev))
+      else toast.error("Couldn't update — try again.")
+    },
+    [toast],
+  )
 
   /* Auto-saving settings */
   const update = useCallback(
@@ -1482,6 +1505,81 @@ export default function Settings() {
                 Retention events (first_task_completed, day3_retained, day7_retained) stream to
                 PostHog. Apply migration 0011 + connect Supabase to populate this in-app table.
               </p>
+            )}
+          </Section>
+        )}
+
+        {/* ── Partner applications (admin only) ── */}
+        {isAdmin && (
+          <Section>
+            <SectionHead icon="support">Partner applications (admin)</SectionHead>
+            {partners === null ? (
+              <p style={{ fontSize: 13, color: TEXT2, marginTop: 10 }}>Loading…</p>
+            ) : partners.length === 0 ? (
+              <p style={{ fontSize: 13, color: TEXT2, marginTop: 10, lineHeight: 1.6 }}>
+                No applications yet.
+              </p>
+            ) : (
+              <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+                {partners.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      background: "var(--sch-card-2)",
+                      border: "1px solid var(--sch-border)",
+                    }}
+                  >
+                    <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--sch-text)" }}>
+                        {p.name} · <span style={{ fontFamily: "ui-monospace, monospace" }}>{p.code}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: TEXT2, overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {p.email}
+                        {p.university ? ` · ${p.university}` : ""}
+                        {p.country ? ` · ${p.country}` : ""}
+                        {p.socials ? ` · ${p.socials}` : ""}
+                        {p.audience_size ? ` · ${p.audience_size} audience` : ""}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        color:
+                          p.status === "active" ? "#1E9E5A" : p.status === "rejected" ? "var(--sch-tx-2)" : "#B7791F",
+                        background:
+                          p.status === "active"
+                            ? "rgba(34,160,90,0.12)"
+                            : p.status === "rejected"
+                              ? "var(--sch-bg)"
+                              : "rgba(244,164,5,0.12)",
+                      }}
+                    >
+                      {p.status}
+                    </span>
+                    {p.status !== "active" && (
+                      <Button variant="secondary" onClick={() => void reviewPartner(p.id, "active")} style={{ flexShrink: 0 }}>
+                        Approve
+                      </Button>
+                    )}
+                    {p.status !== "rejected" && (
+                      <Button variant="ghost" onClick={() => void reviewPartner(p.id, "rejected")} style={{ flexShrink: 0 }}>
+                        Reject
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </Section>
         )}

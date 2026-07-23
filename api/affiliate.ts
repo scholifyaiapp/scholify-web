@@ -66,7 +66,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const action = String(req.query.action || "").trim().toLowerCase()
   if (action === "apply") return apply(req, res, supa)
   if (action === "resolve") return resolve(req, res, supa)
+  if (action === "list") return list(req, res, supa)
+  if (action === "approve") return approve(req, res, supa)
   res.status(400).json({ ok: false, reason: "unknown_action" })
+}
+
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "scholifyaiapp@gmail.com").toLowerCase()
+
+/** Verify the caller is the Scholify admin (by verified JWT email). */
+async function requireAdmin(req: VercelRequest, supa: SupabaseClient): Promise<boolean> {
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) return false
+  const { data } = await supa.auth.getUser(token)
+  return (data?.user?.email || "").toLowerCase() === ADMIN_EMAIL
+}
+
+/** Admin: list affiliates (newest first) so pending applications can be reviewed. */
+async function list(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  if (!(await requireAdmin(req, supa))) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  const { data, error } = await supa
+    .from("affiliates")
+    .select("id, name, email, university, country, socials, audience_size, code, status, clicks, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200)
+  if (error) {
+    res.status(200).json({ ok: false, reason: "read_failed" })
+    return
+  }
+  res.status(200).json({ ok: true, affiliates: data ?? [] })
+}
+
+/** Admin: set an affiliate's status (active | rejected | pending). */
+async function approve(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  if (!(await requireAdmin(req, supa))) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  const b = await body(req)
+  const id = String(b.id || "")
+  const status = String(b.status || "").toLowerCase()
+  if (!id || !["active", "rejected", "pending"].includes(status)) {
+    res.status(400).json({ ok: false, reason: "bad_params" })
+    return
+  }
+  const { error } = await supa.from("affiliates").update({ status }).eq("id", id)
+  if (error) {
+    res.status(200).json({ ok: false, reason: "update_failed" })
+    return
+  }
+  res.status(200).json({ ok: true, id, status })
 }
 
 async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
