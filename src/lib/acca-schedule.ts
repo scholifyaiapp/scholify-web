@@ -391,7 +391,10 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
   const n = practiceCount(left, targetProb)
   if (weak && weak.code !== area.code) {
     tasks.push({
-      id: "weak",
+      // Stable id for the daily drill slot — it must NOT change when the slot
+      // flips between weak-first and plain practice mid-day, or today-mission
+      // completion would regress and re-lock finished tasks.
+      id: "drill",
       icon: "💪",
       title: `Drill ${weak.code} · ${weak.label} — at ${Math.round(weak.acc * 100)}%`,
       detail:
@@ -404,7 +407,7 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
     })
   } else {
     tasks.push({
-      id: "practice",
+      id: "drill", // stable slot id — see the weak branch above
       icon: "✏️",
       title: `Practise ${n} questions${area.code ? ` — ${area.code} focus` : ""}`,
       detail: "Instant marking + Ask Charles — turn the chapter into recall",

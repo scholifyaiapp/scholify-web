@@ -431,6 +431,10 @@ export default function AccaStudy() {
 
   /** Start a practice session from an externally-supplied set (AI-generated). */
   function startCustomSession(qs: AccaQuestion[]) {
+    if (qs.length === 0) {
+      toast.info("No questions were generated — try a different topic or your own notes.")
+      return
+    }
     loadQuestions(qs)
     setIdx(0)
     setCorrectCount(0)
@@ -1079,6 +1083,15 @@ function Overview({
     else if (t.action === "study") (t.area ? onStudyTopic(t.area) : onPractice())
     else if (t.action === "bank") onBankRun()
   }
+  // Launch a today task. Only stamp it "pending" (which auto-completes it on
+  // return) if it will ACTUALLY start — a gated mock (locked gate or non-Pro)
+  // just shows a toast/paywall and stays on this screen, so stamping it would
+  // false-complete the task and wrongly advance the mission on the next visit.
+  function runTodayTask(t: (typeof todayPlan)[number]) {
+    const bounces = t.action === "mock" && (!gate.unlocked || !isPro)
+    if (!bounces) setPendingTodayTask(paper.id, t.id)
+    runToday(t)
+  }
   const todayIcons: Record<TodayAction, IconName> = {
     diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
@@ -1181,7 +1194,7 @@ function Overview({
               activeIdx={activeTodayIdx}
               mins={taskMins}
               icons={todayIcons}
-              onRun={(t) => { setPendingTodayTask(paper.id, t.id); runToday(t) }}
+              onRun={runTodayTask}
               techArticle={techArticle}
               articleDone={articleDone}
               onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}

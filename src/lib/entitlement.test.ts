@@ -20,6 +20,12 @@ describe("paid plans", () => {
     }
   })
 
+  it("treats an active subscription as paid even if the plan name wasn't mapped", () => {
+    const e = entitlementOf(user({ plan: "free", plan_status: "active" }), NOW)
+    expect(e.isPaid).toBe(true)
+    expect(e.isPro).toBe(true)
+  })
+
   it("does not grant Pro to free or an unknown plan", () => {
     expect(isProUser(user({ plan: "free" }), NOW)).toBe(false)
     expect(isProUser(user({ plan: "nonsense" }), NOW)).toBe(false)

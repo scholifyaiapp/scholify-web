@@ -51,7 +51,10 @@ interface MetaCarrier {
 export function entitlementOf(user: MetaCarrier | null | undefined, now: number = Date.now()): Entitlement {
   const meta = user?.app_metadata ?? {}
   const plan = String(meta.plan ?? "free")
-  const isPaid = PAID_PLANS.has(plan)
+  // A live subscription counts as paid even if its price id wasn't mapped to a
+  // known plan name (mis-provisioned Stripe env) — otherwise a genuinely paying
+  // customer would be treated as "free" and trapped behind the expired wall.
+  const isPaid = PAID_PLANS.has(plan) || meta.plan_status === "active"
 
   const trialEndsAt = typeof meta.trial_ends_at === "string" ? meta.trial_ends_at : null
   const hadTrial = Boolean(meta.trial_started_at)

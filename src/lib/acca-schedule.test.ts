@@ -137,7 +137,7 @@ describe("buildDailyTasks — the categorised day", () => {
     const ids = tasks.map((t) => t.id)
     expect(ids[0]).toBe("study")
     expect(ids[1]).toBe("essentials")
-    expect(["weak", "practice"]).toContain(ids[2])
+    expect(ids[2]).toBe("drill")
     expect(ids[3]).toBe("flashcards")
   })
 
@@ -147,8 +147,9 @@ describe("buildDailyTasks — the categorised day", () => {
     setPlan("FA", { dailyMinutes: 25, targetProb: 75 })
     const tasks = buildDailyTasks("FA")
     const study = tasks.find((t) => t.id === "study")!
-    const drill = tasks.find((t) => t.id === "weak")
+    const drill = tasks.find((t) => t.id === "drill")
     expect(drill, "pain-point drill must exist the day after a diagnostic").toBeDefined()
+    expect(drill!.action).toBe("weak")
     expect(drill!.area).toBe("D")
     // Progression continues alongside the pain point: study targets an area,
     // and when it happens to differ from the weakness both run the same day.
@@ -169,9 +170,9 @@ describe("buildDailyTasks — the categorised day", () => {
     setStartMode("assess")
     seedDiagnostic("FA", "D")
     setPlan("FA", { dailyMinutes: 15, targetProb: 65 })
-    const small = buildDailyTasks("FA").find((t) => t.id === "weak" || t.id === "practice")!
+    const small = buildDailyTasks("FA").find((t) => t.id === "drill")!
     setPlan("FA", { dailyMinutes: 60, targetProb: 85 })
-    const large = buildDailyTasks("FA").find((t) => t.id === "weak" || t.id === "practice")!
+    const large = buildDailyTasks("FA").find((t) => t.id === "drill")!
     expect(large.minutes).toBeGreaterThan(small.minutes)
   })
 
@@ -180,9 +181,9 @@ describe("buildDailyTasks — the categorised day", () => {
     setPlan("FA", { dailyMinutes: 25, targetProb: 75 })
     const tasks = buildDailyTasks("FA")
     const ids = tasks.map((t) => t.id)
-    expect(ids).toEqual(["study", "essentials", "practice", "flashcards"])
+    expect(ids).toEqual(["study", "essentials", "drill", "flashcards"])
     const study = tasks.find((t) => t.id === "study")!
     expect(["A", "B", "C"]).toContain(study.area!)
-    expect(tasks.find((t) => t.id === "practice")!.area).toBe(study.area)
+    expect(tasks.find((t) => t.id === "drill")!.area).toBe(study.area)
   })
 })
