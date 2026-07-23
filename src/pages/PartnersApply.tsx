@@ -2,7 +2,6 @@ import { useState, type CSSProperties, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { motion, useReducedMotion } from "motion/react"
 import { ScholifyLockup } from "@/components/brand"
-import CharlesMascot from "@/components/CharlesMascot"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import { applyToAffiliate, type AffiliateApplication } from "@/lib/affiliate"
@@ -192,10 +191,7 @@ export default function PartnersApply() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           style={{ textAlign: "center", paddingTop: 40 }}
         >
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-            <CharlesMascot pose="present" size={132} />
-          </div>
-          <div style={{ ...eyebrow, marginBottom: 16 }}>Scholify · Preferred Partner Program</div>
+          <div style={{ ...eyebrow, marginBottom: 16, paddingTop: 8 }}>Scholify · Preferred Partner Program</div>
           <h1
             style={{
               fontSize: "clamp(30px,6.4vw,52px)",
@@ -539,21 +535,15 @@ export default function PartnersApply() {
 
         {/* ── Why it sells / What you get ── */}
         <Section>
-          <motion.div {...rise()} style={secHead}>
-            Why it sells itself
-          </motion.div>
+          <SectionTitle>Why it sells itself</SectionTitle>
           <CardGrid items={WHY} rise={rise} />
-          <motion.div {...rise()} style={{ ...secHead, marginTop: 40 }}>
-            What you get as a Preferred Partner
-          </motion.div>
+          <SectionTitle style={{ marginTop: 48 }}>What you get as a Preferred Partner</SectionTitle>
           <CardGrid items={GET} rise={rise} />
         </Section>
 
         {/* ── Promotion channels ── */}
         <Section>
-          <motion.div {...rise()} style={secHead}>
-            Where & how you promote
-          </motion.div>
+          <SectionTitle>Where &amp; how you promote</SectionTitle>
           <CardGrid items={CHANNELS} rise={rise} />
         </Section>
 
@@ -571,8 +561,26 @@ export default function PartnersApply() {
           >
             {done ? (
               <div style={{ textAlign: "center" }}>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                  <CharlesMascot pose="success" size={120} />
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                  <motion.div
+                    initial={reduced ? false : { scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 16 }}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "50%",
+                      background: IRIDESCENT,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontSize: 30,
+                      fontWeight: 800,
+                    }}
+                  >
+                    ✓
+                  </motion.div>
                 </div>
                 <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--sch-text)", margin: "0 0 8px" }}>
                   Application received
@@ -604,9 +612,16 @@ export default function PartnersApply() {
             ) : (
               <form onSubmit={submit}>
                 <div style={{ ...eyebrow, fontSize: 10, color: "#C80000", marginBottom: 8 }}>Join the program</div>
-                <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--sch-text)", margin: "0 0 18px", letterSpacing: "-0.02em" }}>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--sch-text)", margin: "0 0 6px", letterSpacing: "-0.02em" }}>
                   Apply to become a partner
                 </h2>
+                <p style={{ fontSize: 13.5, color: "var(--sch-tx-2)", margin: "0 0 18px", lineHeight: 1.5 }}>
+                  Send your details and they go straight to our founder. Questions? Email{" "}
+                  <a href="mailto:founder@flowlifyai.com" style={{ color: "#C80000", fontWeight: 600, textDecoration: "none" }}>
+                    founder@flowlifyai.com
+                  </a>
+                  .
+                </p>
                 <div style={{ display: "grid", gap: 16 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                     <div>
@@ -763,6 +778,37 @@ export default function PartnersApply() {
 }
 
 /* ── Small building blocks ───────────────────────────────────── */
+
+function SectionTitle({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  const reduced = useReducedMotion()
+  return (
+    <div style={{ textAlign: "center", marginBottom: 28, ...style }}>
+      <motion.h2
+        initial={reduced ? false : { opacity: 0, y: 18, filter: "blur(5px)" }}
+        whileInView={reduced ? undefined : { opacity: 1, y: 0, filter: "blur(0px)" }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          fontSize: "clamp(22px,4vw,30px)",
+          fontWeight: 800,
+          letterSpacing: "-0.02em",
+          color: "var(--sch-text)",
+          margin: 0,
+        }}
+      >
+        {children}
+      </motion.h2>
+      <motion.div
+        aria-hidden
+        initial={reduced ? false : { scaleX: 0, opacity: 0 }}
+        whileInView={reduced ? undefined : { scaleX: 1, opacity: 1 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+        style={{ width: 56, height: 3, borderRadius: 3, background: IRIDESCENT, margin: "14px auto 0", transformOrigin: "center" }}
+      />
+    </div>
+  )
+}
 
 function CardGrid({ items, rise }: { items: Array<[string, string]>; rise: (d?: number) => object }) {
   return (

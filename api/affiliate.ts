@@ -163,7 +163,42 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     res.status(200).json({ ok: false, reason: "insert_failed", detail: error.message })
     return
   }
+  // Email the founder about the new application (best-effort — never blocks).
+  void notifyApplication({ name, email, code, b })
   res.status(200).json({ ok: true, code, status: "pending" })
+}
+
+/** Email the Scholify founder when a new partner application arrives (Resend). */
+async function notifyApplication(app: {
+  name: string
+  email: string
+  code: string
+  b: Record<string, unknown>
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY
+  const to = process.env.ADMIN_EMAIL || "founder@flowlifyai.com"
+  const from = process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>"
+  if (!apiKey) return
+  const row = (label: string, val: unknown) => {
+    const v = String(val || "").trim()
+    return v ? `<tr><td style="padding:4px 12px 4px 0;color:#8f8c85;font-size:13px;">${label}</td><td style="padding:4px 0;color:#14141A;font-size:13px;font-weight:600;">${v}</td></tr>` : ""
+  }
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;">
+    <h2 style="color:#14141A;font-size:18px;margin:0 0 4px;">New partner application</h2>
+    <p style="color:#8f8c85;font-size:13px;margin:0 0 16px;">Code <b style="color:#C80000;">${app.code}</b> · status pending · approve it in Settings → Partner applications.</p>
+    <table style="border-collapse:collapse;">
+      ${row("Name", app.name)}${row("Email", app.email)}${row("University", app.b.university)}${row("Country", app.b.country)}${row("Promotes on", app.b.socials)}${row("Audience", app.b.audienceSize)}${row("Area", app.b.areaOfStudy)}
+    </table>
+  </div>`
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to, reply_to: app.email, subject: `New partner application — ${app.name} (${app.code})`, html }),
+    })
+  } catch {
+    /* best-effort */
+  }
 }
 
 async function resolve(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
