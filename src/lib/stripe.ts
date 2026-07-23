@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { getCapturedAffiliate } from "@/lib/affiliate"
 
 /*
  * Stripe Billing — client side (the international/card rail).
@@ -28,10 +29,11 @@ export async function startStripeCheckout(plan: StripePlan): Promise<boolean> {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
     if (!token) return false
+    const affiliateCode = getCapturedAffiliate() || undefined
     const res = await fetch("/api/stripe?action=checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, affiliateCode }),
     })
     const body = (await res.json().catch(() => ({}))) as { url?: string }
     if (body.url) {

@@ -142,6 +142,74 @@ async function writeEntitlement(
   }
 }
 
+/* ── Affiliate commissions (Phase 1: record only — payouts are Phase 2) ── */
+
+const COMMISSION_HOLD_DAYS = 30
+
+/**
+ * Record a 35% (or the affiliate's own rate) commission for a completed
+ * checkout, if the session was attributed to an affiliate. Idempotent via the
+ * unique `stripe_session_id`. Best-effort — the caller swallows any error so a
+ * commission failure can never block the buyer's entitlement.
+ */
+async function recordCommission(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const affiliateId = session.metadata?.affiliate_id
+  const saleAmount = session.amount_total ?? 0
+  if (!affiliateId || saleAmount <= 0) return
+
+  // Use the affiliate's own rate (defaults to 35%); confirm they're still active.
+  const { data: aff } = await supa
+    .from("affiliates")
+    .select("commission_rate, status")
+    .eq("id", affiliateId)
+    .maybeSingle()
+  if (!aff || aff.status !== "active") return
+
+  const rate = typeof aff.commission_rate === "number" ? aff.commission_rate : 0.35
+  const commission = Math.round(saleAmount * rate)
+  const availableAfter = new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5).toISOString()
+
+  const paymentIntent =
+    typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null
+  const customerId =
+    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null
+
+  // Unique stripe_session_id makes this a no-op if the webhook is redelivered.
+  await supa.from("affiliate_commissions").insert({
+    affiliate_id: affiliateId,
+    stripe_session_id: session.id,
+    stripe_payment_intent: paymentIntent,
+    stripe_customer_id: customerId,
+    currency: session.currency ?? "usd",
+    sale_amount: saleAmount,
+    commission_amount: commission,
+    status: "pending",
+    available_after: availableAfter,
+  })
+}
+
+/**
+ * A refund or chargeback pulls back any still-pending commission for that
+ * Stripe customer. We match on customer (subscription-mode charges don't carry
+ * the checkout's payment_intent) and only touch rows not yet paid out.
+ */
+async function cancelCommissionForCustomer(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  customerId: string,
+  fully: boolean,
+): Promise<void> {
+  await supa
+    .from("affiliate_commissions")
+    .update({ status: "canceled" })
+    .eq("stripe_customer_id", customerId)
+    .in("status", ["pending", "approved"])
+  // (Partial refunds still cancel in Phase 1 — a rare edge; revisit if needed.)
+  void fully
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({ error: "POST only" })
@@ -190,6 +258,20 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
     process.env.VITE_PUBLIC_SITE_URL ||
     "https://scholifyapp.com"
 
+  // Affiliate attribution — resolve an active partner code to its id, so the
+  // webhook can record a commission after payment (more reliable than UTM).
+  const affCode = String(body.affiliateCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20)
+  let affMeta: Record<string, string> = {}
+  if (affCode) {
+    const { data: aff } = await supa
+      .from("affiliates")
+      .select("id, code")
+      .eq("code", affCode)
+      .eq("status", "active")
+      .maybeSingle()
+    if (aff) affMeta = { affiliate_id: aff.id, affiliate_code: aff.code }
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -198,8 +280,8 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       client_reference_id: user.id,
       // Both the session AND the subscription carry the user id, so every
       // webhook (checkout + later renewals/cancellations) can map to the account.
-      metadata: { userId: user.id },
-      subscription_data: { metadata: { userId: user.id } },
+      metadata: { userId: user.id, ...affMeta },
+      subscription_data: { metadata: { userId: user.id, ...affMeta } },
       allow_promotion_codes: true,
       success_url: `${origin}/study?upgraded=true`,
       cancel_url: `${origin}/pricing`,
@@ -259,6 +341,17 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           eventType: event.type,
         })
       }
+      // Affiliate commission — best-effort side effect, never blocks entitlement.
+      await recordCommission(supa, session).catch((e) => console.error("affiliate commission:", e))
+    } else if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+      // Refund / chargeback → pull back any still-pending commission for that customer.
+      const charge = event.data.object as Stripe.Charge | Stripe.Dispute
+      const customerId =
+        "customer" in charge && typeof charge.customer === "string" ? charge.customer : null
+      const fullyRefunded =
+        event.type === "charge.dispute.created" ||
+        ("amount_refunded" in charge && "amount" in charge && charge.amount_refunded >= charge.amount)
+      if (customerId) await cancelCommissionForCustomer(supa, customerId, fullyRefunded).catch(() => {})
     } else if (event.type === "customer.subscription.updated") {
       const sub = event.data.object as Stripe.Subscription
       const userId = sub.metadata?.userId

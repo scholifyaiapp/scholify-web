@@ -3,6 +3,7 @@ import { Suspense, lazy, useEffect, type ComponentType } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
+import { captureAffiliateRef } from "@/lib/affiliate"
 
 /*
  * Lazy import that self-heals after a deploy. A route chunk can fail to load
@@ -63,6 +64,8 @@ const Pricing = lazyWithReload(() => import("@/pages/Pricing"))
 const Privacy = lazyWithReload(() => import("@/pages/Privacy"))
 const Terms = lazyWithReload(() => import("@/pages/Terms"))
 const Support = lazyWithReload(() => import("@/pages/Support"))
+const PartnersApply = lazyWithReload(() => import("@/pages/PartnersApply"))
+const Partners = lazyWithReload(() => import("@/pages/Partners"))
 
 function Page({
   name,
@@ -131,6 +134,11 @@ function OAuthReturnHandler() {
 }
 
 export default function App() {
+  // Capture a partner link (?aff=CODE) once on load, wherever it lands.
+  useEffect(() => {
+    captureAffiliateRef()
+  }, [])
+
   return (
     <>
       <OAuthReturnHandler />
@@ -164,6 +172,10 @@ export default function App() {
         <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
         <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
         <Route path="/support" element={<Page name="Support"><Support /></Page>} />
+
+        {/* Affiliate / partner program */}
+        <Route path="/partners/apply" element={<Page name="PartnersApply"><PartnersApply /></Page>} />
+        <Route path="/partners" element={<ProtectedRoute><Page name="Partners"><Partners /></Page></ProtectedRoute>} />
 
         {/* Everything else (legacy plan routes, unknown paths) → the command centre */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
