@@ -156,7 +156,7 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     audience_size: String(b.audienceSize || "").slice(0, 60) || null,
     area_of_study: String(b.areaOfStudy || "").slice(0, 120) || null,
     code,
-    commission_rate: 0.35,
+    commission_rate: 0.27,
     status: "pending",
   })
   if (error) {

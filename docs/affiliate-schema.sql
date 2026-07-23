@@ -3,7 +3,7 @@
 --  Run this in the Supabase SQL editor. Safe to re-run (IF NOT EXISTS).
 --
 --  Model: a partner applies (pending) → you approve (active) → their code
---  attributes Stripe checkouts → a 35% commission is recorded (pending) and
+--  attributes Stripe checkouts → a 27% commission is recorded (pending) and
 --  becomes payable 30 days after purchase, unless refunded/disputed.
 --  Payouts (Stripe Connect transfers) are Phase 2.
 -- ─────────────────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ create table if not exists public.affiliates (
   audience_size       text,
   area_of_study       text,
   code                text unique not null,          -- the ?ref / promo code, e.g. "LARA"
-  commission_rate     numeric(4,3) not null default 0.350,  -- 0.350 = 35%
+  commission_rate     numeric(4,3) not null default 0.270,  -- 0.270 = 27% (flat, all partners)
   status              text not null default 'pending',       -- pending | active | rejected
   clicks              integer not null default 0,
   stripe_account_id   text,                                  -- Connect account (Phase 2)

@@ -147,7 +147,7 @@ async function writeEntitlement(
 const COMMISSION_HOLD_DAYS = 30
 
 /**
- * Record a 35% (or the affiliate's own rate) commission for a completed
+ * Record a 27% (or the affiliate's own rate) commission for a completed
  * checkout, if the session was attributed to an affiliate. Idempotent via the
  * unique `stripe_session_id`. Best-effort — the caller swallows any error so a
  * commission failure can never block the buyer's entitlement.
@@ -160,7 +160,7 @@ async function recordCommission(
   const saleAmount = session.amount_total ?? 0
   if (!affiliateId || saleAmount <= 0) return
 
-  // Use the affiliate's own rate (defaults to 35%); confirm they're still active.
+  // Use the affiliate's own rate (defaults to 27%); confirm they're still active.
   const { data: aff } = await supa
     .from("affiliates")
     .select("commission_rate, status")
@@ -168,7 +168,7 @@ async function recordCommission(
     .maybeSingle()
   if (!aff || aff.status !== "active") return
 
-  const rate = typeof aff.commission_rate === "number" ? aff.commission_rate : 0.35
+  const rate = typeof aff.commission_rate === "number" ? aff.commission_rate : 0.27
   const commission = Math.round(saleAmount * rate)
   const availableAfter = new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5).toISOString()
 
