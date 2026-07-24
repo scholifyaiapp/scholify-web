@@ -6,6 +6,7 @@ import { isAccaOnboarded } from "@/lib/acca-profile"
 import { isStripeConfigured } from "@/lib/stripe"
 import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
+import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
 
 /** Full-screen loader shown while the auth session is being resolved. */
 function AuthLoading() {
@@ -47,6 +48,9 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   if (loading) return <AuthLoading />
   if (!user) {
     return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
+  }
+  if (PRELAUNCH_MODE && !isLaunchAdmin(user)) {
+    return <Navigate to="/" replace />
   }
   if (gate) {
     const e = entitlementOf(user)

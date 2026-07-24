@@ -1,9 +1,10 @@
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { Suspense, lazy, useEffect, type ComponentType } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
 import { captureAffiliateRef } from "@/lib/affiliate"
+import { PRELAUNCH_MODE } from "@/lib/launch"
 
 /*
  * Lazy import that self-heals after a deploy. A route chunk can fail to load
@@ -49,6 +50,7 @@ function lazyWithReload<T extends ComponentType<unknown>>(
 /* ── ACCA product pages only — any old URL redirects to /study
  *    (see the catch-all below). ── */
 const Landing = lazyWithReload(() => import("@/pages/Landing"))
+const Waitlist = lazyWithReload(() => import("@/pages/Waitlist"))
 const SignIn = lazyWithReload(() => import("@/pages/SignIn"))
 const SignUp = lazyWithReload(() => import("@/pages/SignUp"))
 const AuthCallback = lazyWithReload(() => import("@/pages/AuthCallback"))
@@ -133,6 +135,14 @@ function OAuthReturnHandler() {
   return null
 }
 
+function TeamSignIn({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  if (PRELAUNCH_MODE && new URLSearchParams(location.search).get("team") !== "1") {
+    return <Navigate to="/" replace />
+  }
+  return <GuestRoute>{children}</GuestRoute>
+}
+
 export default function App() {
   // Capture a partner link (?aff=CODE) once on load, wherever it lands.
   useEffect(() => {
@@ -143,13 +153,13 @@ export default function App() {
     <>
       <OAuthReturnHandler />
       <Routes>
-        <Route path="/" element={<Page name="Landing"><Landing /></Page>} />
+        <Route path="/" element={<Page name={PRELAUNCH_MODE ? "Waitlist" : "Landing"}>{PRELAUNCH_MODE ? <Waitlist /> : <Landing />}</Page>} />
 
         {/* Guest-only — logged-in users are bounced to /study */}
-        <Route path="/sign-in" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
-        <Route path="/signin" element={<GuestRoute><Page name="SignIn"><SignIn /></Page></GuestRoute>} />
-        <Route path="/sign-up" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
-        <Route path="/signup" element={<GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
+        <Route path="/sign-in" element={<TeamSignIn><Page name="SignIn"><SignIn /></Page></TeamSignIn>} />
+        <Route path="/signin" element={<TeamSignIn><Page name="SignIn"><SignIn /></Page></TeamSignIn>} />
+        <Route path="/sign-up" element={PRELAUNCH_MODE ? <Navigate to="/" replace /> : <GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
+        <Route path="/signup" element={PRELAUNCH_MODE ? <Navigate to="/" replace /> : <GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
 
         {/* OAuth return — must stay public */}
         <Route path="/auth/callback" element={<Page name="AuthCallback"><AuthCallback /></Page>} />
@@ -168,7 +178,7 @@ export default function App() {
         <Route path="/notes" element={<ProtectedRoute gate><Page name="NotesHub"><NotesHub /></Page></ProtectedRoute>} />
 
         {/* Public info */}
-        <Route path="/pricing" element={<Page name="Pricing"><Pricing /></Page>} />
+        <Route path="/pricing" element={PRELAUNCH_MODE ? <Navigate to="/" replace /> : <Page name="Pricing"><Pricing /></Page>} />
         <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
         <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
         <Route path="/support" element={<Page name="Support"><Support /></Page>} />
@@ -178,7 +188,7 @@ export default function App() {
         <Route path="/partners" element={<ProtectedRoute><Page name="Partners"><Partners /></Page></ProtectedRoute>} />
 
         {/* Everything else (legacy plan routes, unknown paths) → the command centre */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to={PRELAUNCH_MODE ? "/" : "/dashboard"} replace />} />
       </Routes>
     </>
   )
