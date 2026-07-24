@@ -456,7 +456,7 @@ export default function SignIn() {
         >
           Don't have an account?{" "}
           <Link
-            to="/sign-up"
+            to="/sign-up?team=1"
             style={{
               color: "rgba(200,0,0,0.9)",
               textDecoration: "none",

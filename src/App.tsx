@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
 import { captureAffiliateRef } from "@/lib/affiliate"
-import { PRELAUNCH_MODE } from "@/lib/launch"
+import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
 
 /*
  * Lazy import that self-heals after a deploy. A route chunk can fail to load
@@ -143,6 +143,13 @@ function TeamSignIn({ children }: { children: React.ReactNode }) {
   return <GuestRoute>{children}</GuestRoute>
 }
 
+function LaunchHome() {
+  const { user, loading } = useAuth()
+  if (!PRELAUNCH_MODE) return <Landing />
+  if (loading) return null
+  return isLaunchAdmin(user) ? <Landing /> : <Waitlist />
+}
+
 export default function App() {
   // Capture a partner link (?aff=CODE) once on load, wherever it lands.
   useEffect(() => {
@@ -153,13 +160,13 @@ export default function App() {
     <>
       <OAuthReturnHandler />
       <Routes>
-        <Route path="/" element={<Page name={PRELAUNCH_MODE ? "Waitlist" : "Landing"}>{PRELAUNCH_MODE ? <Waitlist /> : <Landing />}</Page>} />
+        <Route path="/" element={<Page name="Home"><LaunchHome /></Page>} />
 
         {/* Guest-only — logged-in users are bounced to /study */}
         <Route path="/sign-in" element={<TeamSignIn><Page name="SignIn"><SignIn /></Page></TeamSignIn>} />
         <Route path="/signin" element={<TeamSignIn><Page name="SignIn"><SignIn /></Page></TeamSignIn>} />
-        <Route path="/sign-up" element={PRELAUNCH_MODE ? <Navigate to="/" replace /> : <GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
-        <Route path="/signup" element={PRELAUNCH_MODE ? <Navigate to="/" replace /> : <GuestRoute><Page name="SignUp"><SignUp /></Page></GuestRoute>} />
+        <Route path="/sign-up" element={<TeamSignIn><Page name="SignUp"><SignUp /></Page></TeamSignIn>} />
+        <Route path="/signup" element={<TeamSignIn><Page name="SignUp"><SignUp /></Page></TeamSignIn>} />
 
         {/* OAuth return — must stay public */}
         <Route path="/auth/callback" element={<Page name="AuthCallback"><AuthCallback /></Page>} />
