@@ -23,6 +23,53 @@ function remaining() {
   }
 }
 
+function LaunchPrice({
+  name,
+  price,
+  accent,
+  tilt,
+  reduced,
+}: {
+  name: string
+  price: string
+  accent: string
+  tilt: number
+  reduced: boolean | null
+}) {
+  return (
+    <motion.div
+      initial={reduced ? false : { opacity: 0, y: 24, rotateY: tilt * 1.8 }}
+      whileInView={reduced ? undefined : { opacity: 1, y: 0, rotateY: tilt }}
+      whileHover={reduced ? undefined : { y: -8, rotateY: 0, rotateX: -3, scale: 1.035 }}
+      viewport={{ once: true, amount: .5 }}
+      transition={{ type: "spring", stiffness: 180, damping: 18 }}
+      style={{
+        position: "relative",
+        flex: "0 1 210px",
+        minWidth: 175,
+        padding: "25px 23px 23px",
+        overflow: "hidden",
+        borderRadius: 22,
+        color: "#fff",
+        textAlign: "left",
+        background: `linear-gradient(145deg,${accent},#17171E 88%)`,
+        border: "1px solid rgba(255,255,255,.22)",
+        boxShadow: `0 24px 50px ${accent}28, inset 0 1px 0 rgba(255,255,255,.3)`,
+        transformStyle: "preserve-3d",
+        willChange: "transform",
+      }}
+    >
+      <span aria-hidden style={{ position: "absolute", width: 130, height: 130, right: -42, top: -58, borderRadius: "50%", background: "rgba(255,255,255,.16)", filter: "blur(2px)" }} />
+      <div style={{ position: "relative", transform: "translateZ(22px)" }}>
+        <div style={{ fontSize: 12, fontWeight: 850, letterSpacing: ".13em", textTransform: "uppercase", opacity: .72 }}>{name}</div>
+        <div style={{ marginTop: 8, fontSize: "clamp(28px,3vw,39px)", lineHeight: 1, fontWeight: 900, letterSpacing: "-.055em" }}>
+          {price}<span style={{ marginLeft: 4, fontSize: 12, fontWeight: 700, letterSpacing: 0, opacity: .68 }}>/mo</span>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 export default function Waitlist() {
   const reduced = useReducedMotion()
   const startedAt = useMemo(() => Date.now(), [])
@@ -306,7 +353,39 @@ export default function Waitlist() {
               Joining the waitlist is completely free—no payment details are collected. When paid plans open, checkout will be securely processed by Stripe.
             </p>
           </div>
-          <PaymentMethods heading="" />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "clamp(16px,3vw,30px)",
+              flexWrap: "wrap",
+              perspective: 1100,
+            }}
+          >
+            <LaunchPrice name="Beginner" price="$9.99" accent="#C80000" tilt={7} reduced={reduced} />
+            <motion.div
+              initial={reduced ? false : { opacity: 0, scale: .94 }}
+              whileInView={reduced ? undefined : { opacity: 1, scale: 1 }}
+              viewport={{ once: true, amount: .5 }}
+              transition={{ duration: .55, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                flex: "1 1 390px",
+                maxWidth: 520,
+                padding: "22px 18px",
+                borderRadius: 20,
+                background: "linear-gradient(145deg,rgba(255,255,255,.96),rgba(247,247,244,.8))",
+                border: "1px solid rgba(20,20,26,.08)",
+                boxShadow: "0 16px 38px rgba(20,20,26,.06), inset 0 1px 0 #fff",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 15, color: INK, fontSize: 11, fontWeight: 850, letterSpacing: ".13em", textTransform: "uppercase" }}>
+                <ShieldCheck size={15} color={RED} /> Secure payment system
+              </div>
+              <PaymentMethods heading="" />
+            </motion.div>
+            <LaunchPrice name="Pro" price="$14.99" accent="#9B0059" tilt={-7} reduced={reduced} />
+          </div>
         </motion.div>
       </section>
 
