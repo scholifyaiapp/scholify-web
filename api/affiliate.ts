@@ -185,57 +185,123 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
   res.status(200).json({ ok: true, code, status: "pending" })
 }
 
-/** Email the Scholify founder when a new partner application arrives (Resend). */
+const SITE_URL = "https://www.scholifyapp.com"
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;")
+}
+
+function emailFrame(options: {
+  eyebrow: string
+  title: string
+  intro: string
+  content: string
+  cta?: { label: string; href: string }
+  charles?: boolean
+}): string {
+  const cta = options.cta
+    ? `<tr><td style="padding:8px 32px 30px;">
+        <a href="${escapeHtml(options.cta.href)}" style="display:inline-block;background:#C80000;color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">${escapeHtml(options.cta.label)}</a>
+      </td></tr>`
+    : ""
+  const charles = options.charles
+    ? `<img src="${SITE_URL}/charles/email-avatar.png" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;">`
+    : `<img src="${SITE_URL}/icon-192.png" width="56" height="56" alt="Scholify" style="display:block;width:56px;height:56px;border-radius:14px;">`
+  return `<!doctype html>
+<html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
+        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
+        <tr><td style="padding:28px 32px 18px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td>${charles}</td>
+            <td align="right" style="font-size:23px;font-weight:800;letter-spacing:-0.6px;color:#14141A;">Scholify<span style="color:#C80000;">.</span><div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#8F8C85;margin-top:4px;">LEARN DAILY · GROW STEADILY</div></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">${escapeHtml(options.eyebrow)}</td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${escapeHtml(options.title)}</td></tr>
+        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${options.intro}</td></tr>
+        <tr><td style="padding:0 32px 20px;">${options.content}</td></tr>
+        ${cta}
+        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">
+          Scholify Preferred Partner Program<br>
+          <a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+}
+
+async function sendPartnerEmail(payload: {
+  to: string
+  subject: string
+  html: string
+  replyTo?: string
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>",
+      to: payload.to,
+      reply_to: payload.replyTo || ADMIN_EMAIL,
+      subject: payload.subject,
+      html: payload.html,
+    }),
+  })
+  if (!response.ok) throw new Error(`Resend returned ${response.status}`)
+}
+
+/** Email the admin and applicant when a new partner application arrives. */
 async function notifyApplication(app: {
   name: string
   email: string
   code: string
   b: Record<string, unknown>
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY
-  const to = ADMIN_EMAIL
-  const from = process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>"
-  if (!apiKey) return
   const row = (label: string, val: unknown) => {
-    const v = String(val || "").trim()
-    return v ? `<tr><td style="padding:4px 12px 4px 0;color:#8f8c85;font-size:13px;">${label}</td><td style="padding:4px 0;color:#14141A;font-size:13px;font-weight:600;">${v}</td></tr>` : ""
+    const v = String(val ?? "").trim()
+    return v ? `<tr><td style="padding:7px 12px 7px 0;color:#8F8C85;font-size:12px;">${escapeHtml(label)}</td><td style="padding:7px 0;color:#14141A;font-size:13px;font-weight:700;">${escapeHtml(v)}</td></tr>` : ""
   }
-  const adminHtml = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;">
-    <h2 style="color:#14141A;font-size:18px;margin:0 0 4px;">New partner application</h2>
-    <p style="color:#8f8c85;font-size:13px;margin:0 0 16px;">Code <b style="color:#C80000;">${app.code}</b> · status pending · approve it in Settings → Partner applications.</p>
-    <table style="border-collapse:collapse;">
+  const adminHtml = emailFrame({
+    eyebrow: "Race control · New application",
+    title: `${app.name} wants to partner with Scholify`,
+    intro: `A new Preferred Partner application is waiting for your review. The requested code is <strong style="color:#C80000;">${escapeHtml(app.code)}</strong>.`,
+    content: `<table role="presentation" width="100%" style="border-collapse:collapse;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;">
+      <tr><td style="padding:12px 16px;"><table role="presentation" width="100%" style="border-collapse:collapse;">
       ${row("Name", app.name)}${row("Email", app.email)}${row("University", app.b.university)}${row("Country", app.b.country)}${row("Promotes on", app.b.socials)}${row("Audience", app.b.audienceSize)}${row("Area", app.b.areaOfStudy)}
-    </table>
-  </div>`
+      </table></td></tr></table>`,
+    cta: { label: "Review partner applications", href: `${SITE_URL}/settings` },
+  })
 
-  const first = app.name.split(/\s+/)[0] || "there"
-  const applicantHtml = `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#14141A;">
-    <h2 style="font-size:20px;margin:0 0 10px;">Thanks, ${first} — we've got your application 🏁</h2>
-    <p style="font-size:14px;line-height:1.6;color:#33313a;margin:0 0 14px;">
-      You've applied to the <b>Scholify Preferred Partner Program</b>. We review every application personally and will
-      email you as soon as your partner account is live — then you can start earning a flat <b>27%</b> on every plan you sell.
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#33313a;margin:0 0 14px;">
-      Your partner code will be
-      <span style="font-family:ui-monospace,monospace;font-weight:700;color:#C80000;letter-spacing:.06em;">${app.code}</span>.
-    </p>
-    <p style="font-size:13px;color:#8f8c85;line-height:1.6;margin:18px 0 0;">
-      Questions? Just reply to this email.<br/>— Makhmudov Nuriddin, Founder, Scholify
-    </p>
-  </div>`
+  const first = escapeHtml(app.name.split(/\s+/)[0] || "there")
+  const applicantHtml = emailFrame({
+    eyebrow: "Application received · Pending review",
+    title: `You’re on the starting grid, ${app.name.split(/\s+/)[0] || "there"}`,
+    intro: `Thanks for applying to the <strong>Scholify Preferred Partner Program</strong>. Your application is safely with our founder and is now pending personal review.`,
+    content: `<div style="background:#FFF8E7;border:1px solid #F4DDA2;border-radius:14px;padding:16px 18px;">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#9A6500;text-transform:uppercase;">Your application status</div>
+      <div style="font-size:18px;font-weight:800;color:#14141A;margin-top:6px;">Pending review</div>
+      <div style="font-size:13px;line-height:20px;color:#5F5753;margin-top:7px;">Requested partner code: <strong style="color:#C80000;">${escapeHtml(app.code)}</strong></div>
+    </div>
+    <p style="font-size:14px;line-height:22px;color:#5F5753;margin:18px 0 0;">We’ll email you again as soon as a decision is made. Once approved, you’ll receive your referral link and can earn a flat <strong>27%</strong> on qualifying Scholify plan sales.</p>
+    <p style="font-size:13px;line-height:20px;color:#8F8C85;margin:18px 0 0;">Good luck, ${first}.<br>— Makhmudov Nuriddin, Founder, Scholify</p>`,
+    charles: true,
+  })
 
-  const send = async (payload: Record<string, unknown>) => {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-    if (!response.ok) throw new Error(`Resend returned ${response.status}`)
-  }
-
-  // 1) Notify the founder. 2) Confirm receipt to the applicant. Both best-effort.
-  await send({ from, to, reply_to: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml })
-  await send({ from, to: app.email, reply_to: to, subject: "We've received your Scholify partner application 🏁", html: applicantHtml })
+  await Promise.all([
+    sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml }),
+    sendPartnerEmail({ to: app.email, subject: "Your Scholify partner application is pending review", html: applicantHtml }),
+  ])
 }
 
 /** Tell an applicant when the founder approves or rejects their application. */
@@ -245,33 +311,56 @@ async function notifyApplicationDecision(app: {
   code: string
   status: string
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return
-  const from = process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>"
-  const first = app.name.split(/\s+/)[0] || "there"
+  const first = escapeHtml(app.name.split(/\s+/)[0] || "there")
   const approved = app.status === "active"
   const subject = approved
-    ? "You're approved — welcome to the Scholify Partner Program 🏁"
+    ? "You’re approved — welcome to the Scholify Partner Program"
     : "An update on your Scholify partner application"
   const html = approved
-    ? `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#14141A;">
-        <h2 style="font-size:20px;margin:0 0 10px;">Welcome to the team, ${first} 🏁</h2>
-        <p style="font-size:14px;line-height:1.6;color:#33313a;">Your Scholify partner application is approved. You can now earn <b>27%</b> on every qualifying plan sold through your link.</p>
-        <p style="font-size:14px;line-height:1.6;color:#33313a;">Your partner link is:</p>
-        <p style="font-size:15px;font-weight:700;"><a href="https://www.scholifyapp.com/?aff=${app.code}" style="color:#C80000;">scholifyapp.com/?aff=${app.code}</a></p>
-        <p style="font-size:13px;color:#8f8c85;line-height:1.6;margin-top:18px;">Sign in to Scholify and open the Partners page to see clicks, sales and commissions.<br/>Questions? Reply to this email.<br/>— Makhmudov Nuriddin, Founder, Scholify</p>
-      </div>`
-    : `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#14141A;">
-        <h2 style="font-size:20px;margin:0 0 10px;">Hi ${first},</h2>
-        <p style="font-size:14px;line-height:1.6;color:#33313a;">Thank you for your interest in the Scholify Preferred Partner Program. We’re unable to approve your application at this time.</p>
-        <p style="font-size:13px;color:#8f8c85;line-height:1.6;margin-top:18px;">If you think we missed something, reply to this email and tell us more.<br/>— Makhmudov Nuriddin, Founder, Scholify</p>
-      </div>`
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: app.email, reply_to: ADMIN_EMAIL, subject, html }),
-  })
-  if (!response.ok) throw new Error(`Resend returned ${response.status}`)
+    ? emailFrame({
+        eyebrow: "Application approved · Welcome aboard",
+        title: `You’re officially a Scholify Partner, ${app.name.split(/\s+/)[0] || "there"}`,
+        intro: `Congratulations — your application has been approved. You’re now part of the Scholify Preferred Partner Program and can earn <strong>27%</strong> on qualifying plan sales.`,
+        content: `<div style="background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;padding:16px 18px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#1E7D50;text-transform:uppercase;">Your partner link</div>
+          <div style="font-size:15px;font-weight:800;margin-top:7px;"><a href="${SITE_URL}/?aff=${escapeHtml(app.code)}" style="color:#C80000;text-decoration:none;">scholifyapp.com/?aff=${escapeHtml(app.code)}</a></div>
+          <div style="font-size:12px;color:#8F8C85;margin-top:6px;">Partner code: ${escapeHtml(app.code)}</div>
+        </div>
+        <p style="font-size:14px;line-height:22px;color:#5F5753;margin:18px 0 0;">Share your unique link with your audience. Sign in to Scholify and open your Partners dashboard to monitor clicks, sales and commissions.</p>
+        <p style="font-size:13px;line-height:20px;color:#8F8C85;margin:18px 0 0;">Welcome to the team, ${first}.<br>— Makhmudov Nuriddin, Founder, Scholify</p>`,
+        cta: { label: "Open your partner dashboard", href: `${SITE_URL}/partners` },
+        charles: true,
+      })
+    : emailFrame({
+        eyebrow: "Partner application · Decision",
+        title: `An update on your application, ${app.name.split(/\s+/)[0] || "there"}`,
+        intro: `Thank you for your interest in the Scholify Preferred Partner Program. After reviewing your application, we’re unable to approve it at this time.`,
+        content: `<p style="font-size:14px;line-height:22px;color:#5F5753;margin:0;">If your audience or promotion plans change, you’re welcome to reply to this email and share more information with our team.</p>
+        <p style="font-size:13px;line-height:20px;color:#8F8C85;margin:18px 0 0;">Thank you for believing in Scholify.<br>— Makhmudov Nuriddin, Founder, Scholify</p>`,
+      })
+
+  const sends = [sendPartnerEmail({ to: app.email, subject, html })]
+  if (approved) {
+    const adminHtml = emailFrame({
+      eyebrow: "Race control · Partner activated",
+      title: `${app.name} is now a Scholify Partner`,
+      intro: `Congratulations — you approved a new Preferred Partner. Their referral code is active and Scholify can now attribute clicks, sales and commissions to their account.`,
+      content: `<div style="background:#F1FBF6;border:1px solid #CBEBD9;border-radius:14px;padding:16px 18px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#1E7D50;text-transform:uppercase;">New active partner</div>
+        <div style="font-size:18px;font-weight:800;color:#14141A;margin-top:7px;">${escapeHtml(app.name)}</div>
+        <div style="font-size:13px;line-height:20px;color:#5F5753;margin-top:6px;">${escapeHtml(app.email)} · Code <strong style="color:#C80000;">${escapeHtml(app.code)}</strong></div>
+      </div>`,
+      cta: { label: "View partner applications", href: `${SITE_URL}/settings` },
+      charles: true,
+    })
+    sends.push(sendPartnerEmail({
+      to: ADMIN_EMAIL,
+      replyTo: app.email,
+      subject: `New Scholify Partner activated — ${app.name} (${app.code})`,
+      html: adminHtml,
+    }))
+  }
+  await Promise.all(sends)
 }
 
 async function resolve(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
