@@ -24,6 +24,7 @@ import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
 import { listAffiliates, setAffiliateStatus, type AdminAffiliate } from "@/lib/affiliate"
+import { listWaitlist, type WaitlistContact } from "@/lib/waitlist"
 import {
   Icon,
   Badge,
@@ -728,6 +729,26 @@ export default function Settings() {
         /* ignore — falls back to the PostHog note */
       }
     })()
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin])
+
+  /* Launch waitlist — owner only. */
+  const [waitlist, setWaitlist] = useState<{
+    contacts: WaitlistContact[]
+    total: number
+  } | null>(null)
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+    void listWaitlist()
+      .then((result) => {
+        if (!cancelled) setWaitlist(result)
+      })
+      .catch(() => {
+        if (!cancelled) setWaitlist({ contacts: [], total: 0 })
+      })
     return () => {
       cancelled = true
     }
@@ -1505,6 +1526,63 @@ export default function Settings() {
                 Retention events (first_task_completed, day3_retained, day7_retained) stream to
                 PostHog. Apply migration 0011 + connect Supabase to populate this in-app table.
               </p>
+            )}
+          </Section>
+        )}
+
+        {/* ── Launch waitlist (admin only) ── */}
+        {isAdmin && (
+          <Section>
+            <SectionHead icon="support">Launch waitlist (admin)</SectionHead>
+            {waitlist === null ? (
+              <p style={{ fontSize: 13, color: TEXT2, marginTop: 10 }}>Loading…</p>
+            ) : (
+              <>
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    background: "var(--sch-card-2)",
+                    border: "1px solid var(--sch-border)",
+                  }}
+                >
+                  <div style={{ fontSize: 22, fontWeight: 800, ...iriText }}>{waitlist.total}</div>
+                  <div style={{ fontSize: 12, color: TEXT2, marginTop: 2 }}>People waiting for launch</div>
+                </div>
+                {waitlist.contacts.length === 0 ? (
+                  <p style={{ fontSize: 13, color: TEXT2, marginTop: 10 }}>No waitlist signups yet.</p>
+                ) : (
+                  <div style={{ display: "grid", gap: 8, marginTop: 12, maxHeight: 360, overflowY: "auto" }}>
+                    {waitlist.contacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 8,
+                          padding: "11px 13px",
+                          borderRadius: 12,
+                          background: "var(--sch-card-2)",
+                          border: "1px solid var(--sch-border)",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700 }}>{contact.name}</div>
+                          <a href={`mailto:${contact.email}`} style={{ fontSize: 12, color: C.red }}>
+                            {contact.email}
+                          </a>
+                        </div>
+                        <div style={{ fontSize: 11, color: TEXT2 }}>
+                          {format(new Date(contact.created_at), "d MMM yyyy, HH:mm")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </Section>
         )}

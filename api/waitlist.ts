@@ -1,11 +1,50 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import postgres from "postgres"
+import { createClient } from "@supabase/supabase-js"
 
 const RESEND_API = "https://api.resend.com"
 const ADMIN_EMAIL = "scholifyapp@gmail.com"
 const SITE_URL = "https://www.scholifyapp.com"
 
 type Json = Record<string, unknown>
+
+async function listContacts(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!supabaseUrl || !serviceKey || !token) {
+    res.status(401).json({ ok: false, reason: "unauthorized" })
+    return
+  }
+
+  const auth = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  const { data, error } = await auth.auth.getUser(token)
+  if (error || data.user?.email?.toLowerCase() !== ADMIN_EMAIL) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+
+  const connection = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL
+  if (!connection) {
+    res.status(503).json({ ok: false, reason: "database_not_configured" })
+    return
+  }
+  const sql = postgres(connection, { max: 1, prepare: false, connect_timeout: 10, idle_timeout: 5 })
+  try {
+    const contacts = await sql`
+      select id, email, name, source, created_at
+      from public.launch_waitlist
+      order by created_at desc
+      limit 500
+    `
+    const [{ total }] = await sql<{ total: number }[]>`
+      select count(*)::int as total from public.launch_waitlist
+    `
+    res.status(200).json({ ok: true, contacts, total })
+  } finally {
+    await sql.end({ timeout: 5 })
+  }
+}
 
 async function resend(path: string, apiKey: string, init?: RequestInit): Promise<Response> {
   return fetch(`${RESEND_API}${path}`, {
@@ -76,6 +115,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.setHeader("Cache-Control", "no-store")
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, reason: "post_only" })
+    return
+  }
+  if (String(req.query.action || "") === "list") {
+    try {
+      await listContacts(req, res)
+    } catch (error) {
+      console.error("waitlist list:", error)
+      res.status(500).json({ ok: false, reason: "list_failed" })
+    }
     return
   }
   const body = (req.body || {}) as Json
