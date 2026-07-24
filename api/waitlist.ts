@@ -3,7 +3,7 @@ import postgres from "postgres"
 import { createClient } from "@supabase/supabase-js"
 
 const RESEND_API = "https://api.resend.com"
-const ADMIN_EMAIL = "scholifyapp@gmail.com"
+const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
 const SITE_URL = "https://www.scholifyapp.com"
 
 type Json = Record<string, unknown>

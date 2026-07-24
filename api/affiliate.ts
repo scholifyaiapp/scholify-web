@@ -71,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.status(400).json({ ok: false, reason: "unknown_action" })
 }
 
-const ADMIN_EMAIL = "scholifyapp@gmail.com"
+const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
 
 /** Verify the caller is the Scholify admin (by verified JWT email). */
 async function requireAdmin(req: VercelRequest, supa: SupabaseClient): Promise<boolean> {
