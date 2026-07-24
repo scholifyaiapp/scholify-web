@@ -4,6 +4,7 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { MagneticButton } from "@/components/ui/magnetic-button"
 import { useT } from "@/i18n/LanguageProvider"
+import { PRELAUNCH_MODE } from "@/lib/launch"
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
@@ -187,7 +188,7 @@ export function CinematicFooter({
               <div className="flex flex-col items-center gap-3 w-full">
                 <MagneticButton
                   as="a"
-                  href="/sign-up"
+                  href={PRELAUNCH_MODE ? "/sign-up?team=1" : "/sign-up"}
                   className="footer-glass-pill px-10 py-5 rounded-full text-foreground font-bold text-sm md:text-base flex items-center gap-3 group"
                 >
                   <svg className="w-6 h-6 text-muted-foreground group-hover:text-foreground transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

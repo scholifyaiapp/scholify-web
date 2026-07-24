@@ -38,6 +38,10 @@ import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
+import { PRELAUNCH_MODE } from "@/lib/launch"
+
+const SIGN_IN_PATH = PRELAUNCH_MODE ? "/sign-in?team=1&next=/admin" : "/sign-in"
+const SIGN_UP_PATH = PRELAUNCH_MODE ? "/sign-up?team=1" : "/sign-up"
 
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))
@@ -227,10 +231,10 @@ function Nav() {
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <LanguageToggle />
         <a
-          href="/signin"
+          href={SIGN_IN_PATH}
           onClick={(e) => {
             e.preventDefault()
-            navigate("/signin")
+            navigate(SIGN_IN_PATH)
           }}
           className="scholify-glass-pill hidden rounded-full px-5 py-2 text-sm font-semibold md:inline-flex"
           style={{ color: "var(--foreground)", textDecoration: "none", alignItems: "center" }}
@@ -238,10 +242,10 @@ function Nav() {
           {t("Sign in")}
         </a>
         <a
-          href="/signup"
+          href={SIGN_UP_PATH}
           onClick={(e) => {
             e.preventDefault()
-            navigate("/signup")
+            navigate(SIGN_UP_PATH)
           }}
           className="scholify-glass-pill-primary rounded-full px-4 py-2 text-sm font-bold sm:px-5"
           style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
@@ -310,7 +314,7 @@ function Hero() {
         <UpgradeBanner
           buttonText={t("Meet Charles")}
           description={t("— your AI race engineer for ACCA")}
-          onClick={() => navigate("/signup")}
+          onClick={() => navigate(SIGN_UP_PATH)}
         />
 
         <HeroHeadline />
@@ -368,7 +372,7 @@ function Hero() {
           transition={{ duration: 0.7, delay: 1, ease: EASE_DECISIVE }}
           style={{ marginTop: 28, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
         >
-          <PrimaryCTA onClick={() => navigate("/signup")}>
+          <PrimaryCTA onClick={() => navigate(SIGN_UP_PATH)}>
             {t("Start for free")} <ArrowRight size={18} strokeWidth={2.4} />
           </PrimaryCTA>
         </motion.div>
@@ -1183,7 +1187,7 @@ function PaperCard({ paper, accent, delay }: { paper: (typeof ROADMAP_LEVELS)[nu
   return (
     <motion.button
       type="button"
-      onClick={() => navigate("/signup")}
+      onClick={() => navigate(SIGN_UP_PATH)}
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
@@ -1728,7 +1732,7 @@ function SavingsCalculator() {
         <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} style={{ marginTop: 10 }}>
           <button
             type="button"
-            onClick={() => navigate("/signup")}
+            onClick={() => navigate(SIGN_UP_PATH)}
             style={{ width: "100%", padding: "15px 24px", borderRadius: 999, border: "none", background: GRAD_HERO, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", boxShadow: `0 14px 34px -10px ${BRAND_500}88` }}
           >
             {t("Keep the difference — start free")}
@@ -1771,7 +1775,7 @@ function AccaFactsCTA() {
           facts={facts}
           ctaLabel={t("Start free")}
           animateLabel={t("Next")}
-          onCta={() => navigate("/signup")}
+          onCta={() => navigate(SIGN_UP_PATH)}
         />
       </div>
     </section>
@@ -1839,7 +1843,7 @@ function Pricing() {
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
               ctaLabel={t("Start free")}
-              onCta={() => navigate("/signup")}
+              onCta={() => navigate(SIGN_UP_PATH)}
             />
           </div>
 
@@ -1926,7 +1930,7 @@ function FinalCTA() {
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
         <HandWrittenTitle title={t("Then the next one.")} subtitle={t("Pass this paper.")} />
         <div style={{ marginTop: -32, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-          <PrimaryCTA large onClick={() => navigate("/signup")}>
+          <PrimaryCTA large onClick={() => navigate(SIGN_UP_PATH)}>
             {t("Start prepping — free")} <ArrowRight size={20} strokeWidth={2.4} />
           </PrimaryCTA>
           <p style={{ color: INK_MUTED, fontSize: 14 }}>
