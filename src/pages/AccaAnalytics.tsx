@@ -19,6 +19,7 @@ import { flashcardStats } from "@/lib/acca-flashcards"
 import { getStudyPath, pathProgress } from "@/lib/acca-topics"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
+import CharlesMascot from "@/components/CharlesMascot"
 import {
   probabilityMomentum,
   masteryScore,
@@ -92,9 +93,12 @@ export default function AccaAnalytics() {
           {active.label} · {active.question}
         </SectionLabel>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: SP.md, flexWrap: "wrap", marginBottom: SP.lg }}>
-          <h1 style={{ fontSize: 27, fontWeight: 800, margin: 0, color: C.text, letterSpacing: "-0.02em" }}>
-            {headlineFor(section, paperId, band?.label ?? null)}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <CharlesMascot pose="chart" size={64} />
+            <h1 style={{ fontSize: 27, fontWeight: 800, margin: 0, color: C.text, letterSpacing: "-0.02em" }}>
+              {headlineFor(section, paperId, band?.label ?? null)}
+            </h1>
+          </div>
           {days != null && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", borderRadius: R.pill, background: C.card, border: `1px solid ${C.border}`, fontSize: 12.5, fontWeight: 700, color: C.muted, whiteSpace: "nowrap" }}>
               <Icon name="calendar" size={13} color={C.brand} />

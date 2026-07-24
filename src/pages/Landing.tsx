@@ -299,6 +299,13 @@ function Hero() {
         overflow: "hidden",
       }}
     >
+      <div
+        aria-hidden
+        className="hidden lg:block"
+        style={{ position: "absolute", right: "clamp(18px,4vw,68px)", top: 170, zIndex: 1 }}
+      >
+        <CharlesMascot pose="thumbsup" size="clamp(118px,12vw,176px)" delay={0.45} />
+      </div>
       <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto" }}>
         <UpgradeBanner
           buttonText={t("Meet Charles")}
@@ -503,7 +510,14 @@ function HowItWorks() {
   const t = useT()
   return (
     <section id="how-it-works" style={{ padding: "96px 24px", textAlign: "center" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative" }}>
+        <div
+          aria-hidden
+          className="hidden lg:block"
+          style={{ position: "absolute", left: -92, top: -38 }}
+        >
+          <CharlesMascot pose="plan" size={118} delay={0.1} />
+        </div>
         <SectionLabel>{t("HOW IT WORKS")}</SectionLabel>
         <AnimatedUnderlineText
           text={t("Your exam plan in 60 seconds")}

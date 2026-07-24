@@ -17,16 +17,16 @@ const SRC: Record<CharlesPose, string> = {
   wave: "/charles/6-transparent.webp", // waving hello — true transparent cutout
   present: "/charles/7.webp", // open visor + telemetry — coaching/reveal
   chart: "/charles/2.webp", // pointing at a chart — analytics/readiness
-  celebrate: "/charles/4.webp", // fists up + confetti — reward
-  idea: "/charles/5.webp", // finger up — tip/idea
-  calm: "/charles/3.webp", // arms crossed — steady / empty state
+  celebrate: "/charles/4-transparent.webp", // fists up + confetti — reward
+  idea: "/charles/5-transparent.webp", // finger up — tip/idea
+  calm: "/charles/3-transparent.webp", // arms crossed — steady / empty state
   thumbsup: "/charles/1.webp", // thumbs up — positive / hero
-  plan: "/charles/8.webp", // presenting a plan board — plan reveal / roadmap
-  success: "/charles/9.webp", // double thumbs + sparkles — correct / passed
-  thinking: "/charles/11.webp", // hand on chin + lightbulb — AI thinking / tip
-  start: "/charles/12.webp", // sprint-ready crouch — begin a session
-  run: "/charles/13.webp", // running + speed lines — momentum / streak
-  wave2: "/charles/10.webp", // waving hello (alt) — greeting
+  plan: "/charles/8-transparent.webp", // presenting a plan board — plan reveal / roadmap
+  success: "/charles/9-transparent.webp", // double thumbs + sparkles — correct / passed
+  thinking: "/charles/11-transparent.webp", // hand on chin + lightbulb — AI thinking / tip
+  start: "/charles/12-transparent.webp", // sprint-ready crouch — begin a session
+  run: "/charles/13-transparent.webp", // running + speed lines — momentum / streak
+  wave2: "/charles/10-transparent.webp", // waving hello (alt) — greeting
 }
 /*
  * PLUG-AND-PLAY REAL ANIMATION.
