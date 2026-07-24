@@ -101,7 +101,29 @@ export default function Waitlist() {
             <Sparkles size={15} /> The final lap before launch
           </div>
           <h1 style={{ fontSize: "clamp(44px,7vw,82px)", lineHeight: .98, letterSpacing: "-.055em", margin: "22px 0 24px", maxWidth: 760 }}>
-            Your ACCA study system is almost <span style={{ background: GRADIENT, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>ready to race.</span>
+            Your ACCA study system is almost{" "}
+            <motion.span
+              initial={reduced ? false : { opacity: 0, y: 16, filter: "blur(8px)" }}
+              animate={reduced ? undefined : { opacity: 1, y: 0, filter: "blur(0px)", backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              transition={{
+                opacity: { duration: .55, delay: .35 },
+                y: { duration: .7, delay: .35, ease: [0.16, 1, 0.3, 1] },
+                filter: { duration: .65, delay: .35 },
+                backgroundPosition: { duration: 5.5, repeat: Infinity, ease: "easeInOut" },
+              }}
+              style={{ position: "relative", display: "inline-block", background: GRADIENT, backgroundSize: "220% 220%", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+            >
+              ready to race.
+              {!reduced && (
+                <motion.span
+                  aria-hidden
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: .75 }}
+                  transition={{ duration: .75, delay: .72, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ position: "absolute", left: 2, right: 0, bottom: -5, height: 4, borderRadius: 99, background: GRADIENT, transformOrigin: "left" }}
+                />
+              )}
+            </motion.span>
           </h1>
           <p style={{ maxWidth: 680, fontSize: "clamp(17px,2vw,21px)", lineHeight: 1.65, color: MUTED, margin: 0 }}>
             Scholify combines a personalised daily plan, exam-standard practice and an AI examiner into one focused route from today to exam day.
@@ -207,9 +229,46 @@ export default function Waitlist() {
             [Gauge, "Exam readiness", "Know whether you’re actually on pace—not just how many hours you studied."],
             [ShieldCheck, "Exam-standard practice", "Questions, mocks and written-answer marking across all 15 papers."],
             [Sparkles, "Charles by your side", "Your AI race engineer adjusts the plan and keeps every session focused."],
-          ].map(([Icon, title, copy]) => {
+          ].map(([Icon, title, copy], index) => {
             const FeatureIcon = Icon as typeof BrainCircuit
-            return <div key={String(title)} style={{ background: "#fff", border: "1px solid rgba(20,20,26,.08)", borderRadius: 18, padding: 21 }}><div style={{ width: 40, height: 40, display: "grid", placeItems: "center", borderRadius: 12, color: RED, background: "rgba(200,0,0,.07)" }}><FeatureIcon size={21} /></div><h3 style={{ fontSize: 16, margin: "15px 0 7px" }}>{String(title)}</h3><p style={{ color: MUTED, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{String(copy)}</p></div>
+            const accents = ["#C80000", "#E50068", "#8A3FFC", "#F4A405"]
+            const accent = accents[index]
+            return (
+              <motion.article
+                key={String(title)}
+                initial={reduced ? false : { opacity: 0, y: 28, scale: .97 }}
+                whileInView={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, amount: .25 }}
+                whileHover={reduced ? undefined : { y: -8, scale: 1.015 }}
+                transition={{ duration: .55, delay: reduced ? 0 : index * .09, ease: [0.16, 1, 0.3, 1] }}
+                style={{ background: "rgba(255,255,255,.9)", border: "1px solid rgba(20,20,26,.08)", borderRadius: 20, padding: 22, position: "relative", overflow: "hidden", boxShadow: "0 14px 38px rgba(20,20,26,.06)", backdropFilter: "blur(14px)" }}
+              >
+                <motion.div
+                  aria-hidden
+                  initial={reduced ? false : { scaleX: 0 }}
+                  whileInView={reduced ? undefined : { scaleX: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: .65, delay: reduced ? 0 : .15 + index * .09, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ position: "absolute", left: 0, right: 0, top: 0, height: 3, background: `linear-gradient(90deg,${accent},transparent)`, transformOrigin: "left" }}
+                />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <motion.div
+                    whileHover={reduced ? undefined : { rotate: -6, scale: 1.08 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 18 }}
+                    style={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 13, color: accent, background: `${accent}12`, border: `1px solid ${accent}20` }}
+                  >
+                    <FeatureIcon size={22} />
+                  </motion.div>
+                  <span style={{ color: "rgba(20,20,26,.22)", fontSize: 11, fontWeight: 900, letterSpacing: ".12em" }}>0{index + 1}</span>
+                </div>
+                <h3 style={{ fontSize: 17, lineHeight: 1.25, margin: "17px 0 8px", letterSpacing: "-.015em" }}>{String(title)}</h3>
+                <p style={{ color: MUTED, fontSize: 13, lineHeight: 1.65, margin: 0 }}>{String(copy)}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, color: accent, fontSize: 10, fontWeight: 850, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 18 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 99, background: accent, boxShadow: `0 0 0 4px ${accent}12` }} />
+                  Built into Scholify
+                </div>
+              </motion.article>
+            )
           })}
         </div>
       </section>
