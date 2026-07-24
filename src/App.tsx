@@ -68,6 +68,7 @@ const Terms = lazyWithReload(() => import("@/pages/Terms"))
 const Support = lazyWithReload(() => import("@/pages/Support"))
 const PartnersApply = lazyWithReload(() => import("@/pages/PartnersApply"))
 const Partners = lazyWithReload(() => import("@/pages/Partners"))
+const AdminDashboard = lazyWithReload(() => import("@/pages/AdminDashboard"))
 
 function Page({
   name,
@@ -182,6 +183,7 @@ export default function App() {
         <Route path="/study/analytics" element={<ProtectedRoute gate><Page name="AccaAnalytics"><AccaAnalytics /></Page></ProtectedRoute>} />
         {/* Settings stays ungated so an expired user can still pay / manage / sign out */}
         <Route path="/settings" element={<ProtectedRoute><Page name="Settings"><Settings /></Page></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><Page name="AdminDashboard"><AdminDashboard /></Page></ProtectedRoute>} />
         <Route path="/notes" element={<ProtectedRoute gate><Page name="NotesHub"><NotesHub /></Page></ProtectedRoute>} />
 
         {/* Public info */}

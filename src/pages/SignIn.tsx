@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth"
@@ -209,6 +209,7 @@ function ForgotPasswordModal({
 
 export default function SignIn() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { signIn, signInWithGoogle } = useAuth()
   const [forgotOpen, setForgotOpen] = useState(false)
 
@@ -271,7 +272,8 @@ export default function SignIn() {
       return
     }
     setAttempts(0)
-    navigate("/dashboard")
+    const requested = new URLSearchParams(location.search).get("next")
+    navigate(requested?.startsWith("/") ? requested : "/dashboard")
   }
 
   const handleGoogle = async () => {
@@ -285,7 +287,8 @@ export default function SignIn() {
       return
     }
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
-    navigate("/dashboard")
+    const requested = new URLSearchParams(location.search).get("next")
+    navigate(requested?.startsWith("/") ? requested : "/dashboard")
   }
 
   return (

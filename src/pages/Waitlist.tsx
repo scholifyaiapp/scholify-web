@@ -280,7 +280,7 @@ export default function Waitlist() {
             <Link to="/privacy" style={{ color: "inherit" }}>Privacy</Link> · <Link to="/terms" style={{ color: "inherit" }}>Terms</Link>
           </span>
           <Link
-            to="/sign-in?team=1"
+            to="/sign-in?team=1&next=/admin"
             aria-label="Open the private Scholify admin panel"
             style={{
               display: "inline-flex",
