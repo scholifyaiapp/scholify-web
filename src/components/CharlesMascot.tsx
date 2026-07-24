@@ -14,7 +14,7 @@ export type CharlesPose =
   | "plan" | "success" | "thinking" | "start" | "run" | "wave2"
 
 const SRC: Record<CharlesPose, string> = {
-  wave: "/charles/6.webp", // waving hello — greeting
+  wave: "/charles/6-transparent.webp", // waving hello — true transparent cutout
   present: "/charles/7.webp", // open visor + telemetry — coaching/reveal
   chart: "/charles/2.webp", // pointing at a chart — analytics/readiness
   celebrate: "/charles/4.webp", // fists up + confetti — reward
