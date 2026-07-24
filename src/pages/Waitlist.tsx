@@ -38,6 +38,7 @@ function LaunchPrice({
 }) {
   return (
     <motion.div
+      className="waitlist-price-card"
       initial={reduced ? false : { opacity: 0, y: 24, rotateY: tilt * 1.8 }}
       whileInView={reduced ? undefined : { opacity: 1, y: 0, rotateY: tilt }}
       whileHover={reduced ? undefined : { y: -8, rotateY: 0, rotateX: -3, scale: 1.035 }}
@@ -333,6 +334,7 @@ export default function Waitlist() {
 
       <section style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "68px clamp(20px,4vw,40px) 78px" }}>
         <motion.div
+          className="waitlist-payment-shell"
           initial={reduced ? false : { opacity: 0, y: 22 }}
           whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
           viewport={{ once: true, amount: .3 }}
@@ -354,6 +356,7 @@ export default function Waitlist() {
             </p>
           </div>
           <div
+            className="waitlist-payment-layout"
             style={{
               display: "flex",
               alignItems: "center",
@@ -365,6 +368,7 @@ export default function Waitlist() {
           >
             <LaunchPrice name="Beginner" price="$9.99" accent="#C80000" tilt={7} reduced={reduced} />
             <motion.div
+              className="waitlist-payment-center"
               initial={reduced ? false : { opacity: 0, scale: .94 }}
               whileInView={reduced ? undefined : { opacity: 1, scale: 1 }}
               viewport={{ once: true, amount: .5 }}
@@ -420,11 +424,28 @@ export default function Waitlist() {
           .waitlist-hero { grid-template-columns: 1fr !important; padding-top: 24px !important; }
           .waitlist-countdown { grid-template-columns: 1fr !important; }
           .waitlist-features { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+          .waitlist-payment-shell { padding: 32px 22px !important; }
+          .waitlist-payment-layout {
+            display: grid !important;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            grid-template-areas: "beginner pro" "payment payment";
+            gap: 14px !important;
+          }
+          .waitlist-price-card { min-width: 0 !important; width: 100%; padding: 22px 18px 20px !important; }
+          .waitlist-price-card:first-child { grid-area: beginner; }
+          .waitlist-price-card:last-child { grid-area: pro; }
+          .waitlist-payment-center { grid-area: payment; width: 100%; max-width: none !important; box-sizing: border-box; }
         }
         @media (max-width: 520px) {
           .waitlist-features { grid-template-columns: 1fr !important; }
           .waitlist-countdown > div:last-child { width: 100%; }
           .waitlist-countdown > div:last-child > div { min-width: 0 !important; flex: 1; }
+          .waitlist-payment-shell { margin-inline: -4px; padding: 27px 14px !important; border-radius: 20px !important; }
+          .waitlist-payment-layout { gap: 10px !important; }
+          .waitlist-price-card { padding: 19px 14px 18px !important; border-radius: 17px !important; }
+          .waitlist-payment-center { padding: 18px 10px !important; border-radius: 17px !important; }
+          .waitlist-payment-center > div:last-child > div { gap: 7px !important; }
+          .waitlist-payment-center > div:last-child > div > span { height: 44px !important; padding-inline: 12px !important; }
         }
       `}</style>
     </main>
