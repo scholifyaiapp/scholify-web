@@ -109,11 +109,37 @@ const LADDER: Array<[string, string, boolean]> = [
   ["1,000", "$4,050", true],
 ]
 
-const STEPS: Array<[string, string]> = [
-  ["Apply & get approved", "We review and activate your preferred-partner account."],
-  ["Get your kit", "Unique link, promo code and brand assets land in your dashboard."],
-  ["Promote", "Share across networking, LinkedIn, Reddit and social — posts, reels, stories."],
-  ["Earn & get paid", "A flat 27% per sale, tracked live, paid once it clears (30 days after purchase)."],
+const STEPS = [
+  {
+    title: "Send your application",
+    label: "Apply",
+    detail: "Tell us about you, your audience and where you plan to promote Scholify. You’ll receive an email confirming that your request is pending review.",
+  },
+  {
+    title: "Get personally reviewed",
+    label: "Review",
+    detail: "Our founder reviews every application. We’ll email you with the decision, so you always know where your application stands.",
+  },
+  {
+    title: "Receive your partner link",
+    label: "Activate",
+    detail: "Once approved, you receive your unique referral link and partner code. Your dashboard becomes the home for your clicks, sales and commissions.",
+  },
+  {
+    title: "Share Scholify",
+    label: "Promote",
+    detail: "Use your link in study groups, campus networks, LinkedIn, Reddit or social content. Promote honestly to ACCA students who will genuinely benefit.",
+  },
+  {
+    title: "Stripe tracks the sale",
+    label: "Sell",
+    detail: "Your referred student pays Scholify securely through Stripe. You never handle their card details; a qualifying purchase is attributed to your partner account.",
+  },
+  {
+    title: "Your 27% commission clears",
+    label: "Earn",
+    detail: "The sale and commission appear in your dashboard as pending. After the 30-day validation period, eligible commission can move toward payout.",
+  },
 ]
 
 const CHANNELS: Array<[string, string]> = [
@@ -503,11 +529,16 @@ export default function PartnersApply() {
         <Section style={{ scrollMarginTop: 24 }}>
           <div id="how" />
           <motion.div {...rise()} style={secHead}>
-            How it works
+            How the Partner Programme works
           </motion.div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
-            {STEPS.map(([t, d], i) => (
-              <motion.div key={t} {...rise(i * 0.06)} whileHover={{ y: -4, transition: { duration: 0.2 } }} style={card}>
+          <motion.p {...rise(0.04)} style={{ fontSize: 16, lineHeight: 1.65, color: "var(--sch-tx-1)", maxWidth: 720, margin: "0 0 22px", fontWeight: 500 }}>
+            From application to commission, the process is simple and transparent. Here’s exactly what happens at
+            every step.
+          </motion.p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 14 }}>
+            {STEPS.map((step, i) => (
+              <motion.div key={step.title} {...rise(i * 0.05)} whileHover={{ y: -4, transition: { duration: 0.2 } }} style={{ ...card, position: "relative", overflow: "hidden" }}>
+                <div aria-hidden style={{ position: "absolute", width: 80, height: 80, borderRadius: "50%", right: -34, top: -34, background: "rgba(200,0,0,0.055)" }} />
                 <div
                   style={{
                     width: 30,
@@ -526,11 +557,34 @@ export default function PartnersApply() {
                 >
                   {i + 1}
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--sch-text)", marginBottom: 4 }}>{t}</div>
-                <div style={{ fontSize: 13, color: "var(--sch-tx-2)", lineHeight: 1.5 }}>{d}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: "#C80000", marginBottom: 7 }}>
+                  {step.label}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "var(--sch-text)", marginBottom: 7 }}>{step.title}</div>
+                <div style={{ fontSize: 13.5, color: "var(--sch-tx-2)", lineHeight: 1.58 }}>{step.detail}</div>
               </motion.div>
             ))}
           </div>
+          <motion.div
+            {...rise(0.28)}
+            style={{
+              marginTop: 16,
+              padding: "16px 18px",
+              borderRadius: 14,
+              background: "rgba(244,164,5,0.08)",
+              border: "1px solid rgba(244,164,5,0.24)",
+              display: "flex",
+              gap: 12,
+              alignItems: "flex-start",
+            }}
+          >
+            <span aria-hidden style={{ color: GOLD, fontSize: 18, lineHeight: 1 }}>◆</span>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--sch-tx-1)" }}>
+              <b style={{ color: "var(--sch-text)" }}>A qualifying sale</b> is a completed Scholify plan purchase
+              attributed to your active link or code. Refunded or charged-back purchases do not earn commission.
+              Final payout timing and payment details are confirmed when your partner account is activated.
+            </div>
+          </motion.div>
         </Section>
 
         {/* ── Why it sells / What you get ── */}

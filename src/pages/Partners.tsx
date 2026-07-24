@@ -78,7 +78,7 @@ export default function Partners() {
             </div>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--sch-text)", margin: "0 0 8px" }}>You're not a partner yet</h2>
             <p style={{ fontSize: 15, color: "var(--sch-tx-2)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 20px" }}>
-              Apply to the Scholify partner program and earn 35% on every student you refer. If you've already applied, your account activates once we review it.
+              Apply to the Scholify partner program and earn 27% on qualifying plan sales you refer. If you've already applied, your account activates once we review it.
             </p>
             <Link
               to="/partners/apply"
