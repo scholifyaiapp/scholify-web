@@ -6,6 +6,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import { applyToAffiliate, type AffiliateApplication } from "@/lib/affiliate"
 import PaymentMethods from "@/components/PaymentMethods"
+import { Download, FileText } from "lucide-react"
 
 /* ──────────────────────────────────────────────────────────────
  *  /partners/apply — the Scholify Preferred Partner landing.
@@ -264,9 +265,9 @@ export default function PartnersApply() {
             >
               Apply to become a partner
             </motion.button>
-            <motion.button
-              type="button"
-              onClick={scrollTo("how")}
+            <motion.a
+              href="/partners/Scholify-Partnership-Offer.pdf"
+              download="Scholify-Partnership-Offer.pdf"
               whileHover={reduced ? undefined : { scale: 1.03 }}
               whileTap={reduced ? undefined : { scale: 0.97 }}
               style={{
@@ -277,12 +278,49 @@ export default function PartnersApply() {
                 color: "var(--sch-text)",
                 fontSize: 16,
                 fontWeight: 600,
-                cursor: "pointer",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 9,
               }}
+              aria-label="Download the Scholify Partnership Offer as a PDF"
             >
-              See how it works
-            </motion.button>
+              <Download size={18} aria-hidden /> Download partnership offer
+            </motion.a>
           </div>
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 7,
+              color: "var(--sch-tx-2)",
+              fontSize: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            <FileText size={14} aria-hidden />
+            <span>PDF · 716 KB · Program overview and commercial terms</span>
+          </div>
+          <button
+            type="button"
+            onClick={scrollTo("how")}
+            style={{
+              marginTop: 12,
+              border: 0,
+              padding: 0,
+              background: "transparent",
+              color: "#C80000",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 4,
+            }}
+          >
+            Or read how the programme works online
+          </button>
         </motion.div>
 
         {/* ── What is Scholify ── */}
