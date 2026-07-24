@@ -111,6 +111,29 @@ function confirmationEmail(firstName: string): string {
   </td></tr></table></body></html>`
 }
 
+function adminWaitlistEmail(name: string, email: string): string {
+  const safeName = name.replace(/[<>&"']/g, "")
+  const safeEmail = email.replace(/[<>&"']/g, "")
+  return `<!doctype html><html><body style="margin:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
+      <tr><td style="height:5px;background:linear-gradient(90deg,#C80000,#E50068,#F4A405);font-size:0;">&nbsp;</td></tr>
+      <tr><td style="padding:28px 32px 12px;font-size:23px;font-weight:800;color:#14141A;">Scholify<span style="color:#C80000;">.</span></td></tr>
+      <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#C80000;text-transform:uppercase;">Race control · New waitlist signup</td></tr>
+      <tr><td style="padding:9px 32px 0;font-size:28px;line-height:35px;font-weight:800;color:#14141A;">A new learner joined the grid.</td></tr>
+      <tr><td style="padding:18px 32px 26px;">
+        <div style="background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;padding:18px;">
+          <div style="font-size:17px;font-weight:800;color:#14141A;">${safeName}</div>
+          <a href="mailto:${safeEmail}" style="display:inline-block;margin-top:6px;color:#C80000;text-decoration:none;font-size:14px;">${safeEmail}</a>
+          <div style="margin-top:12px;font-size:12px;color:#8F8C85;">Source: Scholify launch waitlist</div>
+        </div>
+      </td></tr>
+      <tr><td style="padding:0 32px 28px;"><a href="${SITE_URL}/admin" style="display:inline-block;background:#14141A;color:#fff;text-decoration:none;font-size:14px;font-weight:800;padding:13px 22px;border-radius:12px;">Open founder dashboard</a></td></tr>
+      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;color:#8F8C85;">Scholify race control · ${ADMIN_EMAIL}</td></tr>
+    </table>
+  </td></tr></table></body></html>`
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   res.setHeader("Cache-Control", "no-store")
   if (req.method !== "POST") {
@@ -144,17 +167,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   try {
     const isNew = await saveContact(email, name)
     if (isNew) {
-      const sent = await resend("/emails", apiKey, {
-        method: "POST",
-        body: JSON.stringify({
-          from: process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>",
-          to: email,
-          reply_to: ADMIN_EMAIL,
-          subject: "You’re on the Scholify launch waitlist 🏁",
-          html: confirmationEmail(name.split(/\s+/)[0] || "there"),
+      const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+      const [confirmation, adminNotice] = await Promise.all([
+        resend("/emails", apiKey, {
+          method: "POST",
+          body: JSON.stringify({
+            from,
+            to: email,
+            reply_to: ADMIN_EMAIL,
+            subject: "You’re on the Scholify launch waitlist 🏁",
+            html: confirmationEmail(name.split(/\s+/)[0] || "there"),
+          }),
         }),
-      })
-      if (!sent.ok) throw new Error(`confirmation_${sent.status}`)
+        resend("/emails", apiKey, {
+          method: "POST",
+          body: JSON.stringify({
+            from,
+            to: ADMIN_EMAIL,
+            reply_to: email,
+            subject: `New waitlist signup — ${name}`,
+            html: adminWaitlistEmail(name, email),
+          }),
+        }),
+      ])
+      if (!confirmation.ok) throw new Error(`confirmation_${confirmation.status}`)
+      if (!adminNotice.ok) throw new Error(`admin_notice_${adminNotice.status}`)
     }
     res.status(200).json({ ok: true, alreadyJoined: !isNew })
   } catch (error) {
