@@ -69,9 +69,29 @@ export default function Waitlist() {
 
       <header style={{ position: "relative", zIndex: 2, maxWidth: 1120, margin: "0 auto", padding: "24px clamp(20px,4vw,40px)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <ScholifyLockup size={32} color={INK} weight={800} />
-        <div style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 12, fontWeight: 800, color: RED, background: "#fff", border: "1px solid rgba(200,0,0,.14)", borderRadius: 999, padding: "9px 14px" }}>
-          <span style={{ width: 7, height: 7, borderRadius: 99, background: RED, boxShadow: "0 0 0 5px rgba(200,0,0,.08)" }} />
-          PRE-LAUNCH
+        <div style={{ display: "flex", gap: 9, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 12, fontWeight: 800, color: RED, background: "#fff", border: "1px solid rgba(200,0,0,.14)", borderRadius: 999, padding: "9px 14px" }}>
+            <span style={{ width: 7, height: 7, borderRadius: 99, background: RED, boxShadow: "0 0 0 5px rgba(200,0,0,.08)" }} />
+            PRE-LAUNCH
+          </div>
+          <Link
+            to="/partners/apply"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "9px 15px",
+              borderRadius: 999,
+              background: INK,
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 800,
+              textDecoration: "none",
+              boxShadow: "0 8px 24px rgba(20,20,26,.14)",
+            }}
+          >
+            Partner Program <ArrowRight size={14} />
+          </Link>
         </div>
       </header>
 
