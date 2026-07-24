@@ -6,7 +6,7 @@ import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import PaymentMethods from "@/components/PaymentMethods"
 import PartnerLogos from "@/components/ui/partner-logos"
-import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, PARTNER_PROGRAM_REVEAL_ISO } from "@/lib/launch"
+import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, PARTNER_PROGRAM_VISIBLE } from "@/lib/launch"
 
 const RED = "#C80000"
 const INK = "#14141A"
@@ -27,9 +27,6 @@ export default function Waitlist() {
   const reduced = useReducedMotion()
   const startedAt = useMemo(() => Date.now(), [])
   const [clock, setClock] = useState(remaining)
-  const [partnerProgramVisible, setPartnerProgramVisible] = useState(
-    () => Date.now() >= new Date(PARTNER_PROGRAM_REVEAL_ISO).getTime(),
-  )
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [website, setWebsite] = useState("")
@@ -38,11 +35,7 @@ export default function Waitlist() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    const updateScheduledContent = () => {
-      setClock(remaining())
-      setPartnerProgramVisible(Date.now() >= new Date(PARTNER_PROGRAM_REVEAL_ISO).getTime())
-    }
-    const timer = window.setInterval(updateScheduledContent, 30_000)
+    const timer = window.setInterval(() => setClock(remaining()), 30_000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -83,7 +76,7 @@ export default function Waitlist() {
             <span style={{ width: 7, height: 7, borderRadius: 99, background: RED, boxShadow: "0 0 0 5px rgba(200,0,0,.08)" }} />
             PRE-LAUNCH
           </div>
-          {partnerProgramVisible && (
+          {PARTNER_PROGRAM_VISIBLE && (
             <Link
               to="/partners/apply"
               style={{
