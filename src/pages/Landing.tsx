@@ -37,6 +37,7 @@ import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
+import VisionVideoSection from "@/components/VisionVideoSection"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE } from "@/lib/launch"
@@ -1975,6 +1976,7 @@ export default function Landing() {
         caption="Scholify prepares you for the ACCA qualification — the pathway studied at the world's leading institutions."
       />
       <CharlesCarousel />
+      <VisionVideoSection />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
