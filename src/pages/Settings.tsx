@@ -23,8 +23,6 @@ import { syncReminder } from "@/lib/reminders"
 import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
-import { listAffiliates, setAffiliateStatus, type AdminAffiliate } from "@/lib/affiliate"
-import { listWaitlist, type WaitlistContact } from "@/lib/waitlist"
 import {
   Icon,
   Badge,
@@ -687,6 +685,14 @@ export default function Settings() {
         : "Billed monthly · $14.99/month"
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "2026"
 
+  // Founder operations live exclusively at /admin. These legacy render guards
+  // stay false so Settings remains an account-preferences surface.
+  const isAdmin = false
+  const retention = { total: 0, day3: 0, day7: 0, converted: 0, limited: false }
+  const waitlist = { contacts: [] as Array<{ id: string; name: string; email: string; created_at: string }>, total: 0 }
+  const partners = [] as Array<{ id: string; name: string; code: string; email: string; university?: string; country?: string; socials?: string; audience_size?: string; status: string }>
+  const reviewPartner = async (_id: string, _status: string) => false
+
   /* Referrals */
   const referralLink = useMemo(() => referralUrl(getReferralCode(user)), [user])
   const referralStats = useMemo(() => getReferralStats(user), [user])
@@ -698,83 +704,6 @@ export default function Settings() {
       toast.error("Couldn't copy — select the link and copy it manually.")
     }
   }, [referralLink, toast])
-
-  /* Admin retention view — owner only. */
-  const isAdmin = user?.email?.toLowerCase() === "scholifyaiapp@gmail.com"
-  const [retention, setRetention] = useState<{
-    total: number
-    day3: number
-    day7: number
-    converted: number
-    limited: boolean
-  } | null>(null)
-  useEffect(() => {
-    if (!isAdmin || !isSupabaseConfigured) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("day3_retained, day7_retained, converted_to_paid")
-        if (error || !data || cancelled) return
-        const total = data.length
-        setRetention({
-          total,
-          day3: data.filter((r) => r.day3_retained).length,
-          day7: data.filter((r) => r.day7_retained).length,
-          converted: data.filter((r) => r.converted_to_paid).length,
-          limited: total <= 1,
-        })
-      } catch {
-        /* ignore — falls back to the PostHog note */
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [isAdmin])
-
-  /* Launch waitlist — owner only. */
-  const [waitlist, setWaitlist] = useState<{
-    contacts: WaitlistContact[]
-    total: number
-  } | null>(null)
-  useEffect(() => {
-    if (!isAdmin) return
-    let cancelled = false
-    void listWaitlist()
-      .then((result) => {
-        if (!cancelled) setWaitlist(result)
-      })
-      .catch(() => {
-        if (!cancelled) setWaitlist({ contacts: [], total: 0 })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isAdmin])
-
-  /* Admin partner-application review — owner only. */
-  const [partners, setPartners] = useState<AdminAffiliate[] | null>(null)
-  useEffect(() => {
-    if (!isAdmin) return
-    let cancelled = false
-    void listAffiliates().then((list) => {
-      if (!cancelled) setPartners(list)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [isAdmin])
-
-  const reviewPartner = useCallback(
-    async (id: string, status: string) => {
-      const ok = await setAffiliateStatus(id, status)
-      if (ok) setPartners((prev) => (prev ? prev.map((p) => (p.id === id ? { ...p, status } : p)) : prev))
-      else toast.error("Couldn't update — try again.")
-    },
-    [toast],
-  )
 
   /* Auto-saving settings */
   const update = useCallback(

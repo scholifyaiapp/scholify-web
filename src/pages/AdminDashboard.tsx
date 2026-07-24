@@ -6,6 +6,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import { useAuth } from "@/lib/auth"
 import { isLaunchAdmin } from "@/lib/launch"
 import { supabase } from "@/lib/supabase"
+import { setAffiliateStatus } from "@/lib/affiliate"
 
 type Data = {
   generatedAt: string
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
+  const [reviewing, setReviewing] = useState("")
   const [tab, setTab] = useState<"overview" | "users" | "waitlist" | "partners" | "journeys">("overview")
 
   const load = async () => {
@@ -51,6 +53,14 @@ export default function AdminDashboard() {
     const labels = ["Signed up", "Onboarded", "Diagnostic", "Study session", "Upgrade intent", "Subscribed"]
     return labels.map((label, index) => ({ label, value: Number(data?.posthog.funnel[index] || 0) }))
   }, [data])
+
+  const reviewPartner = async (id: string, status: "active" | "rejected" | "pending") => {
+    setReviewing(id)
+    const ok = await setAffiliateStatus(id, status)
+    if (ok) setData((current) => current ? { ...current, partners: current.partners.map((partner) => partner.id === id ? { ...partner, status } : partner) } : current)
+    else setError("The partner status could not be updated. Please try again.")
+    setReviewing("")
+  }
 
   if (authLoading) return null
   if (!isLaunchAdmin(user)) return <Navigate to="/" replace />
@@ -83,13 +93,21 @@ export default function AdminDashboard() {
           {tab === "overview" && <Overview data={data} />}
           {tab === "users" && <Table title="Registered users" columns={["User", "Plan", "Joined", "Last sign-in", "Journey"]} rows={data.users.map((u) => [<span><b>{u.name || "Unnamed"}</b><small>{u.email}</small></span>, u.plan, date(u.createdAt), date(u.lastSignInAt), <Journey user={u} />])} />}
           {tab === "waitlist" && <Table title={`Launch waitlist · ${data.waitlist.length}`} columns={["Contact", "Source", "Joined"]} rows={data.waitlist.map((w) => [<span><b>{w.name}</b><small>{w.email}</small></span>, w.source || "website", date(w.created_at)])} />}
-          {tab === "partners" && <Table title={`Partner traction · ${data.partners.length}`} columns={["Partner", "Status", "Clicks", "Sales", "Revenue", "Commission"]} rows={data.partners.map((p) => [<span><b>{p.name} · {p.code}</b><small>{p.email}</small></span>, <Pill value={p.status} />, p.clicks, p.sales, money(p.revenue), money(p.commission)])} />}
+          {tab === "partners" && <PartnerTable partners={data.partners} reviewing={reviewing} onReview={reviewPartner} />}
           {tab === "journeys" && <Journeys data={data} funnel={funnel} />}
         </>}
       </div>
       <style>{`small{display:block;color:#777780;font-size:11px;margin-top:3px}.admin-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}@media(max-width:850px){.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-charles{display:none}}@media(max-width:520px){.admin-grid{grid-template-columns:1fr}}`}</style>
     </main>
   )
+}
+
+function PartnerTable({ partners, reviewing, onReview }: { partners: Data["partners"]; reviewing: string; onReview: (id: string, status: "active" | "rejected" | "pending") => Promise<void> }) {
+  return <section style={{ ...card, overflow: "hidden" }}><div style={{ padding: "18px 20px", fontWeight: 850, borderBottom: "1px solid rgba(20,20,26,.07)" }}>Partner applications and traction · {partners.length}</div><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}><thead><tr>{["Partner", "Status", "Clicks", "Sales", "Revenue", "Commission", "Decision"].map((column) => <th key={column} style={{ padding: "11px 16px", textAlign: "left", color: C.muted, background: "rgba(20,20,26,.025)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em" }}>{column}</th>)}</tr></thead><tbody>{partners.length ? partners.map((partner) => <tr key={partner.id}><td style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)", fontSize: 12 }}><b>{partner.name} · {partner.code}</b><small>{partner.email}</small></td><td style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)" }}><Pill value={partner.status} /></td>{[partner.clicks, partner.sales, money(partner.revenue), money(partner.commission)].map((value, index) => <td key={index} style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)", fontSize: 12 }}>{value}</td>)}<td style={{ padding: "10px 16px", borderTop: "1px solid rgba(20,20,26,.055)", whiteSpace: "nowrap" }}><div style={{ display: "flex", gap: 6 }}>{partner.status !== "active" && <Action label="Approve" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "active")} primary />}{partner.status !== "rejected" && <Action label="Reject" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "rejected")} />}{partner.status !== "pending" && <Action label="Pending" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "pending")} />}</div></td></tr>) : <tr><td colSpan={7} style={{ padding: 30, color: C.muted, textAlign: "center" }}>No partner applications yet.</td></tr>}</tbody></table></div></section>
+}
+
+function Action({ label, disabled, onClick, primary = false }: { label: string; disabled: boolean; onClick: () => void; primary?: boolean }) {
+  return <button type="button" disabled={disabled} onClick={onClick} style={{ border: primary ? 0 : "1px solid rgba(20,20,26,.12)", borderRadius: 8, padding: "7px 10px", background: primary ? C.ink : "#fff", color: primary ? "#fff" : C.ink, fontSize: 10, fontWeight: 850, cursor: disabled ? "wait" : "pointer", opacity: disabled ? .55 : 1 }}>{label}</button>
 }
 
 function Overview({ data }: { data: Data }) {
