@@ -149,16 +149,54 @@ export default function Waitlist() {
       </section>
 
       <section style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 clamp(20px,4vw,40px) 34px" }}>
-        <div style={{ background: INK, color: "#fff", borderRadius: 24, padding: "clamp(24px,4vw,38px)", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 28 }} className="waitlist-countdown">
-          <div><div style={{ color: "#F4A405", fontSize: 10, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase" }}>Race control countdown</div><div style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 850, letterSpacing: "-.035em", marginTop: 8 }}>Public access opens 10 August.</div></div>
-          <div style={{ display: "flex", gap: 10 }}>
+        <motion.div
+          initial={reduced ? false : { scale: .96, opacity: 0 }}
+          whileInView={reduced ? undefined : { scale: 1, opacity: 1 }}
+          viewport={{ once: true, amount: .35 }}
+          animate={reduced ? undefined : {
+            boxShadow: [
+              "0 0 0 1px rgba(244,164,5,.35),0 12px 34px -16px rgba(244,164,5,.28)",
+              "0 0 0 1px rgba(244,164,5,.85),0 24px 58px -12px rgba(244,164,5,.5)",
+              "0 0 0 1px rgba(244,164,5,.35),0 12px 34px -16px rgba(244,164,5,.28)",
+            ],
+          }}
+          transition={{
+            boxShadow: { duration: 2.8, repeat: Infinity, ease: "easeInOut" },
+            scale: { duration: .55, ease: [0.16, 1, 0.3, 1] },
+          }}
+          style={{ background: "linear-gradient(135deg,#1b1b22 0%,#2a1215 60%,#3a0d1e 100%)", color: "#fff", border: "1px solid rgba(244,164,5,.4)", borderRadius: 24, padding: "clamp(24px,4vw,38px)", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 28, position: "relative", overflow: "hidden" }}
+          className="waitlist-countdown"
+        >
+          {!reduced && (
+            <motion.div
+              aria-hidden
+              initial={{ x: "-130%" }}
+              animate={{ x: "230%" }}
+              transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+              style={{ position: "absolute", inset: 0, width: "42%", background: "linear-gradient(105deg,transparent,rgba(244,164,5,.2) 45%,rgba(255,255,255,.3) 50%,rgba(244,164,5,.2) 55%,transparent)", mixBlendMode: "screen", pointerEvents: "none" }}
+            />
+          )}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#F4A405", fontSize: 10, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase" }}>
+              <motion.span
+                aria-hidden
+                animate={reduced ? undefined : { opacity: [1, .35, 1], scale: [1, 1.5, 1] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                style={{ width: 7, height: 7, borderRadius: 99, background: "#F4A405", boxShadow: "0 0 9px #F4A405" }}
+              />
+              Race control · live
+            </div>
+            <div style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 850, letterSpacing: "-.035em", marginTop: 9 }}>Public access opens 10 August.</div>
+            <div style={{ color: "rgba(255,255,255,.58)", fontSize: 12, marginTop: 8 }}>The starting grid opens when the complete Scholify experience is ready.</div>
+          </div>
+          <div style={{ display: "flex", gap: 10, position: "relative", zIndex: 1 }}>
             {[[clock.days, "days"], [clock.hours, "hours"], [clock.minutes, "minutes"]].map(([value, label]) => (
-              <div key={label} style={{ minWidth: 76, textAlign: "center", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: "12px 10px" }}>
-                <div style={{ fontSize: 25, fontWeight: 900 }}>{String(value).padStart(2, "0")}</div><div style={{ color: "rgba(255,255,255,.55)", fontSize: 9, textTransform: "uppercase", letterSpacing: ".12em", marginTop: 3 }}>{label}</div>
+              <div key={label} style={{ minWidth: 78, textAlign: "center", background: "rgba(255,255,255,.075)", border: "1px solid rgba(244,164,5,.24)", borderRadius: 14, padding: "13px 10px", boxShadow: "inset 0 1px 0 rgba(255,255,255,.08)" }}>
+                <div style={{ fontSize: 27, fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>{String(value).padStart(2, "0")}</div><div style={{ color: "#F4A405", fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".12em", marginTop: 3 }}>{label}</div>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <section style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "58px clamp(20px,4vw,40px) 86px" }}>
