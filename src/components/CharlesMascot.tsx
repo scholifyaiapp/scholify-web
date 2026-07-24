@@ -5,10 +5,9 @@ import type { CSSProperties } from "react"
  * Charles — the little big-helmet mascot. Renders a pose with a spring pop-in
  * and a gentle perpetual float (one ambient element, reduced-motion safe).
  *
- * Some source renders are on a dark radial background, some are transparent.
- * `DARK` poses get a rounded dark "portrait" frame so the background reads as
- * intentional; transparent poses drop straight onto any surface with a soft
- * brand drop-shadow.
+ * Every source render is transparent, so Charles drops straight onto any
+ * surface with a soft brand shadow. A frame remains available as an explicit
+ * opt-in for rare portrait treatments, but is never added automatically.
  */
 export type CharlesPose =
   | "wave" | "present" | "chart" | "celebrate" | "idea" | "calm" | "thumbsup"
@@ -29,12 +28,6 @@ const SRC: Record<CharlesPose, string> = {
   run: "/charles/13.webp", // running + speed lines — momentum / streak
   wave2: "/charles/10.webp", // waving hello (alt) — greeting
 }
-// Only these three source renders sit on a dark background.
-const DARK: Record<CharlesPose, boolean> = {
-  wave: false, present: true, chart: true, celebrate: false, idea: false, calm: false, thumbsup: true,
-  plan: false, success: false, thinking: false, start: false, run: false, wave2: false,
-}
-
 /*
  * PLUG-AND-PLAY REAL ANIMATION.
  * Drop a TRANSPARENT animated file (animated WebP / APNG / GIF) into
@@ -63,13 +56,13 @@ export default function CharlesMascot({
   size?: number | string
   /** Gentle idle bob. */
   float?: boolean
-  /** Force the dark rounded portrait frame on/off (defaults per-pose). */
+  /** Explicitly opt into a dark rounded portrait frame. */
   frame?: boolean
   delay?: number
   style?: CSSProperties
 }) {
   const reduced = useReducedMotion()
-  const framed = frame ?? DARK[pose]
+  const framed = frame ?? false
   // Real animated file wins; when present, let the frames animate (no CSS float).
   const animSrc = ANIM[pose]
   const doFloat = float && !animSrc
