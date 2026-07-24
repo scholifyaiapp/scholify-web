@@ -4,6 +4,8 @@ import { motion, useReducedMotion } from "motion/react"
 import { ArrowRight, BrainCircuit, CalendarDays, Check, Gauge, ShieldCheck, Sparkles } from "lucide-react"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
+import PaymentMethods from "@/components/PaymentMethods"
+import PartnerLogos from "@/components/ui/partner-logos"
 import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL } from "@/lib/launch"
 
 const RED = "#C80000"
@@ -271,6 +273,39 @@ export default function Waitlist() {
             )
           })}
         </div>
+      </section>
+
+      <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(20,20,26,.07)", borderBottom: "1px solid rgba(20,20,26,.07)", background: "rgba(255,255,255,.46)" }}>
+        <PartnerLogos
+          heading="The ACCA learning ecosystem"
+          caption="Scholify prepares learners for a qualification studied across leading universities and professional education organisations."
+        />
+      </div>
+
+      <section style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "68px clamp(20px,4vw,40px) 78px" }}>
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 22 }}
+          whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: .3 }}
+          transition={{ duration: .6, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            background: "rgba(255,255,255,.9)",
+            border: "1px solid rgba(20,20,26,.08)",
+            borderRadius: 24,
+            padding: "clamp(28px,5vw,48px)",
+            boxShadow: "0 22px 64px rgba(20,20,26,.07)",
+            backdropFilter: "blur(16px)",
+          }}
+        >
+          <div style={{ textAlign: "center", maxWidth: 650, margin: "0 auto 28px" }}>
+            <div style={{ color: RED, fontSize: 10, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase" }}>Ready for launch day</div>
+            <h2 style={{ fontSize: "clamp(27px,4vw,40px)", letterSpacing: "-.04em", margin: "11px 0 10px" }}>Simple, secure checkout.</h2>
+            <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+              Joining the waitlist is completely free—no payment details are collected. When paid plans open, checkout will be securely processed by Stripe.
+            </p>
+          </div>
+          <PaymentMethods heading="" />
+        </motion.div>
       </section>
 
       <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(20,20,26,.08)", padding: "23px clamp(20px,4vw,40px)", maxWidth: 1120, margin: "0 auto", display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap", color: MUTED, fontSize: 12 }}>
