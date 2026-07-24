@@ -261,6 +261,12 @@ async function sendPartnerEmail(payload: {
   if (!response.ok) throw new Error(`Resend returned ${response.status}`)
 }
 
+async function sendAllPartnerEmails(messages: Promise<void>[]): Promise<void> {
+  const results = await Promise.allSettled(messages)
+  const failures = results.filter((result) => result.status === "rejected")
+  if (failures.length > 0) throw new Error(`${failures.length} partner email send(s) failed`)
+}
+
 /** Email the admin and applicant when a new partner application arrives. */
 async function notifyApplication(app: {
   name: string
@@ -298,7 +304,7 @@ async function notifyApplication(app: {
     charles: true,
   })
 
-  await Promise.all([
+  await sendAllPartnerEmails([
     sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml }),
     sendPartnerEmail({ to: app.email, subject: "Your Scholify partner application is pending review", html: applicantHtml }),
   ])
@@ -360,7 +366,7 @@ async function notifyApplicationDecision(app: {
       html: adminHtml,
     }))
   }
-  await Promise.all(sends)
+  await sendAllPartnerEmails(sends)
 }
 
 async function resolve(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
