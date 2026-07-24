@@ -178,7 +178,28 @@ export default function Waitlist() {
 
       <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(20,20,26,.08)", padding: "23px clamp(20px,4vw,40px)", maxWidth: 1120, margin: "0 auto", display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap", color: MUTED, fontSize: 12 }}>
         <span>© 2026 Scholify · Learn Daily, Grow Steadily</span>
-        <span><Link to="/privacy" style={{ color: "inherit" }}>Privacy</Link> · <Link to="/terms" style={{ color: "inherit" }}>Terms</Link> · <Link to="/sign-in?team=1" style={{ color: "inherit" }}>Team access</Link></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span>
+            <Link to="/privacy" style={{ color: "inherit" }}>Privacy</Link> · <Link to="/terms" style={{ color: "inherit" }}>Terms</Link>
+          </span>
+          <Link
+            to="/sign-in?team=1"
+            aria-label="Open the private Scholify admin panel"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 13px",
+              borderRadius: 999,
+              background: INK,
+              color: "#fff",
+              fontWeight: 800,
+              textDecoration: "none",
+            }}
+          >
+            Admin Panel <ArrowRight size={13} />
+          </Link>
+        </span>
       </footer>
 
       <style>{`
