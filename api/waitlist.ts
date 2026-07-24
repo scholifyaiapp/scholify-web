@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
+import postgres from "postgres"
 
 const RESEND_API = "https://api.resend.com"
-const SEGMENT_NAME = "Scholify Launch Waitlist — 10 August 2026"
 const ADMIN_EMAIL = "scholifyapp@gmail.com"
 const SITE_URL = "https://www.scholifyapp.com"
 
@@ -18,45 +18,30 @@ async function resend(path: string, apiKey: string, init?: RequestInit): Promise
   })
 }
 
-async function waitlistSegmentId(apiKey: string): Promise<string> {
-  const list = await resend("/segments", apiKey)
-  if (!list.ok) throw new Error(`segment_list_${list.status}`)
-  const json = (await list.json()) as { data?: Array<{ id: string; name: string }> }
-  const existing = json.data?.find((segment) => segment.name === SEGMENT_NAME)
-  if (existing) return existing.id
-
-  const created = await resend("/segments", apiKey, {
-    method: "POST",
-    body: JSON.stringify({ name: SEGMENT_NAME }),
-  })
-  if (!created.ok) throw new Error(`segment_create_${created.status}`)
-  const result = (await created.json()) as { id?: string }
-  if (!result.id) throw new Error("segment_create_missing_id")
-  return result.id
-}
-
-async function addContact(apiKey: string, segmentId: string, email: string, name: string): Promise<boolean> {
-  const created = await resend("/contacts", apiKey, {
-    method: "POST",
-    body: JSON.stringify({
-      email,
-      first_name: name,
-      unsubscribed: false,
-      segments: [{ id: segmentId }],
-    }),
-  })
-  if (created.ok) return true
-  if (created.status !== 409 && created.status !== 422) throw new Error(`contact_create_${created.status}`)
-
-  const existing = await resend(`/contacts/${encodeURIComponent(email)}`, apiKey)
-  if (!existing.ok) throw new Error(`contact_lookup_${existing.status}`)
-  const added = await resend(
-    `/contacts/${encodeURIComponent(email)}/segments/${encodeURIComponent(segmentId)}`,
-    apiKey,
-    { method: "POST", body: "{}" },
-  )
-  if (!added.ok && added.status !== 409) throw new Error(`contact_segment_${added.status}`)
-  return false
+async function saveContact(email: string, name: string): Promise<boolean> {
+  const connection = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL
+  if (!connection) throw new Error("database_not_configured")
+  const sql = postgres(connection, { max: 1, prepare: false, connect_timeout: 10, idle_timeout: 5 })
+  try {
+    await sql`
+      create table if not exists public.launch_waitlist (
+        id uuid primary key default gen_random_uuid(),
+        email text not null unique,
+        name text not null,
+        source text not null default 'website',
+        created_at timestamptz not null default now()
+      )
+    `
+    const rows = await sql<{ id: string }[]>`
+      insert into public.launch_waitlist (email, name)
+      values (${email}, ${name})
+      on conflict (email) do nothing
+      returning id
+    `
+    return rows.length > 0
+  } finally {
+    await sql.end({ timeout: 5 })
+  }
 }
 
 function confirmationEmail(firstName: string): string {
@@ -109,8 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
   try {
-    const segmentId = await waitlistSegmentId(apiKey)
-    const isNew = await addContact(apiKey, segmentId, email, name)
+    const isNew = await saveContact(email, name)
     if (isNew) {
       const sent = await resend("/emails", apiKey, {
         method: "POST",
