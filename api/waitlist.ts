@@ -97,15 +97,32 @@ function confirmationEmail(firstName: string): string {
       </td></tr>
       <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#C80000;text-transform:uppercase;">Launch waitlist · Position secured</td></tr>
       <tr><td style="padding:8px 32px 0;font-size:28px;line-height:35px;font-weight:800;color:#14141A;">You’re on the starting grid, ${safeName}.</td></tr>
-      <tr><td style="padding:14px 32px 8px;font-size:15px;line-height:24px;color:#5F5753;">Thanks for joining the Scholify launch waitlist. We’re completing the final checks now so your first experience feels fast, focused and genuinely useful.</td></tr>
-      <tr><td style="padding:14px 32px 24px;">
-        <div style="background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;padding:18px;">
-          <div style="font-size:10px;font-weight:800;letter-spacing:1.4px;color:#C80000;text-transform:uppercase;">Official launch</div>
-          <div style="font-size:22px;font-weight:800;color:#14141A;margin-top:6px;">10 August 2026</div>
-          <div style="font-size:13px;line-height:20px;color:#6B6460;margin-top:6px;">We’ll email you when access opens. No unfinished dashboard. No broken first lap.</div>
-        </div>
+      <tr><td style="padding:14px 32px 8px;font-size:15px;line-height:24px;color:#5F5753;">Your place is reserved. We’re giving every final detail the attention it deserves so that, from your first session, Scholify feels focused, polished and built around your ACCA journey.</td></tr>
+      <tr><td style="padding:16px 32px 12px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#14141A;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:22px 22px 21px;">
+              <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;color:#FFB3B3;text-transform:uppercase;">Official launch</div>
+              <div style="font-size:25px;line-height:32px;font-weight:800;color:#FFFFFF;margin-top:7px;">10 August 2026</div>
+              <div style="width:42px;height:3px;background:#C80000;border-radius:99px;margin-top:14px;font-size:0;">&nbsp;</div>
+              <div style="font-size:13px;line-height:21px;color:#D8D5D2;margin-top:13px;">We’ll send your access email as soon as the starting lights go out.</div>
+            </td>
+          </tr>
+        </table>
       </td></tr>
-      <tr><td style="padding:0 32px 28px;"><a href="${SITE_URL}" style="display:inline-block;background:#C80000;color:#fff;text-decoration:none;font-size:14px;font-weight:800;padding:13px 22px;border-radius:12px;">See the Scholify preview</a></td></tr>
+      <tr><td style="padding:16px 32px 30px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:#8F8C85;text-transform:uppercase;margin-bottom:13px;">What happens next</div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td valign="top" width="28" style="padding:0 0 13px;"><div style="width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:#FCEBEC;color:#C80000;font-size:11px;font-weight:800;">1</div></td>
+            <td valign="top" style="padding:1px 0 13px;font-size:13px;line-height:19px;color:#5F5753;"><strong style="color:#14141A;">Your place stays secured.</strong> There’s nothing else you need to do.</td>
+          </tr>
+          <tr>
+            <td valign="top" width="28"><div style="width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:#FCEBEC;color:#C80000;font-size:11px;font-weight:800;">2</div></td>
+            <td valign="top" style="padding-top:1px;font-size:13px;line-height:19px;color:#5F5753;"><strong style="color:#14141A;">Watch your inbox.</strong> Your launch invitation will arrive here when access opens.</td>
+          </tr>
+        </table>
+      </td></tr>
       <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Scholify · From F1 to ACCA member.<br><a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a></td></tr>
     </table>
   </td></tr></table></body></html>`
