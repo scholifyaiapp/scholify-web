@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
+import { createClient } from "@supabase/supabase-js"
 
 /*
  * Ops endpoint — health + security introspection. Dispatches by `?action=` to
@@ -27,8 +28,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   if (action === "health") return health(req, res)
   if (action === "security") return securityCheck(req, res)
+  if (action === "reset-prelaunch-once") return resetPrelaunchOnce(req, res)
 
   res.status(400).json({ error: "Unknown action. Use ?action=health | security." })
+}
+
+const ONE_TIME_RESET_TOKEN = "6f523179d8cb4157a707d751275f40d1"
+
+async function resetPrelaunchOnce(req: VercelRequest, res: VercelResponse): Promise<void> {
+  res.setHeader("Cache-Control", "no-store")
+  if (req.method !== "POST") {
+    res.status(405).json({ ok: false, reason: "post_only" })
+    return
+  }
+  const body = (req.body || {}) as Record<string, unknown>
+  if (String(body.token || "") !== ONE_TIME_RESET_TOKEN) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    res.status(503).json({ ok: false, reason: "database_not_configured" })
+    return
+  }
+  const admin = createClient(url, key, { auth: { persistSession: false } })
+  const tables = ["affiliate_commissions", "affiliates", "launch_waitlist"] as const
+  const before: Record<string, number> = {}
+  const after: Record<string, number> = {}
+  for (const table of tables) {
+    const { count, error } = await admin.from(table).select("*", { count: "exact", head: true })
+    if (error) {
+      res.status(500).json({ ok: false, reason: `count_${table}_failed` })
+      return
+    }
+    before[table] = count || 0
+  }
+  if (!Boolean(body.dryRun)) {
+    for (const table of tables) {
+      const { error } = await admin.from(table).delete().not("id", "is", null)
+      if (error) {
+        res.status(500).json({ ok: false, reason: `delete_${table}_failed` })
+        return
+      }
+    }
+  }
+  for (const table of tables) {
+    const { count } = await admin.from(table).select("*", { count: "exact", head: true })
+    after[table] = count || 0
+  }
+  res.status(200).json({ ok: true, dryRun: Boolean(body.dryRun), before, after })
 }
 
 /* ── Health check ────────────────────────────────────────────────────────

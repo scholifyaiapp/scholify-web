@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
+const ANALYTICS_BASELINE = "2026-07-24 10:56:32"
 
 type Row = Record<string, unknown>
 
@@ -111,10 +112,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     try {
       const [events, funnel] = await Promise.all([
         posthogQuery(
-          "SELECT event, count() AS events, uniqExact(person_id) AS people FROM events WHERE timestamp >= now() - INTERVAL 30 DAY GROUP BY event ORDER BY events DESC LIMIT 20",
+          `SELECT event, count() AS events, uniqExact(person_id) AS people FROM events WHERE timestamp >= toDateTime('${ANALYTICS_BASELINE}') GROUP BY event ORDER BY events DESC LIMIT 20`,
         ),
         posthogQuery(
-          "SELECT countIf(event='signup_completed'), countIf(event='onboarding_complete'), countIf(event='diagnostic_completed'), countIf(event='session_completed'), countIf(event='upgrade_started'), countIf(event='subscription_activated') FROM events WHERE timestamp >= now() - INTERVAL 30 DAY",
+          `SELECT countIf(event='signup_completed'), countIf(event='onboarding_complete'), countIf(event='diagnostic_completed'), countIf(event='session_completed'), countIf(event='upgrade_started'), countIf(event='subscription_activated') FROM events WHERE timestamp >= toDateTime('${ANALYTICS_BASELINE}')`,
         ),
       ])
       if (events && funnel) posthog = { connected: true, events, funnel: funnel[0] || [] }
@@ -125,6 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.status(200).json({
       ok: true,
       generatedAt: new Date().toISOString(),
+      analyticsBaseline: `${ANALYTICS_BASELINE}Z`,
       summary: {
         users: users.length,
         active7d: users.filter((user) => user.lastSignInAt && Date.now() - new Date(user.lastSignInAt).getTime() <= 604_800_000).length,
