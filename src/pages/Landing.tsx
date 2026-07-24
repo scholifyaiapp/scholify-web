@@ -37,7 +37,6 @@ import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
-import VisionVideoSection from "@/components/VisionVideoSection"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE } from "@/lib/launch"
@@ -1323,23 +1322,69 @@ const MILESTONE_PHOTOS: Array<{ id: string; image: string; altKey: string }> = [
 
 function MilestoneGallery() {
   const t = useT()
+  const reveal = {
+    hidden: { opacity: 0, y: 32 },
+    visible: (index: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: index * 0.12, duration: 0.6, ease: EASE_DECISIVE },
+    }),
+  }
   return (
     <section style={{ padding: "56px 24px", background: BG_SECONDARY }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
-        <SectionLabel>{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
+        <motion.div
+          custom={0}
+          variants={reveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+        >
+          <SectionLabel>{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
+        </motion.div>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(28px, 4vw, 44px)", color: INK, margin: "14px 0 0", lineHeight: 1.12 }}>
-          {t("Every paper closes with")}{" "}
-          <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("a real document.")}</em>
+          {[
+            { text: t("Every paper closes with"), emphasis: false },
+            { text: t("a real document."), emphasis: true },
+          ].map((part, index) => (
+            <span key={part.text} className="inline-block overflow-hidden" style={{ paddingBottom: 3 }}>
+              <motion.span
+                className={part.emphasis ? "grad-hero-text" : undefined}
+                initial={{ y: "110%" }}
+                whileInView={{ y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ delay: 0.16 + index * 0.14, duration: 0.7, ease: EASE_DECISIVE }}
+                style={{ display: "inline-block", fontStyle: part.emphasis ? "italic" : "normal", marginLeft: index ? "0.24em" : 0 }}
+              >
+                {part.text}
+              </motion.span>
+            </span>
+          ))}
         </h2>
-        <p style={{ color: INK_MUTED, fontSize: 15, maxWidth: 520, margin: "14px auto 0", lineHeight: 1.6 }}>
+        <motion.p
+          custom={3}
+          variants={reveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          style={{ color: INK_MUTED, fontSize: 15, maxWidth: 520, margin: "14px auto 0", lineHeight: 1.6 }}
+        >
           {t("ACCA issues the certificate. Scholify gets you there.")}
-        </p>
+        </motion.p>
 
-        <InteractiveFolderGallery
-          folderName={t("Your qualification.folder")}
-          dragHintText={t("Drag any card down to close")}
-          photos={MILESTONE_PHOTOS.map((p) => ({ id: p.id, image: p.image, alt: t(p.altKey) }))}
-        />
+        <motion.div
+          custom={4}
+          variants={reveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          <InteractiveFolderGallery
+            folderName={t("Your qualification.folder")}
+            dragHintText={t("Drag any card down to close")}
+            photos={MILESTONE_PHOTOS.map((p) => ({ id: p.id, image: p.image, alt: t(p.altKey) }))}
+          />
+        </motion.div>
       </div>
     </section>
   )
@@ -1976,7 +2021,6 @@ export default function Landing() {
         caption="Scholify prepares you for the ACCA qualification — the pathway studied at the world's leading institutions."
       />
       <CharlesCarousel />
-      <VisionVideoSection />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
