@@ -195,27 +195,30 @@ async function sendEmail(
   to: string,
   unsubUrl: string,
 ): Promise<boolean> {
-  // Email-safe PNG (Outlook/Apple Mail don't render the app's .webp avatars).
+  // Email-safe PNG assets (Outlook/Apple Mail don't reliably render SVG/WebP).
   const avatar = `${SITE}/charles/email-avatar.png`
-  // ACCA brand palette on warm paper — the same accents the app uses.
-  const html = `
-  <div style="font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:28px;color:#2A2320;">
-    <img src="${avatar}" width="56" height="56" alt="Charles"
-         style="display:block;width:56px;height:56px;border-radius:50%;margin-bottom:16px;" />
-    <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">Today's session is ready 👋</div>
-    <p style="font-size:15px;line-height:1.6;color:#6B5F58;">
-      Twenty minutes today moves your Exam Readiness Score more than three hours the night before.
-      Your next questions are picked and waiting.
-    </p>
-    <a href="${SITE}/study"
-       style="display:inline-block;margin-top:14px;background:#C80000;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 26px;border-radius:12px;">
-      Start today's session →
-    </a>
-    <p style="font-size:12px;color:#9C8F87;margin-top:22px;">
-      — Charles · Your Scholify race engineer.<br/>
-      <a href="${unsubUrl}" style="color:#9C8F87;">Unsubscribe</a> · or manage reminders in Settings.
-    </p>
-  </div>`
+  const logo = `${SITE}/icon-192.png`
+  // Premium Scholify frame shared by reminders and transactional notifications.
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
+        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
+        <tr><td style="padding:28px 32px 18px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td valign="middle"><img src="${avatar}" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;"></td>
+            <td align="right" valign="middle"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">Charles &middot; Daily race briefing</td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">Today's session is ready 👋</td></tr>
+        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">Twenty minutes today moves your Exam Readiness Score more than three hours the night before. Your next questions are picked and waiting.</td></tr>
+        <tr><td style="padding:8px 32px 30px;"><a href="${SITE}/study" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">Start today's session →</a></td></tr>
+        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or manage reminders in Settings.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+  </body></html>`
   // Plain-text alternative — lowers spam score and covers text-only clients.
   const text = [
     "Today's session is ready.",

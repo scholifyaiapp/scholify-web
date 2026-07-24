@@ -92,7 +92,7 @@ function confirmationEmail(firstName: string): string {
       <tr><td style="padding:28px 32px 16px;">
         <table role="presentation" width="100%"><tr>
           <td><img src="${SITE_URL}/charles/email-avatar.png" width="68" height="68" alt="Charles from Scholify" style="display:block;border-radius:17px;border:1px solid #E8E0DC;"></td>
-          <td align="right" style="font-size:23px;font-weight:800;color:#14141A;">Scholify<span style="color:#C80000;">.</span><div style="font-size:9px;letter-spacing:2px;color:#8F8C85;margin-top:4px;">LEARN DAILY · GROW STEADILY</div></td>
+          <td align="right" valign="middle"><img src="${SITE_URL}/icon-192.png" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
         </tr></table>
       </td></tr>
       <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#C80000;text-transform:uppercase;">Launch waitlist · Position secured</td></tr>
@@ -135,7 +135,12 @@ function adminWaitlistEmail(name: string, email: string): string {
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
       <tr><td style="height:5px;background:linear-gradient(90deg,#C80000,#E50068,#F4A405);font-size:0;">&nbsp;</td></tr>
-      <tr><td style="padding:28px 32px 12px;font-size:23px;font-weight:800;color:#14141A;">Scholify<span style="color:#C80000;">.</span></td></tr>
+      <tr><td style="padding:28px 32px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+          <td valign="middle"><img src="${SITE_URL}/charles/email-avatar.png" width="68" height="68" alt="Charles from Scholify" style="display:block;width:68px;height:68px;border-radius:17px;border:1px solid #E8E0DC;"></td>
+          <td align="right" valign="middle"><img src="${SITE_URL}/icon-192.png" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
+        </tr></table>
+      </td></tr>
       <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#C80000;text-transform:uppercase;">Race control · New waitlist signup</td></tr>
       <tr><td style="padding:9px 32px 0;font-size:28px;line-height:35px;font-weight:800;color:#14141A;">A new learner joined the grid.</td></tr>
       <tr><td style="padding:18px 32px 26px;">

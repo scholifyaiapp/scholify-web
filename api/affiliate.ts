@@ -209,9 +209,10 @@ function emailFrame(options: {
         <a href="${escapeHtml(options.cta.href)}" style="display:inline-block;background:#C80000;color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">${escapeHtml(options.cta.label)}</a>
       </td></tr>`
     : ""
-  const charles = options.charles
-    ? `<img src="${SITE_URL}/charles/email-avatar.png" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;">`
-    : `<img src="${SITE_URL}/icon-192.png" width="56" height="56" alt="Scholify" style="display:block;width:56px;height:56px;border-radius:14px;">`
+  const brandHeader = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+    <td valign="middle"><img src="${SITE_URL}/charles/email-avatar.png" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;"></td>
+    <td align="right" valign="middle"><img src="${SITE_URL}/icon-192.png" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
+  </tr></table>`
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
@@ -219,10 +220,7 @@ function emailFrame(options: {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
         <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
         <tr><td style="padding:28px 32px 18px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td>${charles}</td>
-            <td align="right" style="font-size:23px;font-weight:800;letter-spacing:-0.6px;color:#14141A;">Scholify<span style="color:#C80000;">.</span><div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#8F8C85;margin-top:4px;">LEARN DAILY · GROW STEADILY</div></td>
-          </tr></table>
+          ${brandHeader}
         </td></tr>
         <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">${escapeHtml(options.eyebrow)}</td></tr>
         <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${escapeHtml(options.title)}</td></tr>
