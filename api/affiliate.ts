@@ -71,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.status(400).json({ ok: false, reason: "unknown_action" })
 }
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "scholifyaiapp@gmail.com").toLowerCase()
+const ADMIN_EMAIL = "scholifyapp@gmail.com"
 
 /** Verify the caller is the Scholify admin (by verified JWT email). */
 async function requireAdmin(req: VercelRequest, supa: SupabaseClient): Promise<boolean> {
@@ -112,10 +112,24 @@ async function approve(req: VercelRequest, res: VercelResponse, supa: SupabaseCl
     res.status(400).json({ ok: false, reason: "bad_params" })
     return
   }
+  const { data: affiliate } = await supa
+    .from("affiliates")
+    .select("name, email, code, status")
+    .eq("id", id)
+    .maybeSingle()
+  if (!affiliate) {
+    res.status(404).json({ ok: false, reason: "not_found" })
+    return
+  }
   const { error } = await supa.from("affiliates").update({ status }).eq("id", id)
   if (error) {
     res.status(200).json({ ok: false, reason: "update_failed" })
     return
+  }
+  if (affiliate.status !== status && (status === "active" || status === "rejected")) {
+    await notifyApplicationDecision({ ...affiliate, status }).catch((error: unknown) => {
+      console.error("partner decision email:", error)
+    })
   }
   res.status(200).json({ ok: true, id, status })
 }
@@ -163,8 +177,11 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     res.status(200).json({ ok: false, reason: "insert_failed", detail: error.message })
     return
   }
-  // Email the founder about the new application (best-effort — never blocks).
-  void notifyApplication({ name, email, code, b })
+  // Await the best-effort sends so the serverless function is not frozen before
+  // Resend receives the founder notification and applicant confirmation.
+  await notifyApplication({ name, email, code, b }).catch((error: unknown) => {
+    console.error("partner application email:", error)
+  })
   res.status(200).json({ ok: true, code, status: "pending" })
 }
 
@@ -176,7 +193,7 @@ async function notifyApplication(app: {
   b: Record<string, unknown>
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
-  const to = process.env.ADMIN_EMAIL || "founder@flowlifyai.com"
+  const to = ADMIN_EMAIL
   const from = process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>"
   if (!apiKey) return
   const row = (label: string, val: unknown) => {
@@ -207,16 +224,54 @@ async function notifyApplication(app: {
     </p>
   </div>`
 
-  const send = (payload: Record<string, unknown>) =>
-    fetch("https://api.resend.com/emails", {
+  const send = async (payload: Record<string, unknown>) => {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }).catch(() => {})
+    })
+    if (!response.ok) throw new Error(`Resend returned ${response.status}`)
+  }
 
   // 1) Notify the founder. 2) Confirm receipt to the applicant. Both best-effort.
   await send({ from, to, reply_to: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml })
   await send({ from, to: app.email, reply_to: to, subject: "We've received your Scholify partner application 🏁", html: applicantHtml })
+}
+
+/** Tell an applicant when the founder approves or rejects their application. */
+async function notifyApplicationDecision(app: {
+  name: string
+  email: string
+  code: string
+  status: string
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return
+  const from = process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>"
+  const first = app.name.split(/\s+/)[0] || "there"
+  const approved = app.status === "active"
+  const subject = approved
+    ? "You're approved — welcome to the Scholify Partner Program 🏁"
+    : "An update on your Scholify partner application"
+  const html = approved
+    ? `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#14141A;">
+        <h2 style="font-size:20px;margin:0 0 10px;">Welcome to the team, ${first} 🏁</h2>
+        <p style="font-size:14px;line-height:1.6;color:#33313a;">Your Scholify partner application is approved. You can now earn <b>27%</b> on every qualifying plan sold through your link.</p>
+        <p style="font-size:14px;line-height:1.6;color:#33313a;">Your partner link is:</p>
+        <p style="font-size:15px;font-weight:700;"><a href="https://www.scholifyapp.com/?aff=${app.code}" style="color:#C80000;">scholifyapp.com/?aff=${app.code}</a></p>
+        <p style="font-size:13px;color:#8f8c85;line-height:1.6;margin-top:18px;">Sign in to Scholify and open the Partners page to see clicks, sales and commissions.<br/>Questions? Reply to this email.<br/>— Makhmudov Nuriddin, Founder, Scholify</p>
+      </div>`
+    : `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#14141A;">
+        <h2 style="font-size:20px;margin:0 0 10px;">Hi ${first},</h2>
+        <p style="font-size:14px;line-height:1.6;color:#33313a;">Thank you for your interest in the Scholify Preferred Partner Program. We’re unable to approve your application at this time.</p>
+        <p style="font-size:13px;color:#8f8c85;line-height:1.6;margin-top:18px;">If you think we missed something, reply to this email and tell us more.<br/>— Makhmudov Nuriddin, Founder, Scholify</p>
+      </div>`
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: app.email, reply_to: ADMIN_EMAIL, subject, html }),
+  })
+  if (!response.ok) throw new Error(`Resend returned ${response.status}`)
 }
 
 async function resolve(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {

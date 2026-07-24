@@ -617,8 +617,8 @@ export default function PartnersApply() {
                 </h2>
                 <p style={{ fontSize: 13.5, color: "var(--sch-tx-2)", margin: "0 0 18px", lineHeight: 1.5 }}>
                   Send your details and they go straight to our founder. Questions? Email{" "}
-                  <a href="mailto:founder@flowlifyai.com" style={{ color: "#C80000", fontWeight: 600, textDecoration: "none" }}>
-                    founder@flowlifyai.com
+                  <a href="mailto:scholifyapp@gmail.com" style={{ color: "#C80000", fontWeight: 600, textDecoration: "none" }}>
+                    scholifyapp@gmail.com
                   </a>
                   .
                 </p>
@@ -736,7 +736,7 @@ export default function PartnersApply() {
               <div style={{ marginTop: 14 }}>
                 <div style={{ fontSize: 17, fontWeight: 800, color: "var(--sch-text)" }}>Makhmudov Nuriddin</div>
                 <div style={{ fontSize: 13.5, color: "var(--sch-tx-2)", marginTop: 1 }}>CEO &amp; Founder, Scholify</div>
-                <div style={{ fontFamily: MONO, fontSize: 13, color: "#C80000", marginTop: 2 }}>founder@flowlifyai.com</div>
+                <div style={{ fontFamily: MONO, fontSize: 13, color: "#C80000", marginTop: 2 }}>scholifyapp@gmail.com</div>
               </div>
             </div>
             <button

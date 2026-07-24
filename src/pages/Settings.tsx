@@ -699,7 +699,7 @@ export default function Settings() {
   }, [referralLink, toast])
 
   /* Admin retention view — owner only. */
-  const isAdmin = user?.email === "scholifyaiapp@gmail.com"
+  const isAdmin = user?.email?.toLowerCase() === "scholifyapp@gmail.com"
   const [retention, setRetention] = useState<{
     total: number
     day3: number
