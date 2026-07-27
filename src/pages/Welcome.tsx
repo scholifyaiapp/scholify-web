@@ -30,6 +30,7 @@ import {
   type AssessmentPath,
 } from "@/lib/acca-learner-baseline"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
+import { onboardingSteps } from "@/lib/acca-onboarding-steps"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -128,8 +129,6 @@ const TARGET_OPTIONS: { v: number; label: string; blurb: string }[] = [
   { v: 85, label: "85%", blurb: "Bulletproof" },
 ]
 
-const TOTAL = 10
-const ADVANCED_ONBOARDING_LAUNCH_AT = Date.parse("2026-08-09T19:00:00.000Z")
 
 // The split-screen needs real width; below 1080 the phone layout reads better.
 function useIsMobile(): boolean {
@@ -167,7 +166,6 @@ export default function Welcome() {
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
   const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(null)
-  const advancedOnboardingVisible = Date.now() >= ADVANCED_ONBOARDING_LAUNCH_AT
   // Step 4 ("What are you studying with?" — the Kaplan/BPP/Study Hub picker) is
   // deliberately OUT of the flow. Scholify is not yet an official Kaplan or BPP
   // partner, so asking learners to register third-party materials implied a
@@ -177,11 +175,11 @@ export default function Welcome() {
   // those partnerships are signed — acca-study-resources.ts and the
   // provider-aware plan titles in acca-schedule.ts are all still in place and
   // fall back cleanly to Scholify content while no resource is recorded.
-  const visibleSteps = useMemo(() => {
-    if (!advancedOnboardingVisible) return [0, 3, 5, 6, 7, 9]
-    const all = Array.from({ length: TOTAL }, (_, index) => index)
-    return all.filter((item) => item !== 4 && (learnerRoute !== "new" || item !== 8))
-  }, [advancedOnboardingVisible, learnerRoute])
+  // ONE onboarding flow, defined in acca-onboarding-steps.ts. There used to be a
+  // second, shorter one behind a date gate (9 Aug) that skipped the route and
+  // language questions — and that shorter flow was what actually shipped, which
+  // is why the route-based plan never ran in production. See the note there.
+  const visibleSteps = useMemo(() => onboardingSteps(learnerRoute), [learnerRoute])
   const visibleStepIndex = Math.max(0, visibleSteps.indexOf(step))
 
   const [dir, setDir] = useState(1)
