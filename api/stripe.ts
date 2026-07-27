@@ -56,9 +56,9 @@ function readRawBody(req: VercelRequest): Promise<string> {
 
 /** The three plans → their configured Stripe price ids (server-only). */
 export function priceForPlan(plan: string): string | undefined {
-  if (plan === "beginner") return process.env.STRIPE_PRICE_BEGINNER
-  if (plan === "pro") return process.env.STRIPE_PRICE_PRO
-  if (plan === "annual_pro") return process.env.STRIPE_PRICE_ANNUAL
+  if (plan === "beginner") return process.env.STRIPE_PRICE_BEGINNER || undefined
+  if (plan === "pro") return process.env.STRIPE_PRICE_PRO || undefined
+  if (plan === "annual_pro") return process.env.STRIPE_PRICE_ANNUAL || undefined
   return undefined
 }
 

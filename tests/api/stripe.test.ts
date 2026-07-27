@@ -32,7 +32,7 @@ describe("priceForPlan (checkout: plan → price)", () => {
   })
 
   it("returns undefined when the price ids aren't configured server-side", () => {
-    vi.unstubAllEnvs()
+    vi.stubEnv("STRIPE_PRICE_PRO", "")
     expect(priceForPlan("pro")).toBeUndefined()
   })
 })
