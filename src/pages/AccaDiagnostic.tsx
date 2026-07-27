@@ -205,26 +205,22 @@ export default function AccaDiagnostic() {
   const answersRef = useRef<AnsweredDiagnostic[]>([])
   const [result, setResult] = useState<DiagnosticResult | null>(null)
   const [prior, setPrior] = useState<DiagnosticResult | null>(() => getLatestDiagnostic(defaultPaper))
-  // Fixed 30-minute countdown. Manual submission requires all 25 answers; at
-  // zero, unanswered items count as incorrect.
-  const [timeLeft, setTimeLeft] = useState(0)
-  // Lets the timer's interval call the latest handler without a stale closure.
+  // Fixed 30-minute countdown, held as a wall-clock DEADLINE rather than a
+  // ticking count. Manual submission requires all answers; at zero, unanswered
+  // items count as incorrect.
+  const [deadline, setDeadline] = useState<number | null>(null)
+  // Lets the expiry timeout call the latest handler without a stale closure.
   const endAssessingRef = useRef<() => void>(() => {})
 
+  // ONE timeout for expiry, not a per-second state update. `timeLeft` was only
+  // ever displayed, so decrementing it in page state re-rendered this whole
+  // ~1,100-line page every second to repaint one number. ProCountdown now ticks
+  // itself from the deadline; this page only needs to know when the clock ends.
   useEffect(() => {
-    if (phase !== "assessing") return
-    const t = setInterval(() => {
-      setTimeLeft((s) => {
-        if (s <= 1) {
-          clearInterval(t)
-          endAssessingRef.current()
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => clearInterval(t)
-  }, [phase])
+    if (phase !== "assessing" || deadline == null) return
+    const t = window.setTimeout(() => endAssessingRef.current(), Math.max(0, deadline - Date.now()))
+    return () => window.clearTimeout(t)
+  }, [phase, deadline])
 
   const paper = getPaper(paperId)
 
@@ -258,7 +254,7 @@ export default function AccaDiagnostic() {
     // clones are what the learner sees and what gradeQuestion marks against.
     setQuestions(qs.map((q) => withShuffledOptions(q)))
     setIdx(0)
-    setTimeLeft(diagnosticSeconds(qs.length))
+    setDeadline(Date.now() + diagnosticSeconds(qs.length) * 1000)
     trackEvent("diagnostic_started", { paper: paperId, questions: qs.length, fromOnboarding: fromWelcome, learnerRoute, assessmentMode })
     setPhase("assessing")
   }
@@ -510,7 +506,7 @@ export default function AccaDiagnostic() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: MUTED }}>
                   Question {idx + 1} / {questions.length}
                 </span>
-                <ProCountdown secondsLeft={timeLeft} totalSeconds={diagnosticSeconds(questions.length)} label="Diagnostic" />
+                <ProCountdown deadline={deadline} totalSeconds={diagnosticSeconds(questions.length)} label="Diagnostic" />
                 <span style={{ fontSize: 11, fontWeight: 700, color: DIM, background: CARD2, padding: "3px 9px", borderRadius: 999 }}>
                   {paper?.code} · Area {questions[idx].area}
                 </span>

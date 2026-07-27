@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { Link } from "react-router-dom"
-import { motion, useReducedMotion } from "motion/react"
+import { motion, useInView, useReducedMotion } from "motion/react"
 import { ArrowRight, BrainCircuit, CalendarDays, Check, Gauge, ShieldCheck, Sparkles } from "lucide-react"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
@@ -90,6 +90,12 @@ function LaunchPrice({
 
 export default function Waitlist() {
   const reduced = useLightweightMotion()
+  // Gates the countdown card's infinite shimmer so it does not keep animating
+  // once the reader has scrolled past it.
+  const countdownRef = useRef<HTMLDivElement | null>(null)
+  const countdownInView = useInView(countdownRef, { margin: "100px" })
+  const heroRef = useRef<HTMLSpanElement | null>(null)
+  const heroInView = useInView(heroRef, { margin: "100px" })
   const startedAt = useMemo(() => Date.now(), [])
   const [clock, setClock] = useState(remaining)
   const [name, setName] = useState("")
@@ -173,7 +179,17 @@ export default function Waitlist() {
             Your ACCA study system is almost{" "}
             <motion.span
               initial={reduced ? false : { opacity: 0, y: 16, filter: "blur(8px)" }}
-              animate={reduced ? undefined : { opacity: 1, y: 0, filter: "blur(0px)", backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              ref={heroRef}
+              // The gradient sweep only runs while the headline is on screen.
+              // background-position on a background-clip:text element repaints the
+              // text every frame, and it was looping forever — still repainting
+              // after the reader had scrolled the hero away entirely.
+              animate={reduced ? undefined : {
+                opacity: 1,
+                y: 0,
+                filter: "blur(0px)",
+                ...(heroInView ? { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] } : {}),
+              }}
               transition={{
                 opacity: { duration: .55, delay: .35 },
                 y: { duration: .7, delay: .35, ease: [0.16, 1, 0.3, 1] },
@@ -239,32 +255,30 @@ export default function Waitlist() {
         </motion.div>
       </section>
 
+      {/* The amber glow used to be an infinitely animating boxShadow. A box-shadow
+          cannot be GPU-composited, so that repainted this whole card every frame
+          of a 2.8s loop, forever, on the page that IS the public product before
+          launch — a permanent paint cost for a pulse. It is a static shadow now;
+          the sweep inside supplies the motion at compositor cost only. */}
       <section style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 clamp(20px,4vw,40px) 34px" }}>
         <motion.div
           initial={reduced ? false : { scale: .96, opacity: 0 }}
           whileInView={reduced ? undefined : { scale: 1, opacity: 1 }}
           viewport={{ once: true, amount: .35 }}
-          animate={reduced ? undefined : {
-            boxShadow: [
-              "0 0 0 1px rgba(244,164,5,.35),0 12px 34px -16px rgba(244,164,5,.28)",
-              "0 0 0 1px rgba(244,164,5,.85),0 24px 58px -12px rgba(244,164,5,.5)",
-              "0 0 0 1px rgba(244,164,5,.35),0 12px 34px -16px rgba(244,164,5,.28)",
-            ],
-          }}
-          transition={{
-            boxShadow: { duration: 2.8, repeat: Infinity, ease: "easeInOut" },
-            scale: { duration: .55, ease: [0.16, 1, 0.3, 1] },
-          }}
-          style={{ background: "linear-gradient(135deg,#1b1b22 0%,#2a1215 60%,#3a0d1e 100%)", color: "#fff", border: "1px solid rgba(244,164,5,.4)", borderRadius: 24, padding: "clamp(24px,4vw,38px)", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 28, position: "relative", overflow: "hidden" }}
+          ref={countdownRef}
+          transition={{ scale: { duration: .55, ease: [0.16, 1, 0.3, 1] } }}
+          style={{ background: "linear-gradient(135deg,#1b1b22 0%,#2a1215 60%,#3a0d1e 100%)", color: "#fff", border: "1px solid rgba(244,164,5,.4)", borderRadius: 24, padding: "clamp(24px,4vw,38px)", display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 28, position: "relative", overflow: "hidden", boxShadow: "0 0 0 1px rgba(244,164,5,.55),0 18px 46px -14px rgba(244,164,5,.38)" }}
           className="waitlist-countdown"
         >
-          {!reduced && (
+          {/* Only sweeps while on screen: `repeat: Infinity` otherwise keeps
+              animating after the reader has scrolled well past it. */}
+          {!reduced && countdownInView && (
             <motion.div
               aria-hidden
               initial={{ x: "-130%" }}
               animate={{ x: "230%" }}
               transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-              style={{ position: "absolute", inset: 0, width: "42%", background: "linear-gradient(105deg,transparent,rgba(244,164,5,.2) 45%,rgba(255,255,255,.3) 50%,rgba(244,164,5,.2) 55%,transparent)", mixBlendMode: "screen", pointerEvents: "none" }}
+              style={{ position: "absolute", inset: 0, width: "42%", background: "linear-gradient(105deg,transparent,rgba(244,164,5,.2) 45%,rgba(255,255,255,.3) 50%,rgba(244,164,5,.2) 55%,transparent)", mixBlendMode: "screen", pointerEvents: "none", willChange: "transform" }}
             />
           )}
           <div style={{ position: "relative", zIndex: 1 }}>

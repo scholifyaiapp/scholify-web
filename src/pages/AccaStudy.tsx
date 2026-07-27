@@ -166,7 +166,14 @@ export default function AccaStudy() {
   const [isMock, setIsMock] = useState(false)
   const [isBankRun, setIsBankRun] = useState(false)
   const [bankRunSize, setBankRunSize] = useState<MixedBankSize>(BANK_RUN_SIZE)
-  const [timeLeft, setTimeLeft] = useState(0)
+  // Wall-clock DEADLINE, not a ticking count. Holding the remaining seconds in
+  // page state meant every tick re-rendered this ~2,700-line page — the question
+  // card, the option buttons, the navigator — to repaint one number, which is
+  // what made a timed session feel like it was stuttering. ProCountdown ticks
+  // itself from this; the page only needs to know when the clock ends.
+  const [deadline, setDeadline] = useState<number | null>(null)
+  /** Set when the clock actually ran out, so results can attribute lost marks to time. */
+  const expiredRef = useRef(false)
   const finishRef = useRef<() => void>(() => {})
 
   // topic path (Kaplan-style chapter flow)
@@ -254,25 +261,17 @@ export default function AccaStudy() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content.ready, paperId])
 
-  // One exam-paced countdown for every objective practice session.
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // One exam-paced countdown for every objective practice session — a single
+  // timeout at the deadline, replacing a per-second interval that re-rendered
+  // the entire page on every tick.
   useEffect(() => {
-    if (mode === "session") {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((t) => {
-          if (t <= 1) {
-            if (timerRef.current) clearInterval(timerRef.current)
-            finishRef.current()
-            return 0
-          }
-          return t - 1
-        })
-      }, 1000)
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current)
-      }
-    }
-  }, [mode])
+    if (mode !== "session" || deadline == null) return
+    const t = window.setTimeout(() => {
+      expiredRef.current = true
+      finishRef.current()
+    }, Math.max(0, deadline - Date.now()))
+    return () => window.clearTimeout(t)
+  }, [mode, deadline])
 
   // Record a mock / knowledge check the moment its results screen appears.
   useEffect(() => {
@@ -281,13 +280,13 @@ export default function AccaStudy() {
         recordTopicTest(paperId, topicArea, correctCount / questions.length)
       } else if (isBankRun) {
         recordBankRun(paperId, correctCount, questions.length)
-        if (timeLeft === 0 && log.length < questions.length) {
+        if (expiredRef.current && log.length < questions.length) {
           recordMistake(paperId, "time", questions.length - log.length)
         }
       } else if (isMock) {
         recordMock(paperId, correctCount, questions.length)
         // Questions the clock took are lost-to-time marks, not knowledge gaps.
-        if (timeLeft === 0 && log.length < questions.length) {
+        if (expiredRef.current && log.length < questions.length) {
           recordMistake(paperId, "time", questions.length - log.length)
         }
       }
@@ -357,7 +356,7 @@ export default function AccaStudy() {
     setIsBankRun(false)
     setIsTopicTest(false)
     setTopicArea(null)
-    setTimeLeft(qs.length * MOCK_SECONDS_PER_Q)
+    setDeadline(Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000); expiredRef.current = false
     resetQuestion()
     setMode("session")
   }
@@ -390,7 +389,7 @@ export default function AccaStudy() {
     setIsBankRun(false)
     setIsTopicTest(test)
     setTopicArea(area)
-    setTimeLeft(qs.length * MOCK_SECONDS_PER_Q)
+    setDeadline(Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000); expiredRef.current = false
     resetQuestion()
     setMode("session")
   }
@@ -414,7 +413,7 @@ export default function AccaStudy() {
     setBankRunSize(size)
     setIsTopicTest(false)
     setTopicArea(null)
-    setTimeLeft(qs.length * BANK_RUN_SECONDS_PER_Q)
+    setDeadline(Date.now() + qs.length * BANK_RUN_SECONDS_PER_Q * 1000); expiredRef.current = false
     resetQuestion()
     setMode("session")
   }
@@ -452,7 +451,7 @@ export default function AccaStudy() {
     setIsBankRun(false)
     setIsTopicTest(false)
     setTopicArea(null)
-    setTimeLeft(qs.length * MOCK_SECONDS_PER_Q)
+    setDeadline(Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000); expiredRef.current = false
     resetQuestion()
     setMode("session")
   }
@@ -483,7 +482,7 @@ export default function AccaStudy() {
   // area log (answered-only, so the results effect can still attribute unanswered
   // questions to the clock), and the explained review, then show results.
   function finishSession() {
-    if (timerRef.current) clearInterval(timerRef.current)
+    setDeadline(null) // stops both the expiry timeout and the dial
     let correct = 0
     const newLog: { area: string; correct: boolean }[] = []
     const review: { q: AccaQuestion; response: number | number[] | string | undefined; correct: boolean }[] = []
@@ -520,7 +519,7 @@ export default function AccaStudy() {
   finishRef.current = finishSession
 
   function leaveSession() {
-    if (timerRef.current) clearInterval(timerRef.current)
+    setDeadline(null) // stops both the expiry timeout and the dial
     setTick((t) => t + 1)
     setMode(topicArea ? "topic" : "overview")
   }
@@ -627,7 +626,7 @@ export default function AccaStudy() {
               total={questions.length}
               value={answersMap[idx]}
               isTimed
-              timeLeft={timeLeft}
+              deadline={deadline}
               timerTotal={questions.length * (isBankRun ? BANK_RUN_SECONDS_PER_Q : MOCK_SECONDS_PER_Q)}
               answeredCount={answeredCount}
               isAnswered={isAnswered}
@@ -2348,7 +2347,7 @@ function MissionTasks({
 }
 
 function SessionView({
-  q, index, total, value, isTimed, timeLeft, timerTotal, answeredCount,
+  q, index, total, value, isTimed, deadline, timerTotal, answeredCount,
   isAnswered, isFlagged, currentFlagged, onChange, onGo, onToggleFlag, onFinish, onQuit,
 }: {
   q: AccaQuestion
@@ -2356,7 +2355,7 @@ function SessionView({
   total: number
   value: number | number[] | string | undefined
   isTimed: boolean
-  timeLeft: number
+  deadline: number | null
   timerTotal: number
   answeredCount: number
   isAnswered: (i: number) => boolean
@@ -2370,7 +2369,6 @@ function SessionView({
 }) {
   // Controlled by the parent's per-index answer store — jumping back restores
   // the pick. Exam-style: nothing grades here; the map + Finish do the work.
-  const lowTime = isTimed && timeLeft <= 60
   const numStr = typeof value === "string" ? value : ""
   const single = typeof value === "number" ? value : null
   const multi = Array.isArray(value) ? value : []
@@ -2378,11 +2376,14 @@ function SessionView({
 
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
-      {isTimed && <ProCountdown secondsLeft={timeLeft} totalSeconds={Math.max(1, timerTotal)} label="Practice" />}
+      {isTimed && <ProCountdown deadline={deadline} totalSeconds={Math.max(1, timerTotal)} label="Practice" />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <button onClick={onQuit} style={{ ...backBtn, marginBottom: 0 }}>← Exit</button>
         <span style={{ color: DIM, fontSize: 13, fontWeight: 600 }}>Question {index + 1} / {total}</span>
-        <span style={{ color: lowTime ? C.red : DIM, fontSize: 12, fontWeight: lowTime ? 800 : 600 }}>Area {q.area}</span>
+        {/* The urgency cue lives in ProCountdown (red ring, pulse, "FINAL PUSH").
+            Tinting this label too meant the whole page needed the remaining
+            seconds every second — the cost of that outweighed a second signal. */}
+        <span style={{ color: DIM, fontSize: 12, fontWeight: 600 }}>Area {q.area}</span>
       </div>
 
       <div style={{ height: 6, background: "var(--sch-card-2)", borderRadius: 999, marginBottom: 22, overflow: "hidden" }}>

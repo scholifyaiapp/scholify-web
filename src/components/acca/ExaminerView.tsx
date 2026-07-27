@@ -41,32 +41,30 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
   const [marking, setMarking] = useState(false)
   const [result, setResult] = useState<ExaminerResult | null>(null)
 
-  // Exam clock — null means untimed practice. Driven off a DEADLINE, not a
-  // per-second decrement, because this clock is the product's exam-fidelity
-  // claim ("priced at the official minutes-per-mark") and both decrement
-  // variants lie about elapsed time:
-  //   · deps [secondsLeft, result] tears the interval down and resubscribes on
-  //     every tick, so each period is 1000ms PLUS a render — a 54-minute task
-  //     drifts tens of seconds slow, and the "N used of M" debrief inherits it.
-  //   · any setInterval-based decrement stops counting when the tab is
-  //     backgrounded (browsers throttle background timers to ~1/min), so
-  //     switching tabs would effectively pause the exam clock.
-  // Against a wall-clock deadline, one interval per question is enough and
-  // elapsed time is always real, foregrounded or not.
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
+  // Exam clock — null means untimed practice. Held as a wall-clock DEADLINE,
+  // never as a decrementing count, because this clock is the product's
+  // exam-fidelity claim ("priced at the official minutes-per-mark") and a
+  // decrementing interval lies about elapsed time twice over: it drifts by a
+  // render every tick, and it stops counting altogether in a backgrounded tab
+  // (browsers throttle background timers), so switching tabs would pause the
+  // exam. Against a deadline, elapsed time is always real.
   const [allowed, setAllowed] = useState(0)
   const [endsAt, setEndsAt] = useState<number | null>(null)
+  const [expired, setExpired] = useState(false)
   const timedRef = useRef(false)
+  // ProCountdown ticks itself off `endsAt`, so this view — which carries the word
+  // processor, the spreadsheet pad and the tools dock — no longer re-renders once
+  // a second just to move the clock. All this needs is the single moment the
+  // clock runs out, for the "time is up" banner.
   useEffect(() => {
+    setExpired(false)
     if (endsAt === null || result) return
-    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)))
-    tick()
-    // Sub-second polling so the displayed second flips close to when it really
-    // does; the deadline makes the value exact either way.
-    const t = setInterval(tick, 250)
-    return () => clearInterval(t)
+    const t = window.setTimeout(() => setExpired(true), Math.max(0, endsAt - Date.now()))
+    return () => window.clearTimeout(t)
   }, [endsAt, result])
-  const expired = secondsLeft === 0
+  /** Time actually spent, read on demand at debrief rather than tracked per second. */
+  const usedSeconds = (): number =>
+    endsAt === null ? 0 : Math.min(allowed, Math.max(0, allowed - Math.ceil((endsAt - Date.now()) / 1000)))
 
   async function mark() {
     if (!active) return
@@ -89,10 +87,8 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
     if (examConditions) {
       const secs = examSecondsFor(paperId, q.maxMarks)
       setAllowed(secs)
-      setSecondsLeft(secs)
       setEndsAt(Date.now() + secs * 1000)
     } else {
-      setSecondsLeft(null)
       setAllowed(0)
       setEndsAt(null)
     }
@@ -178,10 +174,9 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        {/* Clearing endsAt is what actually stops the clock — without it the
-            deadline effect re-derives secondsLeft on its next poll and the
-            abandoned question's clock comes back to life over the list. */}
-        <BackButton label="All questions" onClick={() => { setActive(null); setSecondsLeft(null); setEndsAt(null) }} />
+        {/* Clearing endsAt is what stops the clock: it is the single source of
+            truth, so the dial and the expiry timeout both stand down. */}
+        <BackButton label="All questions" onClick={() => { setActive(null); setEndsAt(null) }} />
         {/* ProCountdown IS the clock here (position:fixed, top-right). The pill
             that used to sit in this row showed the same countdown inline, so
             adding ProCountdown without removing it put two identical clocks on
@@ -189,8 +184,8 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
             this reason when it adopted ProCountdown. The total the pill carried
             ("of 54:00") is still stated on the task card and in the debrief's
             "N used of M" line. */}
-        {secondsLeft !== null && !result && (
-          <ProCountdown secondsLeft={secondsLeft} totalSeconds={Math.max(1, allowed)} label="Written task" />
+        {endsAt !== null && !result && (
+          <ProCountdown deadline={endsAt} totalSeconds={Math.max(1, allowed)} label="Written task" />
         )}
       </div>
 
@@ -292,7 +287,7 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
               </div>
               {timedRef.current && (
                 <div style={{ fontSize: 12, color: C.soft, marginTop: 6 }}>
-                  Under exam conditions · {fmtClock(Math.max(0, allowed - (secondsLeft ?? 0)))} used of {fmtClock(allowed)}
+                  Under exam conditions · {fmtClock(usedSeconds())} used of {fmtClock(allowed)}
                 </div>
               )}
               {result.isFallback && (
@@ -322,7 +317,7 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
               <Button variant="secondary" onClick={() => pick(active, true)} style={{ flex: 1, minWidth: 180 }}>
                 <Icon name="time" size={15} /> Again, on the clock
               </Button>
-              <Button variant="ghost" onClick={() => { setAnswer(""); setCells({}); setResult(null); setSecondsLeft(null) }} style={{ flex: 1, minWidth: 140 }}>
+              <Button variant="ghost" onClick={() => { setAnswer(""); setCells({}); setResult(null); setEndsAt(null) }} style={{ flex: 1, minWidth: 140 }}>
                 <Icon name="loop" size={16} /> Untimed retry
               </Button>
             </div>

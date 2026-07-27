@@ -125,7 +125,11 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
   const [essayTab, setEssayTab] = useState<Record<string, "word" | "sheet">>({})
   const [flags, setFlags] = useState<Record<string, boolean>>({})
   const [navOpen, setNavOpen] = useState(false)
-  const [secondsLeft, setSecondsLeft] = useState(mock.seconds)
+  // The sitting's wall-clock deadline, fixed once. ProCountdown ticks itself off
+  // this, so the clock never re-renders the runner.
+  const [deadline] = useState(() => Date.now() + mock.seconds * 1000)
+  /** Seconds actually used, computed on demand rather than tracked every second. */
+  const secondsUsed = (): number => Math.min(mock.seconds, Math.max(0, Math.round((Date.now() - (deadline - mock.seconds * 1000)) / 1000)))
   const [markingNote, setMarkingNote] = useState("")
   const [outcome, setOutcome] = useState<Outcome | null>(null)
 
@@ -142,21 +146,19 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
   useEffect(() => {
     submitRef.current = submit
   })
+  // ONE timeout at the deadline, not a per-second decrement. A 3h15 mock ticking
+  // page state re-rendered this whole runner — every question, the navigator, the
+  // spreadsheet pad — 11,700 times over a sitting, purely to repaint the clock.
+  // A wall-clock deadline is also honest across a backgrounded tab, where a
+  // decrementing interval is throttled and the exam clock effectively pauses.
   useEffect(() => {
     if (stage !== "run" && stage !== "review") return
-    const t = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(t)
-          // Time: the CBE submits your exam for you.
-          if (!submittingRef.current) void submitRef.current(true)
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => clearInterval(t)
-  }, [stage])
+    const t = window.setTimeout(() => {
+      // Time: the CBE submits your exam for you.
+      if (!submittingRef.current) void submitRef.current(true)
+    }, Math.max(0, deadline - Date.now()))
+    return () => window.clearTimeout(t)
+  }, [stage, deadline])
 
   /* ── per-question timing analytics (first leave only) ── */
   const shownAt = useRef(performance.now())
@@ -285,7 +287,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
       tasks,
       unanswered,
       flagged: Object.values(flags).filter(Boolean).length,
-      secondsUsed: mock.seconds - (expired ? 0 : secondsLeft),
+      secondsUsed: expired ? mock.seconds : secondsUsed(),
       expired,
     })
     setStage("results")
@@ -460,7 +462,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
     return (
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <TopBar
-          secondsLeft={secondsLeft}
+          deadline={deadline}
           total={mock.seconds}
           right={
             <Button variant="ghost" onClick={() => setStage("run")} style={{ minHeight: 36, padding: "4px 10px" }}>
@@ -492,7 +494,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <TopBar
-        secondsLeft={secondsLeft}
+        deadline={deadline}
         total={mock.seconds}
         right={
           <div style={{ display: "flex", gap: 6 }}>
@@ -704,10 +706,10 @@ function IntroStat({ icon, label, value }: { icon: IconName; label: string; valu
 // adding ProCountdown without removing it put two identical clocks on screen at
 // once — the diagnostic deleted its own DiagnosticTimer for exactly this reason
 // when it adopted ProCountdown.
-function TopBar({ secondsLeft, total, right }: { secondsLeft: number; total: number; right?: ReactNode }) {
+function TopBar({ deadline, total, right }: { deadline: number; total: number; right?: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-      <ProCountdown secondsLeft={secondsLeft} totalSeconds={total} label="Mock exam" />
+      <ProCountdown deadline={deadline} totalSeconds={total} label="Mock exam" />
       {right}
     </div>
   )

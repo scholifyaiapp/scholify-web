@@ -34,23 +34,53 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
       if (!finePointer) return
 
       const ctx = gsap.context(() => {
+        // One reusable tween per property instead of a NEW gsap.to() on every
+        // mousemove. The old version spawned a fresh 0.4s tween per event — at
+        // pointer rates that is dozens of overlapping tweens on the same element
+        // at once, each animating four properties, and GSAP does not overwrite
+        // them by default. That is the footer/landing hover stutter.
+        const settings = { duration: 0.4, ease: "power2.out" }
+        const toX = gsap.quickTo(element, "x", settings)
+        const toY = gsap.quickTo(element, "y", settings)
+        const toRotX = gsap.quickTo(element, "rotationX", settings)
+        const toRotY = gsap.quickTo(element, "rotationY", settings)
+
+        // Cached at enter, not read per move. getBoundingClientRect() INCLUDES
+        // transforms, so measuring the element while the magnet is displacing it
+        // fed the previous offset back into the next one — a wobble as well as a
+        // forced layout on every event. The resting rect is the correct origin.
+        let rect: DOMRect | null = null
+        let frame = 0
+        let pending: { x: number; y: number } | null = null
+
+        const apply = () => {
+          frame = 0
+          if (!pending || !rect) return
+          const x = pending.x - rect.left - rect.width / 2
+          const y = pending.y - rect.top - rect.height / 2
+          toX(x * strength)
+          toY(y * strength)
+          toRotX(-y * 0.15)
+          toRotY(x * 0.15)
+        }
+
+        const handleMouseEnter = () => {
+          rect = element.getBoundingClientRect()
+          gsap.to(element, { scale: 1.05, ...settings, overwrite: "auto" })
+        }
+        // Coalesce to one update per frame: a pointer can fire far more often
+        // than the display refreshes, and everything past the first per frame is
+        // discarded work.
         const handleMouseMove = (e: MouseEvent) => {
-          const rect = element.getBoundingClientRect()
-          const halfW = rect.width / 2
-          const halfH = rect.height / 2
-          const x = e.clientX - rect.left - halfW
-          const y = e.clientY - rect.top - halfH
-          gsap.to(element, {
-            x: x * strength,
-            y: y * strength,
-            rotationX: -y * 0.15,
-            rotationY: x * 0.15,
-            scale: 1.05,
-            ease: "power2.out",
-            duration: 0.4,
-          })
+          if (!rect) rect = element.getBoundingClientRect()
+          pending = { x: e.clientX, y: e.clientY }
+          if (!frame) frame = requestAnimationFrame(apply)
         }
         const handleMouseLeave = () => {
+          if (frame) cancelAnimationFrame(frame)
+          frame = 0
+          pending = null
+          rect = null
           gsap.to(element, {
             x: 0,
             y: 0,
@@ -59,11 +89,15 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
             scale: 1,
             ease: "elastic.out(1, 0.3)",
             duration: 1.2,
+            overwrite: "auto",
           })
         }
+        element.addEventListener("mouseenter", handleMouseEnter)
         element.addEventListener("mousemove", handleMouseMove)
         element.addEventListener("mouseleave", handleMouseLeave)
         return () => {
+          if (frame) cancelAnimationFrame(frame)
+          element.removeEventListener("mouseenter", handleMouseEnter)
           element.removeEventListener("mousemove", handleMouseMove)
           element.removeEventListener("mouseleave", handleMouseLeave)
         }

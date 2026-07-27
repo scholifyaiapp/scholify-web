@@ -1,12 +1,27 @@
+import { useEffect, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
 
 interface ProCountdownProps {
-  secondsLeft: number
+  /** Remaining seconds, when the caller owns the tick. Ignored if `deadline` is set. */
+  secondsLeft?: number
   totalSeconds: number
+  /**
+   * Wall-clock ms when the clock expires. Prefer this over `secondsLeft`.
+   *
+   * With `secondsLeft`, the OWNING PAGE had to hold a per-second state update —
+   * so every tick re-rendered the whole page (AccaStudy is ~2,700 lines,
+   * AccaDiagnostic ~1,100) just to repaint one number, which is a steady source
+   * of stutter during a timed session. Given a deadline this component ticks
+   * itself, so only this 104px dial re-renders. A deadline is also immune to the
+   * drift and background-tab throttling a decrementing interval suffers.
+   */
+  deadline?: number | null
   label?: string
   fixed?: boolean
   size?: number
 }
+
+const remaining = (deadline: number): number => Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
 
 function clock(seconds: number): string {
   const safe = Math.max(0, Math.floor(seconds))
@@ -20,13 +35,28 @@ function clock(seconds: number): string {
 
 /** Shared visual exam clock. The owning runner remains authoritative on expiry. */
 export function ProCountdown({
-  secondsLeft,
+  secondsLeft: secondsLeftProp,
   totalSeconds,
+  deadline = null,
   label = "Time left",
   fixed = true,
   size = 104,
 }: ProCountdownProps) {
   const reduce = useReducedMotion()
+  const [ticked, setTicked] = useState(() => (deadline == null ? 0 : remaining(deadline)))
+
+  useEffect(() => {
+    if (deadline == null) return
+    const update = () => setTicked(remaining(deadline))
+    update()
+    // Polled a little faster than a second so the digit flips close to when it
+    // truly changes; setting identical state is a no-op in React, so this still
+    // costs about one render per second.
+    const id = window.setInterval(update, 250)
+    return () => window.clearInterval(id)
+  }, [deadline])
+
+  const secondsLeft = deadline != null ? ticked : secondsLeftProp ?? 0
   const fraction = Math.max(0, Math.min(1, secondsLeft / Math.max(1, totalSeconds)))
   const urgent = fraction <= 0.1 || secondsLeft <= 60
   const warning = !urgent && fraction <= 0.25
