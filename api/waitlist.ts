@@ -156,6 +156,37 @@ function adminWaitlistEmail(name: string, email: string): string {
   </td></tr></table></body></html>`
 }
 
+/** Fastest a human plausibly submits — below this it is a script. */
+const MIN_ELAPSED_MS = 1500
+/**
+ * Oldest page load still accepted.
+ *
+ * `startedAt` is stamped once at PAGE LOAD (Waitlist.tsx), not at first
+ * keystroke, so this window measures how long the TAB has been open — not how
+ * long the form took to fill. It used to be one hour, which silently rejected
+ * anyone who left the launch page open longer than that and then signed up, and
+ * showed them a generic "invalid". On the page that IS the public product until
+ * 10 August that is a lost signup. A day is still a sane staleness bound and
+ * costs no spam protection: the honeypot and MIN_ELAPSED_MS do that work.
+ */
+const MAX_ELAPSED_MS = 86_400_000
+
+/** Why this submission should be dropped, or null to accept it. Pure + exported
+ *  so the launch signup gate is actually covered by tests. */
+export function waitlistRejectReason(input: {
+  name: string
+  email: string
+  website: string
+  elapsedMs: number
+}): "honeypot" | "name" | "email" | "too_fast" | "stale" | null {
+  if (input.website) return "honeypot"
+  if (!input.name) return "name"
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) return "email"
+  if (!Number.isFinite(input.elapsedMs) || input.elapsedMs < MIN_ELAPSED_MS) return "too_fast"
+  if (input.elapsedMs > MAX_ELAPSED_MS) return "stale"
+  return null
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   res.setHeader("Cache-Control", "no-store")
   if (req.method !== "POST") {
@@ -176,8 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const email = String(body.email || "").trim().toLowerCase().slice(0, 200)
   const website = String(body.website || "")
   const startedAt = Number(body.startedAt || 0)
-  const elapsed = Date.now() - startedAt
-  if (website || !name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || elapsed < 1500 || elapsed > 3_600_000) {
+  if (waitlistRejectReason({ name, email, website, elapsedMs: Date.now() - startedAt })) {
     res.status(400).json({ ok: false, reason: "invalid" })
     return
   }

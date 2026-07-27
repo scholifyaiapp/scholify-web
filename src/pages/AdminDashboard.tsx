@@ -73,12 +73,16 @@ export default function AdminDashboard() {
 
   const updateFeedback = async (id: string, status: string) => {
     const { data: sessionData } = await supabase.auth.getSession()
+    // POST, not PATCH: api/affiliate rejects every other method with a bare 405
+    // before it even looks at `action`, so on PATCH each status button just
+    // surfaced "Feedback status could not be updated." Every sibling call in
+    // src/lib/affiliate.ts posts for the same reason.
     const response = await fetch("/api/affiliate?action=feedback-status", {
-      method: "PATCH",
+      method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionData.session?.access_token || ""}` },
       body: JSON.stringify({ id, status }),
     })
-    const result = (await response.json()) as { ok?: boolean }
+    const result = (await response.json().catch(() => ({}))) as { ok?: boolean }
     if (result.ok) setData((current) => current ? { ...current, feedback: current.feedback.map((item) => item.id === id ? { ...item, status } : item) } : current)
     else setError("Feedback status could not be updated.")
   }
