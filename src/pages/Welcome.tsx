@@ -13,15 +13,8 @@ import { trackEvent } from "@/lib/analytics"
 import { persistAccountSetup } from "@/lib/account-state"
 import { DurationPicker } from "@/components/ui/duration-picker"
 import { ExamCalendar } from "@/components/ui/exam-calendar"
-import {
-  MATERIAL_LABEL,
-  PROVIDER_LABEL,
-  resourceSummary,
-  setStudyResource,
-  type ResourceMaterial,
-  type ResourceProvider,
-  type StudyResourceProfile,
-} from "@/lib/acca-study-resources"
+// Nothing from acca-study-resources is imported here any more: onboarding no
+// longer collects a third-party study resource. See the note on visibleSteps.
 import {
   analyseResultPdf,
   analyseEnglishCertificate,
@@ -175,10 +168,19 @@ export default function Welcome() {
   const [step, setStep] = useState(0)
   const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(null)
   const advancedOnboardingVisible = Date.now() >= ADVANCED_ONBOARDING_LAUNCH_AT
+  // Step 4 ("What are you studying with?" — the Kaplan/BPP/Study Hub picker) is
+  // deliberately OUT of the flow. Scholify is not yet an official Kaplan or BPP
+  // partner, so asking learners to register third-party materials implied a
+  // partnership and an integration that does not exist, and the plan can only
+  // sequence Scholify's own content anyway. Restore 4 to these lists (and the
+  // ResourceSlide, its state and the setStudyResource call in persist()) once
+  // those partnerships are signed — acca-study-resources.ts and the
+  // provider-aware plan titles in acca-schedule.ts are all still in place and
+  // fall back cleanly to Scholify content while no resource is recorded.
   const visibleSteps = useMemo(() => {
-    if (!advancedOnboardingVisible) return [0, 3, 4, 5, 6, 7, 9]
+    if (!advancedOnboardingVisible) return [0, 3, 5, 6, 7, 9]
     const all = Array.from({ length: TOTAL }, (_, index) => index)
-    return learnerRoute === "new" ? all.filter((item) => item !== 8) : all
+    return all.filter((item) => item !== 4 && (learnerRoute !== "new" || item !== 8))
   }, [advancedOnboardingVisible, learnerRoute])
   const visibleStepIndex = Math.max(0, visibleSteps.indexOf(step))
 
@@ -187,12 +189,6 @@ export default function Welcome() {
   const [showPassed, setShowPassed] = useState(false)
   const [paper, setPaper] = useState<string | null>(null)
   const [paperVariant, setPaperVariantState] = useState<PaperVariant | null>(null)
-  const [providers, setProviders] = useState<ResourceProvider[]>([])
-  const [primaryProvider, setPrimaryProvider] = useState<ResourceProvider>("kaplan")
-  const [materials, setMaterials] = useState<ResourceMaterial[]>(["study-text"])
-  const [resourceEdition, setResourceEdition] = useState("September 2026 – June 2027")
-  const [totalChapters, setTotalChapters] = useState<number | null>(null)
-  const [completedChapters, setCompletedChapters] = useState(0)
   const [minutes, setMinutes] = useState(60)
   const [daysPerWeek, setDaysPerWeek] = useState(6)
   const [slot, setSlot] = useState("19:00")
@@ -239,8 +235,6 @@ export default function Welcome() {
       ? englishLevel !== null && englishEvidence !== null
     : step === 3
     ? paper !== null && (!["LW", "TX"].includes(paper) || paperVariant !== null)
-    : step === 4
-      ? providers.length > 0 && (providers.includes("none") || materials.length > 0)
       : step === 7
         ? goal !== null
         : step === 8
@@ -261,8 +255,6 @@ export default function Welcome() {
     if (nextPaper !== paper) {
       setExamDate("")
       setPickedSitting(null)
-      setTotalChapters(null)
-      setCompletedChapters(0)
     }
     setPaper(nextPaper)
     setPaperVariantState(null)
@@ -303,14 +295,9 @@ export default function Welcome() {
     setPassedPapers([...passed])
     setStudyingPapers([paper])
     if (paperVariant) setPaperVariant(paper, paperVariant)
-    setStudyResource(paper, {
-      providers,
-      primaryProvider,
-      materials: providers.includes("none") ? [] : materials,
-      edition: resourceEdition,
-      totalChapters,
-      completedChapters,
-    })
+    // No third-party resource is recorded while Scholify is the only content
+    // source — getStudyResource() returning null is what makes the daily plan
+    // sequence Scholify's own chapters. See the note on visibleSteps.
     if (goal) setGoal(goal)
     if (learnerRoute && englishLevel && englishEvidence) {
       saveLearnerBaseline({
@@ -468,22 +455,6 @@ export default function Welcome() {
         isMobile={isMobile}
       />
     ),
-    4: (
-      <ResourceSlide
-        providers={providers}
-        setProviders={setProviders}
-        primaryProvider={primaryProvider}
-        setPrimaryProvider={setPrimaryProvider}
-        materials={materials}
-        setMaterials={setMaterials}
-        edition={resourceEdition}
-        setEdition={setResourceEdition}
-        totalChapters={totalChapters}
-        setTotalChapters={setTotalChapters}
-        completedChapters={completedChapters}
-        setCompletedChapters={setCompletedChapters}
-      />
-    ),
     5: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} daysPerWeek={daysPerWeek} setDaysPerWeek={setDaysPerWeek} />,
     6: (
       <SittingSlide
@@ -529,16 +500,6 @@ export default function Welcome() {
         finishBusy={finishBusy}
         finishError={finishError}
         isMobile={isMobile}
-        resource={{
-          paperId: paper ?? "",
-          providers,
-          primaryProvider,
-          materials,
-          edition: resourceEdition,
-          totalChapters,
-          completedChapters,
-          updatedAt: "",
-        }}
         learnerRoute={learnerRoute}
         englishLevel={englishLevel}
         daysPerWeek={daysPerWeek}
@@ -554,6 +515,10 @@ export default function Welcome() {
     "Where are you starting from?",
     "How should Charles explain things?",
     "Which paper are we passing?",
+    // Index 4 is UNREACHABLE — the study-resource step is out of the flow until
+    // the Kaplan/BPP partnerships exist (see visibleSteps). Kept as a
+    // placeholder because TITLES and SUBS are indexed by step number, so
+    // deleting it would silently shift every step after it.
     "What are you studying with?",
     "How much time can you protect, daily?",
     sessionPaper ? "Which sitting are you taking?" : "When's your exam?",
@@ -1048,146 +1013,6 @@ function PaperSlide({
   )
 }
 
-function ResourceSlide({
-  providers,
-  setProviders,
-  primaryProvider,
-  setPrimaryProvider,
-  materials,
-  setMaterials,
-  edition,
-  setEdition,
-  totalChapters,
-  setTotalChapters,
-  completedChapters,
-  setCompletedChapters,
-}: {
-  providers: ResourceProvider[]
-  setProviders: (providers: ResourceProvider[]) => void
-  primaryProvider: ResourceProvider
-  setPrimaryProvider: (provider: ResourceProvider) => void
-  materials: ResourceMaterial[]
-  setMaterials: (materials: ResourceMaterial[]) => void
-  edition: string
-  setEdition: (edition: string) => void
-  totalChapters: number | null
-  setTotalChapters: (count: number | null) => void
-  completedChapters: number
-  setCompletedChapters: (count: number) => void
-}) {
-  const providerOptions: ResourceProvider[] = ["kaplan", "bpp", "acca-study-hub", "other", "none"]
-  const materialOptions: ResourceMaterial[] = ["study-text", "practice-kit", "pocket-notes", "online-course"]
-  const hasResource = providers.length > 0 && !providers.includes("none")
-
-  const toggleProvider = (provider: ResourceProvider) => {
-    if (provider === "none") {
-      setProviders(["none"])
-      setPrimaryProvider("none")
-      return
-    }
-    const withoutNone: ResourceProvider[] = providers.filter((item) => item !== "none")
-    const next = withoutNone.includes(provider)
-      ? withoutNone.filter((item) => item !== provider)
-      : [...withoutNone, provider]
-    setProviders(next)
-    if (!next.includes(primaryProvider)) setPrimaryProvider(next[0] ?? "kaplan")
-  }
-
-  const toggleMaterial = (material: ResourceMaterial) => {
-    setMaterials(materials.includes(material)
-      ? materials.filter((item) => item !== material)
-      : [...materials, material])
-  }
-
-  return (
-    <div style={{ maxWidth: 540 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 9 }}>
-        {providerOptions.map((provider) => {
-          const on = providers.includes(provider)
-          return (
-            <button
-              key={provider}
-              type="button"
-              onClick={() => toggleProvider(provider)}
-              style={{ ...tileStyle(on), minHeight: 50, padding: "12px 14px", font: `700 13px/1.25 ${SANS}`, color: on ? RED : INK }}
-            >
-              {PROVIDER_LABEL[provider]}
-              {provider === "none" && <span style={{ display: "block", marginTop: 3, font: `500 10px/1.3 ${SANS}`, color: META }}>Charles will use Scholify</span>}
-            </button>
-          )
-        })}
-      </div>
-      {hasResource && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 18 }}>
-          {providers.length > 1 && (
-            <>
-              <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT, marginBottom: 8 }}>Primary learning resource</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 16 }}>
-                {providers.map((provider) => (
-                  <button key={provider} type="button" onClick={() => setPrimaryProvider(provider)} style={{ ...tileStyle(primaryProvider === provider), padding: "9px 13px", font: `700 12px/1 ${SANS}`, color: primaryProvider === provider ? RED : INK }}>
-                    {PROVIDER_LABEL[provider]}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT, marginBottom: 8 }}>What do you use?</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-            {materialOptions.map((material) => {
-              const on = materials.includes(material)
-              return (
-                <button key={material} type="button" onClick={() => toggleMaterial(material)} style={{ ...tileStyle(on), padding: "9px 12px", font: `700 11.5px/1 ${SANS}`, color: on ? RED : INK }}>
-                  {MATERIAL_LABEL[material]}
-                </button>
-              )
-            })}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 92px 92px", gap: 9, marginTop: 16 }}>
-            <label style={{ display: "grid", gap: 6, font: `600 10px/1 ${MONO}`, color: FAINT, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Edition
-              <select value={edition} onChange={(event) => setEdition(event.target.value)} style={{ minHeight: 44, borderRadius: 11, border: `1.5px solid ${BORDER}`, background: "#fff", padding: "0 10px", font: `600 11.5px/1 ${SANS}`, color: INK }}>
-                <option>September 2025 – June 2026</option>
-                <option>September 2026 – June 2027</option>
-                <option>Not sure</option>
-              </select>
-            </label>
-            <NumberField label="Chapters" value={totalChapters} min={1} onChange={(value) => {
-              setTotalChapters(value)
-              if (value !== null) setCompletedChapters(Math.min(completedChapters, value))
-            }} />
-            <NumberField label="Completed" value={completedChapters} min={0} max={totalChapters ?? undefined} onChange={(value) => setCompletedChapters(value ?? 0)} />
-          </div>
-          <p style={{ margin: "9px 0 0", font: `500 11px/1.4 ${SANS}`, color: MUTE }}>
-            Chapter counts are optional and refer to your own copy. Scholify stores planning progress, not publisher content.
-          </p>
-        </motion.div>
-      )}
-    </div>
-  )
-}
-
-function NumberField({ label, value, min, max, onChange }: { label: string; value: number | null; min: number; max?: number; onChange: (value: number | null) => void }) {
-  return (
-    <label style={{ display: "grid", gap: 6, font: `600 10px/1 ${MONO}`, color: FAINT, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-      {label}
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        value={value ?? ""}
-        placeholder="—"
-        onChange={(event) => {
-          const next = event.target.value === "" ? null : Number(event.target.value)
-          onChange(next === null || Number.isFinite(next) ? next : null)
-        }}
-        style={{ width: "100%", minHeight: 44, boxSizing: "border-box", borderRadius: 11, border: `1.5px solid ${BORDER}`, background: "#fff", padding: "0 10px", font: `700 13px/1 ${MONO}`, color: INK }}
-      />
-    </label>
-  )
-}
-
 function TimeSlide({
   minutes, setMinutes, slot, setSlot, daysPerWeek, setDaysPerWeek,
 }: {
@@ -1447,7 +1272,7 @@ function ResultUploadSlide({
 }
 
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, resource, learnerRoute, englishLevel, daysPerWeek,
+  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek,
 }: {
   paper: string
   minutes: number
@@ -1461,7 +1286,6 @@ function ReadySlide({
   finishBusy: boolean
   finishError: string
   isMobile: boolean
-  resource: StudyResourceProfile
   learnerRoute: LearnerRoute | null
   englishLevel: CefrLevel | null
   daysPerWeek: number
@@ -1471,7 +1295,6 @@ function ReadySlide({
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
   const rows: [string, string][] = [
     ["Paper", paper],
-    ["Resources", resourceSummary(resource)],
     ["Daily", `${minutes} min · ${slotLabel}`],
     ["Exam", sitting ? `${sitting.label} (wk ${sitting.week})` : examDate || "Paced by mastery"],
     ...(goalLabel ? ([["Goal", goalLabel]] as [string, string][]) : []),
