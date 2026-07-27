@@ -27,6 +27,7 @@ import { flashcardStats, areaReviewed } from "@/lib/acca-flashcards"
 import { getStartMode } from "@/lib/acca-profile"
 import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 import { getPaperPause } from "@/lib/acca-plan-adjustment"
+import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
 import { chapterForLearningDay, getStudyResource, PROVIDER_LABEL } from "@/lib/acca-study-resources"
 
 /* ── Task vocabulary ──────────────────────────────────────────── */
@@ -255,12 +256,30 @@ function practiceCount(remainingMin: number, targetProb: number): number {
 function nextLearnArea(paperId: string): { code: string; label: string } | null {
   const paper = getPaper(paperId)
   const stats = getPaperStats(paperId)
-  for (const a of paper?.areas ?? []) {
+  const outstanding = (paper?.areas ?? []).filter((a) => {
     const topic = getTopicResult(paperId, a.code)
     const stat = stats.areas.find((s) => s.code === a.code)
-    if (!topic.mastered || (stat?.seen ?? 0) < 8) return { code: a.code, label: a.label }
+    return !topic.mastered || (stat?.seen ?? 0) < 8
+  })
+  if (!outstanding.length) return null
+
+  // A learner starting from zero studies in SYLLABUS ORDER — systematic coverage
+  // is the point, and each area builds on the last.
+  //
+  // A RETURNER studies in order of NEED. They arrived having covered ground, so
+  // marching them from area A spends the little time they have on material they
+  // already know — the specific complaint of someone leaving a course because it
+  // cost too much time, energy and money. Their diagnostic already ranked every
+  // area, so lead with the weakest of the areas still outstanding.
+  const route = getLearnerBaseline()?.route ?? null
+  const diagnostic = getLatestDiagnostic(paperId)
+  if (route && route !== "new" && diagnostic) {
+    const scoreOf = (code: string): number =>
+      diagnostic.areas.find((area) => area.code === code && area.seen > 0)?.score ?? 1
+    const byNeed = [...outstanding].sort((a, b) => scoreOf(a.code) - scoreOf(b.code))
+    return { code: byNeed[0].code, label: byNeed[0].label }
   }
-  return null
+  return { code: outstanding[0].code, label: outstanding[0].label }
 }
 
 /**

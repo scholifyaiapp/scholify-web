@@ -7,6 +7,8 @@
  */
 
 import { getPaper, getPaperStats, type PaperStats } from "@/lib/acca"
+import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
+import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 
 const KEY = "scholify-acca-plan"
 
@@ -174,13 +176,59 @@ export const METHOD_PHASES: MethodPhase[] = [
   { key: "rehearse", label: "Rehearse", emoji: "⏱️", share: 0.15, goal: "Timed mocks under exam conditions until you're consistently above the pass line." },
 ]
 
-/** Which phase the learner is in on this paper — mastery-driven. */
+/**
+ * Readiness at which a learner who has already covered the syllabus is ready to
+ * rehearse rather than revise. Deliberately the same number as MOCK_GATE in
+ * acca-loop — a learner sent to Rehearse must find the mock room unlocked — but
+ * declared here because acca-loop imports THIS module, so importing it back
+ * would be a cycle. Keep the two in step.
+ */
+const REHEARSAL_READY = 60
+/**
+ * Below this, a returner's diagnostic has contradicted their own account of
+ * themselves: whatever they covered has not stuck, and Learn is the honest
+ * answer however much material they have been through.
+ */
+const REPAIR_FLOOR = 40
+
+/**
+ * Which phase the learner is in on this paper.
+ *
+ * Driven by the learner's own EVIDENCE, then by the route they declared at
+ * onboarding — in that order, because a self-report is a starting hypothesis and
+ * a diagnostic is a measurement.
+ *
+ * The volume gate below (`coverage < 0.85`) is right for someone starting from
+ * zero and wrong for everyone else: `coverage` counts questions attempted IN
+ * SCHOLIFY, so a learner who has finished Kaplan, BPP and the ACCA Study Hub sits
+ * at ~7% after a 25-question diagnostic and would be held in Learn for ~300
+ * questions — told to study area A a month before their exam. That is the single
+ * fastest way to lose the learner who needs us least and pays most readily.
+ */
 export function currentPhase(paperId: string): MethodPhase {
   const stats = getPaperStats(paperId)
   const days = daysUntilExam(paperId)
 
   // Two weeks out, a tutor always switches to exam rehearsal.
   if (days !== null && days <= 14 && stats.answered > 0) return METHOD_PHASES[3]
+
+  const route = getLearnerBaseline()?.route ?? null
+  const diagnostic = getLatestDiagnostic(paperId)
+
+  // A learner who arrived having already studied — "course" (part-way through a
+  // course or self-study) or "practice" (finished the material) — is placed by
+  // what the diagnostic proved, not by how much of OUR bank they have seen.
+  if (diagnostic && route && route !== "new") {
+    const proven = diagnostic.passProbability
+    // Finished the material and demonstrably at the pass line → rehearse. The
+    // rehearse day is a timed mock plus a post-mortem on what it exposed, which
+    // is exactly the right month for someone with weeks left and no gaps to fill.
+    if (route === "practice" && proven >= REHEARSAL_READY) return METHOD_PHASES[3]
+    // Covered ground but not yet exam-ready → strengthen: keep progressing while
+    // the daily drill attacks the diagnostic's pain points.
+    if (proven >= REPAIR_FLOOR) return METHOD_PHASES[1]
+    return METHOD_PHASES[0]
+  }
 
   if (stats.answered < 20 || stats.coverage < 0.85) return METHOD_PHASES[0]
 
