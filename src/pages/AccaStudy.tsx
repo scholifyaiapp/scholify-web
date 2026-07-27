@@ -440,6 +440,12 @@ export default function AccaStudy() {
     setCorrectCount(0)
     setLog([])
     setIsMock(false)
+    // Reset the other mode flags too — otherwise a custom AI set opened right
+    // after a Bank Run / knowledge check inherits isBankRun/isTopicTest and gets
+    // recorded as bank-run progress and mislabelled on the results screen.
+    setIsBankRun(false)
+    setIsTopicTest(false)
+    setTopicArea(null)
     setTimeLeft(0)
     resetQuestion()
     setMode("session")

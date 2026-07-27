@@ -48,7 +48,10 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
     if (secondsLeft === null || secondsLeft <= 0 || result) return
     const t = setInterval(() => setSecondsLeft((s) => (s === null ? s : Math.max(0, s - 1))), 1000)
     return () => clearInterval(t)
-  }, [secondsLeft !== null, result === null])
+    // Depend on the real values, not booleans: with [secondsLeft !== null, ...]
+    // the guard above only ran at subscribe time, so the interval kept ticking
+    // after hitting 0. Real deps re-run the guard each second and stop it at 0.
+  }, [secondsLeft, result])
   const expired = secondsLeft === 0
 
   async function mark() {

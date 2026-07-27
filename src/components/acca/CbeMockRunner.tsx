@@ -213,7 +213,11 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         const isAnswered = answered({ key, section, item, n: 0 })
         if (!isAnswered) unanswered += 1
         const result = gradeQuestion(item.q, response(item.q, answers[key]))
-        recordAnswer(item.q.paper, item.q, result.correct)
+        // Only feed ANSWERED questions into the per-area knowledge model. An
+        // unanswered item isn't evidence the learner can't do it — it's a time
+        // problem, already attributed to "time" via recordMistake below. Recording
+        // it as seen-and-wrong here too would double-count and depress readiness.
+        if (isAnswered) recordAnswer(item.q.paper, item.q, result.correct)
         if (result.correct) {
           sectionEarned += item.q.marks
           earned += item.q.marks
