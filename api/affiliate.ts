@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import postgres from "postgres"
 
 /*
  * Scholify affiliate API (Phase 1).
@@ -27,6 +28,65 @@ function admin(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return null
   return createClient(url, key, { auth: { persistSession: false } })
+}
+
+let schemaReady: Promise<void> | null = null
+function ensureAffiliateSchema(): Promise<void> {
+  if (schemaReady) return schemaReady
+  const connection = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL
+  if (!connection) return Promise.resolve()
+  schemaReady = (async () => {
+    const sql = postgres(connection, { max: 1, prepare: false, connect_timeout: 10, idle_timeout: 5 })
+    try {
+      await sql`
+        create table if not exists public.affiliate_referrals (
+          id uuid primary key default gen_random_uuid(),
+          affiliate_id uuid not null references public.affiliates (id) on delete cascade,
+          referred_user_id uuid not null references auth.users (id) on delete cascade,
+          created_at timestamptz not null default now(),
+          unique (referred_user_id)
+        )
+      `
+      await sql`create index if not exists affiliate_referrals_affiliate_idx on public.affiliate_referrals (affiliate_id)`
+      await sql`alter table public.affiliate_referrals enable row level security`
+      await sql`drop policy if exists affiliate_referrals_partner_read on public.affiliate_referrals`
+      await sql`
+        create policy affiliate_referrals_partner_read on public.affiliate_referrals
+        for select using (
+          affiliate_id in (select id from public.affiliates where user_id = auth.uid())
+        )
+      `
+      await sql`create unique index if not exists affiliates_email_unique_idx on public.affiliates (lower(email))`
+      await sql`alter table public.affiliate_commissions add column if not exists paid_at timestamptz`
+      await sql`
+        create table if not exists public.product_feedback (
+          id uuid primary key default gen_random_uuid(),
+          user_id uuid references auth.users (id) on delete set null,
+          name text,
+          email text not null,
+          category text not null default 'general',
+          rating smallint,
+          message text not null,
+          source text not null default 'web',
+          page_url text,
+          status text not null default 'new',
+          created_at timestamptz not null default now(),
+          constraint product_feedback_rating_check check (rating is null or rating between 1 and 5),
+          constraint product_feedback_category_check check (category in ('general','idea','bug','content','love')),
+          constraint product_feedback_status_check check (status in ('new','reviewed','planned','completed','archived'))
+        )
+      `
+      await sql`create index if not exists product_feedback_created_idx on public.product_feedback (created_at desc)`
+      await sql`create index if not exists product_feedback_status_idx on public.product_feedback (status)`
+      await sql`alter table public.product_feedback enable row level security`
+    } finally {
+      await sql.end({ timeout: 5 })
+    }
+  })().catch((error) => {
+    schemaReady = null
+    throw error
+  })
+  return schemaReady
 }
 
 function readRawBody(req: VercelRequest): Promise<string> {
@@ -65,6 +125,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const supa = admin()
   if (!supa) {
     res.status(200).json({ ok: false, reason: "not_configured" })
+    return
+  }
+  try {
+    await ensureAffiliateSchema()
+  } catch (error) {
+    console.error("affiliate schema:", error)
+    res.status(503).json({ ok: false, reason: "database_schema_unavailable" })
     return
   }
   const action = String(req.query.action || "").trim().toLowerCase()
