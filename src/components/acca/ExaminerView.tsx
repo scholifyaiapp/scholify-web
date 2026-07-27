@@ -41,18 +41,31 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
   const [marking, setMarking] = useState(false)
   const [result, setResult] = useState<ExaminerResult | null>(null)
 
-  // Exam clock — null means untimed practice.
+  // Exam clock — null means untimed practice. Driven off a DEADLINE, not a
+  // per-second decrement, because this clock is the product's exam-fidelity
+  // claim ("priced at the official minutes-per-mark") and both decrement
+  // variants lie about elapsed time:
+  //   · deps [secondsLeft, result] tears the interval down and resubscribes on
+  //     every tick, so each period is 1000ms PLUS a render — a 54-minute task
+  //     drifts tens of seconds slow, and the "N used of M" debrief inherits it.
+  //   · any setInterval-based decrement stops counting when the tab is
+  //     backgrounded (browsers throttle background timers to ~1/min), so
+  //     switching tabs would effectively pause the exam clock.
+  // Against a wall-clock deadline, one interval per question is enough and
+  // elapsed time is always real, foregrounded or not.
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
   const [allowed, setAllowed] = useState(0)
+  const [endsAt, setEndsAt] = useState<number | null>(null)
   const timedRef = useRef(false)
   useEffect(() => {
-    if (secondsLeft === null || secondsLeft <= 0 || result) return
-    const t = setInterval(() => setSecondsLeft((s) => (s === null ? s : Math.max(0, s - 1))), 1000)
+    if (endsAt === null || result) return
+    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)))
+    tick()
+    // Sub-second polling so the displayed second flips close to when it really
+    // does; the deadline makes the value exact either way.
+    const t = setInterval(tick, 250)
     return () => clearInterval(t)
-    // Depend on the real values, not booleans: with [secondsLeft !== null, ...]
-    // the guard above only ran at subscribe time, so the interval kept ticking
-    // after hitting 0. Real deps re-run the guard each second and stop it at 0.
-  }, [secondsLeft, result])
+  }, [endsAt, result])
   const expired = secondsLeft === 0
 
   async function mark() {
@@ -77,9 +90,11 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
       const secs = examSecondsFor(paperId, q.maxMarks)
       setAllowed(secs)
       setSecondsLeft(secs)
+      setEndsAt(Date.now() + secs * 1000)
     } else {
       setSecondsLeft(null)
       setAllowed(0)
+      setEndsAt(null)
     }
   }
 
@@ -164,7 +179,10 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <BackButton label="All questions" onClick={() => { setActive(null); setSecondsLeft(null) }} />
+        {/* Clearing endsAt is what actually stops the clock — without it the
+            deadline effect re-derives secondsLeft on its next poll and the
+            abandoned question's clock comes back to life over the list. */}
+        <BackButton label="All questions" onClick={() => { setActive(null); setSecondsLeft(null); setEndsAt(null) }} />
         {secondsLeft !== null && !result && (
           <>
           <ProCountdown secondsLeft={secondsLeft} totalSeconds={Math.max(1, allowed)} label="Written task" />

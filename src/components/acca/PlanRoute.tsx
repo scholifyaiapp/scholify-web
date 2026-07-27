@@ -58,11 +58,11 @@ export function PlanRoute({ paperId }: { paperId: string }) {
             {days} days · ~{plan.dailyMinutes} min/day · target {plan.targetProb}%
           </div>
         </div>
-        {/* Streak only. The "N shields left" claim that used to sit here was not
-            true where the student actually looks: acca-schedule.ts keeps its own
-            shield-protected streak, while the headline streak in acca.ts resets
-            on a missed day regardless. Until the two stores are unified, we
-            promise nothing we don't honour. */}
+        {/* Streak only — deliberately no "N shields left" claim. The number here
+            is now the same shield-protected streak the dashboard tile shows
+            (both read shieldState), so the two no longer disagree. Surfacing the
+            remaining allowance is a separate product decision: it would commit
+            us to a counter that silently resets every Monday. */}
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 13px", borderRadius: R.pill, background: C.greenSoft, border: `1px solid ${C.green}`, whiteSpace: "nowrap" }}>
           <Icon name="streak" size={14} color={C.green} />
           <span style={{ fontSize: 12.5, fontWeight: 800, color: C.green }}>{shield.streak}-day streak</span>

@@ -183,11 +183,20 @@ export function recordDayActive(paperId: string): ShieldState {
 
 function shieldStateFrom(rec: ShieldRec, today: string): ShieldState {
   const missed = rec.lastActive ? Math.max(0, daysBetween(rec.lastActive, today) - (rec.lastActive === today ? 0 : 1)) : 0
+  const shieldsLeft = Math.max(0, SHIELDS_PER_WEEK - rec.shieldsUsed)
+  const protectedToday = missed > 0 && missed <= shieldsLeft
   return {
-    streak: rec.streak,
-    shieldsLeft: Math.max(0, SHIELDS_PER_WEEK - rec.shieldsUsed),
+    // A streak the shields can no longer cover is ALREADY gone — report 0, don't
+    // echo the stored number. `rec.streak` is only rewritten by recordDayActive,
+    // i.e. on the learner's NEXT session, so reading it raw means the dashboard
+    // tile keeps advertising a dead streak: "12 days" to someone who last
+    // studied three weeks ago. It must read the same as what recordDayActive
+    // will decide when they do come back (a restart from 1). Gaps still WITHIN
+    // the allowance are protected and keep the number, which is the promise.
+    streak: protectedToday || missed === 0 ? rec.streak : 0,
+    shieldsLeft,
     missedDays: rec.lastActive === today ? 0 : missed,
-    protectedToday: missed > 0 && missed <= SHIELDS_PER_WEEK - rec.shieldsUsed,
+    protectedToday,
   }
 }
 

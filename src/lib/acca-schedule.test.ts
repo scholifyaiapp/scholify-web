@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { focusArea, recordDayActive } from "@/lib/acca-schedule"
+import { focusArea, recordDayActive, shieldState } from "@/lib/acca-schedule"
 import { scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
 import { getPaper, getQuestions, recordAnswer } from "@/lib/acca"
 
@@ -78,6 +78,47 @@ describe("recordDayActive — the shield/streak scheme", () => {
     vi.setSystemTime(new Date("2026-01-11T12:00:00Z"))
     const nextDay = recordDayActive("FA")
     expect(nextDay.streak).toBe(2)
+  })
+
+  /*
+   * The dashboard streak tile and the plan-route badge both READ shieldState()
+   * without recording anything. The stored streak is only ever rewritten by
+   * recordDayActive, so a read that echoed it raw kept advertising a streak the
+   * learner had already lost — the single most trust-damaging thing a streak
+   * tile can do. A read must agree with what the next session will decide.
+   */
+  it("reports a lapsed streak as broken on read, not the stale stored number", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-02-02T12:00:00Z")) // Mon
+    recordDayActive("PM")
+    vi.setSystemTime(new Date("2026-02-03T12:00:00Z")) // Tue
+    expect(recordDayActive("PM").streak).toBe(2)
+
+    // Still Tue: reading back the same day must not disturb the live streak.
+    expect(shieldState("PM").streak).toBe(2)
+
+    // Three weeks later, having never returned. Far beyond any shield allowance.
+    vi.setSystemTime(new Date("2026-02-24T12:00:00Z"))
+    expect(shieldState("PM").streak).toBe(0)
+    expect(shieldState("PM").protectedToday).toBe(false)
+
+    // And the next real session restarts from 1 — exactly what the read said.
+    expect(recordDayActive("PM").streak).toBe(1)
+  })
+
+  it("keeps the streak on a read when shields still cover the gap", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z")) // Mon
+    recordDayActive("FR")
+    vi.setSystemTime(new Date("2026-03-03T12:00:00Z")) // Tue
+    expect(recordDayActive("FR").streak).toBe(2)
+
+    // Thu — one day missed (Wed), well inside the 3-shield weekly allowance.
+    vi.setSystemTime(new Date("2026-03-05T12:00:00Z"))
+    const s = shieldState("FR")
+    expect(s.missedDays).toBe(1)
+    expect(s.protectedToday).toBe(true)
+    expect(s.streak, "a shielded gap must NOT zero the streak").toBe(2)
   })
 })
 
