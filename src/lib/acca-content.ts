@@ -67,6 +67,25 @@ export interface AccaQuestion {
   /** Marks the question is worth (OT questions are typically 2). */
   marks: number
   difficulty: Difficulty
+  /**
+   * True for items DERIVED from study text (a key term or exam trap turned into
+   * a retrieval prompt) rather than authored as exam questions.
+   *
+   * They are useful drilling — they are not exam-standard measurement. A real
+   * ACCA objective-test question is applied: a scenario, a computation, or a
+   * judgement between defensible options. A "which term means X" prompt is a
+   * flashcard, and its distractors are other glossary entries rather than the
+   * targeted misconceptions a real distractor encodes, so it is far easier than
+   * anything in the exam.
+   *
+   * That matters because mastery, the diagnostic and the Exam Readiness Score
+   * are all computed from answers. Mixing recall drills into a graded assessment
+   * makes the headline number optimistically biased — the learner scores well on
+   * a form that is a third trivia and walks into a much harder real CBE. So the
+   * graded builders (buildDiagnostic, buildCbeMock) prefer authored questions and
+   * fall back to these only when a paper genuinely has nothing else for an area.
+   */
+  recall?: true
 }
 
 /*

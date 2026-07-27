@@ -148,11 +148,25 @@ function shuffle<T>(arr: T[], seed: number): T[] {
  * medium, one hard when available — falling back to the nearest difficulty
  * so every area still contributes PER_AREA questions on a thin bank.
  */
+/**
+ * Authored questions first, derived recall drills last — a stable partition, so
+ * a shuffled bucket keeps its order within each group.
+ *
+ * The diagnostic produces the Exam Readiness Score, and a "which term means X"
+ * prompt is far easier than anything in a real CBE (see AccaQuestion.recall).
+ * Grading a form that is part trivia inflates the number the learner trusts
+ * most. Recall items are still drawn when an area has nothing authored left,
+ * because a thin area with a shorter honest ladder beats an absent area.
+ */
+function authoredFirst(questions: AccaQuestion[]): AccaQuestion[] {
+  return [...questions.filter((q) => !q.recall), ...questions.filter((q) => q.recall)]
+}
+
 function pickLadder(pool: AccaQuestion[], seed: number): AccaQuestion[] {
   const buckets: Record<Difficulty, AccaQuestion[]> = {
-    easy: shuffle(pool.filter((q) => q.difficulty === "easy"), seed),
-    medium: shuffle(pool.filter((q) => q.difficulty === "medium"), seed + 1),
-    hard: shuffle(pool.filter((q) => q.difficulty === "hard"), seed + 2),
+    easy: authoredFirst(shuffle(pool.filter((q) => q.difficulty === "easy"), seed)),
+    medium: authoredFirst(shuffle(pool.filter((q) => q.difficulty === "medium"), seed + 1)),
+    hard: authoredFirst(shuffle(pool.filter((q) => q.difficulty === "hard"), seed + 2)),
   }
   const fallback: Record<Difficulty, Difficulty[]> = {
     easy: ["easy", "medium", "hard"],
@@ -211,7 +225,9 @@ export function buildDiagnostic(paperId: string, seed = Date.now(), mode: "full"
   const selected = picked.slice(0, limit)
   if (selected.length < limit) {
     const used = new Set(selected.map((q) => q.id))
-    const spares = shuffle(all.filter((q) => !used.has(q.id)), seed + 11)
+    // Top up with authored questions before reaching for recall drills, for the
+    // same reason pickLadder does.
+    const spares = authoredFirst(shuffle(all.filter((q) => !used.has(q.id)), seed + 11))
     selected.push(...spares.slice(0, limit - selected.length))
   }
   return shuffle(selected, seed + 7)

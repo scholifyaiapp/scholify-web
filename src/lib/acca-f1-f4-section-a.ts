@@ -12,6 +12,13 @@ type ChoiceSeed = {
   distractors: string[]
   explanation: string
   difficulty: AccaQuestion["difficulty"]
+  /**
+   * Set for seeds built by permuting a glossary term or exam trap — retrieval
+   * drills, not exam-standard measurement. Chapter `check` questions are
+   * authored (a real stem with authored options and an authored explanation), so
+   * they are NOT marked: they belong in a graded form. See AccaQuestion.recall.
+   */
+  recall?: true
 }
 
 function choiceQuestion(paper: string, seed: ChoiceSeed, ordinal: number): AccaQuestion {
@@ -30,6 +37,7 @@ function choiceQuestion(paper: string, seed: ChoiceSeed, ordinal: number): AccaQ
     explanation: seed.explanation,
     marks: 2,
     difficulty: seed.difficulty,
+    ...(seed.recall ? { recall: true as const } : {}),
   }
 }
 
@@ -68,6 +76,26 @@ export function completeSectionAFromStudy(
     })),
   )
   const seeds: ChoiceSeed[] = []
+  /**
+   * Push seeds that PERMUTE study material (glossary terms, exam traps, recaps,
+   * outcomes, chapter intros) into retrieval prompts. Everything routed through
+   * here is stamped `recall: true`, which keeps it out of graded forms unless a
+   * paper has nothing authored for an area. Authored chapter `check` questions
+   * are pushed directly onto `seeds` and stay eligible for grading.
+   */
+  const pushRecall = (...items: Omit<ChoiceSeed, "recall">[]): void => {
+    for (const item of items) {
+      // Difficulty is forced to "easy", overriding whatever the seed claimed.
+      // These are all one-step retrieval of a single fact, so the labels were
+      // fiction: the SAME definition→term mapping was tagged "easy" as -name,
+      // "medium" as -label and "hard" as -advice/-identify. DIFFICULTY_WEIGHT
+      // scores the diagnostic by that label — the reveal literally promises "a
+      // hard one right counts for more" — so a meaningless "hard" tag bought the
+      // learner unearned readiness. Recall is easy; the authored bank supplies
+      // the genuine medium and hard tiers.
+      seeds.push({ ...item, difficulty: "easy", recall: true })
+    }
+  }
 
   chapters.forEach((chapter) => {
     chapter.sections.forEach((section, index) => {
@@ -104,7 +132,7 @@ export function completeSectionAFromStudy(
       .concat(otherTerms)
       .map((candidate) => `${term.term} — ${candidate.def}`)
 
-    seeds.push(
+    pushRecall(
       {
         id: `${term.key}-name`,
         area: term.area,
@@ -198,7 +226,7 @@ export function completeSectionAFromStudy(
       .slice((index * 3) % Math.max(1, traps.length - 1))
       .concat(traps)
       .map((candidate) => candidate.trap)
-    seeds.push(
+    pushRecall(
       {
         id: `${trap.key}-fix`,
         area: trap.area,
@@ -229,7 +257,7 @@ export function completeSectionAFromStudy(
       .slice(index % Math.max(1, recaps.length - 1))
       .concat(recaps)
       .map((candidate) => candidate.item)
-    seeds.push({
+    pushRecall({
       id: `${recap.key}-apply`,
       area: recap.area,
       stem: `Which statement should be retained when reviewing ${recap.title.toLowerCase()}?`,
@@ -238,7 +266,7 @@ export function completeSectionAFromStudy(
       explanation: `The chapter recap states: ${recap.item}`,
       difficulty: "medium",
     })
-    seeds.push({
+    pushRecall({
       id: `${recap.key}-advise`,
       area: recap.area,
       stem: `An adviser is checking a conclusion about ${recap.title.toLowerCase()}. Which chapter principle provides the soundest basis?`,
@@ -258,7 +286,7 @@ export function completeSectionAFromStudy(
       .slice((index * 2) % Math.max(1, outcomes.length - 1))
       .concat(outcomes)
       .map((candidate) => candidate.item)
-    seeds.push({
+    pushRecall({
       id: `${outcome.key}-skill`,
       area: outcome.area,
       stem: `Which capability is specifically developed in the ${outcome.title.toLowerCase()} study area?`,
@@ -267,7 +295,7 @@ export function completeSectionAFromStudy(
       explanation: `The relevant capability is: ${outcome.item}`,
       difficulty: "hard",
     })
-    seeds.push({
+    pushRecall({
       id: `${outcome.key}-development`,
       area: outcome.area,
       stem: `Which learning objective best supports advanced work on ${outcome.title.toLowerCase()}?`,
@@ -284,7 +312,7 @@ export function completeSectionAFromStudy(
       .slice(index)
       .concat(chapters)
       .map((candidate) => candidate.intro)
-    seeds.push({
+    pushRecall({
       id: `${chapter.area}-chapter-purpose`,
       area: chapter.area,
       stem: `Which statement best describes the purpose of the ${chapter.title.toLowerCase()} chapter?`,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { ALL_PAPERS } from "@/lib/acca-qualification"
 import { loadPaperContent } from "@/lib/acca-paper-content"
 import { paperContent } from "@/lib/acca-content-registry"
+import { buildDiagnostic } from "@/lib/acca-diagnostic"
 
 /*
  * Examiner-standard integrity of the objective banks.
@@ -50,6 +51,34 @@ describe("objective bank integrity", () => {
       }
     }
     expect(offenders.slice(0, 12), `${offenders.length} questions with duplicate options`).toEqual([])
+  })
+
+  it("never labels a derived recall drill as medium or hard", async () => {
+    // DIFFICULTY_WEIGHT scores the diagnostic by this label, and the reveal
+    // promises "a hard one right counts for more". A one-step glossary lookup
+    // tagged "hard" hands the learner unearned readiness.
+    for (const paper of ALL_PAPERS) {
+      await loadPaperContent(paper.id)
+      const mislabelled = paperContent(paper.id).questions.filter((q) => q.recall && q.difficulty !== "easy")
+      expect(mislabelled.map((q) => q.id).slice(0, 5), `${paper.id}`).toEqual([])
+    }
+  })
+
+  it("keeps the graded diagnostic authored wherever the bank allows it", async () => {
+    // The Exam Readiness Score is the product's central promise. Recall drills
+    // are far easier than a real CBE, so a diagnostic padded with them reads
+    // high and then the real exam doesn't. Papers with a real authored bank must
+    // produce an essentially recall-free form; the exception is a paper whose
+    // bank genuinely has almost nothing authored, where a short honest ladder
+    // still beats an absent syllabus area.
+    const thin = new Set(["LW"]) // LW-Global ships 8 authored questions; see review notes.
+    for (const paper of ALL_PAPERS) {
+      if (thin.has(paper.id)) continue
+      await loadPaperContent(paper.id)
+      const form = buildDiagnostic(paper.id, 42)
+      const recall = form.filter((q) => q.recall).length
+      expect(recall / form.length, `${paper.id} diagnostic is ${recall}/${form.length} recall`).toBeLessThanOrEqual(0.2)
+    }
   })
 
   it("always places the correct option somewhere other than a fixed position", async () => {

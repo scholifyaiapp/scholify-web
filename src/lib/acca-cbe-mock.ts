@@ -136,7 +136,14 @@ export function buildCbeMock(paperId: string, form: number): CbeMock {
   }, 0)
   // Bank OTs are 1–3 marks; assume 1-mark worst case won't happen at scale —
   // request generously, buildMockForm caps at what the form actually holds.
-  const pool = otMarksNeeded > 0 ? [...buildMockForm(paperId, form, Math.ceil(otMarksNeeded / 2) + 6)] : []
+  //
+  // Authored questions are drawn before derived recall drills (see
+  // AccaQuestion.recall): a mock is the learner's dress rehearsal and its score
+  // gates the exam-readiness loop, so it must not be padded with glossary
+  // prompts that are far easier than the real sitting. Recall items stay in the
+  // pool as a last resort for thin banks rather than leaving a hole in a section.
+  const rawPool = otMarksNeeded > 0 ? buildMockForm(paperId, form, Math.ceil(otMarksNeeded / 2) + 6) : []
+  const pool = [...rawPool.filter((q) => !q.recall), ...rawPool.filter((q) => q.recall)]
 
   const written = shuffle(getWrittenQuestions(paperId), paperSeed(paperId) * 17 + form * 131)
   // Rotate authored cases with the form so repeat sitters see variety once
