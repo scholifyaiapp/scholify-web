@@ -57,6 +57,7 @@ import {
   type PlanChangeReason,
 } from "@/lib/acca-plan-adjustment"
 import { getPaperVariant, setPaperVariant, type PaperVariant } from "@/lib/acca-profile"
+import { SETUP_KEYS } from "@/lib/account-state"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -98,19 +99,15 @@ function readSettings(): AppSettings {
 
 const ACCA_PREFIX = "scholify-acca-"
 
-/** Setup, not progress: a reset keeps these so the learner isn't re-onboarded. */
-const RESET_KEEP = new Set([
-  "scholify-acca-onboarded",
-  "scholify-acca-startmode",
-  "scholify-acca-experience",
-  "scholify-acca-goal",
-  "scholify-acca-current-paper",
-  "scholify-acca-studying",
-  "scholify-acca-passed",
-  "scholify-acca-paper-variants",
-  "scholify-acca-plan",
-  "scholify-acca-daily-goal",
-])
+/**
+ * Setup, not progress: a reset keeps these so the learner isn't re-onboarded.
+ *
+ * Derived from account-state's SETUP_KEYS rather than hand-listed — the two were
+ * maintained separately and had already drifted apart (see the note there), which
+ * meant a reset silently destroyed setup that onboarding would never ask for
+ * again. One list, no drift.
+ */
+const RESET_KEEP = new Set<string>(SETUP_KEYS)
 
 function accaKeys(): string[] {
   try {

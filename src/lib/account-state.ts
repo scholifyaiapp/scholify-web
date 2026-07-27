@@ -5,9 +5,21 @@ const OWNER_KEY = "scholify-account-state-owner"
 const BACKUP_PREFIX = "scholify-account-state:"
 const META_KEY = "scholify_acca_setup"
 
-// Small setup/preferences only. Question history and notes have their own
-// database sync paths and must not be copied into auth JWT metadata.
-const SETUP_KEYS = [
+/**
+ * The onboarding SETUP keys — small preferences only. Question history and notes
+ * have their own database sync paths and must not be copied into auth JWT
+ * metadata.
+ *
+ * Exported because this is also the definition of "setup, not progress" that
+ * Settings' "reset my progress" must preserve. Those were two hand-maintained
+ * lists and they had already drifted: `scholify-acca-learner-baseline` and
+ * `scholify-acca-study-resources` were added here but not there, so a reset
+ * deleted the learner's route, English level and study-resource profile while
+ * KEEPING `scholify-acca-onboarded` — leaving them unable to re-enter any of it
+ * (onboarding won't re-run) and silently re-pitched at advanced English with a
+ * generic plan. Settings derives its keep-set from this array; keep them one list.
+ */
+export const SETUP_KEYS = [
   "scholify-acca-onboarded",
   "scholify-acca-current-paper",
   "scholify-acca-studying",

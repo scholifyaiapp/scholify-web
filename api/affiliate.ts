@@ -410,7 +410,15 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     status: "pending",
   })
   if (error) {
-    res.status(200).json({ ok: false, reason: "insert_failed", detail: error.message })
+    // Log the Postgres detail, don't return it. /apply is unauthenticated, and a
+    // raw error message names tables, columns and index names (migration 0023
+    // added affiliates_email_unique_idx, so a duplicate application echoed that
+    // index straight back to the caller). 23505 there means the pre-check above
+    // lost a race with a concurrent application for the same address, so report
+    // it as the already-applied case the applicant can actually act on.
+    console.error("partner application insert:", error.code, error.message)
+    const duplicate = error.code === "23505"
+    res.status(200).json({ ok: false, reason: duplicate ? "already_applied" : "insert_failed" })
     return
   }
   // Await the best-effort sends so the serverless function is not frozen before

@@ -1,6 +1,7 @@
 import { motion } from "motion/react"
 import { ArrowRight, BookOpen, Layers3, Target, TimerReset } from "lucide-react"
 import type { CSSProperties } from "react"
+import { questionCount } from "@/lib/acca-content-counts"
 
 type Props = {
   paperId: string; paperName: string; paperCode: string; level: string
@@ -30,7 +31,12 @@ export default function StudyCommandHero(p: Props) {
         <motion.div className="study-orbit study-orbit-one" animate={{ rotate: 360 }} transition={{ duration: 24, repeat: Infinity, ease: "linear" }} />
         <motion.div className="study-orbit study-orbit-two" animate={{ rotate: -360 }} transition={{ duration: 32, repeat: Infinity, ease: "linear" }} />
         <motion.div className="study-3d-card study-3d-card-back" animate={{ y: [0,-5,0], rotateZ: [-7,-5,-7] }} transition={{ duration: 5.5, repeat: Infinity }}>
-          <Layers3 size={20} /><small>QUESTION BANK</small><strong>350</strong>
+          {/* Read the bank size from acca-content-counts, never a literal: that
+              map is the single source of truth and `npm run audit:content`
+              asserts it against the real banks, so a hardcoded number is the one
+              value here that can silently start lying. It happens to be 350 for
+              every paper today — which is exactly how it would go unnoticed. */}
+          <Layers3 size={20} /><small>QUESTION BANK</small><strong>{questionCount(p.paperId)}</strong>
         </motion.div>
         <motion.div className="study-3d-card study-3d-card-front" animate={{ y: [0,6,0], rotateZ: [5,3,5] }} transition={{ duration: 4.8, repeat: Infinity }}>
           <Target size={22} /><small>READINESS</small><strong>{p.readiness == null ? "—" : `${p.readiness}%`}</strong>
