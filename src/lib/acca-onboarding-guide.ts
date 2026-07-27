@@ -39,18 +39,24 @@ export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date
     ? Math.max(0, Math.ceil((exam.getTime() - now.getTime()) / 604800000))
     : null
   const ratio = availableWeeks === null ? 1 : availableWeeks / recommendedWeeks
-  const status = ratio >= 1.15 ? "comfortable" : ratio >= 0.85 ? "focused" : "risky"
+
+  // This is a conservative planning estimate, not a pass/fail prediction.
+  // The diagnostic can remove work the learner already knows, so reserve the
+  // warning state for a material capacity gap rather than a modest shortfall.
+  const status = ratio >= 1.1 ? "comfortable" : ratio >= 0.7 ? "focused" : "risky"
   const headline = status === "comfortable"
     ? "Your timing has a healthy buffer."
     : status === "focused"
       ? "Your sitting is realistic with consistency."
-      : "This sitting is aggressive for your current workload."
+      : "This sitting has a serious time shortfall."
   const advice = [
     `${input.daysPerWeek} consistent days gives you about ${weeklyHours} protected hours each week.`,
-    `${input.paperId} needs roughly ${recommendedHours} guided hours from your starting point—about ${recommendedWeeks} weeks at this pace.`,
+    `${input.paperId} may need up to ${recommendedHours} guided hours from your starting point—about ${recommendedWeeks} weeks at this pace before the diagnostic personalises it.`,
     status === "risky"
-      ? "Choose a later sitting or increase protected study time; Charles will never promise a pass from an impossible calendar."
-      : "Charles will use short daily missions, weekly review and timed practice rather than one long catch-up day.",
+      ? "There is not enough protected time for the full route. Choose a later sitting or add time only if you can sustain it."
+      : status === "focused"
+        ? "Keep this sitting. Consistency matters more than adding unsustainable hours; Charles will prioritise weak areas after your diagnostic."
+        : "Charles will use short daily missions, weekly review and timed practice rather than one long catch-up day.",
   ]
   return { recommendedHours, weeklyHours, recommendedWeeks, availableWeeks, status, headline, advice }
 }

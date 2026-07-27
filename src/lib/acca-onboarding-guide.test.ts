@@ -16,4 +16,14 @@ describe("Charles onboarding study guide", () => {
     expect(guide.status).toBe("risky")
     expect(guide.availableWeeks).toBeLessThan(guide.recommendedWeeks)
   })
+
+  it("treats a three-month TX plan at two hours a day as focused, not aggressive", () => {
+    const guide = buildOnboardingGuide(
+      { paperId: "TX", route: "new", englishLevel: "B2", minutesPerDay: 120, daysPerWeek: 6, examDate: "2026-12-02" },
+      new Date("2026-09-01T12:00:00Z"),
+    )
+    expect(guide.status).toBe("focused")
+    expect(guide.headline).toContain("realistic")
+    expect(guide.advice.join(" ")).not.toContain("later sitting")
+  })
 })

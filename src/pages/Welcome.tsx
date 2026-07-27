@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { Icon, type IconName } from "@/components/acca/ui"
 import { ScholifyMark } from "@/components/brand"
+import CharlesMascot from "@/components/CharlesMascot"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
 import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
@@ -747,6 +748,13 @@ export default function Welcome() {
             <VisualPanel step={step} paper={paper} sitting={sittings.find((s) => s.date === pickedSitting) ?? null} sittings={sittings} levels={levels} />
           </motion.div>
         </AnimatePresence>
+        <div style={{ position: "absolute", right: 20, bottom: 16, zIndex: 6, pointerEvents: "none" }}>
+          <CharlesMascot
+            pose={(["wave", "idea", "thinking", "present", "plan", "calm", "chart", "run", "thinking", "success"] as const)[step] ?? "wave"}
+            size="clamp(82px,9vw,118px)"
+            delay={0.12}
+          />
+        </div>
       </div>
     </div>
   )
@@ -1393,6 +1401,12 @@ function ReadySlide({
   ]
   return (
     <div style={{ maxWidth: 500 }}>
+      <div style={{ display: "flex", justifyContent: "center", height: 82, marginBottom: 4 }}>
+        <CharlesMascot
+          pose={guide.status === "risky" ? "thinking" : guide.status === "comfortable" ? "thumbsup" : "plan"}
+          size={82}
+        />
+      </div>
       <div style={{ marginBottom: 16, padding: "18px 20px", borderRadius: 17, background: guide.status === "risky" ? "rgba(200,0,0,.06)" : "rgba(14,159,110,.07)", border: `1px solid ${guide.status === "risky" ? "rgba(200,0,0,.22)" : "rgba(14,159,110,.25)"}` }}>
         <div style={{ font: `800 15px/1.25 ${SANS}`, color: guide.status === "risky" ? RED : GREEN }}>Charles recommends · {guide.headline}</div>
         <div style={{ marginTop: 9, display: "grid", gap: 7 }}>
