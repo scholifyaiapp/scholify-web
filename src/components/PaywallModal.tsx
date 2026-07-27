@@ -382,7 +382,7 @@ export default function PaywallModal({
               style={{
                 padding: "24px 32px 0",
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(190px, 100%), 1fr))",
                 gap: 12,
               }}
             >

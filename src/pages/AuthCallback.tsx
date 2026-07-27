@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase"
 import { Spinner } from "@/components/auth/auth-ui"
 import { Icon } from "@/components/acca/ui"
 import { claimCapturedAffiliate } from "@/lib/affiliate"
+import { identifyUser, trackEvent } from "@/lib/analytics"
 
 /*
  * OAuth return handler. Google (and any future provider) redirects here
@@ -37,6 +38,11 @@ export default function AuthCallback() {
       if (cancelled) return
       const { data } = await supabase.auth.getSession()
       if (data.session) {
+        const user = data.session.user
+        identifyUser(user.id, { email: user.email, provider: user.app_metadata?.provider })
+        if (Date.now() - Date.parse(user.created_at) < 10 * 60_000) {
+          trackEvent("signup_completed", { method: "google" })
+        }
         await claimCapturedAffiliate()
         navigate("/dashboard", { replace: true })
         return

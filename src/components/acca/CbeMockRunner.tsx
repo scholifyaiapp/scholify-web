@@ -12,6 +12,7 @@ import { withShuffledOptions } from "@/lib/acca-options"
 import { recordMistake, recordAnswerTiming, snapshotProbability } from "@/lib/acca-analytics"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { queueAccaProgressPush } from "@/lib/acca-cloud"
+import { markFirstTaskCompleted } from "@/lib/retention"
 import { ProCountdown } from "@/components/acca/ProCountdown"
 import { trackEvent } from "@/lib/analytics"
 import { markAnswer, type ExaminerResult } from "@/lib/acca-ai"
@@ -274,6 +275,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
       form: mock.form,
       sections: mock.sections.map((s) => s.id).join(""),
     })
+    void markFirstTaskCompleted()
 
     setOutcome({
       earned: Math.round(earned * 10) / 10,

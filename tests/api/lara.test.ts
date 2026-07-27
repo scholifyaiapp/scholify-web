@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest"
-import { trialActive, envInt } from "./lara.js"
+import { trialActive, envInt } from "../../api/lara.js"
 
 /*
  * The server-side trial gate for AI metering. A trial grants Pro-level AI caps,

@@ -54,6 +54,7 @@ const Waitlist = lazyWithReload(() => import("@/pages/Waitlist"))
 const SignIn = lazyWithReload(() => import("@/pages/SignIn"))
 const SignUp = lazyWithReload(() => import("@/pages/SignUp"))
 const AuthCallback = lazyWithReload(() => import("@/pages/AuthCallback"))
+const ResetPassword = lazyWithReload(() => import("@/pages/ResetPassword"))
 const GoogleCalendarCallback = lazyWithReload(() => import("@/pages/GoogleCalendarCallback"))
 const AccaStudy = lazyWithReload(() => import("@/pages/AccaStudy"))
 const AccaDiagnostic = lazyWithReload(() => import("@/pages/AccaDiagnostic"))
@@ -171,6 +172,7 @@ export default function App() {
 
         {/* OAuth return — must stay public */}
         <Route path="/auth/callback" element={<Page name="AuthCallback"><AuthCallback /></Page>} />
+        <Route path="/reset-password" element={<Page name="ResetPassword"><ResetPassword /></Page>} />
         <Route path="/auth/google/calendar" element={<Page name="GoogleCalendarCallback"><GoogleCalendarCallback /></Page>} />
 
         {/* The product */}

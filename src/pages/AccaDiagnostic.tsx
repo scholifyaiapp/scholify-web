@@ -39,6 +39,7 @@ import RevealExperience from "@/components/acca/RevealExperience"
 import PaywallModal from "@/components/PaywallModal"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import { trackEvent } from "@/lib/analytics"
+import { markFirstTaskCompleted } from "@/lib/retention"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -307,6 +308,7 @@ export default function AccaDiagnostic() {
     const scored = scoreDiagnostic(paperId, answersRef.current)
     setResult(scored)
     trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome })
+    void markFirstTaskCompleted()
     void persistDiagnostic(scored)
     queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
     return scored

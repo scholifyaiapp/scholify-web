@@ -137,6 +137,12 @@ async function writeEntitlement(
       },
       { onConflict: "user_id" },
     )
+    if (!canceled && fields.status === "active") {
+      await supa.from("profiles").upsert(
+        { id: userId, converted_to_paid: true },
+        { onConflict: "id" },
+      )
+    }
   } catch {
     /* audit trail is best-effort */
   }

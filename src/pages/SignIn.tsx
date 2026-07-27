@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth"
+import { safeInternalPath } from "@/lib/navigation"
 import {
   AuthSplitLayout,
   BackToHome,
@@ -273,7 +274,7 @@ export default function SignIn() {
     }
     setAttempts(0)
     const requested = new URLSearchParams(location.search).get("next")
-    navigate(requested?.startsWith("/") ? requested : "/dashboard")
+    navigate(safeInternalPath(requested))
   }
 
   const handleGoogle = async () => {
@@ -288,7 +289,7 @@ export default function SignIn() {
     }
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
     const requested = new URLSearchParams(location.search).get("next")
-    navigate(requested?.startsWith("/") ? requested : "/dashboard")
+    navigate(safeInternalPath(requested))
   }
 
   return (

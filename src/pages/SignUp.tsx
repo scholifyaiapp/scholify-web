@@ -367,7 +367,6 @@ export default function SignUp() {
       setGoogleLoading(false)
       return
     }
-    trackEvent("signup_completed", { method: "google" })
     // Demo mode resolves instantly; real OAuth redirects away before this runs.
     navigate("/dashboard")
   }

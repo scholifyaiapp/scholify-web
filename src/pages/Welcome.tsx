@@ -9,6 +9,7 @@ import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, setPaperVariant, type Goal, type PaperVariant } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
+import { persistAccountSetup } from "@/lib/account-state"
 import { DurationPicker } from "@/components/ui/duration-picker"
 import { ExamCalendar } from "@/components/ui/exam-calendar"
 import {
@@ -312,6 +313,7 @@ export default function Welcome() {
     setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: target })
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()
+    if (complete) void persistAccountSetup()
     // Onboarding is done → start the 3-day free trial now. Fire-and-forget:
     // it's idempotent server-side, and the auth effect re-grants as a safety net.
     if (complete) void startTrial()
@@ -338,6 +340,7 @@ export default function Welcome() {
     try {
       await useUploadedResult(resultAnalysis, resultFile.name)
       markAccaOnboarded()
+      void persistAccountSetup()
       void startTrial()
       setStartMode("assess")
       trackEvent("onboarding_complete", { ...onboardingProps(), exit: "uploaded_result", resultKind: resultAnalysis.resultKind })
@@ -808,14 +811,14 @@ function EnglishBaselineSlide({ route, level, evidence, certificate, certificate
     onLevel(CEFR_LEVELS[Math.max(0, Math.min(5, correct - 1))])
     onEvidence("vocabulary")
   }
-  const levelButtons = (disabled = false) => <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 6 }}>
+  const levelButtons = (disabled = false) => <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
     {CEFR_LEVELS.map((item) => <button key={item} type="button" disabled={disabled} onClick={() => onLevel(item)} style={{ padding: "11px 2px", borderRadius: 9, border: `1px solid ${level === item ? RED : BORDER}`, background: level === item ? RED : "#fff", color: level === item ? "#fff" : INK, opacity: disabled ? .4 : 1, font: `800 11px/1 ${MONO}`, cursor: disabled ? "default" : "pointer" }}>{item}</button>)}
   </div>
   return <div style={{ maxWidth: 590 }}>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>{modes.map((mode) => <button key={mode.id} type="button" onClick={() => { onEvidence(mode.id); onLevel(null) }} style={{ padding: "13px 6px", borderRadius: 13, border: `1.5px solid ${evidence === mode.id ? RED : BORDER}`, background: evidence === mode.id ? "rgba(200,0,0,.05)" : "#fff", color: evidence === mode.id ? RED : BODY, cursor: "pointer", font: `750 11.5px/1.25 ${SANS}` }}><Icon name={mode.icon} size={17} color="currentColor" style={{ margin: "0 auto 7px" }} />{mode.label}</button>)}</div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8 }}>{modes.map((mode) => <button key={mode.id} type="button" onClick={() => { onEvidence(mode.id); onLevel(null) }} style={{ padding: "13px 6px", borderRadius: 13, border: `1.5px solid ${evidence === mode.id ? RED : BORDER}`, background: evidence === mode.id ? "rgba(200,0,0,.05)" : "#fff", color: evidence === mode.id ? RED : BODY, cursor: "pointer", font: `750 11.5px/1.25 ${SANS}` }}><Icon name={mode.icon} size={17} color="currentColor" style={{ margin: "0 auto 7px" }} />{mode.label}</button>)}</div>
     {evidence === "self" && <div style={{ marginTop: 14 }}>{levelButtons()}<p style={{ margin: "9px 0 0", font: `500 11.5px/1.45 ${SANS}`, color: MUTE }}>A1–A2 gets short explanations and defined terminology. B1–B2 gets plain exam English. C1–C2 uses full examiner language.</p></div>}
     {evidence === "certificate" && <div style={{ marginTop: 14, padding: 14, borderRadius: 14, border: `1px solid ${BORDER}`, background: "#fff" }}>
-      <div style={{ display: "flex", gap: 6, marginBottom: 9 }}>{(["IELTS", "TOEFL", "Cambridge", "Other"] as const).map((type) => <button key={type} type="button" onClick={() => onCertificateType(type)} style={{ flex: 1, padding: "8px 2px", borderRadius: 8, border: `1px solid ${certificateType === type ? RED : BORDER}`, background: "#fff", color: certificateType === type ? RED : META, font: `700 9.5px/1 ${SANS}` }}>{type}</button>)}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6, marginBottom: 9 }}>{(["IELTS", "TOEFL", "Cambridge", "Other"] as const).map((type) => <button key={type} type="button" onClick={() => onCertificateType(type)} style={{ padding: "8px 2px", borderRadius: 8, border: `1px solid ${certificateType === type ? RED : BORDER}`, background: "#fff", color: certificateType === type ? RED : META, font: `700 9.5px/1 ${SANS}` }}>{type}</button>)}</div>
       <label style={{ display: "block", padding: 11, borderRadius: 10, border: `1.5px dashed ${level ? GREEN : certificateError ? RED : "#D7CCC4"}`, cursor: certificateBusy ? "wait" : "pointer", font: `650 11.5px/1.3 ${SANS}`, color: level ? GREEN : BODY }}><input type="file" accept=".pdf,application/pdf" disabled={certificateBusy} onChange={(event) => void onCertificate(event.target.files?.[0] ?? null)} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{certificateBusy ? "Charles is reading the certificate…" : level ? `${certificate?.name} · ${level} equivalent verified` : "Attach original text-based certificate PDF"}</label>
       {certificateError && <div role="alert" style={{ marginTop: 7, color: RED, font: `600 10.5px/1.4 ${SANS}` }}>{certificateError}</div>}
       <div style={{ margin: "9px 0 0", font: `500 10px/1.4 ${SANS}`, color: MUTE }}>Scholify reads the score and derives A1–C2; it does not verify the issuer’s authenticity. The original PDF is not retained.</div>

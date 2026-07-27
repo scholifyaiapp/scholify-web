@@ -53,6 +53,7 @@ import { getStudyPath, getTopicResult, recordTopicTest, pathProgress, TOPIC_PASS
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
+import { markFirstTaskCompleted } from "@/lib/retention"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, startFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter } from "@/lib/acca-study-content"
@@ -300,6 +301,7 @@ export default function AccaStudy() {
         correct: correctCount,
         scorePct: questions.length ? Math.round((correctCount / questions.length) * 100) : 0,
       })
+      void markFirstTaskCompleted()
       // Every finished session updates the learner model — snapshot it for
       // the Pass Momentum trend.
       snapshotProbability(paperId)

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import crypto from "node:crypto"
-import { planForPrice, verifySignature } from "./paddle.js"
+import { planForPrice, verifySignature } from "../../api/paddle.js"
 
 /*
  * Billing. Every bug here is a bug that either takes money and gives nothing, or

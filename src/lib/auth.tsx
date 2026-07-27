@@ -11,7 +11,9 @@ import type { Session, User } from "@supabase/supabase-js"
 import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
 import { canStartTrial } from "./entitlement"
 import { isAccaOnboarded } from "./acca-profile"
-import { trackEvent } from "@/lib/analytics"
+import { identifyUser, trackEvent } from "@/lib/analytics"
+import { hydrateAccountSetup, persistAccountSetup, releaseAccountSetup } from "@/lib/account-state"
+import { markAppRetention } from "@/lib/retention"
 
 /*
  * A production build with no Supabase must NOT mint fake accounts (see the note
@@ -148,6 +150,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!user) return
+    const sync = () => { void persistAccountSetup() }
+    const timer = window.setInterval(sync, 30_000)
+    window.addEventListener("pagehide", sync)
+    document.addEventListener("visibilitychange", sync)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener("pagehide", sync)
+      document.removeEventListener("visibilitychange", sync)
+    }
+  }, [user])
+
+  useEffect(() => {
     // DEMO mode — restore any persisted fake session.
     if (!isSupabaseConfigured) {
       setUser(readDemoUser())
@@ -178,7 +193,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const trackOpen = (u: User | null) => {
       if (openedTracked || !u) return
       openedTracked = true
+      identifyUser(u.id, { email: u.email, provider: u.app_metadata?.provider })
       trackEvent("app_opened")
+      void markAppRetention(u)
     }
 
     // REAL mode — hydrate from Supabase and subscribe to changes.
@@ -187,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data }) => {
         if (!active) return
+        hydrateAccountSetup(data.session?.user ?? null)
         trackOpen(data.session?.user ?? null)
         setSession(data.session)
         setUser(data.session?.user ?? null)
@@ -207,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 8000)
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      hydrateAccountSetup(nextSession?.user ?? null)
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
       trackOpen(nextSession?.user ?? null)
@@ -298,6 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       return
     }
+    await releaseAccountSetup()
     await supabase.auth.signOut()
   }, [])
 
@@ -313,7 +333,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) ||
       window.location.origin
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/callback`,
+      redirectTo: `${siteUrl}/reset-password`,
     })
     return { error: error ? friendlyError(error.message) : null }
   }, [])

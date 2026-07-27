@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { commissionAmount, priceForPlan, planForPrice } from "./stripe.js"
+import { commissionAmount, priceForPlan, planForPrice } from "../../api/stripe.js"
 
 /*
  * Stripe plan ↔ price mapping. Every bug here either charges for the wrong plan
