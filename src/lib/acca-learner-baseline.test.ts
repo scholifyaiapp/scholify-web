@@ -10,13 +10,11 @@ describe("learner journey persistence", () => {
       englishLevel: "B2",
       englishEvidence: "self",
       assessmentPath: "timed-practice",
-      syllabusCoverage: "mostly-complete",
       updatedAt: "2026-07-27T00:00:00.000Z",
     })
     expect(getLearnerBaseline()).toMatchObject({
       route: "practice",
       assessmentPath: "timed-practice",
-      syllabusCoverage: "mostly-complete",
     })
     expect(learnerBaselineLine()).toContain("focused on exam practice")
   })

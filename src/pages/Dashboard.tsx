@@ -21,7 +21,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS, paperVariantLabel } from "@/lib/acca-profile"
-import { diagnosticGate, missedDayNote, shieldState } from "@/lib/acca-schedule"
+import { diagnosticGate, missedDayNote, pausedNote, shieldState } from "@/lib/acca-schedule"
 import { PlanRoute } from "@/components/acca/PlanRoute"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
@@ -136,6 +136,8 @@ export default function Dashboard() {
   const gateS = diagnosticGate(paperId)
   const zeroStart = noDiag && getStartMode() === "zero" && !gateS.unlocked
   const missedNote = missedDayNote(paperId)
+  // A paused paper says so, in place of the missed-day note.
+  const pausedBanner = pausedNote(paperId)
   // The streak tile reads the SHIELD-AWARE streak (advanced by recordDayActive
   // on every session), not the answer-only streak from getTodayStats — otherwise
   // the "shields keep your streak alive" promise has no effect on the number the
@@ -184,14 +186,14 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {missedNote && (
+        {(pausedBanner ?? missedNote) && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "13px 16px", borderRadius: R.lg, background: C.brandSoft, border: `1px solid ${C.brandLine}`, marginBottom: SP.lg }}
           >
             <Icon name="tutor" size={17} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
-            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>{missedNote}</div>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>{pausedBanner ?? missedNote}</div>
           </motion.div>
         )}
 

@@ -307,7 +307,6 @@ export default function Welcome() {
         certificateName: certificateFile?.name,
         certificateType: englishEvidence === "certificate" ? certificateType : undefined,
         assessmentPath: learnerRoute === "new" ? "embedded" : resultChoice ?? "diagnostic",
-        syllabusCoverage: learnerRoute === "new" ? "starting" : learnerRoute === "course" ? "partial" : "mostly-complete",
         updatedAt: new Date().toISOString(),
       })
       if (getExperience() !== "professional") {

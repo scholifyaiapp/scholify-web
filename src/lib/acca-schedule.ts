@@ -26,7 +26,7 @@ import { getTopicResult } from "@/lib/acca-topics"
 import { flashcardStats, areaReviewed } from "@/lib/acca-flashcards"
 import { getStartMode } from "@/lib/acca-profile"
 import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
-import { getPaperPause } from "@/lib/acca-plan-adjustment"
+import { activePaperPause } from "@/lib/acca-plan-adjustment"
 import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
 import { chapterForLearningDay, getStudyResource, PROVIDER_LABEL } from "@/lib/acca-study-resources"
 
@@ -213,7 +213,27 @@ function shieldStateFrom(rec: ShieldRec, today: string, paused = false): ShieldS
  * happens (buildDailyTasks recomputes from what remains); this gives it a voice,
  * because the reassurance is the point. Returns null when no days were missed.
  */
+/**
+ * Charles acknowledging an active pause — the other half of the pause feature.
+ *
+ * Settings could pause a paper and hold the streak, but nothing ever SAID so:
+ * the dashboard carried on issuing a normal day, so the learner had no way to
+ * tell the pause had taken effect. Returns null unless a pause is in effect, so
+ * an expired one quietly stops speaking.
+ */
+export function pausedNote(paperId: string): string | null {
+  const pause = activePaperPause(paperId)
+  if (!pause) return null
+  const back = pause.returnDate
+    ? `You're back on ${pause.returnDate}.`
+    : "Come back whenever you're ready."
+  return `${paperId} is paused — your streak is held and nothing is piling up. ${back} Today's plan is here if you want it anyway.`
+}
+
 export function missedDayNote(paperId: string): string | null {
+  // A paused paper has its own note; missed days are not "missed" when the
+  // learner told us they would be away.
+  if (activePaperPause(paperId)) return null
   const s = shieldState(paperId)
   if (s.missedDays <= 0) return null
   const gap = s.missedDays === 1 ? "a day" : `${s.missedDays} days`
@@ -230,7 +250,7 @@ export function shieldState(paperId: string): ShieldState {
   const wk = mondayOf(now)
   let rec = store[paperId] ?? { lastActive: null, streak: 0, shieldsUsed: 0, weekAnchor: wk }
   if (rec.weekAnchor !== wk) rec = { ...rec, weekAnchor: wk, shieldsUsed: 0 }
-  return shieldStateFrom(rec, ymd(now), getPaperPause(paperId) !== null)
+  return shieldStateFrom(rec, ymd(now), activePaperPause(paperId) !== null)
 }
 
 /* ── Daily task distribution ──────────────────────────────────── */

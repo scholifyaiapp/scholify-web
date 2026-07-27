@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { focusArea, recordDayActive, shieldState } from "@/lib/acca-schedule"
+import { focusArea, recordDayActive, shieldState, pausedNote, missedDayNote } from "@/lib/acca-schedule"
 import { pausePaper, resumePaper } from "@/lib/acca-plan-adjustment"
 import { scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
 import { getPaper, getQuestions, recordAnswer } from "@/lib/acca"
@@ -126,6 +126,62 @@ describe("recordDayActive — the shield/streak scheme", () => {
     // ...and resuming puts it back under the ordinary rules.
     resumePaper("AA")
     expect(shieldState("AA").streak).toBe(0)
+  })
+
+  /*
+   * An open-ended pause must EXPIRE. Holding the streak for as long as a pause
+   * record exists meant "pause once, keep a 40-day streak forever" — the streak
+   * stops meaning anything, and a learner who set a return date months ago would
+   * still be protected.
+   */
+  it("stops holding the streak once the pause has run out", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-05-04T12:00:00Z")) // Mon
+    recordDayActive("FM")
+    vi.setSystemTime(new Date("2026-05-05T12:00:00Z")) // Tue
+    expect(recordDayActive("FM").streak).toBe(2)
+
+    // Paused with a return date, then away well past the shield allowance.
+    pausePaper("FM", "illness", "2026-05-20")
+    vi.setSystemTime(new Date("2026-05-18T12:00:00Z"))
+    expect(shieldState("FM").streak, "still inside the pause").toBe(2)
+
+    // Past the return date: the pause is over, so the ordinary rules resume.
+    vi.setSystemTime(new Date("2026-05-25T12:00:00Z"))
+    expect(shieldState("FM").streak, "pause expired — streak is genuinely lost").toBe(0)
+  })
+
+  it("expires an open-ended pause after a bounded window", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-06-01T12:00:00Z"))
+    recordDayActive("AFM")
+    vi.setSystemTime(new Date("2026-06-02T12:00:00Z"))
+    expect(recordDayActive("AFM").streak).toBe(2)
+
+    pausePaper("AFM", "work", null) // no return date given
+    vi.setSystemTime(new Date("2026-06-20T12:00:00Z"))
+    expect(shieldState("AFM").streak, "within the open-pause window").toBe(2)
+
+    vi.setSystemTime(new Date("2026-08-01T12:00:00Z"))
+    expect(shieldState("AFM").streak, "an open pause cannot run forever").toBe(0)
+  })
+
+  it("tells the learner the paper is paused, and says nothing once it is not", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-05-04T12:00:00Z"))
+    recordDayActive("SBR")
+    expect(pausedNote("SBR"), "not paused — no note").toBeNull()
+
+    pausePaper("SBR", "illness", "2026-05-20")
+    vi.setSystemTime(new Date("2026-05-10T12:00:00Z"))
+    const note = pausedNote("SBR")
+    expect(note).toContain("paused")
+    expect(note).toContain("2026-05-20")
+    // A paused paper does not ALSO nag about missed days.
+    expect(missedDayNote("SBR")).toBeNull()
+
+    vi.setSystemTime(new Date("2026-05-25T12:00:00Z"))
+    expect(pausedNote("SBR"), "expired pause stops speaking").toBeNull()
   })
 
   it("keeps the streak on a read when shields still cover the gap", () => {

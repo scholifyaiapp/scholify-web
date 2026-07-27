@@ -10,7 +10,6 @@ export interface LearnerBaseline {
   certificateName?: string
   certificateType?: "IELTS" | "TOEFL" | "Cambridge" | "Other"
   assessmentPath?: AssessmentPath
-  syllabusCoverage?: "starting" | "partial" | "mostly-complete"
   updatedAt: string
 }
 
