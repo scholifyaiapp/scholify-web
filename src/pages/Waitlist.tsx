@@ -260,7 +260,7 @@ export default function Waitlist() {
               />
               Race control · live
             </div>
-            <div style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 850, letterSpacing: "-.035em", marginTop: 9 }}>Public access opens 10 August.</div>
+            <div style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 850, letterSpacing: "-.035em", marginTop: 9 }}>Public access opens {LAUNCH_DATE_LABEL}.</div>
             <div style={{ color: "rgba(255,255,255,.58)", fontSize: 12, marginTop: 8 }}>The starting grid opens when the complete Scholify experience is ready.</div>
           </div>
           <div style={{ display: "flex", gap: 10, position: "relative", zIndex: 1 }}>

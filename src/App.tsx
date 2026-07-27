@@ -196,8 +196,12 @@ export default function App() {
         <Route path="/partners/apply" element={<Page name="PartnersApply"><PartnersApply /></Page>} />
         <Route path="/partners" element={<ProtectedRoute><Page name="Partners"><Partners /></Page></ProtectedRoute>} />
 
-        {/* Everything else (legacy plan routes, unknown paths) → the command centre */}
-        <Route path="*" element={<Navigate to={PRELAUNCH_MODE ? "/" : "/dashboard"} replace />} />
+        {/* Everything else (legacy plan routes, unknown/mistyped paths) → home.
+            NEVER /dashboard: it's a ProtectedRoute, so post-launch a logged-out
+            visitor following a stale or mistyped link would be bounced to a
+            sign-in wall instead of the public landing page. "/" is always safe —
+            Waitlist pre-launch, Landing after. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   )

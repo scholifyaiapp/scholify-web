@@ -743,6 +743,10 @@ function VisualExaminer() {
         borderRadius: 24,
         background: "#0B0B0F",
         color: "#FAFAF7",
+        // Clip the fixed 360px Entropy canvas to the card: on a ~360px phone the
+        // card is narrower than the canvas, so without this it pokes past the
+        // rounded edge. Clipped, it crops cleanly (the animation is abstract).
+        overflow: "hidden",
         boxShadow: "0 1px 2px rgba(20,20,26,0.06), 0 24px 60px -12px rgba(20,20,26,0.25)",
       }}
     >
