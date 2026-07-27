@@ -97,11 +97,12 @@ describe("objective bank integrity", () => {
       await loadPaperContent(paper.id)
       for (const form of [1, 2, 3]) {
         const mock = buildCbeMock(paper.id, form)
+        // Objective items only — a constructed task carries no AccaQuestion.
         const objective = mock.sections
           .flatMap((section) => section.items)
           .filter((item) => item.kind !== "task")
-          .map((item) => (item.kind === "task" ? null : item.q))
-        const recall = objective.filter((q) => q?.recall).length
+          .map((item) => (item as Extract<typeof item, { kind: "ot" | "caseq" }>).q)
+        const recall = objective.filter((q) => q.recall).length
         expect(recall, `${paper.id} mock form ${form}`).toBe(0)
       }
     }
