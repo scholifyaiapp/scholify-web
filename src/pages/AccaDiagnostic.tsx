@@ -205,7 +205,7 @@ export default function AccaDiagnostic() {
   const answersRef = useRef<AnsweredDiagnostic[]>([])
   const [result, setResult] = useState<DiagnosticResult | null>(null)
   const [prior, setPrior] = useState<DiagnosticResult | null>(() => getLatestDiagnostic(defaultPaper))
-  // Fixed 30-minute countdown, held as a wall-clock DEADLINE rather than a
+  // Fixed 40-minute countdown, held as a wall-clock DEADLINE rather than a
   // ticking count. Manual submission requires all answers; at zero, unanswered
   // items count as incorrect.
   const [deadline, setDeadline] = useState<number | null>(null)
@@ -441,22 +441,15 @@ export default function AccaDiagnostic() {
                 {assessmentMode === "readiness" ? "Prove your exam readiness." : "Find the gaps in your current studies."}
               </h1>
               {/* The gap check is a SHORTER form than the readiness check (see
-                  buildDiagnostic's "gaps" mode), so this promise has to follow the
-                  mode. Stating "up to 25 questions" on a 10-question gap check is
-                  the kind of small dishonesty that makes a learner distrust the
-                  score at the end of it. */}
+                  both modes are now the same instrument, so the promise is one
+                  sentence and it states the RULE rather than a number — the count
+                  is 25 on an A–H paper but 27 on FA and AAA and 30 on SBL, and a
+                  hardcoded figure would be wrong on those three. */}
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
-                {assessmentMode === "readiness" ? (
-                  <>
-                    A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to{" "}
-                    {DIAGNOSTIC_QUESTIONS} questions, <strong style={{ color: TEXT }}>timed in one focused 30-minute sitting</strong>.
-                  </>
-                ) : (
-                  <>
-                    A focused sweep across your syllabus areas, <strong style={{ color: TEXT }}>timed in one 30-minute sitting</strong>.
-                  </>
-                )}{" "}
-                No hints. At the end: your Exam Readiness Score, estimated score, weakest sectors, and Charles's race plan to your target.
+                A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> syllabus area,{" "}
+                <strong style={{ color: TEXT }}>{DIAGNOSTIC_QUESTIONS} questions in one focused 40-minute sitting</strong>{" "}
+                (a little more on papers with more areas). No hints. At the end: your Exam Readiness Score, estimated
+                score, weakest sectors, and Charles's race plan to your target.
               </p>
 
               <Card style={{ marginBottom: 16 }}>

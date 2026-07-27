@@ -37,12 +37,30 @@ const PRIOR = 0.5
 const ALPHA = 1.5
 /** Logistic slope: score 60→~75%, 70→~90%, 40→~25% pass probability. */
 const LOGISTIC_K = 0.11
-/** Questions sampled per syllabus area (capped by what the bank holds). */
+/**
+ * Questions sampled per syllabus area: one EASY, one MEDIUM, one HARD.
+ *
+ * This is the diagnostic's contract, not a target — every assessed area gets all
+ * three tiers, so the form spans the syllabus AND the difficulty range in every
+ * area. That is what makes the per-area scores, and therefore the weak-area
+ * ranking the plan is built from, comparable to each other.
+ */
 const PER_AREA = 3
-/** Every formal diagnostic uses one comparable 25-question structure. */
+/**
+ * The standard form: 25 questions.
+ *
+ * A paper with A–H (8 areas) is exactly 8 × 3 = 24 ladder questions plus one, so
+ * 25 is the natural length. Three papers carry more areas than that — FA and AAA
+ * are A–I (9 areas, 27) and SBL is A–J (10 areas, 30) — and for those the form
+ * EXTENDS rather than truncating, because dropping the cap's overflow silently
+ * removed the hard question from the last areas. A complete ladder everywhere
+ * beats an identical length everywhere: a missing tier biases the area score,
+ * and the plan targets weak areas off those scores.
+ */
 const MAX_QUESTIONS = 25
 export const DIAGNOSTIC_QUESTIONS = MAX_QUESTIONS
-export const DIAGNOSTIC_SECONDS = 30 * 60
+/** Every diagnostic is one 40-minute sitting, whatever the paper. */
+export const DIAGNOSTIC_SECONDS = 40 * 60
 /** The improvement target we coach toward for weak areas. */
 export const TARGET_AREA_SCORE = 0.7
 
@@ -187,13 +205,36 @@ function pickLadder(pool: AccaQuestion[], seed: number): AccaQuestion[] {
 }
 
 /**
- * Build the diagnostic form: a stratified difficulty ladder — one easy, one
- * medium, one hard — from EVERY syllabus area (fair, syllabus-spanning, and
- * comparable between takes), capped at MAX_QUESTIONS. FA's 8 areas → 24
- * questions; the exam-style budget is 100 seconds per question (see
- * diagnosticSeconds). Returns [] when the paper has no seed bank.
+ * How many questions this paper's diagnostic carries.
+ *
+ * 25 as standard, extended to one full easy/medium/hard ladder per assessed area
+ * where a paper has more than eight (FA and AAA are A–I → 27, SBL is A–J → 30).
+ * Never truncates a ladder: see MAX_QUESTIONS.
  */
-export function buildDiagnostic(paperId: string, seed = Date.now(), mode: "full" | "gaps" = "full"): AccaQuestion[] {
+export function diagnosticLength(paperId: string): number {
+  const paper = getPaper(paperId)
+  const all = getQuestions(paperId)
+  if (!paper || all.length === 0) return 0
+  const assessed = paper.areas.filter((area) => all.some((q) => q.area === area.code)).length
+  return Math.max(MAX_QUESTIONS, assessed * PER_AREA)
+}
+
+/**
+ * Build the diagnostic form: a stratified difficulty ladder — one EASY, one
+ * MEDIUM and one HARD — from EVERY syllabus area, sat in one 40-minute sitting.
+ *
+ * Syllabus-spanning, difficulty-spanning and comparable between takes. A–H
+ * papers land on exactly 24 ladder questions plus one spare = 25; papers with
+ * more areas extend rather than lose a tier (diagnosticLength). Returns [] when
+ * the paper has no seed bank.
+ *
+ * `mode` no longer changes the LENGTH — a gap check and a readiness check are the
+ * same 25-question, 40-minute instrument, differing only in how they are framed
+ * to the learner. It previously built a 10-question form for "gaps", which is the
+ * route Dashboard sends most learners down, so the majority were being scored on
+ * a third of the coverage and told it was their Exam Readiness Score.
+ */
+export function buildDiagnostic(paperId: string, seed = Date.now(), _mode: "full" | "gaps" = "full"): AccaQuestion[] {
   const paper = getPaper(paperId)
   const all = getQuestions(paperId)
   if (!paper || all.length === 0) return []
@@ -211,9 +252,10 @@ export function buildDiagnostic(paperId: string, seed = Date.now(), mode: "full"
     if (pool && pool.length) ladders.push(pickLadder(pool, seed + area.code.charCodeAt(0)))
   }
 
-  // Round-robin by ladder depth so a broad syllabus cannot lose its final
-  // areas when the hard cap is applied (SBL has 10 areas: 3 each would be 30).
-  // Every represented area gets one question before any area gets a second.
+  // Round-robin by ladder DEPTH — every area gets its easy question before any
+  // area gets its medium, and so on. With the limit now sized to fit a complete
+  // ladder this only affects ordering, but it keeps the fill order fair if a
+  // future paper's bank cannot supply all three tiers everywhere.
   const picked: AccaQuestion[] = []
   for (let depth = 0; depth < PER_AREA; depth += 1) {
     for (const ladder of ladders) {
@@ -221,7 +263,7 @@ export function buildDiagnostic(paperId: string, seed = Date.now(), mode: "full"
     }
   }
 
-  const limit = mode === "gaps" ? Math.min(15, Math.max(ladders.length, 10)) : MAX_QUESTIONS
+  const limit = Math.max(MAX_QUESTIONS, ladders.length * PER_AREA)
   const selected = picked.slice(0, limit)
   if (selected.length < limit) {
     const used = new Set(selected.map((q) => q.id))

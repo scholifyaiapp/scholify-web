@@ -258,12 +258,12 @@ export default function Dashboard() {
             <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Start here</div>
             <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>{learnerRoute === "practice" ? "Assess your exam readiness" : "Map the gaps in your current studies"}</h2>
             <p style={{ ...TYPE.body, color: C.soft, maxWidth: 460, margin: "0 auto 18px", lineHeight: 1.6 }}>
-              A ~15-minute diagnostic reads your current level across every {paper.id} syllabus area — then Scholify builds the roadmap and today's plan around it.
+              A 40-minute diagnostic reads your current level across every {paper.id} syllabus area — then Scholify builds the roadmap and today's plan around it.
             </p>
             <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(`/study/diagnostic?mode=${learnerRoute === "practice" ? "readiness" : "gaps"}`)} style={{ padding: "15px 28px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15.5, cursor: "pointer" }}>
               {learnerRoute === "practice" ? "Start readiness check" : "Start targeted gap check"}
             </motion.button>
-            <div style={{ ...TYPE.small, color: C.faint, marginTop: 10 }}>~15 min · no score counts against you</div>
+            <div style={{ ...TYPE.small, color: C.faint, marginTop: 10 }}>40 min · no score counts against you</div>
           </Card>
         )}
 

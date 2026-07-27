@@ -33,6 +33,7 @@ import { applyVariantStudyContent } from "@/lib/acca-variant-content"
 import { getPaperVariant } from "@/lib/acca-profile"
 import { completeTxGlobalSectionB, completeTxGlobalSectionC } from "@/lib/acca-tx-global-expansion"
 import { LW_GLOBAL_QUESTIONS } from "@/lib/acca-lw-global-questions"
+import { tierCompletionQuestions } from "@/lib/acca-tier-completion"
 import { completeSblWritten } from "@/lib/acca-sbl-expansion"
 import { SBL_CONTENT_TARGET } from "@/lib/sbl-content-contract"
 import { ADVANCED_CONTENT_TARGET, ADVANCED_PAPERS } from "@/lib/advanced-content-contract"
@@ -303,10 +304,17 @@ export function loadPaperContent(paperId: string): Promise<void> {
               : paperId === "ATX"
                 ? mapAtxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
             : collect<Flashcard>(flashcardMods, paperId)
+    // Authored questions that complete the easy/medium/hard ladder in areas whose
+    // bank was missing a tier. Merged AFTER the per-paper syllabus mappers, which
+    // re-derive some area codes from keywords and would otherwise move these off
+    // the very areas they were written to fill. They join the AUTHORED set, so
+    // completeSectionAFromStudy adds correspondingly fewer recall drills and the
+    // bank total stays put — authored content displacing filler, not adding to it.
+    const questionsWithTiers = [...questions, ...tierCompletionQuestions(paperId)]
     const content: PaperContent = {
       questions: ["PM", "TX", "FR", "AA", "FM", "SBL", ...ADVANCED_PAPERS].includes(paperId)
-        ? completeSectionAFromStudy(paperId, questions, chapters, paperId === "PM" ? PM_CONTENT_TARGET.sectionA : paperId === "TX" ? TX_CONTENT_TARGET.sectionA : paperId === "FR" ? FR_CONTENT_TARGET.sectionA : paperId === "AA" ? AA_CONTENT_TARGET.objectiveBank : paperId === "SBL" ? SBL_CONTENT_TARGET.learningDrills : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.learningDrills : FM_CONTENT_TARGET.sectionA)
-        : completeF1F4SectionA(paperId, questions, chapters),
+        ? completeSectionAFromStudy(paperId, questionsWithTiers, chapters, paperId === "PM" ? PM_CONTENT_TARGET.sectionA : paperId === "TX" ? TX_CONTENT_TARGET.sectionA : paperId === "FR" ? FR_CONTENT_TARGET.sectionA : paperId === "AA" ? AA_CONTENT_TARGET.objectiveBank : paperId === "SBL" ? SBL_CONTENT_TARGET.learningDrills : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.learningDrills : FM_CONTENT_TARGET.sectionA)
+        : completeF1F4SectionA(paperId, questionsWithTiers, chapters),
       chapters,
       flashcards: completeStudyFlashcards(paperId, mappedFlashcards, chapters, paperId === "PM" ? PM_CONTENT_TARGET.flashcards : paperId === "TX" ? TX_CONTENT_TARGET.flashcards : paperId === "FR" ? FR_CONTENT_TARGET.flashcards : paperId === "AA" ? AA_CONTENT_TARGET.flashcards : paperId === "FM" ? FM_CONTENT_TARGET.flashcards : paperId === "SBL" ? SBL_CONTENT_TARGET.flashcards : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.flashcards : undefined),
       written: paperId === "PM" ? completePmSectionC(mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "TX" ? isTxGlobal ? completeTxGlobalSectionC() : completeTxSectionC(mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "FR" ? completeFrSectionC(mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "AA" ? completeAaSectionB(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? completeFmSectionC(mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "SBL" ? completeSblWritten(mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)), chapters) : completeAdvancedWritten(paperId, paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId), chapters),

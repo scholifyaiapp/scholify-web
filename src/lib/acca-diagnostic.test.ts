@@ -5,6 +5,7 @@ import {
   estimateFromPractice,
   diagnosticRange,
   diagnosticSeconds,
+  diagnosticLength,
   passBand,
   DIAGNOSTIC_QUESTIONS,
   DIAGNOSTIC_SECONDS,
@@ -32,7 +33,7 @@ describe("buildDiagnostic", () => {
     // handed an FA diagnostic.
     for (const paper of getPapers()) {
       const form = buildDiagnostic(paper.id, 42)
-      expect(form).toHaveLength(25)
+      expect(form).toHaveLength(diagnosticLength(paper.id))
       expect(form.every((q) => q.paper === paper.id)).toBe(true)
 
       const areasHit = new Set(form.map((q) => q.area))
@@ -42,23 +43,41 @@ describe("buildDiagnostic", () => {
     }
   })
 
-  it("uses every verified difficulty tier available in each area when the 25-question limit allows it", () => {
-    for (const paper of getPapers().filter((item) => item.areas.length <= 8)) {
+  /*
+   * THE CONTRACT: every syllabus area of every paper contributes one EASY, one
+   * MEDIUM and one HARD question, in a 40-minute sitting.
+   *
+   * This is the whole basis of the per-area scores, and therefore of the weak-area
+   * ranking the study plan is built from. pickLadder falls back a tier when a
+   * bucket is empty, so a missing tier does not fail loudly — it quietly scores an
+   * area on an easier question and flatters it. 25 area-tiers had nothing authored
+   * to draw on before acca-tier-completion.ts filled them; this test is what stops
+   * that returning as content changes.
+   */
+  it("gives EVERY area of EVERY paper an easy, a medium and a hard question", () => {
+    for (const paper of getPapers()) {
       const form = buildDiagnostic(paper.id, 42)
       for (const area of paper.areas) {
-        const difficulties = new Set(form.filter((q) => q.area === area.code).map((q) => q.difficulty))
-        const available = new Set(getQuestions(paper.id).filter((q) => q.area === area.code).map((q) => q.difficulty))
-        expect(difficulties, `${paper.id} area ${area.code}`).toEqual(available)
+        const tiers = new Set(form.filter((q) => q.area === area.code).map((q) => q.difficulty))
+        expect([...tiers].sort(), `${paper.id} area ${area.code}`).toEqual(["easy", "hard", "medium"])
       }
     }
   })
 
-  it("uses one fixed 25-question, 30-minute contract for every paper", () => {
+  it("is a 40-minute sitting of 25 questions, extended only where a paper has more than 8 areas", () => {
     expect(DIAGNOSTIC_QUESTIONS).toBe(25)
-    expect(DIAGNOSTIC_SECONDS).toBe(30 * 60)
+    expect(DIAGNOSTIC_SECONDS).toBe(40 * 60)
     for (const paper of getPapers()) {
-      expect(buildDiagnostic(paper.id, 42)).toHaveLength(DIAGNOSTIC_QUESTIONS)
-      expect(diagnosticSeconds(DIAGNOSTIC_QUESTIONS)).toBe(DIAGNOSTIC_SECONDS)
+      const form = buildDiagnostic(paper.id, 42)
+      // 40 minutes regardless of paper or form length.
+      expect(diagnosticSeconds(form.length)).toBe(DIAGNOSTIC_SECONDS)
+      // A–H or fewer is exactly 25. FA and AAA are A–I (27) and SBL is A–J (30):
+      // those extend rather than truncate, because the cap's overflow used to drop
+      // the hard question from the last areas in the round-robin.
+      const expected = Math.max(DIAGNOSTIC_QUESTIONS, paper.areas.length * 3)
+      expect(form, paper.id).toHaveLength(expected)
+      expect(diagnosticLength(paper.id), paper.id).toBe(expected)
+      if (paper.areas.length <= 8) expect(form, paper.id).toHaveLength(25)
     }
   })
 
@@ -68,11 +87,17 @@ describe("buildDiagnostic", () => {
     expect(a).toEqual(b)
   })
 
-  it("uses a shorter syllabus-spanning gap check for learners already studying", () => {
+  it("gives the gap check the SAME form as the readiness check", () => {
+    // The two modes differ only in how they are framed to the learner. "gaps"
+    // used to build a 10-question form, and Dashboard routes most learners down
+    // that route — so the majority were scored on a third of the coverage and
+    // shown the result as their Exam Readiness Score.
     const paper = getPaper("TX")!
-    const form = buildDiagnostic("TX", 42, "gaps")
-    expect(form.length).toBeLessThan(25)
-    expect(new Set(form.map((q) => q.area)).size).toBe(paper.areas.length)
+    const gaps = buildDiagnostic("TX", 42, "gaps")
+    const readiness = buildDiagnostic("TX", 42, "full")
+    expect(gaps.map((q) => q.id)).toEqual(readiness.map((q) => q.id))
+    expect(gaps).toHaveLength(diagnosticLength("TX"))
+    expect(new Set(gaps.map((q) => q.area)).size).toBe(paper.areas.length)
   })
 
   it("returns nothing for a paper that doesn't exist, rather than throwing", () => {
