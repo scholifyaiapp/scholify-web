@@ -32,6 +32,7 @@ import { FM_CONTENT_TARGET } from "@/lib/fm-content-contract"
 import { applyVariantStudyContent } from "@/lib/acca-variant-content"
 import { getPaperVariant } from "@/lib/acca-profile"
 import { completeTxGlobalSectionB, completeTxGlobalSectionC } from "@/lib/acca-tx-global-expansion"
+import { LW_GLOBAL_QUESTIONS } from "@/lib/acca-lw-global-questions"
 import { completeSblWritten } from "@/lib/acca-sbl-expansion"
 import { SBL_CONTENT_TARGET } from "@/lib/sbl-content-contract"
 import { ADVANCED_CONTENT_TARGET, ADVANCED_PAPERS } from "@/lib/advanced-content-contract"
@@ -232,7 +233,16 @@ export function loadPaperContent(paperId: string): Promise<void> {
     const isLwGlobal = paperId === "LW" && variant === "GLOBAL"
     const isTxGlobal = paperId === "TX" && variant === "GLOBAL"
     const usesGlobalBank = isLwGlobal || isTxGlobal
-    const collectedQuestions = usesGlobalBank ? [] : collect<AccaQuestion>(questionMods, paperId)
+    // LW-Global cannot use the UK bank (different syllabus: Areas B and C are the
+    // CISG and international transport, not obligations and employment), so it
+    // gets its own authored questions. Without them the paper fell through to
+    // 100% study-text recall — 342 of 350 derived, and Global is the DEFAULT LW
+    // variant, so that was the default experience.
+    const collectedQuestions = isLwGlobal
+      ? LW_GLOBAL_QUESTIONS
+      : usesGlobalBank
+        ? []
+        : collect<AccaQuestion>(questionMods, paperId)
     const questions = paperId === "BT"
       ? mapBtQuestionsToOfficialSyllabus(collectedQuestions)
       : paperId === "MA"
@@ -240,7 +250,11 @@ export function loadPaperContent(paperId: string): Promise<void> {
         : paperId === "FA"
           ? mapFaQuestionsToOfficialSyllabus(collectedQuestions)
           : paperId === "LW"
-            ? mapLwQuestionsToOfficialSyllabus(collectedQuestions)
+            // The LW mapper re-derives any area-"D" question from UK syllabus
+            // keywords. The Global questions are already tagged against the
+            // Global syllabus (Areas B and C being the CISG and international
+            // transport), so running them through it would scatter them.
+            ? isLwGlobal ? collectedQuestions : mapLwQuestionsToOfficialSyllabus(collectedQuestions)
             : paperId === "PM"
               ? mapPmQuestionsToOfficialSyllabus(collectedQuestions)
               : paperId === "TX"

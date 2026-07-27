@@ -67,13 +67,10 @@ describe("objective bank integrity", () => {
   it("keeps the graded diagnostic authored wherever the bank allows it", async () => {
     // The Exam Readiness Score is the product's central promise. Recall drills
     // are far easier than a real CBE, so a diagnostic padded with them reads
-    // high and then the real exam doesn't. Papers with a real authored bank must
-    // produce an essentially recall-free form; the exception is a paper whose
-    // bank genuinely has almost nothing authored, where a short honest ladder
-    // still beats an absent syllabus area.
-    const thin = new Set(["LW"]) // LW-Global ships 8 authored questions; see review notes.
+    // high and then the real exam doesn't. EVERY paper must now produce an
+    // essentially recall-free form — LW-Global was the one exception until it was
+    // given its own authored bank (acca-lw-global-questions.ts).
     for (const paper of ALL_PAPERS) {
-      if (thin.has(paper.id)) continue
       await loadPaperContent(paper.id)
       const form = buildDiagnostic(paper.id, 42)
       const recall = form.filter((q) => q.recall).length

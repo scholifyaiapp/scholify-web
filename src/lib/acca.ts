@@ -21,6 +21,7 @@ import { paperContent, isPaperContentLoaded } from "@/lib/acca-content-registry"
 import "@/lib/acca-content-boot"
 import { questionCount } from "@/lib/acca-content-counts"
 import { ALL_PAPERS } from "@/lib/acca-qualification"
+import { getPaperVariant } from "@/lib/acca-profile"
 
 export type { AccaPaper, AccaQuestion } from "@/lib/acca-content"
 
@@ -39,8 +40,36 @@ export function getPapers(): AccaPaper[] {
   return ALL_PAPERS
 }
 
+/**
+ * Syllabus area labels that DIFFER in a paper's non-default variant.
+ *
+ * ALL_PAPERS carries the UK labels, but LW-GLO is a genuinely different syllabus:
+ * where UK LW has the law of obligations and employment law, Global has
+ * international sale of goods (CISG) and international transport and payment. A
+ * Global learner was therefore shown "Area B · The law of obligations" above
+ * CISG questions and CISG study text — the labels disagreed with the content
+ * they titled. Applied here, in getPaper, because ~60 call sites read
+ * `paper.areas` and this is the one accessor they all go through.
+ */
+const VARIANT_AREA_LABELS: Record<string, Record<string, Record<string, string>>> = {
+  LW: {
+    GLOBAL: {
+      A: "Essential elements of legal systems",
+      B: "International business transactions",
+      C: "Transportation and payment in international trade",
+      D: "Formation and constitution of business organisations",
+      E: "Capital and the financing of companies",
+      F: "Management, administration and regulation of companies",
+    },
+  },
+}
+
 export function getPaper(paperId: string): AccaPaper | undefined {
-  return ALL_PAPERS.find((p) => p.id === paperId)
+  const paper = ALL_PAPERS.find((p) => p.id === paperId)
+  if (!paper) return undefined
+  const overrides = VARIANT_AREA_LABELS[paperId]?.[getPaperVariant(paperId) ?? ""]
+  if (!overrides) return paper
+  return { ...paper, areas: paper.areas.map((area) => ({ ...area, label: overrides[area.code] ?? area.label })) }
 }
 
 /**
