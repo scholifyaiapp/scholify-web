@@ -59,10 +59,20 @@ export function buildMockForm(paperId: string, form: number, size: number): Acca
   // across the three forms — disjoint by construction.
   const mine: AccaQuestion[] = []
   for (const area of paper.areas) {
-    const pool = shuffle(
+    const shuffled = shuffle(
       all.filter((q) => q.area === area.code),
       paperSeed(paperId) + area.code.charCodeAt(0) * 131,
     )
+    // Authored questions ahead of derived recall drills, within each area.
+    //
+    // The shuffle interleaves the two, and the size trim below then takes from
+    // the FRONT of each area — so which questions survived into a mock was decided
+    // by shuffle luck, discarding real exam-standard questions while keeping
+    // glossary prompts. Ordering the area authored-first makes the trim drop
+    // filler instead. Striding an authored-first list still splits the authored
+    // questions evenly across the three forms, so the forms stay disjoint and
+    // comparable, and the result is still fully deterministic.
+    const pool = [...shuffled.filter((q) => !q.recall), ...shuffled.filter((q) => q.recall)]
     for (let i = f; i < pool.length; i += MOCK_FORMS) mine.push(pool[i])
   }
 

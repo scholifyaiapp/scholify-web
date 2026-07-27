@@ -3,6 +3,7 @@ import { ALL_PAPERS } from "@/lib/acca-qualification"
 import { loadPaperContent } from "@/lib/acca-paper-content"
 import { paperContent } from "@/lib/acca-content-registry"
 import { buildDiagnostic } from "@/lib/acca-diagnostic"
+import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
 /*
  * Examiner-standard integrity of the objective banks.
@@ -75,6 +76,34 @@ describe("objective bank integrity", () => {
       const form = buildDiagnostic(paper.id, 42)
       const recall = form.filter((q) => q.recall).length
       expect(recall / form.length, `${paper.id} diagnostic is ${recall}/${form.length} recall`).toBeLessThanOrEqual(0.2)
+    }
+  })
+
+  it("keeps every mock form free of recall drills where the bank allows it", async () => {
+    // A mock is the dress rehearsal and its score gates the readiness loop, so a
+    // glossary prompt in it is worse than in any other surface.
+    //
+    // buildMockForm shuffles each area then trims to size from the front, so
+    // WHICH questions reached a mock was decided by shuffle luck — it discarded
+    // authored questions while keeping recall drills. Ordering each area
+    // authored-first before the stride fixed that for 14 of 15 papers.
+    //
+    // LW is exempt: LW-Global has 56 authored questions total, so a 55-mark
+    // Section A across three disjoint forms cannot be filled from authored
+    // content alone. That is a content shortage, not a selection bug.
+    const thinBank = new Set(["LW"])
+    for (const paper of ALL_PAPERS) {
+      if (thinBank.has(paper.id)) continue
+      await loadPaperContent(paper.id)
+      for (const form of [1, 2, 3]) {
+        const mock = buildCbeMock(paper.id, form)
+        const objective = mock.sections
+          .flatMap((section) => section.items)
+          .filter((item) => item.kind !== "task")
+          .map((item) => (item.kind === "task" ? null : item.q))
+        const recall = objective.filter((q) => q?.recall).length
+        expect(recall, `${paper.id} mock form ${form}`).toBe(0)
+      }
     }
   })
 
