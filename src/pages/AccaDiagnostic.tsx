@@ -21,6 +21,7 @@ import {
   getLatestDiagnostic,
   diagnosticSeconds,
   diagnosticRange,
+  DIAGNOSTIC_QUESTIONS,
   type DiagnosticResult,
   type AnsweredDiagnostic,
 } from "@/lib/acca-diagnostic"
@@ -443,9 +444,22 @@ export default function AccaDiagnostic() {
               <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, margin: "12px 0 12px", lineHeight: 1.15 }}>
                 {assessmentMode === "readiness" ? "Prove your exam readiness." : "Find the gaps in your current studies."}
               </h1>
+              {/* The gap check is a SHORTER form than the readiness check (see
+                  buildDiagnostic's "gaps" mode), so this promise has to follow the
+                  mode. Stating "up to 25 questions" on a 10-question gap check is
+                  the kind of small dishonesty that makes a learner distrust the
+                  score at the end of it. */}
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
-                A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to 25
-                questions, <strong style={{ color: TEXT }}>timed in one focused 30-minute sitting</strong>.
+                {assessmentMode === "readiness" ? (
+                  <>
+                    A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to{" "}
+                    {DIAGNOSTIC_QUESTIONS} questions, <strong style={{ color: TEXT }}>timed in one focused 30-minute sitting</strong>.
+                  </>
+                ) : (
+                  <>
+                    A focused sweep across your syllabus areas, <strong style={{ color: TEXT }}>timed in one 30-minute sitting</strong>.
+                  </>
+                )}{" "}
                 No hints. At the end: your Exam Readiness Score, estimated score, weakest sectors, and Charles's race plan to your target.
               </p>
 
@@ -525,6 +539,9 @@ export default function AccaDiagnostic() {
                 </motion.div>
               </AnimatePresence>
 
+              {/* finishLabel counts off questions.length, never a literal 25 — the
+                  gap-check form is 10 questions, so a hardcoded 25 read
+                  "Answer all 25 · 3/25 complete" on a form that only had 10. */}
               <QuestionNavBar
                 cursor={idx}
                 total={questions.length}
@@ -535,7 +552,7 @@ export default function AccaDiagnostic() {
                 onGo={setIdx}
                 onToggleFlag={() => setFlags((m) => ({ ...m, [idx]: !m[idx] }))}
                 onFinish={finishAssessing}
-                finishLabel={answeredCount === questions.length ? "Finish & see results" : `Answer all 25 · ${answeredCount}/25 complete`}
+                finishLabel={answeredCount === questions.length ? "Finish & see results" : `Answer all ${questions.length} · ${answeredCount}/${questions.length} complete`}
                 finishDisabled={answeredCount < questions.length}
               />
             </motion.div>

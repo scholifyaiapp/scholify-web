@@ -115,6 +115,32 @@ function cleanCode(input: string): string {
     .slice(0, 20)
 }
 
+/**
+ * Escape LIKE/ILIKE metacharacters so an email is matched LITERALLY.
+ *
+ * `_` is a legitimate email character (john_smith@…) and a LIKE wildcard
+ * meaning "any single character", and `%` means "any run of characters" — so
+ * passing a raw address to .ilike() makes it match OTHER people's rows. That is
+ * a real disclosure, not a theoretical one: /apply returns the matched row's
+ * referral `code`, so an unauthenticated caller could probe with a wildcard
+ * address (the email regex there happily accepts `%@gmail.com`) and read back a
+ * partner's code; /dashboard used the same match to attach an unlinked
+ * application to the caller's account.
+ *
+ * PostgREST also reads `*` as `%` in like/ilike values, so that is escaped too.
+ * Callers must STILL verify the returned address with emailsMatch() — this
+ * narrows the query, and that check is what actually authorises the match.
+ */
+export function likeLiteral(value: string): string {
+  return String(value || "").replace(/[\\%_*]/g, (ch) => `\\${ch}`)
+}
+
+/** Case-insensitive exact address comparison — never a pattern match. */
+export function emailsMatch(a: unknown, b: unknown): boolean {
+  const left = String(a ?? "").trim().toLowerCase()
+  return left.length > 0 && left === String(b ?? "").trim().toLowerCase()
+}
+
 export const config = { api: { bodyParser: false } }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -348,12 +374,15 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     res.status(400).json({ ok: false, reason: "name_email_required" })
     return
   }
+  // Literal match only, then re-verify the address in code before echoing the
+  // row back — `code` is a partner secret and must never be returned for a row
+  // that merely pattern-matched the supplied address.
   const { data: existing } = await supa
     .from("affiliates")
-    .select("code, status")
-    .ilike("email", email)
+    .select("code, status, email")
+    .ilike("email", likeLiteral(email))
     .maybeSingle()
-  if (existing) {
+  if (existing && emailsMatch(existing.email, email)) {
     res.status(200).json({ ok: false, reason: "already_applied", code: existing.code, status: existing.status })
     return
   }
@@ -568,11 +597,14 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
   if (!affiliate && user.email) {
     const { data: anonymous } = await supa
       .from("affiliates")
-      .select("id")
+      .select("id, email")
       .is("user_id", null)
-      .ilike("email", user.email)
+      .ilike("email", likeLiteral(user.email))
       .maybeSingle()
-    if (anonymous) {
+    // Only adopt an application whose address really IS this verified account's.
+    // A pattern match here would hand someone else's pending application — and
+    // every commission later attributed to it — to whoever signed in.
+    if (anonymous && emailsMatch(anonymous.email, user.email)) {
       await supa.from("affiliates").update({ user_id: user.id }).eq("id", anonymous.id).is("user_id", null)
       const linked = await supa
         .from("affiliates")

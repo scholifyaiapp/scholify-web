@@ -15,7 +15,7 @@ const KEY = "scholify-acca-bankruns"
 export const MIXED_BANK_SIZES = [10, 20, 30] as const
 export type MixedBankSize = (typeof MIXED_BANK_SIZES)[number]
 export const BANK_RUN_SIZE: MixedBankSize = 30
-export const BANK_RUN_SECONDS_PER_Q = 90 // 50q → 75 minutes
+export const BANK_RUN_SECONDS_PER_Q = 90 // 30q → 45 minutes (10q → 15, 20q → 30)
 export const BANK_RUNS_TARGET = 3
 export function bankRunTarget(paperId: string): number {
   return ["PM", "TX", "FR", "AA", "FM"].includes(paperId) ? 5 : BANK_RUNS_TARGET

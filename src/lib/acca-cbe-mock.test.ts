@@ -40,11 +40,19 @@ describe("buildCbeMock", () => {
     }
   })
 
-  it("never repeats a question or task within a mock", () => {
+  // Checked across several forms, not just one: the Strategic papers select
+  // constructed tasks by exact mark value straight from the full written bank,
+  // which bypasses the shared-list removal that de-duplicates every other
+  // path. Two same-mark slots in one section (SBR B is 25+25) would collide the
+  // moment a bank held fewer than two tasks at that mark, and the collision
+  // would only show up on some forms.
+  it("never repeats a question or task within a mock, on any form", () => {
     for (const id of CURATED) {
-      const mock = buildCbeMock(id, 2)
-      const ids = mock.sections.flatMap((s) => s.items.map((it) => (it.kind === "task" ? it.task.id : it.q.id)))
-      expect(new Set(ids).size, id).toBe(ids.length)
+      for (const form of [1, 2, 3, 4]) {
+        const mock = buildCbeMock(id, form)
+        const ids = mock.sections.flatMap((s) => s.items.map((it) => (it.kind === "task" ? it.task.id : it.q.id)))
+        expect(new Set(ids).size, `${id} form ${form}`).toBe(ids.length)
+      }
     }
   })
 
