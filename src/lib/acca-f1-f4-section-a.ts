@@ -93,9 +93,16 @@ export function completeSectionAFromStudy(
     const definitionDistractors = otherTerms.slice((index * 3) % Math.max(1, otherTerms.length))
       .concat(otherTerms)
       .map((candidate) => candidate.def)
+    // Vary the MEANING, hold the term. The distractors used to be
+    // `otherTerm — term.def`, i.e. a different term paired with the SAME
+    // definition — so the correct option was the only one whose left-hand side
+    // matched the term named in the stem, and every one of these questions was
+    // answerable by string-matching with zero ACCA knowledge. Pairing this term
+    // against other definitions forces the candidate to actually know which
+    // meaning belongs to it.
     const pairingDistractors = otherTerms.slice((index * 5) % Math.max(1, otherTerms.length))
       .concat(otherTerms)
-      .map((candidate) => `${candidate.term} — ${term.def}`)
+      .map((candidate) => `${term.term} — ${candidate.def}`)
 
     seeds.push(
       {

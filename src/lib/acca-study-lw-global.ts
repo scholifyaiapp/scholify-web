@@ -150,7 +150,7 @@ export const LW_GLOBAL_CHAPTERS: StudyChapter[] = AREAS.map((source) => ({
       { kind: "callout", tone: "tip", title: "Application method", md: "Identify the governing instrument or legal principle, connect it to the stated facts, and conclude on the parties' rights, liabilities or remedy. Do not import a domestic rule unless the question supplies it." },
     ],
     check: {
-      q: `Which approach is most appropriate when answering a ${source.title.toLowerCase()} scenario in LW Global?`,
+      q: `Which approach is most appropriate when answering ${/^[aeiou]/i.test(source.title) ? "an" : "a"} ${source.title.toLowerCase()} scenario in LW Global?`,
       options: [
         "Apply the relevant international principle to the facts and reach a supported conclusion",
         "Assume English domestic legislation always governs",
