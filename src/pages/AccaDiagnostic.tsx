@@ -40,6 +40,7 @@ import PaywallModal from "@/components/PaywallModal"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
+import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -184,6 +185,11 @@ export default function AccaDiagnostic() {
     () => new URLSearchParams(window.location.search).get("next") === "paywall",
     [],
   )
+  const assessmentMode = useMemo(
+    () => new URLSearchParams(window.location.search).get("mode") === "readiness" ? "readiness" : "gaps",
+    [],
+  )
+  const learnerRoute = getLearnerBaseline()?.route
   const [showTrialPaywall, setShowTrialPaywall] = useState(false)
 
   const [phase, setPhase] = useState<Phase>("intro")
@@ -242,7 +248,7 @@ export default function AccaDiagnostic() {
   }, [paperId, phase])
 
   function start() {
-    const qs = buildDiagnostic(paperId)
+    const qs = buildDiagnostic(paperId, Date.now(), assessmentMode === "gaps" ? "gaps" : "full")
     if (qs.length === 0) return
     answersRef.current = []
     setResponses({})
@@ -252,7 +258,7 @@ export default function AccaDiagnostic() {
     setQuestions(qs.map((q) => withShuffledOptions(q)))
     setIdx(0)
     setTimeLeft(diagnosticSeconds(qs.length))
-    trackEvent("diagnostic_started", { paper: paperId, questions: qs.length, fromOnboarding: fromWelcome })
+    trackEvent("diagnostic_started", { paper: paperId, questions: qs.length, fromOnboarding: fromWelcome, learnerRoute, assessmentMode })
     setPhase("assessing")
   }
 
@@ -307,7 +313,7 @@ export default function AccaDiagnostic() {
   const finalizeDiagnostic = () => {
     const scored = scoreDiagnostic(paperId, answersRef.current)
     setResult(scored)
-    trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome })
+    trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome, learnerRoute, assessmentMode })
     void markFirstTaskCompleted()
     void persistDiagnostic(scored)
     queueAccaProgressPush() // the diagnostic answered real questions — sync mastery too
@@ -431,11 +437,11 @@ export default function AccaDiagnostic() {
               <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginTop: 18 }}>
                 <IconBadge name="diagnostic" tone="brand" />
                 <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: C.brand }}>
-                  PASS-PROBABILITY DIAGNOSTIC
+                  {assessmentMode === "readiness" ? "EXAM-READINESS CHECK" : "TARGETED GAP CHECK"}
                 </div>
               </div>
               <h1 style={{ fontSize: 30, fontWeight: 800, color: TEXT, margin: "12px 0 12px", lineHeight: 1.15 }}>
-                Know your real <span style={iriText}>Exam Readiness Score</span>.
+                {assessmentMode === "readiness" ? "Prove your exam readiness." : "Find the gaps in your current studies."}
               </h1>
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
                 A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to 25
@@ -476,7 +482,7 @@ export default function AccaDiagnostic() {
               </Card>
 
               <Button onClick={start} size="lg" full>
-                Start the diagnostic <Icon name="arrow" size={18} color="#fff" />
+                Start the {assessmentMode === "readiness" ? "readiness check" : "gap check"} <Icon name="arrow" size={18} color="#fff" />
               </Button>
               <p style={{ fontSize: 12, color: DIM, textAlign: "center", marginTop: 12 }}>
                 Your results are saved to your account.

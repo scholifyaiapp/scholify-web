@@ -179,7 +179,7 @@ function pickLadder(pool: AccaQuestion[], seed: number): AccaQuestion[] {
  * questions; the exam-style budget is 100 seconds per question (see
  * diagnosticSeconds). Returns [] when the paper has no seed bank.
  */
-export function buildDiagnostic(paperId: string, seed = Date.now()): AccaQuestion[] {
+export function buildDiagnostic(paperId: string, seed = Date.now(), mode: "full" | "gaps" = "full"): AccaQuestion[] {
   const paper = getPaper(paperId)
   const all = getQuestions(paperId)
   if (!paper || all.length === 0) return []
@@ -207,11 +207,12 @@ export function buildDiagnostic(paperId: string, seed = Date.now()): AccaQuestio
     }
   }
 
-  const selected = picked.slice(0, MAX_QUESTIONS)
-  if (selected.length < MAX_QUESTIONS) {
+  const limit = mode === "gaps" ? Math.min(15, Math.max(ladders.length, 10)) : MAX_QUESTIONS
+  const selected = picked.slice(0, limit)
+  if (selected.length < limit) {
     const used = new Set(selected.map((q) => q.id))
     const spares = shuffle(all.filter((q) => !used.has(q.id)), seed + 11)
-    selected.push(...spares.slice(0, MAX_QUESTIONS - selected.length))
+    selected.push(...spares.slice(0, limit - selected.length))
   }
   return shuffle(selected, seed + 7)
 }

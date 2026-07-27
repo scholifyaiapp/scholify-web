@@ -26,6 +26,7 @@ import { PlanRoute } from "@/components/acca/PlanRoute"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import { format } from "date-fns"
+import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
 
 /*
  * /dashboard — the command centre, not a report. One glance answers
@@ -77,7 +78,14 @@ export default function Dashboard() {
   const history = getMockHistory(paperId)
   const weakest = palestArea(paperId)
   const momentum = probabilityMomentum(paperId)
-  const mission = buildTodayPlan(paperId)
+  const learnerRoute = getLearnerBaseline()?.route
+  const baseMission = buildTodayPlan(paperId)
+  const mission = learnerRoute === "practice"
+    ? [...baseMission].sort((a, b) => {
+        const priority = (task: TodayAction) => task === "mock" ? 0 : task === "bank" || task === "practice" || task === "weak" ? 1 : task === "flashcards" ? 2 : 3
+        return priority(a.action) - priority(b.action)
+      })
+    : baseMission
   const ent = entitlementOf(user)
   const { showPaywall, paywallType, maybeShowTrialReminder, closePaywall } = usePaywall()
 
@@ -102,7 +110,7 @@ export default function Dashboard() {
   // plan-reveal, and forcing a diagnostic on zero knowledge is pointless. Once
   // the diagnostic is done `prob` is set, so this never loops.
   if (getStartMode() !== "zero" && prob === null) {
-    return <Navigate to="/study/diagnostic?next=paywall" replace />
+    return <Navigate to={`/study/diagnostic?mode=${learnerRoute === "practice" ? "readiness" : "gaps"}&next=paywall`} replace />
   }
 
   if (!paper) return null
@@ -248,12 +256,12 @@ export default function Dashboard() {
               </span>
             </motion.div>
             <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Start here</div>
-            <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>Find out your Exam Readiness Score</h2>
+            <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>{learnerRoute === "practice" ? "Assess your exam readiness" : "Map the gaps in your current studies"}</h2>
             <p style={{ ...TYPE.body, color: C.soft, maxWidth: 460, margin: "0 auto 18px", lineHeight: 1.6 }}>
               A ~15-minute diagnostic reads your current level across every {paper.id} syllabus area — then Scholify builds the roadmap and today's plan around it.
             </p>
-            <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate("/study/diagnostic")} style={{ padding: "15px 28px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15.5, cursor: "pointer" }}>
-              Take the diagnostic
+            <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(`/study/diagnostic?mode=${learnerRoute === "practice" ? "readiness" : "gaps"}`)} style={{ padding: "15px 28px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 15.5, cursor: "pointer" }}>
+              {learnerRoute === "practice" ? "Start readiness check" : "Start targeted gap check"}
             </motion.button>
             <div style={{ ...TYPE.small, color: C.faint, marginTop: 10 }}>~15 min · no score counts against you</div>
           </Card>

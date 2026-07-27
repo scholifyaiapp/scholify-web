@@ -1,4 +1,5 @@
-export type LearnerRoute = "new" | "course" | "retaker"
+export type LearnerRoute = "new" | "course" | "practice"
+export type AssessmentPath = "embedded" | "diagnostic" | "uploaded" | "reported" | "timed-practice"
 export type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
 export type EnglishEvidence = "self" | "vocabulary" | "certificate"
 
@@ -8,6 +9,8 @@ export interface LearnerBaseline {
   englishEvidence: EnglishEvidence
   certificateName?: string
   certificateType?: "IELTS" | "TOEFL" | "Cambridge" | "Other"
+  assessmentPath?: AssessmentPath
+  syllabusCoverage?: "starting" | "partial" | "mostly-complete"
   updatedAt: string
 }
 
@@ -24,7 +27,11 @@ export function saveLearnerBaseline(value: LearnerBaseline): void {
 export function getLearnerBaseline(): LearnerBaseline | null {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "null") as Partial<LearnerBaseline> | null
-    if (!raw || !["new", "course", "retaker"].includes(String(raw.route))) return null
+    if (!raw) return null
+    // Profiles created before the three-journey redesign used "retaker".
+    // Retakers belong in the exam-practice journey; migrate without data loss.
+    if (String(raw.route) === "retaker") raw.route = "practice"
+    if (!["new", "course", "practice"].includes(String(raw.route))) return null
     if (!["A1", "A2", "B1", "B2", "C1", "C2"].includes(String(raw.englishLevel))) return null
     return raw as LearnerBaseline
   } catch {
@@ -39,7 +46,7 @@ export function learnerBaselineLine(): string {
     ? "new to ACCA"
     : baseline.route === "course"
       ? "has already studied through a course or self-study"
-      : "is retaking this paper"
+      : "has completed most learning and is focused on exam practice"
   const support = baseline.englishLevel === "A1" || baseline.englishLevel === "A2"
     ? "Use short sentences, define every technical term, and avoid idioms."
     : baseline.englishLevel === "B1"

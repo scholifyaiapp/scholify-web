@@ -34,6 +34,7 @@ import {
   type CefrLevel,
   type EnglishEvidence,
   type LearnerRoute,
+  type AssessmentPath,
 } from "@/lib/acca-learner-baseline"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 
@@ -172,11 +173,13 @@ export default function Welcome() {
   const reduced = useReducedMotion()
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
+  const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(null)
   const advancedOnboardingVisible = Date.now() >= ADVANCED_ONBOARDING_LAUNCH_AT
-  const visibleSteps = useMemo(
-    () => advancedOnboardingVisible ? Array.from({ length: TOTAL }, (_, index) => index) : [0, 3, 4, 5, 6, 7, 9],
-    [advancedOnboardingVisible],
-  )
+  const visibleSteps = useMemo(() => {
+    if (!advancedOnboardingVisible) return [0, 3, 4, 5, 6, 7, 9]
+    const all = Array.from({ length: TOTAL }, (_, index) => index)
+    return learnerRoute === "new" ? all.filter((item) => item !== 8) : all
+  }, [advancedOnboardingVisible, learnerRoute])
   const visibleStepIndex = Math.max(0, visibleSteps.indexOf(step))
 
   const [dir, setDir] = useState(1)
@@ -197,14 +200,13 @@ export default function Welcome() {
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
   const [goal, setGoalState] = useState<Goal | null>(null)
   const [target, setTarget] = useState(75)
-  const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(null)
   const [englishLevel, setEnglishLevel] = useState<CefrLevel | null>(null)
   const [englishEvidence, setEnglishEvidence] = useState<EnglishEvidence | null>(null)
   const [certificateFile, setCertificateFile] = useState<File | null>(null)
   const [certificateType, setCertificateType] = useState<"IELTS" | "TOEFL" | "Cambridge" | "Other">("IELTS")
   const [certificateBusy, setCertificateBusy] = useState(false)
   const [certificateError, setCertificateError] = useState("")
-  const [resultChoice, setResultChoice] = useState<"diagnostic" | "uploaded" | null>(null)
+  const [resultChoice, setResultChoice] = useState<AssessmentPath | null>(null)
   const [resultFile, setResultFile] = useState<File | null>(null)
   const [resultAnalysis, setResultAnalysis] = useState<ResultUploadAnalysis | null>(null)
   const [resultBusy, setResultBusy] = useState(false)
@@ -266,6 +268,20 @@ export default function Welcome() {
     setPaperVariantState(null)
   }
 
+  function selectLearnerRoute(nextRoute: LearnerRoute) {
+    if (learnerRoute !== nextRoute) {
+      trackEvent(learnerRoute ? "onboarding_route_changed" : "onboarding_route_selected", {
+        route: nextRoute,
+        previousRoute: learnerRoute,
+      })
+      setResultChoice(nextRoute === "new" ? "embedded" : null)
+      setResultFile(null)
+      setResultAnalysis(null)
+      setResultError("")
+    }
+    setLearnerRoute(nextRoute)
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target
@@ -303,6 +319,8 @@ export default function Welcome() {
         englishEvidence,
         certificateName: certificateFile?.name,
         certificateType: englishEvidence === "certificate" ? certificateType : undefined,
+        assessmentPath: learnerRoute === "new" ? "embedded" : resultChoice ?? "diagnostic",
+        syllabusCoverage: learnerRoute === "new" ? "starting" : learnerRoute === "course" ? "partial" : "mostly-complete",
         updatedAt: new Date().toISOString(),
       })
       if (getExperience() !== "professional") {
@@ -321,7 +339,7 @@ export default function Welcome() {
     return true
   }
 
-  const onboardingProps = () => ({ paper, minutes, target, goal, hasExamDate: Boolean(examDate) })
+  const onboardingProps = () => ({ paper, minutes, target, goal, learnerRoute, assessmentPath: resultChoice, hasExamDate: Boolean(examDate) })
   // Each finish path IS the experience answer, so the loop knows the persona from
   // the learner's actual choice (career→professional is already set in persist()).
   const finishToDiagnostic = () => {
@@ -331,7 +349,20 @@ export default function Welcome() {
     if (!persist()) return
     setStartMode("assess")
     trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" })
-    navigate("/study/diagnostic?next=paywall")
+    const mode = learnerRoute === "practice" ? "readiness" : "gaps"
+    trackEvent("diagnostic_offered", { paper, learnerRoute, mode, assessmentPath: resultChoice })
+    navigate(`/study/diagnostic?mode=${mode}&next=paywall`)
+  }
+  const finishNewLearner = () => {
+    if (finishBusy) return
+    setFinishError("")
+    setResultChoice("embedded")
+    setExperience("new")
+    if (!persist()) return
+    setStartMode("zero")
+    trackEvent("personalised_plan_generated", { ...onboardingProps(), route: "new", assessmentPath: "embedded" })
+    trackEvent("onboarding_complete", { ...onboardingProps(), learnerRoute: "new", exit: "learning" })
+    navigate("/dashboard")
   }
   const finishWithResult = async () => {
     if (!resultAnalysis || !resultFile || finishBusy) return
@@ -358,13 +389,16 @@ export default function Welcome() {
     setResultChoice(null)
     setResultError("")
     if (!file || !paper) return
+    trackEvent("onboarding_document_upload_started", { paper, learnerRoute })
     setResultBusy(true)
     try {
       const analysis = await analyseResultPdf(file, paper)
       setResultAnalysis(analysis)
       setResultChoice("uploaded")
+      trackEvent("onboarding_document_analysed", { paper, learnerRoute, resultKind: analysis.resultKind, areas: analysis.areas.length })
     } catch (error) {
       setResultError(error instanceof Error ? error.message : "Charles couldn't analyse this result.")
+      trackEvent("onboarding_document_analysis_failed", { paper, learnerRoute })
     } finally {
       setResultBusy(false)
     }
@@ -400,7 +434,7 @@ export default function Welcome() {
   /* shared slide bodies (question controls only — chrome differs per device) */
   const body: Record<number, ReactNode> = {
     1: (
-      <LearnerRouteSlide value={learnerRoute} onChange={setLearnerRoute} />
+      <LearnerRouteSlide value={learnerRoute} onChange={selectLearnerRoute} />
     ),
     2: (
       <EnglishBaselineSlide
@@ -471,9 +505,10 @@ export default function Welcome() {
         busy={resultBusy}
         error={resultError}
         choice={resultChoice}
+        route={learnerRoute}
         onFile={onResultFile}
-        onDiagnostic={() => {
-          setResultChoice("diagnostic")
+        onChoice={(choice) => {
+          setResultChoice(choice)
           setResultFile(null)
           setResultAnalysis(null)
           setResultError("")
@@ -489,7 +524,7 @@ export default function Welcome() {
         sitting={sittings.find((s) => s.date === pickedSitting) ?? null}
         goal={goal}
         uploadedResult={resultAnalysis}
-        onDiagnostic={finishToDiagnostic}
+        onDiagnostic={learnerRoute === "new" ? finishNewLearner : finishToDiagnostic}
         onUploaded={finishWithResult}
         finishBusy={finishBusy}
         finishError={finishError}
@@ -523,7 +558,7 @@ export default function Welcome() {
     "How much time can you protect, daily?",
     sessionPaper ? "Which sitting are you taking?" : "When's your exam?",
     "What are you here for?",
-    "Already have a result?",
+    learnerRoute === "practice" ? "How should we assess your readiness?" : "How should we map your current progress?",
     "Your loop is set.",
   ]
   const SUBS = [
@@ -537,7 +572,9 @@ export default function Welcome() {
       ? "Your plan counts back from exam week."
       : `${paper ?? "Your paper"} is an on-demand computer exam — book any date at your local centre.`,
     "This shapes the tone I'll coach you in.",
-    "Upload a detailed mock or failed-exam PDF. If Charles can verify it, it replaces the diagnostic.",
+    learnerRoute === "practice"
+      ? "Use a recent result or choose a short exam-focused readiness route. Uploading is optional."
+      : "Use course progress, a targeted gap check, or an optional detailed result PDF.",
     "",
   ]
 
@@ -629,7 +666,9 @@ export default function Welcome() {
           {step === 9 ? (
             resultAnalysis
               ? <PrimaryBtn onClick={() => void finishWithResult()} big disabled={finishBusy}>{finishBusy ? "Building your plan…" : "Build my plan from this result"}</PrimaryBtn>
-              : <PrimaryBtn onClick={finishToDiagnostic} big disabled={finishBusy}>Continue to Learning</PrimaryBtn>
+              : <PrimaryBtn onClick={learnerRoute === "new" ? finishNewLearner : finishToDiagnostic} big disabled={finishBusy}>
+                  {learnerRoute === "new" ? "Build my plan and start learning" : learnerRoute === "practice" ? "Assess readiness and start practising" : "Map my gaps and build my plan"}
+                </PrimaryBtn>
           ) : (
             <>
               <PrimaryBtn onClick={() => (canAdvance ? go(1) : undefined)} big={step === 0} disabled={!canAdvance}>
@@ -773,9 +812,9 @@ const kicker: CSSProperties = {
 /** What Scholify actually gives you — shown on the hero so the value is explicit. */
 function LearnerRouteSlide({ value, onChange }: { value: LearnerRoute | null; onChange: (value: LearnerRoute) => void }) {
   const routes: { value: LearnerRoute; icon: IconName; title: string; detail: string; path: string[] }[] = [
-    { value: "new", icon: "rocket", title: "New to ACCA", detail: "Start with foundations and clearer English support.", path: ["English baseline", "Foundations", "Diagnostic"] },
-    { value: "course", icon: "study", title: "Already learning", detail: "I use a course, tutor, books, or self-study.", path: ["Map resources", "Measure gaps", "Daily plan"] },
-    { value: "retaker", icon: "loop", title: "Retaking a paper", detail: "Use previous evidence and rebuild weak areas.", path: ["Read result", "Find lost marks", "Comeback plan"] },
+    { value: "new", icon: "rocket", title: "Learn from the beginning", detail: "I am starting this paper from zero or near zero.", path: ["Foundations", "Daily lessons", "Checks as I learn"] },
+    { value: "course", icon: "study", title: "Continue my current studies", detail: "I already use a course, tutor, books, or self-study.", path: ["Map progress", "Verify gaps", "Complement my course"] },
+    { value: "practice", icon: "mock", title: "Practise for my exam", detail: "I have covered most of the syllabus and need practice and mocks.", path: ["Readiness check", "Timed practice", "Mock plan"] },
   ]
   return <div style={{ display: "grid", gap: 11, maxWidth: 570 }}>
     {routes.map((route, index) => {
@@ -1308,17 +1347,27 @@ function GoalSlide({
 }
 
 function ResultUploadSlide({
-  paper, file, analysis, busy, error, choice, onFile, onDiagnostic,
+  paper, file, analysis, busy, error, choice, route, onFile, onChoice,
 }: {
   paper: string
   file: File | null
   analysis: ResultUploadAnalysis | null
   busy: boolean
   error: string
-  choice: "diagnostic" | "uploaded" | null
+  choice: AssessmentPath | null
+  route: LearnerRoute | null
   onFile: (file: File | null) => void
-  onDiagnostic: () => void
+  onChoice: (choice: AssessmentPath) => void
 }) {
+  const options: { value: AssessmentPath; title: string; detail: string }[] = route === "practice"
+    ? [
+        { value: "diagnostic", title: "Take a readiness check", detail: "A short mixed assessment of coverage, accuracy, pace, and exam technique." },
+        { value: "timed-practice", title: "Start with timed mixed practice", detail: "Use a timed readiness set when you do not have a recent result." },
+      ]
+    : [
+        { value: "diagnostic", title: "Take a targeted gap check", detail: "Sample studied areas and find what needs reinforcement." },
+        { value: "reported", title: "Map what I have completed", detail: "Use my course progress, then verify claimed topics gradually through questions." },
+      ]
   return (
     <div style={{ maxWidth: 540 }}>
       <label style={{ display: "block", padding: "22px", borderRadius: 18, border: `1.5px dashed ${analysis ? GREEN : error ? RED : "#D7CCC4"}`, background: analysis ? "rgba(14,159,110,.06)" : "#fff", cursor: busy ? "wait" : "pointer" }}>
@@ -1339,7 +1388,7 @@ function ResultUploadSlide({
             </div>
             <div style={{ marginTop: 6, font: `500 12.5px/1.5 ${SANS}`, color: analysis ? "#24745B" : MUTE }}>
               {analysis
-                ? `${analysis.score}% · ${analysis.areas.length} syllabus areas verified. This can replace the diagnostic.`
+                ? `${analysis.score}% · ${analysis.areas.length} syllabus areas found. Charles will use this evidence and verify it through practice.`
                 : `Text-based PDF · ${Math.round(RESULT_PDF_MAX_BYTES / 1024 / 1024)} MB max · ${paper} score plus topic or section breakdown required.`}
             </div>
           </div>
@@ -1352,18 +1401,24 @@ function ResultUploadSlide({
       )}
       {error && (
         <div role="alert" style={{ marginTop: 12, padding: "13px 15px", borderRadius: 13, background: "rgba(200,0,0,.06)", color: "#8E1B1B", font: `600 12.5px/1.45 ${SANS}` }}>
-          {error} The diagnostic remains required.
+          {error} You can continue without a document using one of the assessment choices below.
         </div>
       )}
-      <button
-        type="button"
-        onClick={onDiagnostic}
-        style={{ width: "100%", marginTop: 14, padding: "15px 17px", borderRadius: 14, border: `1.5px solid ${choice === "diagnostic" ? RED : BORDER}`, background: choice === "diagnostic" ? "rgba(200,0,0,.05)" : "transparent", color: choice === "diagnostic" ? RED : BODY, font: `750 13px/1.3 ${SANS}`, cursor: "pointer", textAlign: "left" }}
-      >
-        I don't have a detailed result PDF — take the compulsory diagnostic
-      </button>
+      <div style={{ display: "grid", gap: 9, marginTop: 14 }}>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChoice(option.value)}
+            style={{ width: "100%", padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${choice === option.value ? RED : BORDER}`, background: choice === option.value ? "rgba(200,0,0,.05)" : "#fff", color: choice === option.value ? RED : BODY, cursor: "pointer", textAlign: "left" }}
+          >
+            <span style={{ display: "block", font: `750 13px/1.3 ${SANS}` }}>{option.title}</span>
+            <span style={{ display: "block", marginTop: 4, font: `500 11.5px/1.4 ${SANS}`, color: MUTE }}>{option.detail}</span>
+          </button>
+        ))}
+      </div>
       <p style={{ margin: "12px 2px 0", font: `500 11.5px/1.45 ${SANS}`, color: FAINT }}>
-        Privacy: Scholify extracts the evidence needed for your plan and does not retain the original PDF.
+        Upload is optional. Scholify extracts planning evidence and does not retain the original PDF.
       </p>
     </div>
   )
@@ -1438,7 +1493,11 @@ function ReadySlide({
             </>
           ) : (
             <>
-              No verified result was supplied, so the <b style={{ fontWeight: 700, color: "#4E3A0D" }}>diagnostic is compulsory</b>. It gives Charles the baseline needed to target your weak spots instead of guessing.
+              {learnerRoute === "new"
+                ? <>You are starting from the beginning, so Charles will <b style={{ fontWeight: 700, color: "#4E3A0D" }}>teach first and measure as you learn</b>. No pointless entry test is required.</>
+                : learnerRoute === "practice"
+                  ? <>Your short <b style={{ fontWeight: 700, color: "#4E3A0D" }}>exam-readiness check</b> will focus on coverage, pace, accuracy, and exam technique—not beginner lessons.</>
+                  : <>Charles will use a <b style={{ fontWeight: 700, color: "#4E3A0D" }}>targeted gap check</b> to complement your current studies without restarting the syllabus.</>}
             </>
           )}
         </span>
@@ -1446,7 +1505,15 @@ function ReadySlide({
       {!isMobile && (
         <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
           <motion.button whileTap={finishBusy ? undefined : { scale: 0.98 }} disabled={finishBusy} onClick={uploadedResult ? onUploaded : onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: finishBusy ? "wait" : "pointer", opacity: finishBusy ? .7 : 1, boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-            {finishBusy ? "Building your plan…" : uploadedResult ? "Build my plan from this result" : "Continue to Learning"}
+            {finishBusy
+              ? "Building your plan…"
+              : uploadedResult
+                ? "Build my plan from this result"
+                : learnerRoute === "new"
+                  ? "Build my plan and start learning"
+                  : learnerRoute === "practice"
+                    ? "Assess my readiness and start practising"
+                    : "Map my gaps and build my plan"}
           </motion.button>
           {finishError && <p role="alert" style={{ margin: "10px 0 0", color: RED, font: `600 12px/1.4 ${SANS}` }}>{finishError}</p>}
         </div>

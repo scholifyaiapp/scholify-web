@@ -68,6 +68,13 @@ describe("buildDiagnostic", () => {
     expect(a).toEqual(b)
   })
 
+  it("uses a shorter syllabus-spanning gap check for learners already studying", () => {
+    const paper = getPaper("TX")!
+    const form = buildDiagnostic("TX", 42, "gaps")
+    expect(form.length).toBeLessThan(25)
+    expect(new Set(form.map((q) => q.area)).size).toBe(paper.areas.length)
+  })
+
   it("returns nothing for a paper that doesn't exist, rather than throwing", () => {
     expect(buildDiagnostic("NOPE", 1)).toEqual([])
   })

@@ -91,6 +91,7 @@ export async function useUploadedResult(analysis: ResultUploadAnalysis, filename
     estimatedScore: analysis.score,
     passProbability,
     confidence: analysis.confidence,
+    provisional: true,
     source: "result-upload",
     evidence: {
       kind: analysis.resultKind,

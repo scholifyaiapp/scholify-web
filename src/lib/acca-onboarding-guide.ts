@@ -27,7 +27,7 @@ export interface OnboardingGuide {
 
 export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date()): OnboardingGuide {
   const base = PAPER_LOAD[input.paperId] ?? 150
-  const routeFactor = input.route === "retaker" ? 0.72 : input.route === "course" ? 0.85 : 1.12
+  const routeFactor = input.route === "practice" ? 0.72 : input.route === "course" ? 0.85 : 1.12
   const languageFactor = input.englishLevel === "A1" || input.englishLevel === "A2"
     ? 1.2
     : input.englishLevel === "B1" ? 1.1 : 1

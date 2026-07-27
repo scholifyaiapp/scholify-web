@@ -4,7 +4,7 @@ import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 describe("Charles onboarding study guide", () => {
   it("requires more runway for a new learner on a harder paper", () => {
     const newSbr = buildOnboardingGuide({ paperId: "SBR", route: "new", englishLevel: "B1", minutesPerDay: 60, daysPerWeek: 6, examDate: null })
-    const retakeBt = buildOnboardingGuide({ paperId: "BT", route: "retaker", englishLevel: "C1", minutesPerDay: 60, daysPerWeek: 6, examDate: null })
+    const retakeBt = buildOnboardingGuide({ paperId: "BT", route: "practice", englishLevel: "C1", minutesPerDay: 60, daysPerWeek: 6, examDate: null })
     expect(newSbr.recommendedWeeks).toBeGreaterThan(retakeBt.recommendedWeeks)
   })
 
