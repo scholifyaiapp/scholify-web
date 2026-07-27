@@ -31,7 +31,7 @@ export default function FeedbackForm({
   const [website, setWebsite] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
-  const [done, setDone] = useState(false)
+  const [done, setDone] = useState<{ submitterNotified: boolean } | null>(null)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -56,7 +56,7 @@ export default function FeedbackForm({
       setError(result.reason === "rate_limited" ? "Thanks — we already received several messages from you. Please try again later." : "We couldn't send that yet. Please try again.")
       return
     }
-    setDone(true)
+    setDone({ submitterNotified: result.notifications?.submitter === true })
     setMessage("")
     onSuccess?.()
   }
@@ -66,8 +66,12 @@ export default function FeedbackForm({
       <div style={{ textAlign: "center", padding: compact ? "28px 18px" : "38px 24px" }}>
         <div style={{ width: 54, height: 54, margin: "0 auto", borderRadius: 18, display: "grid", placeItems: "center", background: "rgba(200,0,0,.08)", color: "#C80000" }}><Heart size={25} fill="currentColor" /></div>
         <h3 style={{ margin: "16px 0 7px", fontSize: 22, letterSpacing: "-.03em" }}>Scholify loves you.</h3>
-        <p style={{ margin: 0, color: "var(--sch-tx-2, #6B6B76)", fontSize: 14, lineHeight: 1.6 }}>Thanks for your feedback. It’s in our product inbox, and we sent a confirmation to your email.</p>
-        <button type="button" onClick={() => setDone(false)} style={{ marginTop: 18, border: 0, background: "transparent", color: "#C80000", fontWeight: 800, cursor: "pointer" }}>Send another</button>
+        <p style={{ margin: 0, color: "var(--sch-tx-2, #6B6B76)", fontSize: 14, lineHeight: 1.6 }}>
+          {done.submitterNotified
+            ? "Thanks for your feedback. It’s in our product inbox, and we sent a confirmation to your email."
+            : "Thanks for your feedback. It’s safely in our product inbox. The email confirmation could not be delivered, but your feedback was not lost."}
+        </p>
+        <button type="button" onClick={() => setDone(null)} style={{ marginTop: 18, border: 0, background: "transparent", color: "#C80000", fontWeight: 800, cursor: "pointer" }}>Send another</button>
       </div>
     )
   }

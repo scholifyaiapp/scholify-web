@@ -327,11 +327,18 @@ async function submitFeedback(req: VercelRequest, res: VercelResponse, supa: Sup
     intro: `Thanks for your feedback${name ? `, ${escapeHtml(name.split(/\s+/)[0])}` : ""}. We read every message and use it to decide what Scholify should improve next.`,
     content: `<div style="padding:16px;border-radius:14px;background:#FFF7F7;border:1px solid #F1D5D5;color:#5F5753;font-size:14px;line-height:22px;">Your feedback is safely in our product inbox. If we need more detail, we’ll reply to this email.</div>`,
   })
-  await Promise.allSettled([
+  const notificationResults = await Promise.allSettled([
     sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: email, subject: `New Scholify feedback · ${category}`, html: adminHtml }),
     sendPartnerEmail({ to: email, subject: "Thanks for your feedback — Scholify loves you", html: userHtml }),
   ])
-  res.status(200).json({ ok: true, id: saved.id })
+  const notifications = {
+    admin: notificationResults[0]?.status === "fulfilled",
+    submitter: notificationResults[1]?.status === "fulfilled",
+  }
+  if (!notifications.admin || !notifications.submitter) {
+    console.error("feedback email delivery:", { feedbackId: saved.id, ...notifications })
+  }
+  res.status(200).json({ ok: true, id: saved.id, notifications })
 }
 
 async function updateFeedbackStatus(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
@@ -481,29 +488,40 @@ function emailFrame(options: {
 </body></html>`
 }
 
-async function sendPartnerEmail(payload: {
+export async function sendPartnerEmail(payload: {
   to: string
   subject: string
   html: string
   replyTo?: string
-}): Promise<void> {
+}): Promise<string> {
   const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.REMINDER_FROM || "Scholify Partners <onboarding@resend.dev>",
-      to: payload.to,
-      reply_to: payload.replyTo || ADMIN_EMAIL,
-      subject: payload.subject,
-      html: payload.html,
-    }),
-  })
-  if (!response.ok) throw new Error(`Resend returned ${response.status}`)
+  if (!apiKey) throw new Error("RESEND_API_KEY is not configured")
+  const from = process.env.FEEDBACK_FROM || process.env.REMINDER_FROM
+  if (!from) throw new Error("FEEDBACK_FROM or REMINDER_FROM is not configured")
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: payload.to,
+        reply_to: payload.replyTo || ADMIN_EMAIL,
+        subject: payload.subject,
+        html: payload.html,
+      }),
+    })
+    const result = await response.json().catch(() => ({})) as { id?: string; message?: string; name?: string }
+    if (response.ok && result.id) return result.id
+    const retryable = response.status === 429 || response.status >= 500
+    if (!retryable || attempt === 3) {
+      throw new Error(`Resend ${response.status}: ${String(result.message || result.name || "delivery rejected").slice(0, 180)}`)
+    }
+  }
+  throw new Error("Resend delivery failed")
 }
 
-async function sendAllPartnerEmails(messages: Promise<void>[]): Promise<void> {
+async function sendAllPartnerEmails(messages: Promise<unknown>[]): Promise<void> {
   const results = await Promise.allSettled(messages)
   const failures = results.filter((result) => result.status === "rejected")
   if (failures.length > 0) throw new Error(`${failures.length} partner email send(s) failed`)

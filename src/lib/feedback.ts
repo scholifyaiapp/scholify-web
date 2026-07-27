@@ -13,7 +13,13 @@ export interface FeedbackInput {
   website?: string
 }
 
-export async function submitFeedback(input: FeedbackInput): Promise<{ ok: boolean; reason?: string }> {
+export interface FeedbackResult {
+  ok: boolean
+  reason?: string
+  notifications?: { admin: boolean; submitter: boolean }
+}
+
+export async function submitFeedback(input: FeedbackInput): Promise<FeedbackResult> {
   try {
     let token: string | null = null
     if (isSupabaseConfigured) {
@@ -28,7 +34,7 @@ export async function submitFeedback(input: FeedbackInput): Promise<{ ok: boolea
       },
       body: JSON.stringify(input),
     })
-    return (await response.json()) as { ok: boolean; reason?: string }
+    return (await response.json()) as FeedbackResult
   } catch {
     return { ok: false, reason: "network" }
   }
