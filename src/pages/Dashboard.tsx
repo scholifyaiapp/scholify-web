@@ -21,7 +21,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
-import { diagnosticGate, missedDayNote } from "@/lib/acca-schedule"
+import { diagnosticGate, missedDayNote, shieldState } from "@/lib/acca-schedule"
 import { PlanRoute } from "@/components/acca/PlanRoute"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
@@ -128,6 +128,11 @@ export default function Dashboard() {
   const gateS = diagnosticGate(paperId)
   const zeroStart = noDiag && getStartMode() === "zero" && !gateS.unlocked
   const missedNote = missedDayNote(paperId)
+  // The streak tile reads the SHIELD-AWARE streak (advanced by recordDayActive
+  // on every session), not the answer-only streak from getTodayStats — otherwise
+  // the "shields keep your streak alive" promise has no effect on the number the
+  // learner actually sees, which would still reset on the first missed day.
+  const shieldStreak = shieldState(paperId).streak
 
   return (
     <DashboardLayout>
@@ -364,7 +369,7 @@ export default function Dashboard() {
         {!noDiag && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: SP.md, marginBottom: SP.md }}>
             <VitalTile icon="streak" label="Streak">
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.text, lineHeight: 1 }}>{today.streak} <span style={{ fontSize: 12.5, fontWeight: 700, color: C.soft }}>days</span></div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: C.text, lineHeight: 1 }}>{shieldStreak} <span style={{ fontSize: 12.5, fontWeight: 700, color: C.soft }}>days</span></div>
               <div style={{ display: "flex", gap: 4, marginTop: 9 }}>
                 {week.map((d) => (
                   <span key={d.date} style={{ width: 15, height: 15, borderRadius: 4.5, background: d.count > 0 ? C.green : C.card2 }} />
