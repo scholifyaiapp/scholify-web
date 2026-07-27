@@ -102,7 +102,16 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
  * the Today tab, the pending task is marked done and the next unlocks. Completion
  * is per-paper, per-calendar-day, in localStorage (offline-first like the rest).
  */
-const doneKey = (paperId: string) => `scholify-today-done-${paperId}-${new Date().toISOString().slice(0, 10)}`
+/** Local calendar date (YYYY-MM-DD). NEVER toISOString() here — that returns the
+ *  UTC date, which desyncs an evening user west of Greenwich (and rolls a day
+ *  early east of it) from the daily plan and every other date store, so today's
+ *  "done"/pending marks split across two keys. Matches acca.ts/acca-loop todayStr. */
+function localDay(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
+}
+
+const doneKey = (paperId: string) => `scholify-today-done-${paperId}-${localDay()}`
 const PENDING_KEY = "scholify-today-pending"
 
 export function getTodayDone(paperId: string): string[] {
@@ -164,7 +173,7 @@ export function focusSecondsLeft(): number {
 /** Remember which task the learner just launched, so we can complete it on return. */
 export function setPendingTodayTask(paperId: string, taskId: string): void {
   try {
-    window.localStorage.setItem(PENDING_KEY, JSON.stringify({ paperId, taskId, day: new Date().toISOString().slice(0, 10) }))
+    window.localStorage.setItem(PENDING_KEY, JSON.stringify({ paperId, taskId, day: localDay() }))
   } catch {
     /* ignore */
   }
@@ -179,7 +188,7 @@ export function resolvePendingTodayTask(paperId: string): boolean {
     const raw = window.localStorage.getItem(PENDING_KEY)
     if (!raw) return false
     const p = JSON.parse(raw) as { paperId?: string; taskId?: string; day?: string }
-    const today = new Date().toISOString().slice(0, 10)
+    const today = localDay()
     // A stale marker from a previous day is useless — discard it.
     if (p.day !== today) {
       window.localStorage.removeItem(PENDING_KEY)

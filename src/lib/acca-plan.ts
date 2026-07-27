@@ -67,10 +67,15 @@ export function setPlan(paperId: string, plan: Partial<PaperPlan>): PaperPlan {
 export function daysUntilExam(paperId: string): number | null {
   const plan = getPlan(paperId)
   if (!plan.examDate) return null
-  const exam = new Date(plan.examDate)
+  // Parse the exam date at LOCAL midnight — a bare "YYYY-MM-DD" parses as UTC
+  // midnight, and subtracting a local `now` drops a day for users far from UTC.
+  // Compare local-exam-midnight against local-today-midnight so the result is a
+  // whole-day calendar difference, never off by one and free of intra-day jitter.
+  const exam = new Date(`${plan.examDate}T00:00:00`)
   if (Number.isNaN(exam.getTime())) return null
   const now = new Date()
-  return Math.max(0, Math.round((exam.getTime() - now.getTime()) / 86400000))
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.max(0, Math.round((exam.getTime() - todayMid.getTime()) / 86400000))
 }
 
 export interface Recommendation {

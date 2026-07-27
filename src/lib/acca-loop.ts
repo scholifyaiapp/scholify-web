@@ -41,8 +41,7 @@ export const MOCK_PASS = 50
 /** Mocks to sit before the real exam — Mock 1 → Mock 2 → Mock 3. */
 export const MOCKS_REQUIRED = 3
 
-function todayStr(): string {
-  const d = new Date()
+function todayStr(d: Date = new Date()): string {
   return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
 }
 
@@ -265,7 +264,11 @@ const NO_RECOVERY: RecoveryState = { active: false, outcome: null, answeredSince
 export function recoveryState(paperId: string): RecoveryState {
   const outcome = latestExamOutcome(paperId)
   if (!outcome || outcome.passed) return NO_RECOVERY
-  const failDate = outcome.recordedAt.slice(0, 10)
+  // recordedAt is a UTC ISO stamp; convert to the LOCAL calendar date so it
+  // compares like-for-like with the daily-activity and mock date keys (both
+  // local). Slicing the ISO string would give the UTC date and misclassify the
+  // boundary day for users far from UTC.
+  const failDate = todayStr(new Date(outcome.recordedAt))
   const answeredSince = getDailyActivity(120)
     .filter((d) => d.date > failDate)
     .reduce((s, d) => s + d.count, 0)
