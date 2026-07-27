@@ -307,8 +307,17 @@ export default function AccaDiagnostic() {
   // dashboard. The plan is NOT built yet; that is WOW 2, gated behind the
   // dashboard's "Start closing the gap" button.
   const revealResults = () => {
-    finalizeDiagnostic()
-    setPhase("results")
+    let scored: DiagnosticResult | null = null
+    try {
+      scored = finalizeDiagnostic()
+    } catch (err) {
+      console.error("diagnostic finalize failed:", err)
+    }
+    // Never strand the learner on the "analyzing" loader: only show the results
+    // view when scoring actually produced a result. If it somehow threw, send
+    // them into the app rather than a dead loader / blank screen.
+    if (scored) setPhase("results")
+    else navigate(fromWelcome ? "/dashboard" : "/study")
   }
   // When the test ends, every path runs the same lean scan → dashboard →
   // (button) → plan → paywall sequence. The legacy `reveal`/RevealExperience

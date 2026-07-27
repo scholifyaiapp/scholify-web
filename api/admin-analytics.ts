@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js"
 
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
 const ANALYTICS_BASELINE = "2026-07-24 10:56:32"
@@ -18,12 +18,36 @@ async function requireFounder(req: VercelRequest): Promise<SupabaseClient | null
 }
 
 async function safeRows(admin: SupabaseClient, table: string, select = "*"): Promise<Row[]> {
-  const { data, error } = await admin.from(table).select(select)
-  if (error) {
-    console.warn(`admin analytics: ${table}`, error.message)
-    return []
+  // Page through in batches so counts/sums aren't silently capped by PostgREST's
+  // max-rows limit once a table grows past it — the founder's traction numbers
+  // (users, waitlist, revenue) must stay accurate at scale.
+  const all: Row[] = []
+  const size = 1000
+  for (let from = 0; from < 500_000; from += size) {
+    const { data, error } = await admin.from(table).select(select).range(from, from + size - 1)
+    if (error) {
+      console.warn(`admin analytics: ${table}`, error.message)
+      break
+    }
+    const rows = (data || []) as unknown as Row[]
+    all.push(...rows)
+    if (rows.length < size) break
   }
-  return (data || []) as unknown as Row[]
+  return all
+}
+
+/** Every auth user, paged until an empty page (listUsers caps a single page). */
+async function allAuthUsers(admin: SupabaseClient): Promise<User[]> {
+  const users: User[] = []
+  const perPage = 200
+  for (let page = 1; page <= 500; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage })
+    const batch = data?.users || []
+    if (error || batch.length === 0) break
+    users.push(...batch)
+    if (batch.length < perPage) break
+  }
+  return users
 }
 
 async function posthogQuery(query: string): Promise<unknown[][] | null> {
@@ -54,8 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   try {
-    const [{ data: authData }, profiles, waitlist, partners, commissions] = await Promise.all([
-      admin.auth.admin.listUsers({ page: 1, perPage: 500 }),
+    const [authUsers, profiles, waitlist, partners, commissions] = await Promise.all([
+      allAuthUsers(admin),
       safeRows(admin, "profiles"),
       safeRows(admin, "launch_waitlist", "id,email,name,source,created_at"),
       safeRows(admin, "affiliates"),
@@ -84,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       .sort((a, b) => String(b["created_at"]).localeCompare(String(a["created_at"])))
 
     const profileById = new Map(profiles.map((profile) => [String(profile.id || profile.user_id), profile]))
-    const users = (authData?.users || []).map((user) => {
+    const users = authUsers.map((user) => {
       const profile = profileById.get(user.id) || {}
       return {
         id: user.id,
