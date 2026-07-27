@@ -25,6 +25,37 @@ export const GOAL_OPTIONS: { value: Goal; label: string; blurb: string }[] = [
  *                the diagnostic is the honest starting point.
  */
 export type StartMode = "zero" | "assess"
+export type PaperVariant = "UK" | "GLOBAL"
+
+const VARIANT_KEY = "scholify-acca-paper-variants"
+
+function defaultVariant(paperId: string): PaperVariant | null {
+  if (paperId === "LW") return "GLOBAL"
+  if (paperId === "TX") return "UK"
+  return null
+}
+
+export function getPaperVariant(paperId: string): PaperVariant | null {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(VARIANT_KEY) ?? "{}") as Record<string, PaperVariant>
+    if (saved[paperId] === "UK" || saved[paperId] === "GLOBAL") return saved[paperId]
+  } catch { /* ignore */ }
+  return defaultVariant(paperId)
+}
+
+export function setPaperVariant(paperId: string, variant: PaperVariant): void {
+  if (paperId !== "LW" && paperId !== "TX") return
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(VARIANT_KEY) ?? "{}") as Record<string, PaperVariant>
+    saved[paperId] = variant
+    window.localStorage.setItem(VARIANT_KEY, JSON.stringify(saved))
+  } catch { /* ignore */ }
+}
+
+export function paperVariantLabel(paperId: string): string {
+  const variant = getPaperVariant(paperId)
+  return variant ? `${paperId} · ${variant === "UK" ? "United Kingdom" : "Global"}` : paperId
+}
 
 const START_KEY = "scholify-acca-startmode"
 

@@ -26,6 +26,7 @@
 
 import { getPaper, getQuestions, getPaperStats, DIFFICULTY_WEIGHT } from "@/lib/acca"
 import { experienceLine } from "@/lib/acca-profile"
+import { learnerBaselineLine } from "@/lib/acca-learner-baseline"
 import type { AccaQuestion, Difficulty } from "@/lib/acca-content"
 
 /* ── Tunables ─────────────────────────────────────────────────── */
@@ -38,8 +39,10 @@ const ALPHA = 1.5
 const LOGISTIC_K = 0.11
 /** Questions sampled per syllabus area (capped by what the bank holds). */
 const PER_AREA = 3
-/** Hard ceiling on diagnostic length so it stays ~15–20 min. */
+/** Every formal diagnostic uses one comparable 25-question structure. */
 const MAX_QUESTIONS = 25
+export const DIAGNOSTIC_QUESTIONS = MAX_QUESTIONS
+export const DIAGNOSTIC_SECONDS = 30 * 60
 /** The improvement target we coach toward for weak areas. */
 export const TARGET_AREA_SCORE = 0.7
 
@@ -104,6 +107,14 @@ export interface DiagnosticResult {
    * before this flag existed, which were all formal diagnostics → not provisional.
    */
   provisional?: boolean
+  /** Evidence route used to establish the baseline. */
+  source?: "diagnostic" | "result-upload"
+  evidence?: {
+    kind: "mock" | "failed-exam"
+    filename: string
+    headline: string
+    feedback: string
+  }
   areas: DiagnosticAreaResult[]
   /** Up to 3 assessed areas, lowest score first. */
   weakest: DiagnosticAreaResult[]
@@ -196,14 +207,18 @@ export function buildDiagnostic(paperId: string, seed = Date.now()): AccaQuestio
     }
   }
 
-  // If we're under the cap and the bank has spares, that's fine — a shorter
-  // diagnostic on a thin paper still reports honestly (lower confidence).
-  return shuffle(picked.slice(0, MAX_QUESTIONS), seed + 7)
+  const selected = picked.slice(0, MAX_QUESTIONS)
+  if (selected.length < MAX_QUESTIONS) {
+    const used = new Set(selected.map((q) => q.id))
+    const spares = shuffle(all.filter((q) => !used.has(q.id)), seed + 11)
+    selected.push(...spares.slice(0, MAX_QUESTIONS - selected.length))
+  }
+  return shuffle(selected, seed + 7)
 }
 
-/** Exam-style time budget for a diagnostic form: 100s per question (24 → 40 min). */
-export function diagnosticSeconds(questionCount: number): number {
-  return questionCount * 100
+/** Fixed 30-minute budget for the formal 25-question diagnostic. */
+export function diagnosticSeconds(_questionCount: number): number {
+  return DIAGNOSTIC_SECONDS
 }
 
 /**
@@ -375,6 +390,7 @@ export function scoreDiagnostic(paperId: string, answers: AnsweredDiagnostic[]):
   return assembleResult(paperId, areas, areasMeta.length, {
     questionsAnswered: answers.length,
     rawCorrect: answers.filter((a) => a.correct).length,
+    provisional: answers.length < DIAGNOSTIC_QUESTIONS,
   })
 }
 
@@ -482,10 +498,12 @@ export function learnerProfileSummary(paperId: string): string {
   // Background from onboarding — pitches every explanation at the right level.
   const exp = experienceLine()
   if (exp) lines.push(exp)
+  const baseline = learnerBaselineLine()
+  if (baseline) lines.push(baseline)
 
   const diag = getLatestDiagnostic(paperId)
   if (diag) {
-    lines.push(`Latest diagnostic: ${diag.passProbability}% Exam Readiness Score (estimated exam score ${diag.estimatedScore}%).`)
+    lines.push(`Latest ${diag.source === "result-upload" ? "uploaded result baseline" : "diagnostic"}: ${diag.passProbability}% Exam Readiness Score (estimated exam score ${diag.estimatedScore}%).`)
     if (diag.weakest.length) {
       lines.push(
         `Weakest areas from that diagnostic: ${diag.weakest

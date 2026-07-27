@@ -146,6 +146,13 @@ async function writeEntitlement(
 
 const COMMISSION_HOLD_DAYS = 30
 
+/** Integer-cents commission calculation. Keeping this pure and tested avoids
+ * floating-point drift in the money path. */
+export function commissionAmount(saleAmount: number, rate = 0.27): number {
+  if (!Number.isSafeInteger(saleAmount) || saleAmount <= 0 || !Number.isFinite(rate) || rate < 0) return 0
+  return Math.round(saleAmount * rate)
+}
+
 /**
  * Record a 27% (or the affiliate's own rate) commission for a completed
  * checkout, if the session was attributed to an affiliate. Idempotent via the
@@ -169,7 +176,7 @@ async function recordCommission(
   if (!aff || aff.status !== "active") return
 
   const rate = typeof aff.commission_rate === "number" ? aff.commission_rate : 0.27
-  const commission = Math.round(saleAmount * rate)
+  const commission = commissionAmount(saleAmount, rate)
   const availableAfter = new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5).toISOString()
 
   const paymentIntent =

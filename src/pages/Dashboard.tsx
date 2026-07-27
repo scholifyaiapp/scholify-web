@@ -20,7 +20,7 @@ import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib
 import CharlesMascot from "@/components/CharlesMascot"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
-import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS } from "@/lib/acca-profile"
+import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS, paperVariantLabel } from "@/lib/acca-profile"
 import { diagnosticGate, missedDayNote, shieldState } from "@/lib/acca-schedule"
 import { PlanRoute } from "@/components/acca/PlanRoute"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -140,7 +140,7 @@ export default function Dashboard() {
         {/* header — the morning briefing */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: SP.md, flexWrap: "wrap", marginBottom: SP.xl }}>
           <div>
-            <div className="race-kicker" style={{ color: C.brand, marginBottom: 7 }}>Race control · {paper.id}</div>
+            <div className="race-kicker" style={{ color: C.brand, marginBottom: 7 }}>Race control · {paperVariantLabel(paper.id)}</div>
             <h1 style={{ fontSize: 27, fontWeight: 800, margin: 0, color: C.text, letterSpacing: "-0.02em" }}>{greeting(firstName)}</h1>
             <p style={{ ...TYPE.body, color: C.muted, margin: "5px 0 0", lineHeight: 1.5 }}>{todayHeadline(paperId)}</p>
           </div>
@@ -349,7 +349,7 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{mission[0].detail} · ~{MISSION_MINUTES[mission[0].action]} min</div>
               </div>
               <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(missionHref(mission[0]))} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
-                Start now
+                {mission[0].action === "study" || mission[0].action === "essentials" ? "Start learning" : "Start now"}
               </motion.button>
             </div>
             {mission.slice(1).map((t, i) => (

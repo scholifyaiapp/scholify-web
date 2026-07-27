@@ -13,6 +13,7 @@ import { getTodayStats } from "@/lib/acca"
 import { qualificationProgress } from "@/lib/acca-qualification"
 import { avatarUrlOf, onAvatarChange } from "@/lib/avatar"
 import { initNotesSync } from "@/lib/acca-notes-cloud"
+import FeedbackLauncher from "@/components/FeedbackLauncher"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in ACCA screens (Study, Progress,
@@ -34,6 +35,7 @@ const LAYOUT_CSS = `
   .dash-scroll::-webkit-scrollbar-thumb { background: var(--sch-border); border-radius: 8px; }
   *:focus-visible { outline: 2px solid #C80000 !important; outline-offset: 2px; border-radius: 4px; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+  @media (max-width: 1023px) { .feedback-launcher { bottom: 78px !important; } }
 `
 
 type NavItemDef = {
@@ -46,7 +48,7 @@ type NavItemDef = {
 
 export const NAV: NavItemDef[] = [
   { icon: "roadmap", label: "Dashboard", to: "/dashboard" },
-  { icon: "study", label: "Study", to: "/study" },
+  { icon: "study", label: "Learning", to: "/study" },
   { icon: "notes", label: "Notes", to: "/notes" },
   { icon: "stats", label: "Analytics", to: "/study/analytics" },
   { icon: "settings", label: "Settings", to: "/settings" },
@@ -343,6 +345,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           )
         })}
       </nav>
+      <FeedbackLauncher
+        name={[user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ")}
+        email={user?.email || ""}
+      />
     </div>
   )
 }

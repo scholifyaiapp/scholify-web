@@ -243,6 +243,6 @@ export const TX_A: StudyChapter = {
     "The 2024/25 personal allowance is £12,570, tapered £1 for every £2 of adjusted net income over £100,000 and nil at £125,140.",
     "Tax non-savings income first, then savings, then dividends, across the basic (£37,700 at 20%), higher (to £125,140 at 40%) and additional (45%) bands.",
     "Savings get a starting rate band up to £5,000 and a PSA of £1,000/£500/£0; dividends get a £500 allowance then 8.75%/33.75%/39.35% — all 0% bands still use up the tax band.",
-    "NIC hits earned income only: Class 1 employee 8% then 2%, employer 13.8%, Class 4 self-employed 6% then 2%, on 2024/25 thresholds.",
+    "NIC hits earned income only: Class 1 employee 8% then 2%, employer 15%, Class 4 self-employed 6% then 2%, on 2025/26 thresholds.",
   ],
 }

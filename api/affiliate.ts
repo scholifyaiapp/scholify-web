@@ -12,6 +12,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
  *   POST /api/affiliate?action=resolve   (public)
  *       Body: { code }. If it maps to an ACTIVE affiliate, increments a click
  *       and returns { exists: true }. Used for click tracking on the landing.
+ *   POST /api/affiliate?action=claim     (auth: Supabase JWT)
+ *       Credits the signed-in user to one ACTIVE partner exactly once.
+ *   POST /api/affiliate?action=dashboard (auth: Supabase JWT)
+ *       Returns the partner's own row, commissions and exact invited-user count.
  *
  * Commission recording + refund handling live in api/stripe.ts (the payment
  * events). Payouts (Stripe Connect transfers) are Phase 2. All writes here use
@@ -66,8 +70,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const action = String(req.query.action || "").trim().toLowerCase()
   if (action === "apply") return apply(req, res, supa)
   if (action === "resolve") return resolve(req, res, supa)
+  if (action === "claim") return claim(req, res, supa)
+  if (action === "dashboard") return dashboard(req, res, supa)
   if (action === "list") return list(req, res, supa)
   if (action === "approve") return approve(req, res, supa)
+  if (action === "mark-due-paid") return markDuePaid(req, res, supa)
+  if (action === "feedback-submit") return submitFeedback(req, res, supa)
+  if (action === "feedback-status") return updateFeedbackStatus(req, res, supa)
   res.status(400).json({ ok: false, reason: "unknown_action" })
 }
 
@@ -134,6 +143,128 @@ async function approve(req: VercelRequest, res: VercelResponse, supa: SupabaseCl
   res.status(200).json({ ok: true, id, status })
 }
 
+/** Founder records a completed manual payout. Only commissions whose 30-day
+ * hold has actually expired are eligible. */
+async function markDuePaid(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  if (!(await requireAdmin(req, supa))) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  const b = await body(req)
+  const id = String(b.id || "")
+  if (!id) {
+    res.status(400).json({ ok: false, reason: "bad_params" })
+    return
+  }
+  const { data, error } = await supa
+    .from("affiliate_commissions")
+    .update({ status: "paid", paid_at: new Date().toISOString() })
+    .eq("affiliate_id", id)
+    .eq("status", "pending")
+    .lte("available_after", new Date().toISOString())
+    .select("id, commission_amount")
+  if (error) {
+    res.status(200).json({ ok: false, reason: "update_failed" })
+    return
+  }
+  res.status(200).json({
+    ok: true,
+    paidCount: data?.length ?? 0,
+    paidAmount: (data ?? []).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
+  })
+}
+
+const FEEDBACK_CATEGORIES = new Set(["general", "idea", "bug", "content", "love"])
+
+async function submitFeedback(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  const b = await body(req)
+  if (String(b.website || "")) {
+    res.status(200).json({ ok: true })
+    return
+  }
+  const user = await authenticatedUser(req, supa)
+  const email = String(user?.email || b.email || "").trim().toLowerCase().slice(0, 200)
+  const name = String(b.name || user?.user_metadata?.full_name || "").trim().slice(0, 120)
+  const message = String(b.message || "").trim().slice(0, 4000)
+  const category = FEEDBACK_CATEGORIES.has(String(b.category)) ? String(b.category) : "general"
+  const ratingValue = Number(b.rating)
+  const rating = Number.isInteger(ratingValue) && ratingValue >= 1 && ratingValue <= 5 ? ratingValue : null
+  const source = ["landing", "app", "support"].includes(String(b.source)) ? String(b.source) : "landing"
+  if (!/^\S+@\S+\.\S+$/.test(email) || message.length < 10) {
+    res.status(400).json({ ok: false, reason: "invalid_feedback" })
+    return
+  }
+  const { count } = await supa
+    .from("product_feedback")
+    .select("id", { count: "exact", head: true })
+    .eq("email", email)
+    .gte("created_at", new Date(Date.now() - 3_600_000).toISOString())
+  if ((count ?? 0) >= 3) {
+    res.status(429).json({ ok: false, reason: "rate_limited" })
+    return
+  }
+  const { data: saved, error } = await supa.from("product_feedback").insert({
+    user_id: user?.id ?? null,
+    name: name || null,
+    email,
+    category,
+    rating,
+    message,
+    source,
+    page_url: String(b.pageUrl || "").slice(0, 500) || null,
+  }).select("id").single()
+  if (error) {
+    res.status(200).json({ ok: false, reason: "save_failed" })
+    return
+  }
+  const stars = rating ? `${"★".repeat(rating)}${"☆".repeat(5 - rating)}` : "Not rated"
+  const adminHtml = emailFrame({
+    eyebrow: "Product feedback · New",
+    title: "New Scholify feedback",
+    intro: `${escapeHtml(name || "A learner")} shared feedback from <strong>${escapeHtml(source)}</strong>.`,
+    content: `<div style="padding:16px;border-radius:14px;background:#FAFAF7;border:1px solid #EEE7E3;">
+      <div style="font-size:12px;color:#8F8C85;">${escapeHtml(category)} · ${escapeHtml(stars)} · ${escapeHtml(email)}</div>
+      <div style="margin-top:12px;font-size:15px;line-height:23px;white-space:pre-wrap;">${escapeHtml(message)}</div>
+    </div>`,
+    cta: { label: "Open feedback inbox", href: `${SITE_URL}/admin` },
+  })
+  const userHtml = emailFrame({
+    eyebrow: "Feedback received · Thank you",
+    title: "Scholify loves you.",
+    intro: `Thanks for your feedback${name ? `, ${escapeHtml(name.split(/\s+/)[0])}` : ""}. We read every message and use it to decide what Scholify should improve next.`,
+    content: `<div style="padding:16px;border-radius:14px;background:#FFF7F7;border:1px solid #F1D5D5;color:#5F5753;font-size:14px;line-height:22px;">Your feedback is safely in our product inbox. If we need more detail, we’ll reply to this email.</div>`,
+  })
+  await Promise.allSettled([
+    sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: email, subject: `New Scholify feedback · ${category}`, html: adminHtml }),
+    sendPartnerEmail({ to: email, subject: "Thanks for your feedback — Scholify loves you", html: userHtml }),
+  ])
+  res.status(200).json({ ok: true, id: saved.id })
+}
+
+async function updateFeedbackStatus(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  if (!(await requireAdmin(req, supa))) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  const b = await body(req)
+  const id = String(b.id || "")
+  const status = String(b.status || "")
+  if (!id || !["new", "reviewed", "planned", "completed", "archived"].includes(status)) {
+    res.status(400).json({ ok: false, reason: "bad_params" })
+    return
+  }
+  const { error } = await supa.from("product_feedback").update({ status }).eq("id", id)
+  res.status(200).json(error ? { ok: false, reason: "update_failed" } : { ok: true })
+}
+
+
+async function authenticatedUser(req: VercelRequest, supa: SupabaseClient) {
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) return null
+  const { data, error } = await supa.auth.getUser(token)
+  return error ? null : data.user
+}
+
 async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
   // Auth is optional — if signed in we link the account so they get a dashboard.
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
@@ -148,6 +279,15 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
   const email = String(b.email || "").trim().slice(0, 200)
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) {
     res.status(400).json({ ok: false, reason: "name_email_required" })
+    return
+  }
+  const { data: existing } = await supa
+    .from("affiliates")
+    .select("code, status")
+    .ilike("email", email)
+    .maybeSingle()
+  if (existing) {
+    res.status(200).json({ ok: false, reason: "already_applied", code: existing.code, status: existing.status })
     return
   }
   let code = cleanCode((b.code as string) || name.replace(/\s+/g, ""))
@@ -284,7 +424,7 @@ async function notifyApplication(app: {
       <tr><td style="padding:12px 16px;"><table role="presentation" width="100%" style="border-collapse:collapse;">
       ${row("Name", app.name)}${row("Email", app.email)}${row("University", app.b.university)}${row("Country", app.b.country)}${row("Promotes on", app.b.socials)}${row("Audience", app.b.audienceSize)}${row("Area", app.b.areaOfStudy)}
       </table></td></tr></table>`,
-    cta: { label: "Review partner applications", href: `${SITE_URL}/settings` },
+    cta: { label: "Review partner applications", href: `${SITE_URL}/admin` },
   })
 
   const first = escapeHtml(app.name.split(/\s+/)[0] || "there")
@@ -306,6 +446,105 @@ async function notifyApplication(app: {
     sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml }),
     sendPartnerEmail({ to: app.email, subject: "Your Scholify partner application is pending review", html: applicantHtml }),
   ])
+}
+
+/** Attribute one registered user to one active partner. The database UNIQUE
+ * constraint on referred_user_id is the final authority under concurrent calls. */
+async function claim(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  const user = await authenticatedUser(req, supa)
+  if (!user) {
+    res.status(401).json({ ok: false, reason: "auth_required" })
+    return
+  }
+  const b = await body(req)
+  const code = cleanCode(b.code as string)
+  const { data: affiliate } = await supa
+    .from("affiliates")
+    .select("id, user_id")
+    .eq("code", code)
+    .eq("status", "active")
+    .maybeSingle()
+  if (!affiliate) {
+    res.status(200).json({ ok: false, reason: "invalid_partner" })
+    return
+  }
+  if (affiliate.user_id === user.id) {
+    res.status(200).json({ ok: false, reason: "self_referral" })
+    return
+  }
+  const { error } = await supa.from("affiliate_referrals").insert({
+    affiliate_id: affiliate.id,
+    referred_user_id: user.id,
+  })
+  if (error && error.code !== "23505") {
+    res.status(200).json({ ok: false, reason: "claim_failed" })
+    return
+  }
+  res.status(200).json({ ok: true, credited: !error })
+}
+
+async function dashboard(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  const user = await authenticatedUser(req, supa)
+  if (!user) {
+    res.status(401).json({ ok: false, reason: "auth_required" })
+    return
+  }
+
+  let { data: affiliate } = await supa
+    .from("affiliates")
+    .select("id, name, code, status, clicks, commission_rate, stripe_account_id")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  // Applications are public. Once the applicant signs in with the same
+  // verified email, safely attach their previously anonymous application.
+  if (!affiliate && user.email) {
+    const { data: anonymous } = await supa
+      .from("affiliates")
+      .select("id")
+      .is("user_id", null)
+      .ilike("email", user.email)
+      .maybeSingle()
+    if (anonymous) {
+      await supa.from("affiliates").update({ user_id: user.id }).eq("id", anonymous.id).is("user_id", null)
+      const linked = await supa
+        .from("affiliates")
+        .select("id, name, code, status, clicks, commission_rate, stripe_account_id")
+        .eq("user_id", user.id)
+        .maybeSingle()
+      affiliate = linked.data
+    }
+  }
+
+  if (!affiliate) {
+    res.status(200).json({
+      ok: true,
+      affiliate: null,
+      commissions: [],
+      totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0 },
+    })
+    return
+  }
+
+  const [{ data: commissions }, { count: invitedUsers }] = await Promise.all([
+    supa
+      .from("affiliate_commissions")
+      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at")
+      .eq("affiliate_id", affiliate.id)
+      .order("created_at", { ascending: false }),
+    supa
+      .from("affiliate_referrals")
+      .select("id", { count: "exact", head: true })
+      .eq("affiliate_id", affiliate.id),
+  ])
+  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0 }
+  for (const commission of commissions ?? []) {
+    if (commission.status !== "canceled") totals.sales += Number(commission.sale_amount || 0)
+    if (commission.status === "pending") totals.pending += Number(commission.commission_amount || 0)
+    else if (commission.status === "approved") totals.approved += Number(commission.commission_amount || 0)
+    else if (commission.status === "paid") totals.paid += Number(commission.commission_amount || 0)
+  }
+  res.status(200).json({ ok: true, affiliate, commissions: commissions ?? [], totals })
 }
 
 /** Tell an applicant when the founder approves or rejects their application. */
@@ -354,7 +593,7 @@ async function notifyApplicationDecision(app: {
         <div style="font-size:18px;font-weight:800;color:#14141A;margin-top:7px;">${escapeHtml(app.name)}</div>
         <div style="font-size:13px;line-height:20px;color:#5F5753;margin-top:6px;">${escapeHtml(app.email)} · Code <strong style="color:#C80000;">${escapeHtml(app.code)}</strong></div>
       </div>`,
-      cta: { label: "View partner applications", href: `${SITE_URL}/settings` },
+      cta: { label: "View partner applications", href: `${SITE_URL}/admin` },
       charles: true,
     })
     sends.push(sendPartnerEmail({

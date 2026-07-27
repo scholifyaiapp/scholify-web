@@ -31,6 +31,7 @@ import { MOCK_PASS } from "@/lib/acca-loop"
 import { withShuffledOptions } from "@/lib/acca-options"
 import { Icon, IconBadge, Button, Card, C, SP, SHADOW } from "@/components/acca/ui"
 import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
+import { ProCountdown } from "@/components/acca/ProCountdown"
 import CharlesMascot from "@/components/CharlesMascot"
 import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
@@ -196,8 +197,8 @@ export default function AccaDiagnostic() {
   const answersRef = useRef<AnsweredDiagnostic[]>([])
   const [result, setResult] = useState<DiagnosticResult | null>(null)
   const [prior, setPrior] = useState<DiagnosticResult | null>(() => getLatestDiagnostic(defaultPaper))
-  // Exam-style countdown: 100s per question (24 questions → 40:00). At 0 the
-  // form auto-submits — what's answered is scored, honestly.
+  // Fixed 30-minute countdown. Manual submission requires all 25 answers; at
+  // zero, unanswered items count as incorrect.
   const [timeLeft, setTimeLeft] = useState(0)
   // Lets the timer's interval call the latest handler without a stale closure.
   const endAssessingRef = useRef<() => void>(() => {})
@@ -267,11 +268,18 @@ export default function AccaDiagnostic() {
 
   // Grade every answered question once, in order, then hand off to the reveal.
   // Unanswered questions are simply skipped — the score is honest about coverage.
-  function finishAssessing() {
+  function finishAssessing(forceAtTimeout = false) {
+    if (!forceAtTimeout && answeredCount < questions.length) return
     const graded: AnsweredDiagnostic[] = []
     questions.forEach((q, i) => {
       const r = responses[i]
-      if (r === undefined) return
+      if (r === undefined) {
+        if (forceAtTimeout) {
+          graded.push({ q, correct: false })
+          recordAnswer(paperId, q, false)
+        }
+        return
+      }
       let resp: number | number[]
       if (q.type === "number") {
         if (typeof r !== "string" || r.trim() === "") return
@@ -326,8 +334,8 @@ export default function AccaDiagnostic() {
   const endAssessing = () => {
     setPhase("analyzing")
   }
-  // The clock hitting zero grades whatever's answered, same as tapping Finish.
-  endAssessingRef.current = finishAssessing
+  // The clock hitting zero completes the full form; blanks count as incorrect.
+  endAssessingRef.current = () => finishAssessing(true)
 
   const diagnosticPhases: RevealPhase[] = [
     { icon: "check", label: "Reading your answers", sub: "Every response, weighted by difficulty — a hard one right counts for more." },
@@ -429,7 +437,7 @@ export default function AccaDiagnostic() {
               </h1>
               <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.55, margin: "0 0 24px" }}>
                 A full syllabus sweep — one easy, one medium and one hard question from <em>every</em> area, up to 25
-                questions, <strong style={{ color: TEXT }}>timed like the real exam</strong> (100 seconds each, ~40 minutes).
+                questions, <strong style={{ color: TEXT }}>timed in one focused 30-minute sitting</strong>.
                 No hints. At the end: your Exam Readiness Score, estimated score, weakest sectors, and Charles's race plan to your target.
               </p>
 
@@ -480,7 +488,7 @@ export default function AccaDiagnostic() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: MUTED }}>
                   Question {idx + 1} / {questions.length}
                 </span>
-                <DiagnosticTimer secondsLeft={timeLeft} total={diagnosticSeconds(questions.length)} />
+                <ProCountdown secondsLeft={timeLeft} totalSeconds={diagnosticSeconds(questions.length)} label="Diagnostic" />
                 <span style={{ fontSize: 11, fontWeight: 700, color: DIM, background: CARD2, padding: "3px 9px", borderRadius: 999 }}>
                   {paper?.code} · Area {questions[idx].area}
                 </span>
@@ -519,7 +527,8 @@ export default function AccaDiagnostic() {
                 onGo={setIdx}
                 onToggleFlag={() => setFlags((m) => ({ ...m, [idx]: !m[idx] }))}
                 onFinish={finishAssessing}
-                finishLabel="Finish & see results"
+                finishLabel={answeredCount === questions.length ? "Finish & see results" : `Answer all 25 · ${answeredCount}/25 complete`}
+                finishDisabled={answeredCount < questions.length}
               />
             </motion.div>
           )}
@@ -875,32 +884,6 @@ const backLink = {
 } as const
 
 /* ── Exam-style countdown (100s/question) ─────────────────────── */
-
-function DiagnosticTimer({ secondsLeft, total }: { secondsLeft: number; total: number }) {
-  const mm = Math.floor(secondsLeft / 60)
-  const ss = `${secondsLeft % 60}`.padStart(2, "0")
-  const frac = total > 0 ? secondsLeft / total : 0
-  const low = secondsLeft <= 300 // final five minutes
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 11px", borderRadius: 999, background: low ? "rgba(239,68,68,0.09)" : CARD2, border: `1px solid ${low ? "rgba(239,68,68,0.35)" : "transparent"}` }}>
-      <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden>
-        <circle cx="10" cy="10" r="8" fill="none" stroke="var(--sch-border)" strokeWidth="2.5" />
-        <circle
-          cx="10" cy="10" r="8" fill="none"
-          stroke={low ? RED : C.brand}
-          strokeWidth="2.5" strokeLinecap="round"
-          strokeDasharray={2 * Math.PI * 8}
-          strokeDashoffset={2 * Math.PI * 8 * (1 - frac)}
-          transform="rotate(-90 10 10)"
-          style={{ transition: "stroke-dashoffset 1s linear, stroke .3s" }}
-        />
-      </svg>
-      <span style={{ fontSize: 12.5, fontWeight: 800, color: low ? RED : TEXT, fontVariantNumeric: "tabular-nums" }}>
-        {mm}:{ss}
-      </span>
-    </span>
-  )
-}
 
 /* ── WOW 2 · the personalised race plan (its own screen) ─────────
  *

@@ -10,6 +10,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
+import { ProCountdown } from "@/components/acca/ProCountdown"
 import PaywallModal from "@/components/PaywallModal"
 import ExaminerView from "@/components/acca/ExaminerView"
 import CbeMockRunner from "@/components/acca/CbeMockRunner"
@@ -61,7 +62,7 @@ import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDu
 import { recordMistake, snapshotProbability } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getStartMode } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
-import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, BANK_RUNS_TARGET, recordBankRun, bankRunProgress } from "@/lib/acca-bankruns"
+import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, MIXED_BANK_SIZES, recordBankRun, bankRunProgress, bankRunTarget, type MixedBankSize } from "@/lib/acca-bankruns"
 import { officialResources } from "@/lib/acca-resources"
 import { nextMockForm } from "@/lib/acca-mockforms"
 import { withShuffledOptions } from "@/lib/acca-options"
@@ -69,6 +70,7 @@ import type { PostMortemAction } from "@/lib/acca-ai"
 import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
 import CharlesMascot from "@/components/CharlesMascot"
+import StudyCommandHero from "@/components/acca/StudyCommandHero"
 import { RingGauge, BreakdownList, TrendBars, MeterBar, StatCard, bandColor } from "@/components/acca/charts"
 
 /* ──────────────────────────────────────────────────────────────
@@ -162,6 +164,7 @@ export default function AccaStudy() {
   const [reviewItems, setReviewItems] = useState<{ q: AccaQuestion; response: number | number[] | string | undefined; correct: boolean }[]>([])
   const [isMock, setIsMock] = useState(false)
   const [isBankRun, setIsBankRun] = useState(false)
+  const [bankRunSize, setBankRunSize] = useState<MixedBankSize>(BANK_RUN_SIZE)
   const [timeLeft, setTimeLeft] = useState(0)
   const finishRef = useRef<() => void>(() => {})
 
@@ -250,10 +253,10 @@ export default function AccaStudy() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content.ready, paperId])
 
-  // mock countdown
+  // One exam-paced countdown for every objective practice session.
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    if (mode === "session" && (isMock || isBankRun)) {
+    if (mode === "session") {
       timerRef.current = setInterval(() => {
         setTimeLeft((t) => {
           if (t <= 1) {
@@ -268,7 +271,7 @@ export default function AccaStudy() {
         if (timerRef.current) clearInterval(timerRef.current)
       }
     }
-  }, [mode, isMock, isBankRun])
+  }, [mode])
 
   // Record a mock / knowledge check the moment its results screen appears.
   useEffect(() => {
@@ -352,7 +355,7 @@ export default function AccaStudy() {
     setIsBankRun(false)
     setIsTopicTest(false)
     setTopicArea(null)
-    setTimeLeft(0)
+    setTimeLeft(qs.length * MOCK_SECONDS_PER_Q)
     resetQuestion()
     setMode("session")
   }
@@ -385,17 +388,17 @@ export default function AccaStudy() {
     setIsBankRun(false)
     setIsTopicTest(test)
     setTopicArea(area)
-    setTimeLeft(test ? qs.length * MOCK_SECONDS_PER_Q : 0)
+    setTimeLeft(qs.length * MOCK_SECONDS_PER_Q)
     resetQuestion()
     setMode("session")
   }
 
   /** Bank Run — 50 whole-paper questions under the clock (75 min). Free,
    * pre-gate: the bridge from Learn to the Mock room. */
-  function startBankRun() {
+  function startBankRun(size: MixedBankSize = bankRunSize) {
     if (!paperId) return
     const seed = (Date.now() % 100000) + 1
-    const qs = buildSession(paperId, BANK_RUN_SIZE, {}, seed)
+    const qs = buildSession(paperId, size, {}, seed)
     if (qs.length < 10) {
       toast.info("Not enough questions in this paper's bank yet for a bank run.")
       return
@@ -406,6 +409,7 @@ export default function AccaStudy() {
     setLog([])
     setIsMock(false)
     setIsBankRun(true)
+    setBankRunSize(size)
     setIsTopicTest(false)
     setTopicArea(null)
     setTimeLeft(qs.length * BANK_RUN_SECONDS_PER_Q)
@@ -446,7 +450,7 @@ export default function AccaStudy() {
     setIsBankRun(false)
     setIsTopicTest(false)
     setTopicArea(null)
-    setTimeLeft(0)
+    setTimeLeft(qs.length * MOCK_SECONDS_PER_Q)
     resetQuestion()
     setMode("session")
   }
@@ -620,8 +624,9 @@ export default function AccaStudy() {
               index={idx}
               total={questions.length}
               value={answersMap[idx]}
-              isTimed={isMock || isBankRun}
+              isTimed
               timeLeft={timeLeft}
+              timerTotal={questions.length * (isBankRun ? BANK_RUN_SECONDS_PER_Q : MOCK_SECONDS_PER_Q)}
               answeredCount={answeredCount}
               isAnswered={isAnswered}
               isFlagged={(i) => !!flagsMap[i]}
@@ -1030,7 +1035,7 @@ function Overview({
   isPro: boolean
   onBack: () => void
   onPractice: () => void
-  onBankRun: () => void
+  onBankRun: (size?: MixedBankSize) => void
   onWeak: () => void
   onMock: () => void
   onExaminer: () => void
@@ -1210,8 +1215,18 @@ function Overview({
         </div>
       )}
       <button onClick={onBack} style={backBtn}>← All papers</button>
-      <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 2px", color: TEXT }}>{paper.name}</h1>
-      <p style={{ color: DIM, margin: "0 0 14px", fontSize: 13 }}>{paper.code} · {paper.level}</p>
+      <StudyCommandHero
+        paperId={paper.id}
+        paperName={paper.name}
+        paperCode={paper.code}
+        level={paper.level}
+        readiness={prob}
+        missionPercent={missionPct}
+        answered={stats.answered}
+        daysToExam={days}
+        dailyMinutes={plan.dailyMinutes || 60}
+        onStart={enterLockedIn}
+      />
 
       {/* Tax papers state their Finance Act basis honestly (TX/ATX only) */}
       <TaxBasisNote paperId={paper.id} />
@@ -1602,13 +1617,18 @@ function Overview({
         {curated && (() => {
           const br = bankRunProgress(paper.id)
           return (
-            <ModeTile
-              icon="check"
-              title={br.done >= BANK_RUNS_TARGET ? "Bank run — stay sharp" : `Bank run ${br.done + 1} of ${BANK_RUNS_TARGET} · ${BANK_RUN_SIZE} questions`}
-              sub={`The whole paper under the clock (${Math.round((BANK_RUN_SIZE * BANK_RUN_SECONDS_PER_Q) / 60)} min) — the bridge from Learn to the mock gate${br.best !== null ? ` · best ${br.best}%` : ""}`}
-              onClick={onBankRun}
-              primary={!gate.unlocked && br.done < BANK_RUNS_TARGET && phase.key !== "learn"}
-            />
+            <>
+              {MIXED_BANK_SIZES.map((size) => (
+                <ModeTile
+                  key={size}
+                  icon="check"
+                  title={`Mixed bank · ${size} questions`}
+                  sub={`${Math.round((size * BANK_RUN_SECONDS_PER_Q) / 60)} min · whole syllabus · mixed difficulty${size === BANK_RUN_SIZE ? ` · bank run ${Math.min(br.done + 1, br.target)} of ${br.target}` : ""}${br.best !== null ? ` · best ${br.best}%` : ""}`}
+                  onClick={() => onBankRun(size)}
+                  primary={size === BANK_RUN_SIZE && !gate.unlocked && br.done < br.target && phase.key !== "learn"}
+                />
+              ))}
+            </>
           )
         })()}
         {curated && (
@@ -2326,7 +2346,7 @@ function MissionTasks({
 }
 
 function SessionView({
-  q, index, total, value, isTimed, timeLeft, answeredCount,
+  q, index, total, value, isTimed, timeLeft, timerTotal, answeredCount,
   isAnswered, isFlagged, currentFlagged, onChange, onGo, onToggleFlag, onFinish, onQuit,
 }: {
   q: AccaQuestion
@@ -2335,6 +2355,7 @@ function SessionView({
   value: number | number[] | string | undefined
   isTimed: boolean
   timeLeft: number
+  timerTotal: number
   answeredCount: number
   isAnswered: (i: number) => boolean
   isFlagged: (i: number) => boolean
@@ -2355,14 +2376,11 @@ function SessionView({
 
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
+      {isTimed && <ProCountdown secondsLeft={timeLeft} totalSeconds={Math.max(1, timerTotal)} label="Practice" />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <button onClick={onQuit} style={{ ...backBtn, marginBottom: 0 }}>← Exit</button>
         <span style={{ color: DIM, fontSize: 13, fontWeight: 600 }}>Question {index + 1} / {total}</span>
-        {isTimed ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 14, color: lowTime ? C.red : TEXT, fontVariantNumeric: "tabular-nums" }}><Icon name="mock" size={15} color={lowTime ? C.red : TEXT} /> {fmtTime(timeLeft)}</span>
-        ) : (
-          <span style={{ color: DIM, fontSize: 12 }}>Area {q.area}</span>
-        )}
+        <span style={{ color: lowTime ? C.red : DIM, fontSize: 12, fontWeight: lowTime ? 800 : 600 }}>Area {q.area}</span>
       </div>
 
       <div style={{ height: 6, background: "var(--sch-card-2)", borderRadius: 999, marginBottom: 22, overflow: "hidden" }}>
@@ -2463,7 +2481,7 @@ function Results({
   // paint, so a live read here would show the PREVIOUS count. Capture the
   // pre-record count at mount: this run is number (done + 1).
   const bankRunNo = useMemo(
-    () => (isBankRun ? Math.min(bankRunProgress(paper.id).done + 1, BANK_RUNS_TARGET) : 0),
+    () => (isBankRun ? Math.min(bankRunProgress(paper.id).done + 1, bankRunTarget(paper.id)) : 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
@@ -2494,7 +2512,7 @@ function Results({
         <CharlesMascot pose={passed ? "success" : "calm"} size="clamp(80px, 26vw, 96px)" />
       </div>
       <div style={{ fontSize: 13, color: DIM, letterSpacing: 0.4, fontWeight: 600, marginBottom: 14 }}>
-        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunNo} OF ${BANK_RUNS_TARGET} COMPLETE` : "PRACTICE COMPLETE"}
+        {isTopicTest ? `KNOWLEDGE CHECK · TOPIC ${topicArea}` : isMock ? "MOCK EXAM RESULT" : isBankRun ? `BANK RUN ${bankRunNo} OF ${bankRunTarget(paper.id)} COMPLETE` : "PRACTICE COMPLETE"}
       </div>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}

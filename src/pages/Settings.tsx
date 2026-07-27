@@ -48,7 +48,15 @@ import { getPlan, setPlan } from "@/lib/acca-plan"
 import { entitlementOf } from "@/lib/entitlement"
 import { cancelStripeSubscription } from "@/lib/stripe"
 import { avatarUrlOf, onAvatarChange, saveAvatar, removeAvatar, AVATAR_MAX_SOURCE_MB, type AvatarError } from "@/lib/avatar"
-import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
+import { ALL_PAPERS, getCurrentPaper, getStudyingPapers, setCurrentPaper } from "@/lib/acca-qualification"
+import {
+  getPaperPause,
+  pausePaper,
+  resumePaper,
+  recordPaperSwitch,
+  type PlanChangeReason,
+} from "@/lib/acca-plan-adjustment"
+import { getPaperVariant, setPaperVariant, type PaperVariant } from "@/lib/acca-profile"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -99,6 +107,7 @@ const RESET_KEEP = new Set([
   "scholify-acca-current-paper",
   "scholify-acca-studying",
   "scholify-acca-passed",
+  "scholify-acca-paper-variants",
   "scholify-acca-plan",
   "scholify-acca-daily-goal",
 ])
@@ -131,10 +140,15 @@ function collectAccaData(): Record<string, unknown> {
 /* ── Exam setup — current paper, exam date, daily goal & minutes ── */
 
 function ExamSetupSection() {
-  const paperId = getCurrentPaper() ?? getStudyingPapers()[0] ?? "FA"
+  const { toast } = useToast()
+  const [paperId, setPaperId] = useState(() => getCurrentPaper() ?? getStudyingPapers()[0] ?? "FA")
   const paper = getPaper(paperId)
   const [plan, setPlanState] = useState(() => getPlan(paperId))
   const [goal, setGoal] = useState(() => getDailyGoal())
+  const [reason, setReason] = useState<PlanChangeReason>("difficulty")
+  const [returnDate, setReturnDate] = useState("")
+  const [paused, setPaused] = useState(() => getPaperPause(paperId))
+  const [variant, setVariantState] = useState<PaperVariant | null>(() => getPaperVariant(paperId))
 
   function updatePlan(patch: Parameters<typeof setPlan>[1]) {
     setPlanState(setPlan(paperId, patch))
@@ -142,6 +156,27 @@ function ExamSetupSection() {
   function updateGoal(n: number) {
     setGoal(n)
     setDailyGoal(n)
+  }
+  function switchPaper(nextPaper: string) {
+    if (nextPaper === paperId) return
+    recordPaperSwitch(paperId, nextPaper, reason)
+    setCurrentPaper(nextPaper)
+    setPaperId(nextPaper)
+    setPlanState(getPlan(nextPaper))
+    setPaused(getPaperPause(nextPaper))
+    setVariantState(getPaperVariant(nextPaper))
+    toast.success(`Switched to ${nextPaper} — your ${paperId} progress is safely preserved`)
+  }
+  function togglePause() {
+    if (paused) {
+      resumePaper(paperId)
+      setPaused(null)
+      toast.success(`Welcome back — your ${paperId} plan is ready`)
+    } else {
+      const next = pausePaper(paperId, reason, returnDate || null)
+      setPaused(next)
+      toast.success("Plan paused — progress is safe and there is no catch-up penalty")
+    }
   }
 
   return (
@@ -154,6 +189,70 @@ function ExamSetupSection() {
           </span>
           <span style={{ fontSize: 13, color: "var(--sch-text)", fontWeight: 650 }}>{paper?.name ?? paperId}</span>
         </span>
+      </SettingRow>
+      {["LW", "TX"].includes(paperId) && (
+        <SettingRow name={`${paperId} variant`} desc="Switch the legal or tax system used by your study content">
+          <select
+            aria-label={`${paperId} study variant`}
+            value={variant ?? (paperId === "LW" ? "GLOBAL" : "UK")}
+            onChange={(event) => {
+              const next = event.target.value as PaperVariant
+              setPaperVariant(paperId, next)
+              setVariantState(next)
+              toast.success(`${paperId} changed to ${next === "UK" ? "United Kingdom" : paperId === "TX" ? "International foundation" : "Global"} — reloading study content`)
+              window.setTimeout(() => window.location.reload(), 350)
+            }}
+            style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text, fontWeight: 700 }}
+          >
+            <option value="UK">United Kingdom</option>
+            <option value="GLOBAL">{paperId === "TX" ? "International foundation (not an ACCA exam variant)" : "Global"}</option>
+          </select>
+        </SettingRow>
+      )}
+      <SettingRow name="Change my plan" desc="Pause, reduce pressure, or safely switch papers">
+        <div style={{ display: "grid", gap: 8, minWidth: 260 }}>
+          <select
+            aria-label="Change active paper"
+            value={paperId}
+            onChange={(e) => switchPaper(e.target.value)}
+            style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text, fontWeight: 700 }}
+          >
+            {ALL_PAPERS.map((p) => <option key={p.id} value={p.id}>{p.id} — {p.name}</option>)}
+          </select>
+          <select
+            aria-label="Reason for changing plan"
+            value={reason}
+            onChange={(e) => setReason(e.target.value as PlanChangeReason)}
+            style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text }}
+          >
+            <option value="difficulty">This paper feels too difficult</option>
+            <option value="illness">Illness or recovery</option>
+            <option value="work">Work, travel or family</option>
+            <option value="course">My course or tutor changed</option>
+            <option value="exam-date">My exam date changed</option>
+            <option value="personal">Personal choice</option>
+            <option value="other">Another reason</option>
+          </select>
+          {!paused && (
+            <input
+              type="date"
+              aria-label="Optional return date"
+              value={returnDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setReturnDate(e.target.value)}
+              title="Optional return date"
+              style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text }}
+            />
+          )}
+          <Button onClick={togglePause} variant={paused ? "primary" : "secondary"}>
+            {paused ? "Resume my plan" : "Pause without losing progress"}
+          </Button>
+          <span style={{ color: paused ? C.amber : C.muted, fontSize: 12, lineHeight: 1.4 }}>
+            {paused
+              ? `Paused${paused.returnDate ? ` until ${paused.returnDate}` : ""}. Your answers, notes, diagnostics and streak history remain safe.`
+              : "Switching or pausing never deletes answers, notes, results, diagnostics or paper history."}
+          </span>
+        </div>
       </SettingRow>
       <SettingRow name="Exam date" desc="Your roadmap dates itself back from this">
         <input
@@ -1382,7 +1481,7 @@ export default function Settings() {
               Want to earn from referrals?
             </div>
             <p style={{ fontSize: 12.5, color: TEXT2, lineHeight: 1.6, marginBottom: 12 }}>
-              Join the Scholify partner program and earn 35% on every student you bring in.
+              Join the Scholify partner program and earn 27% on every qualifying plan sale you bring in.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Button variant="secondary" onClick={() => navigate("/partners/apply")} style={{ flexShrink: 0 }}>

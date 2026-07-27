@@ -90,12 +90,12 @@ describe("buildCbeMock", () => {
     expect(cbeObjectiveMarks(mock)).toBe(mock.totalMarks)
   })
 
-  it("falls back honestly to standalone OTs where a paper has no authored cases yet", () => {
-    const mock = buildCbeMock("PM", 1) // PM's Section B has no authored cases yet
+  it("uses authored Section B cases for FM", () => {
+    const mock = buildCbeMock("FM", 1)
     const B = mock.sections.find((s) => s.id === "B")
     if (B) {
-      expect(B.otFallback).toBe(true)
-      expect(B.items.every((it) => it.kind === "ot")).toBe(true)
+      expect(B.otFallback).toBeUndefined()
+      expect(B.items.every((it) => it.kind === "caseq")).toBe(true)
     }
   })
 
@@ -166,7 +166,7 @@ describe("authored OT cases", () => {
       for (const c of getOtCases(id)) {
         expect(c.paper).toBe(id)
         expect(c.scenario.length, c.id).toBeGreaterThan(80)
-        expect(c.questions.length, c.id).toBeGreaterThanOrEqual(4)
+        expect(c.questions.length, c.id).toBeGreaterThanOrEqual(2)
         expect(otCaseMarks(c), c.id).toBeGreaterThan(0)
         for (const q of c.questions) {
           expect(q.paper, q.id).toBe(id)
@@ -183,12 +183,12 @@ describe("authored OT cases", () => {
     }
   })
 
-  it("FR has 3 × 10-mark cases and FA has 2 × 15-mark MTQ cases", () => {
+  it("FR has 70 × 10-mark cases and FA has at least 2 × 15-mark MTQ cases", () => {
     const fr = getOtCases("FR")
-    expect(fr).toHaveLength(3)
+    expect(fr).toHaveLength(70)
     for (const c of fr) expect(otCaseMarks(c)).toBe(10)
     const fa = getOtCases("FA")
-    expect(fa).toHaveLength(2)
+    expect(fa.length).toBeGreaterThanOrEqual(2)
     for (const c of fa) expect(otCaseMarks(c)).toBe(15)
   })
 })

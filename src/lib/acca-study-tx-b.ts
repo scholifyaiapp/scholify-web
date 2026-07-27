@@ -211,7 +211,7 @@ export const TX_B: StudyChapter = {
     { trap: "Using 10%/20% for a disposal after 30 October 2024.", fix: "From 30 October 2024 all assets use 18%/24%. Only disposals before that date use 10%/20% for non-residential assets." },
     { trap: "Claiming letting relief on a home that was moved out of and let.", fix: "Since 6 April 2020 letting relief needs shared occupation — living there while letting part. A vacant let gets only the final 9 months of PPR." },
     { trap: "Matching a share disposal straight to the s104 pool.", fix: "Match same-day first, then acquisitions in the next 30 days, and only then the pool. The 30-day rule catches bed-and-breakfast trades." },
-    { trap: "Taxing a whole BADR gain at 10% above the lifetime limit.", fix: "Only the first £1,000,000 of qualifying gains gets 10%; the excess is taxed at the normal 18%/24%." },
+    { trap: "Taxing a whole BADR gain at 14% above the lifetime limit.", fix: "Only qualifying gains within the remaining £1,000,000 lifetime limit get the 14% BADR rate for 2025/26; the excess is taxed at the normal 18%/24% rates." },
   ],
   keyTerms: [
     { term: "Annual exempt amount", def: "The £3,000 of gains an individual can realise tax-free each year (2024/25); it cannot be carried forward." },
@@ -222,7 +222,7 @@ export const TX_B: StudyChapter = {
   ],
   summary: [
     "CGT ladder: proceeds (or market value) − allowable costs = gain; total gains − £3,000 AEA = taxable gain; then apply the rate.",
-    "Rates are 18%/24% from 30 October 2024 (all assets); non-residential disposals before then used 10%/20%; BADR is a flat 10%.",
+    "Normal CGT rates are 18%/24% for 2025/26; qualifying BADR gains within the lifetime limit are charged at 14%.",
     "Chattels: exempt if proceeds and cost ≤ £6,000; gain capped at 5/3 × (proceeds − £6,000) above; part disposals apportion cost by A/(A+B).",
     "Match share disposals same-day, then next 30 days, then the s104 pool at average cost.",
     "PPR exempts the main-home gain by qualifying months (final 9 always count); letting relief needs shared occupation; BADR gives 10% up to £1m; gift and rollover relief defer gains into a later disposal.",

@@ -26,6 +26,7 @@ import { getTopicResult } from "@/lib/acca-topics"
 import { flashcardStats, areaReviewed } from "@/lib/acca-flashcards"
 import { getStartMode } from "@/lib/acca-profile"
 import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
+import { chapterForLearningDay, getStudyResource, PROVIDER_LABEL } from "@/lib/acca-study-resources"
 
 /* ── Task vocabulary ──────────────────────────────────────────── */
 
@@ -362,13 +363,24 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
   const tasks: SchedTask[] = []
 
   // 1 · Topic learning — the main content.
+  const resource = getStudyResource(paperId)
+  const provider = resource && !resource.providers.includes("none")
+    ? PROVIDER_LABEL[resource.primaryProvider]
+    : null
+  const nextChapter = resource?.totalChapters
+    ? Math.min(resource.totalChapters, resource.completedChapters + 1)
+    : null
   tasks.push({
     id: "study",
     icon: "📖",
-    title: `Study ${area.code ? `${area.code} · ` : ""}${area.label}`,
-    detail: "Read the topic chapter — concept, formulas, worked example, the classic traps",
+    title: provider
+      ? `${provider}${nextChapter ? ` · Chapter ${nextChapter}` : ""}`
+      : `Study ${area.code ? `${area.code} · ` : ""}${area.label}`,
+    detail: provider
+      ? `Continue in your ${provider} resource, then ask Charles to test your understanding of ${area.code ? `${area.code} · ${area.label}` : "the topic"}`
+      : "Read the topic chapter — concept, formulas, worked example, the classic traps",
     action: "study",
-    minutes: COST.study,
+    minutes: provider ? Math.max(12, Math.round(budget * 0.4)) : COST.study,
     area: area.code || undefined,
   })
 
@@ -387,7 +399,7 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
   // 3 · Daily practice — the pain point leads whenever one is measurable.
   const weak = gateFocus ? null : focusArea(paperId)
   const cardsReserve = COST.perCard * Math.max(6, Math.min(due || 8, 12))
-  const left = Math.max(8, budget - COST.study - essentialsMin - cardsReserve)
+  const left = Math.max(8, budget - tasks[0].minutes - essentialsMin - cardsReserve)
   const n = practiceCount(left, targetProb)
   if (weak && weak.code !== area.code) {
     tasks.push({
@@ -498,6 +510,7 @@ export function projectPlan(paperId: string, maxDays = 45): PlanDay[] {
   const budget = Math.max(12, plan.dailyMinutes || 25)
   const paper = getPaper(paperId)
   const areas = paper?.areas ?? []
+  const resource = getStudyResource(paperId)
 
   // Phase spans (in days), last phase takes the remainder.
   const learn = Math.max(1, Math.round(days * PHASE_SHARE.learn))
@@ -531,8 +544,17 @@ export function projectPlan(paperId: string, maxDays = 45): PlanDay[] {
     const areaIdx = areas.length ? Math.min(areas.length - 1, Math.floor(d / perArea)) : 0
     const a = areas[areaIdx]
     const label = a ? `${a.code} · ${a.label}` : "the syllabus"
+    const chapter = chapterForLearningDay(resource, d, learn)
+    const provider = resource && !resource.providers.includes("none")
+      ? PROVIDER_LABEL[resource.primaryProvider]
+      : null
     push(i, "learn", [
-      { kind: "study", title: `Study ${label}`, minutes: COST.study, area: a?.code },
+      {
+        kind: "study",
+        title: provider ? `${provider}${chapter ? ` · Chapter ${chapter}` : ""} · ${label}` : `Study ${label}`,
+        minutes: provider ? Math.max(12, Math.round(budget * 0.4)) : COST.study,
+        area: a?.code,
+      },
       { kind: "weak", title: `Practise ${pcount} in ${a?.code ?? "area"}`, minutes: Math.round(pcount * COST.perQ), area: a?.code },
       { kind: "flashcards", title: `Revise ${a?.code ?? ""} flashcards`, minutes: 8, area: a?.code },
     ])

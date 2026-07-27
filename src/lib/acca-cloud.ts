@@ -56,6 +56,8 @@ export async function persistDiagnostic(result: DiagnosticResult): Promise<void>
       raw_correct: result.rawCorrect,
       areas: result.areas,
       target: result.target,
+      source: result.source ?? "diagnostic",
+      evidence: result.evidence ?? {},
       answered_at: result.answeredAt,
     })
   } catch {
@@ -94,6 +96,8 @@ export async function fetchLatestDiagnostic(paperId: string): Promise<Diagnostic
       estimatedScore: data.estimated_score ?? 0,
       passProbability: data.pass_probability ?? 0,
       confidence: data.confidence ?? 0,
+      source: data.source === "result-upload" ? "result-upload" : "diagnostic",
+      evidence: data.evidence && Object.keys(data.evidence).length ? data.evidence : undefined,
       areas: data.areas ?? [],
       weakest: [...(data.areas ?? [])].filter((a: { seen: number }) => a.seen > 0).sort((a: { score: number }, b: { score: number }) => a.score - b.score).slice(0, 3),
       strongest: [...(data.areas ?? [])].filter((a: { seen: number }) => a.seen > 0).sort((a: { score: number }, b: { score: number }) => b.score - a.score).slice(0, 3),

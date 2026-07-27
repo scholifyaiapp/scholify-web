@@ -9,6 +9,7 @@ import { examBlueprint, constructedSectionLabel, examSecondsFor } from "@/lib/ac
 import { serializeForMarking, type Cells } from "@/lib/spreadsheet"
 import SpreadsheetPad from "@/components/acca/SpreadsheetPad"
 import CbeToolsDock from "@/components/acca/CbeTools"
+import { ProCountdown } from "@/components/acca/ProCountdown"
 
 /*
  * The constructed-response studio — Scholify's CBE room for the written
@@ -165,6 +166,8 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <BackButton label="All questions" onClick={() => { setActive(null); setSecondsLeft(null) }} />
         {secondsLeft !== null && !result && (
+          <>
+          <ProCountdown secondsLeft={secondsLeft} totalSeconds={Math.max(1, allowed)} label="Written task" />
           <motion.div
             animate={expired ? { scale: [1, 1.04, 1] } : undefined}
             transition={{ duration: 0.8, repeat: expired ? Infinity : 0 }}
@@ -179,6 +182,7 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
             </span>
             <span style={{ fontSize: 11, color: C.faint }}>of {fmtClock(allowed)}</span>
           </motion.div>
+          </>
         )}
       </div>
 

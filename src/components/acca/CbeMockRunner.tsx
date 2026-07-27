@@ -12,6 +12,7 @@ import { withShuffledOptions } from "@/lib/acca-options"
 import { recordMistake, recordAnswerTiming, snapshotProbability } from "@/lib/acca-analytics"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { queueAccaProgressPush } from "@/lib/acca-cloud"
+import { ProCountdown } from "@/components/acca/ProCountdown"
 import { trackEvent } from "@/lib/analytics"
 import { markAnswer, type ExaminerResult } from "@/lib/acca-ai"
 import { serializeForMarking, type Cells } from "@/lib/spreadsheet"
@@ -701,6 +702,7 @@ function TopBar({ secondsLeft, total, right }: { secondsLeft: number; total: num
   const tone = frac <= 0.1 ? C.red : frac <= 0.25 ? C.amber : C.text
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
+      <ProCountdown secondsLeft={secondsLeft} totalSeconds={total} label="Mock exam" />
       <motion.div
         animate={frac <= 0.1 ? { scale: [1, 1.04, 1] } : undefined}
         transition={{ duration: 0.9, repeat: frac <= 0.1 ? Infinity : 0 }}

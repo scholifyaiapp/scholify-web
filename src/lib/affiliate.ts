@@ -6,7 +6,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
  * A partner shares `scholifyapp.com/?aff=CODE`. We capture the code, ping the
  * public resolve endpoint for click tracking, and stash it so the next Stripe
  * checkout carries it (see src/lib/stripe.ts → api/stripe.ts metadata). The
- * server records a 35% commission on the completed purchase.
+ * server records a fixed 27% commission on the completed purchase.
  *
  * Applications go through /api/affiliate?action=apply (creates a PENDING row
  * you approve in Supabase). The dashboard reads the partner's own rows via RLS.
@@ -25,7 +25,7 @@ function cleanCode(input: string): string {
 export function captureAffiliateRef(): void {
   try {
     const params = new URLSearchParams(window.location.search)
-    const raw = params.get("aff") || params.get("ref") || ""
+    const raw = params.get("aff") || ""
     const code = cleanCode(raw)
     if (!code) return
     window.localStorage.setItem(AFF_KEY, code)
@@ -123,39 +123,51 @@ export interface CommissionRow {
 export interface AffiliateDashboard {
   affiliate: AffiliateRow | null
   commissions: CommissionRow[]
-  totals: { pending: number; approved: number; paid: number; sales: number }
+  totals: { pending: number; approved: number; paid: number; sales: number; invitedUsers: number }
 }
 
 const EMPTY: AffiliateDashboard = {
   affiliate: null,
   commissions: [],
-  totals: { pending: 0, approved: 0, paid: 0, sales: 0 },
+  totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0 },
 }
 
-/** Load the signed-in partner's own affiliate row + commissions (via RLS). */
+/** Credit the signed-in user to the captured partner once. Server-side uniqueness
+ * makes retries, OAuth callbacks and repeated sign-ins safe. */
+export async function claimCapturedAffiliate(): Promise<boolean> {
+  const code = getCapturedAffiliate()
+  if (!code || !isSupabaseConfigured) return false
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return false
+    const res = await fetch("/api/affiliate?action=claim", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
+    })
+    const json = (await res.json()) as { ok?: boolean }
+    if (json.ok) clearCapturedAffiliate()
+    return Boolean(json.ok)
+  } catch {
+    return false
+  }
+}
+
+/** Load the signed-in partner's row, exact invite count and commissions. The
+ * API also links an older anonymous application to a matching verified email. */
 export async function fetchAffiliateDashboard(): Promise<AffiliateDashboard> {
   if (!isSupabaseConfigured) return EMPTY
   try {
-    const { data: affiliate } = await supabase
-      .from("affiliates")
-      .select("id, name, code, status, clicks, commission_rate, stripe_account_id")
-      .maybeSingle()
-    if (!affiliate) return EMPTY
-
-    const { data: rows } = await supabase
-      .from("affiliate_commissions")
-      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at")
-      .order("created_at", { ascending: false })
-
-    const commissions = (rows ?? []) as CommissionRow[]
-    const totals = { pending: 0, approved: 0, paid: 0, sales: 0 }
-    for (const c of commissions) {
-      totals.sales += c.sale_amount
-      if (c.status === "pending") totals.pending += c.commission_amount
-      else if (c.status === "approved") totals.approved += c.commission_amount
-      else if (c.status === "paid") totals.paid += c.commission_amount
-    }
-    return { affiliate: affiliate as AffiliateRow, commissions, totals }
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return EMPTY
+    const res = await fetch("/api/affiliate?action=dashboard", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    })
+    const json = (await res.json()) as AffiliateDashboard & { ok?: boolean }
+    return json.ok ? json : EMPTY
   } catch {
     return EMPTY
   }
@@ -212,6 +224,24 @@ export async function setAffiliateStatus(id: string, status: string): Promise<bo
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
       body: JSON.stringify({ id, status }),
+    })
+    const json = (await res.json()) as { ok: boolean }
+    return json.ok
+  } catch {
+    return false
+  }
+}
+
+/** Admin: after manually sending money, mark all matured pending commissions
+ * for one partner as paid. The server refuses commissions still on hold. */
+export async function markAffiliateDuePaid(id: string): Promise<boolean> {
+  const token = await adminToken()
+  if (!token) return false
+  try {
+    const res = await fetch("/api/affiliate?action=mark-due-paid", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id }),
     })
     const json = (await res.json()) as { ok: boolean }
     return json.ok

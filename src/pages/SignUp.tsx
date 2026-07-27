@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 import { trackEvent, identifyUser } from "@/lib/analytics"
 import { captureRefFromUrl, applyReferralOnSignup } from "@/lib/referral"
+import { claimCapturedAffiliate } from "@/lib/affiliate"
 import {
   AuthSplitLayout,
   BackToHome,
@@ -348,7 +349,7 @@ export default function SignUp() {
       const { data } = await supabase.auth.getUser()
       if (data.user) {
         identifyUser(data.user.id, { name: firstName.trim(), method: "email" })
-        await applyReferralOnSignup(data.user)
+        await Promise.all([applyReferralOnSignup(data.user), claimCapturedAffiliate()])
       }
     } catch {
       /* analytics/referral are best-effort */

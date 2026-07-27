@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { useAuth } from "@/lib/auth"
@@ -7,17 +7,40 @@ import { ScholifyMark } from "@/components/brand"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
 import { setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
-import { GOAL_OPTIONS, setGoal, setExperience, getExperience, startModeForExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, type Goal } from "@/lib/acca-profile"
+import { GOAL_OPTIONS, setGoal, setExperience, getExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, setPaperVariant, type Goal, type PaperVariant } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
-import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
 import { DurationPicker } from "@/components/ui/duration-picker"
 import { ExamCalendar } from "@/components/ui/exam-calendar"
+import {
+  MATERIAL_LABEL,
+  PROVIDER_LABEL,
+  resourceSummary,
+  setStudyResource,
+  type ResourceMaterial,
+  type ResourceProvider,
+  type StudyResourceProfile,
+} from "@/lib/acca-study-resources"
+import {
+  analyseResultPdf,
+  analyseEnglishCertificate,
+  RESULT_PDF_MAX_BYTES,
+  useUploadedResult,
+  type ResultUploadAnalysis,
+} from "@/lib/acca-result-upload"
+import {
+  saveLearnerBaseline,
+  type CefrLevel,
+  type EnglishEvidence,
+  type LearnerRoute,
+} from "@/lib/acca-learner-baseline"
+import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
  * export ("Scholify post-sign-in onboarding", 2026-07-09).
  *
- *   0 hero → 1 target paper → 2 daily time → 3 exam date → 4 goal → 5 ready
+ *   0 hero → 1 target paper → 2 resources → 3 daily time → 4 exam date
+ *   → 5 goal → 6 ready
  *   → /study/diagnostic?next=paywall → results → trial paywall → /dashboard
  *
  * Mobile (≤900px): single-column phone layout, photo hero on the welcome
@@ -109,7 +132,8 @@ const TARGET_OPTIONS: { v: number; label: string; blurb: string }[] = [
   { v: 85, label: "85%", blurb: "Bulletproof" },
 ]
 
-const TOTAL = 6
+const TOTAL = 10
+const ADVANCED_ONBOARDING_LAUNCH_AT = Date.parse("2026-08-09T19:00:00.000Z")
 
 // The split-screen needs real width; below 1080 the phone layout reads better.
 function useIsMobile(): boolean {
@@ -128,9 +152,9 @@ const PHOTOS = ["/onboarding/welcome-m.webp", "/onboarding/welcome-d.webp", "/on
 /* Directional slide variants — enter and exit run SIMULTANEOUSLY (no
    mode="wait" gap), so steps hand over in one continuous motion. */
 const slideVariants = {
-  enter: (d: number) => ({ opacity: 0, x: d > 0 ? 70 : -70 }),
+  enter: (d: number) => ({ opacity: 0, x: d > 0 ? 36 : -36 }),
   center: { opacity: 1, x: 0 },
-  exit: (d: number) => ({ opacity: 0, x: d > 0 ? -70 : 70 }),
+  exit: (d: number) => ({ opacity: 0, x: d > 0 ? -36 : 36 }),
 }
 const fadeVariants = {
   enter: { opacity: 0 },
@@ -145,91 +169,221 @@ export default function Welcome() {
   const { user, startTrial } = useAuth()
   const reduced = useReducedMotion()
   const isMobile = useIsMobile()
-
   const [step, setStep] = useState(0)
+  const advancedOnboardingVisible = Date.now() >= ADVANCED_ONBOARDING_LAUNCH_AT
+  const visibleSteps = useMemo(
+    () => advancedOnboardingVisible ? Array.from({ length: TOTAL }, (_, index) => index) : [0, 3, 4, 5, 6, 7, 9],
+    [advancedOnboardingVisible],
+  )
+  const visibleStepIndex = Math.max(0, visibleSteps.indexOf(step))
+
   const [dir, setDir] = useState(1)
   const [passed, setPassed] = useState<Set<string>>(new Set())
   const [showPassed, setShowPassed] = useState(false)
   const [paper, setPaper] = useState<string | null>(null)
+  const [paperVariant, setPaperVariantState] = useState<PaperVariant | null>(null)
+  const [providers, setProviders] = useState<ResourceProvider[]>([])
+  const [primaryProvider, setPrimaryProvider] = useState<ResourceProvider>("kaplan")
+  const [materials, setMaterials] = useState<ResourceMaterial[]>(["study-text"])
+  const [resourceEdition, setResourceEdition] = useState("September 2026 – June 2027")
+  const [totalChapters, setTotalChapters] = useState<number | null>(null)
+  const [completedChapters, setCompletedChapters] = useState(0)
   const [minutes, setMinutes] = useState(60)
+  const [daysPerWeek, setDaysPerWeek] = useState(6)
   const [slot, setSlot] = useState("19:00")
   const [examDate, setExamDate] = useState("")
   const [pickedSitting, setPickedSitting] = useState<string | null>(null)
   const [goal, setGoalState] = useState<Goal | null>(null)
   const [target, setTarget] = useState(75)
-  // "Start learning" exit: play the cinematic plan-generation reveal before
-  // handing over to the app (see finishZero).
-  const [zeroReveal, setZeroReveal] = useState(false)
-
+  const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(null)
+  const [englishLevel, setEnglishLevel] = useState<CefrLevel | null>(null)
+  const [englishEvidence, setEnglishEvidence] = useState<EnglishEvidence | null>(null)
+  const [certificateFile, setCertificateFile] = useState<File | null>(null)
+  const [certificateType, setCertificateType] = useState<"IELTS" | "TOEFL" | "Cambridge" | "Other">("IELTS")
+  const [certificateBusy, setCertificateBusy] = useState(false)
+  const [certificateError, setCertificateError] = useState("")
+  const [resultChoice, setResultChoice] = useState<"diagnostic" | "uploaded" | null>(null)
+  const [resultFile, setResultFile] = useState<File | null>(null)
+  const [resultAnalysis, setResultAnalysis] = useState<ResultUploadAnalysis | null>(null)
+  const [resultBusy, setResultBusy] = useState(false)
+  const [resultError, setResultError] = useState("")
+  const [finishBusy, setFinishBusy] = useState(false)
+  const [finishError, setFinishError] = useState("")
   const levels = useMemo(() => paperLevels(), [])
   const sittings = useMemo(() => nextSittings(3), [])
   const sessionPaper = paper !== null && !ON_DEMAND.has(paper)
 
-  // The honest fork (Doc 12, Phase 1): decide which path is *recommended* on the
-  // final slide. An explicit experience answer wins; otherwise the goal is a
-  // strong proxy — a "first-pass" learner on this paper starts by LEARNING
-  // (a pass probability now would be a guess), while a retaker / level-climber /
-  // professional has a baseline worth MEASURING with the diagnostic.
-  const recommendZero = useMemo(() => {
-    const exp = getExperience()
-    if (exp) return startModeForExperience(exp) === "zero"
-    return goal === "first-pass"
-  }, [goal])
-
   useEffect(() => {
     if (isAccaOnboarded()) navigate("/dashboard", { replace: true })
-    // Decode every photo up front so step changes never flash or stall.
-    for (const src of PHOTOS) {
-      const img = new Image()
-      img.src = src
+    const preload = () => PHOTOS.forEach((src) => { const img = new Image(); img.src = src })
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    const idleId = idleWindow.requestIdleCallback?.(preload, { timeout: 2500 })
+    const timerId = idleId === undefined ? window.setTimeout(preload, 900) : undefined
+    return () => {
+      if (idleId !== undefined) idleWindow.cancelIdleCallback?.(idleId)
+      if (timerId !== undefined) window.clearTimeout(timerId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const canAdvance = step === 1 ? paper !== null : step === 4 ? goal !== null : true
+  const canAdvance = step === 1
+    ? learnerRoute !== null
+    : step === 2
+      ? englishLevel !== null && englishEvidence !== null
+    : step === 3
+    ? paper !== null && (!["LW", "TX"].includes(paper) || paperVariant !== null)
+    : step === 4
+      ? providers.length > 0 && (providers.includes("none") || materials.length > 0)
+      : step === 7
+        ? goal !== null
+        : step === 8
+          ? resultChoice !== null
+        : true
 
-  function go(delta: number) {
+  const go = useCallback((delta: number) => {
     setDir(delta)
     setStep((s) => {
-      const next = Math.min(TOTAL - 1, Math.max(0, s + delta))
+      const current = Math.max(0, visibleSteps.indexOf(s))
+      const next = visibleSteps[Math.min(visibleSteps.length - 1, Math.max(0, current + delta))]
       if (next !== s) trackEvent("onboarding_step", { step: next, direction: delta > 0 ? "forward" : "back" })
       return next
     })
+  }, [visibleSteps])
+
+  function selectPaper(nextPaper: string | null) {
+    if (nextPaper !== paper) {
+      setExamDate("")
+      setPickedSitting(null)
+      setTotalChapters(null)
+      setCompletedChapters(0)
+    }
+    setPaper(nextPaper)
+    setPaperVariantState(null)
   }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && canAdvance && step < TOTAL - 1) go(1)
-      if (e.key === "ArrowLeft" && step > 0) go(-1)
+      const target = e.target
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) return
+      if (e.key === "ArrowRight" && canAdvance && visibleStepIndex < visibleSteps.length - 1) go(1)
+      if (e.key === "ArrowLeft" && visibleStepIndex > 0) go(-1)
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  })
+  }, [canAdvance, go, visibleStepIndex, visibleSteps.length])
 
-  function persist() {
-    if (!paper) return
+  function persist(complete = true) {
+    if (!paper) return false
     setPassedPapers([...passed])
     setStudyingPapers([paper])
+    if (paperVariant) setPaperVariant(paper, paperVariant)
+    setStudyResource(paper, {
+      providers,
+      primaryProvider,
+      materials: providers.includes("none") ? [] : materials,
+      edition: resourceEdition,
+      totalChapters,
+      completedChapters,
+    })
     if (goal) setGoal(goal)
+    if (learnerRoute && englishLevel && englishEvidence) {
+      saveLearnerBaseline({
+        route: learnerRoute,
+        englishLevel,
+        englishEvidence,
+        certificateName: certificateFile?.name,
+        certificateType: englishEvidence === "certificate" ? certificateType : undefined,
+        updatedAt: new Date().toISOString(),
+      })
+      if (getExperience() !== "professional") {
+        setExperience(learnerRoute === "new" ? "new" : "some")
+      }
+    }
     if (goal === "career") setExperience("professional")
     const questionsPerDay = minutes >= 120 ? 55 : minutes >= 90 ? 42 : minutes >= 60 ? 30 : 22
-    setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, dailyGoal: questionsPerDay, targetProb: target })
+    setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: target })
     setDailyGoal(questionsPerDay)
-    markAccaOnboarded()
+    if (complete) markAccaOnboarded()
     // Onboarding is done → start the 3-day free trial now. Fire-and-forget:
     // it's idempotent server-side, and the auth effect re-grants as a safety net.
-    void startTrial()
+    if (complete) void startTrial()
+    return true
   }
 
   const onboardingProps = () => ({ paper, minutes, target, goal, hasExamDate: Boolean(examDate) })
   // Each finish path IS the experience answer, so the loop knows the persona from
   // the learner's actual choice (career→professional is already set in persist()).
-  const finishToDiagnostic = () => { if (getExperience() !== "professional") setExperience("some"); persist(); setStartMode("assess"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" }); navigate("/study/diagnostic?next=paywall") }
-  // Brand-new learner: study FIRST — the Dashboard gates the diagnostic
-  // behind initial coverage instead of testing zero knowledge. Their wow
-  // moment is the plan-generation reveal (the assess path gets its reveal
-  // after the diagnostic; this one is built from the onboarding answers).
-  const finishZero = () => { if (getExperience() !== "professional") setExperience("new"); persist(); setStartMode("zero"); trackEvent("onboarding_complete", { ...onboardingProps(), exit: "zero_start" }); setZeroReveal(true) }
+  const finishToDiagnostic = () => {
+    if (finishBusy) return
+    setFinishError("")
+    if (getExperience() !== "professional") setExperience("some")
+    if (!persist()) return
+    setStartMode("assess")
+    trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" })
+    navigate("/study/diagnostic?next=paywall")
+  }
+  const finishWithResult = async () => {
+    if (!resultAnalysis || !resultFile || finishBusy) return
+    setFinishBusy(true)
+    setFinishError("")
+    if (!persist(false)) { setFinishBusy(false); return }
+    try {
+      await useUploadedResult(resultAnalysis, resultFile.name)
+      markAccaOnboarded()
+      void startTrial()
+      setStartMode("assess")
+      trackEvent("onboarding_complete", { ...onboardingProps(), exit: "uploaded_result", resultKind: resultAnalysis.resultKind })
+      navigate("/dashboard")
+    } catch {
+      setFinishError("Charles couldn't save this result. Your file is safe—please try again.")
+      setFinishBusy(false)
+    }
+  }
+
+  const onResultFile = async (file: File | null) => {
+    setResultFile(file)
+    setResultAnalysis(null)
+    setResultChoice(null)
+    setResultError("")
+    if (!file || !paper) return
+    setResultBusy(true)
+    try {
+      const analysis = await analyseResultPdf(file, paper)
+      setResultAnalysis(analysis)
+      setResultChoice("uploaded")
+    } catch (error) {
+      setResultError(error instanceof Error ? error.message : "Charles couldn't analyse this result.")
+    } finally {
+      setResultBusy(false)
+    }
+  }
+
+  const onCertificateFile = async (file: File | null, selectedType = certificateType) => {
+    setCertificateFile(file)
+    setEnglishLevel(null)
+    setCertificateError("")
+    if (!file) return
+    setCertificateBusy(true)
+    try {
+      const result = await analyseEnglishCertificate(file, selectedType)
+      setEnglishLevel(result.level)
+      if (["IELTS", "TOEFL", "Cambridge", "Other"].includes(result.certificateType)) {
+        setCertificateType(result.certificateType as typeof certificateType)
+      }
+    } catch (error) {
+      setCertificateError(error instanceof Error ? error.message : "Charles couldn't read this certificate.")
+    } finally {
+      setCertificateBusy(false)
+    }
+  }
 
   const slideAnim = {
     variants: reduced ? fadeVariants : slideVariants,
@@ -242,10 +396,33 @@ export default function Welcome() {
   /* shared slide bodies (question controls only — chrome differs per device) */
   const body: Record<number, ReactNode> = {
     1: (
+      <LearnerRouteSlide value={learnerRoute} onChange={setLearnerRoute} />
+    ),
+    2: (
+      <EnglishBaselineSlide
+        route={learnerRoute}
+        level={englishLevel}
+        evidence={englishEvidence}
+        certificate={certificateFile}
+        certificateBusy={certificateBusy}
+        certificateError={certificateError}
+        certificateType={certificateType}
+        onLevel={setEnglishLevel}
+        onEvidence={setEnglishEvidence}
+        onCertificate={onCertificateFile}
+        onCertificateType={(nextType) => {
+          setCertificateType(nextType)
+          if (certificateFile) void onCertificateFile(certificateFile, nextType)
+        }}
+      />
+    ),
+    3: (
       <PaperSlide
         levels={levels}
         paper={paper}
-        setPaper={setPaper}
+        setPaper={selectPaper}
+        variant={paperVariant}
+        setVariant={setPaperVariantState}
         passed={passed}
         setPassed={setPassed}
         showPassed={showPassed}
@@ -253,8 +430,24 @@ export default function Welcome() {
         isMobile={isMobile}
       />
     ),
-    2: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} />,
-    3: (
+    4: (
+      <ResourceSlide
+        providers={providers}
+        setProviders={setProviders}
+        primaryProvider={primaryProvider}
+        setPrimaryProvider={setPrimaryProvider}
+        materials={materials}
+        setMaterials={setMaterials}
+        edition={resourceEdition}
+        setEdition={setResourceEdition}
+        totalChapters={totalChapters}
+        setTotalChapters={setTotalChapters}
+        completedChapters={completedChapters}
+        setCompletedChapters={setCompletedChapters}
+      />
+    ),
+    5: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} daysPerWeek={daysPerWeek} setDaysPerWeek={setDaysPerWeek} />,
+    6: (
       <SittingSlide
         sessionPaper={sessionPaper}
         paper={paper}
@@ -265,8 +458,25 @@ export default function Welcome() {
         setExamDate={setExamDate}
       />
     ),
-    4: <GoalSlide goal={goal} setGoal={setGoalState} target={target} setTarget={setTarget} />,
-    5: (
+    7: <GoalSlide goal={goal} setGoal={setGoalState} target={target} setTarget={setTarget} />,
+    8: (
+      <ResultUploadSlide
+        paper={paper ?? ""}
+        file={resultFile}
+        analysis={resultAnalysis}
+        busy={resultBusy}
+        error={resultError}
+        choice={resultChoice}
+        onFile={onResultFile}
+        onDiagnostic={() => {
+          setResultChoice("diagnostic")
+          setResultFile(null)
+          setResultAnalysis(null)
+          setResultError("")
+        }}
+      />
+    ),
+    9: (
       <ReadySlide
         paper={paper ?? ""}
         minutes={minutes}
@@ -274,45 +484,58 @@ export default function Welcome() {
         examDate={examDate}
         sitting={sittings.find((s) => s.date === pickedSitting) ?? null}
         goal={goal}
-        recommendZero={recommendZero}
+        uploadedResult={resultAnalysis}
         onDiagnostic={finishToDiagnostic}
-        onZero={finishZero}
+        onUploaded={finishWithResult}
+        finishBusy={finishBusy}
+        finishError={finishError}
         isMobile={isMobile}
+        resource={{
+          paperId: paper ?? "",
+          providers,
+          primaryProvider,
+          materials,
+          edition: resourceEdition,
+          totalChapters,
+          completedChapters,
+          updatedAt: "",
+        }}
+        learnerRoute={learnerRoute}
+        englishLevel={englishLevel}
+        daysPerWeek={daysPerWeek}
       />
     ),
   }
 
-  const KICKERS = ["A GPS for ACCA", "Step 1 · your target", "Protect your time", "Lock your date", "Your why", ""]
+  const KICKERS = ["A GPS for ACCA", "Your starting point", "English support", "Your target", "Your study stack", "Protect your time", "Lock your date", "Your why", "Optional shortcut", ""]
   // Step 3's question depends on the paper: session exams pick a sitting,
   // on-demand CBEs (BT·MA·FA·LW) pick any date.
   const TITLES = [
     "",
+    "Where are you starting from?",
+    "How should Charles explain things?",
     "Which paper are we passing?",
+    "What are you studying with?",
     "How much time can you protect, daily?",
     sessionPaper ? "Which sitting are you taking?" : "When's your exam?",
     "What are you here for?",
+    "Already have a result?",
     "Your loop is set.",
   ]
   const SUBS = [
     "",
+    "This changes your route—not your potential.",
+    "ACCA is examined in English. Choose evidence, self-rate, or take a short vocabulary check.",
     "Pick one to start. You can add more later.",
+    "Charles will fit the books you already own into your daily plan.",
     "Honest beats ambitious. We build the plan around this.",
     sessionPaper
       ? "Your plan counts back from exam week."
       : `${paper ?? "Your paper"} is an on-demand computer exam — book any date at your local centre.`,
     "This shapes the tone I'll coach you in.",
+    "Upload a detailed mock or failed-exam PDF. If Charles can verify it, it replaces the diagnostic.",
     "",
   ]
-
-  /* ═══ The zero-start wow moment: Charles builds the plan on screen ═══ */
-  if (zeroReveal && paper) {
-    return (
-      <ZeroPlanReveal
-        paperId={paper}
-        onDone={(dest) => navigate(dest === "study" ? "/study" : "/dashboard")}
-      />
-    )
-  }
 
   /* ═══ MOBILE ═══ */
   if (isMobile) {
@@ -337,16 +560,16 @@ export default function Welcome() {
               <ScholifyMark size={24} />
               <span style={{ font: `800 17px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
             </motion.div>
-            <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{`0${step + 1}`} / 08</span>
+            <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{`0${visibleStepIndex + 1}`} / {String(visibleSteps.length + 2).padStart(2, "0")}</span>
           </div>
           <div style={{ marginTop: 14, height: 4, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            <motion.div animate={{ width: `${((step + 1) / 8) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
+            <motion.div animate={{ width: `${((visibleStepIndex + 1) / (visibleSteps.length + 2)) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
           </div>
         </div>
 
         {/* content */}
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <AnimatePresence custom={dir} initial={false}>
+          <AnimatePresence custom={dir} initial={false} mode="wait">
             <motion.div
               key={step}
               {...slideAnim}
@@ -355,8 +578,8 @@ export default function Welcome() {
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.16}
               onDragEnd={(_, info) => {
-                if (info.offset.x < -70 && canAdvance && step < TOTAL - 1) go(1)
-                else if (info.offset.x > 70 && step > 0) go(-1)
+                if (info.offset.x < -70 && canAdvance && visibleStepIndex < visibleSteps.length - 1) go(1)
+                else if (info.offset.x > 70 && visibleStepIndex > 0) go(-1)
               }}
               style={{ position: "absolute", inset: 0, overflowY: "auto", padding: step === 0 ? "284px 24px 56px" : "22px 24px 56px", display: "flex", flexDirection: "column" }}
             >
@@ -373,14 +596,14 @@ export default function Welcome() {
                 </>
               ) : (
                 <>
-                  {step === 5 ? (
+                  {step === 9 ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 7, font: `600 11px/1 ${MONO}`, letterSpacing: "0.13em", textTransform: "uppercase", color: GREEN, marginBottom: 12 }}>
                       <Icon name="done" size={15} color={GREEN} /> Ready
                     </div>
                   ) : null}
-                  <h2 style={{ margin: "0 0 5px", font: `800 ${step === 5 ? 29 : step === 1 ? 25 : 26}px/1.1 ${SANS}`, letterSpacing: "-0.7px", color: INK }}>{TITLES[step]}</h2>
+                  <h2 style={{ margin: "0 0 5px", font: `800 ${step === 9 ? 29 : step === 1 ? 25 : 26}px/1.1 ${SANS}`, letterSpacing: "-0.7px", color: INK }}>{TITLES[step]}</h2>
                   {SUBS[step] && <p style={{ margin: "0 0 18px", font: `400 13px/1.45 ${SANS}`, color: SUB }}>{SUBS[step]}</p>}
-                  {step === 5 && <div style={{ height: 10 }} />}
+                  {step === 9 && <div style={{ height: 10 }} />}
                   {body[step]}
                 </>
               )}
@@ -389,34 +612,27 @@ export default function Welcome() {
         </div>
 
         {/* pinned footer */}
-        <div style={{ padding: step === 5 ? "14px 24px 24px" : "12px 24px 24px", background: `linear-gradient(180deg, rgba(250,250,247,0), ${PAGE} 30%)`, position: "relative", zIndex: 2 }}>
-          {step === 2 && (
+        <div style={{ padding: step === 9 ? "14px 24px 24px" : "12px 24px 24px", background: `linear-gradient(180deg, rgba(250,250,247,0), ${PAGE} 30%)`, position: "relative", zIndex: 2 }}>
+          {step === 5 && (
             <div style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: 14, padding: "0 2px" }}>
               <span style={{ color: RED, fontSize: 15, lineHeight: 1.2 }}>“</span>
               <span style={{ font: `600 13px/1.4 ${SANS}`, color: "#3E3831" }}>The students who pass don't find time — they protect it.</span>
             </div>
           )}
-          {step === 3 && (
+          {step === 6 && (
             <div style={{ marginBottom: 12, font: `500 12px/1.4 ${SANS}`, color: MUTE, textAlign: "center" }}>Not booked yet? I'll pace you by mastery.</div>
           )}
-          {step === 5 ? (
-            recommendZero ? (
-              <>
-                <PrimaryBtn onClick={finishZero} big>Start learning</PrimaryBtn>
-                <button onClick={finishToDiagnostic} style={{ width: "100%", marginTop: 10, padding: "13px 14px", borderRadius: 13, background: "transparent", color: MUTE, font: `700 13px/1 ${SANS}`, border: "none", cursor: "pointer" }}>
-                  I'd rather measure first — take the diagnostic
-                </button>
-              </>
-            ) : (
-              <PrimaryBtn onClick={finishToDiagnostic} big>Find my Exam Readiness Score</PrimaryBtn>
-            )
+          {step === 9 ? (
+            resultAnalysis
+              ? <PrimaryBtn onClick={() => void finishWithResult()} big disabled={finishBusy}>{finishBusy ? "Building your plan…" : "Build my plan from this result"}</PrimaryBtn>
+              : <PrimaryBtn onClick={finishToDiagnostic} big disabled={finishBusy}>Continue to Learning</PrimaryBtn>
           ) : (
             <>
               <PrimaryBtn onClick={() => (canAdvance ? go(1) : undefined)} big={step === 0} disabled={!canAdvance}>
                 {step === 0 ? "Start — it takes a minute" : "Continue"}
               </PrimaryBtn>
               <div style={{ display: "flex", alignItems: "center", marginTop: 12, minHeight: 22, position: "relative" }}>
-                {step > 0 && (
+                {visibleStepIndex > 0 && (
                   <button onClick={() => go(-1)} style={{ background: "none", border: "none", color: MUTE, font: `600 12px/1 ${SANS}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, padding: "4px 6px 4px 0" }}>
                     <Icon name="arrow" size={13} color={MUTE} style={{ transform: "rotate(180deg)" }} /> Back
                   </button>
@@ -427,6 +643,7 @@ export default function Welcome() {
               </div>
             </>
           )}
+          {finishError && <p role="alert" style={{ margin: "10px 0 0", color: RED, font: `600 12px/1.4 ${SANS}`, textAlign: "center" }}>{finishError}</p>}
         </div>
       </div>
     )
@@ -442,14 +659,14 @@ export default function Welcome() {
           <span style={{ font: `800 21px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
         </div>
         <div style={{ marginTop: 26, display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ font: `600 12px/1 ${MONO}`, color: MUTE, letterSpacing: "0.05em" }}>{step + 1} / {TOTAL}</span>
+          <span style={{ font: `600 12px/1 ${MONO}`, color: MUTE, letterSpacing: "0.05em" }}>{visibleStepIndex + 1} / {visibleSteps.length}</span>
           <div style={{ flex: 1, maxWidth: 340, height: 5, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            <motion.div animate={{ width: `${((step + 1) / TOTAL) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
+            <motion.div animate={{ width: `${((visibleStepIndex + 1) / visibleSteps.length) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
           </div>
         </div>
 
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <AnimatePresence custom={dir} initial={false}>
+          <AnimatePresence custom={dir} initial={false} mode="wait">
             <motion.div
               key={step}
               {...slideAnim}
@@ -470,14 +687,14 @@ export default function Welcome() {
                 </div>
               ) : (
                 <div style={{ margin: "auto 0", padding: "18px 0 24px" }}>
-                  {step === 5 ? (
+                  {step === 9 ? (
                     <div style={{ ...kicker, color: GREEN, display: "flex", alignItems: "center", gap: 7 }}>
                       <Icon name="done" size={14} color={GREEN} /> Ready
                     </div>
                   ) : (
                     <div style={kicker}>{KICKERS[step]}</div>
                   )}
-                  <h1 style={{ margin: 0, font: `800 clamp(30px, ${step === 5 ? "3vw" : step === 1 ? "2.6vw" : "2.8vw"}, ${step === 5 ? 43 : step === 1 ? 38 : 40}px)/1.05 ${SANS}`, letterSpacing: "-1.6px", color: INK, marginBottom: step === 5 ? 24 : 0 }}>
+                  <h1 style={{ margin: 0, font: `800 clamp(30px, ${step === 9 ? "3vw" : step === 1 ? "2.6vw" : "2.8vw"}, ${step === 9 ? 43 : step === 1 ? 38 : 40}px)/1.05 ${SANS}`, letterSpacing: "-1.6px", color: INK, marginBottom: step === 9 ? 24 : 0 }}>
                     {TITLES[step]}
                   </h1>
                   {SUBS[step] && <p style={{ margin: "12px 0 0", font: `400 15px/1.5 ${SANS}`, color: SUB }}>{SUBS[step]}</p>}
@@ -489,7 +706,7 @@ export default function Welcome() {
         </div>
 
         {/* footer buttons */}
-        {step < 5 && (
+        {step < 9 && (
           <div style={{ marginTop: 30, display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => go(-1)}
@@ -515,7 +732,7 @@ export default function Welcome() {
 
       {/* right — visual panel */}
       <div style={{ width: "45%", flex: "none", position: "relative", overflow: "hidden" }}>
-        <AnimatePresence initial={false}>
+        <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={step}
             initial={reduced ? { opacity: 0 } : { opacity: 0, x: 20 }}
@@ -543,6 +760,71 @@ const kicker: CSSProperties = {
 /* ── shared slide bodies ─────────────────────────────────────── */
 
 /** What Scholify actually gives you — shown on the hero so the value is explicit. */
+function LearnerRouteSlide({ value, onChange }: { value: LearnerRoute | null; onChange: (value: LearnerRoute) => void }) {
+  const routes: { value: LearnerRoute; icon: IconName; title: string; detail: string; path: string[] }[] = [
+    { value: "new", icon: "rocket", title: "New to ACCA", detail: "Start with foundations and clearer English support.", path: ["English baseline", "Foundations", "Diagnostic"] },
+    { value: "course", icon: "study", title: "Already learning", detail: "I use a course, tutor, books, or self-study.", path: ["Map resources", "Measure gaps", "Daily plan"] },
+    { value: "retaker", icon: "loop", title: "Retaking a paper", detail: "Use previous evidence and rebuild weak areas.", path: ["Read result", "Find lost marks", "Comeback plan"] },
+  ]
+  return <div style={{ display: "grid", gap: 11, maxWidth: 570 }}>
+    {routes.map((route, index) => {
+      const active = value === route.value
+      return <motion.button key={route.value} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .08 }} whileTap={{ scale: .99 }} onClick={() => onChange(route.value)} style={{ padding: "17px 18px", borderRadius: 17, border: `1.5px solid ${active ? RED : BORDER}`, background: active ? "rgba(200,0,0,.045)" : "#fff", cursor: "pointer", textAlign: "left" }}>
+        <div style={{ display: "flex", gap: 13, alignItems: "center" }}>
+          <span style={{ width: 40, height: 40, borderRadius: 12, background: active ? RED : PANEL, display: "grid", placeItems: "center" }}><Icon name={route.icon} size={19} color={active ? "#fff" : BODY} /></span>
+          <div style={{ flex: 1 }}><div style={{ font: `800 15px/1.25 ${SANS}`, color: INK }}>{route.title}</div><div style={{ marginTop: 4, font: `500 12.5px/1.4 ${SANS}`, color: MUTE }}>{route.detail}</div></div>
+          {active && <Icon name="done" size={19} color={RED} />}
+        </div>
+        <AnimatePresence>{active && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, paddingTop: 13, borderTop: `1px solid ${BORDER}`, flexWrap: "wrap" }}>{route.path.map((item, i) => <span key={item} style={{ display: "flex", alignItems: "center", gap: 6, font: `700 10.5px/1 ${MONO}`, color: i === 0 ? RED : META }}>{i > 0 && <Icon name="arrow" size={11} color={GHOST} />}{item}</span>)}</div>
+        </motion.div>}</AnimatePresence>
+      </motion.button>
+    })}
+  </div>
+}
+
+const CEFR_LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"]
+const VOCAB_CHECK = [
+  ["buy", "pay money to get something", "return something"],
+  ["increase", "become larger", "become hidden"],
+  ["reliable", "can be trusted", "very expensive"],
+  ["allocate", "assign for a purpose", "remove permanently"],
+  ["ambiguous", "open to more than one meaning", "proven beyond doubt"],
+  ["circumspect", "careful to consider risks", "eager to act immediately"],
+] as const
+
+function EnglishBaselineSlide({ route, level, evidence, certificate, certificateBusy, certificateError, certificateType, onLevel, onEvidence, onCertificate, onCertificateType }: {
+  route: LearnerRoute | null; level: CefrLevel | null; evidence: EnglishEvidence | null; certificate: File | null
+  certificateBusy: boolean; certificateError: string
+  certificateType: "IELTS" | "TOEFL" | "Cambridge" | "Other"; onLevel: (value: CefrLevel | null) => void; onEvidence: (value: EnglishEvidence) => void
+  onCertificate: (value: File | null) => void; onCertificateType: (value: "IELTS" | "TOEFL" | "Cambridge" | "Other") => void
+}) {
+  const [answers, setAnswers] = useState<Record<number, boolean>>({})
+  const modes: { id: EnglishEvidence; label: string; icon: IconName }[] = [
+    { id: "certificate", label: "Use certificate", icon: "upload" }, { id: "self", label: "Select A1–C2", icon: "stats" }, { id: "vocabulary", label: "Vocabulary check", icon: "tutor" },
+  ]
+  const finishQuiz = () => {
+    const correct = Object.values(answers).filter(Boolean).length
+    onLevel(CEFR_LEVELS[Math.max(0, Math.min(5, correct - 1))])
+    onEvidence("vocabulary")
+  }
+  const levelButtons = (disabled = false) => <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 6 }}>
+    {CEFR_LEVELS.map((item) => <button key={item} type="button" disabled={disabled} onClick={() => onLevel(item)} style={{ padding: "11px 2px", borderRadius: 9, border: `1px solid ${level === item ? RED : BORDER}`, background: level === item ? RED : "#fff", color: level === item ? "#fff" : INK, opacity: disabled ? .4 : 1, font: `800 11px/1 ${MONO}`, cursor: disabled ? "default" : "pointer" }}>{item}</button>)}
+  </div>
+  return <div style={{ maxWidth: 590 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>{modes.map((mode) => <button key={mode.id} type="button" onClick={() => { onEvidence(mode.id); onLevel(null) }} style={{ padding: "13px 6px", borderRadius: 13, border: `1.5px solid ${evidence === mode.id ? RED : BORDER}`, background: evidence === mode.id ? "rgba(200,0,0,.05)" : "#fff", color: evidence === mode.id ? RED : BODY, cursor: "pointer", font: `750 11.5px/1.25 ${SANS}` }}><Icon name={mode.icon} size={17} color="currentColor" style={{ margin: "0 auto 7px" }} />{mode.label}</button>)}</div>
+    {evidence === "self" && <div style={{ marginTop: 14 }}>{levelButtons()}<p style={{ margin: "9px 0 0", font: `500 11.5px/1.45 ${SANS}`, color: MUTE }}>A1–A2 gets short explanations and defined terminology. B1–B2 gets plain exam English. C1–C2 uses full examiner language.</p></div>}
+    {evidence === "certificate" && <div style={{ marginTop: 14, padding: 14, borderRadius: 14, border: `1px solid ${BORDER}`, background: "#fff" }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 9 }}>{(["IELTS", "TOEFL", "Cambridge", "Other"] as const).map((type) => <button key={type} type="button" onClick={() => onCertificateType(type)} style={{ flex: 1, padding: "8px 2px", borderRadius: 8, border: `1px solid ${certificateType === type ? RED : BORDER}`, background: "#fff", color: certificateType === type ? RED : META, font: `700 9.5px/1 ${SANS}` }}>{type}</button>)}</div>
+      <label style={{ display: "block", padding: 11, borderRadius: 10, border: `1.5px dashed ${level ? GREEN : certificateError ? RED : "#D7CCC4"}`, cursor: certificateBusy ? "wait" : "pointer", font: `650 11.5px/1.3 ${SANS}`, color: level ? GREEN : BODY }}><input type="file" accept=".pdf,application/pdf" disabled={certificateBusy} onChange={(event) => void onCertificate(event.target.files?.[0] ?? null)} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{certificateBusy ? "Charles is reading the certificate…" : level ? `${certificate?.name} · ${level} equivalent verified` : "Attach original text-based certificate PDF"}</label>
+      {certificateError && <div role="alert" style={{ marginTop: 7, color: RED, font: `600 10.5px/1.4 ${SANS}` }}>{certificateError}</div>}
+      <div style={{ margin: "9px 0 0", font: `500 10px/1.4 ${SANS}`, color: MUTE }}>Scholify reads the score and derives A1–C2; it does not verify the issuer’s authenticity. The original PDF is not retained.</div>
+    </div>}
+    {evidence === "vocabulary" && <div style={{ marginTop: 13, display: "grid", gap: 6 }}>{VOCAB_CHECK.map(([word, correct, wrong], index) => <div key={word} style={{ display: "grid", gridTemplateColumns: "82px 1fr 1fr", gap: 5, alignItems: "center" }}><strong style={{ font: `800 11px/1 ${MONO}` }}>{word}</strong>{[correct, wrong].map((option) => { const isCorrect = option === correct; const chosen = answers[index] === isCorrect; return <button key={option} type="button" onClick={() => setAnswers((old) => ({ ...old, [index]: isCorrect }))} style={{ padding: "8px 5px", borderRadius: 8, border: `1px solid ${chosen ? RED : BORDER}`, background: chosen ? "rgba(200,0,0,.05)" : "#fff", color: chosen ? RED : META, font: `600 9.5px/1.2 ${SANS}` }}>{option}</button> })}</div>)}<button type="button" disabled={Object.keys(answers).length < 6} onClick={finishQuiz} style={{ padding: 11, border: 0, borderRadius: 10, background: RED, color: "#fff", opacity: Object.keys(answers).length < 6 ? .4 : 1, font: `800 11px/1 ${SANS}` }}>Set my support level</button></div>}
+    {level && <div style={{ marginTop: 11, padding: "10px 12px", borderRadius: 10, background: "rgba(14,159,110,.08)", color: "#177054", font: `700 11.5px/1.4 ${SANS}` }}>Charles will coach you at {level} English{route === "new" ? " while teaching ACCA foundations" : ""}.</div>}
+  </div>
+}
+
 function ValueTrio({ style, big }: { style?: CSSProperties; big?: boolean }) {
   const items: { icon: IconName; text: string }[] = [
     { icon: "diagnostic", text: "A live Exam Readiness Score — know where you stand every day" },
@@ -598,11 +880,13 @@ function tileStyle(on: boolean): CSSProperties {
 }
 
 function PaperSlide({
-  levels, paper, setPaper, passed, setPassed, showPassed, setShowPassed, isMobile,
+  levels, paper, setPaper, variant, setVariant, passed, setPassed, showPassed, setShowPassed, isMobile,
 }: {
   levels: ReturnType<typeof paperLevels>
   paper: string | null
   setPaper: (p: string | null) => void
+  variant: PaperVariant | null
+  setVariant: (variant: PaperVariant) => void
   passed: Set<string>
   setPassed: (fn: (prev: Set<string>) => Set<string>) => void
   showPassed: boolean
@@ -635,6 +919,29 @@ function PaperSlide({
           </div>
         ))}
       </div>
+      {paper && ["LW", "TX"].includes(paper) && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ marginTop: 16, padding: 14, border: `1px solid ${BORDER}`, borderRadius: 14, background: "#FAFAF9" }}
+        >
+          <div style={{ font: `700 11px/1 ${MONO}`, letterSpacing: ".08em", color: INK, marginBottom: 9 }}>CHOOSE {paper} VARIANT</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {([
+              ["UK", "United Kingdom", paper === "LW" ? "English legal system and UK business law" : "UK taxation and Finance Act rules"],
+              ["GLOBAL", "Global", paper === "LW" ? "Official LW Global syllabus" : "Global taxation route"],
+            ] as const).map(([value, label, blurb]) => {
+              const active = variant === value
+              return (
+                <button key={value} type="button" onClick={() => setVariant(value)} style={{ ...tileStyle(active), padding: 12 }}>
+                  <div style={{ font: `700 12px/1 ${MONO}`, color: active ? RED : INK, marginBottom: 6 }}>{label}</div>
+                  <div style={{ font: `500 11px/1.35 ${SANS}`, color: MUTE }}>{blurb}</div>
+                </button>
+              )
+            })}
+          </div>
+        </motion.div>
+      )}
       <button
         onClick={() => setShowPassed((v) => !v)}
         style={{ display: "inline-block", marginTop: isMobile ? 4 : 20, font: `600 ${isMobile ? 12 : 13}px/1 ${SANS}`, color: MUTE, textDecoration: "underline", textUnderlineOffset: 3, background: "none", border: "none", cursor: "pointer", padding: 0 }}
@@ -669,13 +976,155 @@ function PaperSlide({
   )
 }
 
+function ResourceSlide({
+  providers,
+  setProviders,
+  primaryProvider,
+  setPrimaryProvider,
+  materials,
+  setMaterials,
+  edition,
+  setEdition,
+  totalChapters,
+  setTotalChapters,
+  completedChapters,
+  setCompletedChapters,
+}: {
+  providers: ResourceProvider[]
+  setProviders: (providers: ResourceProvider[]) => void
+  primaryProvider: ResourceProvider
+  setPrimaryProvider: (provider: ResourceProvider) => void
+  materials: ResourceMaterial[]
+  setMaterials: (materials: ResourceMaterial[]) => void
+  edition: string
+  setEdition: (edition: string) => void
+  totalChapters: number | null
+  setTotalChapters: (count: number | null) => void
+  completedChapters: number
+  setCompletedChapters: (count: number) => void
+}) {
+  const providerOptions: ResourceProvider[] = ["kaplan", "bpp", "acca-study-hub", "other", "none"]
+  const materialOptions: ResourceMaterial[] = ["study-text", "practice-kit", "pocket-notes", "online-course"]
+  const hasResource = providers.length > 0 && !providers.includes("none")
+
+  const toggleProvider = (provider: ResourceProvider) => {
+    if (provider === "none") {
+      setProviders(["none"])
+      setPrimaryProvider("none")
+      return
+    }
+    const withoutNone: ResourceProvider[] = providers.filter((item) => item !== "none")
+    const next = withoutNone.includes(provider)
+      ? withoutNone.filter((item) => item !== provider)
+      : [...withoutNone, provider]
+    setProviders(next)
+    if (!next.includes(primaryProvider)) setPrimaryProvider(next[0] ?? "kaplan")
+  }
+
+  const toggleMaterial = (material: ResourceMaterial) => {
+    setMaterials(materials.includes(material)
+      ? materials.filter((item) => item !== material)
+      : [...materials, material])
+  }
+
+  return (
+    <div style={{ maxWidth: 540 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 9 }}>
+        {providerOptions.map((provider) => {
+          const on = providers.includes(provider)
+          return (
+            <button
+              key={provider}
+              type="button"
+              onClick={() => toggleProvider(provider)}
+              style={{ ...tileStyle(on), minHeight: 50, padding: "12px 14px", font: `700 13px/1.25 ${SANS}`, color: on ? RED : INK }}
+            >
+              {PROVIDER_LABEL[provider]}
+              {provider === "none" && <span style={{ display: "block", marginTop: 3, font: `500 10px/1.3 ${SANS}`, color: META }}>Charles will use Scholify</span>}
+            </button>
+          )
+        })}
+      </div>
+      {hasResource && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 18 }}>
+          {providers.length > 1 && (
+            <>
+              <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT, marginBottom: 8 }}>Primary learning resource</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 16 }}>
+                {providers.map((provider) => (
+                  <button key={provider} type="button" onClick={() => setPrimaryProvider(provider)} style={{ ...tileStyle(primaryProvider === provider), padding: "9px 13px", font: `700 12px/1 ${SANS}`, color: primaryProvider === provider ? RED : INK }}>
+                    {PROVIDER_LABEL[provider]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT, marginBottom: 8 }}>What do you use?</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+            {materialOptions.map((material) => {
+              const on = materials.includes(material)
+              return (
+                <button key={material} type="button" onClick={() => toggleMaterial(material)} style={{ ...tileStyle(on), padding: "9px 12px", font: `700 11.5px/1 ${SANS}`, color: on ? RED : INK }}>
+                  {MATERIAL_LABEL[material]}
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 92px 92px", gap: 9, marginTop: 16 }}>
+            <label style={{ display: "grid", gap: 6, font: `600 10px/1 ${MONO}`, color: FAINT, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Edition
+              <select value={edition} onChange={(event) => setEdition(event.target.value)} style={{ minHeight: 44, borderRadius: 11, border: `1.5px solid ${BORDER}`, background: "#fff", padding: "0 10px", font: `600 11.5px/1 ${SANS}`, color: INK }}>
+                <option>September 2025 – June 2026</option>
+                <option>September 2026 – June 2027</option>
+                <option>Not sure</option>
+              </select>
+            </label>
+            <NumberField label="Chapters" value={totalChapters} min={1} onChange={(value) => {
+              setTotalChapters(value)
+              if (value !== null) setCompletedChapters(Math.min(completedChapters, value))
+            }} />
+            <NumberField label="Completed" value={completedChapters} min={0} max={totalChapters ?? undefined} onChange={(value) => setCompletedChapters(value ?? 0)} />
+          </div>
+          <p style={{ margin: "9px 0 0", font: `500 11px/1.4 ${SANS}`, color: MUTE }}>
+            Chapter counts are optional and refer to your own copy. Scholify stores planning progress, not publisher content.
+          </p>
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
+function NumberField({ label, value, min, max, onChange }: { label: string; value: number | null; min: number; max?: number; onChange: (value: number | null) => void }) {
+  return (
+    <label style={{ display: "grid", gap: 6, font: `600 10px/1 ${MONO}`, color: FAINT, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      {label}
+      <input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        value={value ?? ""}
+        placeholder="—"
+        onChange={(event) => {
+          const next = event.target.value === "" ? null : Number(event.target.value)
+          onChange(next === null || Number.isFinite(next) ? next : null)
+        }}
+        style={{ width: "100%", minHeight: 44, boxSizing: "border-box", borderRadius: 11, border: `1.5px solid ${BORDER}`, background: "#fff", padding: "0 10px", font: `700 13px/1 ${MONO}`, color: INK }}
+      />
+    </label>
+  )
+}
+
 function TimeSlide({
-  minutes, setMinutes, slot, setSlot,
+  minutes, setMinutes, slot, setSlot, daysPerWeek, setDaysPerWeek,
 }: {
   minutes: number
   setMinutes: (n: number) => void
   slot: string
   setSlot: (s: string) => void
+  daysPerWeek: number
+  setDaysPerWeek: (n: number) => void
 }) {
   const preset = MINUTE_OPTIONS.find((m) => m.v === minutes)
   const micro =
@@ -729,6 +1178,14 @@ function TimeSlide({
             </button>
           )
         })}
+      </div>
+      <div style={{ marginTop: 18, font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>Days I can honestly protect</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        {[4, 5, 6, 7].map((days) => (
+          <button key={days} onClick={() => setDaysPerWeek(days)} style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1.5px solid ${daysPerWeek === days ? RED : BORDER}`, background: daysPerWeek === days ? "rgba(200,0,0,.05)" : "#fff", color: daysPerWeek === days ? RED : INK, font: `700 12px/1 ${SANS}`, cursor: "pointer" }}>
+            {days} days
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -839,8 +1296,70 @@ function GoalSlide({
   )
 }
 
+function ResultUploadSlide({
+  paper, file, analysis, busy, error, choice, onFile, onDiagnostic,
+}: {
+  paper: string
+  file: File | null
+  analysis: ResultUploadAnalysis | null
+  busy: boolean
+  error: string
+  choice: "diagnostic" | "uploaded" | null
+  onFile: (file: File | null) => void
+  onDiagnostic: () => void
+}) {
+  return (
+    <div style={{ maxWidth: 540 }}>
+      <label style={{ display: "block", padding: "22px", borderRadius: 18, border: `1.5px dashed ${analysis ? GREEN : error ? RED : "#D7CCC4"}`, background: analysis ? "rgba(14,159,110,.06)" : "#fff", cursor: busy ? "wait" : "pointer" }}>
+        <input
+          type="file"
+          accept="application/pdf,.pdf"
+          disabled={busy}
+          onChange={(event) => void onFile(event.target.files?.[0] ?? null)}
+          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
+        />
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          <span style={{ width: 42, height: 42, borderRadius: 13, background: analysis ? "rgba(14,159,110,.12)" : "rgba(200,0,0,.08)", display: "grid", placeItems: "center", flex: "none" }}>
+            <Icon name={analysis ? "done" : "upload"} size={21} color={analysis ? GREEN : RED} />
+          </span>
+          <div>
+            <div style={{ font: `800 15px/1.3 ${SANS}`, color: INK }}>
+              {busy ? "Charles is reading your result…" : analysis ? analysis.headline : file ? file.name : "Choose result PDF"}
+            </div>
+            <div style={{ marginTop: 6, font: `500 12.5px/1.5 ${SANS}`, color: analysis ? "#24745B" : MUTE }}>
+              {analysis
+                ? `${analysis.score}% · ${analysis.areas.length} syllabus areas verified. This can replace the diagnostic.`
+                : `Text-based PDF · ${Math.round(RESULT_PDF_MAX_BYTES / 1024 / 1024)} MB max · ${paper} score plus topic or section breakdown required.`}
+            </div>
+          </div>
+        </div>
+      </label>
+      {analysis && (
+        <div style={{ marginTop: 12, padding: "15px 17px", borderRadius: 14, background: "rgba(244,164,5,.09)", border: "1px solid rgba(244,164,5,.24)", font: `500 13px/1.5 ${SANS}`, color: "#6B4E12" }}>
+          {analysis.feedback}
+        </div>
+      )}
+      {error && (
+        <div role="alert" style={{ marginTop: 12, padding: "13px 15px", borderRadius: 13, background: "rgba(200,0,0,.06)", color: "#8E1B1B", font: `600 12.5px/1.45 ${SANS}` }}>
+          {error} The diagnostic remains required.
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onDiagnostic}
+        style={{ width: "100%", marginTop: 14, padding: "15px 17px", borderRadius: 14, border: `1.5px solid ${choice === "diagnostic" ? RED : BORDER}`, background: choice === "diagnostic" ? "rgba(200,0,0,.05)" : "transparent", color: choice === "diagnostic" ? RED : BODY, font: `750 13px/1.3 ${SANS}`, cursor: "pointer", textAlign: "left" }}
+      >
+        I don't have a detailed result PDF — take the compulsory diagnostic
+      </button>
+      <p style={{ margin: "12px 2px 0", font: `500 11.5px/1.45 ${SANS}`, color: FAINT }}>
+        Privacy: Scholify extracts the evidence needed for your plan and does not retain the original PDF.
+      </p>
+    </div>
+  )
+}
+
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, recommendZero, onDiagnostic, onZero, isMobile,
+  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, resource, learnerRoute, englishLevel, daysPerWeek,
 }: {
   paper: string
   minutes: number
@@ -848,21 +1367,35 @@ function ReadySlide({
   examDate: string
   sitting: Sitting | null
   goal: Goal | null
-  recommendZero: boolean
+  uploadedResult: ResultUploadAnalysis | null
   onDiagnostic: () => void
-  onZero: () => void
+  onUploaded: () => void
+  finishBusy: boolean
+  finishError: string
   isMobile: boolean
+  resource: StudyResourceProfile
+  learnerRoute: LearnerRoute | null
+  englishLevel: CefrLevel | null
+  daysPerWeek: number
 }) {
+  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate: examDate || null })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
   const rows: [string, string][] = [
     ["Paper", paper],
+    ["Resources", resourceSummary(resource)],
     ["Daily", `${minutes} min · ${slotLabel}`],
     ["Exam", sitting ? `${sitting.label} (wk ${sitting.week})` : examDate || "Paced by mastery"],
     ...(goalLabel ? ([["Goal", goalLabel]] as [string, string][]) : []),
   ]
   return (
     <div style={{ maxWidth: 500 }}>
+      <div style={{ marginBottom: 16, padding: "18px 20px", borderRadius: 17, background: guide.status === "risky" ? "rgba(200,0,0,.06)" : "rgba(14,159,110,.07)", border: `1px solid ${guide.status === "risky" ? "rgba(200,0,0,.22)" : "rgba(14,159,110,.25)"}` }}>
+        <div style={{ font: `800 15px/1.25 ${SANS}`, color: guide.status === "risky" ? RED : GREEN }}>Charles recommends · {guide.headline}</div>
+        <div style={{ marginTop: 9, display: "grid", gap: 7 }}>
+          {guide.advice.map((tip) => <div key={tip} style={{ display: "flex", gap: 8, font: `500 12.5px/1.4 ${SANS}`, color: BODY }}><span style={{ color: guide.status === "risky" ? RED : GREEN }}>●</span>{tip}</div>)}
+        </div>
+      </div>
       <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 18, overflow: "hidden", boxShadow: "0 12px 30px -22px rgba(20,20,26,.4)" }}>
         {rows.map(([k, v], i) => (
           <motion.div
@@ -880,35 +1413,25 @@ function ReadySlide({
       {/* Charles's "why", warm and honest — the reason the recommended path
           below follows from what the learner just told us about themselves. */}
       <div style={{ marginTop: 18, display: "flex", gap: 12, padding: "16px 18px", borderRadius: 16, background: "rgba(244,164,5,.09)", border: "1px solid rgba(244,164,5,.28)" }}>
-        <Icon name={recommendZero ? "learn" : "time"} size={18} color="#B37503" style={{ marginTop: 1 }} />
+        <Icon name={uploadedResult ? "done" : "diagnostic"} size={18} color="#B37503" style={{ marginTop: 1 }} />
         <span style={{ font: `500 13px/1.45 ${SANS}`, color: "#6B4E12" }}>
-          {recommendZero ? (
+          {uploadedResult ? (
             <>
-              New to {paper}? We'll <b style={{ fontWeight: 700, color: "#4E3A0D" }}>teach the foundations first</b>, then measure you once you've covered the basics. Pass Probability unlocks after your first completed mock.
+              Charles verified your {uploadedResult.resultKind === "mock" ? "mock" : "exam"} result and found <b style={{ fontWeight: 700, color: "#4E3A0D" }}>{uploadedResult.areas.length} usable syllabus areas</b>. Your plan will begin with the weakest evidence from that PDF.
             </>
           ) : (
             <>
-              Since you've studied {paper} before, let's <b style={{ fontWeight: 700, color: "#4E3A0D" }}>measure where you stand</b> — a 10-minute diagnostic so your plan targets exactly your weak spots.
+              No verified result was supplied, so the <b style={{ fontWeight: 700, color: "#4E3A0D" }}>diagnostic is compulsory</b>. It gives Charles the baseline needed to target your weak spots instead of guessing.
             </>
           )}
         </span>
       </div>
       {!isMobile && (
         <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
-          {recommendZero ? (
-            <>
-              <motion.button whileTap={{ scale: 0.98 }} onClick={onZero} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-                Start learning
-              </motion.button>
-              <button onClick={onDiagnostic} style={{ padding: "17px 28px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: MUTE, font: `700 15px/1 ${SANS}`, cursor: "pointer" }}>
-                I'd rather measure first
-              </button>
-            </>
-          ) : (
-            <motion.button whileTap={{ scale: 0.98 }} onClick={onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: "pointer", boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
-              Find my Exam Readiness Score
-            </motion.button>
-          )}
+          <motion.button whileTap={finishBusy ? undefined : { scale: 0.98 }} disabled={finishBusy} onClick={uploadedResult ? onUploaded : onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: finishBusy ? "wait" : "pointer", opacity: finishBusy ? .7 : 1, boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
+            {finishBusy ? "Building your plan…" : uploadedResult ? "Build my plan from this result" : "Continue to Learning"}
+          </motion.button>
+          {finishError && <p role="alert" style={{ margin: "10px 0 0", color: RED, font: `600 12px/1.4 ${SANS}` }}>{finishError}</p>}
         </div>
       )}
     </div>
@@ -976,8 +1499,25 @@ function VisualPanel({
     )
   }
 
-  /* 1 · the ACCA paper path */
-  if (step === 1) {
+  if (step === 1 || step === 2) {
+    const labels = step === 1 ? ["NEW", "LEARNING", "RETAKER"] : ["A1", "A2", "B1", "B2", "C1", "C2"]
+    return (
+      <IllusBase>
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 48 }}>
+          <div style={{ width: "min(84%,430px)", position: "relative" }}>
+            <div style={{ position: "absolute", top: "50%", left: 16, right: 16, height: 2, background: "linear-gradient(90deg,#E7CFC9,#EBD9A9)" }} />
+            <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {labels.map((label, index) => <motion.div key={label} initial={{ opacity: 0, scale: .7, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: index * .1, type: "spring" }} style={{ width: step === 1 ? 94 : 48, height: step === 1 ? 94 : 48, borderRadius: "50%", background: index === 0 ? RED : "#fff", color: index === 0 ? "#fff" : META, border: `1.5px solid ${index === 0 ? RED : BORDER}`, display: "grid", placeItems: "center", font: `800 ${step === 1 ? 11 : 12}px/1 ${MONO}`, boxShadow: "0 12px 28px -20px rgba(20,20,26,.5)" }}>{label}</motion.div>)}
+            </div>
+            <div style={{ marginTop: 38, textAlign: "center", color: MUTE, font: `600 12px/1.5 ${SANS}` }}>{step === 1 ? "Three starting points. One route to a pass." : "Charles adapts the language—not the exam standard."}</div>
+          </div>
+        </div>
+      </IllusBase>
+    )
+  }
+
+  /* 3 · the ACCA paper path */
+  if (step === 3) {
     const all = levels.flatMap((g) => g.papers.map((p) => p.id))
     return (
       <IllusBase>
@@ -1010,8 +1550,31 @@ function VisualPanel({
     )
   }
 
-  /* 2 · time photo + caption chip */
-  if (step === 2) {
+  /* 2 · learner-owned resource stack */
+  if (step === 4) {
+    return (
+      <IllusBase>
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 48 }}>
+          <div style={{ width: "min(84%, 390px)" }}>
+            {["YOUR BOOK", "CHARLES RECALL", "SCHOLIFY PRACTICE", "EXAM-READY"].map((label, index) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, y: 24, rotate: index % 2 ? 1.5 : -1.5 }}
+                animate={{ opacity: 1, y: 0, rotate: index % 2 ? 1.5 : -1.5 }}
+                transition={{ delay: index * 0.12, duration: 0.5 }}
+                style={{ marginTop: index ? -8 : 0, padding: "22px 24px", borderRadius: 18, background: index === 3 ? RED : "#fff", border: `1px solid ${index === 3 ? RED : BORDER}`, color: index === 3 ? "#fff" : INK, font: `800 13px/1 ${MONO}`, letterSpacing: "0.1em", boxShadow: "0 18px 40px -28px rgba(20,20,26,.45)" }}
+              >
+                {label}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </IllusBase>
+    )
+  }
+
+  /* 3 · time photo + caption chip */
+  if (step === 5) {
     return (
       <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/time-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1023,8 +1586,8 @@ function VisualPanel({
     )
   }
 
-  /* 3 · sitting calendar */
-  if (step === 3) {
+  /* 4 · sitting calendar */
+  if (step === 6) {
     const year = (sitting ?? sittings[0])?.label.split(" ")[1] ?? `${new Date().getFullYear()}`
     const monthsRow = ["Mar", "Jun", "Sep", "Dec"]
     const activeMonth = (sitting ?? sittings[0])?.label.slice(0, 3)
@@ -1059,8 +1622,8 @@ function VisualPanel({
     )
   }
 
-  /* 4 · goal photo */
-  if (step === 4) {
+  /* 5 · goal photo */
+  if (step === 7) {
     return (
       <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/goal-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1068,7 +1631,7 @@ function VisualPanel({
     )
   }
 
-  /* 5 · the loop — the REAL structure, six waypoints (matches the
+  /* 6 · the loop — the REAL structure, six waypoints (matches the
      hexagonal brand mark), positioned trigonometrically so the ring
      scales with the panel instead of clipping at hardcoded pixels. */
   const LOOP_STAGES: { label: string; sub: string; icon: IconName; gate?: boolean; win?: boolean }[] = [

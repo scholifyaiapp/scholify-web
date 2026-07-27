@@ -12,9 +12,14 @@
 
 const KEY = "scholify-acca-bankruns"
 
-export const BANK_RUN_SIZE = 50
+export const MIXED_BANK_SIZES = [10, 20, 30] as const
+export type MixedBankSize = (typeof MIXED_BANK_SIZES)[number]
+export const BANK_RUN_SIZE: MixedBankSize = 30
 export const BANK_RUN_SECONDS_PER_Q = 90 // 50q → 75 minutes
 export const BANK_RUNS_TARGET = 3
+export function bankRunTarget(paperId: string): number {
+  return ["PM", "TX", "FR", "AA", "FM"].includes(paperId) ? 5 : BANK_RUNS_TARGET
+}
 
 export interface BankRun {
   date: string // ISO
@@ -64,10 +69,12 @@ export function recordBankRun(paperId: string, correct: number, total: number): 
 
 /** Progress toward the three-run bridge: completed count + best score. */
 export function bankRunProgress(paperId: string): { done: number; target: number; best: number | null } {
-  const runs = getBankRuns(paperId)
+  // Ten- and twenty-question mixed sessions are useful practice; only the
+  // full 30-question form counts toward the three-run mock-readiness bridge.
+  const runs = getBankRuns(paperId).filter((run) => run.total >= BANK_RUN_SIZE)
   return {
     done: runs.length,
-    target: BANK_RUNS_TARGET,
+    target: bankRunTarget(paperId),
     best: runs.length ? Math.max(...runs.map((r) => r.percent)) : null,
   }
 }

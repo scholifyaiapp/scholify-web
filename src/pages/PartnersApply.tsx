@@ -183,6 +183,8 @@ export default function PartnersApply() {
       setError(
         res.reason === "not_configured"
           ? "Applications open soon — check back shortly."
+          : res.reason === "already_applied"
+            ? "An application already exists for this email. Sign in to view its status."
           : "Couldn't submit — please try again.",
       )
   }

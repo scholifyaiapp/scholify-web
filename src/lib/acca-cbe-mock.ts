@@ -80,6 +80,22 @@ function paperSeed(paperId: string): number {
   return h
 }
 
+/** Find a deterministic subset whose marks equal the section exactly. */
+function exactWrittenTasks(pool: WrittenQuestion[], target: number): WrittenQuestion[] | null {
+  const sums = new Map<number, WrittenQuestion[]>([[0, []]])
+  for (const task of pool) {
+    const snapshot = [...sums.entries()].sort((a, b) => b[0] - a[0])
+    for (const [sum, picked] of snapshot) {
+      const next = sum + task.maxMarks
+      if (next > target || sums.has(next)) continue
+      const selection = [...picked, task]
+      if (next === target) return selection
+      sums.set(next, selection)
+    }
+  }
+  return null
+}
+
 /** Draw standalone OTs from the pool until `marks` is filled (or pool dry). */
 export function drawOts(pool: AccaQuestion[], marks: number): AccaQuestion[] {
   const out: AccaQuestion[] = []
@@ -173,13 +189,41 @@ export function buildCbeMock(paperId: string, form: number): CbeMock {
       // written bank — a small overshoot beats a 20-mark hole.
       const tasks: WrittenQuestion[] = []
       let sum = 0
-      for (const w of written) {
-        if (tasks.length && sum >= s.marks - 4) break
-        if (sum + w.maxMarks > s.marks + 5) continue
-        if (tasks.some((t) => t.id === w.id)) continue
-        tasks.push(w)
-        sum += w.maxMarks
-        if (sum >= s.marks) break
+      if (paperId === "SBR" || paperId === "AFM" || paperId === "APM" || paperId === "ATX" || paperId === "AAA") {
+        const requiredMarks =
+          paperId === "SBR"
+            ? s.id === "A" ? [30, 20] : [25, 25]
+            : s.id === "A" ? [50] : [25, 25]
+        const occurrence = new Map<number, number>()
+        for (const marks of requiredMarks) {
+          const ordinal = occurrence.get(marks) ?? 0
+          occurrence.set(marks, ordinal + 1)
+          const candidates = getWrittenQuestions(paperId)
+            .filter((item) => item.maxMarks === marks)
+            .sort((a, b) => a.id.localeCompare(b.id))
+          const formIndex = Math.max(1, form) - 1
+          const selectedIndex = marks === 25 ? formIndex * 2 + ordinal : formIndex
+          const selected = candidates[selectedIndex % Math.max(1, candidates.length)]
+          if (selected) {
+            tasks.push(selected)
+            sum += selected.maxMarks
+          }
+        }
+      } else {
+        const exact = exactWrittenTasks(written, s.marks)
+        if (exact) {
+          tasks.push(...exact)
+          sum = s.marks
+        } else {
+          for (const w of written) {
+            if (tasks.length && sum >= s.marks - 4) break
+            if (sum + w.maxMarks > s.marks + 5) continue
+            if (tasks.some((t) => t.id === w.id)) continue
+            tasks.push(w)
+            sum += w.maxMarks
+            if (sum >= s.marks) break
+          }
+        }
       }
       // Remove picked tasks from the shared list so a second constructed
       // section (SBR/AFM/… have two) never repeats a task.

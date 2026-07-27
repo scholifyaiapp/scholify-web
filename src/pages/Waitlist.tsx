@@ -6,6 +6,7 @@ import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import PaymentMethods from "@/components/PaymentMethods"
 import PartnerLogos from "@/components/ui/partner-logos"
+import FeedbackForm from "@/components/FeedbackForm"
 import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, PARTNER_PROGRAM_VISIBLE } from "@/lib/launch"
 
 const RED = "#C80000"
@@ -21,6 +22,22 @@ function remaining() {
     hours: Math.floor((distance / 3_600_000) % 24),
     minutes: Math.floor((distance / 60_000) % 60),
   }
+}
+
+function useLightweightMotion() {
+  const prefersReduced = useReducedMotion()
+  const [compactDevice, setCompactDevice] = useState(() =>
+    window.matchMedia("(max-width: 820px), (pointer: coarse)").matches,
+  )
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 820px), (pointer: coarse)")
+    const update = () => setCompactDevice(query.matches)
+    query.addEventListener("change", update)
+    return () => query.removeEventListener("change", update)
+  }, [])
+
+  return Boolean(prefersReduced || compactDevice)
 }
 
 function LaunchPrice({
@@ -57,7 +74,7 @@ function LaunchPrice({
         border: "1px solid rgba(255,255,255,.22)",
         boxShadow: `0 24px 50px ${accent}28, inset 0 1px 0 rgba(255,255,255,.3)`,
         transformStyle: "preserve-3d",
-        willChange: "transform",
+        willChange: reduced ? "auto" : "transform",
       }}
     >
       <span aria-hidden style={{ position: "absolute", width: 130, height: 130, right: -42, top: -58, borderRadius: "50%", background: "rgba(255,255,255,.16)", filter: "blur(2px)" }} />
@@ -72,7 +89,7 @@ function LaunchPrice({
 }
 
 export default function Waitlist() {
-  const reduced = useReducedMotion()
+  const reduced = useLightweightMotion()
   const startedAt = useMemo(() => Date.now(), [])
   const [clock, setClock] = useState(remaining)
   const [name, setName] = useState("")
@@ -193,7 +210,7 @@ export default function Waitlist() {
 
         <motion.div {...reveal} transition={{ duration: .65, delay: .12 }} style={{ position: "relative" }}>
           <div style={{ position: "absolute", right: -8, top: -82, zIndex: 2 }}><CharlesMascot pose="wave" size={128} /></div>
-          <div style={{ background: "rgba(255,255,255,.92)", border: "1px solid rgba(20,20,26,.09)", borderRadius: 26, padding: "clamp(24px,4vw,34px)", boxShadow: "0 28px 80px rgba(51,43,40,.13)", backdropFilter: "blur(18px)" }}>
+          <div style={{ background: "rgba(255,255,255,.92)", border: "1px solid rgba(20,20,26,.09)", borderRadius: 26, padding: "clamp(24px,4vw,34px)", boxShadow: "0 28px 80px rgba(51,43,40,.13)", backdropFilter: reduced ? "none" : "blur(18px)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, color: RED, fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase" }}><CalendarDays size={16} /> Launching {LAUNCH_DATE_LABEL}</div>
             <h2 style={{ fontSize: 28, letterSpacing: "-.035em", margin: "14px 0 7px" }}>Join the starting grid.</h2>
             <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.6, margin: "0 0 22px" }}>Be first to know when Scholify opens. We’re keeping the app private until the complete experience is ready.</p>
@@ -293,7 +310,7 @@ export default function Waitlist() {
                 viewport={{ once: true, amount: .25 }}
                 whileHover={reduced ? undefined : { y: -8, scale: 1.015 }}
                 transition={{ duration: .55, delay: reduced ? 0 : index * .09, ease: [0.16, 1, 0.3, 1] }}
-                style={{ background: "rgba(255,255,255,.9)", border: "1px solid rgba(20,20,26,.08)", borderRadius: 20, padding: 22, position: "relative", overflow: "hidden", boxShadow: "0 14px 38px rgba(20,20,26,.06)", backdropFilter: "blur(14px)" }}
+                style={{ background: "rgba(255,255,255,.9)", border: "1px solid rgba(20,20,26,.08)", borderRadius: 20, padding: 22, position: "relative", overflow: "hidden", boxShadow: "0 14px 38px rgba(20,20,26,.06)", backdropFilter: reduced ? "none" : "blur(14px)" }}
               >
                 <motion.div
                   aria-hidden
@@ -345,7 +362,7 @@ export default function Waitlist() {
             borderRadius: 24,
             padding: "clamp(28px,5vw,48px)",
             boxShadow: "0 22px 64px rgba(20,20,26,.07)",
-            backdropFilter: "blur(16px)",
+            backdropFilter: reduced ? "none" : "blur(16px)",
           }}
         >
           <div style={{ textAlign: "center", maxWidth: 650, margin: "0 auto 28px" }}>
@@ -393,6 +410,23 @@ export default function Waitlist() {
         </motion.div>
       </section>
 
+      <section id="feedback" style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 clamp(20px,4vw,40px) 78px" }}>
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 24 }}
+          whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: .25 }}
+          style={{ display: "grid", gridTemplateColumns: "minmax(0,.9fr) minmax(360px,1.1fr)", gap: "clamp(28px,6vw,72px)", alignItems: "center", background: "linear-gradient(145deg,rgba(255,255,255,.94),rgba(250,247,247,.82))", border: "1px solid rgba(20,20,26,.08)", borderRadius: 26, padding: "clamp(28px,5vw,50px)", boxShadow: "0 22px 64px rgba(20,20,26,.07)" }}
+          className="waitlist-feedback"
+        >
+          <div>
+            <div style={{ color: RED, fontSize: 10, fontWeight: 850, letterSpacing: ".16em", textTransform: "uppercase" }}>Build Scholify with us</div>
+            <h2 style={{ fontSize: "clamp(28px,4vw,42px)", lineHeight: 1.03, letterSpacing: "-.045em", margin: "12px 0 14px" }}>Your feedback becomes our roadmap signal.</h2>
+            <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.7, margin: 0 }}>Tell us what would make studying easier, what feels broken, or what you already love. Every message reaches the founder and is reviewed for future Scholify improvements.</p>
+          </div>
+          <FeedbackForm source="landing" />
+        </motion.div>
+      </section>
+
       <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(20,20,26,.08)", padding: "23px clamp(20px,4vw,40px)", maxWidth: 1120, margin: "0 auto", display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap", color: MUTED, fontSize: 12 }}>
         <span>© 2026 Scholify · Learn Daily, Grow Steadily</span>
         <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -421,6 +455,7 @@ export default function Waitlist() {
 
       <style>{`
         @media (max-width: 800px) {
+          .waitlist-feedback { grid-template-columns: 1fr !important; }
           .waitlist-hero { grid-template-columns: 1fr !important; padding-top: 24px !important; }
           .waitlist-countdown { grid-template-columns: 1fr !important; }
           .waitlist-features { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }

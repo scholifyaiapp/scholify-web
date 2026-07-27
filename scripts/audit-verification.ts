@@ -1,90 +1,68 @@
-import {
-  BT_VERIFICATION,
-  MA_VERIFICATION,
-  FA_VERIFICATION,
-  LW_VERIFICATION,
-  PM_VERIFICATION,
-  TX_VERIFICATION,
-  FR_VERIFICATION,
-  AA_VERIFICATION,
-  FM_VERIFICATION,
-  SBL_VERIFICATION,
-  SBR_VERIFICATION,
-  AFM_VERIFICATION,
-  APM_VERIFICATION,
-  ATX_VERIFICATION,
-  AAA_VERIFICATION,
-  isVerified,
-  type AreaVerificationRecord,
-} from "@/lib/acca-content-verification"
+/*
+ * Runtime integrity audit. Unlike the old registry-only audit, this verifies
+ * the exact content objects and mock forms shipped to learners.
+ */
+import { ALL_PAPERS } from "@/lib/acca-qualification"
+import { loadPaperContent } from "@/lib/acca-paper-content"
+import { paperContent } from "@/lib/acca-content-registry"
+import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
-const EXPECTED_BT_AREAS = ["A", "B", "C", "D", "E", "F"]
 const problems: string[] = []
 
-function auditPaper(records: AreaVerificationRecord[], expectedAreas: string[]): void {
-  const paper = records[0]?.paper ?? "unknown"
-  const actualAreas = records.map((record) => record.area)
+for (const paper of ALL_PAPERS) {
+  await loadPaperContent(paper.id)
+  const content = paperContent(paper.id)
+  const areas = new Set(paper.areas.map((area) => area.code))
+  const ids = new Set<string>()
 
-  if (new Set(actualAreas).size !== actualAreas.length) {
-    problems.push(`${paper}: duplicate verification area record`)
+  for (const question of content.questions) {
+    if (ids.has(question.id)) problems.push(`${paper.id}: duplicate question id ${question.id}`)
+    ids.add(question.id)
+    if (!question.stem.trim()) problems.push(`${paper.id}: ${question.id} has an empty stem`)
+    if (!question.explanation.trim()) problems.push(`${paper.id}: ${question.id} has no explanation`)
+    if (!areas.has(question.area)) problems.push(`${paper.id}: ${question.id} uses unknown Area ${question.area}`)
+    if (question.paper !== paper.id) problems.push(`${paper.id}: ${question.id} is tagged ${question.paper}`)
+    if (question.marks <= 0) problems.push(`${paper.id}: ${question.id} has invalid marks`)
+    if (question.type === "mcq") {
+      if (!question.options || question.options.length < 2) problems.push(`${paper.id}: ${question.id} has insufficient options`)
+      if (typeof question.correct !== "number" || question.correct < 0 || question.correct >= (question.options?.length ?? 0))
+        problems.push(`${paper.id}: ${question.id} has an invalid correct option`)
+    }
+    if (question.type === "multi") {
+      if (!Array.isArray(question.correct) || !question.correct.length) problems.push(`${paper.id}: ${question.id} has no correct selections`)
+      if ((question.correct as number[] | undefined)?.some((answer) => answer < 0 || answer >= (question.options?.length ?? 0)))
+        problems.push(`${paper.id}: ${question.id} has an invalid correct selection`)
+    }
+    if (question.type === "number" && !Number.isFinite(question.numericAnswer))
+      problems.push(`${paper.id}: ${question.id} has an invalid numeric answer`)
   }
 
-  for (const area of expectedAreas) {
-    if (!records.some((record) => record.area === area)) {
-      problems.push(`${paper}: missing official Area ${area} verification record`)
+  for (const card of content.flashcards) {
+    if (!card.front.trim() || !card.back.trim()) problems.push(`${paper.id}: flashcard ${card.id} has an empty side`)
+    if (!areas.has(card.area)) problems.push(`${paper.id}: flashcard ${card.id} uses unknown Area ${card.area}`)
+  }
+
+  if (!paper.objectiveOnly) {
+    const writtenIds = new Set<string>()
+    for (const task of content.written) {
+      if (writtenIds.has(task.id)) problems.push(`${paper.id}: duplicate written id ${task.id}`)
+      writtenIds.add(task.id)
+      if (!task.stem.trim() || !task.rubric.length || task.maxMarks <= 0)
+        problems.push(`${paper.id}: written task ${task.id} is incomplete`)
     }
   }
 
-  for (const record of records) {
-    const id = `${record.paper}-${record.area}`
-    if (!record.topicGroups.length) problems.push(`${id}: no official topic groups mapped`)
-    if (!record.sources.some((source) => source.role === "syllabus")) {
-      problems.push(`${id}: no official syllabus source`)
-    }
-    if (record.stage === "verified" && !isVerified(record)) {
-      problems.push(`${id}: claims verified without satisfying every verification gate`)
-    }
+  for (const form of [1, 2, 3]) {
+    const mock = buildCbeMock(paper.id, form)
+    if (mock.totalMarks !== 100) problems.push(`${paper.id}: mock form ${form} totals ${mock.totalMarks} (${mock.sections.map((section) => `${section.id}:${section.marks}`).join(", ")}), expected 100`)
+    if (mock.seconds <= 0 || !mock.sections.length) problems.push(`${paper.id}: mock form ${form} is not runnable`)
   }
 }
 
-auditPaper(BT_VERIFICATION, EXPECTED_BT_AREAS)
-auditPaper(MA_VERIFICATION, ["A", "B", "C", "D", "E", "F"])
-auditPaper(FA_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G", "H", "I"])
-auditPaper(LW_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G", "H"])
-auditPaper(PM_VERIFICATION, ["A", "B", "C", "D", "E", "F"])
-auditPaper(TX_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G"])
-auditPaper(FR_VERIFICATION, ["A", "B", "C", "D", "E"])
-auditPaper(AA_VERIFICATION, ["A", "B", "C", "D", "E", "F"])
-auditPaper(FM_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G", "H"])
-auditPaper(SBL_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
-auditPaper(SBR_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G"])
-auditPaper(AFM_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G"])
-auditPaper(APM_VERIFICATION, ["A", "B", "C", "D", "E"])
-auditPaper(ATX_VERIFICATION, ["A", "B", "C", "D", "E"])
-auditPaper(AAA_VERIFICATION, ["A", "B", "C", "D", "E", "F", "G", "H", "I"])
-
-const sourceChecked = BT_VERIFICATION.filter((record) => record.stage !== "draft").length
-const verified = BT_VERIFICATION.filter(isVerified).length
-console.log(`BT verification: ${sourceChecked}/${BT_VERIFICATION.length} area(s) source-checked; ${verified} independently verified.`)
-console.log(`MA verification: ${MA_VERIFICATION.filter((record) => record.stage !== "draft").length}/${MA_VERIFICATION.length} area(s) source-checked; ${MA_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`FA verification: ${FA_VERIFICATION.filter((record) => record.stage !== "draft").length}/${FA_VERIFICATION.length} area(s) source-checked; ${FA_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`LW-ENG verification: ${LW_VERIFICATION.filter((record) => record.stage !== "draft").length}/${LW_VERIFICATION.length} area(s) source-checked; ${LW_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`PM verification: ${PM_VERIFICATION.filter((record) => record.stage !== "draft").length}/${PM_VERIFICATION.length} area(s) source-checked; ${PM_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`TX-UK verification: ${TX_VERIFICATION.filter((record) => record.stage !== "draft").length}/${TX_VERIFICATION.length} area(s) source-checked; ${TX_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`FR verification: ${FR_VERIFICATION.filter((record) => record.stage !== "draft").length}/${FR_VERIFICATION.length} area(s) source-checked; ${FR_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`AA verification: ${AA_VERIFICATION.filter((record) => record.stage !== "draft").length}/${AA_VERIFICATION.length} area(s) source-checked; ${AA_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`FM verification: ${FM_VERIFICATION.filter((record) => record.stage !== "draft").length}/${FM_VERIFICATION.length} area(s) source-checked; ${FM_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`SBL verification: ${SBL_VERIFICATION.filter((record) => record.stage !== "draft").length}/${SBL_VERIFICATION.length} area(s) source-checked; ${SBL_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`SBR-INT verification: ${SBR_VERIFICATION.filter((record) => record.stage !== "draft").length}/${SBR_VERIFICATION.length} area(s) source-checked; ${SBR_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`AFM verification: ${AFM_VERIFICATION.filter((record) => record.stage !== "draft").length}/${AFM_VERIFICATION.length} area(s) source-checked; ${AFM_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`APM verification: ${APM_VERIFICATION.filter((record) => record.stage !== "draft").length}/${APM_VERIFICATION.length} area(s) source-checked; ${APM_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`ATX-UK verification: ${ATX_VERIFICATION.filter((record) => record.stage !== "draft").length}/${ATX_VERIFICATION.length} area(s) source-checked; ${ATX_VERIFICATION.filter(isVerified).length} independently verified.`)
-console.log(`AAA-INT verification: ${AAA_VERIFICATION.filter((record) => record.stage !== "draft").length}/${AAA_VERIFICATION.length} area(s) source-checked; ${AAA_VERIFICATION.filter(isVerified).length} independently verified.`)
-
 if (problems.length) {
-  console.error(`\n${problems.length} VERIFICATION PROBLEM(S):`)
+  console.error(`${problems.length} runtime verification problem(s):`)
   for (const problem of problems) console.error(`  - ${problem}`)
   process.exit(1)
 }
 
-console.log("Verification registry is internally consistent.")
+console.log(`Runtime verification passed: ${ALL_PAPERS.length} papers, valid banks/cards/written tasks, and 45 exact 100-mark mocks.`)

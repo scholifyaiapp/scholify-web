@@ -114,6 +114,6 @@ describe("official exam blueprints", () => {
   it("prices question time at the official minutes-per-mark", () => {
     expect(examSecondsFor("FR", 20)).toBe(36 * 60) // 1.8 min/mark at Applied Skills
     expect(examSecondsFor("AAA", 25)).toBe(Math.round((1.95 * 25 * 60) / 30) * 30)
-    expect(examSecondsFor("SBL", 100)).toBe(240 * 60)
+    expect(examSecondsFor("SBL", 100)).toBe(195 * 60)
   })
 })

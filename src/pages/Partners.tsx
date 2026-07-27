@@ -135,6 +135,7 @@ export default function Partners() {
             {/* Stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
               <Stat label="Clicks" value={String(aff.clicks ?? 0)} />
+              <Stat label="Invited users" value={String(data.totals.invitedUsers)} />
               <Stat label="Sales" value={formatMoney(data.totals.sales)} />
               <Stat label="Pending" value={formatMoney(data.totals.pending)} />
               <Stat label="Approved" value={formatMoney(data.totals.approved + data.totals.paid)} />

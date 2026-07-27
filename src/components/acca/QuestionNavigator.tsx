@@ -116,6 +116,7 @@ export function QuestionNavBar({
   onToggleFlag,
   onFinish,
   finishLabel = "Finish",
+  finishDisabled = false,
 }: {
   cursor: number
   total: number
@@ -127,6 +128,7 @@ export function QuestionNavBar({
   onToggleFlag: () => void
   onFinish: () => void
   finishLabel?: string
+  finishDisabled?: boolean
 }) {
   const [mapOpen, setMapOpen] = useState(false)
   const atFirst = cursor <= 0
@@ -153,8 +155,9 @@ export function QuestionNavBar({
         <button style={btn(!atLast)} disabled={atLast} onClick={() => !atLast && onGo(cursor + 1)}>Next →</button>
       </div>
       <button
-        onClick={onFinish}
-        style={{ width: "100%", marginTop: 10, padding: 15, borderRadius: 14, border: "none", background: C.brand, color: "#fff", fontWeight: 750, fontSize: 15, cursor: "pointer" }}
+        onClick={() => onFinish()}
+        disabled={finishDisabled}
+        style={{ width: "100%", marginTop: 10, padding: 15, borderRadius: 14, border: "none", background: C.brand, color: "#fff", fontWeight: 750, fontSize: 15, cursor: finishDisabled ? "not-allowed" : "pointer", opacity: finishDisabled ? 0.45 : 1 }}
       >
         {finishLabel}
       </button>

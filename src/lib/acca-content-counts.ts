@@ -12,21 +12,21 @@
  * cannot drift out of sync with the content.
  */
 export const QUESTION_COUNTS: Record<string, number> = {
-  BT: 150,
-  MA: 162,
-  FA: 150,
-  LW: 150,
-  PM: 174,
-  TX: 219,
-  FR: 228,
-  AA: 153,
-  FM: 156,
-  SBL: 165,
-  SBR: 159,
-  AFM: 156,
-  APM: 159,
-  ATX: 151,
-  AAA: 162,
+  BT: 350,
+  MA: 350,
+  FA: 350,
+  LW: 350,
+  PM: 350,
+  TX: 350,
+  FR: 350,
+  AA: 350,
+  FM: 350,
+  SBL: 350,
+  SBR: 350,
+  AFM: 350,
+  APM: 350,
+  ATX: 350,
+  AAA: 350,
 }
 
 /** Bank size for a paper — 0 for a paper with no curated bank. */

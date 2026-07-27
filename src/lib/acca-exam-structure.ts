@@ -13,8 +13,8 @@
  *   · AA                     — 3h, Section A (3 OT cases) + Section B (100%
  *                              constructed — there is NO Section C in AA).
  *   · SBR / AFM / APM / ATX / AAA — 3h15, fully constructed response.
- *   · SBL                    — 4h, one case, fully constructed, 20 of the 100
- *                              marks are professional skills.
+ *   · SBL                    — 3h15, one integrated case with three compulsory
+ *                              tasks; 20 of the 100 marks are professional skills.
  *
  * Where an exam provides reference material (MA/PM/FM formulae sheets and
  * tables, TX/ATX tax rates and allowances), `providedInExam` says exactly
@@ -157,18 +157,18 @@ export const EXAM_BLUEPRINTS: Record<string, ExamBlueprint> = {
     paper: "SBR",
     durationMin: 195,
     sections: [
-      con("A", "2 questions (30 + 20 marks) — groups and ethics are compulsory ground", 50),
-      con("B", "2 questions × 25 marks (scenario and current issues)", 50),
+      con("A", "2 compulsory questions (30 + 20 marks); Q1 includes a pre-formatted spreadsheet and Q2 includes ethics", 50),
+      con("B", "2 compulsory questions × 25 marks; Q4 includes investor-focused professional skills", 50),
     ],
     providedInExam: null,
     cbeTools: ["word", "spreadsheet"],
-    tutorNote: "Marks follow explained IFRS reasoning — a conclusion without the 'because' scores almost nothing.",
+    tutorNote: "Four professional-skills marks are embedded across Q2 and Q4; conclusions need applied IFRS reasoning and stakeholder impact.",
   },
   SBL: {
     paper: "SBL",
-    durationMin: 240,
-    sections: [con("A", "One integrated case — all tasks compulsory (80 technical + 20 professional skills marks)", 100)],
-    providedInExam: null,
+    durationMin: 195,
+    sections: [con("A", "One integrated case — 3 compulsory tasks (80 technical + 20 professional skills marks)", 100)],
+    providedInExam: "Pre-seen material is released two weeks before the exam; new exhibits are provided in the exam",
     cbeTools: ["word", "spreadsheet"],
     tutorNote: "20 marks are professional skills — answer in role, in format (report, briefing, slides), or you cap your own score.",
   },
@@ -176,45 +176,45 @@ export const EXAM_BLUEPRINTS: Record<string, ExamBlueprint> = {
     paper: "AFM",
     durationMin: 195,
     sections: [
-      con("A", "1 compulsory question × 50 marks", 50),
-      con("B", "2 questions × 25 marks", 50),
+      con("A", "1 compulsory scenario × 50 marks (40 technical + 10 professional skills)", 50),
+      con("B", "2 compulsory scenarios × 25 marks (20 technical + 5 professional skills each)", 50),
     ],
     providedInExam: "Formulae sheet + tables (BSOP, parity, PV/annuity) — provided on screen",
     cbeTools: ["word", "spreadsheet"],
-    tutorNote: "Q1's 50 marks usually hinge on an NPV/APV or hedging model — build it in the spreadsheet, then advise on it.",
+    tutorNote: "All questions are compulsory. Q1 integrates syllabus areas; earn its 10 professional-skills marks through the technical advice. Each Section B scenario includes 5 professional-skills marks.",
   },
   APM: {
     paper: "APM",
     durationMin: 195,
     sections: [
-      con("A", "1 compulsory question × 50 marks", 50),
-      con("B", "2 questions × 25 marks", 50),
+      con("A", "1 compulsory case study × 50 marks (40 technical + 10 professional skills)", 50),
+      con("B", "2 compulsory scenarios × 25 marks (20 technical + 5 professional skills each)", 50),
     ],
     providedInExam: null,
     cbeTools: ["word", "spreadsheet"],
-    tutorNote: "APM gives you NO formulae sheet — and rewards evaluation of numbers already given far more than recalculating them.",
+    tutorNote: "APM gives you no formulae sheet. Section A integrates performance issues and all four professional skills; each Section B scenario tests at least two of analysis and evaluation, scepticism and commercial acumen.",
   },
   ATX: {
     paper: "ATX",
     durationMin: 195,
     sections: [
-      con("A", "2 compulsory questions (35 + 25 marks)", 60),
-      con("B", "2 compulsory questions × 20 marks", 40),
+      con("A", "1 compulsory question × 50 marks (40 technical, including 5 ethics, + 10 professional skills)", 50),
+      con("B", "2 compulsory questions × 25 marks (20 technical + 5 professional skills each)", 50),
     ],
-    providedInExam: "Tax rates and allowances — provided on screen (Scholify content states rates in the question, FA2024 basis)",
+    providedInExam: "Tax rates and allowances — provided on screen (Scholify content uses the Finance Act 2025 basis)",
     cbeTools: ["word", "spreadsheet"],
-    tutorNote: "ATX marks advice, not arithmetic — lead with the planning point, support it with the computation.",
+    tutorNote: "All three questions are compulsory. Section A always includes a five-mark ethics requirement and all four professional skills; lead with practical client advice and support it with precise computations.",
   },
   AAA: {
     paper: "AAA",
     durationMin: 195,
     sections: [
-      con("A", "1 compulsory case × 50 marks", 50),
-      con("B", "2 questions × 25 marks", 50),
+      con("A", "1 compulsory planning-stage case × 50 marks (40 technical + 10 professional skills)", 50),
+      con("B", "2 compulsory scenarios × 25 marks (20 technical + 5 professional skills each)", 50),
     ],
     providedInExam: null,
     cbeTools: ["word"],
-    tutorNote: "Risks and procedures must be SPECIFIC to the scenario — generic lists score zero at this level.",
+    tutorNote: "Section A always examines audit planning and risk assessment. One Section B scenario always covers completion and reporting; risks, evidence and procedures must be specific to the exhibits.",
   },
 }
 

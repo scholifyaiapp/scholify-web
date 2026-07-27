@@ -12,6 +12,36 @@ import type { OtCase } from "@/lib/acca-content"
 
 export const CASES_FA: OtCase[] = [
   {
+    id: "case-fa-interp-larch",
+    paper: "FA",
+    area: "H",
+    title: "Larch Co — performance and working capital",
+    scenario:
+      "Larch Co reports revenue of $1,200,000, cost of sales of $780,000 and operating profit of $126,000. Closing inventory is $130,000, trade receivables are $150,000 and trade payables are $90,000. All sales and purchases are on credit. Purchases for the year were $720,000. Comparable prior-year figures were: gross margin 32%, operating margin 12%, inventory days 55 and receivables days 38.",
+    questions: [
+      { id: "fa-case-larch-1", paper: "FA", area: "H", type: "number", stem: "What is Larch Co's gross profit margin?", numericAnswer: 35, unit: "%", tolerance: 0.1, explanation: "Gross profit is $1,200,000 − $780,000 = $420,000. Gross margin is $420,000 ÷ $1,200,000 × 100 = 35%.", marks: 3, difficulty: "easy" },
+      { id: "fa-case-larch-2", paper: "FA", area: "H", type: "number", stem: "What is Larch Co's operating profit margin?", numericAnswer: 10.5, unit: "%", tolerance: 0.1, explanation: "Operating margin is $126,000 ÷ $1,200,000 × 100 = 10.5%.", marks: 3, difficulty: "easy" },
+      { id: "fa-case-larch-3", paper: "FA", area: "H", type: "number", stem: "What are closing inventory holding days, using cost of sales?", numericAnswer: 60.8, unit: "days", tolerance: 0.2, explanation: "Inventory days are $130,000 ÷ $780,000 × 365 = 60.8 days.", marks: 3, difficulty: "medium" },
+      { id: "fa-case-larch-4", paper: "FA", area: "H", type: "number", stem: "What are trade receivables collection days?", numericAnswer: 45.6, unit: "days", tolerance: 0.2, explanation: "Receivables days are $150,000 ÷ $1,200,000 × 365 = 45.6 days.", marks: 3, difficulty: "medium" },
+      { id: "fa-case-larch-5", paper: "FA", area: "H", type: "mcq", stem: "Which interpretation best reflects the comparison with the prior year?", options: ["Gross margin improved, but operating margin and working-capital efficiency deteriorated", "Every performance measure improved", "Gross margin fell and receivables collection improved", "Operating margin improved despite slower inventory"], correct: 0, explanation: "Gross margin rose from 32% to 35%, but operating margin fell from 12% to 10.5%; inventory and receivables days both increased, indicating slower working-capital cycles.", marks: 3, difficulty: "hard" },
+    ],
+  },
+  {
+    id: "case-fa-consol-oak",
+    paper: "FA",
+    area: "G",
+    title: "Oak Co & Acorn Co — consolidation adjustments",
+    scenario:
+      "Oak Co acquired 80% of Acorn Co for $480,000. At acquisition, Acorn Co had share capital of $200,000 and retained earnings of $100,000. Non-controlling interest is measured at its proportionate share of net assets. At the reporting date Acorn Co's retained earnings were $160,000 and Oak Co's retained earnings were $700,000. Oak Co sold goods to Acorn Co for $50,000 at a profit of $10,000; 40% remained in inventory. Acorn Co also owed Oak Co $20,000.",
+    questions: [
+      { id: "fa-case-oak-1", paper: "FA", area: "G", type: "number", stem: "What goodwill arose on Oak Co's acquisition of Acorn Co?", numericAnswer: 240000, unit: "$", tolerance: 0, explanation: "Acquisition net assets are $200,000 + $100,000 = $300,000. Oak's 80% share is $240,000. Goodwill is $480,000 − $240,000 = $240,000.", marks: 3, difficulty: "medium" },
+      { id: "fa-case-oak-2", paper: "FA", area: "G", type: "number", stem: "What unrealised profit must be removed from closing inventory?", numericAnswer: 4000, unit: "$", tolerance: 0, explanation: "Profit on the transfer was $10,000 and 40% remains inside the group, so unrealised profit is $10,000 × 40% = $4,000.", marks: 3, difficulty: "medium" },
+      { id: "fa-case-oak-3", paper: "FA", area: "G", type: "number", stem: "What is non-controlling interest at the reporting date?", numericAnswer: 72000, unit: "$", tolerance: 0, explanation: "Acorn's closing net assets are $200,000 + $160,000 = $360,000. The 20% NCI is $72,000. Oak was the seller, so the unrealised profit does not reduce NCI.", marks: 3, difficulty: "hard" },
+      { id: "fa-case-oak-4", paper: "FA", area: "G", type: "number", stem: "What are consolidated retained earnings?", numericAnswer: 744000, unit: "$", tolerance: 0, explanation: "Oak $700,000 + 80% of Acorn's post-acquisition increase ($160,000 − $100,000) of $48,000 − unrealised profit $4,000 = $744,000.", marks: 3, difficulty: "hard" },
+      { id: "fa-case-oak-5", paper: "FA", area: "G", type: "mcq", stem: "How should Acorn Co's $20,000 balance payable to Oak Co be treated on consolidation?", options: ["Eliminate $20,000 from group receivables and payables", "Eliminate only 80%", "Keep both balances", "Remove it only from payables"], correct: 0, explanation: "The intra-group receivable and payable represent the same internal balance and are eliminated in full.", marks: 3, difficulty: "easy" },
+    ],
+  },
+  {
     id: "case-fa-consol-pine",
     paper: "FA",
     area: "G",

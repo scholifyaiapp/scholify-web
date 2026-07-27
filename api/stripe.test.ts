@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { priceForPlan, planForPrice } from "./stripe"
+import { commissionAmount, priceForPlan, planForPrice } from "./stripe.js"
 
 /*
  * Stripe plan ↔ price mapping. Every bug here either charges for the wrong plan
@@ -48,5 +48,20 @@ describe("planForPrice (webhook: price → plan)", () => {
     for (const bad of ["price_unknown", "", undefined]) {
       expect(planForPrice(bad as string | undefined)).toBeNull()
     }
+  })
+})
+
+describe("partner commission calculation", () => {
+  it("calculates the fixed 27% rate in integer cents", () => {
+    expect(commissionAmount(999)).toBe(270)
+    expect(commissionAmount(1499)).toBe(405)
+    expect(commissionAmount(11_999)).toBe(3240)
+  })
+
+  it("rejects invalid money inputs rather than creating a bad commission", () => {
+    expect(commissionAmount(0)).toBe(0)
+    expect(commissionAmount(-100)).toBe(0)
+    expect(commissionAmount(10.5)).toBe(0)
+    expect(commissionAmount(Number.NaN)).toBe(0)
   })
 })

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { getQuestions } from "@/lib/acca"
 import { chaptersForPaper } from "@/lib/acca-study-content"
 import { getWrittenQuestions } from "@/lib/acca-written"
+import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
 describe("SBR-INT September 2026–June 2027 official structure", () => {
   const areas = ["A", "B", "C", "D", "E", "F", "G"]
@@ -21,5 +22,22 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
     const performance = JSON.stringify(chaptersForPaper("SBR").find((item) => item.area === "C")).toLowerCase()
     expect(performance).toContain("financial instrument")
     expect(performance).toContain("employee benefit")
+  })
+  it("builds three exact, distinct 100-mark mock forms", () => {
+    const ids = new Set<string>()
+    for (const form of [1, 2, 3]) {
+      const mock = buildCbeMock("SBR", form)
+      expect(mock.totalMarks).toBe(100)
+      expect(mock.sections.map((section) => section.marks)).toEqual([50, 50])
+      const tasks = mock.sections
+        .flatMap((section) => section.items)
+        .filter((item) => item.kind === "task")
+        .map((item) => item.task)
+      expect(tasks.map((task) => task.maxMarks)).toEqual([30, 20, 25, 25])
+      for (const task of tasks) {
+        expect(ids.has(task.id), `${task.id} repeated across forms`).toBe(false)
+        ids.add(task.id)
+      }
+    }
   })
 })

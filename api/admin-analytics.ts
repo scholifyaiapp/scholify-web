@@ -78,12 +78,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   try {
-    const [authUsers, profiles, waitlist, partners, commissions] = await Promise.all([
+    const [authUsers, profiles, waitlist, partners, commissions, partnerReferrals, feedback] = await Promise.all([
       allAuthUsers(admin),
       safeRows(admin, "profiles"),
       safeRows(admin, "launch_waitlist", "id,email,name,source,created_at"),
       safeRows(admin, "affiliates"),
       safeRows(admin, "affiliate_commissions"),
+      safeRows(admin, "affiliate_referrals", "affiliate_id,referred_user_id"),
+      safeRows(admin, "product_feedback", "id,name,email,category,rating,message,source,page_url,status,created_at"),
     ])
 
     const commissionByPartner = new Map<string, Row[]>()
@@ -92,18 +94,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       commissionByPartner.set(id, [...(commissionByPartner.get(id) || []), commission])
     }
 
-    const partnerRows: Array<Row & { sales: number; revenue: number; commission: number; approvedCommission: number }> = partners
+    const inviteCountByPartner = new Map<string, number>()
+    for (const referral of partnerReferrals) {
+      const id = String(referral.affiliate_id || "")
+      inviteCountByPartner.set(id, (inviteCountByPartner.get(id) || 0) + 1)
+    }
+
+    const partnerRows: Array<Row & { invitedUsers: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number }> = partners
       .map((partner) => {
         const rows = commissionByPartner.get(String(partner.id)) || []
+        const validRows = rows.filter((row) => row.status !== "canceled")
         return {
           ...partner,
-          sales: rows.length,
-          revenue: rows.reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
-          commission: rows.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
+          invitedUsers: inviteCountByPartner.get(String(partner.id)) || 0,
+          sales: validRows.length,
+          revenue: validRows.reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
+          commission: validRows.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
+          dueCommission: rows
+            .filter((row) => row.status === "pending" && new Date(String(row.available_after)).getTime() <= Date.now())
+            .reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
           approvedCommission: rows
             .filter((row) => row.status === "approved" || row.status === "paid")
             .reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
-        } as Row & { sales: number; revenue: number; commission: number; approvedCommission: number }
+        } as Row & { invitedUsers: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number }
       })
       .sort((a, b) => String(b["created_at"]).localeCompare(String(a["created_at"])))
 
@@ -158,12 +171,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         partners: partnerRows.length,
         activePartners: partnerRows.filter((partner) => partner.status === "active").length,
         partnerClicks: partnerRows.reduce((sum, partner) => sum + Number(partner.clicks || 0), 0),
-        partnerSales: commissions.length,
-        revenue: commissions.reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
+        partnerInvitedUsers: partnerReferrals.length,
+        partnerSales: commissions.filter((row) => row.status !== "canceled").length,
+        revenue: commissions.filter((row) => row.status !== "canceled").reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
+        feedback: feedback.length,
+        newFeedback: feedback.filter((row) => row.status === "new").length,
       },
       users,
       waitlist: waitlist.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
       partners: partnerRows,
+      feedback: feedback.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
       posthog,
     })
   } catch (error) {

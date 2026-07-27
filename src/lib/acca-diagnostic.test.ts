@@ -4,7 +4,10 @@ import {
   scoreDiagnostic,
   estimateFromPractice,
   diagnosticRange,
+  diagnosticSeconds,
   passBand,
+  DIAGNOSTIC_QUESTIONS,
+  DIAGNOSTIC_SECONDS,
   type AnsweredDiagnostic,
 } from "@/lib/acca-diagnostic"
 import { getPapers, getPaper, recordAnswer, getQuestions } from "@/lib/acca"
@@ -29,13 +32,33 @@ describe("buildDiagnostic", () => {
     // handed an FA diagnostic.
     for (const paper of getPapers()) {
       const form = buildDiagnostic(paper.id, 42)
-      expect(form.length).toBeGreaterThan(0)
+      expect(form).toHaveLength(25)
       expect(form.every((q) => q.paper === paper.id)).toBe(true)
 
       const areasHit = new Set(form.map((q) => q.area))
       const areasReal = new Set(paper.areas.map((a) => a.code))
       expect(areasHit.size).toBe(areasReal.size)
       for (const a of areasHit) expect(areasReal.has(a)).toBe(true)
+    }
+  })
+
+  it("uses every verified difficulty tier available in each area when the 25-question limit allows it", () => {
+    for (const paper of getPapers().filter((item) => item.areas.length <= 8)) {
+      const form = buildDiagnostic(paper.id, 42)
+      for (const area of paper.areas) {
+        const difficulties = new Set(form.filter((q) => q.area === area.code).map((q) => q.difficulty))
+        const available = new Set(getQuestions(paper.id).filter((q) => q.area === area.code).map((q) => q.difficulty))
+        expect(difficulties, `${paper.id} area ${area.code}`).toEqual(available)
+      }
+    }
+  })
+
+  it("uses one fixed 25-question, 30-minute contract for every paper", () => {
+    expect(DIAGNOSTIC_QUESTIONS).toBe(25)
+    expect(DIAGNOSTIC_SECONDS).toBe(30 * 60)
+    for (const paper of getPapers()) {
+      expect(buildDiagnostic(paper.id, 42)).toHaveLength(DIAGNOSTIC_QUESTIONS)
+      expect(diagnosticSeconds(DIAGNOSTIC_QUESTIONS)).toBe(DIAGNOSTIC_SECONDS)
     }
   })
 
@@ -77,6 +100,15 @@ describe("scoreDiagnostic — the number stays sane", () => {
     const r = scoreDiagnostic("FA", [])
     expect(r.passProbability).toBe(50)
     expect(r.confidence).toBe(0)
+    expect(r.provisional).toBe(true)
+  })
+
+  it("marks an incomplete attempt provisional so it cannot masquerade as a formal result", () => {
+    const [q] = buildDiagnostic("FA", 42)
+    const r = scoreDiagnostic("FA", [{ q, correct: true }])
+    expect(r.questionsAnswered).toBe(1)
+    expect(r.provisional).toBe(true)
+    expect(scoreDiagnostic("FA", answerAll("FA", true)).provisional).toBe(false)
   })
 
   it("promises a target that is never worse than where the student already is", () => {

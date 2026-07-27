@@ -4,6 +4,7 @@ import { motion } from "motion/react"
 import { supabase } from "@/lib/supabase"
 import { Spinner } from "@/components/auth/auth-ui"
 import { Icon } from "@/components/acca/ui"
+import { claimCapturedAffiliate } from "@/lib/affiliate"
 
 /*
  * OAuth return handler. Google (and any future provider) redirects here
@@ -36,6 +37,7 @@ export default function AuthCallback() {
       if (cancelled) return
       const { data } = await supabase.auth.getSession()
       if (data.session) {
+        await claimCapturedAffiliate()
         navigate("/dashboard", { replace: true })
         return
       }

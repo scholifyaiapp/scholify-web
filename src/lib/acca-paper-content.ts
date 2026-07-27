@@ -16,6 +16,26 @@ import { mapSblFlashcardsToOfficialSyllabus, mapSblQuestionsToOfficialSyllabus, 
 import { mapSbrFlashcardsToOfficialSyllabus, mapSbrQuestionsToOfficialSyllabus, mapSbrWrittenToOfficialSyllabus } from "@/lib/acca-sbr-syllabus-map"
 import { mapApmFlashcardsToOfficialSyllabus, mapApmQuestionsToOfficialSyllabus, mapApmWrittenToOfficialSyllabus } from "@/lib/acca-apm-syllabus-map"
 import { mapAtxFlashcardsToOfficialSyllabus, mapAtxQuestionsToOfficialSyllabus, mapAtxWrittenToOfficialSyllabus } from "@/lib/acca-atx-syllabus-map"
+import { completeStudyFlashcards } from "@/lib/acca-study-flashcards"
+import { completeF1F4SectionA, completeSectionAFromStudy } from "@/lib/acca-f1-f4-section-a"
+import { completeF1F4SectionB } from "@/lib/acca-f1-f4-section-b"
+import { completePmSectionB, completePmSectionC } from "@/lib/acca-pm-expansion"
+import { PM_CONTENT_TARGET } from "@/lib/pm-content-contract"
+import { completeTxSectionB, completeTxSectionC } from "@/lib/acca-tx-expansion"
+import { TX_CONTENT_TARGET } from "@/lib/tx-content-contract"
+import { completeFrSectionB, completeFrSectionC } from "@/lib/acca-fr-expansion"
+import { FR_CONTENT_TARGET } from "@/lib/fr-content-contract"
+import { completeAaSectionA, completeAaSectionB } from "@/lib/acca-aa-expansion"
+import { AA_CONTENT_TARGET } from "@/lib/aa-content-contract"
+import { completeFmSectionB, completeFmSectionC } from "@/lib/acca-fm-expansion"
+import { FM_CONTENT_TARGET } from "@/lib/fm-content-contract"
+import { applyVariantStudyContent } from "@/lib/acca-variant-content"
+import { getPaperVariant } from "@/lib/acca-profile"
+import { completeTxGlobalSectionB, completeTxGlobalSectionC } from "@/lib/acca-tx-global-expansion"
+import { completeSblWritten } from "@/lib/acca-sbl-expansion"
+import { SBL_CONTENT_TARGET } from "@/lib/sbl-content-contract"
+import { ADVANCED_CONTENT_TARGET, ADVANCED_PAPERS } from "@/lib/advanced-content-contract"
+import { completeAdvancedWritten } from "@/lib/acca-advanced-expansion"
 
 /*
  * Scholify — the per-paper CONTENT LOADER. Read acca-content-registry.ts first:
@@ -149,7 +169,10 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
  * never faked by grouping loose questions).
  */
 const CASE_MODULES: Record<string, Loader[]> = {
+  BT: [() => import("@/lib/acca-cases-knowledge")],
+  MA: [() => import("@/lib/acca-cases-knowledge")],
   FA: [() => import("@/lib/acca-cases-fa")],
+  LW: [() => import("@/lib/acca-cases-knowledge")],
   FR: [() => import("@/lib/acca-cases-fr")],
 }
 
@@ -197,6 +220,7 @@ export function loadPaperContent(paperId: string): Promise<void> {
   if (existing) return existing
 
   const job = (async () => {
+    const variant = getPaperVariant(paperId)
     const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods, caseMods] = await Promise.all([
       loadAll(QUESTION_MODULES[paperId]),
       loadAll(CHAPTER_MODULES[paperId]),
@@ -205,7 +229,10 @@ export function loadPaperContent(paperId: string): Promise<void> {
       loadAll(BRIEF_MODULES[paperId]),
       loadAll(CASE_MODULES[paperId]),
     ])
-    const collectedQuestions = collect<AccaQuestion>(questionMods, paperId)
+    const isLwGlobal = paperId === "LW" && variant === "GLOBAL"
+    const isTxGlobal = paperId === "TX" && variant === "GLOBAL"
+    const usesGlobalBank = isLwGlobal || isTxGlobal
+    const collectedQuestions = usesGlobalBank ? [] : collect<AccaQuestion>(questionMods, paperId)
     const questions = paperId === "BT"
       ? mapBtQuestionsToOfficialSyllabus(collectedQuestions)
       : paperId === "MA"
@@ -231,37 +258,60 @@ export function loadPaperContent(paperId: string): Promise<void> {
               : paperId === "ATX"
                 ? mapAtxQuestionsToOfficialSyllabus(collectedQuestions)
         : collectedQuestions
+    const baseChapters = usesGlobalBank
+      ? paperId === "LW"
+        ? (await import("@/lib/acca-study-lw-global")).LW_GLOBAL_CHAPTERS
+        : (await import("@/lib/acca-study-tx-global")).TX_GLOBAL_CHAPTERS
+      : collect<StudyChapter>(chapterMods, paperId)
+    const chapters = usesGlobalBank ? baseChapters : applyVariantStudyContent(paperId, baseChapters)
+    const mappedFlashcards = usesGlobalBank ? [] : paperId === "BT"
+      ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+      : paperId === "MA"
+        ? mapMaFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+        : paperId === "FA"
+          ? mapFaFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+          : paperId === "LW"
+            ? mapLwFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+            : paperId === "PM"
+              ? mapPmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "TX"
+                ? mapTxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "FR"
+                ? mapFrFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "FM"
+                ? mapFmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "SBL"
+                ? mapSblFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "SBR"
+                ? mapSbrFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "APM"
+                ? mapApmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+              : paperId === "ATX"
+                ? mapAtxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
+            : collect<Flashcard>(flashcardMods, paperId)
     const content: PaperContent = {
-      questions,
-      chapters: collect<StudyChapter>(chapterMods, paperId),
-      flashcards: paperId === "BT"
-        ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-        : paperId === "MA"
-          ? mapMaFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-          : paperId === "FA"
-            ? mapFaFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-            : paperId === "LW"
-              ? mapLwFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-              : paperId === "PM"
-                ? mapPmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "TX"
-                  ? mapTxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "FR"
-                  ? mapFrFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "FM"
-                  ? mapFmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "SBL"
-                  ? mapSblFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "SBR"
-                  ? mapSbrFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "APM"
-                  ? mapApmFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-                : paperId === "ATX"
-                  ? mapAtxFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
-            : collect<Flashcard>(flashcardMods, paperId),
-      written: paperId === "PM" ? mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "TX" ? mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FR" ? mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "SBL" ? mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId),
-      briefs: collect<TopicBrief>(briefMods, paperId),
-      cases: collect<OtCase>(caseMods, paperId),
+      questions: ["PM", "TX", "FR", "AA", "FM", "SBL", ...ADVANCED_PAPERS].includes(paperId)
+        ? completeSectionAFromStudy(paperId, questions, chapters, paperId === "PM" ? PM_CONTENT_TARGET.sectionA : paperId === "TX" ? TX_CONTENT_TARGET.sectionA : paperId === "FR" ? FR_CONTENT_TARGET.sectionA : paperId === "AA" ? AA_CONTENT_TARGET.objectiveBank : paperId === "SBL" ? SBL_CONTENT_TARGET.learningDrills : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.learningDrills : FM_CONTENT_TARGET.sectionA)
+        : completeF1F4SectionA(paperId, questions, chapters),
+      chapters,
+      flashcards: completeStudyFlashcards(paperId, mappedFlashcards, chapters, paperId === "PM" ? PM_CONTENT_TARGET.flashcards : paperId === "TX" ? TX_CONTENT_TARGET.flashcards : paperId === "FR" ? FR_CONTENT_TARGET.flashcards : paperId === "AA" ? AA_CONTENT_TARGET.flashcards : paperId === "FM" ? FM_CONTENT_TARGET.flashcards : paperId === "SBL" ? SBL_CONTENT_TARGET.flashcards : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.flashcards : undefined),
+      written: paperId === "PM" ? completePmSectionC(mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "TX" ? isTxGlobal ? completeTxGlobalSectionC() : completeTxSectionC(mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "FR" ? completeFrSectionC(mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "AA" ? completeAaSectionB(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? completeFmSectionC(mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "SBL" ? completeSblWritten(mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)), chapters) : completeAdvancedWritten(paperId, paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId), chapters),
+      briefs: isLwGlobal
+        ? (await import("@/lib/acca-briefs-lw-global")).LW_GLOBAL_BRIEFS
+        : isTxGlobal
+          ? (await import("@/lib/acca-study-tx-global")).TX_GLOBAL_BRIEFS
+          : collect<TopicBrief>(briefMods, paperId),
+      cases: paperId === "PM"
+        ? completePmSectionB(collect<OtCase>(caseMods, paperId))
+        : paperId === "TX"
+          ? isTxGlobal ? completeTxGlobalSectionB() : completeTxSectionB(collect<OtCase>(caseMods, paperId))
+        : paperId === "FR"
+          ? completeFrSectionB(collect<OtCase>(caseMods, paperId))
+        : paperId === "AA"
+          ? completeAaSectionA(collect<OtCase>(caseMods, paperId))
+        : paperId === "FM"
+          ? completeFmSectionB(collect<OtCase>(caseMods, paperId))
+        : completeF1F4SectionB(paperId, usesGlobalBank ? [] : collect<OtCase>(caseMods, paperId), chapters),
     }
     registerPaperContent(paperId, content)
   })()

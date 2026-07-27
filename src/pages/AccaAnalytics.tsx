@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { getExamIntel, avgPassRate } from "@/lib/acca-examiner"
-import { getBankRuns, bankRunProgress, BANK_RUNS_TARGET } from "@/lib/acca-bankruns"
+import { getBankRuns, bankRunProgress } from "@/lib/acca-bankruns"
 import { Icon, IconBadge, Card, Badge, SectionLabel, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, BreakdownList, TrendBars, DeltaChip, Sparkbars, bandColor } from "@/components/acca/charts"
 import { getPaper, getPaperStats, getTodayStats, getDailyActivity, getDailyGoal, setDailyGoal, type AccaPaper } from "@/lib/acca"
@@ -1008,7 +1008,7 @@ function ExamSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) 
         return (
           <Card style={{ marginBottom: SP.md }}>
             <CardTitle icon="check" right={br.best != null ? <span style={{ fontSize: 12, color: C.soft, textTransform: "none", letterSpacing: 0 }}>best <b style={{ color: C.green }}>{br.best}%</b></span> : undefined}>
-              Bank runs · {Math.min(br.done, BANK_RUNS_TARGET)} of {BANK_RUNS_TARGET}
+              Bank runs · {Math.min(br.done, br.target)} of {br.target}
             </CardTitle>
             {runs.length >= 2 ? (
               <TrendBars points={runs.map((r) => ({ date: r.date, percent: r.percent }))} passLine={50} unit="bank run" />
