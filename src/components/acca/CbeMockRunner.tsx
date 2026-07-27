@@ -699,23 +699,15 @@ function IntroStat({ icon, label, value }: { icon: IconName; label: string; valu
   )
 }
 
+// ProCountdown is the exam clock now (it renders position:fixed, top-right).
+// The bespoke pill that used to live here showed the SAME countdown inline, so
+// adding ProCountdown without removing it put two identical clocks on screen at
+// once — the diagnostic deleted its own DiagnosticTimer for exactly this reason
+// when it adopted ProCountdown.
 function TopBar({ secondsLeft, total, right }: { secondsLeft: number; total: number; right?: ReactNode }) {
-  const frac = total > 0 ? secondsLeft / total : 1
-  const tone = frac <= 0.1 ? C.red : frac <= 0.25 ? C.amber : C.text
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
       <ProCountdown secondsLeft={secondsLeft} totalSeconds={total} label="Mock exam" />
-      <motion.div
-        animate={frac <= 0.1 ? { scale: [1, 1.04, 1] } : undefined}
-        transition={{ duration: 0.9, repeat: frac <= 0.1 ? Infinity : 0 }}
-        style={{
-          display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", borderRadius: 999,
-          border: `1.5px solid ${frac <= 0.1 ? C.red : C.border}`, background: frac <= 0.1 ? "rgba(200,0,0,0.06)" : "var(--sch-card, #fff)",
-        }}
-      >
-        <Icon name="time" size={15} color={tone} />
-        <span style={{ fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: tone }}>{fmtClock(secondsLeft)}</span>
-      </motion.div>
       {right}
     </div>
   )

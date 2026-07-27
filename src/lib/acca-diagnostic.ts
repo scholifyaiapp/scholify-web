@@ -262,11 +262,22 @@ export function diagnosticRange(passProbability: number, questionsAnswered: numb
 
 /* ── Scoring & the pass-probability model ─────────────────────── */
 
-function logistic(score0to100: number): number {
+/**
+ * Estimated exam score (0–100) → Exam Readiness Score (0–100).
+ *
+ * Exported because the uploaded-result baseline (acca-result-upload.ts) must
+ * report the SAME readiness number as a sat diagnostic for the same estimated
+ * score. It used to inline its own copy of this curve and of LOGISTIC_K, so the
+ * two agreed only by coincidence — editing the model here would silently have
+ * left uploaded baselines on the old curve.
+ */
+export function logistic(score0to100: number): number {
   return 100 / (1 + Math.exp(-LOGISTIC_K * (score0to100 - 50)))
 }
 
-function bandFor(score: number): DiagnosticAreaResult["band"] {
+/** Competence fraction (0–1) → weak/moderate/strong. The single definition of
+ *  these thresholds; the uploaded-result path reuses it for the same reason. */
+export function bandFor(score: number): DiagnosticAreaResult["band"] {
   if (score < 0.5) return "weak"
   if (score < 0.7) return "moderate"
   return "strong"

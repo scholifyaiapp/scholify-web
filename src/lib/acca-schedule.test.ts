@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import { focusArea, recordDayActive, shieldState } from "@/lib/acca-schedule"
+import { pausePaper, resumePaper } from "@/lib/acca-plan-adjustment"
 import { scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
 import { getPaper, getQuestions, recordAnswer } from "@/lib/acca"
 
@@ -104,6 +105,27 @@ describe("recordDayActive — the shield/streak scheme", () => {
 
     // And the next real session restarts from 1 — exactly what the read said.
     expect(recordDayActive("PM").streak).toBe(1)
+  })
+
+  it("holds the streak while the paper is explicitly paused", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-04-06T12:00:00Z")) // Mon
+    recordDayActive("AA")
+    vi.setSystemTime(new Date("2026-04-07T12:00:00Z")) // Tue
+    expect(recordDayActive("AA").streak).toBe(2)
+
+    // Away for three weeks — far beyond the shield allowance.
+    vi.setSystemTime(new Date("2026-04-28T12:00:00Z"))
+    expect(shieldState("AA").streak, "unpaused, a lapse this long is a broken streak").toBe(0)
+
+    // The learner TOLD us they were away. The declared absence must not be the
+    // one that costs them the streak.
+    pausePaper("AA", "illness", "2026-05-01")
+    expect(shieldState("AA").streak).toBe(2)
+
+    // ...and resuming puts it back under the ordinary rules.
+    resumePaper("AA")
+    expect(shieldState("AA").streak).toBe(0)
   })
 
   it("keeps the streak on a read when shields still cover the gap", () => {

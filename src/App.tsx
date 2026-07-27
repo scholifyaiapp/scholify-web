@@ -4,6 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
 import { captureAffiliateRef } from "@/lib/affiliate"
+import { ownsAuthHash } from "@/lib/navigation"
 import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
 
 /*
@@ -96,9 +97,18 @@ function Page({
 function OAuthReturnHandler() {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     if (loading) return
+
+    // Password recovery arrives at /reset-password carrying the same
+    // #access_token=… hash an OAuth return uses, so this handler would claim it:
+    // strip the hash, then send the user to /dashboard (session already live) or
+    // /auth/callback (not yet). Both take them off the page before they can
+    // choose a password — the reset link would just sign them in and leave the
+    // old password working. That route consumes its own hash; leave it alone.
+    if (ownsAuthHash(location.pathname)) return
 
     const hash = window.location.hash || ""
     const looksLikeAuthHash =
@@ -132,7 +142,7 @@ function OAuthReturnHandler() {
     } else if (looksLikeAuthHash) {
       navigate("/auth/callback", { replace: true })
     }
-  }, [user, loading, navigate])
+  }, [user, loading, navigate, location.pathname])
 
   return null
 }

@@ -1,5 +1,6 @@
 import { getPaper } from "@/lib/acca"
 import { persistDiagnostic } from "@/lib/acca-cloud"
+import { logistic, bandFor } from "@/lib/acca-diagnostic"
 import type { DiagnosticAreaResult, DiagnosticResult } from "@/lib/acca-diagnostic"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
@@ -74,14 +75,18 @@ export async function analyseEnglishCertificate(file: File, certificateType: str
 }
 
 export async function useUploadedResult(analysis: ResultUploadAnalysis, filename: string): Promise<DiagnosticResult> {
+  // Bands and the readiness curve come from acca-diagnostic, not a local copy —
+  // an uploaded baseline has to report the same numbers a sat diagnostic would
+  // for the same estimated score, and duplicating the model made that a
+  // coincidence rather than a guarantee.
   const areas: DiagnosticAreaResult[] = analysis.areas.map((area) => ({
     ...area,
     seen: 1,
     correct: area.score >= 0.5 ? 1 : 0,
-    band: area.score < 0.5 ? "weak" : area.score < 0.7 ? "moderate" : "strong",
+    band: bandFor(area.score),
   }))
   const ranked = [...areas].sort((a, b) => a.score - b.score)
-  const passProbability = Math.round(100 / (1 + Math.exp(-0.11 * (analysis.score - 50))))
+  const passProbability = Math.round(logistic(analysis.score))
   const focusAreas = ranked.slice(0, 3).map((area) => area.label)
   const result: DiagnosticResult = {
     paperId: analysis.paperId,

@@ -45,24 +45,52 @@ export async function persistDiagnostic(result: DiagnosticResult): Promise<void>
   const userId = await currentUserId()
   if (!userId) return
 
+  const row = {
+    user_id: userId,
+    paper_id: result.paperId,
+    pass_probability: result.passProbability,
+    estimated_score: result.estimatedScore,
+    confidence: result.confidence,
+    questions_answered: result.questionsAnswered,
+    raw_correct: result.rawCorrect,
+    areas: result.areas,
+    target: result.target,
+    source: result.source ?? "diagnostic",
+    evidence: result.evidence ?? {},
+    answered_at: result.answeredAt,
+  }
+
   try {
-    await supabase.from("acca_diagnostics").insert({
-      user_id: userId,
-      paper_id: result.paperId,
-      pass_probability: result.passProbability,
-      estimated_score: result.estimatedScore,
-      confidence: result.confidence,
-      questions_answered: result.questionsAnswered,
-      raw_correct: result.rawCorrect,
-      areas: result.areas,
-      target: result.target,
-      source: result.source ?? "diagnostic",
-      evidence: result.evidence ?? {},
-      answered_at: result.answeredAt,
-    })
+    const { error } = await supabase.from("acca_diagnostics").insert(row)
+    if (!error) return
+
+    // `source` and `evidence` arrive with migration 0025. Until that migration is
+    // applied PostgREST rejects the WHOLE row, so every ordinary diagnostic would
+    // stop reaching the cloud — and invisibly, because insert() resolves with an
+    // error instead of throwing, so the catch below never sees it and nothing was
+    // checking the returned error. Retry on the pre-0025 column set so a deploy
+    // that lands before its migration degrades instead of breaking, and warn
+    // either way so a missed migration is diagnosable rather than silent.
+    if (isUnknownColumnError(error)) {
+      console.warn("diagnostic cloud persist: retrying without source/evidence (apply migration 0025)", error.message)
+      const { source: _source, evidence: _evidence, ...legacy } = row
+      const { error: retryError } = await supabase.from("acca_diagnostics").insert(legacy)
+      if (retryError) console.warn("diagnostic cloud persist failed:", retryError.message)
+      return
+    }
+    console.warn("diagnostic cloud persist failed:", error.message)
   } catch {
     /* offline / table missing / RLS — the local copy is authoritative meanwhile */
   }
+}
+
+/** True when Postgres/PostgREST rejected the row for naming a column it lacks. */
+function isUnknownColumnError(error: { code?: string; message?: string }): boolean {
+  // 42703 = undefined_column (Postgres); PGRST204 = column absent from the
+  // PostgREST schema cache, which is what a just-added column usually reports.
+  if (error.code === "42703" || error.code === "PGRST204") return true
+  const message = String(error.message || "")
+  return /does not exist|could not find the .* column|unknown column/i.test(message)
 }
 
 /**

@@ -168,7 +168,6 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
   /* ── answer + marking view ── */
   const scorePct = result ? Math.round((result.marks / result.maxMarks) * 100) : 0
   const canMark = !marking && (!!answer.trim() || Object.keys(cells).length > 0)
-  const clockTone = secondsLeft !== null && allowed > 0 ? (secondsLeft / allowed <= 0.2 ? C.red : secondsLeft / allowed <= 0.5 ? C.amber : C.text) : C.text
 
   const tabBtn = (id: "word" | "sheet"): CSSProperties => ({
     display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 750,
@@ -183,24 +182,15 @@ export default function ExaminerView({ paperId, onBack }: { paperId: string; onB
             deadline effect re-derives secondsLeft on its next poll and the
             abandoned question's clock comes back to life over the list. */}
         <BackButton label="All questions" onClick={() => { setActive(null); setSecondsLeft(null); setEndsAt(null) }} />
+        {/* ProCountdown IS the clock here (position:fixed, top-right). The pill
+            that used to sit in this row showed the same countdown inline, so
+            adding ProCountdown without removing it put two identical clocks on
+            screen — the diagnostic deleted its own DiagnosticTimer for exactly
+            this reason when it adopted ProCountdown. The total the pill carried
+            ("of 54:00") is still stated on the task card and in the debrief's
+            "N used of M" line. */}
         {secondsLeft !== null && !result && (
-          <>
           <ProCountdown secondsLeft={secondsLeft} totalSeconds={Math.max(1, allowed)} label="Written task" />
-          <motion.div
-            animate={expired ? { scale: [1, 1.04, 1] } : undefined}
-            transition={{ duration: 0.8, repeat: expired ? Infinity : 0 }}
-            style={{
-              display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999, marginBottom: SP.md,
-              border: `1.5px solid ${expired ? C.red : C.border}`, background: expired ? "rgba(200,0,0,0.06)" : "var(--sch-card, #fff)",
-            }}
-          >
-            <Icon name="time" size={15} color={clockTone} />
-            <span style={{ fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: clockTone }}>
-              {fmtClock(secondsLeft)}
-            </span>
-            <span style={{ fontSize: 11, color: C.faint }}>of {fmtClock(allowed)}</span>
-          </motion.div>
-          </>
         )}
       </div>
 

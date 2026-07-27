@@ -26,6 +26,7 @@ import { getTopicResult } from "@/lib/acca-topics"
 import { flashcardStats, areaReviewed } from "@/lib/acca-flashcards"
 import { getStartMode } from "@/lib/acca-profile"
 import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
+import { getPaperPause } from "@/lib/acca-plan-adjustment"
 import { chapterForLearningDay, getStudyResource, PROVIDER_LABEL } from "@/lib/acca-study-resources"
 
 /* ── Task vocabulary ──────────────────────────────────────────── */
@@ -181,7 +182,7 @@ export function recordDayActive(paperId: string): ShieldState {
   return shieldStateFrom(rec, today)
 }
 
-function shieldStateFrom(rec: ShieldRec, today: string): ShieldState {
+function shieldStateFrom(rec: ShieldRec, today: string, paused = false): ShieldState {
   const missed = rec.lastActive ? Math.max(0, daysBetween(rec.lastActive, today) - (rec.lastActive === today ? 0 : 1)) : 0
   const shieldsLeft = Math.max(0, SHIELDS_PER_WEEK - rec.shieldsUsed)
   const protectedToday = missed > 0 && missed <= shieldsLeft
@@ -193,7 +194,12 @@ function shieldStateFrom(rec: ShieldRec, today: string): ShieldState {
     // studied three weeks ago. It must read the same as what recordDayActive
     // will decide when they do come back (a restart from 1). Gaps still WITHIN
     // the allowance are protected and keep the number, which is the promise.
-    streak: protectedToday || missed === 0 ? rec.streak : 0,
+    //
+    // An explicitly PAUSED paper is the exception: the learner has told us they
+    // are away, so the streak is held, not lost. Without this the person who
+    // used the pause button — the one case where the absence was declared — is
+    // the one who watches their streak collapse to zero.
+    streak: paused || protectedToday || missed === 0 ? rec.streak : 0,
     shieldsLeft,
     missedDays: rec.lastActive === today ? 0 : missed,
     protectedToday,
@@ -223,7 +229,7 @@ export function shieldState(paperId: string): ShieldState {
   const wk = mondayOf(now)
   let rec = store[paperId] ?? { lastActive: null, streak: 0, shieldsUsed: 0, weekAnchor: wk }
   if (rec.weekAnchor !== wk) rec = { ...rec, weekAnchor: wk, shieldsUsed: 0 }
-  return shieldStateFrom(rec, ymd(now))
+  return shieldStateFrom(rec, ymd(now), getPaperPause(paperId) !== null)
 }
 
 /* ── Daily task distribution ──────────────────────────────────── */
