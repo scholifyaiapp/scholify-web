@@ -601,10 +601,16 @@ export default function Welcome() {
               <ScholifyMark size={24} />
               <span style={{ font: `800 17px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
             </motion.div>
-            <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{`0${visibleStepIndex + 1}`} / {String(visibleSteps.length + 2).padStart(2, "0")}</span>
+            {/* Same denominator as the desktop header below: visibleSteps.length.
+                The `+ 2` here counted two steps that aren't in this flow, so the
+                mobile counter read "01 / 11" for a 9-step onboarding and its bar
+                stopped at ~82% on the final step — the user never saw it
+                complete. String() both sides too: the old `0${n}` template
+                rendered step 10 as "010". */}
+            <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{String(visibleStepIndex + 1).padStart(2, "0")} / {String(visibleSteps.length).padStart(2, "0")}</span>
           </div>
           <div style={{ marginTop: 14, height: 4, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            <motion.div animate={{ width: `${((visibleStepIndex + 1) / (visibleSteps.length + 2)) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
+            <motion.div animate={{ width: `${((visibleStepIndex + 1) / visibleSteps.length) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
           </div>
         </div>
 
@@ -843,6 +849,22 @@ const VOCAB_CHECK = [
   ["circumspect", "careful to consider risks", "eager to act immediately"],
 ] as const
 
+/**
+ * Which rows render the CORRECT definition second (i.e. on the right).
+ *
+ * Rendering `[correct, wrong]` put the right answer in the left button on every
+ * single row, so tapping left six times scored 6/6 → C2 — and C2 tells Charles
+ * to explain everything in full examiner language, the exact opposite of the
+ * support a learner who guessed actually needs. This is the same answer-position
+ * bias that withShuffledOptions() exists to prevent in the question banks.
+ *
+ * Kept as an explicit, balanced mask rather than a hash: over six fixed rows a
+ * hash lands 5–1 as easily as 3–3, and this is auditable at a glance. Extend it
+ * whenever a row is added to VOCAB_CHECK (the render falls back to correct-first
+ * for any index past the end, so keep the lengths in step).
+ */
+const VOCAB_CORRECT_SECOND: readonly boolean[] = [false, true, false, true, true, false]
+
 function EnglishBaselineSlide({ route, level, evidence, certificate, certificateBusy, certificateError, certificateType, onLevel, onEvidence, onCertificate, onCertificateType }: {
   route: LearnerRoute | null; level: CefrLevel | null; evidence: EnglishEvidence | null; certificate: File | null
   certificateBusy: boolean; certificateError: string
@@ -855,7 +877,7 @@ function EnglishBaselineSlide({ route, level, evidence, certificate, certificate
   ]
   const finishQuiz = () => {
     const correct = Object.values(answers).filter(Boolean).length
-    onLevel(CEFR_LEVELS[Math.max(0, Math.min(5, correct - 1))])
+    onLevel(CEFR_LEVELS[Math.max(0, Math.min(CEFR_LEVELS.length - 1, correct - 1))])
     onEvidence("vocabulary")
   }
   const levelButtons = (disabled = false) => <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
@@ -870,7 +892,7 @@ function EnglishBaselineSlide({ route, level, evidence, certificate, certificate
       {certificateError && <div role="alert" style={{ marginTop: 7, color: RED, font: `600 10.5px/1.4 ${SANS}` }}>{certificateError}</div>}
       <div style={{ margin: "9px 0 0", font: `500 10px/1.4 ${SANS}`, color: MUTE }}>Scholify reads the score and derives A1–C2; it does not verify the issuer’s authenticity. The original PDF is not retained.</div>
     </div>}
-    {evidence === "vocabulary" && <div style={{ marginTop: 13, display: "grid", gap: 6 }}>{VOCAB_CHECK.map(([word, correct, wrong], index) => <div key={word} style={{ display: "grid", gridTemplateColumns: "82px 1fr 1fr", gap: 5, alignItems: "center" }}><strong style={{ font: `800 11px/1 ${MONO}` }}>{word}</strong>{[correct, wrong].map((option) => { const isCorrect = option === correct; const chosen = answers[index] === isCorrect; return <button key={option} type="button" onClick={() => setAnswers((old) => ({ ...old, [index]: isCorrect }))} style={{ padding: "8px 5px", borderRadius: 8, border: `1px solid ${chosen ? RED : BORDER}`, background: chosen ? "rgba(200,0,0,.05)" : "#fff", color: chosen ? RED : META, font: `600 9.5px/1.2 ${SANS}` }}>{option}</button> })}</div>)}<button type="button" disabled={Object.keys(answers).length < 6} onClick={finishQuiz} style={{ padding: 11, border: 0, borderRadius: 10, background: RED, color: "#fff", opacity: Object.keys(answers).length < 6 ? .4 : 1, font: `800 11px/1 ${SANS}` }}>Set my support level</button></div>}
+    {evidence === "vocabulary" && <div style={{ marginTop: 13, display: "grid", gap: 6 }}>{VOCAB_CHECK.map(([word, correct, wrong], index) => <div key={word} style={{ display: "grid", gridTemplateColumns: "82px 1fr 1fr", gap: 5, alignItems: "center" }}><strong style={{ font: `800 11px/1 ${MONO}` }}>{word}</strong>{(VOCAB_CORRECT_SECOND[index] ? [wrong, correct] : [correct, wrong]).map((option) => { const isCorrect = option === correct; const chosen = answers[index] === isCorrect; return <button key={option} type="button" onClick={() => setAnswers((old) => ({ ...old, [index]: isCorrect }))} style={{ padding: "8px 5px", borderRadius: 8, border: `1px solid ${chosen ? RED : BORDER}`, background: chosen ? "rgba(200,0,0,.05)" : "#fff", color: chosen ? RED : META, font: `600 9.5px/1.2 ${SANS}` }}>{option}</button> })}</div>)}<button type="button" disabled={Object.keys(answers).length < VOCAB_CHECK.length} onClick={finishQuiz} style={{ padding: 11, border: 0, borderRadius: 10, background: RED, color: "#fff", opacity: Object.keys(answers).length < VOCAB_CHECK.length ? .4 : 1, font: `800 11px/1 ${SANS}` }}>Set my support level</button></div>}
     {level && <div style={{ marginTop: 11, padding: "10px 12px", borderRadius: 10, background: "rgba(14,159,110,.08)", color: "#177054", font: `700 11.5px/1.4 ${SANS}` }}>Charles will coach you at {level} English{route === "new" ? " while teaching ACCA foundations" : ""}.</div>}
   </div>
 }
