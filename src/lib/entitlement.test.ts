@@ -136,3 +136,41 @@ describe("canAccessPaper", () => {
     expect(canAccessPaper(trialUser, "LW", ["FA", "MA"], NOW)).toBe(false)
   })
 })
+
+/*
+ * cancel_at_period_end — the state between "they pressed Cancel" and "Stripe says
+ * it lapsed". Settings tells the learner "access stays until then" and the confirm
+ * dialog says "you'll switch to the free tier at the end of your billing period",
+ * so entitlement has to honour that. It had no idea the state existed.
+ *
+ * The sharp case is a customer whose Stripe price id was never mapped to a known
+ * plan name: they have no PAID_PLANS entry, so plan_status was the ONLY thing
+ * keeping them entitled — and cancelling flipped it to "canceling", revoking a
+ * paid subscription instantly.
+ */
+describe("a subscription cancelling at period end", () => {
+  it("keeps a mapped plan fully entitled until it actually lapses", () => {
+    const e = entitlementOf({ app_metadata: { plan: "pro", plan_status: "canceling" } })
+    expect(e.isPaid).toBe(true)
+    expect(e.isPro).toBe(true)
+  })
+
+  it("keeps an UNMAPPED price id entitled — plan_status is all it has", () => {
+    const e = entitlementOf({ app_metadata: { plan: "scholify_launch_special", plan_status: "canceling" } })
+    expect(e.isPaid, "a paying customer must not be dropped to free on cancel").toBe(true)
+    expect(e.isPro).toBe(true)
+  })
+
+  it("keeps a beginner on the beginner tier, not promoted to pro", () => {
+    const e = entitlementOf({ app_metadata: { plan: "beginner", plan_status: "canceling" } })
+    expect(e.isPaid).toBe(true)
+    expect(e.isBeginner).toBe(true)
+    expect(e.isPro).toBe(false)
+  })
+
+  it("DOES drop access once the webhook reports it genuinely cancelled", () => {
+    const e = entitlementOf({ app_metadata: { plan: "free", plan_status: "canceled" } })
+    expect(e.isPaid).toBe(false)
+    expect(e.isPro).toBe(false)
+  })
+})

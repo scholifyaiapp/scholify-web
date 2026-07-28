@@ -63,7 +63,17 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   // A live subscription counts as paid even if its price id wasn't mapped to a
   // known plan name (mis-provisioned Stripe env) — otherwise a genuinely paying
   // customer would be treated as "free" and trapped behind the expired wall.
-  const planStatusActive = meta.plan_status === "active"
+  //
+  // "canceling" is cancel_at_period_end, NOT cancelled: the customer has paid
+  // through the end of the current period and keeps everything until Stripe's
+  // webhook reports the subscription actually lapsed (which writes "canceled"
+  // and plan "free"). Treating it as inactive revoked access the instant someone
+  // pressed Cancel — while Settings promised "access stays until then" and the
+  // dialog promised "you'll switch to the free tier at the end of your billing
+  // period". It bit hardest exactly where the clause above is meant to help: a
+  // customer on an unmapped price id has no PAID_PLANS entry to fall back on, so
+  // `plan_status` was the only thing keeping them entitled.
+  const planStatusActive = meta.plan_status === "active" || meta.plan_status === "canceling"
   const isPaid = PAID_PLANS.has(plan) || planStatusActive
   const isBeginner = plan === "beginner"
 

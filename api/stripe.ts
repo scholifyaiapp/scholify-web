@@ -432,7 +432,15 @@ async function cancel(req: VercelRequest, res: VercelResponse): Promise<void> {
     // Keep access until period end; the subscription.updated/deleted webhook
     // flips the plan to free when it actually lapses.
     await stripe.subscriptions.update(subId, { cancel_at_period_end: true })
-    await supa.auth.admin.updateUserById(user.id, { app_metadata: { plan_status: "canceling" } })
+    // Carry the existing entitlement forward explicitly rather than trusting
+    // GoTrue to merge a partial app_metadata write. If it ever replaced instead
+    // of merging, this single field would take `plan` with it — dropping a paying
+    // customer to free the moment they pressed Cancel — along with
+    // stripe_subscription_id and stripe_customer_id, which the webhook and the
+    // affiliate-commission reversal both need to find this user later.
+    await supa.auth.admin.updateUserById(user.id, {
+      app_metadata: { ...(user.app_metadata ?? {}), plan_status: "canceling" },
+    })
     res.status(200).json({ ok: true })
   } catch {
     res.status(200).json({ ok: false, reason: "stripe_error" })
