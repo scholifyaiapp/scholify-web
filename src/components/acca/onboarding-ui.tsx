@@ -234,12 +234,77 @@ export function AnimatedHeadline({
  * scale. The track draws with scaleX (compositor) instead of width (layout).
  */
 
+/*
+ * Stage glyphs.
+ *
+ * These replace the plain 6px dot each stage used to carry. A dot said only
+ * "here is an item"; a crosshair, a checklist, a stopwatch and a flag say what
+ * the stage IS, which is the whole job of this slide — the learner reads the
+ * shape of the route before they read a word of it.
+ *
+ * Drawn inline rather than pulled from components/acca/ui so the kit keeps no
+ * dependency on the icon set, and stroked with round caps at 2.4 to match the
+ * Scholify hexagon mark's own construction.
+ */
+const GLYPH = { fill: "none", strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round" } as const
+
+function Crosshair({ tone }: { tone: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
+      <circle cx="12" cy="12" r="6.5" />
+      <path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4" />
+    </svg>
+  )
+}
+
+function Checklist({ tone }: { tone: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
+      <path d="M3 6.5l2.6 2.6L10.4 4.3M3 17.5l2.6 2.6 4.8-4.8M14 6.8h7M14 17.8h7" />
+    </svg>
+  )
+}
+
+function Stopwatch({ tone }: { tone: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
+      <circle cx="12" cy="13.6" r="7.6" />
+      <path d="M12 13.6V9.8M9.4 2.4h5.2" />
+    </svg>
+  )
+}
+
+function Flag({ tone }: { tone: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
+      <path d="M5.6 21.4V3M5.6 4.2h11.8l-2.2 4.4 2.2 4.4H5.6" />
+    </svg>
+  )
+}
+
 const STAGES = [
-  { label: "Diagnostic", detail: "Where you actually are", tint: RED },
-  { label: "Daily missions", detail: "One task at a time", tint: "#D51436" },
-  { label: "Mocks", detail: "Exam conditions", tint: MAGENTA },
-  { label: "Pass", detail: "The only metric", tint: GOLD },
+  { label: "Diagnostic", detail: "Where you actually are", tint: RED, Glyph: Crosshair },
+  { label: "Daily missions", detail: "One task at a time", tint: "#D51436", Glyph: Checklist },
+  { label: "Mocks", detail: "Exam conditions", tint: MAGENTA, Glyph: Stopwatch },
+  { label: "Pass", detail: "The only metric", tint: GOLD, Glyph: Flag },
 ] as const
+
+/* One trip of the relay, in seconds. Each stage lights up a quarter of the way
+   through, so the sweep on the rail and the glyph pulses stay in step. */
+const RELAY = 3.2
+
+/*
+ * The Pass card.
+ *
+ * It used to be a gold→magenta gradient carrying WHITE text, which measures
+ * 2.07:1 against the gold stop — far under the 4.5:1 floor, on the single most
+ * important node of the slide. Keeping the gradient inside the amber range and
+ * putting DARK text on it measures 6.82:1 at its worst, and reads as a medal
+ * rather than as a warning, which is the note this card wants to hit anyway.
+ */
+const PASS_FILL = `linear-gradient(140deg, #FFCC55 0%, ${GOLD} 52%, #E08A07 100%)`
+const PASS_INK = "#14141A" // 6.82:1 at the worst stop
+const PASS_SUB = "#3A2A05" // 5.16:1 at the worst stop
 
 export function RouteJourney3D({ style }: { style?: CSSProperties }) {
   const reduce = useReducedMotion()
@@ -290,6 +355,26 @@ export function RouteJourney3D({ style }: { style?: CSSProperties }) {
               willChange: "transform",
             }}
           />
+          {/* A highlight travelling the rail, so the route reads as a loop that
+              is RUNNING rather than a finished diagram. The strip is the full
+              width of the rail, which is what lets `x: -100% → 100%` carry it
+              exactly one rail-width without the component ever needing to know
+              its own pixel width — percentage translation is relative to the
+              element's own box. */}
+          {!reduce && (
+            <span style={{ position: "absolute", inset: 0, borderRadius: 99, overflow: "hidden" }}>
+              <motion.span
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{ duration: RELAY, repeat: Infinity, ease: "linear", delay: 1.05 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.92) 50%, transparent 100%)",
+                  willChange: "transform",
+                }}
+              />
+            </span>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "stretch", gap: 10, transformStyle: "preserve-3d" }}>
@@ -308,23 +393,45 @@ export function RouteJourney3D({ style }: { style?: CSSProperties }) {
                 style={{
                   flex: 1,
                   minWidth: 0,
+                  // Positioned so the Pass node's ring can overlay it. Without
+                  // this the ring would resolve against the perspective wrapper
+                  // and stretch across the whole route.
+                  position: "relative",
                   transformStyle: "preserve-3d",
                   willChange: "transform, opacity",
                   padding: "13px 13px 14px",
                   borderRadius: 16,
                   // The final node is the promise, so it is the only filled one
                   // and the only one pushed toward the viewer.
-                  background: last
-                    ? `linear-gradient(140deg, ${GOLD} 0%, ${MAGENTA} 118%)`
-                    : "rgba(255,255,255,.72)",
+                  background: last ? PASS_FILL : "rgba(255,255,255,.72)",
                   backdropFilter: last ? undefined : "blur(14px) saturate(150%)",
                   WebkitBackdropFilter: last ? undefined : "blur(14px) saturate(150%)",
-                  border: `1px solid ${last ? "rgba(244,164,5,.5)" : "rgba(20,20,26,.07)"}`,
+                  border: `1px solid ${last ? "rgba(179,117,3,.55)" : "rgba(20,20,26,.07)"}`,
                   boxShadow: last
                     ? "inset 0 1px 0 rgba(255,255,255,.4), 0 18px 34px -16px rgba(244,164,5,.6)"
                     : "inset 0 1px 0 rgba(255,255,255,.9), 0 10px 22px -14px rgba(20,20,26,.24)",
                 }}
               >
+                {/* Pass is the promise of the whole slide, so it gets the one
+                    beat the other three do not: a ring expanding outward as the
+                    relay completes, timed to land when the rail's highlight
+                    arrives. Scale and opacity, no layout, and it renders nothing
+                    at all under reduced motion. */}
+                {last && !reduce && (
+                  <motion.span
+                    aria-hidden
+                    animate={{ scale: [1, 1.14, 1.24], opacity: [0, 0.55, 0] }}
+                    transition={{ duration: RELAY, repeat: Infinity, ease: "easeOut", delay: 1.05 + (3 * RELAY) / 4 }}
+                    style={{
+                      position: "absolute",
+                      inset: -1,
+                      borderRadius: 17,
+                      border: `1.5px solid ${GOLD}`,
+                      pointerEvents: "none",
+                      willChange: "transform, opacity",
+                    }}
+                  />
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -333,19 +440,38 @@ export function RouteJourney3D({ style }: { style?: CSSProperties }) {
                     font: `600 9.5px/1 ${MONO}`,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: last ? "rgba(255,255,255,.9)" : MUTE,
+                    color: last ? PASS_SUB : MUTE,
                   }}
                 >
-                  <span
+                  {/* The glyph brightens and swells as the rail's highlight
+                      reaches this stage — index / 4 of a trip, so the four fire
+                      in order rather than together. opacity and scale only, and
+                      the loop is dropped entirely under reduced motion. */}
+                  <motion.span
                     aria-hidden
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 99,
-                      flex: "none",
-                      background: last ? "#fff" : stage.tint,
-                    }}
-                  />
+                    style={{ flex: "none", display: "grid", placeItems: "center", willChange: "transform" }}
+                    animate={reduce ? undefined : { scale: [1, 1.22, 1, 1], opacity: [0.62, 1, 0.62, 0.62] }}
+                    transition={
+                      reduce
+                        ? undefined
+                        : {
+                            duration: RELAY,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: 1.05 + (index * RELAY) / STAGES.length,
+                            // `times` MUST be the same length as the keyframes and
+                            // MUST end at 1 — Motion asserts both, and a failed
+                            // invariant throws inside the frame loop, which freezes
+                            // every other animation on the slide at its initial
+                            // value rather than just this one. The trailing 1 is
+                            // what holds the glyph at rest for the remaining 80%
+                            // of the relay instead of pulsing continuously.
+                            times: [0, 0.08, 0.2, 1],
+                          }
+                    }
+                  >
+                    <stage.Glyph tone={last ? PASS_SUB : stage.tint} />
+                  </motion.span>
                   0{index + 1}
                 </div>
                 <div
@@ -353,7 +479,7 @@ export function RouteJourney3D({ style }: { style?: CSSProperties }) {
                     marginTop: 8,
                     font: `800 14px/1.15 ${SANS}`,
                     letterSpacing: "-0.02em",
-                    color: last ? "#fff" : INK,
+                    color: last ? PASS_INK : INK,
                   }}
                 >
                   {stage.label}
@@ -362,7 +488,7 @@ export function RouteJourney3D({ style }: { style?: CSSProperties }) {
                   style={{
                     marginTop: 3,
                     font: `500 11px/1.35 ${SANS}`,
-                    color: last ? "rgba(255,255,255,.86)" : MUTE,
+                    color: last ? PASS_SUB : MUTE,
                   }}
                 >
                   {stage.detail}
