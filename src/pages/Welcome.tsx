@@ -32,6 +32,14 @@ import {
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
 import { AnimatedHeadline, GlassButton, RouteJourney3D } from "@/components/acca/onboarding-ui"
+import {
+  ChoiceCard,
+  ChoiceGroup,
+  ChoicePill,
+  ChoiceTile,
+  FieldLabel,
+  TogglePill,
+} from "@/components/acca/onboarding-choice-ui"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -811,21 +819,38 @@ function LearnerRouteSlide({ value, onChange }: { value: LearnerRoute | null; on
     { value: "course", icon: "study", title: "Continue my current studies", detail: "I already use a course, tutor, books, or self-study.", path: ["Map progress", "Verify gaps", "Complement my course"] },
     { value: "practice", icon: "mock", title: "Practise for my exam", detail: "I have covered most of the syllabus and need practice and mocks.", path: ["Readiness check", "Timed practice", "Mock plan"] },
   ]
-  return <div style={{ display: "grid", gap: 11, maxWidth: 570 }}>
-    {routes.map((route, index) => {
-      const active = value === route.value
-      return <motion.button key={route.value} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .08 }} whileTap={{ scale: .99 }} onClick={() => onChange(route.value)} style={{ padding: "17px 18px", borderRadius: 17, border: `1.5px solid ${active ? RED : BORDER}`, background: active ? "rgba(200,0,0,.045)" : "#fff", cursor: "pointer", textAlign: "left" }}>
-        <div style={{ display: "flex", gap: 13, alignItems: "center" }}>
-          <span style={{ width: 40, height: 40, borderRadius: 12, background: active ? RED : PANEL, display: "grid", placeItems: "center" }}><Icon name={route.icon} size={19} color={active ? "#fff" : BODY} /></span>
-          <div style={{ flex: 1 }}><div style={{ font: `800 15px/1.25 ${SANS}`, color: INK }}>{route.title}</div><div style={{ marginTop: 4, font: `500 12.5px/1.4 ${SANS}`, color: MUTE }}>{route.detail}</div></div>
-          {active && <Icon name="done" size={19} color={RED} />}
-        </div>
-        <AnimatePresence>{active && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, paddingTop: 13, borderTop: `1px solid ${BORDER}`, flexWrap: "wrap" }}>{route.path.map((item, i) => <span key={item} style={{ display: "flex", alignItems: "center", gap: 6, font: `700 10.5px/1 ${MONO}`, color: i === 0 ? RED : META }}>{i > 0 && <Icon name="arrow" size={11} color={GHOST} />}{item}</span>)}</div>
-        </motion.div>}</AnimatePresence>
-      </motion.button>
-    })}
-  </div>
+  return (
+    <ChoiceGroup
+      label="Where are you starting from?"
+      values={routes.map((route) => route.value)}
+      value={value}
+      onChange={(next) => onChange(next as LearnerRoute)}
+      gap={11}
+      style={{ maxWidth: 570 }}
+    >
+      {routes.map((route) => (
+        <ChoiceCard
+          key={route.value}
+          value={route.value}
+          title={route.title}
+          detail={route.detail}
+          icon={<Icon name={route.icon} size={19} color={value === route.value ? "#fff" : BODY} />}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {route.path.map((item, i) => (
+              <span
+                key={item}
+                style={{ display: "flex", alignItems: "center", gap: 6, font: `700 10.5px/1 ${MONO}`, color: i === 0 ? RED : META }}
+              >
+                {i > 0 && <Icon name="arrow" size={11} color={GHOST} />}
+                {item}
+              </span>
+            ))}
+          </span>
+        </ChoiceCard>
+      ))}
+    </ChoiceGroup>
+  )
 }
 
 const CEFR_LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"]
@@ -860,28 +885,92 @@ function EnglishBaselineSlide({ route, level, evidence, certificate, certificate
   certificateType: "IELTS" | "TOEFL" | "Cambridge" | "Other"; onLevel: (value: CefrLevel | null) => void; onEvidence: (value: EnglishEvidence) => void
   onCertificate: (value: File | null) => void; onCertificateType: (value: "IELTS" | "TOEFL" | "Cambridge" | "Other") => void
 }) {
-  const [answers, setAnswers] = useState<Record<number, boolean>>({})
+  /*
+   * The chosen DEFINITION per row, not whether it happened to be right.
+   *
+   * Storing the boolean meant the control had no value of its own to be selected
+   * against, which is why it could not become a radiogroup. Scoring moves to
+   * finishQuiz, where it belongs, and the behaviour is unchanged: n correct maps
+   * to CEFR_LEVELS[n - 1], clamped.
+   */
+  const [answers, setAnswers] = useState<Record<number, string>>({})
   const modes: { id: EnglishEvidence; label: string; icon: IconName }[] = [
     { id: "certificate", label: "Use certificate", icon: "upload" }, { id: "self", label: "Select A1–C2", icon: "stats" }, { id: "vocabulary", label: "Vocabulary check", icon: "tutor" },
   ]
+  const answered = Object.keys(answers).length
   const finishQuiz = () => {
-    const correct = Object.values(answers).filter(Boolean).length
+    const correct = VOCAB_CHECK.filter(([, right], index) => answers[index] === right).length
     onLevel(CEFR_LEVELS[Math.max(0, Math.min(CEFR_LEVELS.length - 1, correct - 1))])
     onEvidence("vocabulary")
   }
-  const levelButtons = (disabled = false) => <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-    {CEFR_LEVELS.map((item) => <button key={item} type="button" disabled={disabled} onClick={() => onLevel(item)} style={{ padding: "11px 2px", borderRadius: 9, border: `1px solid ${level === item ? RED : BORDER}`, background: level === item ? RED : "#fff", color: level === item ? "#fff" : INK, opacity: disabled ? .4 : 1, font: `800 11px/1 ${MONO}`, cursor: disabled ? "default" : "pointer" }}>{item}</button>)}
-  </div>
   return <div style={{ maxWidth: 590 }}>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8 }}>{modes.map((mode) => <button key={mode.id} type="button" onClick={() => { onEvidence(mode.id); onLevel(null) }} style={{ padding: "13px 6px", borderRadius: 13, border: `1.5px solid ${evidence === mode.id ? RED : BORDER}`, background: evidence === mode.id ? "rgba(200,0,0,.05)" : "#fff", color: evidence === mode.id ? RED : BODY, cursor: "pointer", font: `750 11.5px/1.25 ${SANS}` }}><Icon name={mode.icon} size={17} color="currentColor" style={{ margin: "0 auto 7px" }} />{mode.label}</button>)}</div>
-    {evidence === "self" && <div style={{ marginTop: 14 }}>{levelButtons()}<p style={{ margin: "9px 0 0", font: `500 11.5px/1.45 ${SANS}`, color: MUTE }}>A1–A2 gets short explanations and defined terminology. B1–B2 gets plain exam English. C1–C2 uses full examiner language.</p></div>}
+    <ChoiceGroup
+      label="How should we set your English level?"
+      values={modes.map((mode) => mode.id)}
+      value={evidence}
+      onChange={(next) => { onEvidence(next as EnglishEvidence); onLevel(null) }}
+      layout="grid"
+      columns={3}
+      gap={8}
+    >
+      {modes.map((mode) => (
+        <ChoiceTile
+          key={mode.id}
+          value={mode.id}
+          label={mode.label}
+          icon={<Icon name={mode.icon} size={17} color={evidence === mode.id ? RED : BODY} />}
+        />
+      ))}
+    </ChoiceGroup>
+    {evidence === "self" && <div style={{ marginTop: 14 }}>
+      <ChoiceGroup label="Your CEFR English level" values={CEFR_LEVELS} value={level} onChange={(next) => onLevel(next as CefrLevel)} layout="row" gap={7}>
+        {CEFR_LEVELS.map((item) => <ChoicePill key={item} value={item} label={item} mono />)}
+      </ChoiceGroup>
+      <p style={{ margin: "9px 0 0", font: `500 11.5px/1.45 ${SANS}`, color: MUTE }}>A1–A2 gets short explanations and defined terminology. B1–B2 gets plain exam English. C1–C2 uses full examiner language.</p>
+    </div>}
     {evidence === "certificate" && <div style={{ marginTop: 14, padding: 14, borderRadius: 14, border: `1px solid ${BORDER}`, background: "#fff" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6, marginBottom: 9 }}>{(["IELTS", "TOEFL", "Cambridge", "Other"] as const).map((type) => <button key={type} type="button" onClick={() => onCertificateType(type)} style={{ padding: "8px 2px", borderRadius: 8, border: `1px solid ${certificateType === type ? RED : BORDER}`, background: "#fff", color: certificateType === type ? RED : META, font: `700 9.5px/1 ${SANS}` }}>{type}</button>)}</div>
+      <ChoiceGroup
+        label="Certificate type"
+        values={["IELTS", "TOEFL", "Cambridge", "Other"]}
+        value={certificateType}
+        onChange={(next) => onCertificateType(next as "IELTS" | "TOEFL" | "Cambridge" | "Other")}
+        layout="grid"
+        columns={2}
+        gap={6}
+        style={{ marginBottom: 9 }}
+      >
+        {(["IELTS", "TOEFL", "Cambridge", "Other"] as const).map((type) => <ChoiceTile key={type} value={type} label={type} />)}
+      </ChoiceGroup>
       <label style={{ display: "block", padding: 11, borderRadius: 10, border: `1.5px dashed ${level ? GREEN : certificateError ? RED : "#D7CCC4"}`, cursor: certificateBusy ? "wait" : "pointer", font: `650 11.5px/1.3 ${SANS}`, color: level ? GREEN : BODY }}><input type="file" accept=".pdf,application/pdf" disabled={certificateBusy} onChange={(event) => void onCertificate(event.target.files?.[0] ?? null)} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{certificateBusy ? "Charles is reading the certificate…" : level ? `${certificate?.name} · ${level} equivalent verified` : "Attach original text-based certificate PDF"}</label>
       {certificateError && <div role="alert" style={{ marginTop: 7, color: RED, font: `600 10.5px/1.4 ${SANS}` }}>{certificateError}</div>}
       <div style={{ margin: "9px 0 0", font: `500 10px/1.4 ${SANS}`, color: MUTE }}>Scholify reads the score and derives A1–C2; it does not verify the issuer’s authenticity. The original PDF is not retained.</div>
     </div>}
-    {evidence === "vocabulary" && <div style={{ marginTop: 13, display: "grid", gap: 6 }}>{VOCAB_CHECK.map(([word, correct, wrong], index) => <div key={word} style={{ display: "grid", gridTemplateColumns: "82px 1fr 1fr", gap: 5, alignItems: "center" }}><strong style={{ font: `800 11px/1 ${MONO}` }}>{word}</strong>{(VOCAB_CORRECT_SECOND[index] ? [wrong, correct] : [correct, wrong]).map((option) => { const isCorrect = option === correct; const chosen = answers[index] === isCorrect; return <button key={option} type="button" onClick={() => setAnswers((old) => ({ ...old, [index]: isCorrect }))} style={{ padding: "8px 5px", borderRadius: 8, border: `1px solid ${chosen ? RED : BORDER}`, background: chosen ? "rgba(200,0,0,.05)" : "#fff", color: chosen ? RED : META, font: `600 9.5px/1.2 ${SANS}` }}>{option}</button> })}</div>)}<button type="button" disabled={Object.keys(answers).length < VOCAB_CHECK.length} onClick={finishQuiz} style={{ padding: 11, border: 0, borderRadius: 10, background: RED, color: "#fff", opacity: Object.keys(answers).length < VOCAB_CHECK.length ? .4 : 1, font: `800 11px/1 ${SANS}` }}>Set my support level</button></div>}
+    {evidence === "vocabulary" && <div style={{ marginTop: 13, display: "grid", gap: 9 }}>
+      {VOCAB_CHECK.map(([word, correct, wrong], index) => {
+        // VOCAB_CORRECT_SECOND balances which side holds the right answer; see
+        // its declaration for why answer-position bias matters here.
+        const options = VOCAB_CORRECT_SECOND[index] ? [wrong, correct] : [correct, wrong]
+        return (
+          <div key={word} style={{ display: "grid", gridTemplateColumns: "82px 1fr", gap: 8, alignItems: "center" }}>
+            <strong style={{ font: `800 11px/1.3 ${MONO}` }}>{word}</strong>
+            <ChoiceGroup
+              label={`What does "${word}" mean?`}
+              values={options}
+              value={answers[index] ?? null}
+              onChange={(next) => setAnswers((old) => ({ ...old, [index]: next }))}
+              layout="grid"
+              columns={2}
+              gap={6}
+            >
+              {options.map((option) => <ChoiceTile key={option} value={option} label={option} />)}
+            </ChoiceGroup>
+          </div>
+        )
+      })}
+      <GlassButton onClick={finishQuiz} disabled={answered < VOCAB_CHECK.length} full>
+        Set my support level
+      </GlassButton>
+    </div>}
     {level && <div style={{ marginTop: 11, padding: "10px 12px", borderRadius: 10, background: "rgba(14,159,110,.08)", color: "#177054", font: `700 11.5px/1.4 ${SANS}` }}>Charles will coach you at {level} English{route === "new" ? " while teaching ACCA foundations" : ""}.</div>}
   </div>
 }
@@ -906,18 +995,6 @@ function ValueTrio({ style, big }: { style?: CSSProperties; big?: boolean }) {
   )
 }
 
-function tileStyle(on: boolean): CSSProperties {
-  return {
-    textAlign: "left",
-    borderRadius: 14,
-    transition: "all .18s",
-    cursor: "pointer",
-    border: `1.5px solid ${on ? RED : BORDER}`,
-    background: on ? "rgba(200,0,0,.05)" : "#fff",
-    boxShadow: on ? "0 0 0 3px rgba(200,0,0,.07)" : "none",
-  }
-}
-
 function PaperSlide({
   levels, paper, setPaper, variant, setVariant, passed, setPassed, showPassed, setShowPassed, isMobile,
 }: {
@@ -934,51 +1011,58 @@ function PaperSlide({
 }) {
   return (
     <div>
-      <div style={{ display: isMobile ? "block" : "flex", gap: 18 }}>
+      {/* ONE radiogroup across all three level columns, because it is one
+          decision. The `style` override supplies the column layout; ChoiceGroup
+          finds its radios at any nesting depth, so arrow keys walk the papers in
+          reading order. */}
+      <ChoiceGroup
+        label="Which paper are you preparing for?"
+        values={levels.flatMap((g) => g.papers.map((p) => p.id))}
+        value={paper}
+        onChange={setPaper}
+        style={{ display: isMobile ? "block" : "flex", gap: 18 }}
+      >
         {levels.map((g) => (
           <div key={g.key} style={{ flex: 1, marginBottom: isMobile ? 18 : 0 }}>
-            <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT, marginBottom: 9 }}>{g.label}</div>
+            <FieldLabel style={{ color: FAINT, letterSpacing: "0.12em", marginBottom: 9 }}>{g.label}</FieldLabel>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr", gap: 8 }}>
-              {g.papers.map((p) => {
-                const on = paper === p.id
-                const done = passed.has(p.id)
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => !done && setPaper(p.id)}
-                    disabled={done}
-                    style={{ ...tileStyle(on), padding: isMobile ? "12px 12px" : "10px 12px", opacity: done ? 0.5 : 1, cursor: done ? "default" : "pointer" }}
-                  >
-                    <div style={{ font: `700 ${isMobile ? 13 : 12}px/1 ${MONO}`, color: RED, marginBottom: 5 }}>{p.id}</div>
-                    <div style={{ font: `600 ${isMobile ? 11.5 : 11}px/1.25 ${SANS}`, color: INK }}>{done ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>Passed <Icon name="done" size={12} /></span> : p.name}</div>
-                  </button>
-                )
-              })}
+              {g.papers.map((p) => (
+                <ChoiceTile
+                  key={p.id}
+                  value={p.id}
+                  label={p.id}
+                  sub={passed.has(p.id) ? "Already passed" : p.name}
+                  disabled={passed.has(p.id)}
+                  mono
+                />
+              ))}
             </div>
           </div>
         ))}
-      </div>
+      </ChoiceGroup>
       {paper && ["LW", "TX"].includes(paper) && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           style={{ marginTop: 16, padding: 14, border: `1px solid ${BORDER}`, borderRadius: 14, background: "#FAFAF9" }}
         >
-          <div style={{ font: `700 11px/1 ${MONO}`, letterSpacing: ".08em", color: INK, marginBottom: 9 }}>CHOOSE {paper} VARIANT</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <FieldLabel style={{ color: INK, letterSpacing: ".08em", marginBottom: 9 }}>Choose {paper} variant</FieldLabel>
+          <ChoiceGroup
+            label={`${paper} syllabus variant`}
+            values={["UK", "GLOBAL"]}
+            value={variant}
+            onChange={(next) => setVariant(next as PaperVariant)}
+            layout="grid"
+            columns={2}
+            gap={8}
+          >
             {([
               ["UK", "United Kingdom", paper === "LW" ? "English legal system and UK business law" : "UK taxation and Finance Act rules"],
               ["GLOBAL", "Global", paper === "LW" ? "Official LW Global syllabus" : "Global taxation route"],
-            ] as const).map(([value, label, blurb]) => {
-              const active = variant === value
-              return (
-                <button key={value} type="button" onClick={() => setVariant(value)} style={{ ...tileStyle(active), padding: 12 }}>
-                  <div style={{ font: `700 12px/1 ${MONO}`, color: active ? RED : INK, marginBottom: 6 }}>{label}</div>
-                  <div style={{ font: `500 11px/1.35 ${SANS}`, color: MUTE }}>{blurb}</div>
-                </button>
-              )
-            })}
-          </div>
+            ] as const).map(([value, label, blurb]) => (
+              <ChoiceTile key={value} value={value} label={label} sub={blurb} />
+            ))}
+          </ChoiceGroup>
         </motion.div>
       )}
       <button
@@ -987,28 +1071,27 @@ function PaperSlide({
       >
         {showPassed ? "Done marking passed papers" : "I've already passed some papers"}
       </button>
+      {/* Multi-select, so these are aria-pressed toggles rather than radios —
+          any number of papers can already be passed. */}
       {showPassed && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-          {levels.flatMap((g) => g.papers).map((p) => {
-            const on = passed.has(p.id)
-            return (
-              <button
-                key={p.id}
-                onClick={() => {
-                  setPassed((prev) => {
-                    const n = new Set(prev)
-                    if (n.has(p.id)) n.delete(p.id)
-                    else n.add(p.id)
-                    return n
-                  })
-                  if (paper === p.id) setPaper(null)
-                }}
-                style={{ padding: "6px 11px", borderRadius: 99, border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", color: on ? RED : INK, font: `700 12px/1 ${MONO}`, cursor: "pointer" }}
-              >
-                {p.id}
-              </button>
-            )
-          })}
+        <div role="group" aria-label="Papers I have already passed" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+          {levels.flatMap((g) => g.papers).map((p) => (
+            <TogglePill
+              key={p.id}
+              label={p.id}
+              on={passed.has(p.id)}
+              ariaLabel={`${p.id} — ${p.name}`}
+              onToggle={() => {
+                setPassed((prev) => {
+                  const n = new Set(prev)
+                  if (n.has(p.id)) n.delete(p.id)
+                  else n.add(p.id)
+                  return n
+                })
+                if (paper === p.id) setPaper(null)
+              }}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -1036,56 +1119,46 @@ function TimeSlide({
       <div style={{ display: "flex", justifyContent: "center" }}>
         <DurationPicker value={minutes} onChange={setMinutes} min={40} max={240} />
       </div>
-      <div style={{ marginTop: 4, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-        {MINUTE_OPTIONS.map((m) => {
-          const on = minutes === m.v
-          return (
-            <button
-              key={m.v}
-              onClick={() => setMinutes(m.v)}
-              style={{
-                minHeight: 44,
-                padding: "8px 14px",
-                borderRadius: 999,
-                font: `600 12.5px/1 ${SANS}`,
-                cursor: "pointer",
-                transition: "all .18s",
-                border: `1.5px solid ${on ? RED : BORDER}`,
-                background: on ? "rgba(200,0,0,.05)" : "#fff",
-                color: on ? RED : INK,
-              }}
-            >
-              {m.v} min · {m.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Numeric values cross the group boundary as strings — ChoiceGroup keys on
+          identity, and a string keeps the DOM value and the aria state in step. */}
+      <ChoiceGroup
+        label="Minutes a day"
+        values={MINUTE_OPTIONS.map((m) => String(m.v))}
+        value={String(minutes)}
+        onChange={(next) => setMinutes(Number(next))}
+        layout="row"
+        gap={8}
+        style={{ marginTop: 4, justifyContent: "center" }}
+      >
+        {MINUTE_OPTIONS.map((m) => <ChoicePill key={m.v} value={String(m.v)} label={`${m.v} min · ${m.label}`} />)}
+      </ChoiceGroup>
       <div style={{ marginTop: 11, padding: "14px 16px", borderRadius: 14, background: "rgba(200,0,0,.05)", border: "1px solid rgba(200,0,0,.14)", font: `500 13px/1.45 ${SANS}`, color: "#8A2222" }}>
         {micro}
       </div>
-      <div style={{ marginTop: 22, font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>My daily slot</div>
-      <div style={{ display: "flex", gap: 8 }}>
-        {SLOT_OPTIONS.map((s) => {
-          const on = slot === s.time
-          return (
-            <button
-              key={s.time}
-              onClick={() => setSlot(s.time)}
-              style={{ flex: 1, minHeight: 44, padding: "12px 6px", borderRadius: 12, font: `600 12px/1.2 ${SANS}`, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", color: on ? RED : INK }}
-            >
-              {s.label}
-            </button>
-          )
-        })}
-      </div>
-      <div style={{ marginTop: 18, font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>Days I can honestly protect</div>
-      <div style={{ display: "flex", gap: 8 }}>
-        {[4, 5, 6, 7].map((days) => (
-          <button key={days} onClick={() => setDaysPerWeek(days)} style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1.5px solid ${daysPerWeek === days ? RED : BORDER}`, background: daysPerWeek === days ? "rgba(200,0,0,.05)" : "#fff", color: daysPerWeek === days ? RED : INK, font: `700 12px/1 ${SANS}`, cursor: "pointer" }}>
-            {days} days
-          </button>
-        ))}
-      </div>
+      <FieldLabel style={{ marginTop: 22, color: FAINT }}>My daily slot</FieldLabel>
+      <ChoiceGroup
+        label="My daily slot"
+        values={SLOT_OPTIONS.map((s) => s.time)}
+        value={slot}
+        onChange={setSlot}
+        layout="grid"
+        columns={SLOT_OPTIONS.length}
+        gap={8}
+      >
+        {SLOT_OPTIONS.map((s) => <ChoiceTile key={s.time} value={s.time} label={s.label} />)}
+      </ChoiceGroup>
+      <FieldLabel style={{ marginTop: 18, color: FAINT }}>Days I can honestly protect</FieldLabel>
+      <ChoiceGroup
+        label="Days a week I can protect"
+        values={["4", "5", "6", "7"]}
+        value={String(daysPerWeek)}
+        onChange={(next) => setDaysPerWeek(Number(next))}
+        layout="grid"
+        columns={4}
+        gap={8}
+      >
+        {[4, 5, 6, 7].map((days) => <ChoiceTile key={days} value={String(days)} label={`${days} days`} />)}
+      </ChoiceGroup>
     </div>
   )
 }
@@ -1105,22 +1178,23 @@ function SittingSlide({
     <div style={{ maxWidth: 480 }}>
       {sessionPaper ? (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-            {sittings.map((s) => {
-              const on = pickedSitting === s.date
-              return (
-                <button key={s.date} onClick={() => onPick(s.date)} style={{ ...tileStyle(on), display: "flex", gap: 14, alignItems: "center", padding: "16px 18px" }}>
-                  <span style={{ flex: "none", width: 44, height: 44, borderRadius: 12, background: "rgba(200,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="calendar" size={20} color={RED} />
-                  </span>
-                  <span>
-                    <span style={{ display: "block", font: `700 15px/1.15 ${SANS}`, color: INK }}>{s.label} sitting</span>
-                    <span style={{ display: "block", marginTop: 3, font: `500 12px/1.35 ${SANS}`, color: META }}>Exam week {s.week} · plan counts back from it</span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          <ChoiceGroup
+            label="Which sitting are you entering?"
+            values={sittings.map((s) => s.date)}
+            value={pickedSitting}
+            onChange={onPick}
+            gap={11}
+          >
+            {sittings.map((s) => (
+              <ChoiceCard
+                key={s.date}
+                value={s.date}
+                title={`${s.label} sitting`}
+                detail={`Exam week ${s.week} · plan counts back from it`}
+                icon={<Icon name="calendar" size={20} color={pickedSitting === s.date ? "#fff" : RED} />}
+              />
+            ))}
+          </ChoiceGroup>
           {/* Once a sitting is chosen, the calendar animates to that month and
               highlights the exam week the whole plan counts back from. */}
           {pickedSitting && (
@@ -1152,41 +1226,38 @@ function GoalSlide({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 11, maxWidth: 500 }}>
-      {GOAL_OPTIONS.map((o) => {
-        const on = goal === o.value
-        return (
-          <button key={o.value} onClick={() => set(o.value)} style={{ ...tileStyle(on), display: "flex", gap: 14, alignItems: "flex-start", padding: "16px 18px" }}>
-            <span style={{ flex: "none", width: 42, height: 42, borderRadius: 12, background: on ? RED : "rgba(200,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .18s" }}>
-              <Icon name={GOAL_ICON[o.value]} size={18} color={on ? "#fff" : RED} />
-            </span>
-            <span>
-              <span style={{ display: "block", font: `700 15px/1.15 ${SANS}`, color: INK }}>{o.label}</span>
-              <span style={{ display: "block", marginTop: 3, font: `500 12px/1.4 ${SANS}`, color: on ? "#8A2222" : META }}>{o.blurb}</span>
-            </span>
-          </button>
-        )
-      })}
+      <ChoiceGroup
+        label="What is your goal for this paper?"
+        values={GOAL_OPTIONS.map((o) => o.value)}
+        value={goal}
+        onChange={(next) => set(next as Goal)}
+        gap={11}
+      >
+        {GOAL_OPTIONS.map((o) => (
+          <ChoiceCard
+            key={o.value}
+            value={o.value}
+            title={o.label}
+            detail={o.blurb}
+            icon={<Icon name={GOAL_ICON[o.value]} size={18} color={goal === o.value ? "#fff" : RED} />}
+          />
+        ))}
+      </ChoiceGroup>
 
       {/* target pass probability — the number the whole plan will chase */}
       <div style={{ marginTop: 10 }}>
-        <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 10 }}>
-          Your target before exam day
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {TARGET_OPTIONS.map((t) => {
-            const on = target === t.v
-            return (
-              <button
-                key={t.v}
-                onClick={() => setTarget(t.v)}
-                style={{ flex: 1, minHeight: 44, padding: "13px 6px", borderRadius: 12, cursor: "pointer", transition: "all .18s", border: `1.5px solid ${on ? RED : BORDER}`, background: on ? "rgba(200,0,0,.05)" : "#fff", textAlign: "center" }}
-              >
-                <span style={{ display: "block", font: `800 17px/1 ${SANS}`, color: on ? RED : INK }}>{t.label}</span>
-                <span style={{ display: "block", marginTop: 4, font: `600 10.5px/1.2 ${SANS}`, color: on ? "#8A2222" : META }}>{t.blurb}</span>
-              </button>
-            )
-          })}
-        </div>
+        <FieldLabel style={{ color: FAINT }}>Your target before exam day</FieldLabel>
+        <ChoiceGroup
+          label="Target Exam Readiness Score"
+          values={TARGET_OPTIONS.map((t) => String(t.v))}
+          value={String(target)}
+          onChange={(next) => setTarget(Number(next))}
+          layout="grid"
+          columns={TARGET_OPTIONS.length}
+          gap={8}
+        >
+          {TARGET_OPTIONS.map((t) => <ChoiceTile key={t.v} value={String(t.v)} label={t.label} sub={t.blurb} />)}
+        </ChoiceGroup>
         <p style={{ margin: "8px 0 0", font: `500 12px/1.4 ${SANS}`, color: MUTE }}>
           Exam Readiness Score — the number your diagnostic sets and your plan pushes to this line.
         </p>
@@ -1253,19 +1324,18 @@ function ResultUploadSlide({
           {error} You can continue without a document using one of the assessment choices below.
         </div>
       )}
-      <div style={{ display: "grid", gap: 9, marginTop: 14 }}>
+      <ChoiceGroup
+        label="How should we set your baseline?"
+        values={options.map((option) => option.value)}
+        value={choice}
+        onChange={(next) => onChoice(next as AssessmentPath)}
+        gap={9}
+        style={{ marginTop: 14 }}
+      >
         {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChoice(option.value)}
-            style={{ width: "100%", padding: "14px 16px", borderRadius: 14, border: `1.5px solid ${choice === option.value ? RED : BORDER}`, background: choice === option.value ? "rgba(200,0,0,.05)" : "#fff", color: choice === option.value ? RED : BODY, cursor: "pointer", textAlign: "left" }}
-          >
-            <span style={{ display: "block", font: `750 13px/1.3 ${SANS}` }}>{option.title}</span>
-            <span style={{ display: "block", marginTop: 4, font: `500 11.5px/1.4 ${SANS}`, color: MUTE }}>{option.detail}</span>
-          </button>
+          <ChoiceCard key={option.value} value={option.value} title={option.title} detail={option.detail} />
         ))}
-      </div>
+      </ChoiceGroup>
       <p style={{ margin: "12px 2px 0", font: `500 11.5px/1.45 ${SANS}`, color: FAINT }}>
         Upload is optional. Scholify extracts planning evidence and does not retain the original PDF.
       </p>
@@ -1350,7 +1420,7 @@ function ReadySlide({
       </div>
       {!isMobile && (
         <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
-          <motion.button whileTap={finishBusy ? undefined : { scale: 0.98 }} disabled={finishBusy} onClick={uploadedResult ? onUploaded : onDiagnostic} style={{ padding: "17px 32px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 16px/1 ${SANS}`, cursor: finishBusy ? "wait" : "pointer", opacity: finishBusy ? .7 : 1, boxShadow: "0 14px 28px -12px rgba(200,0,0,.55)" }}>
+          <GlassButton big disabled={finishBusy} onClick={uploadedResult ? onUploaded : onDiagnostic}>
             {finishBusy
               ? "Building your plan…"
               : uploadedResult
@@ -1360,7 +1430,7 @@ function ReadySlide({
                   : learnerRoute === "practice"
                     ? "Assess my readiness and start practising"
                     : "Map my gaps and build my plan"}
-          </motion.button>
+          </GlassButton>
           {finishError && <p role="alert" style={{ margin: "10px 0 0", color: RED, font: `600 12px/1.4 ${SANS}` }}>{finishError}</p>}
         </div>
       )}
@@ -1528,7 +1598,23 @@ function VisualPanel({
                       EXAM WEEK {sitting.week.toUpperCase()}
                     </div>
                   )}
-                  <div style={{ borderRadius: "50%", transition: "all .2s", width: on ? 30 : 14, height: on ? 30 : 14, background: on ? RED : "#fff", border: `2px solid ${on ? RED : "#DED2C8"}`, boxShadow: on ? "0 12px 26px -10px rgba(200,0,0,.6)" : "none", marginTop: on ? 0 : 8 }} />
+                  {/* Fixed 30px box scaled by transform rather than animating
+                      width/height/marginTop. The old version transitioned all
+                      three, laying out this row on every frame whenever the
+                      sitting changed; 14/30 reproduces the small dot exactly and
+                      both sizes share the same centre, so nothing moves. */}
+                  <div
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      transform: on ? "scale(1)" : "scale(0.4667)",
+                      transition: "transform .2s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                      background: on ? RED : "#fff",
+                      border: `2px solid ${on ? RED : "#DED2C8"}`,
+                      boxShadow: on ? "0 12px 26px -10px rgba(200,0,0,.6)" : "none",
+                    }}
+                  />
                   <div style={{ font: `600 14px/1 ${SANS}`, color: on ? INK : "#B4A99F", fontWeight: on ? 800 : 600 }}>{m}</div>
                 </div>
               )
