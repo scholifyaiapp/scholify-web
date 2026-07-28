@@ -79,21 +79,13 @@ describe("objective bank integrity", () => {
     }
   })
 
-  it("keeps every mock form free of recall drills where the bank allows it", async () => {
+  it("keeps EVERY mock form of EVERY paper free of recall drills", async () => {
     // A mock is the dress rehearsal and its score gates the readiness loop, so a
-    // glossary prompt in it is worse than in any other surface.
-    //
-    // buildMockForm shuffles each area then trims to size from the front, so
-    // WHICH questions reached a mock was decided by shuffle luck — it discarded
-    // authored questions while keeping recall drills. Ordering each area
-    // authored-first before the stride fixed that for 14 of 15 papers.
-    //
-    // LW is exempt: LW-Global has 56 authored questions total, so a 55-mark
-    // Section A across three disjoint forms cannot be filled from authored
-    // content alone. That is a content shortage, not a selection bug.
-    const thinBank = new Set(["LW"])
+    // glossary prompt in it is worse than in any other surface. No paper is
+    // exempt: where a bank cannot fill three disjoint forms from authored
+    // content, buildCbeMock borrows authored questions from the other forms
+    // rather than padding with drills.
     for (const paper of ALL_PAPERS) {
-      if (thinBank.has(paper.id)) continue
       await loadPaperContent(paper.id)
       for (const form of [1, 2, 3]) {
         const mock = buildCbeMock(paper.id, form)
@@ -105,6 +97,33 @@ describe("objective bank integrity", () => {
         const recall = objective.filter((q) => q.recall).length
         expect(recall, `${paper.id} mock form ${form}`).toBe(0)
       }
+    }
+  })
+
+  it("only breaks Section-A disjointness on a paper whose bank cannot fill three forms", async () => {
+    /*
+     * The borrow-from-other-forms fallback must stay a LAST resort: borrowed
+     * questions are appended AFTER the form's own, so they are only ever drawn
+     * once a form's authored supply runs out. Measured, exactly one paper reaches
+     * them — LW draws 11, 19 and 19 borrowed questions across its three forms,
+     * every other paper draws zero.
+     *
+     * LW-Global is the genuine case: 56 authored questions against ~35 Section A
+     * items per form. This test is what stops the fallback spreading to papers
+     * that have the content to keep their forms disjoint.
+     */
+    const mayBorrow = new Set(["LW"])
+    for (const paper of ALL_PAPERS) {
+      await loadPaperContent(paper.id)
+      const sectionA = [1, 2, 3].map((form) => {
+        const section = buildCbeMock(paper.id, form).sections.find((s) => s.id === "A")
+        return (section?.items ?? [])
+          .filter((item) => item.kind === "ot")
+          .map((item) => (item as Extract<typeof item, { kind: "ot" }>).q.id)
+      })
+      const overlap = sectionA[0].filter((id) => sectionA[1].includes(id)).length
+      if (mayBorrow.has(paper.id)) continue
+      expect(overlap, `${paper.id} forms 1 and 2 must share no Section A question`).toBe(0)
     }
   })
 

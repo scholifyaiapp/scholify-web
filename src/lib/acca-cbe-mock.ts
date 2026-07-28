@@ -24,7 +24,7 @@ import { otCaseMarks } from "@/lib/acca-content"
 import type { WrittenQuestion } from "@/lib/acca-written"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getOtCases } from "@/lib/acca-cases"
-import { buildMockForm } from "@/lib/acca-mockforms"
+import { authoredOutsideForm, buildMockForm } from "@/lib/acca-mockforms"
 import { examBlueprint, examSecondsFor, type SectionKind } from "@/lib/acca-exam-structure"
 
 export type CbeItem =
@@ -142,8 +142,27 @@ export function buildCbeMock(paperId: string, form: number): CbeMock {
   // gates the exam-readiness loop, so it must not be padded with glossary
   // prompts that are far easier than the real sitting. Recall items stay in the
   // pool as a last resort for thin banks rather than leaving a hole in a section.
-  const rawPool = otMarksNeeded > 0 ? buildMockForm(paperId, form, Math.ceil(otMarksNeeded / 2) + 6) : []
-  const pool = [...rawPool.filter((q) => !q.recall), ...rawPool.filter((q) => q.recall)]
+  // Size the request for the WORST case — every OT worth 1 mark — not the average.
+  // The old `otMarksNeeded / 2 + 6` assumed 2 marks apiece, so on papers with
+  // 1-mark questions the pool arrived short of the section's marks even though the
+  // form held plenty more. drawOts only consumes what each section needs and the
+  // remainder stays in the pool for the next one, so asking for more costs nothing.
+  const rawPool = otMarksNeeded > 0 ? buildMockForm(paperId, form, otMarksNeeded + 6) : []
+  const authoredHere = rawPool.filter((q) => !q.recall)
+  const recallHere = rawPool.filter((q) => q.recall)
+  // Draw order: this form's authored questions, then authored questions borrowed
+  // from the OTHER forms, and only then derived recall drills.
+  //
+  // The borrow step exists for papers whose authored bank cannot fill three
+  // disjoint forms — see authoredOutsideForm. On every paper with a deep enough
+  // bank the borrow list is never reached, so forms stay strictly disjoint there;
+  // it only engages where the alternative was padding a graded mock with glossary
+  // prompts.
+  const authoredMarks = authoredHere.reduce((sum, q) => sum + q.marks, 0)
+  const borrowed = authoredMarks >= otMarksNeeded
+    ? []
+    : authoredOutsideForm(paperId, form, new Set(rawPool.map((q) => q.id)))
+  const pool = [...authoredHere, ...borrowed, ...recallHere]
 
   const written = shuffle(getWrittenQuestions(paperId), paperSeed(paperId) * 17 + form * 131)
   // Rotate authored cases with the form so repeat sitters see variety once

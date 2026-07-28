@@ -102,6 +102,24 @@ export function buildMockForm(paperId: string, form: number, size: number): Acca
   return [...picked].sort((a, b) => LADDER.indexOf(a.difficulty) - LADDER.indexOf(b.difficulty))
 }
 
+/**
+ * Authored questions from OUTSIDE this form, for a paper whose bank cannot fill
+ * three disjoint forms from authored content alone.
+ *
+ * LW-Global is the case that forces this: 56 authored questions against roughly
+ * 55 objective items per form, so two of its three forms could only be completed
+ * with derived recall drills. Meeting a real question again in a later mock is
+ * ordinary revision; meeting a glossary prompt in a GRADED mock is not. So when a
+ * form runs short, quality comes first and strict disjointness gives way.
+ *
+ * Seeded per form, so each form borrows a different subset rather than all three
+ * converging on the same overflow questions.
+ */
+export function authoredOutsideForm(paperId: string, form: number, exclude: Set<string>): AccaQuestion[] {
+  const spare = getQuestions(paperId).filter((q) => !q.recall && !exclude.has(q.id))
+  return shuffle(spare, paperSeed(paperId) + Math.max(1, Math.round(form)) * 977)
+}
+
 /** Which form the learner's next mock should use (Mock N → Form N, cycling). */
 export function nextMockForm(attempts: number): number {
   return (Math.max(0, attempts) % MOCK_FORMS) + 1
