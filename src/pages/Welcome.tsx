@@ -6,7 +6,7 @@ import { Icon, type IconName } from "@/components/acca/ui"
 import { ScholifyMark } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
-import { setPlan } from "@/lib/acca-plan"
+import { METHOD_PHASES, setPlan } from "@/lib/acca-plan"
 import { setDailyGoal } from "@/lib/acca"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, setPaperVariant, type Goal, type PaperVariant } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
@@ -70,6 +70,9 @@ const FAINT = "#A79E96"
 const GHOST = "#B9B0A8"
 const HINT = "#C3BAB2"
 const RED = "#C80000"
+/* Brand Board secondary — the gradient partner to RED, used by the method
+   phase bar on step 1 so it matches the loop diagram's own palette. */
+const MAGENTA = "#E50068"
 const GREEN = "#0E9F6E"
 const BORDER = "#ECE4DE"
 const TRACK = "#EAE2DB"
@@ -794,7 +797,7 @@ export default function Welcome() {
             transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: "absolute", inset: 0 }}
           >
-            <VisualPanel step={step} paper={paper} sitting={sittings.find((s) => s.date === pickedSitting) ?? null} sittings={sittings} levels={levels} />
+            <VisualPanel step={step} paper={paper} sitting={sittings.find((s) => s.date === pickedSitting) ?? null} sittings={sittings} levels={levels} learnerRoute={learnerRoute} englishLevel={englishLevel} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -1482,13 +1485,18 @@ function IllusBase({ children }: { children: ReactNode }) {
 }
 
 function VisualPanel({
-  step, paper, sitting, sittings, levels,
+  step, paper, sitting, sittings, levels, learnerRoute, englishLevel,
 }: {
   step: number
   paper: string | null
   sitting: Sitting | null
   sittings: Sitting[]
   levels: ReturnType<typeof paperLevels>
+  /* Steps 1 and 2 used to fall through to the generic loop panel, so the visual
+     side sat inert while the learner was choosing — the paper step (3) reacted
+     live and the two before it did not. These two props are what let them. */
+  learnerRoute: LearnerRoute | null
+  englishLevel: CefrLevel | null
 }) {
   const reducedLoop = useReducedMotion()
   /* 0 · welcome photo + brand chip */
@@ -1509,17 +1517,157 @@ function VisualPanel({
     )
   }
 
-  if (step === 1 || step === 2) {
-    const labels = step === 1 ? ["NEW", "LEARNING", "RETAKER"] : ["A1", "A2", "B1", "B2", "C1", "C2"]
+  /* The old shared step 1 + 2 panel is gone. It drew three circles (NEW /
+     LEARNING / RETAKER) or six (A1…C2) and hardcoded `index === 0` as the lit
+     one — so it highlighted the FIRST option forever, whatever the learner
+     actually chose. It looked responsive and never was, which is why the paper
+     step felt alive and these two felt dead. Replaced by the two dedicated
+     panels below, which read learnerRoute and englishLevel. */
+
+  /* 1 · the method, with the learner's ENTRY POINT lit as they choose.
+     The four phases are drawn at their real share of study time (0.45 / 0.25 /
+     0.15 / 0.15 from METHOD_PHASES), so the bar is not decoration — it is the
+     plan's actual shape. Choosing a route dims the phases you skip, which is
+     the whole promise of the question: your answer changes the plan. */
+  if (step === 1) {
+    const ENTRY: Record<LearnerRoute, number> = { new: 0, course: 1, practice: 3 }
+    const entry = learnerRoute ? ENTRY[learnerRoute] : -1
+    const PHASE_ICON: IconName[] = ["learn", "practice", "flashcards", "mock"]
     return (
       <IllusBase>
-        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 48 }}>
-          <div style={{ width: "min(84%,430px)", position: "relative" }}>
-            <div style={{ position: "absolute", top: "50%", left: 16, right: 16, height: 2, background: "linear-gradient(90deg,#E7CFC9,#EBD9A9)" }} />
-            <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {labels.map((label, index) => <motion.div key={label} initial={{ opacity: 0, scale: .7, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: index * .1, type: "spring" }} style={{ width: step === 1 ? 94 : 48, height: step === 1 ? 94 : 48, borderRadius: "50%", background: index === 0 ? RED : "#fff", color: index === 0 ? "#fff" : META, border: `1.5px solid ${index === 0 ? RED : BORDER}`, display: "grid", placeItems: "center", font: `800 ${step === 1 ? 11 : 12}px/1 ${MONO}`, boxShadow: "0 12px 28px -20px rgba(20,20,26,.5)" }}>{label}</motion.div>)}
-            </div>
-            <div style={{ marginTop: 38, textAlign: "center", color: MUTE, font: `600 12px/1.5 ${SANS}` }}>{step === 1 ? "Three starting points. One route to a pass." : "Charles adapts the language—not the exam standard."}</div>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px clamp(28px,3.4vw,46px)" }}>
+          <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 16 }}>
+            The Scholify method
+          </div>
+          {/* Proportional phase bar. flex-grow carries the share, so the widths
+              stay true if a share is ever retuned. */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
+            {METHOD_PHASES.map((phase, i) => (
+              <motion.div
+                key={phase.key}
+                animate={{ opacity: entry < 0 ? 0.55 : i < entry ? 0.22 : 1 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  flex: phase.share,
+                  height: 8,
+                  borderRadius: 99,
+                  background: entry >= 0 && i >= entry ? `linear-gradient(90deg,${RED},${MAGENTA})` : "#E3D7CF",
+                }}
+              />
+            ))}
+          </div>
+          {METHOD_PHASES.map((phase, i) => {
+            const on = i === entry
+            const skipped = entry >= 0 && i < entry
+            return (
+              <motion.div
+                key={phase.key}
+                animate={{ opacity: skipped ? 0.34 : 1, x: on ? 5 : 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 26 }}
+                style={{
+                  display: "flex", gap: 11, alignItems: "center", marginBottom: 6,
+                  padding: "10px 12px", borderRadius: 14,
+                  background: on ? "#fff" : "transparent",
+                  border: `1px solid ${on ? RED : "transparent"}`,
+                  boxShadow: on ? "0 14px 30px -18px rgba(200,0,0,.5)" : "none",
+                  transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                }}
+              >
+                <span style={{ flex: "none", width: 30, height: 30, borderRadius: 9, display: "grid", placeItems: "center", background: on ? RED : "rgba(200,0,0,.07)", transition: "background-color .2s ease" }}>
+                  <Icon name={PHASE_ICON[i]} size={15} color={on ? "#fff" : RED} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", font: `800 13px/1.2 ${SANS}`, color: INK }}>{phase.label}</span>
+                  <span style={{ display: "block", marginTop: 2, font: `500 11px/1.4 ${SANS}`, color: MUTE }}>{phase.goal}</span>
+                </span>
+                {on && (
+                  <span style={{ marginLeft: "auto", flex: "none", font: `700 8.5px/1 ${MONO}`, letterSpacing: "0.1em", color: RED }}>
+                    START
+                  </span>
+                )}
+              </motion.div>
+            )
+          })}
+          <div style={{ marginTop: 12, font: `500 12px/1.45 ${SANS}`, color: META }}>
+            {entry >= 0
+              ? `Your plan opens in ${METHOD_PHASES[entry].label} — the phases above it are already behind you.`
+              : "Tell us where you're starting and the plan reshapes around it."}
+          </div>
+        </div>
+      </IllusBase>
+    )
+  }
+
+  /* 2 · Charles's actual voice at the chosen level — a live preview.
+     The same idea explained three ways, swapping as the learner picks a band.
+     This is the one question in the flow whose answer is otherwise invisible
+     until long after onboarding, so showing it now is the point. */
+  if (step === 2) {
+    const band =
+      englishLevel === null ? -1 : englishLevel === "A1" || englishLevel === "A2" ? 0 : englishLevel === "B1" || englishLevel === "B2" ? 1 : 2
+    const SAMPLES = [
+      { tag: "A1–A2 · short, with terms defined", text: "An accrual is a cost you have used but not paid yet. You still record it in this year." },
+      { tag: "B1–B2 · plain exam English", text: "An accrual recognises an expense in the period it was incurred, even if the invoice has not yet been paid." },
+      { tag: "C1–C2 · full examiner language", text: "Accruals apply the matching principle: expenses are recognised in the period in which the related economic benefit is consumed, irrespective of settlement timing." },
+    ]
+    const shown = band < 0 ? null : SAMPLES[band]
+    return (
+      <IllusBase>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px clamp(28px,3.4vw,46px)" }}>
+          <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 16 }}>
+            How Charles will explain things
+          </div>
+          <div style={{ display: "flex", gap: 5, marginBottom: 18 }}>
+            {(["A1", "A2", "B1", "B2", "C1", "C2"] as const).map((lvl) => {
+              const on = englishLevel === lvl
+              return (
+                <div
+                  key={lvl}
+                  style={{
+                    flex: 1, textAlign: "center", padding: "7px 0", borderRadius: 9,
+                    font: `700 10.5px/1 ${MONO}`,
+                    background: on ? RED : "rgba(255,255,255,.7)",
+                    color: on ? "#fff" : "#9A8F86",
+                    border: `1px solid ${on ? RED : BORDER}`,
+                    transition: "background-color .2s ease, color .2s ease, border-color .2s ease",
+                  }}
+                >
+                  {lvl}
+                </div>
+              )
+            })}
+          </div>
+          {/* The bubble swaps on band change. mode="wait" is right HERE — unlike
+              the slide shell, these two are in normal flow and would stack. */}
+          <div style={{ minHeight: 168 }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={band}
+                initial={reducedLoop ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reducedLoop ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                style={{ padding: "16px 18px", borderRadius: 18, background: "#fff", border: `1px solid ${BORDER}`, boxShadow: "0 18px 40px -26px rgba(20,20,26,.45)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                  <span style={{ flex: "none", width: 28, height: 28, borderRadius: 9, background: RED, display: "grid", placeItems: "center" }}>
+                    <Icon name="tutor" size={14} color="#fff" />
+                  </span>
+                  <span style={{ font: `800 12px/1 ${SANS}`, color: INK }}>Charles</span>
+                  <span style={{ marginLeft: "auto", font: `600 9px/1 ${MONO}`, letterSpacing: "0.07em", color: FAINT }}>
+                    {shown ? shown.tag.split(" · ")[1].toUpperCase() : "PICK A LEVEL"}
+                  </span>
+                </div>
+                <p style={{ margin: 0, font: `500 13.5px/1.55 ${SANS}`, color: BODY }}>
+                  {shown
+                    ? shown.text
+                    : "Choose a level and Charles will answer this in your English — the same idea, pitched three different ways."}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div style={{ marginTop: 14, font: `500 12px/1.45 ${SANS}`, color: META }}>
+            {shown ? `“Accrual”, explained at ${shown.tag.split(" · ")[0]}.` : "Every explanation and every marked answer follows this setting."}
           </div>
         </div>
       </IllusBase>
