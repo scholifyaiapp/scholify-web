@@ -5,6 +5,7 @@ import {
   ROUTE_STEP,
   RESOURCE_STEP,
   ASSESSMENT_STEP,
+  SLIDE_POSES,
 } from "@/lib/acca-onboarding-steps"
 
 /*
@@ -54,5 +55,33 @@ describe("onboarding flow", () => {
     const steps = onboardingSteps("course")
     expect(steps[0]).toBe(0)
     expect(steps[steps.length - 1]).toBe(ONBOARDING_TOTAL - 1)
+  })
+})
+
+/*
+ * Charles appears in the corner of the WRITING panel on every slide, in both the
+ * desktop and mobile layouts. He previously lived in the desktop visual panel and
+ * was absent from mobile entirely.
+ *
+ * The renderer falls back to "wave" for a missing pose, so a slide added without
+ * one would silently get the wrong expression rather than failing — this is what
+ * catches that.
+ */
+describe("the slide mascot", () => {
+  it("has an explicit pose for every step the flow can show", () => {
+    for (const route of [null, "new", "course", "practice"] as const) {
+      for (const step of onboardingSteps(route)) {
+        expect(SLIDE_POSES[step], `step ${step} (route=${route}) has no pose`).toBeTruthy()
+      }
+    }
+  })
+
+  it("covers every authored slide index, so adding a step cannot outrun it", () => {
+    expect(SLIDE_POSES).toHaveLength(ONBOARDING_TOTAL)
+  })
+
+  it("opens on a greeting and closes on a celebration", () => {
+    expect(SLIDE_POSES[0]).toBe("wave")
+    expect(SLIDE_POSES[ONBOARDING_TOTAL - 1]).toBe("success")
   })
 })

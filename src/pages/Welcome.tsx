@@ -30,7 +30,7 @@ import {
   type AssessmentPath,
 } from "@/lib/acca-learner-baseline"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
-import { onboardingSteps } from "@/lib/acca-onboarding-steps"
+import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -618,6 +618,9 @@ export default function Welcome() {
               )}
             </motion.div>
           </AnimatePresence>
+          {/* Charles sits in this panel's bottom-right on mobile too — he was
+              absent from this layout entirely before. */}
+          <SlideMascot step={step} size="clamp(64px,17vw,88px)" right={14} bottom={8} />
         </div>
 
         {/* pinned footer */}
@@ -739,6 +742,7 @@ export default function Welcome() {
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 22, textAlign: "center", font: `500 10px/1 ${MONO}`, letterSpacing: "0.2em", textTransform: "uppercase", color: HINT, pointerEvents: "none" }}>
           ← → or swipe
         </div>
+        <SlideMascot step={step} size="clamp(78px,8vw,112px)" right="clamp(16px,2.5vw,36px)" bottom={40} />
       </div>
 
       {/* right — visual panel */}
@@ -755,14 +759,27 @@ export default function Welcome() {
             <VisualPanel step={step} paper={paper} sitting={sittings.find((s) => s.date === pickedSitting) ?? null} sittings={sittings} levels={levels} />
           </motion.div>
         </AnimatePresence>
-        <div style={{ position: "absolute", right: 20, bottom: 16, zIndex: 6, pointerEvents: "none" }}>
-          <CharlesMascot
-            pose={(["wave", "idea", "thinking", "present", "plan", "calm", "chart", "run", "thinking", "success"] as const)[step] ?? "wave"}
-            size="clamp(82px,9vw,118px)"
-            delay={0.12}
-          />
-        </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Charles in the BOTTOM-RIGHT corner of the writing panel, on every slide.
+ *
+ * He used to live in the right-hand visual panel on desktop, and not at all on
+ * mobile. He now sits in the corner of the panel the learner is actually reading
+ * and answering in, identically in both layouts.
+ *
+ * Bottom-right rather than top-right: the mobile header already carries the step
+ * counter on the right, and on desktop the footer buttons are left-aligned with
+ * the swipe hint centred — so this corner is the one genuinely free space in both.
+ * pointerEvents stays off so he can never intercept a tap on an answer.
+ */
+function SlideMascot({ step, size, right, bottom }: { step: number; size: string; right: number | string; bottom: number | string }) {
+  return (
+    <div style={{ position: "absolute", right, bottom, zIndex: 3, pointerEvents: "none" }} aria-hidden>
+      <CharlesMascot pose={SLIDE_POSES[step] ?? "wave"} size={size} delay={0.12} />
     </div>
   )
 }
@@ -1298,12 +1315,11 @@ function ReadySlide({
   ]
   return (
     <div style={{ maxWidth: 500 }}>
-      <div style={{ display: "flex", justifyContent: "center", height: 82, marginBottom: 4 }}>
-        <CharlesMascot
-          pose={guide.status === "risky" ? "thinking" : guide.status === "comfortable" ? "thumbsup" : "plan"}
-          size={82}
-        />
-      </div>
+      {/* No mascot here any more. Charles now sits in this panel's corner on every
+          slide including this one, so a second centred Charles put two of him on
+          the final screen. The capacity verdict he used to signal by pose is still
+          carried by this card's colour and its "Charles recommends" headline — and
+          the 82px it frees goes to the busiest slide in the flow. */}
       <div style={{ marginBottom: 16, padding: "18px 20px", borderRadius: 17, background: guide.status === "risky" ? "rgba(200,0,0,.06)" : "rgba(14,159,110,.07)", border: `1px solid ${guide.status === "risky" ? "rgba(200,0,0,.22)" : "rgba(14,159,110,.25)"}` }}>
         <div style={{ font: `800 15px/1.25 ${SANS}`, color: guide.status === "risky" ? RED : GREEN }}>Charles recommends · {guide.headline}</div>
         <div style={{ marginTop: 9, display: "grid", gap: 7 }}>

@@ -1,4 +1,5 @@
 import type { LearnerRoute } from "@/lib/acca-learner-baseline"
+import type { CharlesPose } from "@/components/CharlesMascot"
 
 /*
  * Which onboarding slides a learner actually sees.
@@ -35,6 +36,30 @@ export const RESOURCE_STEP = 4
 
 /** How a returner wants to set their baseline. A beginner has no use for it. */
 export const ASSESSMENT_STEP = 8
+
+/**
+ * Charles's pose on each slide, indexed by STEP number so he stays in step with
+ * the question even when a route hides a slide.
+ *
+ * Lives beside the step list so the two cannot drift: the renderer falls back to
+ * "wave" for a missing entry, which would silently give a new slide the wrong
+ * expression rather than failing. `satisfies` validates every name against the
+ * mascot's own pose union, and the accompanying test asserts one exists for every
+ * step the flow can actually show. The CharlesPose import is type-only, so this
+ * adds no runtime dependency on the component.
+ */
+export const SLIDE_POSES = [
+  "wave",      // 0 · welcome
+  "idea",      // 1 · where are you starting from
+  "thinking",  // 2 · how should Charles explain things
+  "present",   // 3 · which paper
+  "plan",      // 4 · resource step (out of the flow)
+  "calm",      // 5 · daily time
+  "chart",     // 6 · sitting / exam date
+  "run",       // 7 · goal
+  "thinking",  // 8 · how to baseline
+  "success",   // 9 · ready
+] as const satisfies readonly CharlesPose[]
 
 /** The steps shown, in order, for a learner on this route (null = not yet chosen). */
 export function onboardingSteps(learnerRoute: LearnerRoute | null): number[] {
