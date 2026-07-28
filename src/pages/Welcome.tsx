@@ -31,6 +31,7 @@ import {
 } from "@/lib/acca-learner-baseline"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
+import { AnimatedHeadline, GlassButton, RouteJourney3D } from "@/components/acca/onboarding-ui"
 
 /*
  * /welcome — post-sign-in onboarding, implemented from the approved design
@@ -594,14 +595,21 @@ export default function Welcome() {
             >
               {step === 0 ? (
                 <>
-                  <h1 style={{ margin: 0, font: `800 32px/1.06 ${SANS}`, letterSpacing: "-1px", color: INK }}>
-                    Welcome to Scholify.<br />Let's pass your<br />next paper.
-                  </h1>
-                  <p style={{ margin: "16px 0 0", font: `400 15px/1.5 ${SANS}`, color: BODY, maxWidth: 300 }}>
+                  <AnimatedHeadline
+                    text="Welcome to Scholify. Let's pass your next paper."
+                    delay={0.06}
+                    style={{ font: `800 32px/1.06 ${SANS}`, letterSpacing: "-1px", color: INK }}
+                  />
+                  <motion.p
+                    initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ margin: "16px 0 0", font: `400 15px/1.5 ${SANS}`, color: BODY, maxWidth: 300 }}
+                  >
                     A GPS for ACCA: it measures where you are, hands you the next task daily, and recalculates until you pass.
-                  </p>
+                  </motion.p>
                   <ValueTrio style={{ marginTop: 18 }} />
-                  <WaypointChips style={{ marginTop: 24 }} />
+                  <RouteJourney3D style={{ marginTop: 24 }} />
                 </>
               ) : (
                 <>
@@ -689,15 +697,26 @@ export default function Welcome() {
             >
               {step === 0 ? (
                 <div style={{ margin: "auto 0", paddingBottom: 12 }}>
-                  <div style={kicker}>A GPS for ACCA</div>
-                  <h1 style={{ margin: 0, font: `800 clamp(32px, 3vw, 43px)/1.05 ${SANS}`, letterSpacing: "-1.4px", color: INK }}>
-                    Welcome to Scholify. Let's pass your next paper.
-                  </h1>
-                  <p style={{ margin: "20px 0 0", font: `400 18px/1.5 ${SANS}`, color: BODY, maxWidth: 460 }}>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} style={kicker}>
+                    A GPS for ACCA
+                  </motion.div>
+                  <AnimatedHeadline
+                    text="Welcome to Scholify. Let's pass your next paper."
+                    delay={0.08}
+                    style={{ font: `800 clamp(32px, 3vw, 43px)/1.05 ${SANS}`, letterSpacing: "-1.4px", color: INK }}
+                  />
+                  <motion.p
+                    initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.42, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ margin: "20px 0 0", font: `400 18px/1.5 ${SANS}`, color: BODY, maxWidth: 460 }}
+                  >
                     It measures where you are, hands you the next task daily, and recalculates until you pass.
-                  </p>
+                  </motion.p>
                   <ValueTrio style={{ marginTop: 22 }} big />
-                  <WaypointChips style={{ marginTop: 30 }} big />
+                  {/* The universal route, in perspective — the same four stages
+                      for every learner, which is this slide's whole argument. */}
+                  <RouteJourney3D style={{ marginTop: 30, maxWidth: 560 }} />
                 </div>
               ) : (
                 <div style={{ margin: "auto 0", padding: "18px 0 24px" }}>
@@ -722,21 +741,12 @@ export default function Welcome() {
         {/* footer buttons */}
         {step < 9 && (
           <div style={{ marginTop: 30, display: "flex", alignItems: "center", gap: 12 }}>
-            <button
-              onClick={() => go(-1)}
-              disabled={step === 0}
-              style={{ padding: "15px 22px", borderRadius: 14, background: "transparent", border: `1.5px solid ${BORDER}`, color: step === 0 ? "#CFC7BF" : MUTE, font: `700 14px/1 ${SANS}`, cursor: step === 0 ? "default" : "pointer", display: "flex", alignItems: "center", gap: 8 }}
-            >
+            <GlassButton variant="ghost" onClick={() => go(-1)} disabled={step === 0} ariaLabel="Previous step">
               <Icon name="arrow" size={16} color={step === 0 ? "#CFC7BF" : MUTE} style={{ transform: "rotate(180deg)" }} /> Back
-            </button>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => (canAdvance ? go(1) : undefined)}
-              disabled={!canAdvance}
-              style={{ padding: "16px 30px", borderRadius: 14, background: RED, border: "none", color: "#fff", font: `800 15px/1 ${SANS}`, cursor: canAdvance ? "pointer" : "default", opacity: canAdvance ? 1 : 0.45, boxShadow: "0 12px 24px -12px rgba(200,0,0,.5)", display: "flex", alignItems: "center", gap: 9 }}
-            >
+            </GlassButton>
+            <GlassButton onClick={() => (canAdvance ? go(1) : undefined)} disabled={!canAdvance}>
               {step === 0 ? "Start — it takes a minute" : "Continue"} <Icon name="arrow" size={17} color="#fff" />
-            </motion.button>
+            </GlassButton>
           </div>
         )}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 22, textAlign: "center", font: `500 10px/1 ${MONO}`, letterSpacing: "0.2em", textTransform: "uppercase", color: HINT, pointerEvents: "none" }}>
@@ -892,28 +902,6 @@ function ValueTrio({ style, big }: { style?: CSSProperties; big?: boolean }) {
           <span style={{ font: `600 ${big ? 13.5 : 12.5}px/1.4 ${SANS}`, color: "#3E3831" }}>{it.text}</span>
         </motion.div>
       ))}
-    </div>
-  )
-}
-
-function WaypointChips({ style, big }: { style?: CSSProperties; big?: boolean }) {
-  const chip = (label: string, filled = false): CSSProperties => ({
-    padding: big ? "9px 14px" : "8px 12px",
-    borderRadius: 99,
-    background: filled ? RED : "#fff",
-    border: `1px solid ${filled ? RED : BORDER}`,
-    font: `${filled ? 700 : 600} ${big ? 13 : 12}px/1 ${SANS}`,
-    color: filled ? "#fff" : INK,
-  })
-  return (
-    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: big ? 9 : 7, ...style }}>
-      {["Diagnostic", "Daily missions", "3 mocks"].map((l, i) => (
-        <motion.span key={l} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.12 }} style={{ display: "inline-flex", alignItems: "center", gap: big ? 9 : 7 }}>
-          <span style={chip(l)}>{l}</span>
-          <span style={{ color: "#C9C0B8", fontSize: 12 }}>→</span>
-        </motion.span>
-      ))}
-      <motion.span initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.61 }} style={chip("Pass", true)}>Pass</motion.span>
     </div>
   )
 }
@@ -1380,22 +1368,12 @@ function ReadySlide({
   )
 }
 
+/** Mobile primary action — the shared glass control, full width. */
 function PrimaryBtn({ children, onClick, big, disabled }: { children: ReactNode; onClick: () => void; big?: boolean; disabled?: boolean }) {
   return (
-    <motion.button
-      whileTap={disabled ? undefined : { scale: 0.98 }}
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%",
-        padding: big ? 17 : 16, borderRadius: 15, background: RED, color: "#fff",
-        font: `800 ${big ? 16 : 15}px/1 ${SANS}`, border: "none", cursor: disabled ? "default" : "pointer",
-        letterSpacing: "-0.2px", opacity: disabled ? 0.45 : 1,
-        boxShadow: disabled ? "none" : "0 12px 24px -10px rgba(200,0,0,.5)",
-      }}
-    >
+    <GlassButton onClick={onClick} disabled={disabled} big={big} full>
       {children}
-    </motion.button>
+    </GlassButton>
   )
 }
 
