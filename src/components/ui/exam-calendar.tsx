@@ -111,12 +111,12 @@ export function ExamCalendar({ value, onSelect, highlightWeek }: ExamCalendarPro
             aria-label="Previous month"
             onClick={() => canGoBack && go(-1)}
             disabled={!canGoBack}
-            style={{ width: 30, height: 30, borderRadius: 9, border: `1px solid ${BORDER}`, background: CARD, display: "grid", placeItems: "center", cursor: canGoBack ? "pointer" : "not-allowed", opacity: canGoBack ? 1 : 0.35 }}
+            style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${BORDER}`, background: CARD, display: "grid", placeItems: "center", cursor: canGoBack ? "pointer" : "not-allowed", opacity: canGoBack ? 1 : 0.35 }}
           >
             <ChevronLeft size={16} color={INK} />
           </button>
         ) : (
-          <span style={{ width: 30 }} />
+          <span style={{ width: 44 }} />
         )}
 
         <div style={{ position: "relative", overflow: "hidden", flex: 1, textAlign: "center", height: 24 }}>
@@ -140,12 +140,12 @@ export function ExamCalendar({ value, onSelect, highlightWeek }: ExamCalendarPro
             type="button"
             aria-label="Next month"
             onClick={() => go(1)}
-            style={{ width: 30, height: 30, borderRadius: 9, border: `1px solid ${BORDER}`, background: CARD, display: "grid", placeItems: "center", cursor: "pointer" }}
+            style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${BORDER}`, background: CARD, display: "grid", placeItems: "center", cursor: "pointer" }}
           >
             <ChevronRight size={16} color={INK} />
           </button>
         ) : (
-          <span style={{ width: 30 }} />
+          <span style={{ width: 44 }} />
         )}
       </div>
 
@@ -170,7 +170,7 @@ export function ExamCalendar({ value, onSelect, highlightWeek }: ExamCalendarPro
             style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}
           >
             {cells.map((d, i) => {
-              if (d === null) return <span key={`b${i}`} style={{ aspectRatio: "1 / 1" }} />
+              if (d === null) return <span key={`b${i}`} style={{ aspectRatio: "1 / 1", minHeight: 44 }} />
               const isTarget = !!target && target.y === view.y && target.m === view.m && target.d === d
               const inWeek = weekDays?.has(d) ?? false
               const cellDate = new Date(view.y, view.m, d)
@@ -188,6 +188,20 @@ export function ExamCalendar({ value, onSelect, highlightWeek }: ExamCalendarPro
                   style={{
                     position: "relative",
                     aspectRatio: "1 / 1",
+                    /*
+                     * 44px floor on the axis that has room.
+                     *
+                     * A CDP pass over the real flow at 375px found all 31 day
+                     * cells rendering at roughly 40x40: seven 1fr columns inside
+                     * the card's padding leave about 40px each, and aspectRatio
+                     * 1/1 then makes the height match. A true 44x44 grid is
+                     * geometrically impossible at this width (7 x 44 + gaps is
+                     * already 320px before any padding), so the width stays as
+                     * it is and the height is lifted to the minimum. Taller-than
+                     * -square cells are what the native iOS date picker does for
+                     * the same reason.
+                     */
+                    minHeight: 44,
                     display: "grid",
                     placeItems: "center",
                     border: "none",

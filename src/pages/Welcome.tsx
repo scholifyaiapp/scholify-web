@@ -581,13 +581,21 @@ export default function Welcome() {
             <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{String(visibleStepIndex + 1).padStart(2, "0")} / {String(visibleSteps.length).padStart(2, "0")}</span>
           </div>
           <div style={{ marginTop: 14, height: 4, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            <motion.div animate={{ width: `${((visibleStepIndex + 1) / visibleSteps.length) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
+            {/* scaleX, not width. Animating width re-laid-out the header on every
+                frame of every step change; scaleX is compositor-only and visually
+                identical for a 4px bar. */}
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (visibleStepIndex + 1) / visibleSteps.length }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", width: "100%", transformOrigin: "left center", background: RED, borderRadius: 99 }} />
           </div>
         </div>
 
         {/* content */}
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <AnimatePresence custom={dir} initial={false} mode="wait">
+          {/* NOT mode="wait". The slide is position:absolute inset:0 inside a
+              relative parent, so the outgoing and incoming steps can occupy the
+              same space and cross over. mode="wait" held the new step back until
+              the old one had fully left, which doubled every transition and left
+              a stretch where NEITHER slide was on screen — the pause. */}
+          <AnimatePresence custom={dir} initial={false}>
             <motion.div
               key={step}
               {...slideAnim}
@@ -691,12 +699,20 @@ export default function Welcome() {
         <div style={{ marginTop: 26, display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ font: `600 12px/1 ${MONO}`, color: MUTE, letterSpacing: "0.05em" }}>{visibleStepIndex + 1} / {visibleSteps.length}</span>
           <div style={{ flex: 1, maxWidth: 340, height: 5, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            <motion.div animate={{ width: `${((visibleStepIndex + 1) / visibleSteps.length) * 100}%` }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", background: RED, borderRadius: 99 }} />
+            {/* scaleX, not width. Animating width re-laid-out the header on every
+                frame of every step change; scaleX is compositor-only and visually
+                identical for a 4px bar. */}
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (visibleStepIndex + 1) / visibleSteps.length }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", width: "100%", transformOrigin: "left center", background: RED, borderRadius: 99 }} />
           </div>
         </div>
 
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <AnimatePresence custom={dir} initial={false} mode="wait">
+          {/* NOT mode="wait". The slide is position:absolute inset:0 inside a
+              relative parent, so the outgoing and incoming steps can occupy the
+              same space and cross over. mode="wait" held the new step back until
+              the old one had fully left, which doubled every transition and left
+              a stretch where NEITHER slide was on screen — the pause. */}
+          <AnimatePresence custom={dir} initial={false}>
             <motion.div
               key={step}
               {...slideAnim}
@@ -765,13 +781,17 @@ export default function Welcome() {
 
       {/* right — visual panel */}
       <div style={{ width: "45%", flex: "none", position: "relative", overflow: "hidden" }}>
-        <AnimatePresence initial={false} mode="wait">
+        {/* Same reasoning, and this was the worst of the three: at 0.5s each way
+            mode="wait" made the visual panel take a FULL SECOND to swap, half of
+            it blank. Crossing over also halves the duration to 0.36 so it lands
+            with the writing panel instead of trailing it. */}
+        <AnimatePresence initial={false}>
           <motion.div
             key={step}
             initial={reduced ? { opacity: 0 } : { opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, x: -20 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: "absolute", inset: 0 }}
           >
             <VisualPanel step={step} paper={paper} sitting={sittings.find((s) => s.date === pickedSitting) ?? null} sittings={sittings} levels={levels} />

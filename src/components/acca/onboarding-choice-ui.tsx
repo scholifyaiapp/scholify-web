@@ -67,6 +67,47 @@ const PAINT = "background-color .18s ease, border-color .18s ease, box-shadow .1
 const PRESS = { scale: 0.985 } as const
 const SPRING = { type: "spring", stiffness: 420, damping: 32, mass: 0.5 } as const
 
+/*
+ * Staggered entrance for the options in a group.
+ *
+ * Consolidating the fifteen hand-rolled controls lost the one thing the old
+ * route cards did have — they rose in one after another. This puts it back for
+ * every group, not just that one.
+ *
+ * The delay is capped at the 9th item because the paper picker renders fifteen:
+ * an uncapped 45ms step would make the last tile wait two thirds of a second,
+ * which reads as the page still loading rather than as a reveal.
+ *
+ * It is returned as a nested `transition` on the animate target so it applies to
+ * the ENTRANCE only. Putting the delay on the component's top-level transition
+ * would also delay whileTap, which would make every press feel laggy.
+ */
+const ENTER_STAGGER = 0.04
+const ENTER_CAP = 9
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1]
+
+/*
+ * Every branch returns the SAME object shape. Returning `{initial: false}` for
+ * the reduced-motion case instead produced a union that will not spread into
+ * motion.button's props — TS2322 on all three item shapes. Under reduced motion
+ * `initial` simply equals the resting state and the duration is 0, which is the
+ * same outcome with one type.
+ */
+function enterAnim(index: number, reduce: boolean | null) {
+  return {
+    initial: reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: reduce ? 0 : Math.min(index, ENTER_CAP) * ENTER_STAGGER,
+        duration: reduce ? 0 : 0.3,
+        ease: EASE,
+      },
+    },
+  }
+}
+
 type ChoiceContextValue = {
   value: string | null
   values: readonly string[]
@@ -85,6 +126,7 @@ function useChoiceItem(value: string, disabled: boolean, component: string) {
 
   return {
     selected,
+    index,
     props: {
       type: "button" as const,
       role: "radio",
@@ -236,11 +278,12 @@ export function ChoiceCard({
   children?: ReactNode
 }) {
   const reduce = useReducedMotion()
-  const { selected, props } = useChoiceItem(value, disabled, "ChoiceCard")
+  const { selected, index, props } = useChoiceItem(value, disabled, "ChoiceCard")
 
   return (
     <motion.button
       {...props}
+      {...enterAnim(index, reduce)}
       whileTap={disabled || reduce ? undefined : PRESS}
       transition={SPRING}
       style={{ ...itemSkin(selected, disabled), minHeight: 64, padding: "15px 16px", width: "100%" }}
@@ -305,11 +348,12 @@ export function ChoiceTile({
   disabled?: boolean
 }) {
   const reduce = useReducedMotion()
-  const { selected, props } = useChoiceItem(value, disabled, "ChoiceTile")
+  const { selected, index, props } = useChoiceItem(value, disabled, "ChoiceTile")
 
   return (
     <motion.button
       {...props}
+      {...enterAnim(index, reduce)}
       whileTap={disabled || reduce ? undefined : PRESS}
       transition={SPRING}
       style={{ ...itemSkin(selected, disabled), minHeight: 48, padding: "11px 12px", width: "100%" }}
@@ -360,11 +404,12 @@ export function ChoicePill({
   disabled?: boolean
 }) {
   const reduce = useReducedMotion()
-  const { selected, props } = useChoiceItem(value, disabled, "ChoicePill")
+  const { selected, index, props } = useChoiceItem(value, disabled, "ChoicePill")
 
   return (
     <motion.button
       {...props}
+      {...enterAnim(index, reduce)}
       whileTap={disabled || reduce ? undefined : PRESS}
       transition={SPRING}
       style={{
