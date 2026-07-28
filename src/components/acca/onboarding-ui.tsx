@@ -10,8 +10,8 @@ import { Fragment, type CSSProperties, type ReactNode } from "react"
  *                    nav bar (ui/nav-header.tsx) so onboarding and marketing
  *                    speak with one visual voice.
  *   AnimatedHeadline Word-by-word reveal for the welcome sentences.
- *   RouteJourney3D   The universal Scholify route in perspective — the same
- *                    journey every learner takes, whatever their starting point.
+ *   RouteLoop        The Scholify cycle drawn as a cycle — measure, assign,
+ *                    recalculate — with Pass as the exit condition at its centre.
  *
  * MOTION CONTRACT (applies to everything here)
  *  · transform and opacity ONLY — never width/height/top/left, which force
@@ -217,286 +217,226 @@ export function AnimatedHeadline({
   )
 }
 
-/* ── RouteJourney3D ──────────────────────────────────────────────
+/* ── RouteLoop ───────────────────────────────────────────────────
  *
- * The universal route: Diagnostic → Daily missions → Mocks → Pass. Every
- * learner walks the same four stages regardless of where they join, which is
- * the point this slide has to make in one glance — so the visual is deliberately
- * identical for all three onboarding routes.
+ * The Scholify loop, drawn as a loop.
  *
- * Built from CSS 3D rather than a canvas or WebGL: the whole thing is four
- * nodes and a track on a rotated plane, so a compositor-only implementation
- * gives real depth for no main-thread cost and no extra bytes. A WebGL scene
- * here would be heavier than the entire onboarding chunk.
+ * This replaced a left-to-right rail that ended at "Pass". The rail was the
+ * wrong diagram. It described a one-way journey, when the product is a CYCLE —
+ * measure, assign, recalculate — that repeats until the learner passes. Read as
+ * a line it implies you sit the diagnostic once and move on, which is exactly
+ * the misunderstanding this slide exists to prevent.
  *
- * Depth comes from ONE perspective ancestor and per-node translateZ, so the
- * nodes genuinely sit at different distances rather than being faked with
- * scale. The track draws with scaleX (compositor) instead of width (layout).
+ * Three stages sit ON the ring because they ARE the repeating mechanism. Pass
+ * sits INSIDE it because it is not a fourth stage: it is the exit condition the
+ * loop converges on. A rail had to put Pass at the end, which made it look like
+ * one more task to complete rather than the thing that stops the cycle.
+ *
+ * COLOUR ENCODES ROLE, NOT IDENTITY
+ *  · The three ring stages are deliberately identical — white disc, red glyph,
+ *    ink label. They are the same KIND of thing, and the rail's three different
+ *    hues implied they differed in kind.
+ *  · The ring track is a single flat tone. A gradient would have been wrong
+ *    here: a gradient has a start and an end, which is the one thing a loop does
+ *    not have. Direction is carried by arrowheads and the travelling dot instead.
+ *  · Gold is reserved for the single thing that IS different — the goal. Its
+ *    text sits at 6.82:1 on the amber range (see PASS_INK), so the payoff node
+ *    is also the most legible one.
+ *
+ * Drawn as one SVG so it scales exactly at any width and needs no percentage
+ * arithmetic to keep labels on their nodes. role="img" with a sentence-long
+ * label, because four separate text nodes announce as disconnected fragments
+ * and the RELATIONSHIP between them is the entire content.
  */
 
 /*
- * Stage glyphs.
+ * The Pass node's palette.
  *
- * These replace the plain 6px dot each stage used to carry. A dot said only
- * "here is an item"; a crosshair, a checklist, a stopwatch and a flag say what
- * the stage IS, which is the whole job of this slide — the learner reads the
- * shape of the route before they read a word of it.
- *
- * Drawn inline rather than pulled from components/acca/ui so the kit keeps no
- * dependency on the icon set, and stroked with round caps at 2.4 to match the
- * Scholify hexagon mark's own construction.
+ * White text on the old gold→magenta fill measured 2.07:1 against the gold stop,
+ * against a 4.5:1 floor, on the most important element of the slide. Holding the
+ * gradient inside the amber range and putting DARK text on it gives 6.82:1 at
+ * its worst — and reads as a medal rather than as a warning, which is the note
+ * this node wants anyway.
  */
-const GLYPH = { fill: "none", strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round" } as const
+const PASS_INK = "#14141A" // 6.82:1 at the worst amber stop
+const PASS_SUB = "#3A2A05" // 5.16:1 at the worst amber stop
 
-function Crosshair({ tone }: { tone: string }) {
+/* Glyph geometry, in the shared 24x24 space. Rendered as <g> children rather
+   than nested <svg> so they inherit the parent's stroke and scale cleanly. */
+function Glyph({ kind }: { kind: StageKind }) {
+  if (kind === "crosshair")
+    return (
+      <>
+        <circle cx="12" cy="12" r="6.4" />
+        <path d="M12 2.2v3.2M12 18.6v3.2M2.2 12h3.2M18.6 12h3.2" />
+      </>
+    )
+  if (kind === "checklist")
+    return <path d="M3.2 6.6l2.5 2.5L10.3 4.5M3.2 17.4l2.5 2.5 4.6-4.6M13.8 6.9h7M13.8 17.7h7" />
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
-      <circle cx="12" cy="12" r="6.5" />
-      <path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4" />
-    </svg>
+    <>
+      <circle cx="12" cy="13.7" r="7.4" />
+      <path d="M12 13.7V10M9.5 2.6h5" />
+    </>
   )
 }
 
-function Checklist({ tone }: { tone: string }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
-      <path d="M3 6.5l2.6 2.6L10.4 4.3M3 17.5l2.6 2.6 4.8-4.8M14 6.8h7M14 17.8h7" />
-    </svg>
-  )
-}
+type StageKind = "crosshair" | "checklist" | "stopwatch"
 
-function Stopwatch({ tone }: { tone: string }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
-      <circle cx="12" cy="13.6" r="7.6" />
-      <path d="M12 13.6V9.8M9.4 2.4h5.2" />
-    </svg>
-  )
-}
+/* Clockwise from the top. The angles are what place both the disc and its label,
+   so the two cannot drift apart. */
+const LOOP_STAGES: { kind: StageKind; label: string; angle: number }[] = [
+  { kind: "crosshair", label: "Diagnostic", angle: -90 },
+  { kind: "checklist", label: "Daily missions", angle: 30 },
+  { kind: "stopwatch", label: "Mocks", angle: 150 },
+]
 
-function Flag({ tone }: { tone: string }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden stroke={tone} {...GLYPH}>
-      <path d="M5.6 21.4V3M5.6 4.2h11.8l-2.2 4.4 2.2 4.4H5.6" />
-    </svg>
-  )
-}
+/* Geometry, in viewBox units. */
+const CX = 120
+const CY = 98
+const R = 62
+const DISC = 17
 
-const STAGES = [
-  { label: "Diagnostic", detail: "Where you actually are", tint: RED, Glyph: Crosshair },
-  { label: "Daily missions", detail: "One task at a time", tint: "#D51436", Glyph: Checklist },
-  { label: "Mocks", detail: "Exam conditions", tint: MAGENTA, Glyph: Stopwatch },
-  { label: "Pass", detail: "The only metric", tint: GOLD, Glyph: Flag },
-] as const
+/* One full revolution of the travelling dot. Nine seconds reads as a steady
+   process; the 3.2s of the old linear sweep would be dizzying on a circle. */
+const ORBIT = 9
 
-/* One trip of the relay, in seconds. Each stage lights up a quarter of the way
-   through, so the sweep on the rail and the glyph pulses stay in step. */
-const RELAY = 3.2
+const rad = (deg: number) => (deg * Math.PI) / 180
+const px = (deg: number) => CX + R * Math.cos(rad(deg))
+const py = (deg: number) => CY + R * Math.sin(rad(deg))
 
-/*
- * The Pass card.
- *
- * It used to be a gold→magenta gradient carrying WHITE text, which measures
- * 2.07:1 against the gold stop — far under the 4.5:1 floor, on the single most
- * important node of the slide. Keeping the gradient inside the amber range and
- * putting DARK text on it measures 6.82:1 at its worst, and reads as a medal
- * rather than as a warning, which is the note this card wants to hit anyway.
- */
-const PASS_FILL = `linear-gradient(140deg, #FFCC55 0%, ${GOLD} 52%, #E08A07 100%)`
-const PASS_INK = "#14141A" // 6.82:1 at the worst stop
-const PASS_SUB = "#3A2A05" // 5.16:1 at the worst stop
+/* Arrowheads sit midway between consecutive stages. Position uses the angle;
+   rotation is angle + 90, which is the clockwise tangent at that point. */
+const ARROWS = [-30, 90, 210]
 
-export function RouteJourney3D({ style }: { style?: CSSProperties }) {
+/* Where the travelling dot sits at rest, and where its orbit begins: -60deg,
+   clear of both the Diagnostic disc at -90 and the first arrowhead at -30. */
+const DOT_X = Number((R * Math.cos(rad(-60))).toFixed(2))
+const DOT_Y = Number((R * Math.sin(rad(-60))).toFixed(2))
+
+export function RouteLoop({ style }: { style?: CSSProperties }) {
   const reduce = useReducedMotion()
 
   return (
-    <div
-      style={{
-        position: "relative",
-        // Perspective lives on the wrapper so every child shares one vanishing
-        // point. Per-element perspective would give each node its own, which
-        // reads as unrelated tilts rather than one receding plane.
-        perspective: 1100,
-        perspectiveOrigin: "50% 42%",
-        ...style,
-      }}
-      role="img"
-      aria-label="The Scholify route: diagnostic, then daily missions, then mocks, then pass."
-    >
-      <div
-        style={{
-          transformStyle: "preserve-3d",
-          transform: reduce ? "none" : "rotateX(16deg) rotateZ(-1.2deg)",
-        }}
-      >
-        {/* The track. Drawn with scaleX from the left so it reads as travelled
-            distance, and it sits behind the nodes at negative Z. */}
-        <div
-          aria-hidden
-          style={{
-            position: "relative",
-            height: 3,
-            borderRadius: 99,
-            background: "rgba(20,20,26,.07)",
-            transform: "translateZ(-26px)",
-            marginBottom: 20,
-          }}
+    <div style={style}>
+      <div style={{ width: "100%", maxWidth: 330, margin: "0 auto" }}>
+        <svg
+          viewBox="0 0 240 196"
+          style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}
+          role="img"
+          aria-label="The Scholify loop: a diagnostic measures where you are, daily missions work your weakest areas, mocks test you under exam conditions, and the cycle then repeats with a fresh diagnostic. It keeps going until you pass."
         >
-          <motion.div
-            initial={reduce ? { scaleX: 1 } : { scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={reduce ? { duration: 0 } : { delay: 0.15, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: 99,
-              transformOrigin: "left center",
-              background: `linear-gradient(90deg, ${RED} 0%, ${MAGENTA} 58%, ${GOLD} 100%)`,
-              willChange: "transform",
-            }}
-          />
-          {/* A highlight travelling the rail, so the route reads as a loop that
-              is RUNNING rather than a finished diagram. The strip is the full
-              width of the rail, which is what lets `x: -100% → 100%` carry it
-              exactly one rail-width without the component ever needing to know
-              its own pixel width — percentage translation is relative to the
-              element's own box. */}
-          {!reduce && (
-            <span style={{ position: "absolute", inset: 0, borderRadius: 99, overflow: "hidden" }}>
-              <motion.span
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: RELAY, repeat: Infinity, ease: "linear", delay: 1.05 }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.92) 50%, transparent 100%)",
-                  willChange: "transform",
-                }}
-              />
-            </span>
-          )}
-        </div>
+          <defs>
+            <linearGradient id="scholify-pass" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#FFCC55" />
+              <stop offset="52%" stopColor={GOLD} />
+              <stop offset="100%" stopColor="#E08A07" />
+            </linearGradient>
+          </defs>
 
-        <div style={{ display: "flex", alignItems: "stretch", gap: 10, transformStyle: "preserve-3d" }}>
-          {STAGES.map((stage, index) => {
-            const last = index === STAGES.length - 1
+          {/* Ring track — one flat tone, for the reason given in the header. */}
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(200,0,0,.14)" strokeWidth="2.5" />
+
+          {/* Direction of travel. */}
+          {ARROWS.map((angle) => (
+            <path
+              key={angle}
+              d="M-4.2,-3.4 L4.2,0 L-4.2,3.4 Z"
+              fill="rgba(200,0,0,.42)"
+              transform={"translate(" + px(angle).toFixed(2) + " " + py(angle).toFixed(2) + ") rotate(" + (angle + 90) + ")"}
+            />
+          ))}
+
+          {/* Pass — inside the ring, because it is the exit condition. */}
+          <circle cx={CX} cy={CY} r="31" fill="url(#scholify-pass)" stroke="rgba(179,117,3,.5)" strokeWidth="1" />
+          <g transform={"translate(" + (CX - 7.92) + " " + (CY - 17) + ") scale(0.66)"} fill="none" stroke={PASS_SUB} strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5.6 21.4V3M5.6 4.2h11.8l-2.2 4.4 2.2 4.4H5.6" />
+          </g>
+          <text
+            x={CX}
+            y={CY + 13}
+            textAnchor="middle"
+            style={{ font: "800 12px " + SANS, letterSpacing: "-0.02em", fill: PASS_INK }}
+          >
+            Pass
+          </text>
+
+          {/* The three stages. Identical by design — see COLOUR ENCODES ROLE. */}
+          {LOOP_STAGES.map((stage, index) => {
+            const x = px(stage.angle)
+            const y = py(stage.angle)
+            const above = stage.angle === -90
+            const words = stage.label.split(" ")
             return (
-              <motion.div
+              <motion.g
                 key={stage.label}
-                initial={reduce ? { opacity: 1 } : { opacity: 0, y: 22, z: -60, rotateX: -14 }}
-                animate={{ opacity: 1, y: 0, z: last ? 34 : 0, rotateX: 0 }}
-                transition={
-                  reduce
-                    ? { duration: 0 }
-                    : { delay: 0.28 + index * 0.055, type: "spring", stiffness: 210, damping: 24, mass: 0.8 }
-                }
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  // Positioned so the Pass node's ring can overlay it. Without
-                  // this the ring would resolve against the perspective wrapper
-                  // and stretch across the whole route.
-                  position: "relative",
-                  transformStyle: "preserve-3d",
-                  willChange: "transform, opacity",
-                  padding: "13px 13px 14px",
-                  borderRadius: 16,
-                  // The final node is the promise, so it is the only filled one
-                  // and the only one pushed toward the viewer.
-                  background: last ? PASS_FILL : "rgba(255,255,255,.72)",
-                  backdropFilter: last ? undefined : "blur(14px) saturate(150%)",
-                  WebkitBackdropFilter: last ? undefined : "blur(14px) saturate(150%)",
-                  border: `1px solid ${last ? "rgba(179,117,3,.55)" : "rgba(20,20,26,.07)"}`,
-                  boxShadow: last
-                    ? "inset 0 1px 0 rgba(255,255,255,.4), 0 18px 34px -16px rgba(244,164,5,.6)"
-                    : "inset 0 1px 0 rgba(255,255,255,.9), 0 10px 22px -14px rgba(20,20,26,.24)",
-                }}
+                initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.82 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={reduce ? { duration: 0 } : { delay: 0.2 + index * 0.11, type: "spring", stiffness: 260, damping: 22 }}
+                style={{ transformOrigin: x.toFixed(2) + "px " + y.toFixed(2) + "px" }}
               >
-                {/* Pass is the promise of the whole slide, so it gets the one
-                    beat the other three do not: a ring expanding outward as the
-                    relay completes, timed to land when the rail's highlight
-                    arrives. Scale and opacity, no layout, and it renders nothing
-                    at all under reduced motion. */}
-                {last && !reduce && (
-                  <motion.span
-                    aria-hidden
-                    animate={{ scale: [1, 1.14, 1.24], opacity: [0, 0.55, 0] }}
-                    transition={{ duration: RELAY, repeat: Infinity, ease: "easeOut", delay: 1.05 + (3 * RELAY) / 4 }}
-                    style={{
-                      position: "absolute",
-                      inset: -1,
-                      borderRadius: 17,
-                      border: `1.5px solid ${GOLD}`,
-                      pointerEvents: "none",
-                      willChange: "transform, opacity",
-                    }}
-                  />
-                )}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 7,
-                    font: `600 9.5px/1 ${MONO}`,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: last ? PASS_SUB : MUTE,
-                  }}
+                <circle cx={x} cy={y} r={DISC} fill="#fff" stroke="rgba(20,20,26,.10)" strokeWidth="1" />
+                <circle cx={x} cy={y} r={DISC} fill="none" stroke="rgba(200,0,0,.22)" strokeWidth="1.4" />
+                <g
+                  transform={"translate(" + (x - 9.36) + " " + (y - 9.36) + ") scale(0.78)"}
+                  fill="none"
+                  stroke={RED}
+                  strokeWidth="2.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  {/* The glyph brightens and swells as the rail's highlight
-                      reaches this stage — index / 4 of a trip, so the four fire
-                      in order rather than together. opacity and scale only, and
-                      the loop is dropped entirely under reduced motion. */}
-                  <motion.span
-                    aria-hidden
-                    style={{ flex: "none", display: "grid", placeItems: "center", willChange: "transform" }}
-                    animate={reduce ? undefined : { scale: [1, 1.22, 1, 1], opacity: [0.62, 1, 0.62, 0.62] }}
-                    transition={
-                      reduce
-                        ? undefined
-                        : {
-                            duration: RELAY,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            delay: 1.05 + (index * RELAY) / STAGES.length,
-                            // `times` MUST be the same length as the keyframes and
-                            // MUST end at 1 — Motion asserts both, and a failed
-                            // invariant throws inside the frame loop, which freezes
-                            // every other animation on the slide at its initial
-                            // value rather than just this one. The trailing 1 is
-                            // what holds the glyph at rest for the remaining 80%
-                            // of the relay instead of pulsing continuously.
-                            times: [0, 0.08, 0.2, 1],
-                          }
-                    }
+                  <Glyph kind={stage.kind} />
+                </g>
+                {words.map((word, w) => (
+                  <text
+                    key={word}
+                    x={x}
+                    y={above ? y - DISC - 16 + w * 11 : y + DISC + 14 + w * 11}
+                    textAnchor="middle"
+                    style={{ font: "750 10.5px " + SANS, letterSpacing: "-0.01em", fill: INK }}
                   >
-                    <stage.Glyph tone={last ? PASS_SUB : stage.tint} />
-                  </motion.span>
-                  0{index + 1}
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    font: `800 14px/1.15 ${SANS}`,
-                    letterSpacing: "-0.02em",
-                    color: last ? PASS_INK : INK,
-                  }}
-                >
-                  {stage.label}
-                </div>
-                <div
-                  style={{
-                    marginTop: 3,
-                    font: `500 11px/1.35 ${SANS}`,
-                    color: last ? PASS_SUB : MUTE,
-                  }}
-                >
-                  {stage.detail}
-                </div>
-              </motion.div>
+                    {word}
+                  </text>
+                ))}
+              </motion.g>
             )
           })}
-        </div>
+
+          {/* The learner travelling the loop. Rotated about the ring centre by
+              nesting inside a translate, so the origin is the local (0,0) —
+              px transform-origin on an SVG group is far less dependable.
+
+              It STARTS at -60deg, between Diagnostic and the first arrowhead,
+              rather than at the top. At the top it began life sitting exactly
+              under the Diagnostic disc, which read as a red blob over the glyph
+              instead of as a dot on the ring — and that is also where it rests
+              under reduced motion, so the collision was permanent there. */}
+          <g transform={"translate(" + CX + " " + CY + ")"}>
+            {reduce ? (
+              <circle cx={DOT_X} cy={DOT_Y} r="4.4" fill={RED} />
+            ) : (
+              <motion.g
+                animate={{ rotate: 360 }}
+                transition={{ duration: ORBIT, repeat: Infinity, ease: "linear" }}
+                style={{ transformOrigin: "0px 0px", willChange: "transform" }}
+              >
+                <circle cx={DOT_X} cy={DOT_Y} r="7" fill={RED} opacity="0.16" />
+                <circle cx={DOT_X} cy={DOT_Y} r="4.4" fill={RED} />
+              </motion.g>
+            )}
+          </g>
+        </svg>
+
+        <p
+          style={{
+            margin: "6px 0 0",
+            textAlign: "center",
+            font: "500 11.5px/1.4 " + SANS,
+            color: MUTE,
+          }}
+        >
+          The loop recalculates every day — until you pass.
+        </p>
       </div>
     </div>
   )
