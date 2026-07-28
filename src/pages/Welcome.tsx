@@ -31,7 +31,7 @@ import {
 } from "@/lib/acca-learner-baseline"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
-import { AnimatedHeadline, GlassButton, RouteLoop } from "@/components/acca/onboarding-ui"
+import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
 import {
   ChoiceCard,
   ChoiceGroup,
@@ -625,7 +625,7 @@ export default function Welcome() {
                     A GPS for ACCA: it measures where you are, hands you the next task daily, and recalculates until you pass.
                   </motion.p>
                   <ValueTrio style={{ marginTop: 18 }} />
-                  <RouteLoop style={{ marginTop: 24 }} />
+                  <RouteClimb style={{ marginTop: 24 }} />
                 </>
               ) : (
                 <>
@@ -740,7 +740,7 @@ export default function Welcome() {
                   <ValueTrio style={{ marginTop: 22 }} big />
                   {/* The universal route, in perspective — the same four stages
                       for every learner, which is this slide's whole argument. */}
-                  <RouteLoop style={{ marginTop: 30, maxWidth: 560 }} />
+                  <RouteClimb style={{ marginTop: 30, maxWidth: 560 }} />
                 </div>
               ) : (
                 <div style={{ margin: "auto 0", padding: "18px 0 24px" }}>
