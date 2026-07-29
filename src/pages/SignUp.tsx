@@ -306,14 +306,22 @@ export default function SignUp() {
     trackEvent("signup_started")
   }, [])
 
-  const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
+  /*
+   * Test the TRIMMED address — handleSubmit sends email.trim(), so validating the
+   * raw value disagreed with what was actually submitted. One trailing space (a
+   * mobile keyboard's autocomplete, or a paste from a password manager) failed
+   * `^\S+@\S+\.\S+$`, which both flagged the field as invalid AND kept the submit
+   * button disabled, with no way for the learner to see why the address they were
+   * looking at was being rejected.
+   */
+  const emailInvalid = email.trim().length > 0 && !EMAIL_RE.test(email.trim())
   const passwordInvalid = password.length > 0 && password.length < 8
 
   const isValid = useMemo(
     () =>
       firstName.trim().length > 0 &&
       lastName.trim().length > 0 &&
-      EMAIL_RE.test(email) &&
+      EMAIL_RE.test(email.trim()) &&
       password.length >= 8 &&
       agreed,
     [firstName, lastName, email, password, agreed],

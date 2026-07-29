@@ -248,9 +248,19 @@ export default function SignIn() {
     e.preventDefault()
     if (loading || locked) return
 
+    /*
+     * Validate the TRIMMED address, because that is what gets submitted.
+     * Previously this tested the raw value while signIn() received email.trim(),
+     * so a single trailing space — routine from a mobile keyboard's autocomplete
+     * or a paste out of a password manager — failed `^\S+@\S+\.\S+$` and the
+     * learner was told "Enter a valid email address" about an address that was
+     * perfectly valid and would have worked. The reset modal in this same file
+     * already trimmed before testing; the main form did not.
+     */
+    const cleanEmail = email.trim()
     const nextErrors: { email?: string; password?: string } = {}
-    if (!email.trim()) nextErrors.email = "Email is required."
-    else if (!EMAIL_RE.test(email)) nextErrors.email = "Enter a valid email address."
+    if (!cleanEmail) nextErrors.email = "Email is required."
+    else if (!EMAIL_RE.test(cleanEmail)) nextErrors.email = "Enter a valid email address."
     if (!password) nextErrors.password = "Password is required."
 
     setErrors(nextErrors)
@@ -258,16 +268,33 @@ export default function SignIn() {
     if (Object.keys(nextErrors).length > 0) return
 
     setLoading(true)
-    const { error } = await signIn(email.trim(), password)
+    const { error, code } = await signIn(cleanEmail, password)
     if (error) {
-      const n = attempts + 1
-      setAttempts(n)
-      if (n >= 5) {
-        setLockSeconds(60)
-        setFormError(null)
+      /*
+       * Only a genuine credential failure gets the deliberately vague message and
+       * counts toward the lockout. Everything else — an unconfirmed email, a rate
+       * limit, no auth backend, a dropped network — is shown as it is.
+       *
+       * This used to replace EVERY error with "Wrong email or password", which
+       * meant a learner who simply had not clicked the link in their inbox was
+       * told their password was wrong, retyped a correct password five times, and
+       * was locked out for 60 seconds. Nothing in the UI ever mentioned the real
+       * cause, and no amount of retrying could fix it.
+       *
+       * Keeping `credentials` vague is intentional: naming which half was wrong
+       * lets a stranger test whether an address has an account here.
+       */
+      if (code === "credentials") {
+        const n = attempts + 1
+        setAttempts(n)
+        if (n >= 5) {
+          setLockSeconds(60)
+          setFormError(null)
+        } else {
+          setFormError("Wrong email or password. Try again.")
+        }
       } else {
-        // Never reveal which field was wrong.
-        setFormError("Wrong email or password. Try again.")
+        setFormError(error)
       }
       setLoading(false)
       return

@@ -37,27 +37,58 @@ export interface SignUpInput {
   password: string
 }
 
+/**
+ * WHY an error needs a code as well as a message.
+ *
+ * SignIn deliberately shows a non-revealing "Wrong email or password" for a
+ * genuine credential failure — telling a stranger which half was wrong is
+ * account enumeration. But it was applying that message to EVERY failure, which
+ * threw away the specific ones this mapper had carefully produced: a learner
+ * whose email was unconfirmed, or who had hit a rate limit, or who was signing in
+ * to a build with no Supabase configured, was told their password was wrong. That
+ * is advice they can never act on — they retype a correct password until the
+ * form locks them out.
+ *
+ * The code lets the page keep the enumeration-safe message where it matters and
+ * be honest everywhere else.
+ */
+export type AuthErrorCode =
+  /** Email/password did not match. The one case that must stay vague. */
+  | "credentials"
+  /** The account exists but the email has not been confirmed. */
+  | "unconfirmed"
+  /** An account already exists (sign-up). */
+  | "exists"
+  /** Supabase rate limit — nothing to do with what was typed. */
+  | "rate_limit"
+  /** No auth backend configured in this build. */
+  | "unavailable"
+  /** Anything else, including network failures. */
+  | "unknown"
+
 export interface AuthResult {
   /** Human-readable error message, or null on success. */
   error: string | null
+  /** Machine-readable classification of `error`. Absent on success. */
+  code?: AuthErrorCode
   /** True when this account was just created (used for onboarding redirect). */
   isNewUser?: boolean
   /** True when sign-up succeeded but the email still needs confirming. */
   needsEmailConfirmation?: boolean
 }
 
-/** Turn raw Supabase auth errors into friendly, human messages. */
-function friendlyError(message: string): string {
+/** Turn raw Supabase auth errors into friendly, human messages plus a code. */
+function friendlyError(message: string): { error: string; code: AuthErrorCode } {
   const m = message.toLowerCase()
   if (m.includes("invalid login credentials"))
-    return "Wrong email or password. Please try again."
+    return { error: "Wrong email or password. Please try again.", code: "credentials" }
   if (m.includes("email not confirmed"))
-    return "Please confirm your email first — check your inbox for the link."
+    return { error: "Please confirm your email first — check your inbox for the link.", code: "unconfirmed" }
   if (m.includes("already registered") || m.includes("already exists"))
-    return "An account with this email already exists. Try signing in instead."
+    return { error: "An account with this email already exists. Try signing in instead.", code: "exists" }
   if (m.includes("rate limit"))
-    return "Too many attempts. Please wait a moment and try again."
-  return message
+    return { error: "Too many attempts. Please wait a moment and try again.", code: "rate_limit" }
+  return { error: message, code: "unknown" }
 }
 
 interface AuthContextValue {
@@ -240,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
-    if (authUnavailable) return { error: ACCOUNTS_CLOSED, isNewUser: false }
+    if (authUnavailable) return { error: ACCOUNTS_CLOSED, code: "unavailable", isNewUser: false }
     if (isDemoAuthAllowed) {
       const demo = makeDemoUser(email)
       writeDemoUser(demo)
@@ -248,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null, isNewUser: false }
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: friendlyError(error.message), isNewUser: false }
+    if (error) return { ...friendlyError(error.message), isNewUser: false }
     // Update state immediately so route guards don't race the listener.
     if (data.session) {
       setSession(data.session)
@@ -259,7 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (input: SignUpInput): Promise<AuthResult> => {
     const { firstName, lastName, email, password } = input
-    if (authUnavailable) return { error: ACCOUNTS_CLOSED, isNewUser: true }
+    if (authUnavailable) return { error: ACCOUNTS_CLOSED, code: "unavailable", isNewUser: true }
     if (isDemoAuthAllowed) {
       const demo = makeDemoUser(email, firstName, lastName)
       writeDemoUser(demo)
@@ -271,7 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { first_name: firstName, last_name: lastName } },
     })
-    if (error) return { error: friendlyError(error.message), isNewUser: true }
+    if (error) return { ...friendlyError(error.message), isNewUser: true }
     // With email confirmation OFF, signUp returns a session and the user is
     // logged in instantly. With it ON, session is null until they confirm.
     if (data.session) {
@@ -282,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithGoogle = useCallback(async (): Promise<AuthResult> => {
-    if (authUnavailable) return { error: ACCOUNTS_CLOSED, isNewUser: false }
+    if (authUnavailable) return { error: ACCOUNTS_CLOSED, code: "unavailable", isNewUser: false }
     if (isDemoAuthAllowed) {
       const demo = makeDemoUser("you@gmail.com", "Google", "User")
       writeDemoUser(demo)
@@ -335,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl}/reset-password`,
     })
-    return { error: error ? friendlyError(error.message) : null }
+    return error ? friendlyError(error.message) : { error: null }
   }, [])
 
   // Called by the onboarding wizard the instant it completes, so the 3-day clock
