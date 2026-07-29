@@ -117,7 +117,7 @@ const CH13: AccaQuestion[] = [
       "The audit's primary purpose is the detection of fraud",
     ],
     1,
-    "The external auditor is appointed by and reports to the SHAREHOLDERS, giving an OPINION on whether the statements give a true and fair view. That structure is what makes it possible to report something management would prefer unsaid. Assurance is REASONABLE, not absolute, because the audit relies on sampling and risk assessment, and fraud detection is not its purpose — the difference from public expectation being the expectation gap."),
+    "The external auditor is appointed by the SHAREHOLDERS and reports to them, answering one question: do these statements present a true and fair view? That structure is what makes it possible to report something management would prefer unsaid. The answer carries REASONABLE rather than absolute assurance, because it rests on sampling and risk assessment, and fraud detection is not its purpose — the difference from public expectation being the expectation gap."),
 
   q("BTK-13-02", "BT-13", "C", "hard", 2,
     "Why is an independent audit still necessary when accounting standards already prescribe how items must be treated?",

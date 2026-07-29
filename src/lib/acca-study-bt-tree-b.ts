@@ -920,7 +920,7 @@ export const BT_TREE_11: StudyChapter = {
           items: [
             "**Strategy** — contributing to it and constructively challenging it.",
             "**Scrutiny** — holding executive management to account for performance.",
-            "**Risk** — satisfying themselves that financial information is accurate and that risk management and internal control are robust.",
+            "**Risk** — forming their own view that the numbers can be relied on, and that the systems for managing risk and controlling the business actually work.",
             "**People** — determining executive pay, and appointing and where necessary removing executive directors.",
           ],
         },

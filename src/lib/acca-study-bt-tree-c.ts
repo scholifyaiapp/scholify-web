@@ -80,7 +80,7 @@ export const BT_TREE_12: StudyChapter = {
         {
           kind: "definition",
           term: "Internal audit",
-          md: "An **independent, objective assurance and consulting activity** established within an organisation to evaluate and improve the effectiveness of risk management, internal control and governance. Note the words: it is assurance, it is internal, and its value depends entirely on its independence from the operations it examines.",
+          md: "An **assurance function inside the organisation**, independent of the operations it examines, whose job is to test how well the organisation manages its risks, operates its internal controls and governs itself — and to recommend improvements. Note the three words that matter: it provides **assurance** rather than doing the work; it sits **inside** the entity; and its value rests entirely on its **independence** from what it examines.",
         },
         {
           kind: "callout",
@@ -364,7 +364,7 @@ export const BT_TREE_13: StudyChapter = {
         {
           kind: "definition",
           term: "External audit",
-          md: "An **independent examination** of an entity's financial statements resulting in an **opinion** on whether they give a true and fair view (or are presented fairly) in accordance with the applicable framework. The auditor is appointed by, and reports to, the **shareholders** — not to management.",
+          md: "An **independent examination** of a set of financial statements, which ends in a published **opinion**: do these statements, measured against the applicable reporting framework, present a *true and fair view* (in some frameworks, are they *presented fairly*)? The auditor is appointed by the **shareholders** and reports to them — not to the management who prepared the statements.",
         },
         {
           kind: "table",
@@ -397,12 +397,12 @@ export const BT_TREE_13: StudyChapter = {
         options: [
           "The external auditor is appointed by the board of directors and reports to them",
           "An external audit provides absolute assurance that the financial statements contain no errors",
-          "The external auditor gives an opinion to shareholders on whether the financial statements give a true and fair view",
+          "The external auditor reports an opinion to shareholders: do these statements present a true and fair view?",
           "The external auditor's main purpose is to detect fraud",
         ],
         correct: 2,
         explain:
-          "The external auditor is appointed by and reports to the SHAREHOLDERS, giving an OPINION on whether the financial statements give a true and fair view. It is REASONABLE, not absolute, assurance — based on sampling and risk assessment — and fraud detection is not its primary purpose. The difference between what an audit delivers and what users assume it delivers is the expectation gap.",
+          "The external auditor is appointed by the SHAREHOLDERS and reports to them, answering one question: do these statements present a true and fair view? Note what the answer is — an OPINION carrying REASONABLE rather than absolute assurance, because it rests on sampling and risk assessment. Fraud detection is not its purpose either. The gap between what an audit delivers and what users assume it delivers is the expectation gap.",
       },
     },
     {
@@ -468,7 +468,7 @@ export const BT_TREE_13: StudyChapter = {
   ],
   keyTerms: [
     { term: "Accounting standards", def: "Authoritative rules on how transactions and balances are recognised, measured, presented and disclosed, to make statements comparable and consistent." },
-    { term: "External audit", def: "An independent examination of financial statements producing an opinion for shareholders on whether they give a true and fair view." },
+    { term: "External audit", def: "An independent examination of a set of financial statements, ending in a published opinion for shareholders on whether those statements present a true and fair view." },
     { term: "Expectation gap", def: "The difference between what an audit actually provides and what users commonly believe it provides." },
     { term: "Reasonable assurance", def: "The high but not absolute level of assurance an audit provides, reflecting its reliance on sampling and risk assessment." },
     { term: "Management information", def: "Data selected, summarised, compared and interpreted so that it can support a specific management decision." },
@@ -478,7 +478,7 @@ export const BT_TREE_13: StudyChapter = {
     "Reporting is regulated because it is prepared by the people it reports on, and users need comparability, credibility and protection.",
     "The three sources of regulation are national law, accounting standards and stock exchange rules.",
     "Standards constrain discretion but leave judgement, which is why an independent audit is needed on top of them.",
-    "The external auditor is appointed by and reports to shareholders, giving reasonable assurance that the statements give a true and fair view.",
+    "The external auditor is appointed by shareholders and reports to them, offering reasonable assurance that the statements present a true and fair view.",
     "Internal audit serves the board on risk, control and governance; external audit serves shareholders on the financial statements.",
     "Information comes from internal records and external sources, and every external source should be judged on who produced it, when and on what basis.",
     "Data becomes management information only once it is selected, summarised, compared and interpreted for a decision.",
@@ -1132,7 +1132,7 @@ export const BT_TREE_16: StudyChapter = {
         {
           kind: "definition",
           term: "Fraud",
-          md: "An **intentional** act by one or more persons involving the use of **deception** to obtain an **unjust or illegal advantage**. The three elements — intention, deception, advantage — are all required.",
+          md: "A **deliberate** act, by one person or several, that uses **deception** to secure a gain the actor was **not entitled to** — or to avoid a loss they should have borne. Three elements have to be present together: it was intended, it involved deceiving someone, and it produced an advantage that was not properly due.",
         },
         {
           kind: "definition",
@@ -1350,7 +1350,7 @@ export const BT_TREE_16: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "Fraud", def: "An intentional act using deception to obtain an unjust or illegal advantage." },
+    { term: "Fraud", def: "A deliberate act that uses deception to secure a gain the actor was not entitled to, or to avoid a loss they should have borne." },
     { term: "Error", def: "An unintentional misstatement or omission, distinguished from fraud by the absence of intent." },
     { term: "Fraud triangle", def: "The three conditions required for fraud: opportunity, motive or pressure, and rationalisation." },
     { term: "Teeming and lading", def: "Misappropriating a customer receipt and concealing it with a later receipt from another customer, requiring continuous attention to sustain." },

@@ -610,7 +610,7 @@ export const BT_TREE_03: StudyChapter = {
   intro:
     "Government sets the rules a business plays by, and the law enforces them. This chapter covers where legal authority comes from and the four bodies of law BT expects you to know: employment, data protection, health and safety, and consumer protection.",
   outcomes: [
-    "Explain how the political system and government policy affect an organisation",
+    "Trace the routes by which a government's decisions reach a business, and what each one costs it",
     "Describe the sources of legal authority, from supra-national bodies to regional government",
     "Explain how employment law protects employees and what it requires of managers",
     "Identify the principles of data protection and data security",
@@ -1600,7 +1600,7 @@ export const BT_TREE_06: StudyChapter = {
   intro:
     "Three sets of external forces that reshape businesses slowly and then all at once: who the population is and what it values, what technology makes newly possible, and the environmental limits and expectations a business now has to answer for.",
   outcomes: [
-    "Explain the medium- and long-term effects of social and demographic trends on an organisation",
+    "Work out how a shift in population or social attitudes reshapes an organisation over years rather than months",
     "Describe the impact of changes in the workforce and in social attitudes",
     "Explain how technology affects organisational structure, work and customer relationships",
     "Explain the effects of technology on the value chain and on how work is organised",
@@ -1771,7 +1771,7 @@ export const BT_TREE_06: StudyChapter = {
         {
           kind: "definition",
           term: "Sustainability",
-          md: "Meeting present needs **without compromising the ability of future generations to meet theirs**. In a business context it means operating so that the resources, ecosystems and social licence the organisation depends on are not depleted by its own activity.",
+          md: "Meeting today's needs in a way that **leaves those who come after us able to meet their own**. For a business that means operating without exhausting the very things it depends on — the resources it draws on, the ecosystems it affects, and the social licence that lets it trade at all.",
         },
         {
           kind: "definition",
@@ -1847,7 +1847,7 @@ export const BT_TREE_06: StudyChapter = {
     { term: "PESTEL", def: "A framework for scanning the macro environment: Political, Economic, Social, Technological, Environmental and Legal factors." },
     { term: "Demography", def: "The study of a population's size, growth, age structure, distribution and composition." },
     { term: "Disintermediation", def: "The removal of intermediaries from a value chain as technology allows producers to deal directly with end customers." },
-    { term: "Sustainability", def: "Meeting present needs without compromising the ability of future generations to meet theirs." },
+    { term: "Sustainability", def: "Meeting today's needs in a way that leaves those who come after us able to meet their own." },
     { term: "Triple bottom line", def: "Measuring and reporting performance against economic, social and environmental outcomes rather than profit alone." },
     { term: "Greenwashing", def: "Presenting an organisation's environmental credentials in a way that is technically defensible but creates a materially misleading impression." },
   ],
