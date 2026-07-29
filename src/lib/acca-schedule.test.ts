@@ -306,3 +306,64 @@ describe("buildDailyTasks — the categorised day", () => {
     expect(tasks.find((t) => t.id === "drill")!.area).toBe(study.area)
   })
 })
+
+/*
+ * The daily budget allocator.
+ *
+ * The bug this covers: a learner who chose 180 min/day was given a 48-minute
+ * day, and so was a learner who chose 45 — practiceCount() capped at 30
+ * questions, the study block was a fixed 7 min (its budget-aware branch needed
+ * a third-party resource, which onboarding never collects), and flashcards were
+ * pinned to 12–15 cards. Every budget above ~40 min produced an identical day,
+ * so the onboarding time question barely affected the plan.
+ */
+import { shapeDay } from "@/lib/acca-schedule"
+
+describe("shapeDay — filling the daily minute budget", () => {
+  const BUDGETS = [12, 15, 25, 30, 45, 60, 90, 120, 180, 240]
+
+  it.each(BUDGETS)("spends what a %i-minute learner promised", (budget) => {
+    for (const target of [65, 75, 85]) {
+      const day = shapeDay(budget, target)
+      // Within 5% or 3 minutes, whichever is larger — rounding on per-question
+      // and per-card costs cannot land exactly on every budget.
+      const slack = Math.max(3, Math.round(budget * 0.05))
+      expect(
+        Math.abs(day.totalMinutes - budget),
+        `budget ${budget} @ ${target}% allocated ${day.totalMinutes}min`,
+      ).toBeLessThanOrEqual(slack)
+    }
+  })
+
+  it("gives a bigger budget strictly more work, at every step", () => {
+    let prev = 0
+    for (const budget of BUDGETS) {
+      const day = shapeDay(budget, 75)
+      expect(day.totalMinutes, `${budget}min should exceed the tier below`).toBeGreaterThan(prev)
+      prev = day.totalMinutes
+    }
+  })
+
+  it("earns a second topic on a long day instead of one marathon drill", () => {
+    expect(shapeDay(45, 75).cycles).toHaveLength(1)
+    const long = shapeDay(180, 75)
+    expect(long.cycles).toHaveLength(2)
+    // No single practice block is allowed to become the whole day.
+    for (const cycle of long.cycles) expect(cycle.practiceQ).toBeLessThanOrEqual(41)
+  })
+
+  it("always studies something, even on the smallest day", () => {
+    const tiny = shapeDay(12, 65)
+    expect(tiny.cycles.length).toBeGreaterThanOrEqual(1)
+    expect(tiny.cycles[0].studyMinutes).toBeGreaterThan(0)
+  })
+
+  it("only schedules a bank run when a whole one fits", () => {
+    expect(shapeDay(60, 75).bankRun).toBe(false)
+    expect(shapeDay(240, 75).bankRun).toBe(true)
+  })
+
+  it("clears the cards that are actually due rather than inventing a session", () => {
+    expect(shapeDay(180, 75, 4).cards).toBeLessThan(shapeDay(180, 75, 0).cards)
+  })
+})

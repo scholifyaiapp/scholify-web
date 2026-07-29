@@ -29,6 +29,7 @@ import {
   type LearnerRoute,
   type AssessmentPath,
 } from "@/lib/acca-learner-baseline"
+import { shapeDay } from "@/lib/acca-schedule"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
@@ -347,7 +348,14 @@ export default function Welcome() {
       }
     }
     if (goal === "career") setExperience("professional")
-    const questionsPerDay = minutes >= 120 ? 55 : minutes >= 90 ? 42 : minutes >= 60 ? 30 : 22
+    /*
+     * Derived from the SAME allocator that builds the day (acca-schedule
+     * shapeDay), not a separate lookup table. The old table said 55 questions
+     * for a 120-min learner while the scheduler only ever scheduled 30 — so the
+     * dashboard's daily goal and the plan disagreed, and neither matched the
+     * minutes the learner had actually promised.
+     */
+    const questionsPerDay = shapeDay(minutes, target).questionGoal
     setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: target })
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()

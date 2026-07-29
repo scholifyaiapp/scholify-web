@@ -266,17 +266,163 @@ function ambitionFactor(targetProb: number): number {
   return 1.0
 }
 
-/** How many practice questions fit the remaining daily minutes. */
-function practiceCount(remainingMin: number, targetProb: number): number {
-  const raw = Math.round((remainingMin / COST.perQ) * ambitionFactor(targetProb))
-  return Math.max(5, Math.min(30, raw))
+const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n))
+
+/* ── Daily budget allocation ──────────────────────────────────────
+ *
+ * ONE function decides what a day of N minutes contains, so the plan preview,
+ * the daily missions and the onboarding daily goal cannot disagree.
+ *
+ * WHY THIS EXISTS. All three used to size a day with their own hardcoded
+ * numbers, and every one of them hit the same ceiling:
+ *
+ *   · practiceCount() clamped to 30 questions (33 min), whatever the budget.
+ *   · the study block was a flat COST.study = 7 min unless a third-party
+ *     resource was set — and NO learner has one, because the resource step is
+ *     deliberately out of the onboarding flow (see Welcome.tsx visibleSteps).
+ *     So the budget-aware branch was unreachable in production and every
+ *     learner got a 7-minute "read the topic chapter".
+ *   · flashcards were pinned to 12–15 cards (~7–9 min).
+ *
+ * A learner who promised 180 min/day therefore got a 48-minute day:
+ *
+ *     study 7 + practice 33 + flashcards 8 = 48
+ *
+ * And so did a learner who promised 45 — the caps bind from roughly 40 minutes
+ * upward, so EVERY budget above that produced an identical day. The daily-time
+ * question in onboarding had almost no effect on the plan it produced.
+ *
+ * THE SHAPE. The fix is not one enormous drill: 180 minutes at 1.1 min/question
+ * is 160 questions, which is neither sustainable nor how anyone passes. A longer
+ * day earns MORE BLOCKS — a second topic, a real spaced-repetition session, a
+ * timed bank run, then written recall for the tail. That is also the honest
+ * answer to "what am I supposed to do with the rest of my time?".
+ *
+ * Allocation order is a priority order, and it is deliberate:
+ *   1. FLASHCARDS are reserved first. Spaced repetition is the cheapest marks
+ *      in the plan, so it must not be the thing a long practice block squeezes
+ *      out.
+ *   2. TOPIC CYCLES (read → essentials ×5 → targeted practice), at most two a
+ *      day. Two topics is the sane maximum; three is thrash.
+ *   3. A BANK RUN, only when a whole one still fits.
+ *   4. WRITTEN RECALL absorbs the remainder, so the arithmetic closes.
+ */
+
+/** Per-block bounds. A day grows by ADDING blocks, never by inflating one. */
+const SHAPE = {
+  /** Reading a topic: share of the day for the 1st/2nd cycle, and bounds. */
+  studyShare: [0.22, 0.15],
+  studyMax: [34, 26],
+  /** Below ~30 min there is no room for a 10-minute read AND essentials. */
+  studyFloorSmall: 5,
+  studyFloor: 10,
+  /** Spaced repetition: share of the day, bounded in cards. */
+  cardsShare: 0.13,
+  cardsMin: 6,
+  cardsMax: 40,
+  /** Questions in ONE practice block. Past this, the day adds another block. */
+  practiceQMax: 30,
+  /** A second topic cycle is only worth starting with this much left. */
+  secondCycleFloor: 34,
+  /** Written recall is only offered when it is a real block, not a rounding scrap. */
+  recallFloor: 6,
+} as const
+
+export interface TopicCycle {
+  /** Minutes reading the topic. */
+  studyMinutes: number
+  /** Guided questions straight after the read (0 when there is no room). */
+  essentials: number
+  /** Targeted practice questions after the essentials. */
+  practiceQ: number
+}
+
+export interface DayShape {
+  /** One entry per topic studied today (always at least one). */
+  cycles: TopicCycle[]
+  /** Flashcards to clear/revise. */
+  cards: number
+  /** A timed 50-question bank run fits today. */
+  bankRun: boolean
+  /** Written-recall minutes absorbing the tail (0 when there is no tail). */
+  recallMinutes: number
+  /** What the shape actually adds up to — should track `budget` closely. */
+  totalMinutes: number
+  /** Every question in the day (essentials + practice) — the day's goal. */
+  questionGoal: number
+}
+
+/**
+ * Fill a daily minute budget with real work.
+ *
+ * `due` is the learner's outstanding flashcard count: when cards are genuinely
+ * due we clear those rather than inventing a bigger session than exists.
+ */
+export function shapeDay(budget: number, targetProb: number, due = 0): DayShape {
+  const B = Math.max(12, Math.round(budget))
+  const amb = ambitionFactor(targetProb)
+  const essentialsMin = Math.round(ESSENTIALS_SIZE * COST.perQ)
+
+  // 1 · Flashcards, reserved first.
+  const cardTarget = clamp(Math.round((B * SHAPE.cardsShare) / COST.perCard), SHAPE.cardsMin, SHAPE.cardsMax)
+  const cards = due > 0 ? clamp(Math.min(due, cardTarget), SHAPE.cardsMin, SHAPE.cardsMax) : cardTarget
+  let left = B - Math.round(cards * COST.perCard)
+
+  // 2 · Topic cycles.
+  const cycles: TopicCycle[] = []
+  const studyFloor = B < 30 ? SHAPE.studyFloorSmall : SHAPE.studyFloor
+  /** One practice block's ceiling in minutes — ambition tilts it up. */
+  const blockCapMin = Math.round(SHAPE.practiceQMax * COST.perQ * amb)
+
+  for (let c = 0; c < SHAPE.studyShare.length; c++) {
+    if (c > 0 && left < SHAPE.secondCycleFloor) break
+    const want = clamp(Math.round(B * SHAPE.studyShare[c]), studyFloor, SHAPE.studyMax[c])
+    const studyMinutes = Math.max(1, Math.min(want, left))
+    left -= studyMinutes
+
+    /*
+     * Essentials only when there is ALSO room for practice after them. On a
+     * 15-minute day, five essentials would consume every remaining minute and
+     * leave the practice slot empty — and five questions on the topic you just
+     * read is what essentials already is. Practice wins the tie.
+     */
+    const essentials = left >= essentialsMin + Math.ceil(COST.perQ) ? ESSENTIALS_SIZE : 0
+    left -= Math.round(essentials * COST.perQ)
+
+    const practiceMinutes = Math.max(0, Math.min(left, blockCapMin))
+    const practiceQ = clamp(Math.floor(practiceMinutes / COST.perQ), 0, Math.round(SHAPE.practiceQMax * amb))
+    left -= Math.round(practiceQ * COST.perQ)
+
+    cycles.push({ studyMinutes, essentials, practiceQ })
+  }
+
+  // 3 · A bank run, only if a whole one fits.
+  const bankRun = left >= COST.bank
+  if (bankRun) left -= COST.bank
+
+  // 4 · Written recall absorbs whatever is left.
+  const recallMinutes = left >= SHAPE.recallFloor ? left : 0
+
+  const cycleMinutes = cycles.reduce(
+    (sum, cy) => sum + cy.studyMinutes + Math.round(cy.essentials * COST.perQ) + Math.round(cy.practiceQ * COST.perQ),
+    0,
+  )
+  return {
+    cycles,
+    cards,
+    bankRun,
+    recallMinutes,
+    totalMinutes: Math.round(cards * COST.perCard) + cycleMinutes + (bankRun ? COST.bank : 0) + recallMinutes,
+    questionGoal: cycles.reduce((sum, cy) => sum + cy.essentials + cy.practiceQ, 0),
+  }
 }
 
 /** The next syllabus area a learner should study — first not-yet-solid one. */
-function nextLearnArea(paperId: string): { code: string; label: string } | null {
+function nextLearnArea(paperId: string, exclude: string[] = []): { code: string; label: string } | null {
   const paper = getPaper(paperId)
   const stats = getPaperStats(paperId)
   const outstanding = (paper?.areas ?? []).filter((a) => {
+    if (exclude.includes(a.code)) return false
     const topic = getTopicResult(paperId, a.code)
     const stat = stats.areas.find((s) => s.code === a.code)
     return !topic.mastered || (stat?.seen ?? 0) < 8
@@ -414,9 +560,7 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
     ? { code: focus.area, label: focus.label }
     : nextLearnArea(paperId) ?? { code: "", label: "the syllabus" }
 
-  const tasks: SchedTask[] = []
-
-  // 1 · Topic learning — the main content.
+  const shape = shapeDay(budget, targetProb, due)
   const resource = getStudyResource(paperId)
   const provider = resource && !resource.providers.includes("none")
     ? PROVIDER_LABEL[resource.primaryProvider]
@@ -424,76 +568,120 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
   const nextChapter = resource?.totalChapters
     ? Math.min(resource.totalChapters, resource.completedChapters + 1)
     : null
-  tasks.push({
-    id: "study",
-    icon: "📖",
-    title: provider
-      ? `${provider}${nextChapter ? ` · Chapter ${nextChapter}` : ""}`
-      : `Study ${area.code ? `${area.code} · ` : ""}${area.label}`,
-    detail: provider
-      ? `Continue in your ${provider} resource, then ask Charles to test your understanding of ${area.code ? `${area.code} · ${area.label}` : "the topic"}`
-      : "Read the topic chapter — concept, formulas, worked example, the classic traps",
-    action: "study",
-    minutes: provider ? Math.max(12, Math.round(budget * 0.4)) : COST.study,
-    area: area.code || undefined,
-  })
-
-  // 2 · Essentials — 5 guided questions on what was just studied.
-  const essentialsMin = Math.round(ESSENTIALS_SIZE * COST.perQ)
-  tasks.push({
-    id: "essentials",
-    icon: "🎯",
-    title: `Essentials ×${ESSENTIALS_SIZE}${area.code ? ` — ${area.code}` : ""}`,
-    detail: "The five most essential questions on what you just studied — read the brief, then prove it",
-    action: "essentials",
-    minutes: essentialsMin,
-    area: area.code || undefined,
-  })
-
-  // 3 · Daily practice — the pain point leads whenever one is measurable.
+  // The pain point leads practice whenever one is measurable.
   const weak = gateFocus ? null : focusArea(paperId)
-  const cardsReserve = COST.perCard * Math.max(6, Math.min(due || 8, 12))
-  const left = Math.max(8, budget - tasks[0].minutes - essentialsMin - cardsReserve)
-  const n = practiceCount(left, targetProb)
-  if (weak && weak.code !== area.code) {
-    tasks.push({
-      // Stable id for the daily drill slot — it must NOT change when the slot
-      // flips between weak-first and plain practice mid-day, or today-mission
-      // completion would regress and re-lock finished tasks.
-      id: "drill",
-      icon: "💪",
-      title: `Drill ${weak.code} · ${weak.label} — at ${Math.round(weak.acc * 100)}%`,
-      detail:
-        weak.source === "diagnostic"
-          ? `${n} adaptive questions on your diagnostic's pain point — until the floor lifts above 65%`
-          : `${n} adaptive questions on your weakest practised area — until the floor lifts above 65%`,
-      action: "weak",
-      minutes: Math.round(n * COST.perQ),
-      area: weak.code,
-    })
-  } else {
-    tasks.push({
-      id: "drill", // stable slot id — see the weak branch above
-      icon: "✏️",
-      title: `Practise ${n} questions${area.code ? ` — ${area.code} focus` : ""}`,
-      detail: "Instant marking + Ask Charles — turn the chapter into recall",
-      action: "practice",
-      minutes: Math.round(n * COST.perQ),
-      area: area.code || undefined,
-    })
-  }
 
-  // 4 · Flashcards — spaced revision closes the day.
-  const cards = Math.max(6, Math.min(due || 12, 15))
+  const tasks: SchedTask[] = []
+
+  shape.cycles.forEach((cycle, c) => {
+    /*
+     * A second topic only exists on a long day (see shapeDay). It studies the
+     * NEXT area rather than repeating the first — two reads of the same chapter
+     * is not what three hours should buy. `secondArea` falls back to the first
+     * when the syllabus has nothing else outstanding.
+     */
+    const cycleArea = c === 0 ? area : nextLearnArea(paperId, [area.code]) ?? area
+    const suffix = c === 0 ? "" : String(c + 1)
+
+    // 1 · Topic learning.
+    tasks.push({
+      id: `study${suffix}`,
+      icon: "📖",
+      title: provider && c === 0
+        ? `${provider}${nextChapter ? ` · Chapter ${nextChapter}` : ""}`
+        : `Study ${cycleArea.code ? `${cycleArea.code} · ` : ""}${cycleArea.label}`,
+      detail: provider && c === 0
+        ? `Continue in your ${provider} resource, then ask Charles to test your understanding of ${cycleArea.code ? `${cycleArea.code} · ${cycleArea.label}` : "the topic"}`
+        : `Read the topic chapter — concept, formulas, worked example, the classic traps · ~${cycle.studyMinutes} min`,
+      action: "study",
+      minutes: cycle.studyMinutes,
+      area: cycleArea.code || undefined,
+    })
+
+    // 2 · Essentials — five guided questions on what was just studied.
+    if (cycle.essentials > 0) {
+      tasks.push({
+        id: `essentials${suffix}`,
+        icon: "🎯",
+        title: `Essentials ×${cycle.essentials}${cycleArea.code ? ` — ${cycleArea.code}` : ""}`,
+        detail: "The five most essential questions on what you just studied — read the brief, then prove it",
+        action: "essentials",
+        minutes: Math.round(cycle.essentials * COST.perQ),
+        area: cycleArea.code || undefined,
+      })
+    }
+
+    // 3 · Daily practice — the biggest block.
+    if (cycle.practiceQ > 0) {
+      const n = cycle.practiceQ
+      const aimWeak = c === 0 && weak && weak.code !== cycleArea.code
+      tasks.push(
+        aimWeak
+          ? {
+              // Stable id for the daily drill slot — it must NOT change when the
+              // slot flips between weak-first and plain practice mid-day, or
+              // today-mission completion would regress and re-lock finished tasks.
+              id: "drill",
+              icon: "💪",
+              title: `Drill ${weak!.code} · ${weak!.label} — at ${Math.round(weak!.acc * 100)}%`,
+              detail:
+                weak!.source === "diagnostic"
+                  ? `${n} adaptive questions on your diagnostic's pain point — until the floor lifts above 65%`
+                  : `${n} adaptive questions on your weakest practised area — until the floor lifts above 65%`,
+              action: "weak",
+              minutes: Math.round(n * COST.perQ),
+              area: weak!.code,
+            }
+          : {
+              id: `drill${suffix}`, // stable slot id — see the weak branch above
+              icon: "✏️",
+              title: `Practise ${n} questions${cycleArea.code ? ` — ${cycleArea.code} focus` : ""}`,
+              detail: "Instant marking + Ask Charles — turn the chapter into recall",
+              action: "practice",
+              minutes: Math.round(n * COST.perQ),
+              area: cycleArea.code || undefined,
+            },
+      )
+    }
+  })
+
+  // 4 · Flashcards — spaced revision closes the taught material.
   tasks.push({
     id: "flashcards",
     icon: "🧠",
-    title: due > 0 ? `Clear ${cards} due flashcards` : `Revise ${cards} flashcards`,
+    title: due > 0 ? `Clear ${shape.cards} due flashcards` : `Revise ${shape.cards} flashcards`,
     detail: due > 0 ? "Cards due for spaced repetition — lock in what you learned" : "Warm up the key facts, formulas and thresholds",
     action: "flashcards",
-    minutes: Math.round(cards * COST.perCard),
+    minutes: Math.round(shape.cards * COST.perCard),
     area: area.code || undefined,
   })
+
+  /*
+   * 5 · What a LONG day does with the time one topic cannot fill. Before this,
+   * these minutes simply had nothing in them — a learner who promised 180 min
+   * was handed 48 and left to invent the rest.
+   */
+  if (shape.bankRun) {
+    tasks.push({
+      id: "bank",
+      icon: "📚",
+      title: "Bank run — 50 questions under time",
+      detail: "A whole-paper set against the clock — this is what builds exam pace",
+      action: "bank",
+      minutes: COST.bank,
+    })
+  }
+  if (shape.recallMinutes > 0) {
+    tasks.push({
+      id: "recall",
+      icon: "✍️",
+      title: `Written recall — ${shape.recallMinutes} min`,
+      detail: "Close the book and write out today's rules, formulas and traps from memory. Retrieval, not re-reading, is what sticks",
+      action: "weak",
+      minutes: shape.recallMinutes,
+      area: area.code || undefined,
+    })
+  }
 
   return tasks
 }
@@ -505,33 +693,72 @@ function phaseDay(paperId: string, budget: number, targetProb: number, due: numb
 
   // Learn AND strengthen run the same four-category day — what changes between
   // them is where practice lands (categoryDay aims it at the pain point the
-  // moment one is measurable). Strengthen adds a bank run on big-budget days.
-  if (key === "learn") return categoryDay(paperId, budget, targetProb, due, false)
+  // moment one is measurable). categoryDay now schedules its own bank run when
+  // the budget affords a whole one, so strengthen no longer bolts on a second.
+  if (key === "learn" || key === "strengthen") return categoryDay(paperId, budget, targetProb, due, false)
 
-  if (key === "strengthen") {
-    const tasks = categoryDay(paperId, budget, targetProb, due, false)
-    const spent = tasks.reduce((a, t) => a + t.minutes, 0)
-    if (budget - spent > 25) {
-      tasks.push({ id: "bank", icon: "📚", title: "Bank run — 50 questions under time", detail: "Whole-paper set against the clock — bridge toward the mock gate", action: "bank", minutes: COST.bank })
+  if (key === "revise") {
+    /*
+     * Revise used to be three fixed blocks summing to ~72 min regardless of the
+     * budget: over for a 25-minute learner, and a third of the day for someone
+     * on 180. Both halves now scale — cards and the second pass take shares of
+     * the day, and the bank run only appears when a whole one fits.
+     */
+    const cardTarget = Math.max(8, Math.round((budget * 0.3) / COST.perCard))
+    const cards = due > 0 ? Math.max(8, Math.min(due, cardTarget)) : cardTarget
+    const tasks: SchedTask[] = [{
+      id: "flashcards", icon: "🧠",
+      title: due > 0 ? `Clear ${cards} due flashcards` : `Flashcard sweep — ${cards} cards`,
+      detail: "Active recall to zero-due — this is marks on exam day",
+      action: "flashcards", minutes: Math.round(cards * COST.perCard),
+    }]
+    let left = budget - tasks[0].minutes
+    const weak = focusArea(paperId)
+    if (weak && left >= 10) {
+      const mins = Math.min(left, Math.max(15, Math.round(budget * 0.35)))
+      tasks.push({
+        id: "weak", icon: "💪", title: `Second pass on ${weak.code} · ${weak.label}`,
+        detail: weak.source === "diagnostic" ? "The diagnostic's weakest area — lock it before rehearsal" : "Lock the last soft area before rehearsal",
+        action: "weak", minutes: mins, area: weak.code,
+      })
+      left -= mins
+    }
+    if (left >= COST.bank) {
+      tasks.push({ id: "bank", icon: "📚", title: "Bank run — mixed 50", detail: "Confirm coverage holds across the whole paper", action: "bank", minutes: COST.bank })
+      left -= COST.bank
+    }
+    if (left >= 8) {
+      tasks.push({
+        id: "recall", icon: "✍️", title: `Written recall — ${left} min`,
+        detail: "Close the book and write the rules and formulas from memory — retrieval, not re-reading",
+        action: "weak", minutes: left,
+      })
     }
     return tasks
   }
 
-  if (key === "revise") {
-    const tasks: SchedTask[] = [{
-      id: "flashcards", icon: "🧠", title: due > 0 ? `Clear ${Math.min(due, 20)} due flashcards` : "Flashcard sweep", detail: "Active recall to zero-due — this is marks on exam day", action: "flashcards", minutes: Math.round(Math.min(due || 15, 20) * COST.perCard),
-    }]
-    const weak = focusArea(paperId)
-    if (weak) tasks.push({ id: "weak", icon: "💪", title: `Second pass on ${weak.code} · ${weak.label}`, detail: weak.source === "diagnostic" ? "The diagnostic's weakest area — lock it before rehearsal" : "Lock the last soft area before rehearsal", action: "weak", minutes: 20, area: weak.code })
-    tasks.push({ id: "bank", icon: "📚", title: "Bank run — mixed 50", detail: "Confirm coverage holds across the whole paper", action: "bank", minutes: COST.bank })
-    return tasks.slice(0, 3)
-  }
-
-  // rehearse
-  return [
+  /*
+   * REHEARSE. A mock is a fixed real duration — you cannot sit two thirds of
+   * one — so it is never scaled. What DOES scale is what follows it: reviewing
+   * every wrong answer is the actual study, and a long day has room for a
+   * proper review plus a flashcard sweep rather than a flat 20 minutes.
+   */
+  const tasks: SchedTask[] = [
     { id: "mock", icon: "⏱️", title: "Sit a timed mock", detail: "Exam conditions, no hints — the review of every wrong answer IS the study", action: "mock", minutes: COST.mock },
-    { id: "weak", icon: "💪", title: "Review the mock's weakest area", detail: "Straight into the gap the mock exposed", action: "weak", minutes: 20 },
   ]
+  let left = budget - COST.mock
+  const reviewMin = left >= 12 ? Math.min(left, Math.max(20, Math.round(budget * 0.25))) : Math.max(10, Math.round(COST.mock * 0.4))
+  tasks.push({ id: "weak", icon: "💪", title: "Review the mock's weakest area", detail: "Straight into the gap the mock exposed — every wrong answer, understood", action: "weak", minutes: reviewMin })
+  left -= reviewMin
+  if (left >= 8) {
+    const cards = Math.max(8, Math.round(left / COST.perCard))
+    tasks.push({
+      id: "flashcards", icon: "🧠", title: due > 0 ? `Clear ${Math.min(due, cards)} due flashcards` : `Revise ${cards} flashcards`,
+      detail: "Keep the cards at zero-due through rehearsal week", action: "flashcards",
+      minutes: Math.round(Math.min(due > 0 ? Math.min(due, cards) : cards, cards) * COST.perCard),
+    })
+  }
+  return tasks
 }
 
 /* ── Forward calendar — every day from today to exam ──────────── */
@@ -575,7 +802,13 @@ export function projectPlan(paperId: string, maxDays = 45): PlanDay[] {
   const out: PlanDay[] = []
   const start = new Date()
   const perArea = areas.length ? Math.max(1, Math.floor(learn / areas.length)) : 1
-  const pcount = practiceCount(Math.round(budget * 0.55), plan.targetProb)
+  /*
+   * The SAME allocator the live daily missions use (see shapeDay). The preview
+   * and the real day used to be sized by two different sets of hardcoded
+   * numbers, so the plan a learner was shown at onboarding was not the plan they
+   * then got — and both were capped at ~48 min whatever they promised.
+   */
+  const shape = shapeDay(budget, plan.targetProb)
 
   const push = (i: number, phase: MethodPhaseKey, tasks: PlanDayTask[]) => {
     const d = new Date(start)
@@ -602,40 +835,80 @@ export function projectPlan(paperId: string, maxDays = 45): PlanDay[] {
     const provider = resource && !resource.providers.includes("none")
       ? PROVIDER_LABEL[resource.primaryProvider]
       : null
-    push(i, "learn", [
-      {
+    const tasks: PlanDayTask[] = []
+    shape.cycles.forEach((cycle, c) => {
+      // The second cycle studies the NEXT area in syllabus order, not the same
+      // one twice — that is what a long day actually buys.
+      const ca = c === 0 ? a : areas[Math.min(areas.length - 1, areaIdx + 1)]
+      const clabel = ca ? `${ca.code} · ${ca.label}` : "the syllabus"
+      tasks.push({
         kind: "study",
-        title: provider ? `${provider}${chapter ? ` · Chapter ${chapter}` : ""} · ${label}` : `Study ${label}`,
-        minutes: provider ? Math.max(12, Math.round(budget * 0.4)) : COST.study,
-        area: a?.code,
-      },
-      { kind: "weak", title: `Practise ${pcount} in ${a?.code ?? "area"}`, minutes: Math.round(pcount * COST.perQ), area: a?.code },
-      { kind: "flashcards", title: `Revise ${a?.code ?? ""} flashcards`, minutes: 8, area: a?.code },
-    ])
+        title: provider && c === 0 ? `${provider}${chapter ? ` · Chapter ${chapter}` : ""} · ${clabel}` : `Study ${clabel}`,
+        minutes: cycle.studyMinutes,
+        area: ca?.code,
+      })
+      if (cycle.essentials > 0) {
+        tasks.push({ kind: "essentials", title: `Essentials ×${cycle.essentials} — ${ca?.code ?? "area"}`, minutes: Math.round(cycle.essentials * COST.perQ), area: ca?.code })
+      }
+      if (cycle.practiceQ > 0) {
+        tasks.push({ kind: "weak", title: `Practise ${cycle.practiceQ} in ${ca?.code ?? "area"}`, minutes: Math.round(cycle.practiceQ * COST.perQ), area: ca?.code })
+      }
+    })
+    tasks.push({ kind: "flashcards", title: `Revise ${shape.cards} ${a?.code ?? ""} flashcards`.replace("  ", " "), minutes: Math.round(shape.cards * COST.perCard), area: a?.code })
+    if (shape.bankRun) tasks.push({ kind: "bank", title: "Bank run — 50 under time", minutes: COST.bank })
+    if (shape.recallMinutes > 0) tasks.push({ kind: "weak", title: `Written recall — ${shape.recallMinutes} min`, minutes: shape.recallMinutes, area: a?.code })
+    push(i, "learn", tasks)
   }
-  // STRENGTHEN — weak drills, a bank run every 3rd day.
+  // STRENGTHEN — weak drills sized to the budget, a bank run every 3rd day.
+  const drillQ = shape.cycles.reduce((s, c) => s + c.practiceQ, 0) || 10
   for (let d = 0; d < strengthen && i < days; d++, i++) {
+    const isBankDay = d % 3 === 2
+    // The bank run is 40 real minutes; on a bank day the drill gives way to it
+    // rather than the day silently running 40 minutes long.
+    const room = Math.max(10, budget - Math.round(shape.cards * COST.perCard) - (isBankDay ? COST.bank : 0))
+    const q = Math.max(5, Math.min(drillQ, Math.floor(room / COST.perQ)))
     const tasks: PlanDayTask[] = [
-      { kind: "weak", title: `Drill your weakest area (${pcount})`, minutes: Math.round(pcount * COST.perQ) },
-      { kind: "flashcards", title: "Clear due flashcards", minutes: 8 },
+      { kind: "weak", title: `Drill your weakest area (${q})`, minutes: Math.round(q * COST.perQ) },
+      { kind: "flashcards", title: `Clear ${shape.cards} due flashcards`, minutes: Math.round(shape.cards * COST.perCard) },
     ]
-    if (d % 3 === 2) tasks.push({ kind: "bank", title: "Bank run — 50 under time", minutes: COST.bank })
+    if (isBankDay) tasks.push({ kind: "bank", title: "Bank run — 50 under time", minutes: COST.bank })
+    const spent = tasks.reduce((s, t) => s + t.minutes, 0)
+    if (budget - spent >= 8) tasks.push({ kind: "weak", title: `Written recall — ${budget - spent} min`, minutes: budget - spent })
     push(i, "strengthen", tasks)
   }
   // REVISE — flashcards + written recall, a bank run mid-phase.
   for (let d = 0; d < revise && i < days; d++, i++) {
+    const isBankDay = d === Math.floor(revise / 2)
+    const cards = Math.max(8, Math.round((budget * 0.3) / COST.perCard))
     const tasks: PlanDayTask[] = [
-      { kind: "flashcards", title: "Flashcards toward zero-due", minutes: 12 },
-      { kind: "weak", title: "Second pass on a soft area", minutes: 20 },
+      { kind: "flashcards", title: `Flashcards toward zero-due (${cards})`, minutes: Math.round(cards * COST.perCard) },
     ]
-    if (d === Math.floor(revise / 2)) tasks.push({ kind: "bank", title: "Bank run — mixed 50", minutes: COST.bank })
+    let room = budget - tasks[0].minutes - (isBankDay ? COST.bank : 0)
+    if (room >= 10) {
+      const secondPass = Math.min(room, Math.max(15, Math.round(budget * 0.35)))
+      tasks.push({ kind: "weak", title: "Second pass on a soft area", minutes: secondPass })
+      room -= secondPass
+    }
+    if (isBankDay) tasks.push({ kind: "bank", title: "Bank run — mixed 50", minutes: COST.bank })
+    if (room >= 8) tasks.push({ kind: "weak", title: `Written recall — ${room} min`, minutes: room })
     push(i, "revise", tasks)
   }
-  // REHEARSE — mocks every other day, review between.
+  // REHEARSE — mocks every other day, review between. A mock is a fixed real
+  // duration and is never scaled; what follows it is.
   for (let d = 0; d < rehearse && i < days; d++, i++) {
-    const tasks: PlanDayTask[] = d % 2 === 0
-      ? [{ kind: "mock", title: "Timed mock — full paper", minutes: COST.mock }, { kind: "weak", title: "Review the mock's weakest area", minutes: 20 }]
-      : [{ kind: "weak", title: "Fix the gaps the last mock exposed", minutes: 25 }, { kind: "flashcards", title: "Keep cards at zero-due", minutes: 8 }]
+    const tasks: PlanDayTask[] = []
+    if (d % 2 === 0) {
+      tasks.push({ kind: "mock", title: "Timed mock — full paper", minutes: COST.mock })
+      const review = Math.max(20, Math.min(Math.max(0, budget - COST.mock), Math.round(budget * 0.3)))
+      tasks.push({ kind: "weak", title: "Review the mock's weakest area", minutes: review })
+      const room = budget - COST.mock - review
+      if (room >= 8) tasks.push({ kind: "flashcards", title: "Keep cards at zero-due", minutes: room })
+    } else {
+      const fix = Math.max(25, Math.round(budget * 0.55))
+      tasks.push({ kind: "weak", title: "Fix the gaps the last mock exposed", minutes: fix })
+      const room = Math.max(0, budget - fix)
+      tasks.push({ kind: "flashcards", title: `Keep cards at zero-due`, minutes: Math.max(8, room) })
+    }
     push(i, "rehearse", tasks)
   }
 
