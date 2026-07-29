@@ -12,6 +12,7 @@ import { deriveNotifications, subscribeNotifications, type NotificationKind } fr
 import { getTodayStats } from "@/lib/acca"
 import { qualificationProgress } from "@/lib/acca-qualification"
 import { avatarUrlOf, onAvatarChange } from "@/lib/avatar"
+import { isLaunchAdmin } from "@/lib/launch"
 import { initNotesSync } from "@/lib/acca-notes-cloud"
 import FeedbackLauncher from "@/components/FeedbackLauncher"
 
@@ -312,7 +313,37 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <Link to="/study" className="lg:invisible" style={{ textDecoration: "none" }}>
             <Brand compact />
           </Link>
-          <NotificationBell />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/*
+             * Admin entry point. Lives in the TOP BAR rather than either nav on
+             * purpose: the mobile tab bar is already at the 5-item ceiling, and
+             * /admin is not a learner destination — mixing it into the learner
+             * nav would put two different hierarchies at the same level. Here it
+             * is present on both breakpoints with one implementation.
+             *
+             * Renders only for the launch admin (isLaunchAdmin, hardcoded to the
+             * ops account in lib/launch.ts). This is discoverability only, NOT a
+             * gate: /admin re-checks on mount and api/admin-analytics re-checks
+             * server-side with the service-role key, so hiding the link grants
+             * nothing and showing it leaks nothing.
+             */}
+            {isLaunchAdmin(user) && (
+              <Link
+                to="/admin"
+                aria-label="Admin dashboard"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, minHeight: 40,
+                  padding: "8px 12px", borderRadius: R.pill, textDecoration: "none",
+                  border: `1px solid ${C.brandLine}`, background: C.brandSoft, color: C.brand,
+                  fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em",
+                }}
+              >
+                <Icon name="shield" size={15} color={C.brand} strokeWidth={2.3} />
+                <span className="hidden sm:inline">ADMIN</span>
+              </Link>
+            )}
+            <NotificationBell />
+          </div>
         </div>
 
         {/* sch-app-container caps the measure at --app-max (1360px). Without it
