@@ -72,9 +72,34 @@ export const SLIDE_POSES = [
   "success",   // 9 · ready
 ] as const satisfies readonly CharlesPose[]
 
+/**
+ * Short label per STEP number, for the progress rail.
+ *
+ * Indexed by step number rather than by position, for the same reason SLIDE_POSES
+ * is: a route that hides a slide must not shift every label after it onto the
+ * wrong question.
+ */
+export const STEP_LABELS: readonly string[] = [
+  "Welcome",
+  "Starting point",
+  "English",
+  "Paper",
+  "Materials", // out of the flow — see RESOURCE_STEP
+  "Time",
+  "Exam date",
+  "Goal",
+  "Baseline",
+  "Ready",
+] as const
+
 /** The steps shown, in order, for a learner on this route (null = not yet chosen). */
 export function onboardingSteps(learnerRoute: LearnerRoute | null): number[] {
   return Array.from({ length: ONBOARDING_TOTAL }, (_, index) => index).filter(
     (step) => step !== RESOURCE_STEP && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
   )
 }
+
+/** "Which paper are we passing?" — referenced by the editable summary rows. */
+export const PAPER_STEP = 3
+/** "What are you here for?" — the goal question. */
+export const GOAL_STEP = 7

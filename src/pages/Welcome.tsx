@@ -32,9 +32,11 @@ import {
 import { shapeDay } from "@/lib/acca-schedule"
 import { registerPracticeTime } from "@/lib/reminders"
 import { buildOnboardingGuide, MIN_DAILY_MINUTES, TARGET_DAILY_MINUTES, type GuideFix, type OnboardingGuide } from "@/lib/acca-onboarding-guide"
-import { onboardingSteps, SLIDE_POSES, TIME_STEP, EXAM_DATE_STEP } from "@/lib/acca-onboarding-steps"
+import { onboardingSteps, SLIDE_POSES, STEP_LABELS, TIME_STEP, EXAM_DATE_STEP, PAPER_STEP, GOAL_STEP } from "@/lib/acca-onboarding-steps"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
 import { CapacityPlan, MinutesNudge } from "@/components/acca/CapacityPlan"
+import { OnboardingStepper } from "@/components/acca/OnboardingStepper"
+import { readOnboardingDraft, saveOnboardingDraft, clearOnboardingDraft } from "@/lib/acca-onboarding-draft"
 import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
 import {
   ChoiceCard,
@@ -200,8 +202,16 @@ export default function Welcome() {
   const { user, startTrial } = useAuth()
   const reduced = useReducedMotion()
   const isMobile = useIsMobile()
-  const [step, setStep] = useState(0)
-  const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(null)
+
+  /*
+   * Restore an interrupted run. Read ONCE into the initial state rather than in
+   * an effect, so the first paint is already the learner's own answers — an
+   * effect-based restore would flash step 0 and then jump, which reads as a bug.
+   */
+  const draft = useMemo(() => readOnboardingDraft(), [])
+
+  const [step, setStep] = useState(draft?.step ?? 0)
+  const [learnerRoute, setLearnerRoute] = useState<LearnerRoute | null>(draft?.learnerRoute ?? null)
   // Step 4 ("What are you studying with?" — the Kaplan/BPP/Study Hub picker) is
   // deliberately OUT of the flow. Scholify is not yet an official Kaplan or BPP
   // partner, so asking learners to register third-party materials implied a
@@ -217,26 +227,31 @@ export default function Welcome() {
   // is why the route-based plan never ran in production. See the note there.
   const visibleSteps = useMemo(() => onboardingSteps(learnerRoute), [learnerRoute])
   const visibleStepIndex = Math.max(0, visibleSteps.indexOf(step))
+  /* Labels for the steps this route actually shows, in order — indexed by step
+     NUMBER upstream so a hidden slide cannot shift the rest onto wrong names. */
+  const stepLabels = useMemo(() => visibleSteps.map((s) => STEP_LABELS[s] ?? `Step ${s + 1}`), [visibleSteps])
 
   const [dir, setDir] = useState(1)
-  const [passed, setPassed] = useState<Set<string>>(new Set())
+  const [passed, setPassed] = useState<Set<string>>(new Set(draft?.passed ?? []))
   const [showPassed, setShowPassed] = useState(false)
-  const [paper, setPaper] = useState<string | null>(null)
-  const [paperVariant, setPaperVariantState] = useState<PaperVariant | null>(null)
-  const [minutes, setMinutes] = useState(60)
-  const [daysPerWeek, setDaysPerWeek] = useState(6)
-  const [slot, setSlot] = useState("19:00")
-  const [examDate, setExamDate] = useState("")
-  const [pickedSitting, setPickedSitting] = useState<string | null>(null)
-  const [goal, setGoalState] = useState<Goal | null>(null)
-  const [target, setTarget] = useState(75)
-  const [englishLevel, setEnglishLevel] = useState<CefrLevel | null>(null)
-  const [englishEvidence, setEnglishEvidence] = useState<EnglishEvidence | null>(null)
+  const [paper, setPaper] = useState<string | null>(draft?.paper ?? null)
+  const [paperVariant, setPaperVariantState] = useState<PaperVariant | null>(draft?.paperVariant ?? null)
+  const [minutes, setMinutes] = useState(draft?.minutes ?? 60)
+  const [daysPerWeek, setDaysPerWeek] = useState(draft?.daysPerWeek ?? 6)
+  const [slot, setSlot] = useState(draft?.slot ?? "19:00")
+  const [examDate, setExamDate] = useState(draft?.examDate ?? "")
+  const [pickedSitting, setPickedSitting] = useState<string | null>(draft?.pickedSitting ?? null)
+  const [goal, setGoalState] = useState<Goal | null>(draft?.goal ?? null)
+  const [target, setTarget] = useState(draft?.target ?? 75)
+  const [englishLevel, setEnglishLevel] = useState<CefrLevel | null>(draft?.englishLevel ?? null)
+  const [englishEvidence, setEnglishEvidence] = useState<EnglishEvidence | null>(draft?.englishEvidence ?? null)
+  // Files are NOT restored — see the note in acca-onboarding-draft. The upload
+  // steps re-ask rather than showing a filename with no file behind it.
   const [certificateFile, setCertificateFile] = useState<File | null>(null)
   const [certificateType, setCertificateType] = useState<"IELTS" | "TOEFL" | "Cambridge" | "Other">("IELTS")
   const [certificateBusy, setCertificateBusy] = useState(false)
   const [certificateError, setCertificateError] = useState("")
-  const [resultChoice, setResultChoice] = useState<AssessmentPath | null>(null)
+  const [resultChoice, setResultChoice] = useState<AssessmentPath | null>(draft?.resultChoice ?? null)
   const [resultFile, setResultFile] = useState<File | null>(null)
   const [resultAnalysis, setResultAnalysis] = useState<ResultUploadAnalysis | null>(null)
   const [resultBusy, setResultBusy] = useState(false)
@@ -264,6 +279,23 @@ export default function Welcome() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  /*
+   * Persist every answer as it changes, so an interrupted run resumes instead of
+   * restarting. Cheap (one small JSON write) and not worth debouncing: these are
+   * discrete choices, not keystrokes.
+   *
+   * Skipped while step is 0 — writing a draft nobody has answered anything into
+   * would make the restore path fire for people who only glanced at the welcome
+   * slide.
+   */
+  useEffect(() => {
+    if (step === 0) return
+    saveOnboardingDraft({
+      step, learnerRoute, passed: [...passed], paper, paperVariant, minutes, daysPerWeek,
+      slot, examDate, pickedSitting, goal, target, englishLevel, englishEvidence, resultChoice,
+    })
+  }, [step, learnerRoute, passed, paper, paperVariant, minutes, daysPerWeek, slot, examDate, pickedSitting, goal, target, englishLevel, englishEvidence, resultChoice])
 
   const canAdvance = step === 1
     ? learnerRoute !== null
@@ -410,6 +442,9 @@ export default function Welcome() {
      * learner the three daily reminders had nothing to fire from.
      */
     if (complete) registerPracticeTime(slot)
+    // The answers are now committed to the real stores, so the draft has served
+    // its purpose. Leaving it would offer to "resume" a finished onboarding.
+    if (complete) clearOnboardingDraft()
     // Onboarding is done → start the 3-day free trial now. Fire-and-forget:
     // it's idempotent server-side, and the auth effect re-grants as a safety net.
     if (complete) void startTrial()
@@ -606,6 +641,7 @@ export default function Welcome() {
         englishLevel={englishLevel}
         daysPerWeek={daysPerWeek}
         onApplyFix={applyGuideFix}
+        onEdit={goToStep}
       />
     ),
   }
@@ -687,13 +723,17 @@ export default function Welcome() {
                 stopped at ~82% on the final step — the user never saw it
                 complete. String() both sides too: the old `0${n}` template
                 rendered step 10 as "010". */}
-            <span style={{ font: `500 11px/1 ${MONO}`, color: GHOST }}>{String(visibleStepIndex + 1).padStart(2, "0")} / {String(visibleSteps.length).padStart(2, "0")}</span>
           </div>
-          <div style={{ marginTop: 14, height: 4, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            {/* scaleX, not width. Animating width re-laid-out the header on every
-                frame of every step change; scaleX is compositor-only and visually
-                identical for a 4px bar. */}
-            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (visibleStepIndex + 1) / visibleSteps.length }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", width: "100%", transformOrigin: "left center", background: RED, borderRadius: 99 }} />
+          {/* compact: counter + bar + the step's own NAME, no labelled rail —
+              eight labels do not fit across 320px. */}
+          <div style={{ marginTop: 14 }}>
+            <OnboardingStepper
+              labels={stepLabels}
+              index={visibleStepIndex}
+              total={visibleSteps.length}
+              onJump={(i) => goToStep(visibleSteps[i])}
+              compact
+            />
           </div>
         </div>
 
@@ -810,14 +850,13 @@ export default function Welcome() {
           <ScholifyMark size={30} />
           <span style={{ font: `800 21px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
         </div>
-        <div style={{ marginTop: "clamp(14px, 2.4vh, 26px)", display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ font: `600 12px/1 ${MONO}`, color: MUTE, letterSpacing: "0.05em" }}>{visibleStepIndex + 1} / {visibleSteps.length}</span>
-          <div style={{ flex: 1, maxWidth: 340, height: 5, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
-            {/* scaleX, not width. Animating width re-laid-out the header on every
-                frame of every step change; scaleX is compositor-only and visually
-                identical for a 4px bar. */}
-            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: (visibleStepIndex + 1) / visibleSteps.length }} transition={{ type: "spring", stiffness: 170, damping: 26 }} style={{ height: "100%", width: "100%", transformOrigin: "left center", background: RED, borderRadius: 99 }} />
-          </div>
+        <div style={{ marginTop: "clamp(14px, 2.4vh, 26px)" }}>
+          <OnboardingStepper
+            labels={stepLabels}
+            index={visibleStepIndex}
+            total={visibleSteps.length}
+            onJump={(i) => goToStep(visibleSteps[i])}
+          />
         </div>
 
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
@@ -1557,7 +1596,7 @@ function CapacityCoach({
 }
 
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek, onApplyFix,
+  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek, onApplyFix, onEdit,
 }: {
   paper: string
   minutes: number
@@ -1575,15 +1614,18 @@ function ReadySlide({
   englishLevel: CefrLevel | null
   daysPerWeek: number
   onApplyFix: (fix: GuideFix) => void
+  /** Jump to the step that owns a summary row. */
+  onEdit: (step: number) => void
 }) {
   const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate: examDate || null })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
-  const rows: [string, string][] = [
-    ["Paper", paper],
-    ["Daily", `${minutes} min · ${slotLabel}`],
-    ["Exam", sitting ? `${sitting.label} (wk ${sitting.week})` : examDate || "Paced by mastery"],
-    ...(goalLabel ? ([["Goal", goalLabel]] as [string, string][]) : []),
+  /** label, value, and the step that owns it — the third field makes it editable. */
+  const rows: [string, string, number][] = [
+    ["Paper", paper, PAPER_STEP],
+    ["Daily", `${minutes} min · ${slotLabel}`, TIME_STEP],
+    ["Exam", sitting ? `${sitting.label} (wk ${sitting.week})` : examDate || "Paced by mastery", EXAM_DATE_STEP],
+    ...(goalLabel ? ([["Goal", goalLabel, GOAL_STEP]] as [string, string, number][]) : []),
   ]
   return (
     <div style={{ maxWidth: 500 }}>
@@ -1594,18 +1636,42 @@ function ReadySlide({
           the 82px it frees goes to the busiest slide in the flow. */}
       <CapacityCoach guide={guide} onApplyFix={onApplyFix} compact={isMobile} paper={paper} />
       <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 18, overflow: "hidden", boxShadow: "0 12px 30px -22px rgba(20,20,26,.4)" }}>
-        {rows.map(([k, v], i) => (
-          <motion.div
+        {/*
+          * Each row is now a BUTTON back to the step that owns it.
+          *
+          * This is the last screen before the plan is built, and it was read-only:
+          * a learner who noticed the wrong paper or the wrong sitting here had to
+          * work out how many Back presses that was and hope. A summary that shows
+          * a mistake but will not let you correct it is worse than one that shows
+          * nothing — it puts the error in front of someone and then blocks them.
+          */}
+        {rows.map(([k, v, jumpTo], i) => (
+          <motion.button
             key={k}
+            type="button"
+            onClick={() => onEdit(jumpTo)}
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.08 + i * 0.08 }}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "16px 18px" : "18px 22px", borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}
+            whileTap={{ scale: 0.995 }}
+            aria-label={`${k}: ${v}. Tap to change.`}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+              width: "100%", textAlign: "left", background: "transparent", cursor: "pointer",
+              padding: isMobile ? "16px 18px" : "18px 22px", minHeight: 56,
+              border: "none", borderTop: i > 0 ? `1px solid ${BORDER}` : "none", font: "inherit",
+            }}
           >
-            <span style={{ font: `600 12px/1 ${MONO}`, letterSpacing: "0.06em", textTransform: "uppercase", color: FAINT }}>{k}</span>
-            <span style={{ font: `700 ${isMobile ? 14 : 15}px/1.2 ${SANS}`, color: INK, textAlign: "right" }}>{v}</span>
-          </motion.div>
+            <span style={{ font: `600 12px/1 ${MONO}`, letterSpacing: "0.06em", textTransform: "uppercase", color: FAINT, flexShrink: 0 }}>{k}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <span style={{ font: `700 ${isMobile ? 14 : 15}px/1.2 ${SANS}`, color: INK, textAlign: "right" }}>{v}</span>
+              <Icon name="chevron" size={14} color={FAINT} />
+            </span>
+          </motion.button>
         ))}
+        <div style={{ padding: isMobile ? "10px 18px 14px" : "10px 22px 16px", borderTop: `1px solid ${BORDER}`, font: `500 11.5px/1.4 ${SANS}`, color: FAINT }}>
+          Tap any line to change it.
+        </div>
       </div>
       {/* Charles's "why", warm and honest — the reason the recommended path
           below follows from what the learner just told us about themselves. */}
