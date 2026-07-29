@@ -9,6 +9,15 @@ import { getQuestions, getPracticeInventory } from "@/lib/acca"
 import { getOtCases, otCaseMarks } from "@/lib/acca-cases"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
+/*
+ * BT has outgrown this shared contract and has its own — see
+ * bt-content-contract.ts and its test. It holds 454 authored questions with no
+ * derived drills, and 18 Section B MTQs at the real 4-mark unit size rather than
+ * 350 generated 1-mark linked questions. The inventory assertions below therefore
+ * cover the three papers still sized against the shared target.
+ */
+const SHARED_INVENTORY_PAPERS = F1_F4_PAPERS.filter((paper) => paper !== "BT")
+
 describe("F1–F4 product structure", () => {
   it("has Section A and B only, never Section C", () => {
     for (const paper of F1_F4_PAPERS) {
@@ -40,8 +49,8 @@ describe("F1–F4 product structure", () => {
    * and could not tell the difference between 350 authored questions and 174
    * authored questions padded with 176 permuted glossary prompts.
    */
-  it("serves exactly 350 unique, answerable practice items for every F1–F4 paper", () => {
-    for (const paperId of F1_F4_PAPERS) {
+  it("serves exactly 350 unique, answerable practice items for every F1–F4 paper still on the shared target", () => {
+    for (const paperId of SHARED_INVENTORY_PAPERS) {
       const questions = getPracticeInventory(paperId)
       expect(questions, paperId).toHaveLength(F1_F4_CONTENT_TARGET.sectionA)
       expect(getQuestions(paperId).some((question) => question.recall), `${paperId} drill leak`).toBe(false)
@@ -58,8 +67,8 @@ describe("F1–F4 product structure", () => {
   })
 
   it("serves genuine, correctly sized Section B MTQ units for every F1–F4 paper", () => {
-    const unitMarks = { BT: 4, MA: 10, FA: 15, LW: 6 } as const
-    for (const paperId of F1_F4_PAPERS) {
+    const unitMarks = { MA: 10, FA: 15, LW: 6 } as const
+    for (const paperId of SHARED_INVENTORY_PAPERS) {
       const cases = getOtCases(paperId)
       expect(cases.length, `${paperId} authored cases`).toBeGreaterThan(0)
       const linkedQuestions = cases.flatMap((item) => item.questions)

@@ -49,6 +49,16 @@ export interface AccaQuestion {
   paper: string
   /** Syllabus area code (matches a SyllabusArea.code on the paper). */
   area: string
+  /**
+   * The study chapter this question examines, as a StudyChapter `id` (e.g.
+   * "BT-14"). Optional, and only meaningful on a paper authored as a chapter
+   * tree: it lets the reader's "now practise" CTA draw the questions for the
+   * chapter just read, which is how the approved-provider exam kits are indexed.
+   *
+   * A question without it is still fully usable — it is simply attributed to its
+   * syllabus area rather than to a specific chapter.
+   */
+  chapter?: string
   type: QuestionType
   /** The question text/stem. */
   stem: string

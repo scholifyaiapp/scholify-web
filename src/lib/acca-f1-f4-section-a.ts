@@ -76,18 +76,33 @@ export function studyDerivedQuestions(
   chapters: StudyChapter[],
   target: number,
 ): StudyDerivedQuestions {
+  /*
+   * The scope a generated id is namespaced under.
+   *
+   * It used to be the syllabus AREA, which was unique while every paper had one
+   * chapter per area. On a paper authored as a chapter TREE it is not: BT's Area A
+   * has seven chapters, so the third inline check in chapter 1 and the third in
+   * chapter 2 both produced "A-check-3" — nineteen colliding ids across the paper,
+   * which would have made two different questions share one progress record.
+   *
+   * Tree chapters carry an explicit `id`, so they are namespaced by it. Chapters
+   * without one keep the area-based scope exactly as before, which matters: those
+   * ids are already in learners' stored progress and must not be renamed.
+   */
+  const scopeOf = (chapter: StudyChapter): string => chapter.id ?? chapter.area
+
   const terms = chapters.flatMap((chapter) =>
     chapter.keyTerms.map((term, index) => ({
       ...term,
       area: chapter.area,
-      key: `${chapter.area}-term-${index + 1}`,
+      key: `${scopeOf(chapter)}-term-${index + 1}`,
     })),
   )
   const traps = chapters.flatMap((chapter) =>
     chapter.examTraps.map((trap, index) => ({
       ...trap,
       area: chapter.area,
-      key: `${chapter.area}-trap-${index + 1}`,
+      key: `${scopeOf(chapter)}-trap-${index + 1}`,
     })),
   )
   const seeds: ChoiceSeed[] = []
@@ -117,7 +132,7 @@ export function studyDerivedQuestions(
       if (!section.check) return
       const check = section.check
       seeds.push({
-        id: `${chapter.area}-check-${index + 1}`,
+        id: `${scopeOf(chapter)}-check-${index + 1}`,
         area: chapter.area,
         stem: check.q,
         answer: check.options[check.correct],
@@ -264,7 +279,7 @@ export function studyDerivedQuestions(
   })
 
   const recaps = chapters.flatMap((chapter) =>
-    chapter.summary.map((item, index) => ({ item, area: chapter.area, title: chapter.title, key: `${chapter.area}-recap-${index + 1}` })),
+    chapter.summary.map((item, index) => ({ item, area: chapter.area, title: chapter.title, key: `${scopeOf(chapter)}-recap-${index + 1}` })),
   )
   recaps.forEach((recap, index) => {
     const alternatives = recaps
@@ -293,7 +308,7 @@ export function studyDerivedQuestions(
   })
 
   const outcomes = chapters.flatMap((chapter) =>
-    chapter.outcomes.map((item, index) => ({ item, area: chapter.area, title: chapter.title, key: `${chapter.area}-outcome-${index + 1}` })),
+    chapter.outcomes.map((item, index) => ({ item, area: chapter.area, title: chapter.title, key: `${scopeOf(chapter)}-outcome-${index + 1}` })),
   )
   outcomes.forEach((outcome, index) => {
     const alternatives = outcomes
@@ -328,7 +343,7 @@ export function studyDerivedQuestions(
       .concat(chapters)
       .map((candidate) => candidate.intro)
     pushRecall({
-      id: `${chapter.area}-chapter-purpose`,
+      id: `${scopeOf(chapter)}-chapter-purpose`,
       area: chapter.area,
       stem: `Which statement best describes the purpose of the ${chapter.title.toLowerCase()} chapter?`,
       answer: chapter.intro,
@@ -339,28 +354,45 @@ export function studyDerivedQuestions(
   })
 
   const seenStems = new Set(authored.map((question) => question.stem.trim().toLowerCase()))
-  const additions: AccaQuestion[] = []
+  const chapterChecks: AccaQuestion[] = []
+  const drills: AccaQuestion[] = []
+
+  /*
+   * Chapter `check` questions are ALWAYS taken. They are authored — a real stem
+   * with authored options and an authored explanation — so they are bank depth,
+   * not filler, and there is no reason to cap them at an inventory target.
+   *
+   * Derived recall drills are taken only to cover the SHORTFALL between the
+   * authored bank and the paper's inventory target. This bound matters: without
+   * it, a paper whose authored bank already exceeds its target generated every
+   * seed the chapters could produce. On BT — 454 authored questions and 26
+   * chapters' worth of glossary, traps and recaps — that was 2,553 drills, an
+   * inventory of filler five times the size of the real bank, produced precisely
+   * because the bank had grown past the point of needing any.
+   */
   for (const seed of seeds) {
     const signature = seed.stem.trim().toLowerCase()
     if (seenStems.has(signature)) continue
+    if (seed.recall) {
+      const bank = authored.length + chapterChecks.length + drills.length
+      if (bank >= target) continue
+      seenStems.add(signature)
+      drills.push(choiceQuestion(paper, seed, drills.length))
+      continue
+    }
     seenStems.add(signature)
-    additions.push(choiceQuestion(paper, seed, additions.length))
-    if (authored.length + additions.length === target) break
+    chapterChecks.push(choiceQuestion(paper, seed, chapterChecks.length))
   }
 
   /*
-   * A paper whose bank already MEETS its inventory target needs nothing from the
-   * chapters, and one that overshoots is a good problem. Only a shortfall the
-   * chapters cannot cover even with retrieval prompts is a real fault, because it
-   * means the study text itself is too thin to revise from.
+   * A shortfall the chapters cannot cover even with retrieval prompts is a real
+   * fault: it means the study text itself is too thin to revise from.
    */
-  if (authored.length < target && authored.length + additions.length < target) {
+  const total = authored.length + chapterChecks.length + drills.length
+  if (total < target) {
     throw new Error(
-      `${paper} has ${authored.length} bank + ${additions.length} study-derived items against a ${target} inventory; author more chapter source material`,
+      `${paper} has ${authored.length} bank + ${chapterChecks.length} chapter-check + ${drills.length} drillable items against a ${target} inventory; author more chapter source material`,
     )
   }
-  return {
-    authored: additions.filter((question) => !question.recall),
-    drills: additions.filter((question) => question.recall),
-  }
+  return { authored: chapterChecks, drills }
 }

@@ -56,7 +56,7 @@ import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, startFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
-import { getStudyChapter } from "@/lib/acca-study-content"
+import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, type StudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
@@ -178,6 +178,15 @@ export default function AccaStudy() {
 
   // topic path (Kaplan-style chapter flow)
   const [topicArea, setTopicArea] = useState<string | null>(null)
+  /**
+   * Which chapter the reader is showing, for a paper authored as a chapter TREE.
+   *
+   * A paper with one chapter per syllabus area needs no such state — the area IS
+   * the chapter. BT now has 26 chapters across six areas, so an area maps to a
+   * LIST and the learner picks from it. `null` means "show the list"; on a
+   * single-chapter area the list is skipped and that chapter opens directly.
+   */
+  const [studyChapterKey, setStudyChapterKey] = useState<string | null>(null)
   const [isTopicTest, setIsTopicTest] = useState(false)
 
   const paper = paperId ? getPaper(paperId) : undefined
@@ -254,6 +263,7 @@ export default function AccaStudy() {
     else if (action === "essentials") startEssentials(linkArea)
     else if (action === "study" && linkArea) {
       setTopicArea(linkArea)
+      setStudyChapterKey(null)
       setIsTopicTest(false)
       setMode("brief")
     }
@@ -573,7 +583,7 @@ export default function AccaStudy() {
               onGenerate={openGenerate}
               onFlashcards={() => { setTopicArea(null); setMode("flashcards") }}
               onTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
-              onStudyTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("brief") }}
+              onStudyTopic={(area) => { setTopicArea(area); setStudyChapterKey(null); setIsTopicTest(false); setMode("brief") }}
               onEssentials={startEssentials}
               onJourney={() => setMode("journey")}
               onLoopAction={runLoopAction}
@@ -586,24 +596,49 @@ export default function AccaStudy() {
             <JourneyMap key="journey" paperId={paperId} onBack={() => setMode("overview")} />
           )}
 
-          {mode === "brief" && paper && topicArea && (
-            getStudyChapter(paper.id, topicArea) ? (
+          {mode === "brief" && paper && topicArea && (() => {
+            const areaChapters = chaptersForArea(paper.id, topicArea)
+            // A tree area with no chapter chosen yet shows its contents page.
+            if (areaChapters.length > 1 && !studyChapterKey) {
+              return (
+                <ChapterList
+                  key={`chapters-${topicArea}`}
+                  paper={paper}
+                  area={topicArea}
+                  chapters={areaChapters}
+                  onOpen={(key) => setStudyChapterKey(key)}
+                  onBack={() => setMode("topic")}
+                />
+              )
+            }
+            const chapter = studyChapterKey
+              ? getChapterByKey(paper.id, studyChapterKey) ?? areaChapters[0]
+              : areaChapters[0]
+            if (!chapter) {
+              return (
+                <BriefReader
+                  key={`brief-${topicArea}`}
+                  paper={paper}
+                  area={topicArea}
+                  onBack={() => setMode("topic")}
+                  onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+                />
+              )
+            }
+            return (
               <StudyChapterReader
-                key={`chapter-${topicArea}`}
-                chapter={getStudyChapter(paper.id, topicArea)!}
-                onBack={() => setMode("topic")}
+                key={`chapter-${chapterKey(chapter)}`}
+                chapter={chapter}
+                // Back returns to the chapter list where there is one, and to the
+                // topic hub where the area holds a single chapter.
+                onBack={() => {
+                  if (areaChapters.length > 1) setStudyChapterKey(null)
+                  else setMode("topic")
+                }}
                 onPractice={() => startTopicSession(topicArea, false, LEARN_SIZE)}
               />
-            ) : (
-              <BriefReader
-                key={`brief-${topicArea}`}
-                paper={paper}
-                area={topicArea}
-                onBack={() => setMode("topic")}
-                onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
-              />
             )
-          )}
+          })()}
 
           {mode === "topic" && paper && topicArea && (
             <TopicView
@@ -611,7 +646,7 @@ export default function AccaStudy() {
               paper={paper}
               area={topicArea}
               onBack={() => { setTopicArea(null); setTick((t) => t + 1); setMode("overview") }}
-              onBrief={() => setMode("brief")}
+              onBrief={() => { setStudyChapterKey(null); setMode("brief") }}
               onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
               onDrill={() => startTopicSession(topicArea, false)}
               onTest={() => startTopicSession(topicArea, true)}
@@ -1898,6 +1933,83 @@ function StudyPathSection({ paperId, curated, onTopic }: { paperId: string; cura
   )
 }
 
+/* ── Chapter list: the contents page of one syllabus area ─────────
+ * Shown only where an area holds MORE than one chapter. A paper with one
+ * chapter per area skips this entirely and opens the reader directly, so the
+ * experience on those papers is byte-identical to before.
+ */
+
+function ChapterList({
+  paper, area, chapters, onOpen, onBack,
+}: {
+  paper: AccaPaper
+  area: string
+  chapters: StudyChapter[]
+  onOpen: (key: string) => void
+  onBack: () => void
+}) {
+  const areaInfo = paper.areas.find((a) => a.code === area)
+  const totalMinutes = chapters.reduce((total, c) => total + c.minutes, 0)
+  const totalSections = chapters.reduce((total, c) => total + c.sections.length, 0)
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      <button onClick={onBack} style={backBtn}>← Topic</button>
+      <p style={{ color: DIM, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, margin: "0 0 4px" }}>
+        {paper.id} · AREA {area} · STUDY TEXT
+      </p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 6px", color: TEXT, lineHeight: 1.25 }}>{areaInfo?.label ?? area}</h1>
+      <p style={{ color: MUTED, margin: "0 0 18px", fontSize: 13.5, lineHeight: 1.55 }}>
+        {chapters.length} chapters · {totalSections} sections · about {totalMinutes} minutes of reading.
+        Work through them in order — each one builds on the last.
+      </p>
+
+      <div style={{ display: "grid", gap: 10 }}>
+        {chapters.map((chapter, index) => {
+          const key = chapterKey(chapter)
+          return (
+            <motion.button
+              key={key}
+              onClick={() => onOpen(key)}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.995 }}
+              style={{
+                ...card({ padding: 15 }),
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 13,
+                textAlign: "left",
+                border: `1px solid var(--sch-border)`,
+                cursor: "pointer",
+                width: "100%",
+              }}
+            >
+              <span style={{
+                flex: "none", width: 30, height: 30, borderRadius: 9,
+                background: "var(--sch-card-2)", color: "#C80000",
+                fontSize: 13, fontWeight: 800, display: "grid", placeItems: "center",
+                fontVariantNumeric: "tabular-nums",
+              }}>
+                {chapter.number ?? index + 1}
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 750, fontSize: 14.5, color: TEXT, lineHeight: 1.3 }}>
+                  {chapter.title}
+                </span>
+                <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>
+                  {chapter.sections.length} sections · {chapter.minutes} min
+                  {chapter.syllabusRefs && chapter.syllabusRefs.length > 0 && ` · ${chapter.syllabusRefs[0]}–${chapter.syllabusRefs[chapter.syllabusRefs.length - 1]}`}
+                </span>
+              </span>
+              <Icon name="chevron" size={16} color={DIM} />
+            </motion.button>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
+
 /* ── Topic hub: learn → flashcards → knowledge check ──────────── */
 
 function TopicView({
@@ -1919,6 +2031,10 @@ function TopicView({
   const areaCards = getFlashcards(paper.id).filter((c) => c.area === area).length
   const brief = getTopicBrief(paper.id, area)
   const chapter = getStudyChapter(paper.id, area)
+  // A tree area holds several chapters; the tile then advertises the whole
+  // reading list and its total time rather than one chapter's.
+  const areaChapters = chaptersForArea(paper.id, area)
+  const areaMinutes = areaChapters.reduce((total, item) => total + item.minutes, 0)
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
@@ -1958,8 +2074,22 @@ function TopicView({
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
         <ModeTile
           icon="learn"
-          title={chapter ? `Study chapter · ${chapter.minutes} min` : brief ? `Topic brief · ${brief.minutes} min read` : "Topic brief"}
-          sub={chapter ? "Full theory, worked examples, interactive diagrams, exam traps and quick checks — learn every aspect here first" : "The concept, the formulas, one worked example, and the classic traps — read this first"}
+          title={
+            areaChapters.length > 1
+              ? `${areaChapters.length} study chapters · ${areaMinutes} min`
+              : chapter
+                ? `Study chapter · ${chapter.minutes} min`
+                : brief
+                  ? `Topic brief · ${brief.minutes} min read`
+                  : "Topic brief"
+          }
+          sub={
+            areaChapters.length > 1
+              ? "This syllabus area is taught as a full reading list — one chapter per topic, each with theory, worked examples, activities, exam traps and a knowledge diagnostic"
+              : chapter
+                ? "Full theory, worked examples, interactive diagrams, exam traps and quick checks — learn every aspect here first"
+                : "The concept, the formulas, one worked example, and the classic traps — read this first"
+          }
           onClick={onBrief}
           primary={(areaStats?.seen ?? 0) === 0}
         />

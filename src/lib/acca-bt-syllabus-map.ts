@@ -24,6 +24,17 @@ const AREA_A_FROM_D = new Set(["BT2-D-09", "BT3-D-08", "BT3-D-09"])
 const AREA_A_FROM_B = new Set(["BT3-B-11", "BT3-B-12"])
 
 export function officialBtArea(question: AccaQuestion): string {
+  /*
+   * Questions authored against the OFFICIAL syllabus carry a `chapter`, and their
+   * `area` is already the official one — so the migration below must not touch
+   * them. Without this guard the fallback rules (former bucket B → area D, former
+   * C → F, everything else → C) would scramble the entire per-chapter question
+   * kit, moving Area B questions to D and Area C questions to F.
+   *
+   * The map exists solely to relabel the LEGACY four-bucket bank. A question that
+   * never used those buckets does not need migrating.
+   */
+  if (question.chapter) return question.area
   if (AREA_B.has(question.id)) return "B"
   if (AREA_E.has(question.id)) return "E"
   if (AREA_A_FROM_D.has(question.id) || AREA_A_FROM_B.has(question.id)) return "A"

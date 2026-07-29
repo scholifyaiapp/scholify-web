@@ -92,7 +92,19 @@ const QUESTION_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fa2"), () => import("@/lib/acca-content-fa3")],
   FR: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fr2"), () => import("@/lib/acca-content-fr3"), () => import("@/lib/acca-content-fr4"), () => import("@/lib/acca-content-fr5"), () => import("@/lib/acca-content-fr-official")],
   MA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-ma2"), () => import("@/lib/acca-content-ma3"), () => import("@/lib/acca-content-ma-official")],
-  BT: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-bt2"), () => import("@/lib/acca-content-bt3")],
+  // The `acca-questions-bt-kit-*` modules are the per-chapter question kit:
+  // authored, applied questions indexed to a study chapter. They carry official
+  // syllabus areas and are exempt from the legacy BT area migration (see
+  // acca-bt-syllabus-map.ts).
+  BT: [
+    () => import("@/lib/acca-content-core"),
+    () => import("@/lib/acca-content-bt2"),
+    () => import("@/lib/acca-content-bt3"),
+    () => import("@/lib/acca-questions-bt-kit-a"),
+    () => import("@/lib/acca-questions-bt-kit-b"),
+    () => import("@/lib/acca-questions-bt-kit-c"),
+    () => import("@/lib/acca-questions-bt-kit-def"),
+  ],
   LW: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-lw2"), () => import("@/lib/acca-content-lw3")],
   PM: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-pm2"), () => import("@/lib/acca-content-pm3"), () => import("@/lib/acca-content-pm4"), () => import("@/lib/acca-content-pm-official")],
   TX: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-tx2"), () => import("@/lib/acca-content-tx3"), () => import("@/lib/acca-content-tx4"), () => import("@/lib/acca-content-tx-official")],
@@ -174,7 +186,9 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
  * never faked by grouping loose questions).
  */
 const CASE_MODULES: Record<string, Loader[]> = {
-  BT: [() => import("@/lib/acca-cases-knowledge")],
+  // BT's Section B is 18 authored multi-task questions at the real 4-mark unit
+  // size — not the shared knowledge-paper cases, and not generated.
+  BT: [() => import("@/lib/acca-cases-bt")],
   MA: [() => import("@/lib/acca-cases-knowledge")],
   FA: [() => import("@/lib/acca-cases-fa")],
   LW: [() => import("@/lib/acca-cases-knowledge")],
