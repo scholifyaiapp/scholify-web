@@ -3,18 +3,32 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { createHmac, timingSafeEqual } from "node:crypto"
 
 /*
- * Daily email reminders.
+ * Practice-time reminders — three a day, in the learner's own clock.
  *
  *   POST /api/reminders?action=sync   (Authorization: Bearer <supabase token>)
- *        body: { optIn, email, reminderTime, lastSessionDate }
- *        → upsert the learner's reminder preference + last activity.
+ *        body: { optIn, practiceTime, timezone, slots, lastSessionDate }
+ *        → upsert the learner's schedule + last activity.
  *
- *   GET  /api/reminders?action=send   (Vercel cron; Authorization: Bearer CRON_SECRET)
- *        → email everyone who opted in and hasn't studied today.
+ *   GET  /api/reminders?action=send   (Authorization: Bearer CRON_SECRET)
+ *        → deliver whichever slot is due for whoever is due it, right now.
  *
- * Requires the `study_reminders` table (migration 0015) + RESEND_API_KEY (+
- * optional CRON_SECRET, REMINDER_FROM). Missing any → graceful no-op
- * ({ disabled: true }), so the in-app toggle and the cron never error before
+ *   GET/POST /api/reminders?action=unsubscribe&u=<id>&t=<hmac>
+ *        → one-click opt-out (RFC 8058), no login required.
+ *
+ * SEND IS A TICK, NOT A DAILY BATCH. It is designed to be called every ~5
+ * minutes and to be cheap and idempotent when nothing is due. It previously ran
+ * once a day from a Vercel cron at 08:00 UTC and mailed everyone who had not
+ * studied — the stored `reminder_time` was read by nothing at all, and there was
+ * no timezone column, so 08:00 UTC was 13:00 in Tashkent and 03:00 in New York
+ * for every learner alike.
+ *
+ * The caller is pg_cron inside Supabase, because Vercel Hobby permits 2 cron
+ * jobs at once-a-day granularity and a "10 minutes before your session"
+ * reminder needs 5-minute granularity. See migration 0026 for the exact setup.
+ *
+ * Requires `study_reminders` (migrations 0015 + 0026) and RESEND_API_KEY, plus
+ * CRON_SECRET to unlock the send path at all. Missing any → graceful no-op
+ * ({ disabled: true }), so the in-app toggle and the tick never error before
  * setup is complete.
  */
 
@@ -30,8 +44,117 @@ function admin() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-function todayUTC(): string {
-  return new Date().toISOString().slice(0, 10)
+/* ── The three reminders, as offsets from the learner's practice time ──────
+ *
+ * One clock (practice_time, set at onboarding 5/8) drives all three, so they
+ * cannot drift apart or contradict each other:
+ *
+ *   lead     −180 min   "your session is at 19:00"       — plan the day around it
+ *   soon      −10 min   "10 minutes"                     — the one that starts sessions
+ *   catchup  +150 min   "you still have time today"      — only if they skipped
+ *
+ * WINDOW. The sender is called every ~5 minutes, so it fires a slot when the
+ * learner's local clock is between the target and target + WINDOW. The window is
+ * deliberately wider than the tick interval: a skipped or slow tick must not
+ * silently drop someone's reminder. Exactly-once is guaranteed by the per-slot
+ * sent_*_date columns instead, never by the window.
+ */
+const SLOTS = [
+  { key: "lead", offset: -180, onCol: "lead_on", dateCol: "sent_lead_date" },
+  { key: "soon", offset: -10, onCol: "soon_on", dateCol: "sent_soon_date" },
+  { key: "catchup", offset: 150, onCol: "catchup_on", dateCol: "sent_catchup_date" },
+] as const
+
+type SlotKey = (typeof SLOTS)[number]["key"]
+
+/** How late a tick may be and still deliver a slot, in minutes. */
+const WINDOW = 20
+
+const MINUTES_IN_DAY = 24 * 60
+
+/**
+ * The learner's own calendar date and minutes-since-midnight.
+ *
+ * Uses the IANA zone rather than a stored offset so DST is the platform's
+ * problem, not ours — a fixed offset is wrong for half the year in most of
+ * Europe and North America. `hourCycle: "h23"` because `hour12: false` renders
+ * midnight as "24" on some ICU builds, which would put every learner's midnight
+ * 24 hours into the future.
+ */
+function localNow(timeZone: string, now: Date): { date: string; minutes: number } | null {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(now)
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ""
+    const y = get("year")
+    const mo = get("month")
+    const d = get("day")
+    const h = Number(get("hour"))
+    const mi = Number(get("minute"))
+    if (!y || !mo || !d || Number.isNaN(h) || Number.isNaN(mi)) return null
+    return { date: `${y}-${mo}-${d}`, minutes: h * 60 + mi }
+  } catch {
+    // An unknown/garbage zone would otherwise throw per-row and abort the whole
+    // tick, taking every other learner's reminder down with it.
+    return null
+  }
+}
+
+/** "19:00" → 1140. Null on anything malformed rather than defaulting silently. */
+function parseHHMM(value: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(value || "").trim())
+  if (!m) return null
+  const h = Number(m[1])
+  const mi = Number(m[2])
+  if (h > 23 || mi > 59) return null
+  return h * 60 + mi
+}
+
+/**
+ * Which slot (if any) is due for this learner right now.
+ *
+ * Returns null when nothing is due — the overwhelmingly common case, since each
+ * learner is due for at most ~3 of the 288 daily ticks.
+ */
+export function dueSlot(
+  row: {
+    practice_time: string
+    lead_on?: boolean
+    soon_on?: boolean
+    catchup_on?: boolean
+    sent_lead_date?: string | null
+    sent_soon_date?: string | null
+    sent_catchup_date?: string | null
+  },
+  local: { date: string; minutes: number },
+): SlotKey | null {
+  const practice = parseHHMM(row.practice_time)
+  if (practice === null) return null
+
+  for (const slot of SLOTS) {
+    if (row[slot.onCol] === false) continue
+    if ((row[slot.dateCol] ?? null) === local.date) continue
+
+    const target = practice + slot.offset
+    /*
+     * Offsets can fall outside the learner's day: a 01:00 session puts `lead` at
+     * 22:00 the previous evening, and a 23:00 session puts `catchup` at 01:30 the
+     * next morning. Both would need cross-day bookkeeping to dedupe correctly
+     * (the sent-date is a local date), and both would mean mailing someone about
+     * a session on a different calendar day than the one they're in. Skipping is
+     * the honest behaviour; the other two slots still fire.
+     */
+    if (target < 0 || target >= MINUTES_IN_DAY) continue
+    if (local.minutes >= target && local.minutes < target + WINDOW) return slot.key
+  }
+  return null
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -109,11 +232,36 @@ async function handleSync(req: VercelRequest, res: VercelResponse): Promise<void
       res.status(400).json({ ok: false, reason: "no_verified_email" })
       return
     }
+    /*
+     * The timezone is trusted from the client because only the client can know
+     * it — there is no server-side source for "which zone is this person in"
+     * that is not a guess from an IP. It is validated against the platform's own
+     * zone list rather than stored raw, so a malformed value cannot silently
+     * break this learner's sender loop later.
+     */
+    const tzRaw = String(body.timezone || "").slice(0, 64)
+    let timezone = "UTC"
+    if (tzRaw) {
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: tzRaw })
+        timezone = tzRaw
+      } catch {
+        /* keep UTC */
+      }
+    }
+    const practice = /^\d{2}:\d{2}$/.test(String(body.practiceTime || "")) ? String(body.practiceTime) : "19:00"
+    const slots = (body.slots || {}) as Record<string, unknown>
     const row = {
       user_id: userData.user.id,
       email,
       opt_in: Boolean(body.optIn),
-      reminder_time: String(body.reminderTime || "08:00").slice(0, 5),
+      timezone,
+      practice_time: practice,
+      // Kept in step so anything still reading the legacy column agrees.
+      reminder_time: practice,
+      lead_on: slots.lead !== false,
+      soon_on: slots.soon !== false,
+      catchup_on: slots.catchup !== false,
       last_session_date: body.lastSessionDate ? String(body.lastSessionDate).slice(0, 10) : null,
       updated_at: new Date().toISOString(),
     }
@@ -152,40 +300,125 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
     return
   }
 
-  const today = todayUTC()
   const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+  const now = new Date()
 
   try {
     const { data, error } = await db
       .from(TABLE)
-      .select("user_id, email, last_session_date, last_reminded")
+      .select(
+        "user_id, email, timezone, practice_time, last_session_date, lead_on, soon_on, catchup_on, sent_lead_date, sent_soon_date, sent_catchup_date",
+      )
       .eq("opt_in", true)
-      .limit(200)
+      .limit(2000)
     if (error) {
+      // A missing column here means migration 0026 has not been applied yet.
+      console.warn("reminders send:", error.message)
       res.status(200).json({ sent: 0, disabled: true })
       return
     }
 
-    // Due = hasn't studied today and wasn't already reminded today.
-    const due = (data || []).filter(
-      (r) => r.email && r.last_session_date !== today && r.last_reminded !== today,
-    )
-
     let sent = 0
-    for (const r of due) {
+    let considered = 0
+    for (const r of data || []) {
+      if (!r.email) continue
+      const local = localNow(String(r.timezone || "UTC"), now)
+      if (!local) continue
+
+      /*
+       * Already studied today → say nothing. All three reminders exist to get a
+       * session started; once one has happened they are just noise, and noise is
+       * what gets a sender marked as spam.
+       */
+      if (r.last_session_date === local.date) continue
+
+      const slot = dueSlot(r as Parameters<typeof dueSlot>[0], local)
+      if (!slot) continue
+      considered += 1
+
       const unsubUrl = `${SITE}/api/reminders?action=unsubscribe&u=${encodeURIComponent(
         r.user_id as string,
       )}&t=${unsubToken(r.user_id as string, secret as string)}`
-      const ok = await sendEmail(resendKey, from, r.email as string, unsubUrl)
+
+      /*
+       * Claim the slot BEFORE sending, not after. If the write happened after a
+       * successful send and the function timed out in between, the next tick 5
+       * minutes later would see an unclaimed slot and mail the learner a second
+       * time. Losing a reminder to a failed send is recoverable (the window is
+       * wider than one tick, so the next tick retries); double-mailing someone is
+       * not. The conditional filter also makes two overlapping ticks safe — only
+       * one of them can claim the row.
+       *
+       * The condition is "unset OR not today", not just "unset": from day two
+       * onward the column holds YESTERDAY's date, so an is-null-only claim would
+       * never match again and every learner would get exactly one day of
+       * reminders and then silence.
+       */
+      const dateCol = SLOTS.find((s) => s.key === slot)!.dateCol
+      const { data: claimed, error: claimErr } = await db
+        .from(TABLE)
+        .update({ [dateCol]: local.date })
+        .eq("user_id", r.user_id)
+        .or(`${dateCol}.is.null,${dateCol}.neq.${local.date}`)
+        .select("user_id")
+      if (claimErr || !claimed || claimed.length === 0) continue
+
+      const ok = await sendEmail(resendKey, from, r.email as string, unsubUrl, slot, String(r.practice_time || ""))
       if (ok) {
         sent += 1
-        await db.from(TABLE).update({ last_reminded: today }).eq("user_id", r.user_id)
+        // Kept in step for anything still reading the legacy column.
+        await db.from(TABLE).update({ last_reminded: local.date }).eq("user_id", r.user_id)
+      } else {
+        // Release the claim so the next tick inside the window can retry.
+        await db.from(TABLE).update({ [dateCol]: null }).eq("user_id", r.user_id)
       }
     }
-    res.status(200).json({ sent })
+    res.status(200).json({ sent, considered })
   } catch (err) {
     console.error("reminders send:", err)
     res.status(200).json({ sent: 0, disabled: true })
+  }
+}
+
+/*
+ * COPY. Three genuinely different messages, because three identical ones read
+ * as a malfunction. Each states plainly why it has arrived and asks for one
+ * thing. No exclamation marks, no emoji in the body, no invented statistics and
+ * no guilt — a learner who missed a session already knows, and being told off by
+ * software is what makes people unsubscribe.
+ *
+ * `at` is the learner's own practice time, echoed back so the mail is obviously
+ * about a commitment they made rather than a generic broadcast.
+ */
+function copyFor(slot: SlotKey, at: string): { subject: string; kicker: string; heading: string; body: string; cta: string } {
+  const time = /^\d{1,2}:\d{2}$/.test(at) ? at : null
+  if (slot === "lead") {
+    return {
+      subject: time ? `Your ACCA session is at ${time}` : "Your ACCA session is scheduled for today",
+      kicker: "Today's schedule",
+      heading: time ? `Your session is at ${time}` : "Your session is scheduled for today",
+      body:
+        "This is your advance notice, three hours ahead, so the time is easy to protect. Your questions are already selected and the session will be waiting when you arrive — nothing to set up.",
+      cta: "Review today's plan",
+    }
+  }
+  if (slot === "soon") {
+    return {
+      subject: time ? `Starting at ${time} — 10 minutes` : "Your session starts in 10 minutes",
+      kicker: "Starting shortly",
+      heading: "Ten minutes until your session",
+      body:
+        "Your topic, practice set and flashcards are loaded and ready. Opening the session now is the whole task — Charles takes it from there.",
+      cta: "Open my session",
+    }
+  }
+  return {
+    subject: "There is still time for today's session",
+    heading: "There is still time today",
+    kicker: "End of day",
+    body:
+      "Today's session has not been opened yet. A shortened version still counts: covering even one topic keeps your plan on its schedule and your streak intact, and the plan will absorb the difference tomorrow.",
+    cta: "Start a shorter session",
   }
 }
 
@@ -194,7 +427,10 @@ async function sendEmail(
   from: string,
   to: string,
   unsubUrl: string,
+  slot: SlotKey = "soon",
+  practiceTime = "",
 ): Promise<boolean> {
+  const c = copyFor(slot, practiceTime)
   // Email-safe PNG assets (Outlook/Apple Mail don't reliably render SVG/WebP).
   const avatar = `${SITE}/charles/email-avatar.png`
   const logo = `${SITE}/icon-192.png`
@@ -210,24 +446,26 @@ async function sendEmail(
             <td align="right" valign="middle"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
           </tr></table>
         </td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">Charles &middot; Daily race briefing</td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">Today's session is ready 👋</td></tr>
-        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">Twenty minutes today moves your Exam Readiness Score more than three hours the night before. Your next questions are picked and waiting.</td></tr>
-        <tr><td style="padding:8px 32px 30px;"><a href="${SITE}/study" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">Start today's session →</a></td></tr>
-        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or manage reminders in Settings.</td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">Charles &middot; ${c.kicker}</td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${c.heading}</td></tr>
+        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${c.body}</td></tr>
+        <tr><td style="padding:8px 32px 30px;"><a href="${SITE}/study" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">${c.cta} &rarr;</a></td></tr>
+        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you set a daily practice time in Scholify.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change the times in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.</td></tr>
       </table>
     </td></tr>
   </table>
   </body></html>`
   // Plain-text alternative — lowers spam score and covers text-only clients.
   const text = [
-    "Today's session is ready.",
+    c.heading,
     "",
-    "Twenty minutes today moves your Exam Readiness Score more than three hours the night before. Your next questions are picked and waiting.",
+    c.body,
     "",
-    `Start today's session: ${SITE}/study`,
+    `${c.cta}: ${SITE}/study`,
     "",
     "— Charles · Your Scholify race engineer",
+    "You are receiving this because you set a daily practice time in Scholify.",
+    `Change the times: ${SITE}/settings`,
     `Unsubscribe: ${unsubUrl}`,
   ].join("\n")
   try {
@@ -237,7 +475,7 @@ async function sendEmail(
       body: JSON.stringify({
         from,
         to,
-        subject: "Your ACCA session is ready 📘",
+        subject: c.subject,
         html,
         text,
         // One-click unsubscribe (RFC 8058) — required by Gmail/Yahoo bulk-sender

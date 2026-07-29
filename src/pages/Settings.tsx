@@ -19,7 +19,7 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
-import { syncReminder } from "@/lib/reminders"
+import { syncReminder, localTimeZone, DEFAULT_SLOTS, type ReminderSlots } from "@/lib/reminders"
 import CalendarSync from "@/components/CalendarSync"
 import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
@@ -69,7 +69,12 @@ const TEXT2 = "var(--sch-tx-2)"
 
 interface AppSettings {
   notifyDaily: boolean
+  /** When the daily session starts. All three reminders are offsets from this. */
+  practiceTime: string
+  /** Pre-0026 key, kept so an existing install's saved hour is not lost. */
   reminderTime: string
+  /** Which of the three daily reminders to send. */
+  reminderSlots: ReminderSlots
   streakAlerts: boolean
   weeklyReport: boolean
   newFeatures: boolean
@@ -78,17 +83,74 @@ interface AppSettings {
 
 const DEFAULT_SETTINGS: AppSettings = {
   notifyDaily: true,
-  reminderTime: "08:00",
+  // 19:00 matches the onboarding default so the two cannot disagree on a
+  // learner who never opened either screen.
+  practiceTime: "19:00",
+  reminderTime: "19:00",
+  reminderSlots: DEFAULT_SLOTS,
   streakAlerts: true,
   weeklyReport: true,
   newFeatures: false,
   theme: "dark",
 }
 
+/**
+ * The three reminder rows. Each description states the ACTUAL time it will
+ * arrive, derived from the practice clock — "3 hours before" is abstract, and a
+ * learner cannot sanity-check it, whereas "16:00" they can.
+ */
+const REMINDER_SLOT_ROWS: {
+  key: keyof ReminderSlots
+  name: string
+  desc: (practiceTime: string) => string
+}[] = [
+  {
+    key: "lead",
+    name: "Advance notice",
+    desc: (t) => `Three hours ahead${shiftClock(t, -180) ? ` — around ${shiftClock(t, -180)}` : ""}, so you can protect the time`,
+  },
+  {
+    key: "soon",
+    name: "Ten minutes before",
+    desc: (t) => `${shiftClock(t, -10) ? `Around ${shiftClock(t, -10)}` : "Ten minutes ahead"} — the one that starts the session`,
+  },
+  {
+    key: "catchup",
+    name: "End-of-day catch-up",
+    desc: (t) => `${shiftClock(t, 150) ? `Around ${shiftClock(t, 150)}` : "Later that evening"} — only if you haven't studied yet`,
+  },
+]
+
+/**
+ * Shift "19:00" by N minutes → "16:00". Returns "" when the result falls outside
+ * the same day, which is exactly when the server skips that slot too (see the
+ * offset note in api/reminders.ts) — so the UI cannot promise a reminder that
+ * will not be sent.
+ */
+function shiftClock(time: string, deltaMinutes: number): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(time || ""))
+  if (!m) return ""
+  const total = Number(m[1]) * 60 + Number(m[2]) + deltaMinutes
+  if (total < 0 || total >= 24 * 60) return ""
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`
+}
+
 function readSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem("scholify-settings")
-    if (raw) return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) }
+    if (raw) {
+      const saved = JSON.parse(raw) as Partial<AppSettings>
+      const merged = { ...DEFAULT_SETTINGS, ...saved }
+      /*
+       * An install from before 0026 has `reminderTime` and no `practiceTime`, so
+       * a plain default-merge would silently move their session from the hour
+       * they picked to 19:00. Carry it across instead.
+       */
+      if (!saved.practiceTime && saved.reminderTime) merged.practiceTime = saved.reminderTime
+      // A partially-saved slots object must not leave a slot undefined.
+      merged.reminderSlots = { ...DEFAULT_SLOTS, ...(saved.reminderSlots || {}) }
+      return merged
+    }
   } catch {
     /* ignore */
   }
@@ -1373,25 +1435,55 @@ export default function Settings() {
         <Section>
           <SectionHead icon="mission">Notifications</SectionHead>
           <div style={{ marginTop: 8 }}>
-            <SettingRow name="Daily email reminder" desc="A nudge to study on days you haven't yet">
+            {/*
+              * The three reminders all derive from ONE clock — the practice time.
+              * Exposing three separate times would let a learner set them out of
+              * order (a "10 minutes before" that lands after the catch-up), and
+              * there is nothing useful they could express that way.
+              *
+              * Every change re-syncs immediately, including the timezone, because
+              * a stale zone is the one error that silently sends every reminder at
+              * the wrong hour with no visible symptom in the UI.
+              */}
+            <SettingRow name="Practice reminders" desc="Email reminders around your daily session">
               <Toggle
                 on={settings.notifyDaily}
                 onChange={(v) => {
                   update("notifyDaily", v)
-                  void syncReminder(v, settings.reminderTime)
+                  void syncReminder(v, settings.practiceTime, settings.reminderSlots)
                 }}
               />
             </SettingRow>
             {settings.notifyDaily && (
-              <SettingRow name="Reminder time" desc="Send your daily reminder at">
-                <TimeInput
-                  value={settings.reminderTime}
-                  onChange={(v) => {
-                    update("reminderTime", v)
-                    void syncReminder(true, v)
-                  }}
-                />
-              </SettingRow>
+              <>
+                <SettingRow name="My session starts at" desc="The clock all three reminders are measured from">
+                  <TimeInput
+                    value={settings.practiceTime}
+                    onChange={(v) => {
+                      update("practiceTime", v)
+                      // Keep the legacy key in step so nothing reading it drifts.
+                      update("reminderTime", v)
+                      void syncReminder(true, v, settings.reminderSlots)
+                    }}
+                  />
+                </SettingRow>
+                {REMINDER_SLOT_ROWS.map((row) => (
+                  <SettingRow key={row.key} name={row.name} desc={row.desc(settings.practiceTime)}>
+                    <Toggle
+                      on={settings.reminderSlots[row.key] !== false}
+                      onChange={(v) => {
+                        const next = { ...settings.reminderSlots, [row.key]: v }
+                        update("reminderSlots", next)
+                        void syncReminder(true, settings.practiceTime, next)
+                      }}
+                    />
+                  </SettingRow>
+                ))}
+                <div style={{ padding: "10px 2px 2px", fontSize: 11.5, lineHeight: 1.55, color: "var(--sch-tx-3)" }}>
+                  Times are in your device's timezone ({localTimeZone()}). Reminders stop for the
+                  rest of the day as soon as you start a session.
+                </div>
+              </>
             )}
             <SettingRow name="Streak alerts" desc="Be notified when your streak is at risk">
               <Toggle on={settings.streakAlerts} onChange={(v) => update("streakAlerts", v)} />

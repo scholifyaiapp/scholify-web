@@ -30,6 +30,7 @@ import {
   type AssessmentPath,
 } from "@/lib/acca-learner-baseline"
 import { shapeDay } from "@/lib/acca-schedule"
+import { registerPracticeTime } from "@/lib/reminders"
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
@@ -360,6 +361,13 @@ export default function Welcome() {
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()
     if (complete) void persistAccountSetup()
+    /*
+     * Create the reminder row NOW, with the clock they just set and their
+     * browser's timezone. Without this the row only appeared if the learner
+     * happened to open Settings and touch the toggle — so for a brand-new
+     * learner the three daily reminders had nothing to fire from.
+     */
+    if (complete) registerPracticeTime(slot)
     // Onboarding is done → start the 3-day free trial now. Fire-and-forget:
     // it's idempotent server-side, and the auth effect re-grants as a safety net.
     if (complete) void startTrial()
@@ -1221,9 +1229,20 @@ function TimeSlide({
       <div style={{ marginTop: 11, padding: "14px 16px", borderRadius: 14, background: "rgba(200,0,0,.05)", border: "1px solid rgba(200,0,0,.14)", font: `500 13px/1.45 ${SANS}`, color: "#8A2222" }}>
         {micro}
       </div>
-      <FieldLabel style={{ marginTop: 22, color: FAINT }}>My daily slot</FieldLabel>
+      {/*
+        * The exact start time. The four tiles are shortcuts, not the answer —
+        * the clock below is, and it is what the three daily reminders are all
+        * measured from (−3h, −10min, and a late catch-up). A learner who trains
+        * at 06:40 could not previously say so: the tiles were the only input, so
+        * every reminder would have been aimed at 08:00.
+        *
+        * A native <input type="time"> on purpose: it gets the platform's own
+        * spinner/keypad, respects the device's 12h/24h convention, is keyboard
+        * and screen-reader complete, and cannot drift from the value we store.
+        */}
+      <FieldLabel style={{ marginTop: 22, color: FAINT }}>My practice time starts at</FieldLabel>
       <ChoiceGroup
-        label="My daily slot"
+        label="Quick presets"
         values={SLOT_OPTIONS.map((s) => s.time)}
         value={slot}
         onChange={setSlot}
@@ -1233,6 +1252,31 @@ function TimeSlide({
       >
         {SLOT_OPTIONS.map((s) => <ChoiceTile key={s.time} value={s.time} label={s.label} />)}
       </ChoiceGroup>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+        <label
+          htmlFor="practice-clock"
+          style={{ font: `700 12.5px/1.3 ${SANS}`, color: MUTE, flex: "1 1 auto", minWidth: 130 }}
+        >
+          Exact start time
+        </label>
+        <input
+          id="practice-clock"
+          type="time"
+          value={slot}
+          onChange={(e) => { if (e.target.value) setSlot(e.target.value) }}
+          step={300}
+          style={{
+            font: `800 17px/1 ${MONO}`, color: INK, background: "#fff",
+            border: `1.5px solid ${BORDER}`, borderRadius: 12,
+            padding: "12px 14px", minHeight: 48, minWidth: 124,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        />
+      </div>
+      <div style={{ marginTop: 8, font: `500 12px/1.5 ${SANS}`, color: FAINT }}>
+        Charles will remind you 3 hours ahead, 10 minutes before you start, and once more
+        later if the day gets away from you. You can change all of this in Settings.
+      </div>
       <FieldLabel style={{ marginTop: 18, color: FAINT }}>Days I can honestly protect</FieldLabel>
       <ChoiceGroup
         label="Days a week I can protect"
