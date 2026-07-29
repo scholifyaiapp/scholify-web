@@ -17,7 +17,7 @@ import { mapSbrFlashcardsToOfficialSyllabus, mapSbrQuestionsToOfficialSyllabus, 
 import { mapApmFlashcardsToOfficialSyllabus, mapApmQuestionsToOfficialSyllabus, mapApmWrittenToOfficialSyllabus } from "@/lib/acca-apm-syllabus-map"
 import { mapAtxFlashcardsToOfficialSyllabus, mapAtxQuestionsToOfficialSyllabus, mapAtxWrittenToOfficialSyllabus } from "@/lib/acca-atx-syllabus-map"
 import { completeStudyFlashcards } from "@/lib/acca-study-flashcards"
-import { completeF1F4SectionA, completeSectionAFromStudy } from "@/lib/acca-f1-f4-section-a"
+import { f1F4StudyDerived, studyDerivedQuestions } from "@/lib/acca-f1-f4-section-a"
 import { completeF1F4SectionB } from "@/lib/acca-f1-f4-section-b"
 import { completePmSectionB, completePmSectionC } from "@/lib/acca-pm-expansion"
 import { PM_CONTENT_TARGET } from "@/lib/pm-content-contract"
@@ -311,10 +311,33 @@ export function loadPaperContent(paperId: string): Promise<void> {
     // completeSectionAFromStudy adds correspondingly fewer recall drills and the
     // bank total stays put — authored content displacing filler, not adding to it.
     const questionsWithTiers = [...questions, ...tierCompletionQuestions(paperId)]
+    /*
+     * The inventory a paper is sized to. Authored questions count toward it first;
+     * derived recall drills make up whatever remains (see PaperContent.drills).
+     * Once a paper's authored bank reaches its target the drill list is simply
+     * empty — which is the direction every paper is being rebuilt in.
+     */
+    const inventoryTarget = paperId === "PM"
+      ? PM_CONTENT_TARGET.sectionA
+      : paperId === "TX"
+        ? TX_CONTENT_TARGET.sectionA
+        : paperId === "FR"
+          ? FR_CONTENT_TARGET.sectionA
+          : paperId === "AA"
+            ? AA_CONTENT_TARGET.objectiveBank
+            : paperId === "FM"
+              ? FM_CONTENT_TARGET.sectionA
+              : paperId === "SBL"
+                ? SBL_CONTENT_TARGET.learningDrills
+                : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number])
+                  ? ADVANCED_CONTENT_TARGET.learningDrills
+                  : null
+    const studyDerived = inventoryTarget != null
+      ? studyDerivedQuestions(paperId, questionsWithTiers, chapters, inventoryTarget)
+      : f1F4StudyDerived(paperId, questionsWithTiers, chapters)
     const content: PaperContent = {
-      questions: ["PM", "TX", "FR", "AA", "FM", "SBL", ...ADVANCED_PAPERS].includes(paperId)
-        ? completeSectionAFromStudy(paperId, questionsWithTiers, chapters, paperId === "PM" ? PM_CONTENT_TARGET.sectionA : paperId === "TX" ? TX_CONTENT_TARGET.sectionA : paperId === "FR" ? FR_CONTENT_TARGET.sectionA : paperId === "AA" ? AA_CONTENT_TARGET.objectiveBank : paperId === "SBL" ? SBL_CONTENT_TARGET.learningDrills : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.learningDrills : FM_CONTENT_TARGET.sectionA)
-        : completeF1F4SectionA(paperId, questionsWithTiers, chapters),
+      questions: [...questionsWithTiers, ...studyDerived.authored],
+      drills: studyDerived.drills,
       chapters,
       flashcards: completeStudyFlashcards(paperId, mappedFlashcards, chapters, paperId === "PM" ? PM_CONTENT_TARGET.flashcards : paperId === "TX" ? TX_CONTENT_TARGET.flashcards : paperId === "FR" ? FR_CONTENT_TARGET.flashcards : paperId === "AA" ? AA_CONTENT_TARGET.flashcards : paperId === "FM" ? FM_CONTENT_TARGET.flashcards : paperId === "SBL" ? SBL_CONTENT_TARGET.flashcards : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.flashcards : undefined),
       written: paperId === "PM" ? completePmSectionC(mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "TX" ? isTxGlobal ? completeTxGlobalSectionC() : completeTxSectionC(mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "FR" ? completeFrSectionC(mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "AA" ? completeAaSectionB(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? completeFmSectionC(mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "SBL" ? completeSblWritten(mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)), chapters) : completeAdvancedWritten(paperId, paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId), chapters),

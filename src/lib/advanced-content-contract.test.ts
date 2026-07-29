@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { getQuestions } from "@/lib/acca"
+import { getQuestions, getPracticeInventory } from "@/lib/acca"
 import { getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { examBlueprint } from "@/lib/acca-exam-structure"
@@ -10,10 +10,15 @@ import { ADVANCED_CONTENT_TARGET, ADVANCED_PAPERS } from "@/lib/advanced-content
 describe("Strategic Professional full study system", () => {
   it("provides complete advanced learning and constructed-response inventories", () => {
     for (const paper of ADVANCED_PAPERS) {
-      expect(getQuestions(paper), `${paper} advanced drills`).toHaveLength(ADVANCED_CONTENT_TARGET.learningDrills)
+      // Objective items are LEARNING material at Strategic Professional — these
+      // exams are fully constructed-response. The inventory counts authored
+      // questions plus derived drills; the graded bank must contain no drills.
+      const inventory = getPracticeInventory(paper)
+      expect(inventory, `${paper} advanced drills`).toHaveLength(ADVANCED_CONTENT_TARGET.learningDrills)
+      expect(getQuestions(paper).some((item) => item.recall), `${paper} drill leak`).toBe(false)
       expect(getFlashcards(paper), `${paper} flashcards`).toHaveLength(ADVANCED_CONTENT_TARGET.flashcards)
       expect(getWrittenQuestions(paper), `${paper} written cases`).toHaveLength(ADVANCED_CONTENT_TARGET.writtenCases)
-      expect(new Set(getQuestions(paper).map((item) => item.id)).size, `${paper} drill IDs`).toBe(ADVANCED_CONTENT_TARGET.learningDrills)
+      expect(new Set(inventory.map((item) => item.id)).size, `${paper} drill IDs`).toBe(ADVANCED_CONTENT_TARGET.learningDrills)
       expect(new Set(getWrittenQuestions(paper).map((item) => item.id)).size, `${paper} written IDs`).toBe(ADVANCED_CONTENT_TARGET.writtenCases)
     }
   })

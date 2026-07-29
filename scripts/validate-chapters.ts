@@ -1,4 +1,4 @@
-import { chaptersForPaper } from "@/lib/acca-study-content"
+import { chaptersForPaper, chapterKey } from "@/lib/acca-study-content"
 
 const PAPERS = ["FA", "FR", "MA", "BT", "TX", "LW", "PM", "FM", "AA", "SBR", "SBL", "AFM", "APM", "ATX", "AAA"]
 const problems: string[] = []
@@ -11,7 +11,7 @@ for (const p of PAPERS) {
   const chapters = chaptersForPaper(p)
   for (const ch of chapters) {
     chapterCount++
-    const id = `${p}-${ch.area}`
+    const id = chapterKey(ch)
     // chapter-level arrays the reader maps over
     for (const field of ["outcomes", "sections", "examTraps", "keyTerms", "summary"] as const) {
       if (!Array.isArray((ch as any)[field])) problems.push(`${id}: chapter.${field} not an array`)
@@ -64,6 +64,21 @@ for (const p of PAPERS) {
             if (t === "tAccount") for (const side of ["debits", "credits"]) for (const r of (d?.[side] ?? [])) if (typeof r?.amount !== "number") problems.push(`${id}/${sec.id}: tAccount ${side} amount not a number`)
             break
           }
+          case "list":
+            if (!isArr(b.items)) problems.push(`${id}/${sec.id}: list missing/empty items`)
+            else for (const it of b.items) if (typeof it !== "string") problems.push(`${id}/${sec.id}: list item not a string`)
+            break
+          case "definition":
+            if (typeof b.term !== "string" || typeof b.md !== "string") problems.push(`${id}/${sec.id}: definition missing term/md`)
+            break
+          case "illustration":
+            if (typeof b.title !== "string" || typeof b.md !== "string") problems.push(`${id}/${sec.id}: illustration missing title/md`)
+            break
+          case "activity":
+            if (typeof b.title !== "string" || typeof b.prompt !== "string" || typeof b.answer !== "string") {
+              problems.push(`${id}/${sec.id}: activity missing title/prompt/answer`)
+            }
+            break
           default:
             problems.push(`${id}/${sec.id}: unknown block kind "${b.kind}"`)
         }

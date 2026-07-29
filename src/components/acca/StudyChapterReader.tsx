@@ -44,10 +44,22 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
 
       {/* hero */}
       <div style={{ fontFamily: "ui-monospace, monospace", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.brand }}>
-        {chapter.paper} · Area {chapter.area} · {chapter.minutes} min
+        {chapter.paper}
+        {chapter.number != null && ` · Chapter ${chapter.number}`}
+        {" · Area "}{chapter.area} · {chapter.minutes} min
       </div>
       <h1 style={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.02em", color: C.text, margin: "8px 0 8px", lineHeight: 1.2 }}>{chapter.title}</h1>
       <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.6, margin: "0 0 18px" }}>{chapter.intro}</p>
+
+      {/* which official study-guide outcomes this chapter actually delivers */}
+      {chapter.syllabusRefs && chapter.syllabusRefs.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: "0 0 18px" }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.faint, marginRight: 2 }}>Syllabus</span>
+          {chapter.syllabusRefs.map((ref) => (
+            <span key={ref} style={{ fontFamily: "ui-monospace, monospace", fontSize: 11, fontWeight: 700, color: C.muted, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 6, padding: "2px 7px" }}>{ref}</span>
+          ))}
+        </div>
+      )}
 
       {/* honest Finance Act basis for TX/ATX chapters (null otherwise) */}
       <TaxBasisNote paperId={chapter.paper} />
@@ -106,6 +118,33 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
           </div>
         </div>
       </section>
+
+      {/* knowledge diagnostic — the chapter-end "did it land?" pass */}
+      {chapter.knowledgeDiagnostic && chapter.knowledgeDiagnostic.length > 0 && (
+        <section style={{ marginTop: 34 }}>
+          <SectionHeading icon="check" text="Knowledge diagnostic" />
+          <p style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.55, margin: "-6px 0 12px" }}>
+            Answer each one out loud before you tap it. Anything you cannot answer is a section to re-read, not a question to guess.
+          </p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {chapter.knowledgeDiagnostic.map((item, i) => <DiagnosticRow key={i} index={i} q={item.q} a={item.a} />)}
+          </div>
+        </section>
+      )}
+
+      {/* where this chapter leads */}
+      {chapter.furtherStudy && chapter.furtherStudy.length > 0 && (
+        <section style={{ marginTop: 30 }}>
+          <SectionHeading icon="topics" text="Where this leads" />
+          <div style={{ display: "grid", gap: 7 }}>
+            {chapter.furtherStudy.map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: 9, fontSize: 13, color: C.muted, lineHeight: 1.55 }}>
+                <span style={{ color: C.brand, fontWeight: 800 }}>→</span><span>{rich(item)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* CTA into practice */}
       <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={onPractice}
@@ -185,9 +224,81 @@ function Block({ block }: { block: StudyBlock }) {
       return <ExampleBlock title={block.title} scenario={block.scenario} steps={block.steps} result={block.result} />
     case "diagram":
       return <StudyDiagram diagram={block.diagram} />
+    case "list":
+      return (
+        <div style={{ margin: "12px 0" }}>
+          {block.title && <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 8 }}>{rich(block.title)}</div>}
+          <div style={{ display: "grid", gap: 8 }}>
+            {block.items.map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, fontSize: 14, color: C.muted, lineHeight: 1.6 }}>
+                <span style={{ flex: "none", minWidth: 17, textAlign: "right", color: C.brand, fontWeight: 800, fontSize: block.style === "number" ? 12.5 : 15, lineHeight: block.style === "number" ? 1.75 : 1.35 }}>
+                  {block.style === "number" ? `${i + 1}.` : "•"}
+                </span>
+                <span>{rich(item)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    case "definition":
+      return (
+        <div style={{ display: "flex", gap: 0, margin: "16px 0", background: C.card, border: `1px solid ${C.border}`, borderRadius: 13, overflow: "hidden" }}>
+          <div style={{ flex: "none", width: 34, background: C.brand, display: "grid", placeItems: "center" }}>
+            <span style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: 9, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#fff" }}>Key term</span>
+          </div>
+          <div style={{ padding: "13px 15px" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>{block.term}</div>
+            <div style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.6 }}>{rich(block.md)}</div>
+          </div>
+        </div>
+      )
+    case "illustration":
+      return (
+        <div style={{ margin: "16px 0", padding: "13px 15px 14px", background: C.card2, border: `1px dashed ${C.border}`, borderRadius: 13 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: "#7C6BD6", marginBottom: 5 }}>Illustration</div>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text, marginBottom: 6 }}>{block.title}</div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {block.md.split("\n\n").map((p, i) => <div key={i} style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.62 }}>{rich(p)}</div>)}
+          </div>
+        </div>
+      )
+    case "activity":
+      return <ActivityBlock title={block.title} prompt={block.prompt} answer={block.answer} />
     default:
       return null
   }
+}
+
+/**
+ * An "attempt it first" activity. The answer stays hidden behind a deliberate
+ * click, because the learning is in the attempt — revealing it by default turns
+ * the activity back into prose the eye slides over.
+ */
+function ActivityBlock({ title, prompt, answer }: { title: string; prompt: string; answer: string }) {
+  const [shown, setShown] = useState(false)
+  return (
+    <div style={{ margin: "16px 0", background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.brand}`, borderRadius: 13, padding: "13px 15px" }}>
+      <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.brand, marginBottom: 5 }}>Activity — try it before you look</div>
+      <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text, marginBottom: 7 }}>{title}</div>
+      <div style={{ display: "grid", gap: 10 }}>
+        {prompt.split("\n\n").map((p, i) => <div key={i} style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.62 }}>{rich(p)}</div>)}
+      </div>
+      {shown ? (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+          style={{ marginTop: 12, padding: "12px 14px", borderRadius: 11, background: C.greenSoft, border: `1px solid ${C.green}` }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.green, marginBottom: 5 }}>Model answer</div>
+          <div style={{ display: "grid", gap: 9 }}>
+            {answer.split("\n\n").map((p, i) => <div key={i} style={{ fontSize: 13.5, color: C.text, lineHeight: 1.62 }}>{rich(p)}</div>)}
+          </div>
+        </motion.div>
+      ) : (
+        <button onClick={() => setShown(true)}
+          style={{ marginTop: 11, padding: "9px 16px", borderRadius: 10, border: `1px solid ${C.brand}`, background: C.brandSoft, color: C.brand, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
+          Reveal the model answer
+        </button>
+      )}
+    </div>
+  )
 }
 
 function ExampleBlock({ title, scenario, steps, result }: { title: string; scenario: string; steps: { label: string; detail: string }[]; result: string }) {
@@ -250,6 +361,27 @@ function CheckBlock({ check }: { check: MiniCheck }) {
             <div style={{ marginTop: 12, padding: "11px 14px", borderRadius: 11, background: picked === check.correct ? C.greenSoft : C.card2, fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
               <span style={{ fontWeight: 800, color: picked === check.correct ? C.green : C.brand }}>{picked === check.correct ? "Correct. " : "Not quite. "}</span>{check.explain}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function DiagnosticRow({ index, q, a }: { index: number; q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 11, overflow: "hidden" }}>
+      <button onClick={() => setOpen((o) => !o)}
+        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", background: "none", border: "none", cursor: "pointer" }}>
+        <span style={{ flex: "none", width: 20, height: 20, borderRadius: 6, background: C.brandSoft, color: C.brand, fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center" }}>{index + 1}</span>
+        <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: C.text, lineHeight: 1.45 }}>{q}</span>
+        <span style={{ flex: "none", color: C.faint, fontSize: 13, fontWeight: 800 }}>{open ? "−" : "+"}</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+            <div style={{ padding: "0 13px 12px 43px", fontSize: 13, color: C.muted, lineHeight: 1.62 }}>{rich(a)}</div>
           </motion.div>
         )}
       </AnimatePresence>

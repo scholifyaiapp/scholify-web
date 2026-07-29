@@ -9,17 +9,27 @@
  * Run: npm run audit:content   (exits 1 on any launch-blocking gap)
  */
 
-import { getPapers, getQuestions } from "@/lib/acca"
+import { getPapers, getQuestions, getDrills } from "@/lib/acca"
 import { buildDiagnostic } from "@/lib/acca-diagnostic"
 import { getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { chaptersForPaper } from "@/lib/acca-study-content"
-import { questionCount } from "@/lib/acca-content-counts"
+import { questionCount, drillCount } from "@/lib/acca-content-counts"
 import { mapTxQuestionsToOfficialSyllabus } from "@/lib/acca-tx-syllabus-map"
 
-/** The practice-ladder floor a promoted paper must clear. */
+/** The practice-ladder floor a promoted paper must clear (authored + drills). */
 const MIN_BANK = 150
+/**
+ * The AUTHORED floor — exam-standard questions alone, drills excluded.
+ *
+ * Warning rather than blocking, deliberately. Every paper cleared the old
+ * MIN_BANK because derived drills were counted as bank depth, so promoting this
+ * to blocking today would fail papers that ship and work. It is the ratchet for
+ * the paper-by-paper rebuild instead: the warning list is the remaining work, and
+ * it should shrink to nothing.
+ */
+const MIN_AUTHORED = 150
 const MIN_CARDS = 40
 /**
  * A paper whose real exam HAS a constructed-response section must have written
@@ -39,6 +49,8 @@ for (const paper of getPapers()) {
   const id = paper.id
   const areas = paper.areas.map((a) => a.code)
   const bank = getQuestions(id)
+  const drills = getDrills(id)
+  const practice = bank.length + drills.length
   const diagnostic = buildDiagnostic(id, 42)
   const cards = getFlashcards(id)
   const written = getWrittenQuestions(id)
@@ -55,7 +67,18 @@ for (const paper of getPapers()) {
   // Areas the diagnostic actually reaches — coverage drives the confidence score.
   const diagAreas = new Set(diagnostic.map((q) => q.area))
 
-  if (bank.length < MIN_BANK) blocking.push(`${id}: bank ${bank.length} < ${MIN_BANK}`)
+  if (practice < MIN_BANK) blocking.push(`${id}: practice pool ${practice} < ${MIN_BANK}`)
+  if (bank.length < MIN_AUTHORED)
+    warnings.push(
+      `${id}: only ${bank.length} AUTHORED question(s) < ${MIN_AUTHORED} — ${drills.length} of its ${practice} practice items are derived recall drills, which no graded surface uses. This paper still needs its authored bank.`,
+    )
+  /*
+   * A question tagged `recall` must never reach the authored bank — that flag is
+   * how the old single-list design tried to keep drills out of graded forms, and
+   * the whole point of the split is that the separation is now structural.
+   */
+  const leaked = bank.filter((q) => q.recall)
+  if (leaked.length) blocking.push(`${id}: ${leaked.length} derived recall drill(s) leaked into the authored bank`)
   /*
    * Content loads per paper now, so a paper the student has NOT opened has no bank
    * in memory — and the picker still has to show its readiness %. Coverage there
@@ -65,7 +88,11 @@ for (const paper of getPapers()) {
    */
   if (questionCount(id) !== bank.length)
     blocking.push(
-      `${id}: QUESTION_COUNTS says ${questionCount(id)} but the bank holds ${bank.length} — update src/lib/acca-content-counts.ts`,
+      `${id}: QUESTION_COUNTS says ${questionCount(id)} but the authored bank holds ${bank.length} — update src/lib/acca-content-counts.ts`,
+    )
+  if (drillCount(id) !== drills.length)
+    blocking.push(
+      `${id}: DRILL_COUNTS says ${drillCount(id)} but the paper generates ${drills.length} — update src/lib/acca-content-counts.ts`,
     )
   // A paper that advertises a curated bank must have one: hasCuratedContent() is
   // answered from this flag now (the picker reads it before any content loads).
@@ -103,20 +130,26 @@ for (const paper of getPapers()) {
       blocking.push(`${id}: question ${q.id} has duplicate options after transform — ${JSON.stringify(q.options)}`)
   }
   if (briefs.length < areas.length) warnings.push(`${id}: briefs cover ${briefs.length}/${areas.length} areas`)
-  if (chapters.length < areas.length) warnings.push(`${id}: study chapters cover ${chapters.length}/${areas.length} areas`)
+  // Count AREAS REACHED, not chapters: a paper authored as a chapter tree has
+  // many chapters per area, so comparing the two totals would read a deeper
+  // paper as a more complete one and a 20-chapter paper as over-covered.
+  const chapterAreas = new Set(chapters.map((c) => c.area))
+  if (chapterAreas.size < areas.length)
+    warnings.push(`${id}: study chapters reach ${chapterAreas.size}/${areas.length} areas`)
 
   rows.push([
     id.padEnd(4),
-    String(bank.length).padStart(4),
+    String(bank.length).padStart(8),
+    String(drills.length).padStart(6),
     `${diagnostic.length}q/${diagAreas.size}of${areas.length}`.padStart(12),
     String(cards.length).padStart(6),
     (paper.objectiveOnly ? "n/a" : String(written.length)).padStart(8),
     `${briefs.length}/${areas.length}`.padStart(7),
-    `${chapters.length}/${areas.length}`.padStart(9),
+    `${chapters.length}ch/${chapterAreas.size}of${areas.length}`.padStart(9),
   ])
 }
 
-console.log("paper  bank    diagnostic  cards  written  briefs  chapters")
+console.log("paper  authored  drills    diagnostic  cards  written  briefs  chapters")
 for (const r of rows) console.log(r.join("  "))
 
 if (warnings.length) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { FR_CONTENT_TARGET } from "@/lib/fr-content-contract"
-import { getQuestions } from "@/lib/acca"
+import { getQuestions, getPracticeInventory } from "@/lib/acca"
 import { getOtCases, otCaseMarks } from "@/lib/acca-cases"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getFlashcards } from "@/lib/acca-flashcards"
@@ -13,8 +13,15 @@ describe("FR/F7 complete content contract", () => {
     expect(examBlueprint("FR")?.sections.map((section) => section.id)).toEqual(["A", "B", "C"])
   })
   it("serves 350 unique Section A questions", () => {
-    const questions = getQuestions("FR")
+  /*
+   * The inventory contract is sized on everything the paper CONTAINS — authored
+   * questions plus derived recall drills. The second assertion is the honest one:
+   * the graded bank must hold no drills at all, so a mock or a readiness score can
+   * never be padded with permuted glossary prompts.
+   */
+    const questions = getPracticeInventory("FR")
     expect(questions).toHaveLength(FR_CONTENT_TARGET.sectionA)
+    expect(getQuestions("FR").some((q) => q.recall)).toBe(false)
     expect(new Set(questions.map((q) => q.id)).size).toBe(questions.length)
     expect(new Set(questions.map((q) => q.stem.trim().toLowerCase())).size).toBe(questions.length)
   })

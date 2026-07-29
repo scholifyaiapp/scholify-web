@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { getQuestions } from "@/lib/acca"
+import { getQuestions, getPracticeInventory } from "@/lib/acca"
 import { getFlashcards } from "@/lib/acca-flashcards"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { examBlueprint } from "@/lib/acca-exam-structure"
@@ -16,7 +16,11 @@ describe("SBL complete learning inventory and real exam structure", () => {
   })
 
   it("serves the complete study inventory without calling objective drills exam sections", () => {
-    expect(getQuestions("SBL")).toHaveLength(SBL_CONTENT_TARGET.learningDrills)
+    // SBL's objective items are LEARNING material — its real exam has none. The
+    // inventory is sized on authored questions plus derived drills together; the
+    // graded bank itself must stay drill-free.
+    expect(getPracticeInventory("SBL")).toHaveLength(SBL_CONTENT_TARGET.learningDrills)
+    expect(getQuestions("SBL").some((item) => item.recall)).toBe(false)
     expect(getFlashcards("SBL")).toHaveLength(SBL_CONTENT_TARGET.flashcards)
     expect(getWrittenQuestions("SBL")).toHaveLength(SBL_CONTENT_TARGET.writtenCases)
     expect(new Set(getWrittenQuestions("SBL").map((item) => item.area))).toEqual(new Set(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]))

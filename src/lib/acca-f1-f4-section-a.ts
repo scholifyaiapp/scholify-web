@@ -42,25 +42,40 @@ function choiceQuestion(paper: string, seed: ChoiceSeed, ordinal: number): AccaQ
 }
 
 /**
- * Converts already-authored chapter checks and glossary/control material into
- * independently answerable Section-A retrieval questions. These are not option
- * shuffles of bank questions: each has a new prompt and a traceable study source.
+ * Questions built FROM the study text, split by whether they are exam-standard.
+ *
+ * Two very different things come out of a chapter and they must not be pooled:
+ *
+ *  · `authored` — the chapter's inline `check` questions. Each is a real stem with
+ *    authored options and an authored explanation, written to test application.
+ *    They belong in a graded form and are counted as bank depth.
+ *  · `drills` — prompts PERMUTED out of glossary terms, exam traps, recaps and
+ *    outcomes. Real revision value, not measurement. Stamped `recall: true`.
+ *
+ * `target` is the combined inventory the paper is sized to, so the same items are
+ * generated in the same order as before and every id a learner has already
+ * answered stays stable.
  */
-export function completeF1F4SectionA(
+export interface StudyDerivedQuestions {
+  authored: AccaQuestion[]
+  drills: AccaQuestion[]
+}
+
+export function f1F4StudyDerived(
   paper: string,
   authored: AccaQuestion[],
   chapters: StudyChapter[],
-): AccaQuestion[] {
-  if (!TARGET_PAPERS.has(paper)) return authored
-  return completeSectionAFromStudy(paper, authored, chapters, F1_F4_CONTENT_TARGET.sectionA)
+): StudyDerivedQuestions {
+  if (!TARGET_PAPERS.has(paper)) return { authored: [], drills: [] }
+  return studyDerivedQuestions(paper, authored, chapters, F1_F4_CONTENT_TARGET.sectionA)
 }
 
-export function completeSectionAFromStudy(
+export function studyDerivedQuestions(
   paper: string,
   authored: AccaQuestion[],
   chapters: StudyChapter[],
   target: number,
-): AccaQuestion[] {
+): StudyDerivedQuestions {
   const terms = chapters.flatMap((chapter) =>
     chapter.keyTerms.map((term, index) => ({
       ...term,
@@ -333,11 +348,19 @@ export function completeSectionAFromStudy(
     if (authored.length + additions.length === target) break
   }
 
-  const result = [...authored, ...additions]
-  if (result.length < target) {
+  /*
+   * A paper whose bank already MEETS its inventory target needs nothing from the
+   * chapters, and one that overshoots is a good problem. Only a shortfall the
+   * chapters cannot cover even with retrieval prompts is a real fault, because it
+   * means the study text itself is too thin to revise from.
+   */
+  if (authored.length < target && authored.length + additions.length < target) {
     throw new Error(
-      `${paper} Section A has ${result.length}/${target} traceable questions; author more chapter source material`,
+      `${paper} has ${authored.length} bank + ${additions.length} study-derived items against a ${target} inventory; author more chapter source material`,
     )
   }
-  return result.slice(0, target)
+  return {
+    authored: additions.filter((question) => !question.recall),
+    drills: additions.filter((question) => question.recall),
+  }
 }

@@ -84,8 +84,51 @@ export function hasCuratedContent(paperId: string): boolean {
   return getPaper(paperId)?.hasCuratedContent === true
 }
 
+/**
+ * The paper's AUTHORED, exam-standard question bank.
+ *
+ * This is the measurement surface: the diagnostic, the mock forms, the sectioned
+ * CBE mock, topic knowledge checks and the readiness score all score on it. It
+ * deliberately excludes the derived recall drills — see PaperContent.drills.
+ */
 export function getQuestions(paperId: string): AccaQuestion[] {
   return paperContent(paperId).questions
+}
+
+/**
+ * The paper's derived recall drills — retrieval prompts permuted out of the study
+ * text. Useful revision, honestly labelled, never graded.
+ */
+export function getDrills(paperId: string): AccaQuestion[] {
+  return paperContent(paperId).drills
+}
+
+/**
+ * Everything a learner can work through on a paper: the authored bank, then the
+ * drills. This is an INVENTORY figure — what the paper contains — and it is what
+ * the per-paper content contracts are sized against. It is never a measurement
+ * pool: nothing that publishes a score may draw from it.
+ */
+export function getPracticeInventory(paperId: string): AccaQuestion[] {
+  const content = paperContent(paperId)
+  return [...content.questions, ...content.drills]
+}
+
+/**
+ * A recall-drill session: retrieval practice over the study text, optionally
+ * narrowed to one syllabus area.
+ *
+ * Kept out of buildSession on purpose. Every question a normal session serves is
+ * marked through recordAnswer, which is what the per-area accuracy and therefore
+ * the Exam Readiness Score are computed from — so "practice that also includes
+ * drills" would move the headline number on the back of glossary prompts. Drills
+ * are revision, so they run on their own path and record nothing (see
+ * recordAnswer, which refuses them outright).
+ */
+export function buildDrillSession(paperId: string, count = 10, area?: string, seed = 1): AccaQuestion[] {
+  let pool = getDrills(paperId)
+  if (area) pool = pool.filter((q) => q.area === area)
+  return shuffle(pool, seed).slice(0, count)
 }
 
 export function getSyllabusAreas(paperId: string): string[] {
@@ -404,8 +447,18 @@ function todayStr(): string {
   return `${d.getFullYear()}-${m}-${day}`
 }
 
-/** Record the outcome of a single answered question and persist. */
+/**
+ * Record the outcome of a single answered question and persist.
+ *
+ * Derived recall drills are REFUSED. Everything downstream of this function is
+ * the competence model — per-area weighted accuracy, coverage, the Exam Readiness
+ * Score, the mock gate, the weak-area ranking the study plan is built from. A
+ * drill is a glossary term with four options; letting one in would lift the
+ * headline readiness number without any evidence the learner can answer an exam
+ * question. Drills are revision, and revision does not get to score the exam.
+ */
 export function recordAnswer(paperId: string, q: AccaQuestion, correct: boolean): void {
+  if (q.recall) return
   const p = readRaw()
 
   const qByPaper = (p.questions[paperId] ??= {})

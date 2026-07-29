@@ -5,7 +5,7 @@ import { MIXED_BANK_SIZES } from "@/lib/acca-bankruns"
 import { MOCK_FORMS } from "@/lib/acca-mockforms"
 import { getFlashcards } from "@/lib/acca-flashcards"
 import { getPaper } from "@/lib/acca"
-import { getQuestions } from "@/lib/acca"
+import { getQuestions, getPracticeInventory } from "@/lib/acca"
 import { getOtCases, otCaseMarks } from "@/lib/acca-cases"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
@@ -33,10 +33,18 @@ describe("F1–F4 product structure", () => {
     }
   })
 
-  it("serves exactly 350 unique, answerable Section A questions for every F1–F4 paper", () => {
+  /*
+   * Sized on the paper's whole inventory — authored questions plus derived recall
+   * drills — with a separate, stricter assertion that the GRADED bank is
+   * drill-free. Before the two were separated this test read 350 for every paper
+   * and could not tell the difference between 350 authored questions and 174
+   * authored questions padded with 176 permuted glossary prompts.
+   */
+  it("serves exactly 350 unique, answerable practice items for every F1–F4 paper", () => {
     for (const paperId of F1_F4_PAPERS) {
-      const questions = getQuestions(paperId)
+      const questions = getPracticeInventory(paperId)
       expect(questions, paperId).toHaveLength(F1_F4_CONTENT_TARGET.sectionA)
+      expect(getQuestions(paperId).some((question) => question.recall), `${paperId} drill leak`).toBe(false)
       expect(new Set(questions.map((question) => question.id)).size, `${paperId} IDs`).toBe(questions.length)
       expect(new Set(questions.map((question) => question.stem.trim().toLowerCase())).size, `${paperId} stems`).toBe(questions.length)
       expect(questions.every((question) => question.explanation.trim().length > 0), `${paperId} explanations`).toBe(true)

@@ -6,6 +6,7 @@ import {
   restoreProgress,
   snapshotProgress,
   getQuestions,
+  getDrills,
   getPapers,
 } from "@/lib/acca"
 import type { AccaQuestion } from "@/lib/acca-content"
@@ -154,9 +155,35 @@ describe("the content itself", () => {
     const papers = getPapers()
     expect(papers.length).toBe(15)
     for (const p of papers) {
-      const qs = getQuestions(p.id)
-      expect(qs.length).toBeGreaterThanOrEqual(150)
-      expect(qs.every((q) => q.paper === p.id)).toBe(true)
+      const authored = getQuestions(p.id)
+      const drills = getDrills(p.id)
+      // Whatever a learner can work through must clear the practice floor.
+      expect(authored.length + drills.length, p.id).toBeGreaterThanOrEqual(150)
+      expect(authored.every((q) => q.paper === p.id), p.id).toBe(true)
+      expect(drills.every((q) => q.paper === p.id), `${p.id} drills`).toBe(true)
+      // The graded bank must never contain a derived recall drill.
+      expect(authored.some((q) => q.recall), `${p.id} drill leak`).toBe(false)
+    }
+  })
+
+  /*
+   * The AUTHORED floor, tracked separately and with its exception NAMED.
+   *
+   * Every paper used to clear 150 because derived recall drills were counted as
+   * bank depth. With the two separated, LW is revealed to have 56 authored
+   * questions — the known LW-Global authoring gap, which is real and is being
+   * worked, not a test to relax. Listing it here means any OTHER paper slipping
+   * below the floor fails immediately, and closing LW's gap is a one-line delete.
+   */
+  it("holds at least 150 authored, exam-standard questions per paper", () => {
+    const knownAuthoringGaps = new Set(["LW"])
+    for (const p of getPapers()) {
+      const authored = getQuestions(p.id).length
+      if (knownAuthoringGaps.has(p.id)) {
+        expect(authored, `${p.id} still has its documented gap`).toBeLessThan(150)
+        continue
+      }
+      expect(authored, p.id).toBeGreaterThanOrEqual(150)
     }
   })
 })
