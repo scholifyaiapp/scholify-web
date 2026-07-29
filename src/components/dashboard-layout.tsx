@@ -36,6 +36,17 @@ const LAYOUT_CSS = `
   *:focus-visible { outline: 2px solid #C80000 !important; outline-offset: 2px; border-radius: 4px; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
   @media (max-width: 1023px) { .feedback-launcher { bottom: 78px !important; } }
+
+  /* The content column starts where the sidebar ends. --app-sidebar narrows to
+     216px on 1024–1279 laptops (see index.css), so this offset has to read the
+     variable rather than hardcode 244px — otherwise mid-size laptops got a
+     28px empty gutter down the left of every page. */
+  @media (min-width: 1024px) { .dash-main { padding-left: var(--app-sidebar); } }
+
+  /* Bottom padding existed to clear the mobile tab bar. On desktop there is no
+     tab bar, so 110px was just dead space under the fold on every page. */
+  .dash-content { padding-bottom: 110px; }
+  @media (min-width: 1024px) { .dash-content { padding-bottom: 48px; } }
 `
 
 type NavItemDef = {
@@ -209,7 +220,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       <aside
         className="hidden lg:flex dash-scroll"
         style={{
-          position: "fixed", top: 0, left: 0, bottom: 0, width: 244, flexDirection: "column",
+          position: "fixed", top: 0, left: 0, bottom: 0, width: "var(--app-sidebar)", flexDirection: "column",
           padding: `${SP.xl}px ${SP.lg}px`, background: "var(--sch-card)",
           borderRight: "1px solid var(--sch-hairline)", overflowY: "auto", zIndex: 20,
         }}
@@ -288,7 +299,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="lg:pl-[244px]">
+      <main className="dash-main">
         {/* Top bar */}
         <div
           style={{
@@ -304,7 +315,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <NotificationBell />
         </div>
 
-        <div className="px-4 py-5 lg:px-10 lg:py-8" style={{ paddingBottom: 110, position: "relative" }}>
+        {/* sch-app-container caps the measure at --app-max (1360px). Without it
+            every dashboard grid stretched to the full window on a 1440px+
+            display, so stat cards grew to ~400px wide and the reading measure
+            on Notes and Learning ran past 140 characters. */}
+        <div className="dash-content sch-app-container px-4 py-5 lg:px-10 lg:py-8" style={{ position: "relative" }}>
           {children}
         </div>
       </main>

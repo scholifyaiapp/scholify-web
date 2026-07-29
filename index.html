@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to real
+         values on notched iPhones. The mobile tab bar, the fixed countdown and
+         the onboarding footer all already pad with env() — without this flag
+         those insets are always 0 and the controls sit under the home bar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Favicon: the brand mark (deep-red hexagonal circuit). ?v=2 busts
          stale browser favicon caches from the pre-rebrand icon. -->

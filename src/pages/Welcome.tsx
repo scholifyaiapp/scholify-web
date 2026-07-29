@@ -142,11 +142,31 @@ const TARGET_OPTIONS: { v: number; label: string; blurb: string }[] = [
 ]
 
 
-// The split-screen needs real width; below 1080 the phone layout reads better.
+/*
+ * Which shell: the single-column flow, or the two-pane split?
+ *
+ * The split needs real width AND real height. It is position:fixed inset:0
+ * with overflow:hidden, so it cannot grow — everything (brand, progress,
+ * slide, Back/Continue, keyboard hint) has to fit in one viewport or it gets
+ * clipped with no way to scroll to it.
+ *
+ *  · max-width 1080  — below this the writing pane is narrower than its own
+ *    620px measure and the visual pane can't hold its scenes.
+ *  · max-height 620  — the axis this hook ignored entirely. A landscape phone
+ *    (~390px) or a half-height desktop window is wide enough for the split and
+ *    far too short for it: Back/Continue sat below the fold with no scroll to
+ *    reach them. Short-and-wide now gets the single-column flow instead.
+ *
+ * A 1366×768 laptop (~650px of viewport after browser chrome) deliberately
+ * stays on the split — it is genuinely wide, and the vh-clamped padding in the
+ * writing pane below is what buys back the room it needs.
+ */
+const COMPACT_SHELL_QUERY = "(max-width: 1080px), (max-height: 620px)"
+
 function useIsMobile(): boolean {
-  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 1080px)").matches)
+  const [mobile, setMobile] = useState(() => window.matchMedia(COMPACT_SHELL_QUERY).matches)
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1080px)")
+    const mq = window.matchMedia(COMPACT_SHELL_QUERY)
     const on = () => setMobile(mq.matches)
     mq.addEventListener("change", on)
     return () => mq.removeEventListener("change", on)
@@ -690,16 +710,21 @@ export default function Welcome() {
     )
   }
 
-  /* ═══ DESKTOP · 55/45 split ═══ */
+  /* ═══ DESKTOP · fluid split (see --onb-writing) ═══ */
   return (
     <div style={{ position: "fixed", inset: 0, background: PAGE, display: "flex", overflow: "hidden", fontFamily: SANS }}>
-      {/* left — question panel */}
-      <div style={{ width: "55%", flex: "none", display: "flex", flexDirection: "column", padding: "40px clamp(32px, 4vw, 60px) 54px", position: "relative", minWidth: 0 }}>
+      {/* left — question panel.
+          Every vertical measurement here is vh-relative rather than fixed,
+          because this pane cannot scroll: on a 660px-tall laptop the old flat
+          40/54px padding plus 26px and 30px gaps spent ~150px on whitespace
+          and pushed Continue against the fold. The clamps keep the desktop
+          spacing at full height and give it back where there is none. */}
+      <div style={{ width: "var(--onb-writing)", flex: "none", display: "flex", flexDirection: "column", padding: "clamp(20px, 3.6vh, 40px) clamp(28px, 3.5vw, 60px) clamp(30px, 5vh, 54px)", position: "relative", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <ScholifyMark size={30} />
           <span style={{ font: `800 21px/1 ${SANS}`, letterSpacing: "-0.6px", color: INK }}>Scholify</span>
         </div>
-        <div style={{ marginTop: 26, display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ marginTop: "clamp(14px, 2.4vh, 26px)", display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ font: `600 12px/1 ${MONO}`, color: MUTE, letterSpacing: "0.05em" }}>{visibleStepIndex + 1} / {visibleSteps.length}</span>
           <div style={{ flex: 1, maxWidth: 340, height: 5, borderRadius: 99, background: TRACK, overflow: "hidden" }}>
             {/* scaleX, not width. Animating width re-laid-out the header on every
@@ -767,7 +792,7 @@ export default function Welcome() {
 
         {/* footer buttons */}
         {step < 9 && (
-          <div style={{ marginTop: 30, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ marginTop: "clamp(16px, 2.6vh, 30px)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <GlassButton variant="ghost" onClick={() => go(-1)} disabled={step === 0} ariaLabel="Previous step">
               <Icon name="arrow" size={16} color={step === 0 ? "#CFC7BF" : MUTE} style={{ transform: "rotate(180deg)" }} /> Back
             </GlassButton>
@@ -776,14 +801,17 @@ export default function Welcome() {
             </GlassButton>
           </div>
         )}
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 22, textAlign: "center", font: `500 10px/1 ${MONO}`, letterSpacing: "0.2em", textTransform: "uppercase", color: HINT, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: "clamp(6px, 1.4vh, 22px)", textAlign: "center", font: `500 10px/1 ${MONO}`, letterSpacing: "0.2em", textTransform: "uppercase", color: HINT, pointerEvents: "none" }}>
           ← → or swipe
         </div>
-        <SlideMascot step={step} size="clamp(78px,8vw,112px)" right="clamp(16px,2.5vw,36px)" bottom={40} />
+        {/* Charles is absolutely positioned over this pane, so on a short
+            screen he crept up into the Back/Continue row. Tie his offset to
+            the same vh rhythm the padding uses. */}
+        <SlideMascot step={step} size="clamp(64px,7vw,112px)" right="clamp(16px,2.5vw,36px)" bottom="clamp(22px, 4.4vh, 40px)" />
       </div>
 
       {/* right — visual panel */}
-      <div style={{ width: "45%", flex: "none", position: "relative", overflow: "hidden" }}>
+      <div style={{ width: "calc(100% - var(--onb-writing))", flex: "none", position: "relative", overflow: "hidden" }}>
         {/* Same reasoning, and this was the worst of the three: at 0.5s each way
             mode="wait" made the visual panel take a FULL SECOND to swap, half of
             it blank. Crossing over also halves the duration to 0.36 so it lands
@@ -1504,7 +1532,7 @@ function VisualPanel({
     return (
       <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/welcome-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", left: 28, bottom: 28, display: "flex", alignItems: "center", gap: 13, padding: "12px 18px 12px 12px", borderRadius: 16, background: RED, boxShadow: "0 18px 44px -16px rgba(200,0,0,.7)" }}>
+        <div style={{ position: "absolute", left: "clamp(16px, 2.4vw, 28px)", bottom: "clamp(16px, 3vh, 28px)", display: "flex", alignItems: "center", gap: 13, padding: "12px 18px 12px 12px", borderRadius: 16, background: RED, boxShadow: "0 18px 44px -16px rgba(200,0,0,.7)" }}>
           <div style={{ width: 42, height: 42, borderRadius: 11, background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ScholifyMark size={27} variant="white" />
           </div>
@@ -1535,7 +1563,7 @@ function VisualPanel({
     const PHASE_ICON: IconName[] = ["learn", "practice", "flashcards", "mock"]
     return (
       <IllusBase>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px clamp(28px,3.4vw,46px)" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "clamp(26px, 5vh, 48px) clamp(24px, 3.4vw, 46px)" }}>
           <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 16 }}>
             The Scholify method
           </div>
@@ -1613,7 +1641,7 @@ function VisualPanel({
     const shown = band < 0 ? null : SAMPLES[band]
     return (
       <IllusBase>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px clamp(28px,3.4vw,46px)" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "clamp(26px, 5vh, 48px) clamp(24px, 3.4vw, 46px)" }}>
           <div style={{ font: `600 10px/1 ${MONO}`, letterSpacing: "0.14em", textTransform: "uppercase", color: FAINT, marginBottom: 16 }}>
             How Charles will explain things
           </div>
@@ -1679,7 +1707,7 @@ function VisualPanel({
     const all = levels.flatMap((g) => g.papers.map((p) => p.id))
     return (
       <IllusBase>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 0" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(30px, 6vh, 56px) 0" }}>
           <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", maxHeight: 640 }}>
             <div style={{ position: "absolute", top: 6, bottom: 6, width: 2, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(#E7CFC9,#EBD9A9)" }} />
             {all.map((code) => {
@@ -1736,7 +1764,7 @@ function VisualPanel({
     return (
       <div style={{ position: "absolute", inset: 0, background: PANEL }}>
         <img src="/onboarding/time-d.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", left: 28, bottom: 28, display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", borderRadius: 14, background: "rgba(20,20,26,.72)", backdropFilter: "blur(6px)" }}>
+        <div style={{ position: "absolute", left: "clamp(16px, 2.4vw, 28px)", bottom: "clamp(16px, 3vh, 28px)", display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", borderRadius: 14, background: "rgba(20,20,26,.72)", backdropFilter: "blur(6px)" }}>
           <Icon name="time" size={16} color="#F4A405" />
           <span style={{ font: `600 13px/1.3 ${SANS}`, color: "#fff" }}>Small but daily beats big but rarely.</span>
         </div>

@@ -186,11 +186,14 @@ function Nav() {
       className="glass-light pl-3.5 pr-2.5 sm:pl-5 sm:pr-3"
       style={{
         position: "fixed",
-        top: 24,
+        /* The nav rides the same gutter as every section below it, so its
+           left edge lines up with the content instead of sitting 8px inside
+           it on phones and 16px outside it on desktop. */
+        top: "clamp(12px, 2vw, 24px)",
         left: "50%",
         zIndex: 100,
-        width: "calc(100% - 32px)",
-        maxWidth: 1200,
+        width: "calc(100% - var(--page-gutter) * 2)",
+        maxWidth: "var(--page-max)",
         height: 60,
         display: "flex",
         alignItems: "center",
@@ -294,12 +297,18 @@ function Hero() {
     <section
       style={{
         position: "relative",
-        minHeight: "100vh",
+        /* dvh so the hero is exactly the visible viewport on mobile. With
+           100vh the "Start for free" CTA sat under the browser's own chrome
+           on first paint and only appeared after a scroll. */
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "140px 24px 96px",
+        /* Top pad = section rhythm + enough to clear the fixed nav (60px tall
+           at a 12–24px offset). Was a flat 140px, which left a dead band on
+           phones and crowded the nav on short laptops. */
+        padding: "calc(var(--section-y) + 56px) var(--page-gutter) var(--section-y)",
         textAlign: "center",
         overflow: "hidden",
       }}
@@ -311,7 +320,7 @@ function Hero() {
       >
         <CharlesMascot pose="thumbsup" size="clamp(118px,12vw,176px)" delay={0.45} />
       </div>
-      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ width: "100%", maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <UpgradeBanner
           buttonText={t("Meet Charles")}
           description={t("— your AI race engineer for ACCA")}
@@ -325,7 +334,7 @@ function Hero() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.7, delay: 0.85, ease: EASE_DECISIVE }}
           style={{
-            fontSize: 20,
+            fontSize: "clamp(16px, 1.5vw, 20px)",
             color: INK_MUTED,
             maxWidth: 560,
             margin: "12px auto 0",
@@ -479,15 +488,15 @@ function StatCard({ value, label, source, delay, tone = "blue" }: { value: strin
 function Problem() {
   const t = useT()
   return (
-    <section style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 72px)", color: INK, margin: 0 }}>
           {t("Half of ACCA candidates fail each sitting.")}
         </h2>
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(36px, 5vw, 72px)", margin: "16px 0 0", fontStyle: "italic" }}>
           {t("Scholify exists to put you in the other half.")}
         </h2>
-        <p style={{ color: INK_MUTED, fontSize: 18, maxWidth: 620, margin: "32px auto 0", lineHeight: 1.65 }}>
+        <p style={{ color: INK_MUTED, fontSize: "clamp(15px, 1.35vw, 18px)", maxWidth: 620, margin: "32px auto 0", lineHeight: 1.65 }}>
           <span className="font-mono-pro tabular" style={{ color: INK, fontWeight: 700 }}>~50%</span>{" "}
           {t("pass a typical Applied Skills exam. The difference isn't brains — it's practice, fast feedback, and a plan. Scholify is all three.")}
         </p>
@@ -514,8 +523,8 @@ function HowItWorks() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-120px")
   const t = useT()
   return (
-    <section id="how-it-works" style={{ padding: "96px 24px", textAlign: "center" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative" }}>
+    <section id="how-it-works" style={{ padding: "var(--section-y) var(--page-gutter)", textAlign: "center" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", position: "relative" }}>
         <div
           aria-hidden
           className="hidden lg:block"
@@ -1010,8 +1019,8 @@ function VisualProgress() {
 function Features() {
   const t = useT()
   return (
-    <section id="features" style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+    <section id="features" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("FEATURES")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK, margin: "18px 0 0" }}>
@@ -1119,8 +1128,8 @@ function FeatureSwiper() {
   }, [])
 
   return (
-    <section style={{ padding: "96px 24px", background: BG_PRIMARY }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto", textAlign: "center" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)", background: BG_PRIMARY }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("BUILT FOR EVERY PAPER")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
           {t("Six tools that")}{" "}
@@ -1254,8 +1263,8 @@ function PaperCard({ paper, accent, delay }: { paper: (typeof ROADMAP_LEVELS)[nu
 function QualificationRoadmap() {
   const t = useT()
   return (
-    <section style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("THE FULL QUALIFICATION")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
@@ -1335,8 +1344,8 @@ function MilestoneGallery() {
     }),
   }
   return (
-    <section style={{ padding: "56px 24px", background: BG_SECONDARY }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+    <section style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter)", background: BG_SECONDARY }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
         <motion.div
           custom={0}
           variants={reveal}
@@ -1512,13 +1521,13 @@ function Identity() {
     <section
       style={{
         position: "relative",
-        padding: "120px 24px",
+        padding: "calc(var(--section-y) * 1.25) var(--page-gutter)",
         background: BG_DARK,
         color: INK_INVERSE,
         overflow: "hidden",
       }}
     >
-      <div style={{ position: "relative", maxWidth: 1180, margin: "0 auto", textAlign: "center", width: "100%", zIndex: 2 }}>
+      <div style={{ position: "relative", maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center", width: "100%", zIndex: 2 }}>
         <SectionLabel tone="inverse">{t("THE TRANSFORMATION")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 80px)", color: INK_INVERSE, margin: "18px 0 0" }}>
           {t("You're not just passing exams.")}
@@ -1526,7 +1535,7 @@ function Identity() {
         <h2 className="font-display text-pro-h grad-hero-text" style={{ fontSize: "clamp(40px, 5vw, 80px)", margin: "16px 0 0", fontStyle: "italic" }}>
           {t("You're becoming an ACCA member.")}
         </h2>
-        <p style={{ color: "rgba(250,250,247,0.65)", fontSize: 18, maxWidth: 620, margin: "24px auto 0", lineHeight: 1.65 }}>
+        <p style={{ color: "rgba(250,250,247,0.65)", fontSize: "clamp(15px, 1.35vw, 18px)", maxWidth: 620, margin: "24px auto 0", lineHeight: 1.65 }}>
           {t("Drag the slider — see what 60 days of Scholify actually changes.")}
         </p>
 
@@ -1569,8 +1578,8 @@ const ROI_ROWS: { label: string; values: [string, string, string, string]; highl
 function CompareROI() {
   const t = useT()
   return (
-    <section style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("THE ROI")}</SectionLabel>
           <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 64px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
@@ -1811,7 +1820,7 @@ function AccaFactsCTA() {
   const facts = ACCA_FACT_KEYS.map((f) => ({ title: t(f.titleKey), description: t(f.descKey), image: f.image })) as [StackFact, StackFact, StackFact]
 
   return (
-    <section style={{ padding: "96px 24px" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("WHY ACCA")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(36px, 5vw, 56px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}>
@@ -1858,8 +1867,8 @@ function Pricing() {
   const navigate = useNavigate()
   const t = useT()
   return (
-    <section id="pricing" style={{ padding: "96px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+    <section id="pricing" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("PRICING")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
           {t("Start free.")} <em style={{ fontStyle: "italic" }}>{t("Upgrade when you're ready.")}</em>
@@ -1871,7 +1880,7 @@ function Pricing() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
             gap: 40,
             marginTop: 56,
             alignItems: "start",
@@ -1972,13 +1981,13 @@ function FinalCTA() {
     <section
       className="mesh-bg"
       style={{
-        padding: "160px 24px",
+        padding: "calc(var(--section-y) * 1.55) var(--page-gutter)",
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", position: "relative" }}>
         <HandWrittenTitle title={t("Then the next one.")} subtitle={t("Pass this paper.")} />
         <div style={{ marginTop: -32, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <PrimaryCTA large onClick={() => navigate(SIGN_UP_PATH)}>
@@ -1998,7 +2007,7 @@ function FinalCTA() {
 function MobileAppsTeaser() {
   const t = useT()
   return (
-    <section style={{ padding: "56px 24px" }}>
+    <section style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter)" }}>
       <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
         <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginBottom: 24 }}>
           {t("MOBILE APPS — COMING SEPTEMBER 1, 2026")}
@@ -2016,7 +2025,7 @@ function MobileAppsTeaser() {
 
 export default function Landing() {
   return (
-    <div className="scholify-race-shell race-grid-surface" style={{ backgroundColor: BG_PRIMARY, color: INK, minHeight: "100vh", overflowX: "hidden" }}>
+    <div className="scholify-race-shell race-grid-surface" style={{ backgroundColor: BG_PRIMARY, color: INK, minHeight: "100dvh", overflowX: "clip" }}>
       <LiquidGlassFilterDefs />
       <Nav />
       <Hero />
@@ -2036,7 +2045,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
-      <PaymentMethods style={{ padding: "56px 24px 8px", maxWidth: 1100, margin: "0 auto" }} />
+      <PaymentMethods style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter) 8px", maxWidth: "var(--page-max)", margin: "0 auto" }} />
       <LazyOnView style={{ minHeight: 300 }}><MobileAppsTeaser /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
     </div>

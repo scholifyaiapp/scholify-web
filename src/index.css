@@ -287,7 +287,10 @@ html[data-theme="light"] {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--background);
-    min-height: 100vh;
+    /* dvh, not vh: on mobile Safari/Chrome 100vh is the tallest the viewport
+       ever gets, so a 100vh page always sat ~80px taller than the visible
+       area and the last row of content hid under the browser chrome. */
+    min-height: 100dvh;
     overscroll-behavior-y: none;
   }
   a, button, [role="button"], input, label, select, textarea {
@@ -518,6 +521,77 @@ html[data-theme="light"] {
   --plum-100: #FCE4EF;
 }
 
+/* ──────────────────────────────────────────────────────────────
+ *  RESPONSIVE LAYOUT SCALE — one structure for every screen.
+ *
+ *  The problem this fixes: sections were each hand-padded ("96px 24px")
+ *  with their own max-width (1200 / 1180 / 1100 / 1080), so no two
+ *  sections shared a left edge and none of them shared one with the
+ *  floating nav. And because the gutter was a constant 24px, a 375px
+ *  phone and a 1440px laptop got the same inset — too wide on one, far
+ *  too tight on the other.
+ *
+ *  Tiers match Tailwind's defaults (640 / 768 / 1024 / 1280 / 1536) so
+ *  these vars and the `sm: md: lg:` classes already in the JSX agree.
+ *
+ *    --page-gutter   horizontal inset; equals the floating nav's inset
+ *                    at every tier, so nav and content share one edge
+ *    --page-max      marketing container measure (one value, not four)
+ *    --section-y     vertical section rhythm
+ *    --app-max       signed-in content measure (stops the 2560px stretch)
+ *    --app-sidebar   app sidebar width — narrows on 1024–1279 laptops,
+ *                    where 244px was eating the content column
+ * ────────────────────────────────────────────────────────────── */
+:root {
+  --page-gutter: 16px;
+  --page-max: 1180px;
+  --section-y: 60px;
+  --app-max: 1360px;
+  --app-sidebar: 244px;
+}
+@media (min-width: 640px) {
+  :root { --page-gutter: 24px; --section-y: 76px; }
+}
+@media (min-width: 768px) {
+  :root { --page-gutter: 28px; --section-y: 88px; }
+}
+@media (min-width: 1024px) {
+  /* Mid-size laptops (1024–1279: 1280×800, scaled 1366×768). A 244px
+     sidebar left only 780px of content here — 216px buys back 28px
+     without the nav labels wrapping. */
+  :root { --page-gutter: 32px; --section-y: 96px; --app-sidebar: 216px; }
+}
+@media (min-width: 1280px) {
+  :root { --page-gutter: 40px; --app-sidebar: 244px; }
+}
+
+/*
+ * Onboarding split ratio (/welcome, ≥1081px). A flat 55/45 meant the writing
+ * pane was 594px on a 1080p-class laptop — narrower than the 620px measure the
+ * slides are set to, so every question wrapped one word early. Give the
+ * writing pane more of the width the tighter the screen, and only relax toward
+ * 55/45 once there is width to spare.
+ */
+:root { --onb-writing: 62%; }
+@media (min-width: 1280px) { :root { --onb-writing: 57%; } }
+@media (min-width: 1536px) { :root { --onb-writing: 55%; } }
+
+/* Signed-in pages: one measure for the content column, so a 1440px+ display
+   stops stretching cards and reading text to the full window width. */
+.sch-app-container {
+  width: 100%;
+  max-width: var(--app-max);
+  margin-inline: auto;
+}
+
+/*
+ * A single overflowing child (a 360px-min grid track, a nowrap heading, a
+ * fixed-width card) used to make the whole document scroll sideways on a
+ * 375px phone. `clip` stops that without creating a scroll container, so
+ * the dashboard's sticky top bar keeps working — `hidden` would break it.
+ */
+body { overflow-x: clip; }
+
 /* ── ROI calculator sliders (landing) ─────────────────────────── */
 .roi-range {
   -webkit-appearance: none;
@@ -561,7 +635,29 @@ html[data-theme="light"] {
 .study-orbit{position:absolute;left:50%;top:50%;border:1px solid rgba(255,255,255,.13);border-radius:50%;transform:translate(-50%,-50%) rotateX(65deg)}.study-orbit-one{width:245px;height:245px}.study-orbit-two{width:185px;height:185px;border-style:dashed;border-color:rgba(244,164,5,.24)}
 .study-3d-card{position:absolute;z-index:5;display:flex;flex-direction:column;width:105px;padding:13px;border:1px solid rgba(255,255,255,.16);border-radius:17px;background:rgba(255,255,255,.1);box-shadow:0 20px 35px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.18);backdrop-filter:blur(15px)}.study-3d-card small{margin-top:12px;color:rgba(255,255,255,.48);font-size:7.5px;font-weight:800;letter-spacing:.1em}.study-3d-card strong{margin-top:2px;font-size:21px;letter-spacing:-.04em}.study-3d-card-front{right:1%;top:20%;color:#ffc24b}.study-3d-card-back{left:1%;bottom:10%;color:#ff6e9f}.study-3d-card i{position:relative;overflow:hidden;height:3px;margin-top:8px;border-radius:99px;background:rgba(255,255,255,.12)}.study-3d-card i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--hero-progress);border-radius:inherit;background:currentColor}
 .study-command-metrics{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.045)}.study-command-metrics div{padding:11px 14px;border-right:1px solid rgba(255,255,255,.08)}.study-command-metrics div:last-child{border-right:0}.study-command-metrics span{display:block;color:rgba(255,255,255,.45);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.study-command-metrics strong{display:block;overflow:hidden;margin-top:4px;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
-@media(max-width:720px){.study-command-hero{grid-template-columns:1fr;padding:22px}.study-command-scene{min-height:180px}.study-command-metrics{grid-template-columns:repeat(2,1fr)}.study-command-metrics div:nth-child(2){border-right:0}.study-command-metrics div:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.08)}}
+/*
+ * The 3D scene is built from absolutely-positioned parts: a 126px core at the
+ * centre, a 245px orbit ring, and two 105px cards pinned to left:1%/right:1%.
+ * Below roughly 300px of scene width those cards slide over the core and the
+ * whole thing reads as a pile.
+ *
+ * This used to collapse at 720px only. But the hero lives inside the dashboard
+ * content column, not the viewport — at a 730px viewport the column is ~700px
+ * and the 0.85fr scene track lands at ~290px, i.e. already broken while still
+ * in two-column mode. Collapsing at 900px keeps the scene at 300px or more
+ * everywhere it stays side-by-side.
+ */
+@media(max-width:900px){.study-command-hero{grid-template-columns:1fr;padding:22px}.study-command-scene{min-height:180px}.study-command-metrics{grid-template-columns:repeat(2,1fr)}.study-command-metrics div:nth-child(2){border-right:0}.study-command-metrics div:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.08)}}
+/* 901–1279: two columns, but the sidebar is still taking 216–244px, so give the
+   scene a little less and shrink the orbit to match rather than letting the
+   copy column get squeezed. */
+@media(min-width:901px) and (max-width:1279px){
+  .study-command-hero{grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr);gap:18px}
+  .study-orbit-one{width:215px;height:215px}
+  .study-orbit-two{width:162px;height:162px}
+  .study-command-core{width:110px;height:110px;border-radius:30px}
+  .study-3d-card{width:96px;padding:11px}
+}
 .pro-countdown {
   position: relative;
   z-index: 45;

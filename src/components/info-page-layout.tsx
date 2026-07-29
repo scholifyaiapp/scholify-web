@@ -38,7 +38,7 @@ export default function InfoPageLayout({ title, intro, updated, sections }: Info
   }, [])
 
   return (
-    <div className="min-h-screen" style={{ background: CREAM, color: INK }}>
+    <div className="min-h-dvh" style={{ background: CREAM, color: INK }}>
       <header
         className="sticky top-0 z-10 flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
         style={{ borderColor: BORDER, background: `${CREAM}E6` }}

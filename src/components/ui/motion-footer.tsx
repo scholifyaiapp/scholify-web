@@ -82,8 +82,18 @@ const STYLES = `
 }
 /* On touch / small screens the fixed + clip-path "reveal" made the footer links
    unreliable to tap. Fall back to a normal, statically-flowed footer so every
-   link is a plain tappable target. */
-@media (max-width: 768px) {
+   link is a plain tappable target.
+
+   Two conditions now trigger the fallback, not one:
+    · width < 1024 — tablets and small laptops, not just phones. At 900px the
+      reveal still worked but the 8xl heading and the link column had nowhere
+      to go inside one viewport.
+    · height < 760 — the mid-size-laptop case (1366×768, 1280×800 with browser
+      chrome ≈ 640–700px of viewport). The footer is height:100dvh with
+      overflow:hidden, so on a short screen the marquee + heading + links +
+      copyright simply did not fit and the bottom rows were clipped away.
+      Short-and-wide is the exact shape this footer could not handle. */
+@media (max-width: 1023px), (max-height: 760px) {
   .cinematic-footer-shell { height: auto !important; clip-path: none !important; }
   .cinematic-footer-wrapper { position: relative !important; height: auto !important; padding-top: 64px; padding-bottom: 24px; }
   .cinematic-footer-wrapper .footer-giant-bg-text { display: none; }
@@ -160,8 +170,8 @@ export function CinematicFooter({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: STYLES }} />
-      <div ref={wrapperRef} className="cinematic-footer-shell relative h-screen w-full" style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}>
-        <footer className="fixed bottom-0 left-0 flex h-screen w-full flex-col justify-between overflow-hidden bg-background text-foreground cinematic-footer-wrapper">
+      <div ref={wrapperRef} className="cinematic-footer-shell relative h-dvh w-full" style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}>
+        <footer className="fixed bottom-0 left-0 flex h-dvh w-full flex-col justify-between overflow-hidden bg-background text-foreground cinematic-footer-wrapper">
           <div className="footer-aurora absolute left-1/2 top-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px] pointer-events-none z-0" />
           <div className="footer-bg-grid absolute inset-0 z-0 pointer-events-none" />
           <div

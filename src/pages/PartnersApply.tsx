@@ -717,7 +717,7 @@ export default function PartnersApply() {
                   .
                 </p>
                 <div style={{ display: "grid", gap: 16 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 14 }}>
                     <div>
                       <label style={labelStyle}>Full name *</label>
                       <input style={field} value={form.name} onChange={set("name")} placeholder="Jane Doe" autoComplete="name" />
@@ -727,7 +727,7 @@ export default function PartnersApply() {
                       <input style={field} value={form.email} onChange={set("email")} placeholder="you@email.com" type="email" autoComplete="email" />
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 14 }}>
                     <div>
                       <label style={labelStyle}>University</label>
                       <input style={field} value={form.university ?? ""} onChange={set("university")} placeholder="LSE" />
@@ -741,7 +741,7 @@ export default function PartnersApply() {
                     <label style={labelStyle}>Where will you promote? (LinkedIn, Reddit, Instagram, TikTok, class…)</label>
                     <input style={field} value={form.socials ?? ""} onChange={set("socials")} placeholder="@yourhandle / channel / community" />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 14 }}>
                     <div>
                       <label style={labelStyle}>Audience size</label>
                       <input style={field} value={form.audienceSize ?? ""} onChange={set("audienceSize")} placeholder="e.g. 3,000" />

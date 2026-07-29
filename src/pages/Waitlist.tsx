@@ -468,6 +468,13 @@ export default function Waitlist() {
       </footer>
 
       <style>{`
+        /* Tablets and small laptops fell into the desktop rules: the feature
+           row stayed 4-up, so each card was ~225px and its label wrapped to
+           three lines. Two-up is the honest reading of that width — the jump
+           was 4 → 2 at 800px with nothing in between. */
+        @media (min-width: 801px) and (max-width: 1080px) {
+          .waitlist-features { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
         @media (max-width: 800px) {
           .waitlist-feedback { grid-template-columns: 1fr !important; }
           .waitlist-hero { grid-template-columns: 1fr !important; padding-top: 24px !important; }
