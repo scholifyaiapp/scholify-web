@@ -112,6 +112,9 @@ const CHAPTER_MODULES: Record<string, Loader[]> = {
   MA: [
     () => import("@/lib/acca-study-ma-official"),
   ],
+  // BT is authored as a 26-chapter TREE across its six syllabus areas (see
+  // acca-study-bt-official.ts). `collect` reads arrays as well as single objects,
+  // so a paper with many chapters per area needs no special handling here.
   BT: [
     () => import("@/lib/acca-study-bt-official"),
   ],
