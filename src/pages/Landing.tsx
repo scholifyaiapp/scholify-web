@@ -39,10 +39,10 @@ import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
-import { PRELAUNCH_MODE } from "@/lib/launch"
+import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
 
-const SIGN_IN_PATH = PRELAUNCH_MODE ? "/sign-in?team=1&next=/admin" : "/sign-in"
-const SIGN_UP_PATH = PRELAUNCH_MODE ? "/sign-up?team=1" : "/sign-up"
+const SIGN_IN_PATH = signInPath(PRELAUNCH_MODE ? "/admin" : undefined)
+const SIGN_UP_PATH = signUpPath()
 
 const Entropy = lazy(() =>
   import("@/components/ui/entropy").then((m) => ({ default: m.Entropy }))

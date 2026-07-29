@@ -18,6 +18,7 @@ import {
 } from "@/components/auth/auth-ui"
 import { CharacterLeftPanel } from "@/components/auth/auth-characters"
 import { ScholifyLockup } from "@/components/brand"
+import { signUpPath } from "@/lib/launch"
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
@@ -242,7 +243,13 @@ export default function SignIn() {
   }, [lockSeconds])
 
   const locked = lockSeconds > 0
-  const canSubmit = email.trim().length > 0 && password.length > 0 && !locked
+  /*
+   * Only the lockout disables the button. It used to also require both fields to
+   * be non-empty, which made "Sign in" a dead grey control on an empty form and
+   * left the "Email is required." / "Password is required." messages
+   * unreachable — the exact same silent-refusal problem as the sign-up button.
+   */
+  const canSubmit = !locked
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -314,7 +321,13 @@ export default function SignIn() {
       setGoogleLoading(false)
       return
     }
-    // Demo mode resolves instantly; real OAuth redirects away before this runs.
+    /*
+     * Real OAuth navigates away before this runs; only demo mode reaches it.
+     * Releasing the button either way matters: if the redirect never happens —
+     * a blocked popup, an extension intercepting it — the button previously
+     * stayed disabled with no error, so the only way out was a page reload.
+     */
+    setGoogleLoading(false)
     const requested = new URLSearchParams(location.search).get("next")
     navigate(safeInternalPath(requested))
   }
@@ -437,6 +450,9 @@ export default function SignIn() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
+                // Without a live region a screen-reader user gets no indication
+                // at all that the sign-in failed.
+                role="alert"
                 style={{
                   color: "#FF453A",
                   fontSize: 13,
@@ -487,7 +503,7 @@ export default function SignIn() {
         >
           Don't have an account?{" "}
           <Link
-            to="/sign-up?team=1"
+            to={signUpPath()}
             style={{
               color: "rgba(200,0,0,0.9)",
               textDecoration: "none",

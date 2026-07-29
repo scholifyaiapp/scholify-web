@@ -7,7 +7,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import PaymentMethods from "@/components/PaymentMethods"
 import PartnerLogos from "@/components/ui/partner-logos"
 import FeedbackForm from "@/components/FeedbackForm"
-import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, PARTNER_PROGRAM_VISIBLE } from "@/lib/launch"
+import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, PARTNER_PROGRAM_VISIBLE, signInPath } from "@/lib/launch"
 
 const RED = "#C80000"
 const INK = "#14141A"
@@ -448,7 +448,7 @@ export default function Waitlist() {
             <Link to="/privacy" style={{ color: "inherit" }}>Privacy</Link> · <Link to="/terms" style={{ color: "inherit" }}>Terms</Link>
           </span>
           <Link
-            to="/sign-in?team=1&next=/admin"
+            to={signInPath("/admin")}
             aria-label="Open the private Scholify admin panel"
             style={{
               display: "inline-flex",

@@ -6,6 +6,7 @@ import { Spinner } from "@/components/auth/auth-ui"
 import { Icon } from "@/components/acca/ui"
 import { claimCapturedAffiliate } from "@/lib/affiliate"
 import { identifyUser, trackEvent } from "@/lib/analytics"
+import { signInPath } from "@/lib/launch"
 
 /*
  * OAuth return handler. Google (and any future provider) redirects here
@@ -120,7 +121,7 @@ export default function AuthCallback() {
               {error}
             </p>
             <Link
-              to="/sign-in"
+              to={signInPath()}
               style={{
                 display: "inline-block",
                 marginTop: 24,

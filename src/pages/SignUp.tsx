@@ -19,6 +19,7 @@ import {
   itemVariants,
 } from "@/components/auth/auth-ui"
 import { ScholifyLockup } from "@/components/brand"
+import { signInPath } from "@/lib/launch"
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
@@ -265,7 +266,7 @@ function ConfirmEmailPanel({ email }: { email: string }) {
       </p>
 
       <Link
-        to="/sign-in"
+        to={signInPath()}
         style={{
           display: "inline-block",
           marginTop: 28,
@@ -329,7 +330,30 @@ export default function SignUp() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (loading || !isValid) return
+    if (loading) return
+
+    /*
+     * SAY WHAT IS MISSING instead of just refusing.
+     *
+     * The submit button used to be `disabled={!isValid}`, so "Start for free" sat
+     * there grey and unclickable until all five conditions were met — with
+     * nothing naming the one that wasn't. An unticked terms box or a 7-character
+     * password produced a dead button and no explanation, which is
+     * indistinguishable from a broken button. The button is now always live and
+     * the form answers on submit.
+     */
+    if (!isValid) {
+      setFormError(
+        !firstName.trim() || !lastName.trim()
+          ? "Please enter your first and last name."
+          : !EMAIL_RE.test(email.trim())
+            ? "Please enter a valid email address."
+            : password.length < 8
+              ? "Your password needs at least 8 characters."
+              : "Please accept the Terms and Privacy Policy to continue.",
+      )
+      return
+    }
 
     setLoading(true)
     setFormError(null)
@@ -362,7 +386,13 @@ export default function SignUp() {
     } catch {
       /* analytics/referral are best-effort */
     }
-    navigate("/dashboard")
+    /*
+     * Straight to onboarding, not /dashboard. The comment above always said
+     * "go straight to onboarding" but the code sent new accounts to /dashboard,
+     * which then bounced them to /welcome itself — a visible double redirect
+     * through a gated route, for a user who by definition has no plan yet.
+     */
+    navigate("/welcome", { replace: true })
   }
 
   const handleGoogle = async () => {
@@ -375,8 +405,13 @@ export default function SignUp() {
       setGoogleLoading(false)
       return
     }
-    // Demo mode resolves instantly; real OAuth redirects away before this runs.
-    navigate("/dashboard")
+    /*
+     * Real OAuth redirects away before this line runs; only demo mode reaches it.
+     * If neither happens — a blocked redirect, a COOP-isolated popup — the button
+     * would otherwise stay disabled forever with no error, so hand control back.
+     */
+    setGoogleLoading(false)
+    navigate("/welcome", { replace: true })
   }
 
   // After sign-up with email confirmation ON, show the inbox panel instead.
@@ -515,6 +550,9 @@ export default function SignUp() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
+                // Without a live region a screen-reader user gets no indication
+                // at all that the submit produced an error.
+                role="alert"
                 style={{ color: "#FF453A", fontSize: 13, marginTop: 16, overflow: "hidden" }}
               >
                 {formError}
@@ -522,13 +560,12 @@ export default function SignUp() {
             )}
           </AnimatePresence>
 
-          {/* Submit */}
+          {/* Submit — never disabled; handleSubmit names whatever is missing. */}
           <motion.div variants={itemVariants} custom={7} style={{ marginTop: 24 }}>
             <SubmitButton
               label="Create account →"
               loadingLabel="Creating account..."
               loading={loading}
-              disabled={!isValid}
             />
           </motion.div>
         </form>
@@ -560,7 +597,7 @@ export default function SignUp() {
         >
           Already have an account?{" "}
           <Link
-            to="/sign-in"
+            to={signInPath()}
             style={{ color: "rgba(200,0,0,0.9)", textDecoration: "none", fontWeight: 500 }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(200,0,0,1)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,0,0,0.9)")}

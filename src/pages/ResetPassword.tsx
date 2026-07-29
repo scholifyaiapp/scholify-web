@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { ScholifyLockup } from "@/components/brand"
+import { signInPath } from "@/lib/launch"
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -60,7 +61,7 @@ export default function ResetPassword() {
             {busy ? "Updating…" : ready ? "Update password" : "Verifying link…"}
           </button>
         </form>
-        <Link to="/sign-in?team=1" style={{ display: "inline-block", marginTop: 20, color: "var(--sch-tx-2)", fontSize: 13 }}>Back to sign in</Link>
+        <Link to={signInPath()} style={{ display: "inline-block", marginTop: 20, color: "var(--sch-tx-2)", fontSize: 13 }}>Back to sign in</Link>
       </section>
     </main>
   )
