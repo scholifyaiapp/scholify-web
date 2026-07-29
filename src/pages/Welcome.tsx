@@ -32,6 +32,7 @@ import {
 import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
+import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
 import {
   ChoiceCard,
   ChoiceGroup,
@@ -239,6 +240,8 @@ export default function Welcome() {
   const [resultError, setResultError] = useState("")
   const [finishBusy, setFinishBusy] = useState(false)
   const [finishError, setFinishError] = useState("")
+  /** New-learner exit: hand over to the plan build → reveal → commit sequence. */
+  const [planReveal, setPlanReveal] = useState(false)
   const levels = useMemo(() => paperLevels(), [])
   const sittings = useMemo(() => nextSittings(3), [])
   const sessionPaper = paper !== null && !ON_DEMAND.has(paper)
@@ -369,6 +372,18 @@ export default function Welcome() {
     trackEvent("diagnostic_offered", { paper, learnerRoute, mode, assessmentPath: resultChoice })
     navigate(`/study/diagnostic?mode=${mode}&next=paywall`)
   }
+  /*
+   * The new-learner exit. This used to navigate straight to /dashboard, so the
+   * learner pressed "Build my plan and start learning" and simply landed in the
+   * app — no generation, no plan, no ask. ZeroPlanReveal (which already
+   * existed but was never mounted anywhere) is that missing sequence: build →
+   * plan → commit → paywall. It renders in place rather than as a route so the
+   * handover from the last onboarding slide has no navigation flash.
+   *
+   * persist() has already run by then, including markAccaOnboarded(), so a
+   * reload mid-reveal lands the learner in their finished plan rather than back
+   * at step 1.
+   */
   const finishNewLearner = () => {
     if (finishBusy) return
     setFinishError("")
@@ -378,7 +393,7 @@ export default function Welcome() {
     setStartMode("zero")
     trackEvent("personalised_plan_generated", { ...onboardingProps(), route: "new", assessmentPath: "embedded" })
     trackEvent("onboarding_complete", { ...onboardingProps(), learnerRoute: "new", exit: "learning" })
-    navigate("/dashboard")
+    setPlanReveal(true)
   }
   const finishWithResult = async () => {
     if (!resultAnalysis || !resultFile || finishBusy) return
@@ -571,6 +586,18 @@ export default function Welcome() {
       : "Use course progress, a targeted gap check, or an optional detailed result PDF.",
     "",
   ]
+
+  /* ═══ PLAN BUILD → REVEAL → COMMIT → PAYWALL ═══
+     Takes over both shells once the new learner finishes onboarding. Its own
+     layout is fixed/inset-0 and scrolls, so it works at any viewport. */
+  if (planReveal && paper) {
+    return (
+      <ZeroPlanReveal
+        paperId={paper}
+        onDone={(dest) => navigate(dest === "study" ? "/study" : "/dashboard")}
+      />
+    )
+  }
 
   /* ═══ MOBILE ═══ */
   if (isMobile) {

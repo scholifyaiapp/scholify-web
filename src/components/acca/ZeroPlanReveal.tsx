@@ -1,34 +1,80 @@
-import { useMemo, useState, type ReactNode } from "react"
-import { motion, AnimatePresence } from "motion/react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, C, type IconName } from "@/components/acca/ui"
 import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import PaywallModal from "@/components/PaywallModal"
+import { usePaperContent } from "@/hooks/usePaperContent"
+import { trackEvent } from "@/lib/analytics"
 import { getPaper } from "@/lib/acca"
 import { getPlan, daysUntilExam } from "@/lib/acca-plan"
 import { MOCK_GATE } from "@/lib/acca-loop"
+import { TRIAL_DAYS } from "@/lib/entitlement"
 
 /*
- * ZeroPlanReveal — the cinematic plan-generation moment for the learner who
- * chose "Start learning" (StartMode zero) at onboarding.
+ * ZeroPlanReveal — the plan-generation moment for the learner who chose
+ * "Start learning" (StartMode zero) at onboarding.
  *
- * The assess path already gets a full reveal after the diagnostic; the
- * zero-start learner used to be dropped on the dashboard with no ceremony at
- * all — their plan silently existed. This is their wow moment: Charles visibly
- * builds the plan from their ONBOARDING answers (paper, minutes, slot,
- * target, exam date) — honest that it's profile-built, not evidence-built —
- * and shows the exact road: learn the foundations → diagnostic unlocks →
- * missions → mocks → exam day.
+ * The assess path gets a reveal after its diagnostic; the zero-start learner
+ * used to be dropped straight onto the dashboard with no ceremony at all —
+ * their plan silently existed and the app "started without anything". This is
+ * their moment, in three beats:
+ *
+ *   1. BUILDING  Charles visibly builds the plan from their onboarding answers
+ *                (paper, minutes, slot, target, exam date). The wait is REAL:
+ *                the paper's content chunk is downloading behind it, and the
+ *                sequence will not hand over until both the choreography has
+ *                played AND the content has landed. So the loader is honest —
+ *                it is not a timer pretending to be work.
+ *   2. PLAN      The concrete day-by-day (PlanDashboard) — what they actually
+ *                get, before anything is asked of them.
+ *   3. COMMIT    The emotional close, then the paywall. Deliberately a separate
+ *                beat rather than a modal that ambushes the "Start day 1"
+ *                button: the learner sees their own numbers, is told plainly
+ *                that their trial is shorter than their plan, and chooses.
+ *                Declining still starts day 1 — this beat never blocks the app.
+ *                (The hard block is route-guards.tsx, and only after the trial
+ *                actually expires. Copy here must not promise a free tier,
+ *                because there isn't one.)
  */
+
+type Stage = "building" | "plan" | "commit"
 
 export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; onDone: (dest: "study" | "dashboard") => void }) {
   const paper = getPaper(paperId)
   const plan = getPlan(paperId)
   const days = daysUntilExam(paperId)
-  const [ready, setReady] = useState(false)
+  const reduced = useReducedMotion()
+  const [stage, setStage] = useState<Stage>("building")
   const [showPaywall, setShowPaywall] = useState(false)
+
+  /*
+   * The real work behind the loader. Kicking the paper's content chunk off here
+   * means the choreography and the download overlap, so the learner waits once
+   * instead of twice — and PlanDashboard's projectPlan() reads a loaded paper
+   * rather than falling back to a synthesised week.
+   */
+  const content = usePaperContent(paperId)
+  const [choreographyDone, setChoreographyDone] = useState(false)
+  /*
+   * Hard ceiling on the wait. `error` covers a rejected import, but a request
+   * that simply hangs (captive portal, dead 3G) never resolves OR rejects — and
+   * this is a full-screen takeover, so the learner would have no way out of the
+   * loader at all. After this we go on without the chunk: PlanDashboard falls
+   * back to the syllabus-derived week, which is still a real plan.
+   */
+  const CONTENT_WAIT_CEILING_MS = 9000
+  const [waitedLongEnough, setWaitedLongEnough] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setWaitedLongEnough(true), CONTENT_WAIT_CEILING_MS)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    if (choreographyDone && (content.ready || content.error || waitedLongEnough)) setStage("plan")
+  }, [choreographyDone, content.ready, content.error, waitedLongEnough])
 
   const foundations = (paper?.areas ?? []).slice(0, 3)
   const firstArea = foundations[0]
@@ -45,6 +91,26 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
+
+  /*
+   * The commitment numbers. Every one is derived from what they actually chose,
+   * so nothing here is a stock figure: sessions come from their exam date and
+   * days-per-week, questions and hours from their own daily block.
+   */
+  const scale = useMemo(() => {
+    if (days === null || days <= 0) return null
+    const perWeek = plan.daysPerWeek || 6
+    const sessions = Math.max(1, Math.round((days * perWeek) / 7))
+    return {
+      sessions,
+      questions: sessions * (plan.dailyGoal || 15),
+      hours: Math.max(1, Math.round((sessions * (plan.dailyMinutes || 25)) / 60)),
+    }
+  }, [days, plan.daysPerWeek, plan.dailyGoal, plan.dailyMinutes])
+
+  useEffect(() => {
+    if (stage === "commit") trackEvent("plan_commit_shown", { paper: paperId, days, hasDate: days !== null })
+  }, [stage, paperId, days])
 
   if (!paper) return null
 
@@ -66,7 +132,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--sch-bg, #FAFAF7)", overflowY: "auto", overflowX: "hidden", zIndex: 50, fontFamily: "var(--sch-font)" }}>
       <AnimatePresence mode="wait">
-        {!ready ? (
+        {stage === "building" ? (
           <motion.div
             key="building"
             exit={{ opacity: 0, scale: 0.98 }}
@@ -74,23 +140,37 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
             style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
           >
             <div style={{ width: "100%", maxWidth: 420 }}>
-              <CinematicReveal phases={phases} accent={C.brand} perPhaseMs={950} onComplete={() => setReady(true)} />
+              <CinematicReveal phases={phases} accent={C.brand} perPhaseMs={950} onComplete={() => setChoreographyDone(true)} />
+              {/* Only shown if the content download is the thing still running —
+                  i.e. the learner is on a slow connection and the choreography
+                  finished first. Never a fake message. */}
+              {choreographyDone && !content.ready && !content.error && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  style={{ marginTop: 18, textAlign: "center", fontSize: 12.5, color: C.faint }}
+                >
+                  Loading your {paperId} material…
+                </motion.div>
+              )}
             </div>
           </motion.div>
-        ) : (
+        ) : stage === "plan" ? (
           <motion.div
             key="plan"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.4 }}
             style={{ maxWidth: 560, margin: "0 auto", padding: "40px 22px 48px" }}
           >
             {/* headline */}
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2, color: C.brand, marginBottom: 10 }}>
-                CHARLES BUILT THIS FROM YOUR TELEMETRY
+                CHARLES BUILT THIS FROM YOUR ANSWERS
               </div>
-              <h1 style={{ fontSize: 30, fontWeight: 850, letterSpacing: "-0.8px", color: C.text, margin: "0 0 8px", lineHeight: 1.15 }}>
+              <h1 style={{ fontSize: "clamp(25px, 6vw, 30px)", fontWeight: 850, letterSpacing: "-0.8px", color: C.text, margin: "0 0 8px", lineHeight: 1.15 }}>
                 Your {paperId} <span style={iriText}>plan is ready.</span>
               </h1>
               <p style={{ fontSize: 14.5, color: C.soft, lineHeight: 1.55, margin: "0 0 22px" }}>
@@ -167,7 +247,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 whileHover={{ y: -1 }}
-                onClick={() => setShowPaywall(true)}
+                onClick={() => setStage("commit")}
                 style={{
                   width: "100%", padding: "16px 18px", borderRadius: 14, border: "none", cursor: "pointer",
                   background: IRIDESCENT, color: "#fff", fontWeight: 800, fontSize: 15.5,
@@ -184,11 +264,134 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               </button>
             </Reveal>
           </motion.div>
+        ) : (
+          /* ── COMMIT ── the emotional close, then the ask ─────────── */
+          <motion.div
+            key="commit"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.45 }}
+            style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 22px" }}
+          >
+            <div style={{ width: "100%", maxWidth: 500, textAlign: "center" }}>
+              <Reveal delay={0}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2, color: C.brand, marginBottom: 14 }}>
+                  ONE THING LEFT
+                </div>
+              </Reveal>
+
+              {/* The headline number. Their exam date, or their syllabus if they
+                  haven't booked one — never a placeholder. */}
+              <Reveal delay={0.1}>
+                {days !== null && days > 0 ? (
+                  <h1 style={{ margin: 0, fontWeight: 850, letterSpacing: "-1.4px", color: C.text, lineHeight: 1.04, fontSize: "clamp(30px, 8vw, 44px)" }}>
+                    Charles has planned<br />
+                    <motion.span
+                      initial={reduced ? undefined : { opacity: 0, scale: 0.92 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.35, type: "spring", stiffness: 240, damping: 20 }}
+                      style={{ ...iriText, fontVariantNumeric: "tabular-nums", display: "inline-block" }}
+                    >
+                      all {days} days.
+                    </motion.span>
+                  </h1>
+                ) : (
+                  <h1 style={{ margin: 0, fontWeight: 850, letterSpacing: "-1.4px", color: C.text, lineHeight: 1.04, fontSize: "clamp(30px, 8vw, 44px)" }}>
+                    Every area of {paperId},<br />
+                    <span style={{ ...iriText, display: "inline-block" }}>already sequenced.</span>
+                  </h1>
+                )}
+              </Reveal>
+
+              {/* Their own numbers, counted up. */}
+              {scale && (
+                <Reveal delay={0.45}>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", margin: "26px 0 0" }}>
+                    <ScaleStat value={scale.sessions} label="study sessions" />
+                    <ScaleStat value={scale.questions} label="questions waiting" />
+                    <ScaleStat value={scale.hours} label="hours mapped" suffix="h" />
+                  </div>
+                </Reveal>
+              )}
+
+              {/* The emotional beat. Anchored to the one published fact the
+                  landing page already uses — no invented statistics. */}
+              <Reveal delay={0.6}>
+                <p style={{ fontSize: "clamp(14.5px, 3.6vw, 16px)", lineHeight: 1.6, color: C.muted, margin: "26px auto 0", maxWidth: 430 }}>
+                  Around half of candidates fail a typical Applied Skills sitting. Not for lack of ability —
+                  because nobody ever handed them the next hour's work.
+                  {scale ? <> Yours is written. All {scale.sessions} of them.</> : <> Yours is written, area by area.</>}
+                </p>
+              </Reveal>
+
+              <Reveal delay={0.72}>
+                <p style={{ fontSize: "clamp(14.5px, 3.6vw, 16px)", lineHeight: 1.6, color: C.text, fontWeight: 750, margin: "16px auto 0", maxWidth: 430 }}>
+                  There is exactly one thing this plan cannot do for you: show up tomorrow.
+                </p>
+              </Reveal>
+
+              {/*
+                * The ask, stated truthfully. There is NO free tier to fall back
+                * on: ProtectedRoute hard-blocks the app once a used trial
+                * expires (see route-guards.tsx), so any "free forever" framing
+                * here would be a lie the learner discovers on day 4.
+                *
+                * The true version is the stronger one anyway — the gap between
+                * a 3-day trial and a plan measured in months is real tension
+                * that needs no embellishment.
+                */}
+              <Reveal delay={0.84}>
+                <div style={{
+                  display: "flex", gap: 11, alignItems: "flex-start", textAlign: "left",
+                  margin: "26px auto 0", maxWidth: 430, padding: "14px 16px", borderRadius: 14,
+                  border: `1px solid ${C.brandLine}`, background: "linear-gradient(135deg, rgba(200,0,0,0.05), var(--sch-card, #fff))",
+                }}>
+                  <span style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, display: "grid", placeItems: "center", background: C.brandSoft }}>
+                    <Icon name="time" size={16} color={C.brand} />
+                  </span>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.55, color: C.soft }}>
+                    {scale
+                      ? <><b style={{ color: C.text }}>Your plan runs {days} days. Your trial covers {TRIAL_DAYS}.</b>{" "}</>
+                      : <><b style={{ color: C.text }}>Your trial covers the next {TRIAL_DAYS} days.</b>{" "}</>}
+                    It's already running and no card was needed — nothing is charged today. Choosing a plan is
+                    what keeps the mocks, the AI Examiner and every paper open after that.
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.96}>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ y: -1 }}
+                  onClick={() => {
+                    trackEvent("plan_commit_upgrade_clicked", { paper: paperId, days })
+                    setShowPaywall(true)
+                  }}
+                  style={{
+                    width: "100%", marginTop: 26, padding: "17px 18px", borderRadius: 14, border: "none", cursor: "pointer",
+                    background: IRIDESCENT, color: "#fff", fontWeight: 800, fontSize: 16,
+                    boxShadow: "0 12px 32px rgba(200,0,0,0.30)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  }}
+                >
+                  Unlock everything Charles planned <Icon name="arrow" size={17} color="#fff" />
+                </motion.button>
+                <button
+                  onClick={() => {
+                    trackEvent("plan_commit_declined", { paper: paperId, days })
+                    onDone("study")
+                  }}
+                  style={{ width: "100%", marginTop: 10, padding: 13, borderRadius: 12, border: "none", background: "transparent", color: C.soft, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                >
+                  Start day 1 — I'll decide later
+                </button>
+              </Reveal>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* The plan reveal leads to the trial paywall, same as the assess path.
-          Dismissing still drops the learner into their (free) plan. */}
+      {/* Dismissing the paywall still starts day 1 — they have the rest of the
+          trial to decide, and Settings/pricing stay reachable after it. */}
       <PaywallModal open={showPaywall} type="general" onClose={() => { setShowPaywall(false); onDone("study") }} />
     </div>
   )
@@ -196,6 +399,36 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
 
 function SectionTag({ children }: { children: ReactNode }) {
   return <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: C.faint, marginBottom: 10 }}>{children}</div>
+}
+
+/** A counted-up commitment number. */
+function ScaleStat({ value, label, suffix = "" }: { value: number; label: string; suffix?: string }) {
+  const reduced = useReducedMotion()
+  const [shown, setShown] = useState(reduced ? value : 0)
+
+  useEffect(() => {
+    if (reduced) { setShown(value); return }
+    const DURATION = 900
+    let raf = 0
+    let t0 = 0
+    const tick = (t: number) => {
+      if (!t0) t0 = t
+      const p = Math.min(1, (t - t0) / DURATION)
+      setShown(Math.round(value * (1 - Math.pow(1 - p, 3))))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, reduced])
+
+  return (
+    <div style={{ minWidth: 96, flex: "1 1 96px", maxWidth: 150, padding: "13px 10px", borderRadius: 14, border: `1px solid ${C.border}`, background: "var(--sch-card, #fff)" }}>
+      <div style={{ fontSize: "clamp(20px, 5.5vw, 25px)", fontWeight: 850, letterSpacing: "-0.03em", color: C.text, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
+        {shown.toLocaleString("en-GB")}{suffix}
+      </div>
+      <div style={{ fontSize: 11, color: C.faint, marginTop: 3, lineHeight: 1.3 }}>{label}</div>
+    </div>
+  )
 }
 
 function Reveal({ delay, children }: { delay: number; children: ReactNode }) {
