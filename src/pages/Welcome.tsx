@@ -31,9 +31,10 @@ import {
 } from "@/lib/acca-learner-baseline"
 import { shapeDay } from "@/lib/acca-schedule"
 import { registerPracticeTime } from "@/lib/reminders"
-import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
-import { onboardingSteps, SLIDE_POSES } from "@/lib/acca-onboarding-steps"
+import { buildOnboardingGuide, MIN_DAILY_MINUTES, TARGET_DAILY_MINUTES, type GuideFix, type OnboardingGuide } from "@/lib/acca-onboarding-guide"
+import { onboardingSteps, SLIDE_POSES, TIME_STEP, EXAM_DATE_STEP } from "@/lib/acca-onboarding-steps"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
+import { CapacityPlan, MinutesNudge } from "@/components/acca/CapacityPlan"
 import ZeroPlanReveal from "@/components/acca/ZeroPlanReveal"
 import {
   ChoiceCard,
@@ -285,6 +286,47 @@ export default function Welcome() {
       return next
     })
   }, [visibleSteps])
+
+  /** Jump straight to a step by its index in the deck (not a relative move). */
+  const goToStep = useCallback((target: number) => {
+    setStep((s) => {
+      if (!visibleSteps.includes(target) || target === s) return s
+      setDir(target > s ? 1 : -1)
+      trackEvent("onboarding_step", { step: target, direction: target > s ? "forward" : "back" })
+      return target
+    })
+  }, [visibleSteps])
+
+  /*
+   * Apply one of Charles's capacity fixes, then land the learner on the step that
+   * owns the value so they can see what changed and adjust it further.
+   *
+   * Deliberately NOT silent: changing the answer under them and staying on the
+   * summary would leave them unsure what happened, and the daily-time and
+   * exam-date steps both carry context (the micro-copy, the sitting weeks) that
+   * makes the new number make sense. The exception is "move to a later sitting",
+   * where Charles cannot pick FOR them — which sitting to take is a real-world
+   * decision about their own year, so that one only navigates.
+   */
+  const applyGuideFix = useCallback((fix: GuideFix) => {
+    trackEvent("onboarding_capacity_fix", {
+      kind: fix.kind,
+      paper,
+      from: fix.kind === "sitting" ? null : fix.from,
+      to: fix.kind === "sitting" ? fix.weeksNeeded : fix.to,
+    })
+    if (fix.kind === "minutes") {
+      setMinutes(fix.to)
+      goToStep(TIME_STEP)
+      return
+    }
+    if (fix.kind === "days") {
+      setDaysPerWeek(fix.to)
+      goToStep(TIME_STEP)
+      return
+    }
+    goToStep(EXAM_DATE_STEP)
+  }, [goToStep, paper])
 
   function selectPaper(nextPaper: string | null) {
     if (nextPaper !== paper) {
@@ -563,6 +605,7 @@ export default function Welcome() {
         learnerRoute={learnerRoute}
         englishLevel={englishLevel}
         daysPerWeek={daysPerWeek}
+        onApplyFix={applyGuideFix}
       />
     ),
   }
@@ -1229,6 +1272,14 @@ function TimeSlide({
       <div style={{ marginTop: 11, padding: "14px 16px", borderRadius: 14, background: "rgba(200,0,0,.05)", border: "1px solid rgba(200,0,0,.14)", font: `500 13px/1.45 ${SANS}`, color: "#8A2222" }}>
         {micro}
       </div>
+      {/* Sitting on the floor of the picker gets said HERE, while the control is
+          still in front of the learner — not saved for the summary slide, where
+          acting on it means walking back through the deck. */}
+      {minutes <= MIN_DAILY_MINUTES && (
+        <MinutesNudge
+          text={`${minutes} minutes is the floor, not the target. Try to protect more than ${TARGET_DAILY_MINUTES} minutes a day — that is the pace most passers keep, and it is what lets Charles fit a topic, its practice and your flashcards into one sitting.`}
+        />
+      )}
       {/*
         * The exact start time. The four tiles are shortcuts, not the answer —
         * the clock below is, and it is what the three daily reminders are all
@@ -1473,8 +1524,40 @@ function ResultUploadSlide({
   )
 }
 
+/**
+ * CapacityPlan plus the one analytics event that matters: how often Charles tells
+ * a learner their plan is short, and with what numbers. Paired with
+ * `onboarding_capacity_fix` (fired in applyGuideFix) this answers whether the
+ * recommendation is actually acted on, or whether learners read the warning and
+ * carry on regardless — which would mean the copy, not the maths, needs work.
+ */
+function CapacityCoach({
+  guide, onApplyFix, compact, paper,
+}: {
+  guide: OnboardingGuide
+  onApplyFix: (fix: GuideFix) => void
+  compact: boolean
+  paper: string
+}) {
+  useEffect(() => {
+    if (guide.status !== "risky") return
+    trackEvent("onboarding_capacity_warning", {
+      paper,
+      status: guide.status,
+      deficitHours: guide.deficitHours,
+      coverage: Math.round(guide.coverage * 100),
+      availableWeeks: guide.availableWeeks,
+      recommendedWeeks: guide.recommendedWeeks,
+      fixes: guide.fixes.map((f) => f.kind).join(","),
+    })
+    // Once per verdict, not once per render — the numbers ARE the identity here.
+  }, [guide.status, guide.deficitHours, guide.coverage, guide.availableWeeks, guide.recommendedWeeks, guide.fixes, paper])
+
+  return <CapacityPlan guide={guide} onApplyFix={onApplyFix} compact={compact} />
+}
+
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek,
+  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek, onApplyFix,
 }: {
   paper: string
   minutes: number
@@ -1491,6 +1574,7 @@ function ReadySlide({
   learnerRoute: LearnerRoute | null
   englishLevel: CefrLevel | null
   daysPerWeek: number
+  onApplyFix: (fix: GuideFix) => void
 }) {
   const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate: examDate || null })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
@@ -1508,12 +1592,7 @@ function ReadySlide({
           the final screen. The capacity verdict he used to signal by pose is still
           carried by this card's colour and its "Charles recommends" headline — and
           the 82px it frees goes to the busiest slide in the flow. */}
-      <div style={{ marginBottom: 16, padding: "18px 20px", borderRadius: 17, background: guide.status === "risky" ? "rgba(200,0,0,.06)" : "rgba(14,159,110,.07)", border: `1px solid ${guide.status === "risky" ? "rgba(200,0,0,.22)" : "rgba(14,159,110,.25)"}` }}>
-        <div style={{ font: `800 15px/1.25 ${SANS}`, color: guide.status === "risky" ? RED : GREEN }}>Charles recommends · {guide.headline}</div>
-        <div style={{ marginTop: 9, display: "grid", gap: 7 }}>
-          {guide.advice.map((tip) => <div key={tip} style={{ display: "flex", gap: 8, font: `500 12.5px/1.4 ${SANS}`, color: BODY }}><span style={{ color: guide.status === "risky" ? RED : GREEN }}>●</span>{tip}</div>)}
-        </div>
-      </div>
+      <CapacityCoach guide={guide} onApplyFix={onApplyFix} compact={isMobile} paper={paper} />
       <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 18, overflow: "hidden", boxShadow: "0 12px 30px -22px rgba(20,20,26,.4)" }}>
         {rows.map(([k, v], i) => (
           <motion.div

@@ -34,6 +34,17 @@ export const ROUTE_STEP = 1
  */
 export const RESOURCE_STEP = 4
 
+/**
+ * "How much time can you protect, daily?" — minutes/day, days/week and the exact
+ * practice clock. Named because Charles's capacity fixes navigate here: when the
+ * plan is short on time, the remedy is applied and the learner is returned to the
+ * control that owns it.
+ */
+export const TIME_STEP = 5
+
+/** "Which sitting / when is your exam?" — the other lever a capacity fix uses. */
+export const EXAM_DATE_STEP = 6
+
 /** How a returner wants to set their baseline. A beginner has no use for it. */
 export const ASSESSMENT_STEP = 8
 
