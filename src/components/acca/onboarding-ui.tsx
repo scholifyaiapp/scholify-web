@@ -291,16 +291,16 @@ function Glyph({ kind }: { kind: StepKind }) {
 
 /* Card geometry. Position is derived from the index so a step cannot drift from
    its label or its connector. */
-const CARD_W = 68
+const CARD_W = 58
 const CARD_H = 46
-const STEP_X = 72 // horizontal advance per step
-const STEP_Y = 28 // how far each step rises
+const STEP_X = 61
+const STEP_Y = 0
 const BASE_X = 5
-const BASE_Y = 98
+const BASE_Y = 28
 
 const STEPS: { kind: StepKind; label: string[] }[] = [
-  { kind: "crosshair", label: ["Diagnostic"] },
-  { kind: "checklist", label: ["Daily", "missions"] },
+  { kind: "crosshair", label: ["Diagnose"] },
+  { kind: "checklist", label: ["Daily"] },
   { kind: "stopwatch", label: ["Mocks"] },
 ]
 
@@ -309,7 +309,7 @@ const cardY = (i: number) => BASE_Y - i * STEP_Y
 
 /* Summit, clear of the last card's top-right corner. */
 const SUMMIT_X = 242
-const SUMMIT_Y = 26
+const SUMMIT_Y = 51
 const SUMMIT_R = 21
 
 export function RouteClimb({ style }: { style?: CSSProperties }) {
@@ -319,7 +319,7 @@ export function RouteClimb({ style }: { style?: CSSProperties }) {
     <div style={style}>
       <div style={{ width: "100%", maxWidth: 420, margin: "0 auto" }}>
         <svg
-          viewBox="0 0 268 196"
+          viewBox="0 0 268 104"
           style={{ width: "100%", height: "auto", display: "block" }}
           role="img"
           aria-label="The Scholify loop as a climb: a diagnostic measures where you are, daily missions work your weakest areas, and mocks test you under exam conditions. The cycle then repeats from a higher level than before, and the summit is passing the exam."
@@ -331,6 +331,7 @@ export function RouteClimb({ style }: { style?: CSSProperties }) {
               <stop offset="100%" stopColor="#E08A07" />
             </linearGradient>
           </defs>
+          <path d="M63 51H221" fill="none" stroke="#D9CBC3" strokeWidth="1.5" strokeDasharray="3 4" />
 
           {/* Loop-back: from beneath the last step, round to the first. Dashed,
               because it means "again" rather than "another way forward". */}
@@ -348,8 +349,9 @@ export function RouteClimb({ style }: { style?: CSSProperties }) {
             initial={reduce ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={reduce ? { duration: 0 } : { delay: 0.55, duration: 0.45, ease: "easeOut" }}
+            display="none"
           />
-          <path d="M-4,-3.2 L4,0 L-4,3.2 Z" fill="rgba(200,0,0,.42)" transform="translate(28 151) rotate(-152)" />
+          <path d="M-4,-3.2 L4,0 L-4,3.2 Z" fill="rgba(200,0,0,.42)" transform="translate(28 151) rotate(-152)" display="none" />
           <text
             x={113}
             /* Below the arc's lowest point, not level with it. At y=170 the
@@ -357,6 +359,7 @@ export function RouteClimb({ style }: { style?: CSSProperties }) {
             y={188}
             textAnchor="middle"
             style={{ font: "600 8.5px " + MONO, letterSpacing: "0.1em", fill: MUTE }}
+            display="none"
           >
             REPEATS — ONE LEVEL HIGHER
           </text>
@@ -398,8 +401,9 @@ export function RouteClimb({ style }: { style?: CSSProperties }) {
                   <Glyph kind={step.kind} />
                 </g>
                 <text
-                  x={x + 33}
+                  x={x + CARD_W / 2}
                   y={y + 15}
+                  textAnchor="middle"
                   style={{ font: "600 7.5px " + MONO, letterSpacing: "0.09em", fill: MUTE }}
                 >
                   {"0" + (i + 1)}
@@ -407,9 +411,10 @@ export function RouteClimb({ style }: { style?: CSSProperties }) {
                 {step.label.map((word, w) => (
                   <text
                     key={word}
-                    x={x + 10}
+                    x={x + CARD_W / 2}
                     y={y + 31 + w * 10}
-                    style={{ font: "750 10px " + SANS, letterSpacing: "-0.01em", fill: INK }}
+                    textAnchor="middle"
+                    style={{ font: "750 9px " + SANS, letterSpacing: "-0.01em", fill: INK }}
                   >
                     {word}
                   </text>
