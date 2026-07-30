@@ -64,6 +64,14 @@ export function CinematicReveal({
 
   const current = phases[Math.min(step, phases.length - 1)]
   const progress = Math.min(1, (step + (step >= phases.length ? 1 : 0)) / phases.length)
+  const mascotPoses = [
+    "/charles/10-transparent.webp",
+    "/charles/11-transparent.webp",
+    "/charles/12-transparent.webp",
+    "/charles/13-transparent.webp",
+    "/charles/4-transparent.webp",
+  ] as const
+  const mascotPose = mascotPoses[Math.min(step, mascotPoses.length - 1)]
 
   const rings: Ring[] = [
     { size: 128, tiltX: 72, tiltY: 8, dur: 6, dir: 1, op: 0.9 },
@@ -85,8 +93,44 @@ export function CinematicReveal({
 
   return (
     <div style={{ textAlign: "center", padding: "36px 0 8px", userSelect: "none" }}>
+      <div style={{ position: "relative", height: 264, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 26 }}>
+        <motion.div
+          aria-hidden
+          animate={reduced ? undefined : { scale: [0.88, 1.08, 0.88], opacity: [0.16, 0.34, 0.16] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: "absolute", width: 208, height: 208, borderRadius: "50%", background: `radial-gradient(circle, ${accent}30 0%, ${accent}12 48%, transparent 72%)`, filter: "blur(3px)" }}
+        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={mascotPose}
+            src={mascotPose}
+            alt="Charles building your personalised study plan"
+            initial={reduced ? { opacity: 1 } : { opacity: 0, x: 24, scale: 0.88 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={reduced ? { opacity: 0 } : { opacity: 0, x: -24, scale: 0.92 }}
+            transition={{ duration: reduced ? 0.15 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+            style={{ position: "relative", zIndex: 1, width: 248, height: 248, objectFit: "contain", filter: `drop-shadow(0 22px 24px ${accent}24)` }}
+          />
+        </AnimatePresence>
+        {!reduced && (
+          <>
+            <motion.span
+              aria-hidden
+              animate={{ y: [0, -12, 0], opacity: [0.2, 0.75, 0.2] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              style={{ position: "absolute", left: "14%", top: "34%", width: 7, height: 7, borderRadius: "50%", background: accent }}
+            />
+            <motion.span
+              aria-hidden
+              animate={{ y: [0, 10, 0], opacity: [0.15, 0.6, 0.15] }}
+              transition={{ duration: 2.1, repeat: Infinity, ease: "easeInOut", delay: 0.35 }}
+              style={{ position: "absolute", right: "14%", top: "48%", width: 5, height: 5, borderRadius: "50%", background: accent }}
+            />
+          </>
+        )}
+      </div>
       {/* ── 3D stage ─────────────────────────────────────────────── */}
-      <div style={{ perspective: 1000, height: 264, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 26 }}>
+      <div aria-hidden style={{ perspective: 1000, height: 264, display: "none", alignItems: "center", justifyContent: "center", marginBottom: 26 }}>
         <motion.div
           style={{ position: "relative", width: 264, height: 264, transformStyle: "preserve-3d" }}
           animate={reduced ? {} : { rotateY: [-10, 10, -10], rotateX: [4, -4, 4] }}
