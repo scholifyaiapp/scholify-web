@@ -158,15 +158,16 @@ function faCases(needed: number, startIndex: number): OtCase[] {
  * Completes the 350 linked-question Section B inventory for the F1–F4 papers that
  * still rely on it.
  *
- * BT is EXCLUDED. It now has 18 authored multi-task questions worth exactly four
- * marks each — the real exam's Section B unit — in acca-cases-bt.ts. Padding that
- * to 350 linked questions would mean re-adding the generated units this replaced,
- * whose stems read "In review 7, situation 2 at Grove Co, which syllabus concept
- * should be applied?" at one mark apiece. A real MTQ bank of the right size beats
- * a large one of the wrong shape.
+ * BT and MA are EXCLUDED, because both now have authored MTQs at their real exam
+ * unit size: BT 18 units of exactly 4 marks (acca-cases-bt.ts) and MA 9 units of
+ * exactly 10 marks (acca-cases-ma.ts). Padding either to 350 linked questions
+ * would mean re-adding the generated units they replaced, whose stems read "In
+ * review 7, situation 2 at Grove Co, which syllabus concept should be applied?"
+ * at one mark apiece. A real MTQ bank of the right size beats a large one of the
+ * wrong shape.
  */
 export function completeF1F4SectionB(paper: string, authored: OtCase[], chapters: StudyChapter[]): OtCase[] {
-  if (paper === "BT") return authored
+  if (paper === "BT" || paper === "MA") return authored
   if (!TARGET_PAPERS.has(paper)) return authored
   const current = linkedCount(authored)
   if (current > F1_F4_CONTENT_TARGET.sectionB) {

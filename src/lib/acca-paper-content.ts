@@ -91,7 +91,19 @@ function collect<T extends Owned>(mods: ContentModule[], paperId: string): T[] {
 const QUESTION_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fa2"), () => import("@/lib/acca-content-fa3")],
   FR: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fr2"), () => import("@/lib/acca-content-fr3"), () => import("@/lib/acca-content-fr4"), () => import("@/lib/acca-content-fr5"), () => import("@/lib/acca-content-fr-official")],
-  MA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-ma2"), () => import("@/lib/acca-content-ma3"), () => import("@/lib/acca-content-ma-official")],
+  // The `acca-questions-ma-kit-*` modules are MA's per-chapter question kit:
+  // authored, applied questions indexed to a study chapter, with numeric entry
+  // used wherever the skill is a calculation. Like BT's kit they carry official
+  // syllabus areas and bypass the legacy area migration.
+  MA: [
+    () => import("@/lib/acca-content-core"),
+    () => import("@/lib/acca-content-ma2"),
+    () => import("@/lib/acca-content-ma3"),
+    () => import("@/lib/acca-content-ma-official"),
+    () => import("@/lib/acca-questions-ma-kit-ab"),
+    () => import("@/lib/acca-questions-ma-kit-c"),
+    () => import("@/lib/acca-questions-ma-kit-def"),
+  ],
   // The `acca-questions-bt-kit-*` modules are the per-chapter question kit:
   // authored, applied questions indexed to a study chapter. They carry official
   // syllabus areas and are exempt from the legacy BT area migration (see
@@ -189,7 +201,9 @@ const CASE_MODULES: Record<string, Loader[]> = {
   // BT's Section B is 18 authored multi-task questions at the real 4-mark unit
   // size — not the shared knowledge-paper cases, and not generated.
   BT: [() => import("@/lib/acca-cases-bt")],
-  MA: [() => import("@/lib/acca-cases-knowledge")],
+  // MA's Section B is 9 authored MTQs at the real 10-mark unit size, three each
+  // on budgeting, standard costing and performance measurement.
+  MA: [() => import("@/lib/acca-cases-ma")],
   FA: [() => import("@/lib/acca-cases-fa")],
   LW: [() => import("@/lib/acca-cases-knowledge")],
   FR: [() => import("@/lib/acca-cases-fr")],

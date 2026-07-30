@@ -30,7 +30,9 @@ export const QUESTION_COUNTS: Record<string, number> = {
   // BT is the first paper rebuilt to a per-chapter authored kit: 454 exam-standard
   // questions and no derived drills at all (see DRILL_COUNTS below).
   BT: 454,
-  MA: 177,
+  // MA is the second paper rebuilt to a per-chapter authored kit: 478
+  // exam-standard questions and no derived drills.
+  MA: 478,
   FA: 181,
   LW: 56,
   PM: 188,
@@ -58,7 +60,7 @@ export const DRILL_COUNTS: Record<string, number> = {
   // target outright, so there is no shortfall for drills to cover. This is the
   // state every paper is being rebuilt toward.
   BT: 0,
-  MA: 173,
+  MA: 0,
   FA: 169,
   LW: 294,
   PM: 162,

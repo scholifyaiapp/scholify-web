@@ -6,9 +6,18 @@ const AREA_B = new Set([
   "MA2-C-16", "MA2-C-17", "MA3-C-03",
 ])
 
-/** Preserve stable IDs while moving former five-bucket MA content to A-F. */
+/**
+ * Preserve stable IDs while moving former five-bucket MA content to A-F.
+ *
+ * Questions carrying a `chapter` were authored against the OFFICIAL syllabus and
+ * already hold the correct area, so they must pass through untouched. Without
+ * that guard the shift rules below (former A→A, B→C, C→D, D→E, everything else→F)
+ * would scramble the entire per-chapter question kit — moving Area B questions to
+ * C, C to D and so on. This map exists solely to relabel the LEGACY bank.
+ */
 export function mapMaQuestionsToOfficialSyllabus(questions: AccaQuestion[]): AccaQuestion[] {
   return questions.map((question) => {
+    if (question.chapter) return question
     let area: string
     if (AREA_B.has(question.id)) area = "B"
     else if (question.area === "A") area = "A"
