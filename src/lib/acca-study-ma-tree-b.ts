@@ -170,9 +170,9 @@ export const MA_TREE_06: StudyChapter = {
     "Averages, spread, expected values and the normal distribution. This chapter turns a column of numbers into a statement a manager can act on — and shows why the average alone is rarely enough to act on.",
   outcomes: [
     "Describe the five characteristics of big data and its three types",
-    "Describe the main uses of big data and analytics for a business",
+    "Say what a business actually does with big data, and what it costs to do it",
     "Distinguish categorical from continuous data, and descriptive from inferential analysis",
-    "Calculate the mean, mode and median for ungrouped and grouped data",
+    "Work out a mean, a mode and a median, from a raw list and from grouped frequencies",
     "Calculate measures of dispersion including range, variance and standard deviation",
     "Calculate expected values and use them in decision-making",
     "Explain the properties of a normal distribution and interpret normal distribution tables",
@@ -547,8 +547,8 @@ export const MA_TREE_07: StudyChapter = {
     "Construct a scatter diagram and a line of best fit",
     "Explain and interpret the correlation coefficient and the coefficient of determination",
     "Use linear regression coefficients to forecast costs and revenues",
-    "Adjust historical and forecast data for price movements",
-    "State the advantages and disadvantages of linear regression analysis",
+    "Restate figures from different years onto one price basis before analysing them",
+    "Weigh up where regression can be relied on and where it cannot",
   ],
   sections: [
     {
@@ -865,7 +865,7 @@ export const MA_TREE_08: StudyChapter = {
     "Calculate a trend using moving averages and by regression on time",
     "Calculate and apply seasonal variations under the additive and multiplicative models",
     "Produce a forecast combining trend and seasonal variation",
-    "State the advantages and disadvantages of time series analysis",
+    "Weigh up what time series analysis can and cannot tell you",
     "Explain the purpose of index numbers and calculate simple and weighted indices",
     "Describe the product life cycle and its implications for forecasting",
   ],

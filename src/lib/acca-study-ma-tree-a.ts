@@ -29,7 +29,7 @@ export const MA_TREE_01: StudyChapter = {
   outcomes: [
     "State the purpose and role of cost accounting and management accounting within a business",
     "Compare financial accounting with cost and management accounting on the points that get examined",
-    "Describe the managerial processes of planning, decision-making and control",
+    "Say what a manager is doing when they plan, when they decide and when they control",
     "Distinguish strategic, tactical and operational planning and the information each needs",
     "Distinguish data from information, and list the attributes of good information",
     "Explain the limitations of management information",
