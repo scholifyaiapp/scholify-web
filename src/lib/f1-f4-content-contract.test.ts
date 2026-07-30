@@ -10,18 +10,18 @@ import { getOtCases, otCaseMarks } from "@/lib/acca-cases"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
 /*
- * BT and MA have both outgrown this shared contract and have their own — see
- * bt-content-contract.ts and ma-content-contract.ts with their tests. Each holds
- * an authored bank with no derived drills (BT 454, MA 478) and authored MTQs at
- * its own real exam unit size — BT 18 units of 4 marks, MA 9 units of 10 marks —
- * rather than 350 generated 1-mark linked questions.
+ * BT, MA and FA have all outgrown this shared contract and have their own — see
+ * bt-content-contract.ts, ma-content-contract.ts and fa-content-contract.ts with
+ * their tests. Each holds an authored bank with no derived drills and authored MTQs
+ * at its own real exam unit size — BT 18 units of 4 marks, MA 9 units of 10 marks,
+ * FA 6 units of 15 marks — rather than 350 generated linked questions.
  *
  * That difference in unit size is exactly why a shared contract could not survive
  * the rebuild: it asserted one Section B shape across four papers whose real exams
- * have four different ones. The assertions below cover the two papers still sized
- * against the shared target, and this list should shrink to nothing.
+ * have four different ones. Only LW is still sized against the shared target, and
+ * this list should shrink to nothing.
  */
-const REBUILT_PAPERS = new Set(["BT", "MA"])
+const REBUILT_PAPERS = new Set(["BT", "MA", "FA"])
 const SHARED_INVENTORY_PAPERS = F1_F4_PAPERS.filter((paper) => !REBUILT_PAPERS.has(paper))
 
 describe("F1–F4 product structure", () => {
@@ -73,9 +73,9 @@ describe("F1–F4 product structure", () => {
   })
 
   it("serves genuine, correctly sized Section B MTQ units for every F1–F4 paper", () => {
-    // Only the papers still on the shared target appear here; BT and MA assert
+    // Only the papers still on the shared target appear here; BT, MA and FA assert
     // their own unit sizes in their own contract tests.
-    const unitMarks: Partial<Record<(typeof F1_F4_PAPERS)[number], number>> = { FA: 15, LW: 6 }
+    const unitMarks: Partial<Record<(typeof F1_F4_PAPERS)[number], number>> = { LW: 6 }
     for (const paperId of SHARED_INVENTORY_PAPERS) {
       expect(unitMarks[paperId], `${paperId} needs an expected MTQ unit size`).toBeDefined()
       const cases = getOtCases(paperId)

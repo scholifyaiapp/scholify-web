@@ -77,7 +77,11 @@ export const EXAM_BLUEPRINTS: Record<string, ExamBlueprint> = {
     durationMin: 120,
     sections: [
       ot("35 objective-test questions × 2 marks", 70),
-      otB("2 multi-task questions × 15 marks (consolidation and interpretation)", 30),
+      // The published FA blueprint names CONSOLIDATIONS and ACCOUNTS PREPARATION —
+      // the latter including a statement of cash flows — as Section B's two areas.
+      // Interpretation is examined in Section A, and the label said otherwise until
+      // the FA content rebuild.
+      otB("2 multi-task questions × 15 marks (consolidation and accounts preparation)", 30),
     ],
     providedInExam: null,
     cbeTools: [],

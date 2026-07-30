@@ -1,33 +1,70 @@
 /*
- * Originality check: does any of Scholify's authored BT content share a long
- * verbatim word sequence with the Kaplan/BPP source books?
+ * Originality check: does any of Scholify's authored content share a long verbatim
+ * word sequence with the Kaplan/BPP source books?
  *
  * Method: normalise both sides to a bare word stream (lowercase, letters and
- * digits only, single spaces). Index every N-word shingle in the four books, then
- * slide the same window over Scholify's authored strings and report every hit.
+ * digits only, single spaces). Index every N-word shingle in the books, then slide
+ * the same window over Scholify's authored strings and report every hit.
  *
- * A short match is meaningless — professional terminology is shared vocabulary,
- * not authorship ("the bargaining power of buyers", "segregation of duties",
- * "reasonable assurance"). A LONG match would indicate copied prose. So the check
- * reports at several window sizes and prints the actual matched text for judgement.
+ * A short match is meaningless — professional terminology is shared vocabulary, not
+ * authorship ("the bargaining power of buyers", "segregation of duties", "true and
+ * fair view", "lower of cost and net realisable value"). A LONG match would indicate
+ * copied prose. So the check reports at several window sizes and prints the actual
+ * matched text for judgement. Target: zero matches at 10+ words.
+ *
+ * ── One documented exception, and why ─────────────────────────────
+ * FA cannot reach zero at 10 words, because the OFFICIAL NAME of one of the
+ * statements it teaches — "the statement of profit or loss and other comprehensive
+ * income" — is itself ten words long. Two strings in the FA tree are that name and
+ * nothing else: a section heading and one multiple-choice option. It is an IFRS term
+ * of art and rewording it would make the content wrong, so both are left alone.
+ *
+ * FA is otherwise clean: 0 matches at 12, 15 and above. Everything that WAS matching
+ * on the first run has been reworded — the culprits were verbatim ACCA syllabus
+ * learning-outcome wording copied into `outcomes` arrays (about twenty of them), and
+ * IASB Conceptual Framework definitions of asset, liability, equity, income,
+ * depreciation, provisions and going concern absorbed word for word. Both classes are
+ * exactly what this check exists to catch: the syllabus and the standards are public,
+ * but a learner is paying for Scholify's explanation of them, not a transcription.
+ *
+ * Run it from the directory holding the extracted book text, with BOOKS and MINE set
+ * for the paper being authored:
+ *   node scripts/originality-check.cjs
  */
 const fs = require("fs")
 const path = require("path")
 
-const BOOKS = ["kaplan-st.txt", "kaplan-rk.txt", "bpp-kit.txt", "bpp-workbook.txt"]
+/*
+ * Set these two arrays for the paper under review. BOOKS are plain-text extracts of
+ * the approved-provider texts (produce them with pdf-parse, already a dependency);
+ * MINE are the authored source files for that paper.
+ *
+ * Current setting: FA (the third paper rebuilt). BT's and MA's settings are kept
+ * below in comments so an earlier paper can be re-checked without rediscovering the
+ * file names.
+ */
+const BOOKS = ["fa-study-text-2024-25.txt", "f3-kaplan-kit-2023-24.txt", "fa2-bpp-kit.txt"]
 const SRC_DIR = "C:/Users/User/Desktop/scholify-web-main/scholify-web-main/src/lib"
 const MINE = [
-  "acca-study-bt-tree-a.ts",
-  "acca-study-bt-tree-b.ts",
-  "acca-study-bt-tree-c.ts",
-  "acca-study-bt-tree-d.ts",
-  "acca-study-bt-tree-ef.ts",
-  "acca-questions-bt-kit-a.ts",
-  "acca-questions-bt-kit-b.ts",
-  "acca-questions-bt-kit-c.ts",
-  "acca-questions-bt-kit-def.ts",
-  "acca-cases-bt.ts",
+  "acca-study-fa-tree-ab.ts",
+  "acca-study-fa-tree-c.ts",
+  "acca-study-fa-tree-d1.ts",
+  "acca-study-fa-tree-d2.ts",
+  "acca-study-fa-tree-ef.ts",
+  "acca-study-fa-tree-g.ts",
+  "acca-study-fa-tree-hi.ts",
+  "acca-questions-fa-kit-abc.ts",
+  "acca-questions-fa-kit-d.ts",
+  "acca-questions-fa-kit-efg.ts",
+  "acca-questions-fa-kit-hi.ts",
+  "acca-cases-fa.ts",
 ]
+
+/* BT: BOOKS = ["kaplan-st.txt", "kaplan-rk.txt", "bpp-kit.txt", "bpp-workbook.txt"]
+ *     MINE  = acca-study-bt-tree-{a,b,c,d,ef}.ts, acca-questions-bt-kit-{a,b,c,def}.ts, acca-cases-bt.ts
+ * MA: BOOKS = ["ma-kaplan-st.txt", "ma-kaplan-kit.txt", "ma-bpp-st.txt", "ma-bpp-kit.txt"]
+ *     MINE  = acca-study-ma-tree-{a,b,c,d,ef}.ts, acca-questions-ma-kit-{ab,c,def}.ts, acca-cases-ma.ts
+ */
 
 const words = (s) =>
   s
@@ -51,9 +88,9 @@ for (const f of MINE) {
   /*
    * Line by line, so a "string" can never span from one literal's closing quote to
    * the next literal's opening quote and swallow the code and COMMENTS in between.
-   * The first cut of this did exactly that, which made the check compare
-   * maintainer comments as though they were published content — stricter than
-   * needed, but it also reported hits against text no learner ever sees.
+   * The first cut of this did exactly that, which made the check compare maintainer
+   * comments as though they were published content — stricter than needed, but it
+   * also reported hits against text no learner ever sees.
    *
    * Comment lines are skipped explicitly for the same reason: what matters is the
    * prose, stems, options and explanations that reach the learner.

@@ -33,7 +33,9 @@ export const QUESTION_COUNTS: Record<string, number> = {
   // MA is the second paper rebuilt to a per-chapter authored kit: 478
   // exam-standard questions and no derived drills.
   MA: 478,
-  FA: 181,
+  // FA is the third paper rebuilt to a per-chapter authored kit: 534 exam-standard
+  // questions, every one at the real Section A unit of 2 marks, and no derived drills.
+  FA: 534,
   LW: 56,
   PM: 188,
   TX: 237,
@@ -61,7 +63,7 @@ export const DRILL_COUNTS: Record<string, number> = {
   // state every paper is being rebuilt toward.
   BT: 0,
   MA: 0,
-  FA: 169,
+  FA: 0,
   LW: 294,
   PM: 162,
   TX: 113,

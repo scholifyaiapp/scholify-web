@@ -89,7 +89,20 @@ function collect<T extends Owned>(mods: ContentModule[], paperId: string): T[] {
 /* ── Per-paper module maps ────────────────────────────────────── */
 
 const QUESTION_MODULES: Record<string, Loader[]> = {
-  FA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fa2"), () => import("@/lib/acca-content-fa3")],
+  // The `acca-questions-fa-kit-*` modules are FA's per-chapter question kit:
+  // authored, applied questions indexed to a study chapter, every one at the real
+  // Section A unit of 2 marks, with numeric entry used wherever the skill is a
+  // computation. Like BT's and MA's kits they carry official syllabus areas and
+  // bypass the legacy area migration (see acca-fa-syllabus-map.ts).
+  FA: [
+    () => import("@/lib/acca-content-core"),
+    () => import("@/lib/acca-content-fa2"),
+    () => import("@/lib/acca-content-fa3"),
+    () => import("@/lib/acca-questions-fa-kit-abc"),
+    () => import("@/lib/acca-questions-fa-kit-d"),
+    () => import("@/lib/acca-questions-fa-kit-efg"),
+    () => import("@/lib/acca-questions-fa-kit-hi"),
+  ],
   FR: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fr2"), () => import("@/lib/acca-content-fr3"), () => import("@/lib/acca-content-fr4"), () => import("@/lib/acca-content-fr5"), () => import("@/lib/acca-content-fr-official")],
   // The `acca-questions-ma-kit-*` modules are MA's per-chapter question kit:
   // authored, applied questions indexed to a study chapter, with numeric entry
@@ -204,6 +217,9 @@ const CASE_MODULES: Record<string, Loader[]> = {
   // MA's Section B is 9 authored MTQs at the real 10-mark unit size, three each
   // on budgeting, standard costing and performance measurement.
   MA: [() => import("@/lib/acca-cases-ma")],
+  // FA's Section B is 6 authored MTQs at the real 15-mark unit size — three on
+  // accounts preparation and three on consolidation, the two areas the published
+  // blueprint names, ordered alternately so every mock form draws one of each.
   FA: [() => import("@/lib/acca-cases-fa")],
   LW: [() => import("@/lib/acca-cases-knowledge")],
   FR: [() => import("@/lib/acca-cases-fr")],
