@@ -15,8 +15,8 @@ export type CharlesPose =
 
 const SRC: Record<CharlesPose, string> = {
   wave: "/charles/6-transparent.webp", // waving hello — true transparent cutout
-  present: "/charles/7.webp", // open visor + telemetry — coaching/reveal
-  chart: "/charles/2.webp", // pointing at a chart — analytics/readiness
+  present: "/charles/5-transparent.webp", // clean full-body coach — coaching/reveal
+  chart: "/charles/5-transparent.webp", // clean full-body coach — analytics/readiness
   celebrate: "/charles/4-transparent.webp", // fists up + confetti — reward
   idea: "/charles/5-transparent.webp", // finger up — tip/idea
   calm: "/charles/3-transparent.webp", // arms crossed — steady / empty state
