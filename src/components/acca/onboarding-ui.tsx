@@ -315,7 +315,48 @@ const SUMMIT_R = 21
 export function RouteClimb({ style }: { style?: CSSProperties }) {
   const reduce = useReducedMotion()
 
+  const words = ["Diagnose", "Daily", "Mocks", "Pass"] as const
   return (
+    <div
+      role="list"
+      aria-label="How Scholify gets you exam-ready"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        width: "100%",
+        maxWidth: 560,
+        margin: "0 auto",
+        borderTop: "1px solid rgba(20,20,26,.12)",
+        borderBottom: "1px solid rgba(20,20,26,.12)",
+        ...style,
+      }}
+    >
+      {words.map((word, i) => (
+        <motion.div
+          key={word}
+          role="listitem"
+          initial={reduce ? { opacity: 1 } : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduce ? { duration: 0 } : { delay: 0.12 + i * 0.08, duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            minWidth: 0,
+            padding: "clamp(14px,3vw,20px) clamp(3px,1.4vw,12px)",
+            textAlign: "center",
+            borderLeft: i === 0 ? "none" : "1px solid rgba(20,20,26,.1)",
+          }}
+        >
+          <div style={{ font: `600 clamp(8px,2vw,10px)/1 ${MONO}`, letterSpacing: "0.14em", color: i === 3 ? RED : MUTE }}>
+            {String(i + 1).padStart(2, "0")}
+          </div>
+          <div style={{ marginTop: 8, font: `800 clamp(11px,3.1vw,16px)/1.05 ${SANS}`, letterSpacing: "-0.035em", color: i === 3 ? RED : INK }}>
+            {word}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  )
+
+  if (false) return (
     <div style={style}>
       <div style={{ width: "100%", maxWidth: 420, margin: "0 auto" }}>
         <svg
