@@ -1762,7 +1762,7 @@ function VisualPanel({
           </div>
           <div>
             <div style={{ font: `800 14px/1 ${SANS}`, color: "#fff" }}>Scholify</div>
-            <div style={{ font: `500 11px/1.3 ${MONO}`, color: "rgba(255,255,255,.78)", marginTop: 4 }}>measure · task · recalculate</div>
+            <div style={{ font: `500 11px/1.3 ${MONO}`, color: "rgba(255,255,255,.78)", marginTop: 4 }}>learn daily · grow steadily</div>
           </div>
         </div>
       </div>
