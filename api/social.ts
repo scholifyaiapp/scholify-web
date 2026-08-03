@@ -66,6 +66,7 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     stripe_webhook: !!process.env.STRIPE_WEBHOOK_SECRET,
     stripe_publishable: !!process.env.VITE_STRIPE_PUBLISHABLE_KEY,
     stripe_price_beginner: !!process.env.STRIPE_PRICE_BEGINNER,
+    stripe_price_beginner_annual: !!process.env.STRIPE_PRICE_BEGINNER_ANNUAL,
     stripe_price_pro: !!process.env.STRIPE_PRICE_PRO,
     stripe_price_annual: !!process.env.STRIPE_PRICE_ANNUAL,
   }
@@ -78,6 +79,7 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     keys.stripe_webhook,
     keys.stripe_publishable,
     keys.stripe_price_beginner,
+    keys.stripe_price_beginner_annual,
     keys.stripe_price_pro,
     keys.stripe_price_annual,
   ]

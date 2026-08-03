@@ -9,6 +9,7 @@ import { commissionAmount, priceForPlan, planForPrice } from "../../api/stripe.j
 
 const ENV = {
   STRIPE_PRICE_BEGINNER: "price_beginner_123",
+  STRIPE_PRICE_BEGINNER_ANNUAL: "price_beginner_annual_123",
   STRIPE_PRICE_PRO: "price_pro_123",
   STRIPE_PRICE_ANNUAL: "price_annual_123",
 }
@@ -21,6 +22,7 @@ afterEach(() => vi.unstubAllEnvs())
 describe("priceForPlan (checkout: plan → price)", () => {
   it("maps each plan to its configured price", () => {
     expect(priceForPlan("beginner")).toBe(ENV.STRIPE_PRICE_BEGINNER)
+    expect(priceForPlan("annual_beginner")).toBe(ENV.STRIPE_PRICE_BEGINNER_ANNUAL)
     expect(priceForPlan("pro")).toBe(ENV.STRIPE_PRICE_PRO)
     expect(priceForPlan("annual_pro")).toBe(ENV.STRIPE_PRICE_ANNUAL)
   })
@@ -40,6 +42,7 @@ describe("priceForPlan (checkout: plan → price)", () => {
 describe("planForPrice (webhook: price → plan)", () => {
   it("maps each configured price back to its plan", () => {
     expect(planForPrice(ENV.STRIPE_PRICE_BEGINNER)).toBe("beginner")
+    expect(planForPrice(ENV.STRIPE_PRICE_BEGINNER_ANNUAL)).toBe("beginner")
     expect(planForPrice(ENV.STRIPE_PRICE_PRO)).toBe("pro")
     expect(planForPrice(ENV.STRIPE_PRICE_ANNUAL)).toBe("annual_pro")
   })

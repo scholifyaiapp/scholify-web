@@ -7,7 +7,7 @@ import Stripe from "stripe"
  * Hobby cap), the international/card rail for Flowlify LLC.
  *
  *   POST /api/stripe?action=checkout   (auth: Supabase JWT)
- *     body: { plan: "beginner" | "pro" | "annual_pro" }
+ *     body: { plan: "beginner" | "annual_beginner" | "pro" | "annual_pro" }
  *     → creates a subscription Checkout Session for the signed-in user and
  *       returns { url } to redirect to. The user id rides in metadata so the
  *       webhook can grant the entitlement to the right account.
@@ -25,7 +25,8 @@ import Stripe from "stripe"
  * only the PAID conversion, so its subscriptions carry no Stripe-side trial.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_BEGINNER,
- * STRIPE_PRICE_PRO, STRIPE_PRICE_ANNUAL, SUPABASE_SERVICE_ROLE_KEY +
+ * STRIPE_PRICE_BEGINNER_ANNUAL, STRIPE_PRICE_PRO, STRIPE_PRICE_ANNUAL,
+ * SUPABASE_SERVICE_ROLE_KEY +
  * VITE_SUPABASE_URL. Client sees only VITE_STRIPE_PUBLISHABLE_KEY (the "is
  * billing live?" flag).
  */
@@ -54,9 +55,10 @@ function readRawBody(req: VercelRequest): Promise<string> {
   })
 }
 
-/** The three plans → their configured Stripe price ids (server-only). */
+/** The four billing choices → their configured Stripe price ids (server-only). */
 export function priceForPlan(plan: string): string | undefined {
   if (plan === "beginner") return process.env.STRIPE_PRICE_BEGINNER || undefined
+  if (plan === "annual_beginner") return process.env.STRIPE_PRICE_BEGINNER_ANNUAL || undefined
   if (plan === "pro") return process.env.STRIPE_PRICE_PRO || undefined
   if (plan === "annual_pro") return process.env.STRIPE_PRICE_ANNUAL || undefined
   return undefined
@@ -66,6 +68,7 @@ export function priceForPlan(plan: string): string | undefined {
 export function planForPrice(priceId: string | undefined): string | null {
   if (!priceId) return null
   if (priceId === process.env.STRIPE_PRICE_BEGINNER) return "beginner"
+  if (priceId === process.env.STRIPE_PRICE_BEGINNER_ANNUAL) return "beginner"
   if (priceId === process.env.STRIPE_PRICE_PRO) return "pro"
   if (priceId === process.env.STRIPE_PRICE_ANNUAL) return "annual_pro"
   return null
@@ -232,7 +235,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "webhook") return webhook(req, res)
   if (action === "checkout") return checkout(req, res)
   if (action === "cancel") return cancel(req, res)
-  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel." })
+  if (action === "portal") return portal(req, res)
+  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal." })
 }
 
 /* ── Checkout: app → Stripe hosted checkout ─────────────────────────── */
@@ -269,7 +273,29 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
   const origin =
     (req.headers.origin as string | undefined) ||
     process.env.VITE_PUBLIC_SITE_URL ||
-    "https://scholifyapp.com"
+    "https://www.scholifyapp.com"
+
+  // A paying customer must manage their existing subscription rather than
+  // accidentally creating a second one. This server-side guard protects every
+  // checkout entry point, including stale browser tabs and older app builds.
+  const existingSubscriptionId = user.app_metadata?.stripe_subscription_id as string | undefined
+  const existingCustomerId = user.app_metadata?.stripe_customer_id as string | undefined
+  if (existingSubscriptionId && existingCustomerId) {
+    try {
+      const existing = await stripe.subscriptions.retrieve(existingSubscriptionId)
+      if (existing.status !== "canceled" && existing.status !== "incomplete_expired") {
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: existingCustomerId,
+          return_url: `${origin}/pricing`,
+        })
+        res.status(200).json({ ok: true, url: portalSession.url, destination: "portal" })
+        return
+      }
+    } catch {
+      // A stale subscription id should not strand the customer; Checkout below
+      // can create a fresh subscription and the webhook repairs app_metadata.
+    }
+  }
 
   // Affiliate attribution — resolve an active partner code to its id, so the
   // webhook can record a commission after payment (more reliable than UTM).
@@ -303,6 +329,41 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
   } catch (err) {
     console.error("stripe checkout:", err)
     res.status(200).json({ ok: false, reason: "checkout_failed" })
+  }
+}
+
+/* ── Billing portal: change plan, payment method, invoices ──────────── */
+
+async function portal(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const stripe = stripeClient()
+  const supa = admin()
+  if (!stripe || !supa) {
+    res.status(200).json({ ok: false, reason: "not_configured" })
+    return
+  }
+  const user = await authedUser(req, supa)
+  if (!user) {
+    res.status(401).json({ ok: false, reason: "auth_required" })
+    return
+  }
+  const customerId = user.app_metadata?.stripe_customer_id as string | undefined
+  if (!customerId) {
+    res.status(200).json({ ok: false, reason: "no_customer" })
+    return
+  }
+  const origin =
+    (req.headers.origin as string | undefined) ||
+    process.env.VITE_PUBLIC_SITE_URL ||
+    "https://www.scholifyapp.com"
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${origin}/settings`,
+    })
+    res.status(200).json({ ok: true, url: session.url })
+  } catch (err) {
+    console.error("stripe portal:", err)
+    res.status(200).json({ ok: false, reason: "portal_failed" })
   }
 }
 

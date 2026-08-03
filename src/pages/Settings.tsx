@@ -46,7 +46,7 @@ import {
 } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { entitlementOf } from "@/lib/entitlement"
-import { cancelStripeSubscription } from "@/lib/stripe"
+import { cancelStripeSubscription, openStripeBillingPortal } from "@/lib/stripe"
 import { avatarUrlOf, onAvatarChange, saveAvatar, removeAvatar, AVATAR_MAX_SOURCE_MB, type AvatarError } from "@/lib/avatar"
 import { ALL_PAPERS, getCurrentPaper, getStudyingPapers, setCurrentPaper } from "@/lib/acca-qualification"
 import {
@@ -1412,7 +1412,7 @@ export default function Settings() {
             </div>
             {isPaid ? (
               <div style={{ display: "flex", gap: 10 }}>
-                <Button variant="secondary" onClick={() => navigate("/pricing")}>
+                <Button variant="secondary" onClick={() => { void openStripeBillingPortal().then((ok) => { if (!ok) toast.error("Couldn't open billing management — please try again") }) }}>
                   Manage plan
                 </Button>
                 <button type="button" onClick={() => setDialog("cancel")} style={redGhost}>

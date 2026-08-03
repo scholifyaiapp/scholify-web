@@ -2,12 +2,13 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/stripe"
+import { startStripeCheckout, isStripeConfigured, openStripeBillingPortal, type StripePlan } from "@/lib/stripe"
 import { isSupabaseConfigured } from "@/lib/supabase"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
 import { ScholifyLockup } from "@/components/brand"
+import { entitlementOf } from "@/lib/entitlement"
 
 /* ──────────────────────────────────────────────────────────────
  *  Public pricing page (/pricing) — plans, comparison table, FAQ.
@@ -173,6 +174,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function Pricing() {
   const { user } = useAuth()
+  const entitlement = entitlementOf(user)
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly")
   const [showTable, setShowTable] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -191,6 +193,14 @@ export default function Pricing() {
   const checkout = (plan: StripePlan) => {
     if (!paymentsOpen) {
       flash("Payments aren't open yet — hang tight, they're coming soon.")
+      return
+    }
+    // Existing subscribers change plans and payment details in Stripe's hosted
+    // portal. Starting a second Checkout subscription would double-bill them.
+    if (entitlement.isPaid) {
+      void openStripeBillingPortal().then((ok) => {
+        if (!ok) flash("Couldn't open billing management — please try again in a moment.")
+      })
       return
     }
     void startStripeCheckout(plan).then((ok) => {
@@ -386,7 +396,7 @@ export default function Pricing() {
             features={BEGINNER_FEATURES}
             cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
             disabled={!paymentsOpen}
-            onCta={() => checkout("beginner")}
+            onCta={() => checkout(annual ? "annual_beginner" : "beginner")}
           />
           <PricingCard
             index={2}

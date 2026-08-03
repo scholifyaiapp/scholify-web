@@ -33,6 +33,7 @@ import { StoreBadge } from "@/components/ui/store-badge"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
+import { rememberCheckoutPlan, type StripePlan } from "@/lib/stripe"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
@@ -1866,6 +1867,17 @@ const scholifyFeatures: ScholifyFeature[] = [
 function Pricing() {
   const navigate = useNavigate()
   const t = useT()
+  const choosePlan = (tier: 0 | 1 | 2, period: 0 | 1) => {
+    if (tier === 0) {
+      navigate(SIGN_UP_PATH)
+      return
+    }
+    const plan: StripePlan = tier === 1
+      ? (period === 1 ? "annual_beginner" : "beginner")
+      : (period === 1 ? "annual_pro" : "pro")
+    rememberCheckoutPlan(plan)
+    navigate(signUpPath(`/pricing?checkout=${plan}`))
+  }
   return (
     <section id="pricing" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
@@ -1903,7 +1915,7 @@ function Pricing() {
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
               ctaLabel={t("Start free")}
-              onCta={() => navigate(SIGN_UP_PATH)}
+              onCta={choosePlan}
             />
           </div>
 

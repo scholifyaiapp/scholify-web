@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { getCapturedAffiliate } from "@/lib/affiliate"
+import { signUpPath } from "@/lib/launch"
 
 /*
  * Stripe Billing — client side (the international/card rail).
@@ -15,7 +16,13 @@ export function isStripeConfigured(): boolean {
   return Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 }
 
-export type StripePlan = "beginner" | "pro" | "annual_pro"
+export type StripePlan = "beginner" | "annual_beginner" | "pro" | "annual_pro"
+
+const PENDING_PLAN_KEY = "scholify-pending-checkout-plan"
+
+export function rememberCheckoutPlan(plan: StripePlan): void {
+  try { window.sessionStorage.setItem(PENDING_PLAN_KEY, plan) } catch { /* storage is optional */ }
+}
 
 /**
  * Start a Stripe subscription checkout for the signed-in user. Redirects the
@@ -28,7 +35,11 @@ export async function startStripeCheckout(plan: StripePlan): Promise<boolean> {
   try {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
-    if (!token) return false
+    if (!token) {
+      rememberCheckoutPlan(plan)
+      window.location.href = signUpPath(`/pricing?checkout=${plan}`)
+      return true
+    }
     const affiliateCode = getCapturedAffiliate() || undefined
     const res = await fetch("/api/stripe?action=checkout", {
       method: "POST",
@@ -37,10 +48,30 @@ export async function startStripeCheckout(plan: StripePlan): Promise<boolean> {
     })
     const body = (await res.json().catch(() => ({}))) as { url?: string }
     if (body.url) {
+      try { window.sessionStorage.removeItem(PENDING_PLAN_KEY) } catch { /* storage is optional */ }
       window.location.href = body.url
       return true
     }
     return false
+  } catch {
+    return false
+  }
+}
+
+/** Open Stripe's hosted billing portal for plan changes and payment management. */
+export async function openStripeBillingPortal(): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return false
+    const res = await fetch("/api/stripe?action=portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const body = (await res.json().catch(() => ({}))) as { url?: string }
+    if (!body.url) return false
+    window.location.href = body.url
+    return true
   } catch {
     return false
   }
