@@ -1927,7 +1927,7 @@ function Pricing() {
               {t("Every paper. Every mode.")}
             </h3>
             <p style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>
-              {t("Free gets you practising. Pro unlocks mocks, the AI Examiner and unlimited AI practice.")}
+              {t("The trial covers your chosen paper. Beginner unlocks all 15 papers; Pro adds mocks, the AI Examiner and custom AI practice.")}
             </p>
 
             <div style={{ height: 1, background: HAIR, margin: "22px 0" }} />

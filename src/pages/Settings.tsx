@@ -834,10 +834,11 @@ export default function Settings() {
   const isPaid = ent.isPaid
   // The label and billing line must reflect the ACTUAL plan — a Beginner or
   // Annual Pro subscriber was previously shown "Pro · $14.99/month".
-  const planLabel = ent.plan === "beginner" ? "Beginner" : ent.plan === "annual_pro" ? "Annual Pro" : "Pro"
+  const annualBeginner = ent.plan === "beginner" && user?.app_metadata?.billing_interval === "year"
+  const planLabel = ent.plan === "beginner" ? (annualBeginner ? "Annual Beginner" : "Beginner") : ent.plan === "annual_pro" ? "Annual Pro" : "Pro"
   const planBilling =
     ent.plan === "beginner"
-      ? "Billed monthly · $9.99/month"
+      ? annualBeginner ? "Billed annually · $79.99/year" : "Billed monthly · $9.99/month"
       : ent.plan === "annual_pro"
         ? "Billed annually · $119.99/year"
         : "Billed monthly · $14.99/month"
@@ -1396,8 +1397,8 @@ export default function Settings() {
                 {isPaid
                   ? planBilling
                   : ent.isTrial
-                    ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} of Pro left — mocks, the AI Examiner and custom practice are all unlocked. After it ends you keep the full free plan.`
-                    : "No time limit. Timed mocks, the AI Examiner and custom practice are the paid modes."}
+                    ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} of Pro left — mocks, the AI Examiner and custom practice are unlocked on your chosen paper. Choose a paid plan to continue after the trial.`
+                    : "Your trial has ended. Choose Beginner or Pro to continue; your progress remains saved."}
               </div>
               {!isPaid && (
                 <motion.div
@@ -1504,7 +1505,7 @@ export default function Settings() {
         <Section>
           <SectionHead icon="support">Invite Friends</SectionHead>
           <p style={{ fontSize: 13, color: TEXT2, marginTop: 6, lineHeight: 1.6 }}>
-            Share your link — anyone who joins gets the full free plan, no card needed.
+            Share your link — anyone who joins gets the 3-day Pro trial, no card needed.
           </p>
 
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>
@@ -2070,7 +2071,7 @@ export default function Settings() {
       <ConfirmDialog
         open={dialog === "cancel"}
         title="Cancel your plan?"
-        body="Your streak and progress are always saved. You'll switch to the free tier at the end of your billing period."
+        body="Your access continues to the end of the billing period. Your streak and progress remain saved if you return later."
         confirmLabel="Cancel anyway"
         onConfirm={() => void cancelPlan()}
         onCancel={() => setDialog(null)}

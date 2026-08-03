@@ -105,6 +105,19 @@ export function isProUser(user: MetaCarrier | null | undefined, now: number = Da
   return entitlementOf(user, now).isPro
 }
 
+/** Feature-level gate tied to the same contract rendered on /pricing. */
+export function canUsePlanFeature(
+  user: MetaCarrier | null | undefined,
+  feature: PlanFeatureKey,
+  now: number = Date.now(),
+): boolean {
+  const entitlement = entitlementOf(user, now)
+  if (entitlement.isTrial) return tierHasFeature("trial", feature)
+  if (entitlement.isBeginner) return tierHasFeature("beginner", feature)
+  if (entitlement.isPro) return tierHasFeature("pro", feature)
+  return false
+}
+
 /**
  * Which papers can this user open?
  *   - A PAID subscriber: every paper.
@@ -136,3 +149,4 @@ export function canStartTrial(user: MetaCarrier | null | undefined): boolean {
 
 /** Length of a trial, in days — one constant, shared by copy and the server. */
 export const TRIAL_DAYS = 3
+import { tierHasFeature, type PlanFeatureKey } from "@/lib/plan-contract"

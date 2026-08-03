@@ -335,6 +335,9 @@ export default function PaywallModal({
 
             {/* ── Feature list ── */}
             <div style={{ padding: sectionPad, marginTop: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "var(--sch-tx-3)", marginBottom: 14 }}>
+                PRO ADDS
+              </div>
               {FEATURES.map((f) => (
                 <div
                   key={f.text}
@@ -405,6 +408,26 @@ export default function PaywallModal({
                 disabled={!paymentsOpen}
                 onClick={() => handleCheckout("pro")}
               />
+            </div>
+
+            <div style={{ padding: "12px 32px 0" }}>
+              <motion.button
+                type="button"
+                onClick={() => handleCheckout("annual_beginner")}
+                whileHover={paymentsOpen ? { scale: 1.01 } : undefined}
+                style={{
+                  width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "14px 16px", borderRadius: 14, border: "1px solid var(--sch-border)",
+                  background: "var(--sch-card)", cursor: paymentsOpen ? "pointer" : "not-allowed",
+                  opacity: paymentsOpen ? 1 : 0.55, textAlign: "left",
+                }}
+              >
+                <span>
+                  <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--sch-text)" }}>Annual Beginner</span>
+                  <span style={{ display: "block", fontSize: 11, color: "var(--sch-tx-2)", marginTop: 2 }}>All 15 papers · $79.99/year</span>
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--sch-text)" }}>Choose →</span>
+              </motion.button>
             </div>
 
             {/* Annual row */}

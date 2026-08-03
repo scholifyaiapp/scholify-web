@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { entitlementOf, isProUser, canStartTrial, canAccessPaper, TRIAL_DAYS } from "@/lib/entitlement"
+import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canUsePlanFeature, TRIAL_DAYS } from "@/lib/entitlement"
 
 /*
  * Entitlement decides who gets Pro. Every case here is a real gate: a wrong
@@ -34,6 +34,19 @@ describe("paid plans", () => {
     expect(canAccessPaper(beginner, "AAA", ["FA"], NOW)).toBe(true)
   })
 
+  it("enforces the marketed feature boundary for Beginner and Pro", () => {
+    const beginner = user({ plan: "beginner" })
+    const pro = user({ plan: "pro" })
+    for (const feature of ["timed_mocks", "ai_examiner", "custom_practice", "mock_history"] as const) {
+      expect(canUsePlanFeature(beginner, feature, NOW)).toBe(false)
+      expect(canUsePlanFeature(pro, feature, NOW)).toBe(true)
+    }
+    for (const feature of ["all_papers", "question_banks", "flashcards", "diagnostic", "charles_tutor"] as const) {
+      expect(canUsePlanFeature(beginner, feature, NOW)).toBe(true)
+      expect(canUsePlanFeature(pro, feature, NOW)).toBe(true)
+    }
+  })
+
   it("treats an active subscription as paid even if the plan name wasn't mapped", () => {
     const e = entitlementOf(user({ plan: "free", plan_status: "active" }), NOW)
     expect(e.isPaid).toBe(true)
@@ -55,6 +68,15 @@ describe("trial", () => {
     expect(e.isPro).toBe(true)
     expect(e.isPaid).toBe(false)
     expect(e.trialDaysLeft).toBe(5)
+  })
+
+  it("grants Pro features on the chosen paper but not all-paper access", () => {
+    const trial = user({ plan: "free", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
+    expect(canUsePlanFeature(trial, "timed_mocks", NOW)).toBe(true)
+    expect(canUsePlanFeature(trial, "ai_examiner", NOW)).toBe(true)
+    expect(canUsePlanFeature(trial, "custom_practice", NOW)).toBe(true)
+    expect(canUsePlanFeature(trial, "all_papers", NOW)).toBe(false)
+    expect(canAccessPaper(trial, "AAA", ["FA"], NOW)).toBe(false)
   })
 
   it("revokes Pro the moment the trial has passed", () => {

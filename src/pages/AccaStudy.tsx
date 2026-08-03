@@ -5,7 +5,7 @@ import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
 import { useAuth } from "@/lib/auth"
-import { isProUser, canAccessPaper } from "@/lib/entitlement"
+import { canUsePlanFeature, canAccessPaper } from "@/lib/entitlement"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -108,7 +108,10 @@ export default function AccaStudy() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isPro = isProUser(user)
+  const canUseMocks = canUsePlanFeature(user, "timed_mocks")
+  const canUseExaminer = canUsePlanFeature(user, "ai_examiner")
+  const canUseCustomPractice = canUsePlanFeature(user, "custom_practice")
+  const isPro = canUseMocks && canUseExaminer && canUseCustomPractice
   const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
 
   // Land where the loop is: the current paper's overview. The picker stays
@@ -340,7 +343,7 @@ export default function AccaStudy() {
         toast.info(`The mock room unlocks at a ${MOCK_GATE}% Exam Readiness Score — you're at ${gate.prob}%. Today's plan is aimed at getting you there.`)
         return
       }
-      if (!isPro) {
+      if (!canUseMocks) {
         triggerFeaturePaywall()
         return
       }
@@ -429,7 +432,7 @@ export default function AccaStudy() {
   }
 
   function openExaminer() {
-    if (!isPro) {
+    if (!canUseExaminer) {
       triggerFeaturePaywall()
       return
     }
@@ -437,7 +440,7 @@ export default function AccaStudy() {
   }
 
   function openGenerate() {
-    if (!isPro) {
+    if (!canUseCustomPractice) {
       triggerFeaturePaywall()
       return
     }

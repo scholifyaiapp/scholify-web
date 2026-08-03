@@ -107,6 +107,7 @@ async function writeEntitlement(
     plan?: string
     status: string
     priceId?: string
+    billingInterval?: "month" | "year"
     subscriptionId?: string
     customerId?: string
     eventType: string
@@ -120,6 +121,7 @@ async function writeEntitlement(
         plan_status: fields.status,
         ...(fields.subscriptionId ? { stripe_subscription_id: fields.subscriptionId } : {}),
         ...(fields.customerId ? { stripe_customer_id: fields.customerId } : {}),
+        ...(fields.billingInterval ? { billing_interval: fields.billingInterval } : {}),
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
   await supa.auth.admin.updateUserById(userId, { app_metadata: meta })
@@ -410,6 +412,7 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           plan: plan ?? undefined,
           status: "active",
           priceId,
+          billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
           eventType: event.type,
@@ -444,6 +447,7 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           plan: status === "canceled" ? "free" : (plan ?? undefined),
           status,
           priceId,
+          billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
           eventType: event.type,

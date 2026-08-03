@@ -9,6 +9,7 @@ import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
 import { ScholifyLockup } from "@/components/brand"
 import { entitlementOf } from "@/lib/entitlement"
+import { PLAN_FEATURES } from "@/lib/plan-contract"
 
 /* ──────────────────────────────────────────────────────────────
  *  Public pricing page (/pricing) — plans, comparison table, FAQ.
@@ -23,11 +24,11 @@ const GOLD = "linear-gradient(135deg,#FFD700,#FFA500)"
 const accountsOpen = isSupabaseConfigured
 
 const FREE_FEATURES: PlanFeature[] = [
-  { text: "2,494 expert-written practice questions" },
+  { text: "Expert-written practice on your chosen paper" },
   { text: "Instant marking + teaching explanations" },
   { text: "1,057 SRS flashcards" },
   { text: "Diagnostic with an Exam Readiness Score (± margin)" },
-  { text: "69 study chapters across all 15 papers" },
+  { text: "Study chapters for your chosen paper" },
   { text: "Charles AI race engineer" },
   { text: "Daily goal, streak & readiness score" },
   { text: "Full ACCA roadmap BT → AAA" },
@@ -52,19 +53,14 @@ const PRO_FEATURES: PlanFeature[] = [
 /* Columns: Feature · Free · Beginner · Pro · Annual Pro.
  * Beginner is a paying tier (all 15 papers) but NOT the premium modes — those
  * (timed mocks, AI Examiner, custom practice) are Pro/Annual only. */
-const COMPARISON: Array<[string, string, string, string, string]> = [
-  ["Expert-written question banks", "✓", "✓", "✓", "✓"],
-  ["Practice sessions", "✓", "✓", "✓", "✓"],
-  ["Instant marking + explanations", "✓", "✓", "✓", "✓"],
-  ["SRS flashcards", "✓", "✓", "✓", "✓"],
-  ["Diagnostic + Exam Readiness Score", "✓", "✓", "✓", "✓"],
-  ["Study chapters (all 15 papers)", "✓", "✓", "✓", "✓"],
-  ["Readiness score & weak-area analytics", "✓", "✓", "✓", "✓"],
-  ["Charles AI race engineer", "✓", "✓", "✓", "✓"],
-  ["Timed mock exams", "✓", "—", "✓", "✓"],
-  ["AI Examiner (written marking)", "✓", "—", "✓", "✓"],
-  ["Custom practice from your notes", "✓", "—", "✓", "✓"],
-]
+const mark = (available: boolean) => available ? "✓" : "—"
+const COMPARISON: Array<[string, string, string, string, string]> = PLAN_FEATURES.map((feature) => [
+  feature.label,
+  mark(feature.trial),
+  mark(feature.beginner),
+  mark(feature.pro),
+  mark(feature.pro),
+])
 
 const FAQS: Array<[string, string]> = [
   [
