@@ -1,5 +1,5 @@
 import type { AccaQuestion } from "@/lib/acca-content"
-import { q1, q2, multi2 } from "@/lib/acca-lwg-kit-builders"
+import { q1, q2, multi2 } from "@/lib/acca-lw-kit-builders"
 
 /*
  * LW-GLOBAL · Area A question kit — chapters 1 to 5.

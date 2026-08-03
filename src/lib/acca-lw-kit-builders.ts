@@ -1,18 +1,27 @@
 import type { AccaQuestion } from "@/lib/acca-content"
 
 /*
- * Builders for LW-Global's per-chapter question kit.
+ * Builders for BOTH LW variants' per-chapter question kits — Global and ENG.
  *
  * These set only fixed boilerplate (paper, type) and positional arguments — they do
  * NOT generate content. Every stem, option, answer and explanation is authored
  * individually; anything machine-permuted belongs in PaperContent.drills.
+ *
+ * ── Why one builder serves both variants ───────────────────────
+ * LW-Global and LW-ENG are different SYLLABUSES but the same PAPER, so they share the
+ * same exam shape: Section A of 25 two-mark plus 20 one-mark objective tests, and
+ * Section B of five 6-mark multi-task questions. Only the subject matter differs, and
+ * subject matter is supplied per question by the kit files. Duplicating these builders
+ * per variant would mean two files that must be kept identical, so the file is named
+ * for the paper rather than for one of its variants.
  *
  * ── Why marks are an argument here, unlike FA's builders ────────
  * LW's real Section A is 25 questions of 2 marks PLUS 20 of 1 mark — 45 questions for
  * 70 marks. So unlike FA, where every Section A item is worth exactly 2 and the builder
  * fixes it, LW genuinely needs both values, and a bank of only 2-mark questions could
  * never compose a real-shaped sitting. Three disjoint forms need roughly 60 one-mark
- * and 75 two-mark authored questions, which is what this kit is sized to supply.
+ * and 75 two-mark authored questions, which is what each variant's kit is sized to
+ * supply.
  *
  * Use the mark value to reflect what the question actually demands:
  *  · `q1` / `multi1` — ONE mark. A single point: identify the instrument, name the
