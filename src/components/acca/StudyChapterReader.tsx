@@ -149,7 +149,7 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
       {/* CTA into practice */}
       <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={onPractice}
         style={{ width: "100%", marginTop: 26, padding: "15px 24px", borderRadius: 14, border: "none", background: C.brand, color: "#fff", fontWeight: 800, fontSize: 15.5, cursor: "pointer", boxShadow: `0 14px 28px -12px ${C.brand}88` }}>
-        Understood it — now practise the questions →
+        Complete lesson — unlock 5 Quizzes →
       </motion.button>
     </div>
   )

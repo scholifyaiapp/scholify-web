@@ -4,6 +4,7 @@ import {
   markTodayTaskDone,
   setPendingTodayTask,
   resolvePendingTodayTask,
+  completePendingTodayTask,
   allocateTaskMinutes,
   type TodayTask,
 } from "@/lib/acca-today"
@@ -70,5 +71,20 @@ describe("today-plan sequential completion store", () => {
     expect(getTodayDone("AA")).toEqual([])
     expect(resolvePendingTodayTask("FA")).toBe(true) // still resolvable for the right paper
     expect(getTodayDone("FA")).toEqual(["task-1"])
+  })
+
+  it("does not complete a reading task merely because the learner exits", () => {
+    setPendingTodayTask("FA", "study-1", true)
+    expect(resolvePendingTodayTask("FA")).toBe(false)
+    expect(getTodayDone("FA")).toEqual([])
+    expect(completePendingTodayTask("FA")).toBe(true)
+    expect(getTodayDone("FA")).toEqual(["study-1"])
+  })
+
+  it("cannot explicitly complete another paper's reading task", () => {
+    setPendingTodayTask("FA", "study-1", true)
+    expect(completePendingTodayTask("AA")).toBe(false)
+    expect(getTodayDone("FA")).toEqual([])
+    expect(completePendingTodayTask("FA")).toBe(true)
   })
 })

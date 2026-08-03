@@ -603,8 +603,8 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
       tasks.push({
         id: `essentials${suffix}`,
         icon: "🎯",
-        title: `Essentials ×${cycle.essentials}${cycleArea.code ? ` — ${cycleArea.code}` : ""}`,
-        detail: "The five most essential questions on what you just studied — read the brief, then prove it",
+        title: `Quizzes ×${cycle.essentials}${cycleArea.code ? ` — ${cycleArea.code}` : ""}`,
+        detail: "Five Quizzes on what you just studied — finish the lesson, then prove it",
         action: "essentials",
         minutes: Math.round(cycle.essentials * COST.perQ),
         area: cycleArea.code || undefined,
@@ -848,7 +848,7 @@ export function projectPlan(paperId: string, maxDays = 45): PlanDay[] {
         area: ca?.code,
       })
       if (cycle.essentials > 0) {
-        tasks.push({ kind: "essentials", title: `Essentials ×${cycle.essentials} — ${ca?.code ?? "area"}`, minutes: Math.round(cycle.essentials * COST.perQ), area: ca?.code })
+        tasks.push({ kind: "essentials", title: `Quizzes ×${cycle.essentials} — ${ca?.code ?? "area"}`, minutes: Math.round(cycle.essentials * COST.perQ), area: ca?.code })
       }
       if (cycle.practiceQ > 0) {
         tasks.push({ kind: "weak", title: `Practise ${cycle.practiceQ} in ${ca?.code ?? "area"}`, minutes: Math.round(cycle.practiceQ * COST.perQ), area: ca?.code })

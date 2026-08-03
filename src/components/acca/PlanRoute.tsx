@@ -18,7 +18,7 @@ const KIND_ICON: Record<SchedAction, IconName> = {
   bank: "practice", mock: "mock" as IconName, diagnostic: "diagnostic",
 }
 const KIND_LABEL: Record<SchedAction, string> = {
-  study: "Study", essentials: "Essentials", practice: "Practise", weak: "Drill", flashcards: "Cards", bank: "Bank 50", mock: "Mock", diagnostic: "Diagnostic",
+  study: "Study", essentials: "Quizzes", practice: "Practise", weak: "Drill", flashcards: "Cards", bank: "Bank 50", mock: "Mock", diagnostic: "Diagnostic",
 }
 const PHASE_TINT: Record<string, string> = {
   learn: C.brand, strengthen: C.amber, revise: "#7C6BD6", rehearse: C.green,

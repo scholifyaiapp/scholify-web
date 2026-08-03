@@ -54,7 +54,7 @@ import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, startFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, type StudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
@@ -624,7 +624,7 @@ export default function AccaStudy() {
                   paper={paper}
                   area={topicArea}
                   onBack={() => setMode("topic")}
-                  onLearn={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+                  onLearn={() => { completePendingTodayTask(paper.id); startTopicSession(topicArea, false, LEARN_SIZE) }}
                 />
               )
             }
@@ -638,7 +638,7 @@ export default function AccaStudy() {
                   if (areaChapters.length > 1) setStudyChapterKey(null)
                   else setMode("topic")
                 }}
-                onPractice={() => startTopicSession(topicArea, false, LEARN_SIZE)}
+                onPractice={() => { completePendingTodayTask(paper.id); startTopicSession(topicArea, false, LEARN_SIZE) }}
               />
             )
           })()}
@@ -1139,7 +1139,7 @@ function Overview({
   // false-complete the task and wrongly advance the mission on the next visit.
   function runTodayTask(t: (typeof todayPlan)[number]) {
     const bounces = t.action === "mock" && (!gate.unlocked || !isPro)
-    if (!bounces) setPendingTodayTask(paper.id, t.id)
+    if (!bounces) setPendingTodayTask(paper.id, t.id, t.action === "study")
     runToday(t)
   }
   const todayIcons: Record<TodayAction, IconName> = {
@@ -1391,7 +1391,7 @@ function Overview({
           activeIdx={activeTodayIdx}
           mins={taskMins}
           icons={todayIcons}
-          onRun={(t) => { setPendingTodayTask(paper.id, t.id); runToday(t) }}
+          onRun={runTodayTask}
           techArticle={techArticle}
           articleDone={articleDone}
           onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
@@ -1600,13 +1600,13 @@ function Overview({
             {/* the full path — topic by topic, Kaplan-style (the main content lives here) */}
             <StudyPathSection paperId={paper.id} curated={curated} onTopic={onTopic} />
 
-            {/* 2 · Essentials after study */}
-            <SectionHead icon="mission" right={minChip(minutesFor(["essentials"]))}>2 · Essentials after study</SectionHead>
+            {/* 2 · Quizzes after study */}
+            <SectionHead icon="mission" right={minChip(minutesFor(["essentials"]))}>2 · Quizzes</SectionHead>
             <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
               <ModeTile
                 icon="mission"
-                title={`${LEARN_SIZE} essential questions${essTask?.area ? ` — ${essTask.area}` : ""}`}
-                sub="The five most essential points of what you just studied, as guided questions"
+                title={`${LEARN_SIZE} Quizzes${essTask?.area ? ` — ${essTask.area}` : ""}`}
+                sub="Unlocked after the lesson, with guided questions on what you just studied"
                 onClick={() => onEssentials(essTask?.area)}
                 primary={Boolean(essTask) && phase.key === "learn"}
               />
@@ -2098,9 +2098,9 @@ function TopicView({
         />
       </div>
 
-      <h3 style={sectionH}>2 · LEARN THE ESSENTIALS</h3>
+      <h3 style={sectionH}>2 · QUIZZES</h3>
       <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-        <ModeTile icon="practice" title={`First ${LEARN_SIZE} questions — guided`} sub="Instant marking, explanations & Ask Charles — the essentials of this sector only" onClick={onLearn} primary={!result.mastered && (areaStats?.seen ?? 0) > 0 && (areaStats?.seen ?? 0) < LEARN_SIZE} />
+        <ModeTile icon="practice" title={`${LEARN_SIZE} Quizzes — guided`} sub="Unlocked after the lesson, with instant marking, explanations and Ask Charles" onClick={onLearn} primary={!result.mastered && (areaStats?.seen ?? 0) > 0 && (areaStats?.seen ?? 0) < LEARN_SIZE} />
       </div>
 
       <h3 style={sectionH}>3 · MEMORISE</h3>
@@ -2163,7 +2163,7 @@ function BriefReader({
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <button onClick={onBack} style={backBtn}>← Topic</button>
         <p style={{ color: MUTED, fontSize: 14 }}>No brief for this topic yet — jump straight into the guided questions.</p>
-        <Button onClick={onLearn} size="lg" full>Start the first {LEARN_SIZE} questions</Button>
+        <Button onClick={onLearn} size="lg" full>Start {LEARN_SIZE} Quizzes</Button>
       </motion.div>
     )
   }
@@ -2216,10 +2216,10 @@ function BriefReader({
 
       <div style={{ marginTop: 20 }}>
         <Button onClick={onLearn} size="lg" full>
-          Got it — first {LEARN_SIZE} questions <Icon name="arrow" size={17} color="#fff" />
+          Complete lesson — unlock {LEARN_SIZE} Quizzes <Icon name="arrow" size={17} color="#fff" />
         </Button>
         <p style={{ fontSize: 11.5, color: DIM, textAlign: "center", margin: "10px 0 0" }}>
-          Learn by doing: the questions teach the rest.
+          Reaching this point completes the lesson and unlocks today&apos;s Quizzes.
         </p>
       </div>
     </motion.div>

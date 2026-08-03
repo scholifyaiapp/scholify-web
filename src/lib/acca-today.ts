@@ -171,9 +171,9 @@ export function focusSecondsLeft(): number {
 }
 
 /** Remember which task the learner just launched, so we can complete it on return. */
-export function setPendingTodayTask(paperId: string, taskId: string): void {
+export function setPendingTodayTask(paperId: string, taskId: string, requiresExplicitCompletion = false): void {
   try {
-    window.localStorage.setItem(PENDING_KEY, JSON.stringify({ paperId, taskId, day: localDay() }))
+    window.localStorage.setItem(PENDING_KEY, JSON.stringify({ paperId, taskId, day: localDay(), requiresExplicitCompletion }))
   } catch {
     /* ignore */
   }
@@ -187,7 +187,7 @@ export function resolvePendingTodayTask(paperId: string): boolean {
   try {
     const raw = window.localStorage.getItem(PENDING_KEY)
     if (!raw) return false
-    const p = JSON.parse(raw) as { paperId?: string; taskId?: string; day?: string }
+    const p = JSON.parse(raw) as { paperId?: string; taskId?: string; day?: string; requiresExplicitCompletion?: boolean }
     const today = localDay()
     // A stale marker from a previous day is useless — discard it.
     if (p.day !== today) {
@@ -196,6 +196,7 @@ export function resolvePendingTodayTask(paperId: string): boolean {
     }
     // Belongs to a different paper — leave it for that paper's tab to resolve.
     if (p.paperId !== paperId || typeof p.taskId !== "string") return false
+    if (p.requiresExplicitCompletion) return false
     window.localStorage.removeItem(PENDING_KEY)
     markTodayTaskDone(paperId, p.taskId)
     return true
@@ -203,4 +204,23 @@ export function resolvePendingTodayTask(paperId: string): boolean {
     /* ignore */
   }
   return false
+}
+
+/** Complete a reading task only from its end-of-lesson action. */
+export function completePendingTodayTask(paperId: string): boolean {
+  try {
+    const raw = window.localStorage.getItem(PENDING_KEY)
+    if (!raw) return false
+    const p = JSON.parse(raw) as { paperId?: string; taskId?: string; day?: string; requiresExplicitCompletion?: boolean }
+    if (p.day !== localDay()) {
+      window.localStorage.removeItem(PENDING_KEY)
+      return false
+    }
+    if (p.paperId !== paperId || typeof p.taskId !== "string" || !p.requiresExplicitCompletion) return false
+    window.localStorage.removeItem(PENDING_KEY)
+    markTodayTaskDone(paperId, p.taskId)
+    return true
+  } catch {
+    return false
+  }
 }
