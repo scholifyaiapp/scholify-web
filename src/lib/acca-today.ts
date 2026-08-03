@@ -17,12 +17,13 @@
 import { getPaper } from "@/lib/acca"
 import { readinessState, recoveryState } from "@/lib/acca-loop"
 import { buildDailyTasks } from "@/lib/acca-schedule"
+import { examBlueprint } from "@/lib/acca-exam-structure"
 
-export type TodayAction = "diagnostic" | "weak" | "practice" | "essentials" | "flashcards" | "mock" | "study" | "bank"
+export type TodayAction = "diagnostic" | "weak" | "practice" | "section" | "essentials" | "flashcards" | "mock" | "study" | "bank"
 
 /** Rough per-task durations — the single source for "~25 min" labels. */
 export const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
+  diagnostic: 15, weak: 25, practice: 20, section: 15, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 
 /**
@@ -37,7 +38,11 @@ export function allocateTaskMinutes(tasks: TodayTask[], dailyMinutes: number): n
   const budget = Math.max(tasks.length, dailyMinutes) // at least ~1 min/task
   const weights = tasks.map((t) => MISSION_MINUTES[t.action] ?? 10)
   const sum = weights.reduce((a, b) => a + b, 0) || 1
-  return weights.map((w) => Math.max(1, Math.round((w / sum) * budget)))
+  const allocation = weights.map((w) => Math.max(1, Math.floor((w / sum) * budget)))
+  let remaining = budget - allocation.reduce((a, b) => a + b, 0)
+  const priority = weights.map((w, i) => ({ i, fraction: (w / sum) * budget - Math.floor((w / sum) * budget) })).sort((a, b) => b.fraction - a.fraction)
+  for (let cursor = 0; remaining > 0; cursor += 1, remaining -= 1) allocation[priority[cursor % priority.length].i] += 1
+  return allocation
 }
 
 export interface TodayTask {
@@ -48,6 +53,8 @@ export interface TodayTask {
   action: TodayAction
   /** Syllabus area the task targets (essentials/study carry it). */
   area?: string
+  /** Official exam section for a section-specific practice block. */
+  section?: "A" | "B" | "C"
 }
 
 /** Time-of-day greeting, personalised when we know the name. */
@@ -84,7 +91,7 @@ export function todayHeadline(paperId: string): string {
  * budget and the target %, and self-heals around missed days.
  */
 export function buildTodayPlan(paperId: string): TodayTask[] {
-  return buildDailyTasks(paperId).map((t) => ({
+  const scheduled = buildDailyTasks(paperId).map((t) => ({
     id: t.id,
     icon: t.icon,
     title: t.title,
@@ -92,6 +99,25 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
     action: t.action,
     area: t.area,
   }))
+  const study: TodayTask = scheduled.find((task) => task.action === "study") ?? {
+    id: "study", icon: "📖", title: "Study today's topic", detail: "Charles selected the next lesson from your live progress", action: "study" as const, area: getPaper(paperId)?.areas[0]?.code,
+  }
+  const quizzes: TodayTask = scheduled.find((task) => task.action === "essentials") ?? {
+    id: "essentials", icon: "🎯", title: "5 Quizzes", detail: "Five guided checks unlocked after the lesson", action: "essentials" as const, area: study.area,
+  }
+  const sections: TodayTask[] = (examBlueprint(paperId)?.sections ?? []).map((section) => ({
+    id: `section-${section.id}`,
+    icon: "📝",
+    title: `Practice · Section ${section.id}`,
+    detail: `${section.makeup} · practised separately in the official exam shape`,
+    action: "section",
+    section: section.id,
+  }))
+  const flashcards = scheduled.find((task) => task.action === "flashcards") ?? {
+    id: "flashcards", icon: "🗂️", title: "Flashcards", detail: "Spaced recall chosen from today's learning and weak areas", action: "flashcards" as const,
+  }
+  const diagnostic = scheduled.find((task) => task.action === "diagnostic")
+  return diagnostic ? [diagnostic, study, quizzes, ...sections, flashcards] : [study, quizzes, ...sections, flashcards]
 }
 
 /* ── Sequential unlock: one task at a time ────────────────────────────────
@@ -138,17 +164,28 @@ export function markTodayTaskDone(paperId: string, taskId: string): void {
  *
  * The learner presses Start and the app enters full-focus mode: only today's
  * mission on screen, a countdown in the corner. The session is stored as an END
- * timestamp so it SURVIVES navigating into a task and back (the Today view
- * unmounts while they practise) — on return we recompute the time left. It
- * clears itself when the clock runs out. */
+ * remaining-time record. It pauses when this view unmounts and resumes from
+ * that exact saved point when the learner returns. */
 const FOCUS_KEY = "scholify-focus-session"
 
 export function startFocusSession(minutes: number): void {
   try {
-    window.localStorage.setItem(FOCUS_KEY, JSON.stringify({ endsAt: Date.now() + Math.max(1, minutes) * 60000 }))
+    window.localStorage.setItem(FOCUS_KEY, JSON.stringify({ remainingSeconds: Math.max(1, minutes) * 60, startedAt: Date.now() }))
   } catch {
     /* ignore */
   }
+}
+export function resumeFocusSession(): void {
+  try {
+    const remainingSeconds = focusSecondsLeft()
+    if (remainingSeconds > 0) window.localStorage.setItem(FOCUS_KEY, JSON.stringify({ remainingSeconds, startedAt: Date.now() }))
+  } catch { /* ignore */ }
+}
+export function pauseFocusSession(): void {
+  try {
+    const remainingSeconds = focusSecondsLeft()
+    if (remainingSeconds > 0) window.localStorage.setItem(FOCUS_KEY, JSON.stringify({ remainingSeconds }))
+  } catch { /* ignore */ }
 }
 export function clearFocusSession(): void {
   try {
@@ -162,9 +199,14 @@ export function focusSecondsLeft(): number {
   try {
     const raw = window.localStorage.getItem(FOCUS_KEY)
     if (!raw) return 0
-    const { endsAt } = JSON.parse(raw) as { endsAt?: number }
-    if (typeof endsAt !== "number") return 0
-    return Math.max(0, Math.round((endsAt - Date.now()) / 1000))
+    const state = JSON.parse(raw) as { remainingSeconds?: number; startedAt?: number; endsAt?: number }
+    // Migrate a session created by the previous deadline-based implementation.
+    if (typeof state.remainingSeconds !== "number" && typeof state.endsAt === "number") {
+      return Math.max(0, Math.round((state.endsAt - Date.now()) / 1000))
+    }
+    if (typeof state.remainingSeconds !== "number") return 0
+    const elapsed = typeof state.startedAt === "number" ? Math.floor((Date.now() - state.startedAt) / 1000) : 0
+    return Math.max(0, state.remainingSeconds - elapsed)
   } catch {
     return 0
   }

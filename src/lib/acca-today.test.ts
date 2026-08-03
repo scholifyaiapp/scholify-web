@@ -7,6 +7,7 @@ import {
   completePendingTodayTask,
   allocateTaskMinutes,
   type TodayTask,
+  buildTodayPlan,
 } from "@/lib/acca-today"
 
 const task = (action: TodayTask["action"]): TodayTask => ({ id: action, icon: "", title: action, detail: "", action })
@@ -18,7 +19,7 @@ describe("allocateTaskMinutes", () => {
     expect(mins).toHaveLength(4)
     expect(mins.every((m) => m >= 1)).toBe(true)
     const total = mins.reduce((a, b) => a + b, 0)
-    expect(Math.abs(total - 60)).toBeLessThanOrEqual(tasks.length) // rounding drift only
+    expect(total).toBe(60)
     // practice (heaviest weight) gets the biggest slice
     expect(Math.max(...mins)).toBe(mins[2])
   })
@@ -26,6 +27,21 @@ describe("allocateTaskMinutes", () => {
   it("never returns zero minutes and handles an empty plan", () => {
     expect(allocateTaskMinutes([], 60)).toEqual([])
     expect(allocateTaskMinutes([task("study")], 60)).toEqual([60])
+  })
+
+  it("allocates the complete budget exactly across a longer sectioned plan", () => {
+    const tasks = [task("study"), task("essentials"), task("section"), task("section"), task("section"), task("flashcards")]
+    expect(allocateTaskMinutes(tasks, 54).reduce((sum, minutes) => sum + minutes, 0)).toBe(54)
+  })
+})
+
+describe("official daily-plan structure", () => {
+  it("separates Sections A and B for an F1–F4 paper", () => {
+    expect(buildTodayPlan("BT").filter((item) => item.action === "section").map((item) => item.section)).toEqual(["A", "B"])
+  })
+
+  it("separates Sections A, B and C where the official exam has all three", () => {
+    expect(buildTodayPlan("PM").filter((item) => item.action === "section").map((item) => item.section)).toEqual(["A", "B", "C"])
   })
 })
 

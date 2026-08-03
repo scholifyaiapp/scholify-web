@@ -40,10 +40,10 @@ import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
  */
 
 const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
+  diagnostic: 15, weak: 25, practice: 20, section: 15, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
 }
 const MISSION_ICONS: Record<TodayAction, IconName> = {
-  diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+  diagnostic: "diagnostic", weak: "weak", practice: "practice", section: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
 }
 
 /** Deep-link for a mission task — carries the area so study/essentials land on today's topic. */

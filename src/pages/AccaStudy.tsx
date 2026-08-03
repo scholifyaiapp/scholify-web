@@ -16,6 +16,7 @@ import ExaminerView from "@/components/acca/ExaminerView"
 import CbeMockRunner from "@/components/acca/CbeMockRunner"
 import CbeToolsDock, { CbeBlueprintCard } from "@/components/acca/CbeTools"
 import { constructedSectionLabel, examBlueprint } from "@/lib/acca-exam-structure"
+import { buildCbeMock } from "@/lib/acca-cbe-mock"
 import FlashcardsView from "@/components/acca/FlashcardsView"
 import GenerateView from "@/components/acca/GenerateView"
 import ExamDayFlow from "@/components/acca/ExamDayFlow"
@@ -54,7 +55,7 @@ import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
+import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, resumeFocusSession, pauseFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import { recordDayActive } from "@/lib/acca-schedule"
 import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, type StudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
@@ -374,6 +375,33 @@ export default function AccaStudy() {
     setMode("session")
   }
 
+  /** A daily practice block for one official exam section only. */
+  function startSectionSession(sectionId: "A" | "B" | "C") {
+    if (!paperId) return
+    const section = examBlueprint(paperId)?.sections.find((item) => item.id === sectionId)
+    if (!section) return
+    if (section.kind === "constructed") {
+      openExaminer()
+      return
+    }
+    const composed = buildCbeMock(paperId, nextMockForm(getMockHistory(paperId).length)).sections.find((item) => item.id === sectionId)
+    const qs = (composed?.items ?? []).flatMap((item) => {
+      if (item.kind === "ot") return [item.q]
+      if (item.kind === "caseq") return [{ ...item.q, stem: `${item.caseRef.title}\n\n${item.caseRef.scenario}\n\n${item.q.stem}` }]
+      return []
+    }).slice(0, SESSION_SIZE)
+    if (qs.length === 0) {
+      toast.info(`Section ${sectionId} practice is not available for this paper yet.`)
+      return
+    }
+    loadQuestions(qs)
+    setIdx(0); setCorrectCount(0); setLog([])
+    setIsMock(false); setIsBankRun(false); setIsTopicTest(false); setTopicArea(null)
+    setDeadline(Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000); expiredRef.current = false
+    resetQuestion()
+    setMode("session")
+  }
+
   /** Category 2 — the five essential questions on today's studied topic. */
   function startEssentials(area?: string | null) {
     if (!paperId) return
@@ -579,6 +607,7 @@ export default function AccaStudy() {
               isPro={isPro}
               onBack={() => { setPaperId(null); setMode("picker") }}
               onPractice={() => startSession(false, false)}
+              onSection={startSectionSession}
               onBankRun={startBankRun}
               onWeak={() => startSession(true, false)}
               onMock={() => startSession(false, true)}
@@ -1056,6 +1085,7 @@ function Overview({
   isPro,
   onBack,
   onPractice,
+  onSection,
   onBankRun,
   onWeak,
   onMock,
@@ -1074,6 +1104,7 @@ function Overview({
   isPro: boolean
   onBack: () => void
   onPractice: () => void
+  onSection: (section: "A" | "B" | "C") => void
   onBankRun: (size?: MixedBankSize) => void
   onWeak: () => void
   onMock: () => void
@@ -1127,6 +1158,7 @@ function Overview({
     if (t.action === "diagnostic") navigate("/study/diagnostic")
     else if (t.action === "weak") onWeak()
     else if (t.action === "practice") onPractice()
+    else if (t.action === "section" && t.section) onSection(t.section)
     else if (t.action === "essentials") onEssentials(t.area)
     else if (t.action === "flashcards") onFlashcards()
     else if (t.action === "mock") onMock()
@@ -1138,12 +1170,15 @@ function Overview({
   // just shows a toast/paywall and stays on this screen, so stamping it would
   // false-complete the task and wrongly advance the mission on the next visit.
   function runTodayTask(t: (typeof todayPlan)[number]) {
-    const bounces = t.action === "mock" && (!gate.unlocked || !isPro)
+    const constructedSection = t.action === "section" && t.section
+      ? examBlueprint(paper.id)?.sections.find((section) => section.id === t.section)?.kind === "constructed"
+      : false
+    const bounces = (t.action === "mock" && (!gate.unlocked || !isPro)) || (constructedSection && !isPro)
     if (!bounces) setPendingTodayTask(paper.id, t.id, t.action === "study")
     runToday(t)
   }
   const todayIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+    diagnostic: "diagnostic", weak: "weak", practice: "practice", section: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
   }
 
   // Sequential unlock — only the first unfinished task is active; later ones wait.
@@ -1162,6 +1197,7 @@ function Overview({
   const [focusLeft, setFocusLeft] = useState(() => focusSecondsLeft())
   useEffect(() => {
     if (!lockedIn) return
+    resumeFocusSession()
     const tick = () => {
       const left = focusSecondsLeft()
       setFocusLeft(left)
@@ -1172,7 +1208,10 @@ function Overview({
     }
     tick()
     const id = window.setInterval(tick, 1000)
-    return () => window.clearInterval(id)
+    return () => {
+      window.clearInterval(id)
+      pauseFocusSession()
+    }
   }, [lockedIn])
   function enterLockedIn() {
     startFocusSession(plan.dailyMinutes || 60)
@@ -1185,7 +1224,9 @@ function Overview({
   }
   const activeTodayIdx = todayPlan.findIndex((t) => !todayDone.includes(t.id))
   // Split the daily-minutes commitment across today's tasks (≈10/10/20/… of 60).
-  const taskMins = allocateTaskMinutes(todayPlan, plan.dailyMinutes || 60)
+  const techArticle = officialResources(paper.id).find((r) => /technical article/i.test(r.title))
+  const articleMinutes = techArticle ? Math.max(5, Math.round((plan.dailyMinutes || 60) * 0.1)) : 0
+  const taskMins = allocateTaskMinutes(todayPlan, Math.max(todayPlan.length, (plan.dailyMinutes || 60) - articleMinutes))
   // Charles's honest exam-timing read, from readiness vs target + daily pace.
   const targetProb = plan.targetProb ?? 75
   const examTimingLine =
@@ -1196,8 +1237,6 @@ function Overview({
         : prob >= targetProb
           ? `You're at ${prob}% — above target on knowledge. Clear the mock gate and you're ready to book ${paper.id}.`
           : `You're at ${prob}% vs a ${targetProb}% target. At ${plan.dailyMinutes || 60} min/day, keep the loop — I'll green-light your ${paper.id} sitting the moment your readiness holds there.`
-  // ACCA's own technical articles for this paper (examining-team explainers).
-  const techArticle = officialResources(paper.id).find((r) => /technical article/i.test(r.title))
   // Today-mission completion: the plan's tasks (topic learn, essentials, practice,
   // flashcards…) plus the optional technical article — drives the animated ring.
   const doneTasks = todayPlan.filter((t) => todayDone.includes(t.id)).length
@@ -1246,6 +1285,7 @@ function Overview({
               icons={todayIcons}
               onRun={runTodayTask}
               techArticle={techArticle}
+              articleMinutes={articleMinutes}
               articleDone={articleDone}
               onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
               paperId={paper.id}
@@ -1375,28 +1415,9 @@ function Overview({
           <Icon name="mock" size={15} color="#fff" /> Start {plan.dailyMinutes || 60}-min Locked In session
         </motion.button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "16px 0 8px" }}>
-          <Icon name="mission" size={14} color="#C80000" strokeWidth={2.4} />
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: "#C80000" }}>TODAY'S PLAN · THE PLAN ALREADY CHOSE FOR YOU</span>
-          <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 750, color: DIM }}>
-            {(() => {
-              const t = getTodayStats()
-              return t.goalMet ? "goal met" : `${doneTasks} of ${todayPlan.length} done`
-            })()}
-          </span>
+        <div style={{ marginTop: 12, padding: "11px 13px", borderRadius: 12, background: "var(--sch-card-2)", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
+          Charles has divided your {plan.dailyMinutes || 60} minutes across study, 5 Quizzes, each official exam section, flashcards and an ACCA technical article. Start Locked In to see and work the sequence.
         </div>
-        <MissionTasks
-          tasks={todayPlan}
-          done={todayDone}
-          activeIdx={activeTodayIdx}
-          mins={taskMins}
-          icons={todayIcons}
-          onRun={runTodayTask}
-          techArticle={techArticle}
-          articleDone={articleDone}
-          onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
-          paperId={paper.id}
-        />
       </motion.div>
       </motion.div>
       )}
@@ -1598,7 +1619,6 @@ function Overview({
               )}
             </div>
             {/* the full path — topic by topic, Kaplan-style (the main content lives here) */}
-            <StudyPathSection paperId={paper.id} curated={curated} onTopic={onTopic} />
 
             {/* 2 · Quizzes after study */}
             <SectionHead icon="mission" right={minChip(minutesFor(["essentials"]))}>2 · Quizzes</SectionHead>
@@ -2398,7 +2418,7 @@ function CircleTimer({ secondsLeft, totalSeconds, size = 72 }: { secondsLeft: nu
 /* The today-mission task list + optional ACCA technical article — shared by the
  * normal Today card and the Locked-In focus overlay so both stay in sync. */
 function MissionTasks({
-  tasks, done, activeIdx, mins, icons, onRun, techArticle, articleDone, onArticle, paperId,
+  tasks, done, activeIdx, mins, icons, onRun, techArticle, articleMinutes, articleDone, onArticle, paperId,
 }: {
   tasks: TodayTask[]
   done: string[]
@@ -2407,10 +2427,12 @@ function MissionTasks({
   icons: Record<TodayAction, IconName>
   onRun: (t: TodayTask) => void
   techArticle?: { title: string; detail: string; url: string }
+  articleMinutes: number
   articleDone: boolean
   onArticle: () => void
   paperId: string
 }) {
+  const articleLocked = activeIdx !== -1
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2438,7 +2460,7 @@ function MissionTasks({
               <IconBadge name={isDone ? "done" : icons[t.action]} tone={isActive ? "brand" : "neutral"} size={38} />
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-                  {["①", "②", "③", "④", "⑤"][i] ?? ""} {t.title}
+                  {i + 1}. {t.title}
                 </span>
                 <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
                   {locked ? "Finish the step above to unlock this" : `${t.detail} · ~${mins[i] ?? MISSION_MINUTES[t.action]} min`}
@@ -2460,17 +2482,24 @@ function MissionTasks({
           href={techArticle.url}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onArticle}
+          aria-disabled={articleLocked}
+          onClick={(event) => {
+            if (articleLocked) {
+              event.preventDefault()
+              return
+            }
+            onArticle()
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${articleDone ? C.green : BORDER}`, background: "var(--sch-bg)" }}
+          style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", marginTop: 8, padding: "12px 14px", borderRadius: 12, border: `1px dashed ${articleDone ? C.green : BORDER}`, background: "var(--sch-bg)", opacity: articleLocked ? 0.6 : 1, cursor: articleLocked ? "default" : "pointer" }}
         >
           <IconBadge name={articleDone ? "done" : "learn"} tone={articleDone ? "green" : "neutral"} size={38} />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-              Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
+              {tasks.length + 1}. Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
             </span>
-            <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>Examining-team explainer for {paperId} · optional deepen</span>
+            <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{articleLocked ? "Finish the step above to unlock this" : `Examining-team explainer for ${paperId} · ~${articleMinutes} min`}</span>
           </span>
           {articleDone ? <Icon name="done" size={16} color={C.green} style={{ flexShrink: 0 }} /> : <Icon name="arrow" size={14} color={DIM} style={{ flexShrink: 0 }} />}
         </motion.a>
