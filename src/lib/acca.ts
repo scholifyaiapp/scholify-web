@@ -60,6 +60,13 @@ const VARIANT_AREA_LABELS: Record<string, Record<string, Record<string, string>>
       D: "Formation and constitution of business organisations",
       E: "Capital and the financing of companies",
       F: "Management, administration and regulation of companies",
+      /*
+       * Area G differs too, and was missing until the LW-Global content rebuild: the
+       * ENG label is "Insolvency law", but the Global syllabus area is broader and
+       * jurisdiction-neutral. Areas D and H are worded identically in both variants,
+       * so they need no override.
+       */
+      G: "Companies in difficulty or in crisis",
     },
   },
 }
