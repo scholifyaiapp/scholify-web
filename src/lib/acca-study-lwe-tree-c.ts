@@ -322,7 +322,7 @@ export const LWE_TREE_24: StudyChapter = {
           kind: "callout",
           tone: "key",
           title: "The duty of fidelity does not stop the employee leaving",
-          md: "An employee owes **good faith** during employment: no competing, no secret profits, no misuse of confidential information. But after employment ends, only **genuine trade secrets and confidential information** stay protected by the implied duty — an ex-employee is otherwise free to use their **general skill and experience**, and to compete. To go further, the employer needs an **express restraint of trade** clause, and that is only enforceable so far as it is **reasonable** in scope, area and duration to protect a legitimate interest (chapter 14).",
+          md: "An employee owes **good faith** during employment: no competing, no secret profits, no misuse of confidential information. But after employment ends, only **genuine trade secrets and confidential information** stay protected by the implied duty — an ex-employee is otherwise free to use their **general skill and experience**, and to compete. To go further, the employer needs an **express restraint of trade** clause, and that is only enforceable so far as it is **reasonable** in scope, area and duration to protect a legitimate interest (chapter 18).",
         },
         {
           kind: "example",
