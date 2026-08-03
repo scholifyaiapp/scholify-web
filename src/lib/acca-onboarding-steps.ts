@@ -95,7 +95,7 @@ export const STEP_LABELS: readonly string[] = [
 /** The steps shown, in order, for a learner on this route (null = not yet chosen). */
 export function onboardingSteps(learnerRoute: LearnerRoute | null): number[] {
   return Array.from({ length: ONBOARDING_TOTAL }, (_, index) => index).filter(
-    (step) => step !== RESOURCE_STEP && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
+    (step) => ![RESOURCE_STEP, EXAM_DATE_STEP, GOAL_STEP].includes(step) && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
   )
 }
 

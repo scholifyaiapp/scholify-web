@@ -401,6 +401,14 @@ export default function Welcome() {
 
   function persist(complete = true) {
     if (!paper) return false
+    const charlesPlan = buildOnboardingGuide({
+      paperId: paper,
+      route: learnerRoute,
+      englishLevel,
+      minutesPerDay: minutes,
+      daysPerWeek,
+      examDate: null,
+    })
     setPassedPapers([...passed])
     setStudyingPapers([paper])
     if (paperVariant) setPaperVariant(paper, paperVariant)
@@ -430,8 +438,8 @@ export default function Welcome() {
      * dashboard's daily goal and the plan disagreed, and neither matched the
      * minutes the learner had actually promised.
      */
-    const questionsPerDay = shapeDay(minutes, target).questionGoal
-    setPlan(paper, { examDate: examDate || null, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: target })
+    const questionsPerDay = shapeDay(minutes, charlesPlan.recommendedTarget).questionGoal
+    setPlan(paper, { examDate: charlesPlan.recommendedExamDate, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: charlesPlan.recommendedTarget })
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()
     if (complete) void persistAccountSetup()
@@ -451,7 +459,7 @@ export default function Welcome() {
     return true
   }
 
-  const onboardingProps = () => ({ paper, minutes, target, goal, learnerRoute, assessmentPath: resultChoice, hasExamDate: Boolean(examDate) })
+  const onboardingProps = () => ({ paper, minutes, learnerRoute, assessmentPath: resultChoice, scheduling: "charles_recommended" })
   // Each finish path IS the experience answer, so the loop knows the persona from
   // the learner's actual choice (career→professional is already set in persist()).
   const finishToDiagnostic = () => {
@@ -1617,15 +1625,15 @@ function ReadySlide({
   /** Jump to the step that owns a summary row. */
   onEdit: (step: number) => void
 }) {
-  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate: examDate || null })
+  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate: null })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
   /** label, value, and the step that owns it — the third field makes it editable. */
-  const rows: [string, string, number][] = [
+  const rows: [string, string, number | null][] = [
     ["Paper", paper, PAPER_STEP],
-    ["Daily", `${minutes} min · ${slotLabel}`, TIME_STEP],
-    ["Exam", sitting ? `${sitting.label} (wk ${sitting.week})` : examDate || "Paced by mastery", EXAM_DATE_STEP],
-    ...(goalLabel ? ([["Goal", goalLabel, GOAL_STEP]] as [string, string, number][]) : []),
+    ["Schedule", `${minutes} min · ${daysPerWeek} days · ${slotLabel}`, TIME_STEP],
+    ["Charles's target", `${guide.recommendedTarget}% readiness`, null],
+    ["Exam estimate", guide.recommendedExamLabel, null],
   ]
   return (
     <div style={{ maxWidth: 500 }}>
@@ -1649,15 +1657,15 @@ function ReadySlide({
           <motion.button
             key={k}
             type="button"
-            onClick={() => onEdit(jumpTo)}
+            onClick={() => { if (jumpTo !== null) onEdit(jumpTo) }}
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.08 + i * 0.08 }}
             whileTap={{ scale: 0.995 }}
-            aria-label={`${k}: ${v}. Tap to change.`}
+            aria-label={`${k}: ${v}${jumpTo !== null ? ". Tap to change." : ". Recommended by Charles."}`}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-              width: "100%", textAlign: "left", background: "transparent", cursor: "pointer",
+              width: "100%", textAlign: "left", background: "transparent", cursor: jumpTo !== null ? "pointer" : "default",
               padding: isMobile ? "16px 18px" : "18px 22px", minHeight: 56,
               border: "none", borderTop: i > 0 ? `1px solid ${BORDER}` : "none", font: "inherit",
             }}
@@ -1665,12 +1673,12 @@ function ReadySlide({
             <span style={{ font: `600 12px/1 ${MONO}`, letterSpacing: "0.06em", textTransform: "uppercase", color: FAINT, flexShrink: 0 }}>{k}</span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <span style={{ font: `700 ${isMobile ? 14 : 15}px/1.2 ${SANS}`, color: INK, textAlign: "right" }}>{v}</span>
-              <Icon name="chevron" size={14} color={FAINT} />
+              {jumpTo !== null ? <Icon name="chevron" size={14} color={FAINT} /> : <Icon name="tutor" size={14} color="#C80000" />}
             </span>
           </motion.button>
         ))}
         <div style={{ padding: isMobile ? "10px 18px 14px" : "10px 22px 16px", borderTop: `1px solid ${BORDER}`, font: `500 11.5px/1.4 ${SANS}`, color: FAINT }}>
-          Tap any line to change it.
+          You choose your available schedule. Charles sets and continually adjusts the target and exam window.
         </div>
       </div>
       {/* Charles's "why", warm and honest — the reason the recommended path

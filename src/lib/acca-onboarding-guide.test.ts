@@ -32,6 +32,14 @@ const base: OnboardingGuideInput = {
 }
 
 describe("buildOnboardingGuide — the capacity verdict", () => {
+  it("lets Charles choose a paper-aware target and future exam window", () => {
+    const knowledge = buildOnboardingGuide({ ...base, paperId: "BT", route: "new", examDate: null }, NOW)
+    const strategicRetake = buildOnboardingGuide({ ...base, paperId: "AAA", route: "practice", examDate: null }, NOW)
+    expect(knowledge.recommendedTarget).toBe(72)
+    expect(strategicRetake.recommendedTarget).toBe(82)
+    expect(new Date(strategicRetake.recommendedExamDate).getTime()).toBeGreaterThan(NOW.getTime())
+    expect(strategicRetake.recommendedExamLabel).toContain("exam window")
+  })
   it("offers no fixes when there is enough time", () => {
     const g = buildOnboardingGuide(base, NOW)
     expect(g.status).not.toBe("risky")

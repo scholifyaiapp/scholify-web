@@ -5,6 +5,8 @@ import {
   ROUTE_STEP,
   RESOURCE_STEP,
   ASSESSMENT_STEP,
+  EXAM_DATE_STEP,
+  GOAL_STEP,
   SLIDE_POSES,
 } from "@/lib/acca-onboarding-steps"
 
@@ -30,6 +32,13 @@ describe("onboarding flow", () => {
   it("never shows the Kaplan/BPP resource picker", () => {
     for (const route of [null, "new", "course", "practice"] as const) {
       expect(onboardingSteps(route), `route=${route}`).not.toContain(RESOURCE_STEP)
+    }
+  })
+
+  it("lets Charles choose the target and exam window instead of asking the learner", () => {
+    for (const route of [null, "new", "course", "practice"] as const) {
+      expect(onboardingSteps(route)).not.toContain(EXAM_DATE_STEP)
+      expect(onboardingSteps(route)).not.toContain(GOAL_STEP)
     }
   })
 

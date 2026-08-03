@@ -37,6 +37,11 @@ export interface OnboardingGuide {
   recommendedHours: number
   weeklyHours: number
   recommendedWeeks: number
+  /** Charles's evidence-aware readiness target, not a learner-selected wish. */
+  recommendedTarget: number
+  /** Provisional date; the live plan moves it as actual performance arrives. */
+  recommendedExamDate: string
+  recommendedExamLabel: string
   availableWeeks: number | null
   status: "comfortable" | "focused" | "risky"
   headline: string
@@ -54,6 +59,36 @@ export interface OnboardingGuide {
    * single most useful nudge in the whole deck.
    */
   minutesNudge: string | null
+}
+
+const KNOWLEDGE_PAPERS = new Set(["BT", "MA", "FA", "LW"])
+const SESSION_PAPERS = new Set(["PM", "TX", "FR", "AA", "FM", "SBL", "SBR", "AFM", "APM", "ATX", "AAA"])
+
+function isoDay(date: Date): string {
+  return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")}`
+}
+
+/** First realistic exam date/window after Charles's estimated preparation. */
+function recommendedExamFor(paperId: string, weeks: number, now: Date): { date: string; label: string } {
+  const ready = new Date(now)
+  ready.setHours(12, 0, 0, 0)
+  ready.setDate(ready.getDate() + weeks * 7)
+  if (!SESSION_PAPERS.has(paperId)) {
+    return { date: isoDay(ready), label: `Ready from ${ready.toLocaleDateString(undefined, { month: "long", year: "numeric" })}` }
+  }
+  // Session exams run in March, June, September and December. Use the first
+  // window with a small revision buffer after the estimated learning finish.
+  for (let offset = 0; offset < 8; offset += 1) {
+    const year = ready.getFullYear() + Math.floor((ready.getMonth() + offset * 3) / 12)
+    const month = ((Math.floor(ready.getMonth() / 3) * 3 + offset * 3) % 12 + 12) % 12
+    const sessionMonth = [2, 5, 8, 11].find((candidate) => candidate >= month) ?? 2
+    const sessionYear = sessionMonth < month ? year + 1 : year
+    const candidate = new Date(sessionYear, sessionMonth, 7, 12)
+    if (candidate.getTime() >= ready.getTime() + 7 * 86400000) {
+      return { date: isoDay(candidate), label: `${candidate.toLocaleDateString(undefined, { month: "long", year: "numeric" })} exam window` }
+    }
+  }
+  return { date: isoDay(ready), label: ready.toLocaleDateString(undefined, { month: "long", year: "numeric" }) }
 }
 
 /** Protected hours a week, from the two things the learner actually chose. */
@@ -96,6 +131,11 @@ export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date
   const recommendedHours = Math.round(base * routeFactor * languageFactor)
   const weeklyHours = weeklyHoursFor(input.minutesPerDay, input.daysPerWeek)
   const recommendedWeeks = weeksNeededFor(recommendedHours, weeklyHours)
+  const recommendedTarget = Math.min(82,
+    (KNOWLEDGE_PAPERS.has(input.paperId) ? 72 : input.paperId === "SBL" || input.paperId === "SBR" || ["AFM", "APM", "ATX", "AAA"].includes(input.paperId) ? 79 : 76)
+    + (input.route === "practice" ? 3 : input.route === "course" ? 1 : 0),
+  )
+  const recommendedExam = recommendedExamFor(input.paperId, recommendedWeeks, now)
   const exam = input.examDate ? new Date(`${input.examDate}T12:00:00`) : null
   const availableWeeks = exam && !Number.isNaN(exam.getTime())
     ? Math.max(0, Math.ceil((exam.getTime() - now.getTime()) / 604800000))
@@ -208,6 +248,9 @@ export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date
     recommendedHours,
     weeklyHours,
     recommendedWeeks,
+    recommendedTarget,
+    recommendedExamDate: recommendedExam.date,
+    recommendedExamLabel: recommendedExam.label,
     availableWeeks,
     status,
     headline,
