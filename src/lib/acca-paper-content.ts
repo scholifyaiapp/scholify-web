@@ -32,7 +32,6 @@ import { FM_CONTENT_TARGET } from "@/lib/fm-content-contract"
 import { applyVariantStudyContent } from "@/lib/acca-variant-content"
 import { getPaperVariant } from "@/lib/acca-profile"
 import { completeTxGlobalSectionB, completeTxGlobalSectionC } from "@/lib/acca-tx-global-expansion"
-import { LW_GLOBAL_QUESTIONS } from "@/lib/acca-lw-global-questions"
 import { tierCompletionQuestions } from "@/lib/acca-tier-completion"
 import { completeSblWritten } from "@/lib/acca-sbl-expansion"
 import { SBL_CONTENT_TARGET } from "@/lib/sbl-content-contract"
@@ -225,6 +224,33 @@ const CASE_MODULES: Record<string, Loader[]> = {
   FR: [() => import("@/lib/acca-cases-fr")],
 }
 
+/*
+ * LW-GLOBAL's own content, loaded only when that variant is active.
+ *
+ * These are DYNAMIC loaders for the same reason every other content module is: a
+ * static import here would put LW-Global's bank into the shared chunk that every
+ * paper downloads. The Global question bank used to be statically imported at the top
+ * of this file, which did exactly that — a defect that mattered little at 48 questions
+ * and would have mattered a great deal at 378.
+ *
+ * The Global variant needs its own lists because three of LW's eight syllabus areas
+ * differ from the ENG variant (see acca-study-lw-global.ts): its Area B is the CISG,
+ * its Area C is transport and payment, and its Area G is companies in difficulty.
+ */
+const LW_GLOBAL_QUESTION_MODULES: Loader[] = [
+  () => import("@/lib/acca-lw-global-questions"),
+  () => import("@/lib/acca-questions-lwg-kit-a"),
+  () => import("@/lib/acca-questions-lwg-kit-b"),
+  () => import("@/lib/acca-questions-lwg-kit-cd"),
+  () => import("@/lib/acca-questions-lwg-kit-efgh"),
+]
+
+/*
+ * LW-Global's Section B is 15 authored MTQs at the real 6-mark unit size — five per
+ * sitting, three disjoint sittings — replacing 350 generated linked questions.
+ */
+const LW_GLOBAL_CASE_MODULES: Loader[] = [() => import("@/lib/acca-cases-lw-global")]
+
 const BRIEF_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-briefs-fa-official")],
   FR: [() => import("@/lib/acca-briefs-fr-official")],
@@ -270,24 +296,28 @@ export function loadPaperContent(paperId: string): Promise<void> {
 
   const job = (async () => {
     const variant = getPaperVariant(paperId)
-    const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods, caseMods] = await Promise.all([
+    const isLwGlobal = paperId === "LW" && variant === "GLOBAL"
+    const isTxGlobal = paperId === "TX" && variant === "GLOBAL"
+    const usesGlobalBank = isLwGlobal || isTxGlobal
+    const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods, caseMods, lwGlobalMods, lwGlobalCaseMods] = await Promise.all([
       loadAll(QUESTION_MODULES[paperId]),
       loadAll(CHAPTER_MODULES[paperId]),
       loadAll(FLASHCARD_MODULES[paperId]),
       loadAll(WRITTEN_MODULES[paperId]),
       loadAll(BRIEF_MODULES[paperId]),
       loadAll(CASE_MODULES[paperId]),
+      loadAll(isLwGlobal ? LW_GLOBAL_QUESTION_MODULES : undefined),
+      loadAll(isLwGlobal ? LW_GLOBAL_CASE_MODULES : undefined),
     ])
-    const isLwGlobal = paperId === "LW" && variant === "GLOBAL"
-    const isTxGlobal = paperId === "TX" && variant === "GLOBAL"
-    const usesGlobalBank = isLwGlobal || isTxGlobal
-    // LW-Global cannot use the UK bank (different syllabus: Areas B and C are the
-    // CISG and international transport, not obligations and employment), so it
-    // gets its own authored questions. Without them the paper fell through to
-    // 100% study-text recall — 342 of 350 derived, and Global is the DEFAULT LW
-    // variant, so that was the default experience.
+    /*
+     * LW-Global cannot use the ENG bank: three of the eight syllabus areas differ, so
+     * its Area B is the CISG and Incoterms, its Area C is transport documents and
+     * payment, and its Area G is companies in difficulty. Before it had its own bank
+     * the paper fell through to almost pure study-text recall — 342 of 350 derived —
+     * and Global is the DEFAULT LW variant, so that was the default experience.
+     */
     const collectedQuestions = isLwGlobal
-      ? LW_GLOBAL_QUESTIONS
+      ? collect<AccaQuestion>(lwGlobalMods, paperId)
       : usesGlobalBank
         ? []
         : collect<AccaQuestion>(questionMods, paperId)
@@ -403,6 +433,10 @@ export function loadPaperContent(paperId: string): Promise<void> {
           ? completeAaSectionA(collect<OtCase>(caseMods, paperId))
         : paperId === "FM"
           ? completeFmSectionB(collect<OtCase>(caseMods, paperId))
+        // LW-Global has its own 15 authored MTQs at the real 6-mark unit size, so it
+        // is served directly and never padded with generated conceptual cases.
+        : isLwGlobal
+          ? collect<OtCase>(lwGlobalCaseMods, paperId)
         : completeF1F4SectionB(paperId, usesGlobalBank ? [] : collect<OtCase>(caseMods, paperId), chapters),
     }
     registerPaperContent(paperId, content)

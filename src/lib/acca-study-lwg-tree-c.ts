@@ -224,16 +224,16 @@ export const LWG_TREE_15: StudyChapter = {
         {
           kind: "definition",
           term: "Credit transfer",
-          md: "The **series of operations, beginning with the originator's payment order, made for the purpose of placing funds at the disposal of a beneficiary**. It includes any payment order issued by the originator's bank, or by an intermediary bank, in order to carry out the originator's payment order.",
+          md: "**Article 2(a)** of the Model Law puts it this way: \"the series of operations, beginning with the originator's payment order, made for the purpose of placing funds at the disposal of a beneficiary\", and adds that it \"includes any payment order issued by the originator's bank or by an intermediary bank in order to carry out the originator's payment order\". Read the definition carefully: the credit transfer is the **whole chain**, not the single debit at one end of it.",
         },
         {
           kind: "table",
-          caption: "The parties",
+          caption: "The parties, as article 2 defines them",
           head: ["Party", "Who it is"],
           rows: [
-            ["**Originator**", "The issuer of the **first** payment order in the credit transfer — in a sale, the buyer"],
+            ["**Originator** — art 2(b)", "\"The issuer of the first payment order in a credit transfer\" — in a sale, the buyer"],
             ["**Originator's bank**", "The bank that receives the originator's payment order"],
-            ["**Intermediary bank**", "**Any receiving bank other than** the originator's bank and the beneficiary's bank"],
+            ["**Intermediary bank** — art 2(f)", "\"Any receiving bank other than the originator's bank and the beneficiary's bank\""],
             ["**Beneficiary's bank**", "The bank that receives the payment order for the beneficiary's account"],
             ["**Beneficiary**", "The person to be paid — in a sale, the seller"],
           ],
@@ -266,13 +266,13 @@ export const LWG_TREE_15: StudyChapter = {
         q: "In a credit transfer, which bank is an \"intermediary bank\"?",
         options: [
           "The originator's bank, because it stands between the originator and the beneficiary",
-          "Any receiving bank other than the originator's bank and the beneficiary's bank",
+          "Any receiving bank other than the originator's bank and the beneficiary's bank (art 2(f))",
           "Only the last bank before the beneficiary's bank",
           "Any bank that charges a fee for the transfer",
         ],
         correct: 1,
         explain:
-          "ANY RECEIVING BANK OTHER THAN the originator's bank and the beneficiary's bank. The definition is exclusionary, so a chain may contain several intermediaries or none — and the originator's own bank is never one.",
+          "Article 2(f): \"any receiving bank other than the originator's bank and the beneficiary's bank\". The definition works by EXCLUSION, so a chain may contain several intermediaries or none — and the originator's own bank is never one.",
       },
     },
     {
@@ -355,7 +355,7 @@ export const LWG_TREE_15: StudyChapter = {
   examTraps: [
     {
       trap: "Calling the originator's bank an intermediary bank.",
-      fix: "An intermediary is any receiving bank OTHER THAN the originator's bank and the beneficiary's bank.",
+      fix: "Art 2(f): an intermediary is any receiving bank OTHER THAN the originator's bank and the beneficiary's bank.",
     },
     {
       trap: "Treating the transfer as complete when the buyer's account is debited.",
@@ -375,15 +375,15 @@ export const LWG_TREE_15: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "Credit transfer", def: "The series of operations beginning with the originator's payment order, made to place funds at the disposal of a beneficiary." },
-    { term: "Originator", def: "The issuer of the first payment order in a credit transfer." },
-    { term: "Intermediary bank", def: "Any receiving bank other than the originator's bank and the beneficiary's bank." },
+    { term: "Credit transfer", def: "Art 2(a) — the series of operations beginning with the originator's payment order, made to place funds at the disposal of a beneficiary." },
+    { term: "Originator", def: "Art 2(b) — the issuer of the first payment order in a credit transfer." },
+    { term: "Intermediary bank", def: "Art 2(f) — any receiving bank other than the originator's bank and the beneficiary's bank." },
     { term: "Money-back guarantee", def: "The rule that where a credit transfer is not completed the originator's bank must refund the originator with interest, each bank looking to the bank it paid." },
     { term: "Payment order", def: "An instruction to a receiving bank to place a sum at the disposal of a beneficiary, which the bank must act on once accepted." },
   ],
   summary: [
     "A credit transfer is the series of operations from the originator's payment order to funds reaching the beneficiary.",
-    "An intermediary bank is any receiving bank other than the originator's bank and the beneficiary's bank.",
+    "Art 2(f): an intermediary bank is any receiving bank other than the originator's bank and the beneficiary's bank.",
     "A receiving bank must act on an accepted order, follow routing instructions, and notify insufficient data, delay or non-execution.",
     "If the transfer is not completed the originator's bank refunds with interest, and each bank looks to the bank it paid.",
     "Delay attracts interest for the period of delay; consequential loss is only narrowly recoverable.",
@@ -391,8 +391,8 @@ export const LWG_TREE_15: StudyChapter = {
     "Where security matters, a documentary credit substitutes a bank's undertaking for the buyer's willingness to pay.",
   ],
   knowledgeDiagnostic: [
-    { q: "Define a credit transfer.", a: "The series of operations, beginning with the originator's payment order, made for the purpose of placing funds at the disposal of a beneficiary." },
-    { q: "Who is an intermediary bank?", a: "Any receiving bank other than the originator's bank and the beneficiary's bank." },
+    { q: "Define a credit transfer.", a: "Art 2(a) — the series of operations, beginning with the originator's payment order, made for the purpose of placing funds at the disposal of a beneficiary." },
+    { q: "Who is an intermediary bank?", a: "Art 2(f) — any receiving bank other than the originator's bank and the beneficiary's bank." },
     { q: "What is the money-back guarantee?", a: "Where the transfer is not completed, the originator's bank must refund the originator with interest, and each bank in the chain looks to the bank it paid." },
     { q: "What is the remedy for a delayed but completed transfer?", a: "Interest for the period of the delay, payable by the bank responsible, generally to the beneficiary. Consequential loss is only narrowly recoverable." },
     { q: "Why does a bank transfer give a seller less security than a documentary credit?", a: "Payment depends on the buyer instructing it. A credit substitutes a bank's own undertaking, payable against complying documents." },
@@ -417,7 +417,7 @@ export const LWG_TREE_16: StudyChapter = {
     "Three instruments, three quite different levels of protection — and the difference between the strongest and the weakest of them is the difference between a bank's promise and a parent company's good intentions.",
   outcomes: [
     "Define a bill of exchange and a promissory note and identify the parties to each",
-    "Explain and apply the rules of the UN Convention on International Bills of Exchange and International Promissory Notes",
+    "Apply the 1988 UN Convention that governs international bills and notes",
     "Explain the operation of a letter of credit and identify the four parties",
     "Explain the principles of autonomy and strict compliance",
     "Explain the operation and legal effect of a letter of comfort",
@@ -430,7 +430,7 @@ export const LWG_TREE_16: StudyChapter = {
         {
           kind: "definition",
           term: "Bill of exchange",
-          md: "An **unconditional order in writing**, by one person to another, to pay a **specified sum** to a **specified person or to bearer**, either on demand or on a **particular date**. In substance it is a formal, transferable IOU used in trade — a cheque is the everyday example.",
+          md: "A written instruction, carrying **no condition of any kind**, by which one party directs another to hand over a **fixed amount of money** — on demand, or on a named future date — to a party the document identifies or to whoever holds it. In substance it is a transferable IOU that the market will buy and sell; a cheque is the version everyone has already used.",
         },
         {
           kind: "table",
@@ -482,7 +482,7 @@ export const LWG_TREE_16: StudyChapter = {
         {
           kind: "definition",
           term: "Letter of credit (documentary credit)",
-          md: "An **undertaking by a bank to make a payment to a named beneficiary** within a specified time, **against the presentation of documents which comply strictly with the terms of the credit**.",
+          md: "A promise given by a bank, at the buyer's request, to pay the seller a **stated amount within a stated period** — releasing the money only when the seller tenders paperwork that matches what the credit demands, with **no discrepancies**. The bank owes that promise in its own right, and it answers to the documents rather than to the goods.",
         },
         {
           kind: "table",
@@ -615,10 +615,10 @@ export const LWG_TREE_16: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "Bill of exchange", def: "An unconditional written order by one person to another to pay a specified sum to a specified person or bearer, on demand or on a stated date." },
-    { term: "Promissory note", def: "An unconditional written promise by the maker to pay a specified sum to a specified person or bearer." },
+    { term: "Bill of exchange", def: "A written, condition-free instruction from one party to another to hand a fixed amount to a named party or to the holder, either on demand or on a set date." },
+    { term: "Promissory note", def: "A written, condition-free undertaking by the maker itself to hand a fixed amount to a named party or to the holder." },
     { term: "Acceptance", def: "The drawee's undertaking to pay a bill of exchange, making it the acceptor." },
-    { term: "Letter of credit", def: "A bank's undertaking to pay a named beneficiary within a specified time against documents complying strictly with the credit's terms." },
+    { term: "Letter of credit", def: "A bank's own promise, given for the buyer, to pay the seller a stated amount inside a stated period once conforming paperwork is tendered." },
     { term: "Autonomy of credits", def: "The principle that a letter of credit is independent of the underlying sale, so disputes under the sale do not affect the bank's obligation." },
     { term: "Strict compliance", def: "The requirement that documents presented under a credit conform exactly to its terms, any discrepancy entitling the bank to refuse." },
     { term: "Confirming bank", def: "A bank that adds its own undertaking to a credit, giving the beneficiary a paying bank in its own jurisdiction." },

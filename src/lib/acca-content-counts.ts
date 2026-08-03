@@ -36,11 +36,10 @@ export const QUESTION_COUNTS: Record<string, number> = {
   // FA is the third paper rebuilt to a per-chapter authored kit: 534 exam-standard
   // questions, every one at the real Section A unit of 2 marks, and no derived drills.
   FA: 534,
-  // LW's counts are for the DEFAULT variant, which is GLOBAL. The 33-chapter Global
-  // reading tree lifted the authored bank from 56 to 118 by supplying real inline
-  // checks in place of the eight generated chapters' handful. Still short of the 150
-  // floor: LW-Global needs its authored question kit, which is the next step.
-  LW: 118,
+  // LW's counts are for the DEFAULT variant, which is GLOBAL: 444 exam-standard
+  // questions across the 33-chapter tree, in both of the real Section A mark values
+  // (25 × 2 plus 20 × 1), and no derived drills. Was 56 authored against 294 drills.
+  LW: 444,
   PM: 188,
   TX: 237,
   FR: 247,
@@ -68,8 +67,7 @@ export const DRILL_COUNTS: Record<string, number> = {
   BT: 0,
   MA: 0,
   FA: 0,
-  // Falling as the Global tree's authored checks displace filler: 294 → 232.
-  LW: 232,
+  LW: 0,
   PM: 162,
   TX: 113,
   FR: 103,

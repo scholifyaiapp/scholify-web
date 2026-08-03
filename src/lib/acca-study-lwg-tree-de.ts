@@ -32,7 +32,7 @@ export const LWG_TREE_19: StudyChapter = {
     "Distinguish sole traders, partnerships and companies",
     "Explain the meaning and effect of limited liability",
     "Analyse the different types of company, especially private and public",
-    "Illustrate the effect of separate personality and the veil of incorporation",
+    "Show what follows from a company being a person in its own right, screened off from its members",
     "Recognise the instances in which separate personality will be ignored",
   ],
   sections: [
@@ -113,7 +113,7 @@ export const LWG_TREE_19: StudyChapter = {
           kind: "list",
           title: "Other classifications the syllabus expects",
           items: [
-            "**Limited by shares** — members' liability is the amount unpaid on their shares. The commercial norm.",
+            "**Limited by shares** — a member can be called on for whatever part of the share price remains outstanding, and no more. The commercial norm.",
             "**Limited by guarantee** — members undertake to contribute a nominal sum on winding up. Used for non-profit bodies.",
             "**Unlimited** — members have no limit on liability, in exchange for lighter disclosure. Rare.",
             "**Holding company and subsidiary** — a group relationship based on control, which matters for consolidated accounts and for some of the veil-lifting cases below.",
@@ -557,7 +557,7 @@ export const LWG_TREE_21: StudyChapter = {
             "Articles are altered by **special resolution** of the members — a **supermajority**, whose exact percentage the scenario will state.",
             "**A copy of the amended articles** and the resolution must be **filed** with the registrar within the prescribed period.",
             "**Entrenchment.** Specified provisions may be **entrenched**, so that they can be amended only if additional conditions are met or a higher majority obtained. Entrenchment does not prevent amendment by unanimous agreement of all members.",
-            "**Bona fide for the benefit of the company as a whole.** An alteration must be made in good faith in the company's interests, not to expropriate a minority.",
+            "**Bona fide for the benefit of the company as a whole** — Lord Lindley's formula in *Allen v Gold Reefs* (1900). An alteration must be made in good faith in the company's interests, not to expropriate a minority.",
             "**No increase in a member's liability** to contribute to share capital without that member's written consent.",
             "**Class rights.** Where an alteration varies the rights of a class of shares, the **class consent** procedure must also be followed (chapter 22).",
           ],
@@ -575,7 +575,7 @@ export const LWG_TREE_21: StudyChapter = {
             "Cranmere Ltd has four members. Its articles contain a pre-emption clause requiring any member wishing to transfer shares to offer them to the others first, and an entrenchment provision stating that this clause may be altered only with the consent of all members. The three majority members pass a special resolution deleting the pre-emption clause so that one of them can sell to an outside buyer at a premium. The fourth member, Whitlow, objects. The three also pass a resolution requiring every member to subscribe for a further 1,000 shares each.",
           steps: [
             { label: "Test the deletion against entrenchment", detail: "The pre-emption clause is ENTRENCHED, alterable only with the consent of ALL members. A special resolution of three of four does not satisfy that condition, so the deletion is INEFFECTIVE." },
-            { label: "Test it against good faith", detail: "Even without entrenchment, the alteration was made so that a majority member could sell at a premium to an outsider, defeating the minority's pre-emption right. That is difficult to justify as bona fide FOR THE BENEFIT OF THE COMPANY AS A WHOLE." },
+            { label: "Test it against good faith", detail: "Even without entrenchment, the alteration was made so that a majority member could sell at a premium to an outsider, defeating the minority's pre-emption right. That is difficult to justify as bona fide FOR THE BENEFIT OF THE COMPANY AS A WHOLE, the Allen v Gold Reefs test." },
             { label: "Test the subscription resolution", detail: "Requiring members to subscribe for further shares INCREASES their liability to contribute to capital. That cannot be imposed on Whitlow without his WRITTEN CONSENT, so it does not bind him." },
             { label: "Note what does bind the others", detail: "The three who voted for it may be bound by their own agreement to subscribe, but the alteration cannot be enforced against the dissenting member." },
             { label: "Consider what the majority could lawfully do", detail: "Obtain Whitlow's consent; or offer the shares under the pre-emption clause as it stands; or, if the commercial case is genuine and even-handed, alter the clause prospectively in a way that does not simply strip the minority of a right for one member's benefit." },
@@ -619,7 +619,7 @@ export const LWG_TREE_21: StudyChapter = {
           title: "Changing a name, and being made to",
           items: [
             "A company may **change its name voluntarily** by special resolution, or by any other means its articles provide, and the change takes effect when a **new certificate** is issued.",
-            "The **registrar may direct a change** where a name is the **same as or too like** an existing one, or where misleading information was given on registration.",
+            "Under **s.67** the **registrar may direct a change** where a name is the **same as or too like** an existing one, or where misleading information was given on registration.",
             "An **adjudication or similar procedure** may require a change where a name was registered opportunistically to exploit another's goodwill.",
             "A name change **does not affect** the company's rights, obligations or legal proceedings — it is the same legal person.",
             "**Passing off** remains available to a business whose goodwill is damaged by another's use of a confusingly similar name, independently of the registration rules.",
@@ -642,7 +642,7 @@ export const LWG_TREE_21: StudyChapter = {
         ],
         correct: 1,
         explain:
-          "Both routes are open: the REGISTRAR may direct a change where the name is the same as or too like an existing one, and the competitor has independent remedies in PASSING OFF and for trade mark infringement. Acceptance by the registrar is not permission to use the name.",
+          "Both routes are open: under s.67 the REGISTRAR may direct a change where the name is the same as or too like an existing one, and the competitor has independent remedies in PASSING OFF and for trade mark infringement. Acceptance by the registrar is not permission to use the name.",
       },
     },
   ],
@@ -691,7 +691,7 @@ export const LWG_TREE_21: StudyChapter = {
   ],
   knowledgeDiagnostic: [
     { q: "In what capacity are the articles enforceable?", a: "Qua member — in respect of membership rights. An outsider, or a member acting in another capacity, cannot enforce them." },
-    { q: "What three tests must an alteration of the articles pass?", a: "The required special majority, any entrenchment condition, and the requirement that it be bona fide for the benefit of the company as a whole." },
+    { q: "What three tests must an alteration of the articles pass?", a: "The required special majority, any entrenchment condition, and the Allen v Gold Reefs requirement that it be bona fide for the benefit of the company as a whole." },
     { q: "Can a special resolution require a member to subscribe for more shares?", a: "Not against a member who has not given written consent — liability to contribute to capital cannot be increased without it." },
     { q: "What is the effect of a contract by the company not to alter its articles?", a: "It does not prevent alteration. The alteration is valid, but the company may be liable in damages for breach." },
     { q: "Does registration of a company name protect it against a passing off claim?", a: "No. Registration only means the name passed the registration controls; passing off and trade mark rights are independent." },
@@ -716,7 +716,7 @@ export const LWG_TREE_22: StudyChapter = {
     "Equity finance, and the vocabulary that goes with it. The distinctions that earn marks are between the kinds of capital, between classes of share, and between the two ways of issuing more.",
   outcomes: [
     "Examine the different types of capital",
-    "Illustrate the differences between classes of shares, including treasury shares, and the procedure for altering class rights",
+    "Tell the share classes apart, treasury shares included, and follow the steps needed to change what a class is entitled to",
     "Explain allotment of shares and distinguish a rights issue from a bonus issue",
     "Examine the effect of issuing shares at a discount or at a premium",
   ],

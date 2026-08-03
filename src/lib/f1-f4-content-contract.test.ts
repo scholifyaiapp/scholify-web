@@ -10,18 +10,24 @@ import { getOtCases, otCaseMarks } from "@/lib/acca-cases"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
 /*
- * BT, MA and FA have all outgrown this shared contract and have their own — see
- * bt-content-contract.ts, ma-content-contract.ts and fa-content-contract.ts with
- * their tests. Each holds an authored bank with no derived drills and authored MTQs
- * at its own real exam unit size — BT 18 units of 4 marks, MA 9 units of 10 marks,
- * FA 6 units of 15 marks — rather than 350 generated linked questions.
+ * ALL FOUR papers have now outgrown this shared contract and have their own — see
+ * bt-content-contract.ts, ma-content-contract.ts, fa-content-contract.ts and
+ * lw-global-content-contract.ts with their tests. Each holds an authored bank with no
+ * derived drills and authored MTQs at its own real exam unit size — BT 18 units of 4
+ * marks, MA 9 of 10, FA 6 of 15, LW-Global 15 of 6 — rather than 350 generated linked
+ * questions.
  *
- * That difference in unit size is exactly why a shared contract could not survive
- * the rebuild: it asserted one Section B shape across four papers whose real exams
- * have four different ones. Only LW is still sized against the shared target, and
- * this list should shrink to nothing.
+ * That difference in unit size is exactly why a shared contract could not survive the
+ * rebuild: it asserted one Section B shape across four papers whose real exams have
+ * four different ones. The list below is now empty, so the per-paper assertions that
+ * depended on the shared target no longer run against anything — what remains are the
+ * genuinely shared product facts (Section A and B only, the mixed bank sizes, three
+ * mock forms, 120 flashcards each).
+ *
+ * LW-ENG is not covered by any contract yet: it is the one variant still on the old
+ * content, and it is the next rebuild.
  */
-const REBUILT_PAPERS = new Set(["BT", "MA", "FA"])
+const REBUILT_PAPERS = new Set(["BT", "MA", "FA", "LW"])
 const SHARED_INVENTORY_PAPERS = F1_F4_PAPERS.filter((paper) => !REBUILT_PAPERS.has(paper))
 
 describe("F1–F4 product structure", () => {

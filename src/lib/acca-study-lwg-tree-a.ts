@@ -40,7 +40,7 @@ export const LWG_TREE_01: StudyChapter = {
     "Law does not arrive from nowhere. It is made by institutions that answer to a political system and pay for themselves out of an economy — and knowing which institution made a rule tells you how much weight it carries.",
   outcomes: [
     "Explain how economic, political and legal systems depend on one another",
-    "Explain the doctrine of the separation of powers and what it is for",
+    "Set out how the separation-of-powers doctrine divides the state, and what dividing it achieves",
     "Identify the three branches of state and the function each performs",
     "Distinguish criminal from civil law by purpose, parties, standard of proof and outcome",
     "Classify a given dispute as criminal, civil, or both",
@@ -422,8 +422,8 @@ export const LWG_TREE_03: StudyChapter = {
   intro:
     "Two parties, two legal systems, one deal. Somebody has to decide whose law applies and whose court decides — and that question is worth as much commercially as the price.",
   outcomes: [
-    "Explain the need for international legal regulation in the context of conflict of laws",
-    "Explain the function of international treaties, conventions and model codes, and how they differ",
+    "Say why cross-border trade has to be regulated internationally once two legal systems compete to govern one deal",
+    "Distinguish treaties, conventions and model codes, and say what each of them is for",
     "Explain the roles of the UN, ICC, WTO, OECD, UNIDROIT and UNCITRAL in regulating and promoting international trade",
     "Identify what a well-drafted international contract should settle in advance",
   ],
@@ -632,7 +632,7 @@ export const LWG_TREE_04: StudyChapter = {
     "Explain the operation of court-based adjudication in a commercial dispute",
     "Explain the operation of negotiation, mediation, conciliation, expert determination and arbitration",
     "Evaluate the distinct merits of each against court adjudication",
-    "Explain the role of the international courts of trade, including the ICC International Court of Arbitration",
+    "Set out what the standing trade courts do, the ICC International Court of Arbitration among them",
     "Recommend a dispute resolution route for given commercial facts",
   ],
   sections: [
@@ -833,7 +833,7 @@ export const LWG_TREE_05: StudyChapter = {
   intro:
     "The Model Law is the text most national arbitration statutes are built from, and the syllabus asks you to apply it rather than describe it. Almost everything in it follows from one idea: the parties' agreement governs, and the court's role is limited to supporting it.",
   outcomes: [
-    "Explain and apply the provisions of the UNCITRAL Model Law on International Commercial Arbitration",
+    "Work through the UNCITRAL Model Law on International Commercial Arbitration and apply it to facts",
     "Explain the requirements and effect of an arbitration agreement",
     "Describe the arbitral tribunal: composition, appointment, challenge and jurisdiction",
     "Describe the conduct of proceedings and the limits on court intervention",

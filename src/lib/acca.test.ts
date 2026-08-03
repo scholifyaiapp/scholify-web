@@ -167,23 +167,17 @@ describe("the content itself", () => {
   })
 
   /*
-   * The AUTHORED floor, tracked separately and with its exception NAMED.
+   * The AUTHORED floor, with NO exceptions left.
    *
-   * Every paper used to clear 150 because derived recall drills were counted as
-   * bank depth. With the two separated, LW is revealed to have 56 authored
-   * questions — the known LW-Global authoring gap, which is real and is being
-   * worked, not a test to relax. Listing it here means any OTHER paper slipping
-   * below the floor fails immediately, and closing LW's gap is a one-line delete.
+   * Every paper used to clear 150 because derived recall drills were counted as bank
+   * depth. Once the two were separated, LW was revealed to hold 56 authored questions
+   * against 294 drills — a real gap, named here rather than hidden, and the last one.
+   * The LW-Global rebuild closed it (444 authored, no drills), so the exception list is
+   * gone and every paper now clears the floor on authored content alone.
    */
   it("holds at least 150 authored, exam-standard questions per paper", () => {
-    const knownAuthoringGaps = new Set(["LW"])
     for (const p of getPapers()) {
-      const authored = getQuestions(p.id).length
-      if (knownAuthoringGaps.has(p.id)) {
-        expect(authored, `${p.id} still has its documented gap`).toBeLessThan(150)
-        continue
-      }
-      expect(authored, p.id).toBeGreaterThanOrEqual(150)
+      expect(getQuestions(p.id).length, p.id).toBeGreaterThanOrEqual(150)
     }
   })
 })

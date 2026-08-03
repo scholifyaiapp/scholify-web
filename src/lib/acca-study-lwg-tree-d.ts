@@ -262,9 +262,9 @@ export const LWG_TREE_18: StudyChapter = {
   outcomes: [
     "Demonstrate knowledge of the legislation governing unlimited and limited partnerships",
     "Discuss the formation of a partnership",
-    "Explain the authority of partners in relation to partnership activity",
+    "Work out how far a partner can commit the firm when dealing with outsiders",
     "Analyse the liability of partners for partnership debts",
-    "Explain the termination of a partnership and partners' subsequent rights and liabilities",
+    "Set out how a partnership ends, and what the partners still owe and may claim afterwards",
   ],
   sections: [
     {
@@ -274,7 +274,7 @@ export const LWG_TREE_18: StudyChapter = {
         {
           kind: "definition",
           term: "Partnership",
-          md: "The relationship which exists between persons **carrying on a business in common with a view of profit**. Three elements: a **business**, carried on **in common**, with the **intention of making a profit**. No written agreement, registration or formality is required — a partnership can exist because of what people do.",
+          md: "**Section 1(1)** of the Partnership Act 1890 puts it as \"the relationship which exists between persons carrying on a business in common with a view of profit\". Unpack that into three elements: a **business**, carried on **in common**, with the **intention of making a profit**. Notice what is absent — no written agreement, registration or formality is required, so a partnership can exist purely because of what people do.",
         },
         {
           kind: "list",
@@ -307,13 +307,13 @@ export const LWG_TREE_18: StudyChapter = {
         q: "Two people jointly own a warehouse and let it, dividing the rent equally. Are they partners?",
         options: [
           "Yes, because they share the income equally",
-          "No — joint ownership and sharing receipts is not carrying on a business in common with a view of profit",
+          "No — joint ownership and sharing receipts is not \"carrying on a business in common with a view of profit\" under s.1(1)",
           "Yes, because letting property is a business",
           "Only if they have a written agreement",
         ],
         correct: 1,
         explain:
-          "NOT PARTNERS. Joint ownership of property and division of receipts does not by itself amount to carrying on a BUSINESS IN COMMON with a view of profit. Sharing gross returns is expressly not enough — and a written agreement is neither necessary nor sufficient.",
+          "NOT PARTNERS. Joint ownership of property and division of receipts does not by itself amount to carrying on a BUSINESS IN COMMON with a view of profit within s.1(1). Sharing gross returns is expressly not enough — and a written agreement is neither necessary nor sufficient.",
       },
     },
     {
@@ -447,7 +447,7 @@ export const LWG_TREE_18: StudyChapter = {
   examTraps: [
     {
       trap: "Requiring a written agreement or registration for a general partnership.",
-      fix: "None is needed. A partnership exists where persons carry on a business in common with a view of profit.",
+      fix: "None is needed. Under s.1(1) a partnership exists where persons carry on a business in common with a view of profit.",
     },
     {
       trap: "Treating a share of profits as conclusive of partnership.",
@@ -471,7 +471,7 @@ export const LWG_TREE_18: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "Partnership", def: "The relationship between persons carrying on a business in common with a view of profit, requiring no formality to exist." },
+    { term: "Partnership", def: "Partnership Act 1890 s.1(1) — the relationship between persons carrying on a business in common with a view of profit, requiring no formality to exist." },
     { term: "Limited partnership", def: "A registered partnership with at least one general partner of unlimited liability and limited partners whose liability is capped, provided they take no part in management." },
     { term: "Partner as agent", def: "Each partner's capacity to bind the firm by acts done in the usual way of business of the kind the firm carries on." },
     { term: "Holding out", def: "Appearing to be a partner, making a person liable to a third party who gave credit on the faith of that appearance." },
@@ -479,7 +479,7 @@ export const LWG_TREE_18: StudyChapter = {
     { term: "Dissolution", def: "The ending of the partnership, by expiry, notice, death or bankruptcy, illegality or court order." },
   ],
   summary: [
-    "A partnership exists where persons carry on a business in common with a view of profit; no formality is needed.",
+    "Section 1(1): a partnership exists where persons carry on a business in common with a view of profit; no formality is needed.",
     "Sharing gross returns, or taking profits as a lender, does not by itself create one.",
     "A limited partnership needs registration, and a limited partner who manages loses the limit.",
     "Every partner is an agent of the firm for acts done in the usual way of its business.",

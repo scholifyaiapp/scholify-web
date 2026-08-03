@@ -307,7 +307,7 @@ export const LWG_TREE_28: StudyChapter = {
           title: "Points of procedure that decide questions",
           items: [
             "**Special notice** is required for resolutions to remove a director or an auditor — extended notice to the company, distinct from the notice of the meeting.",
-            "**The text of a special resolution** must be set out in the notice; it cannot be amended at the meeting in any material way.",
+            "**A special resolution must be reproduced word for word** in the notice, and cannot then be altered at the meeting in any way that matters.",
             "**Filing.** Special resolutions, and certain ordinary ones, must be filed with the registrar within the prescribed period.",
             "**Unanimous informal agreement.** Where **all** members entitled to vote agree, a decision may be effective even without the formal procedure — but this cannot cure a defect where the procedure protects an **outsider's** right to be heard.",
             "**Effect of a defect.** A resolution passed without proper notice or without a quorum is liable to be **invalid**, and anything done under it may fall with it.",
@@ -415,7 +415,7 @@ export const LWG_TREE_29: StudyChapter = {
     "Liquidation is the end of the company's life, and the whole exercise is about one question: who gets paid, and in what order.",
   outcomes: [
     "Explain the meaning of, and the procedure in, voluntary liquidation, distinguishing members' from creditors' voluntary liquidation",
-    "Explain the meaning of, the grounds for and the procedure in compulsory liquidation",
+    "Say what compulsory liquidation is, on what grounds a court orders it, and how it runs",
     "Explain the order in which company debts are paid on liquidation",
     "Apply the order of priority to distribute a liquidation estate",
   ],
@@ -661,7 +661,7 @@ export const LWG_TREE_30: StudyChapter = {
           title: "The hierarchy of purposes",
           items: [
             "**Rescuing the company as a going concern** — the primary objective, and the one that distinguishes administration from liquidation.",
-            "**Achieving a better result for the creditors as a whole** than would be likely on a winding up — pursued only if the first is not reasonably practicable.",
+            "**Achieving a better result for the creditors as a whole** than would be likely on a winding up (Sch B1 para 3(1)(b)) — pursued only if the first is not reasonably practicable.",
             "**Realising property to make a distribution to secured or preferential creditors** — pursued only if neither of the first two is reasonably practicable, and only without unnecessarily harming the interests of the creditors as a whole.",
           ],
         },
@@ -676,7 +676,7 @@ export const LWG_TREE_30: StudyChapter = {
           caption: "Three routes to appointment",
           head: ["Appointed by", "How, and the constraint"],
           rows: [
-            ["**The court**", "On an **administration application** by the company, the directors or a creditor. The court must be satisfied the company is or is likely to become **unable to pay its debts** and that administration is likely to achieve its purpose"],
+            ["**The court**", "On an **administration application** by the company, the directors or a creditor. Under Sch B1 para 11 the court must be satisfied the company \"is or is likely to become unable to pay its debts\" and that administration is likely to achieve its purpose"],
             ["**The holder of a qualifying floating charge**", "**Out of court**, by filing the prescribed documents. It must give notice to any prior qualifying charge holder"],
             ["**The company or its directors**", "**Out of court**, by filing, having given notice to any qualifying floating charge holder — who may then appoint its own choice instead. Not available where a winding-up petition is pending"],
           ],
@@ -838,14 +838,14 @@ export const LWG_TREE_31: StudyChapter = {
         {
           kind: "definition",
           term: "Inside information",
-          md: "Information which is **specific or precise**, **not made public**, relates to particular securities or a particular issuer, and **if made public would be likely to have a significant effect on the price** of those securities. All four elements are needed.",
+          md: "On the **s.56(1)** definition, information is inside information where it is **specific or precise**, **not made public**, relates to particular securities or a particular issuer, and \"if made public would be likely to have a significant effect on the price\" of those securities. All four elements are needed — drop any one and the offence cannot be made out.",
         },
         {
           kind: "table",
           caption: "The three forms of the offence",
           head: ["Conduct", "Detail"],
           rows: [
-            ["**Dealing**", "Acquiring or disposing of price-affected securities while in possession of inside information as an insider"],
+            ["**Dealing** — s.52(1)", "Acquiring or disposing of price-affected securities while in possession of inside information as an insider"],
             ["**Encouraging**", "Encouraging another to deal in those securities, knowing or having reasonable cause to believe they would deal"],
             ["**Disclosing**", "Disclosing the information to another otherwise than in the proper performance of one's employment, office or profession — a **tip-off**"],
           ],
@@ -855,7 +855,7 @@ export const LWG_TREE_31: StudyChapter = {
           title: "Who is an insider",
           items: [
             "A person who has information **as an insider** — that is, who knows it is inside information and knows the source is an inside source.",
-            "**Primary insiders**: those with the information through being a **director, employee or shareholder** of an issuer, or through their **employment, office or profession**.",
+            "**Primary insiders** (s.57(2)): those with the information through being a **director, employee or shareholder** of an issuer, or through their **employment, office or profession**.",
             "**Secondary insiders**: those whose **direct or indirect source** is a primary insider — the tippee.",
             "**It applies to price-affected securities** traded on a regulated market, or where a professional intermediary is involved.",
           ],
@@ -871,8 +871,8 @@ export const LWG_TREE_31: StudyChapter = {
           style: "number",
           title: "The general defences",
           items: [
-            "The person **did not expect** the dealing to result in a profit or the avoidance of a loss attributable to the price-sensitive nature of the information.",
-            "They **believed on reasonable grounds** that the information had been **disclosed widely enough** that no participant would be prejudiced.",
+            "Under s.53, the person **did not expect** the dealing to result in a profit or the avoidance of a loss attributable to the price-sensitive nature of the information.",
+            "They **believed on reasonable grounds** that the information had been **disclosed widely enough** that no participant would be prejudiced (s.53).",
             "They **would have done what they did** even if they had not had the information — for example completing a pre-existing obligation.",
             "Special defences exist for **market makers** acting in good faith in the course of business, and for **price stabilisation** and **market information** in defined circumstances.",
           ],
@@ -909,7 +909,7 @@ export const LWG_TREE_31: StudyChapter = {
             ["**Unlawful disclosure**", "Disclosing inside information outside the normal exercise of employment, profession or duties"],
             ["**Market manipulation**", "Transactions or orders giving **false or misleading signals** as to supply, demand or price, or securing the price at an abnormal or artificial level"],
             ["**Dissemination of false information**", "Giving out information likely to give a false or misleading impression, where the person knew or ought to have known it was false"],
-            ["**Misleading behaviour and distortion**", "Behaviour likely to give a regular user a false or misleading impression, or to distort the market"],
+            ["**Misleading behaviour and distortion** — s.118", "Behaviour likely to give a regular user a false or misleading impression, or to distort the market"],
           ],
         },
         {
@@ -988,7 +988,7 @@ export const LWG_TREE_31: StudyChapter = {
   ],
   keyTerms: [
     { term: "Inside information", def: "Specific or precise information, not public, relating to particular securities or an issuer, which if public would likely have a significant effect on price." },
-    { term: "Primary insider", def: "A person with inside information through being a director, employee or shareholder of an issuer, or through their employment, office or profession." },
+    { term: "Primary insider", def: "s.57(2) — a person with inside information through being a director, employee or shareholder of an issuer, or through their employment, office or profession." },
     { term: "Secondary insider", def: "A person whose direct or indirect source of inside information is a primary insider — the tippee." },
     { term: "Insider dealing", def: "The criminal offence of dealing, encouraging another to deal, or disclosing inside information improperly." },
     { term: "Market abuse", def: "A civil and regulatory regime prohibiting insider dealing, unlawful disclosure, manipulation and dissemination of false information." },
@@ -1240,9 +1240,9 @@ export const LWG_TREE_33: StudyChapter = {
     "The offences that attach to running a company badly or dishonestly — and the one place where the corporate veil is lifted by statute rather than by the court's discretion.",
   outcomes: [
     "Recognise the nature of, and legal control over, bribery",
-    "Discuss potential criminal activity in the operation, management and liquidation of companies",
+    "Discuss the crimes that can arise while a company is run, managed and wound up",
     "Recognise the nature of, and legal control over, fraudulent and wrongful trading",
-    "Explain the failure to prevent the facilitation of tax evasion and the meaning of a relevant body",
+    "Explain the corporate offence of failing to stop tax evasion being facilitated, and who counts as a relevant body",
     "Distinguish fraudulent from wrongful trading and identify the consequences of each",
   ],
   sections: [
@@ -1274,7 +1274,7 @@ export const LWG_TREE_33: StudyChapter = {
         },
         {
           kind: "list",
-          title: "Other criminal activity in the operation, management and liquidation of companies",
+          title: "Other crimes arising while a company is run, managed and wound up",
           items: [
             "**Fraudulent trading**, and **wrongful trading** — below.",
             "**Falsification, destruction or concealment of company records**, and making false statements to an auditor or a liquidator.",
@@ -1307,7 +1307,7 @@ export const LWG_TREE_33: StudyChapter = {
           caption: "The distinction that carries the marks",
           head: ["", "Fraudulent trading", "Wrongful trading"],
           rows: [
-            ["**Test**", "Carrying on business with **intent to defraud** creditors, or for any fraudulent purpose — **dishonesty** required", "Continuing to trade when the director **knew or ought to have concluded** there was **no reasonable prospect** of avoiding insolvent liquidation — **no dishonesty required**"],
+            ["**Test**", "s.213 — carrying on business with **intent to defraud** creditors, or for any fraudulent purpose; **dishonesty** required", "Continuing to trade when the director **knew or ought to have concluded** there was **no reasonable prospect** of avoiding insolvent liquidation — **no dishonesty required**"],
             ["**Standard of proof**", "High, because dishonesty must be proved", "**Civil** standard, on the balance of probabilities"],
             ["**Who is liable**", "Any person **knowingly party** to the carrying on of the business", "**Directors**, including de facto and shadow directors"],
             ["**Nature of liability**", "**Civil** contribution and a **criminal** offence", "**Civil** contribution only"],
@@ -1400,7 +1400,7 @@ export const LWG_TREE_33: StudyChapter = {
     { term: "Failure to prevent bribery", def: "The corporate offence where an associated person bribes to obtain business for the organisation, with a defence of adequate procedures." },
     { term: "Associated person", def: "Anyone performing services for an organisation — employee, agent, subsidiary or intermediary." },
     { term: "Relevant body", def: "A body corporate or a partnership, for the purposes of the failure to prevent the facilitation of tax evasion." },
-    { term: "Fraudulent trading", def: "Carrying on business with intent to defraud creditors or for a fraudulent purpose; requires dishonesty and is both civil and criminal." },
+    { term: "Fraudulent trading", def: "s.213 — carrying on business with intent to defraud creditors or for a fraudulent purpose; requires dishonesty and is both civil and criminal." },
     { term: "Wrongful trading", def: "Continuing to trade when a director knew or ought to have concluded there was no reasonable prospect of avoiding insolvent liquidation; civil only, no dishonesty required." },
     { term: "Preference", def: "A transaction putting one creditor in a better position than others before insolvency, attackable by a liquidator or administrator." },
   ],

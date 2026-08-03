@@ -24,7 +24,7 @@ import { otCaseMarks } from "@/lib/acca-content"
 import type { WrittenQuestion } from "@/lib/acca-written"
 import { getWrittenQuestions } from "@/lib/acca-written"
 import { getOtCases } from "@/lib/acca-cases"
-import { authoredOutsideForm, buildMockForm } from "@/lib/acca-mockforms"
+import { authoredOutsideForm, buildMockForm, MOCK_FORMS } from "@/lib/acca-mockforms"
 import { examBlueprint, examSecondsFor, type SectionKind } from "@/lib/acca-exam-structure"
 
 export type CbeItem =
@@ -101,15 +101,35 @@ export function drawOts(pool: AccaQuestion[], marks: number): AccaQuestion[] {
   const out: AccaQuestion[] = []
   let sum = 0
   while (pool.length && sum < marks) {
-    const q = pool.shift()!
-    // Never overshoot the section by more than a question's slack.
-    if (sum + q.marks > marks && out.length > 0) {
-      // Doesn't fit THIS section — return it to the pool rather than
-      // dropping it, since `pool` is shared across every section drawn
-      // from the same call site. Unshift to preserve draw order.
-      pool.unshift(q)
+    /*
+     * Take the first question that still FITS, rather than stopping at the head of the
+     * pool.
+     *
+     * On a paper whose Section A mixes mark values this matters: LW's is 25 two-mark
+     * plus 20 one-mark questions, so the head of the pool is often a 2-mark question at
+     * the point where only 1 mark of the section remains. Stopping there left the
+     * section composing to 69 of 70 marks — a mock that could never total 100. Scanning
+     * past the question that does not fit finds the 1-mark one that completes the
+     * section exactly, and on a uniform bank the scan always matches at index 0, so
+     * nothing changes for the papers that were already exact.
+     */
+    const index = pool.findIndex((q) => sum + q.marks <= marks)
+    if (index === -1) {
+      /*
+       * Nothing left fits. A section must still get at least one item rather than
+       * compose to nothing, so take the head in that case. Otherwise leave the
+       * remainder alone: `pool` is shared across every section drawn from the same call
+       * site, and a question that overshoots THIS section may be exactly what the next
+       * one needs.
+       */
+      if (out.length === 0) {
+        const q = pool.shift()!
+        out.push(q)
+        sum += q.marks
+      }
       break
     }
+    const [q] = pool.splice(index, 1)
     out.push(q)
     sum += q.marks
   }
@@ -165,9 +185,26 @@ export function buildCbeMock(paperId: string, form: number): CbeMock {
   const pool = [...authoredHere, ...borrowed, ...recallHere]
 
   const written = shuffle(getWrittenQuestions(paperId), paperSeed(paperId) * 17 + form * 131)
-  // Rotate authored cases with the form so repeat sitters see variety once
-  // the case bank outgrows one sitting's worth.
-  const rotatedCases = cases.length ? [...cases.slice((form - 1) % cases.length), ...cases.slice(0, (form - 1) % cases.length)] : []
+  /*
+   * Rotate authored cases with the form so repeat sitters see variety once the case
+   * bank outgrows one sitting's worth.
+   *
+   * The offset is a whole SITTING's worth of cases, not one case. Rotating by
+   * (form − 1) advanced the list by a single case per form, so a paper whose Section B
+   * takes five cases drew 0–4, then 1–5, then 2–6 — the three forms overlapped almost
+   * completely and cases 7 onward were never reachable. Every paper with an authored
+   * MTQ bank was affected, and each of their contract files claims three DISJOINT
+   * sittings: BT 18 units of 4 marks, MA 9 of 10, FA 6 of 15, LW-Global 15 of 6. Only
+   * now is that claim actually true.
+   *
+   * ceil(cases / MOCK_FORMS) is the block size, so form 1 takes the first block, form 2
+   * the second and form 3 the third. Where the bank is not an exact multiple the last
+   * block wraps, which is the honest degradation — a short bank cannot give three
+   * disjoint sittings, and wrapping repeats a case rather than leaving a hole.
+   */
+  const blockSize = cases.length ? Math.ceil(cases.length / MOCK_FORMS) : 0
+  const offset = cases.length ? ((form - 1) * blockSize) % cases.length : 0
+  const rotatedCases = cases.length ? [...cases.slice(offset), ...cases.slice(0, offset)] : []
   let caseCursor = 0
 
   const sections: CbeSection[] = []

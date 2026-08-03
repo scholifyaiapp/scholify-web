@@ -292,7 +292,7 @@ export const LWG_TREE_24: StudyChapter = {
         {
           kind: "definition",
           term: "Distributable profits",
-          md: "**Accumulated realised profits**, so far as not previously distributed or capitalised, **less accumulated realised losses**, so far as not previously written off. Two features matter: the test is **cumulative**, not year by year, and the profits must be **realised** — an unrealised revaluation gain is not distributable.",
+          md: "The statutory formula (**CA 2006 s.830(2)** and its equivalents) is \"accumulated, realised profits, so far as not previously distributed or capitalised, less accumulated, realised losses, so far as not previously written off\". Two features matter: the test is **cumulative**, not year by year, and the profits must be **realised** — an unrealised revaluation gain is not distributable.",
         },
         {
           kind: "table",
@@ -351,7 +351,7 @@ export const LWG_TREE_24: StudyChapter = {
   examTraps: [
     {
       trap: "Treating an unrealised revaluation surplus as distributable.",
-      fix: "Distributable profits are accumulated REALISED profits less accumulated realised losses. A revaluation surplus is an undistributable reserve.",
+      fix: "Under s.830(2) distributable profits are accumulated REALISED profits less accumulated realised losses. A revaluation surplus is an undistributable reserve.",
     },
     {
       trap: "Applying only the distributable profits test to a public company.",
@@ -377,7 +377,7 @@ export const LWG_TREE_24: StudyChapter = {
   keyTerms: [
     { term: "Capital maintenance", def: "The doctrine that share capital and restricted reserves must be kept in the company and returned to members only by a permitted procedure." },
     { term: "Reduction of capital", def: "A permitted return or cancellation of capital, by special resolution with court confirmation or a directors' solvency statement." },
-    { term: "Distributable profits", def: "Accumulated realised profits not previously distributed or capitalised, less accumulated realised losses not previously written off." },
+    { term: "Distributable profits", def: "s.830(2) — accumulated realised profits not previously distributed or capitalised, less accumulated realised losses not previously written off." },
     { term: "Undistributable reserves", def: "Reserves such as share premium and the revaluation surplus that may not be paid out as a dividend." },
     { term: "Public company net-assets test", def: "The additional requirement that after a distribution net assets be no less than called-up share capital plus undistributable reserves." },
     { term: "Unlawful distribution", def: "A distribution exceeding what the law permits, repayable by a knowing member and recoverable from the authorising directors." },
@@ -386,14 +386,14 @@ export const LWG_TREE_24: StudyChapter = {
     "Capital maintenance keeps the fund creditors lent against inside the company.",
     "Capital may leave only by reduction, buy-back, redemption or a lawful dividend, each with safeguards.",
     "A solvency statement relocates the protection onto the directors rather than removing it.",
-    "Distributable profits are accumulated realised profits less accumulated realised losses.",
+    "Under s.830(2), distributable profits are accumulated realised profits less accumulated realised losses.",
     "An unrealised revaluation surplus is not distributable.",
     "A public company must also satisfy the net-assets test, which often binds before the profits test.",
     "An unlawful distribution is repayable by a knowing member and recoverable from the authorising directors.",
   ],
   knowledgeDiagnostic: [
     { q: "Why does capital maintenance exist?", a: "Because limited liability leaves creditors with no claim against members, so the company's capital is the fund they rely on and must not simply be returned." },
-    { q: "Define distributable profits.", a: "Accumulated realised profits not previously distributed or capitalised, less accumulated realised losses not previously written off." },
+    { q: "Define distributable profits.", a: "s.830(2) — accumulated realised profits not previously distributed or capitalised, less accumulated realised losses not previously written off." },
     { q: "What extra test applies to a public company's distribution?", a: "After the distribution, net assets must be no less than called-up share capital plus undistributable reserves." },
     { q: "Can a revaluation surplus fund a dividend?", a: "No. It is unrealised and an undistributable reserve, and it is one of the reserves the public company test protects." },
     { q: "Who can be made to make good an unlawful distribution?", a: "A member who knew or had reasonable grounds to believe it was unlawful must repay it, and the directors who authorised it may be liable to the company." },
@@ -500,7 +500,7 @@ export const LWG_TREE_25: StudyChapter = {
           style: "number",
           title: "Disqualification",
           items: [
-            "**Grounds** include conviction of an indictable offence connected with company management; persistent breach of filing obligations; **fraudulent or wrongful trading**; being found unfit to be concerned in the management of a company, typically after insolvency; and breach of competition law.",
+            "**Grounds** include conviction of an indictable offence connected with company management; persistent breach of filing obligations; **fraudulent or wrongful trading**; being found, in the words of the disqualification legislation, \"unfit to be concerned in the management of a company\", typically after insolvency; and breach of competition law.",
             "**Effect.** The person may not, for the period of the order, be a director or take part directly or indirectly in the **promotion, formation or management** of a company without leave of the court.",
             "**Duration** runs up to a statutory maximum, and the scenario will state the applicable range.",
             "**Acting in breach** is an offence and exposes the person to **personal liability** for the debts of the company incurred while doing so.",
@@ -517,7 +517,7 @@ export const LWG_TREE_25: StudyChapter = {
             { label: "Test the weighted voting provision", detail: "This is harder. Weighted votes on a removal resolution can make the statutory power practically unusable. On 30% of the shares with four votes each, Nash may command more votes than the other 70% combined, so the resolution may FAIL in practice even though it is legally available." },
             { label: "Compute the voting position", detail: "If there are 100 shares, Nash has 30 shares × 4 votes = 120 votes; the others have 70 votes. Nash defeats the resolution. The members' remedy then lies elsewhere — an unfair prejudice petition, or altering the articles if they can muster the majority to do so." },
             { label: "Deal with the service contract", detail: "Even if removal succeeds, Nash's CONTRACT is a separate matter. Removal in breach of a three-year unexpired term exposes the company to DAMAGES for wrongful dismissal — potentially a substantial sum against $540,000 of remaining salary, subject to mitigation." },
-            { label: "Turn to the disqualification exposure", detail: "Continuing to trade and incur credit for eight months after insolvency was plain is the classic WRONGFUL TRADING pattern, and a ground for a finding that Nash is unfit to be concerned in the management of a company." },
+            { label: "Turn to the disqualification exposure", detail: "Continuing to trade and incur credit for eight months after insolvency was plain is the classic WRONGFUL TRADING pattern, and a ground for a finding, in the words of s.6 of the disqualification legislation, that Nash is \"unfit to be concerned in the management of a company\"." },
             { label: "State the consequence of disqualification", detail: "If disqualified, Nash may not be a director or take part directly or indirectly in the promotion, formation or management of a company for the period of the order — which would end the Ferrers problem, and acting in breach would make him personally liable for debts incurred." },
           ],
           result:
@@ -602,7 +602,7 @@ export const LWG_TREE_26: StudyChapter = {
   intro:
     "The board's power to manage is nearly unlimited, and that is precisely why the duties are strict. Almost every question here is about a director who had the power to do something and should not have used it.",
   outcomes: [
-    "Distinguish the powers of the board, the managing director and individual directors to bind the company",
+    "Separate what the board, a managing director and a single director can each commit the company to",
     "Explain the duties directors owe to their companies",
     "Explain the statutory controls over dealings between directors and their companies, including loans",
     "Apply the duties to decide whether a director has breached them and what follows",
@@ -663,7 +663,7 @@ export const LWG_TREE_26: StudyChapter = {
             ["**Act within powers**", "Act in accordance with the constitution and exercise powers only for the purposes for which they are conferred", "Issuing shares to defeat a takeover rather than to raise capital"],
             ["**Promote the success of the company**", "Act in the way the director considers, in good faith, most likely to promote the company's success for the benefit of its members, having regard to the longer term, employees, suppliers, customers, the community, the environment and the company's reputation", "Favouring one shareholder's interests, or a parent's, over the company's"],
             ["**Exercise independent judgement**", "Not fetter discretion by agreeing in advance to vote as another directs", "Signing a contract binding the board's future votes"],
-            ["**Exercise reasonable care, skill and diligence**", "The care of a reasonably diligent person with the general knowledge, skill and experience reasonably expected of someone in that role — **and** with the director's own actual knowledge, skill and experience", "Not reading the accounts; leaving everything to a colleague"],
+            ["**Exercise reasonable care, skill and diligence**", "**s.174(2)** — \"the care of a reasonably diligent person with the general knowledge, skill and experience\" reasonably expected of someone in that role, **and** with the director's own actual knowledge, skill and experience", "Not reading the accounts; leaving everything to a colleague"],
             ["**Avoid conflicts of interest**", "Avoid a situation in which the director has, or may have, an interest conflicting with the company's — including exploitation of property, information or opportunity", "Taking for oneself a contract the company was pursuing"],
             ["**Not accept benefits from third parties**", "Not accept a benefit conferred by reason of being a director or of doing anything as one", "A supplier's commission"],
             ["**Declare an interest** in a proposed or existing transaction", "Declare the nature and extent of the interest to the other directors before the company enters the transaction", "Voting on a contract with one's own other business without disclosure"],

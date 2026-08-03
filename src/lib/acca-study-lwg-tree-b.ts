@@ -46,7 +46,7 @@ export const LWG_TREE_06: StudyChapter = {
         {
           kind: "definition",
           term: "The basic test",
-          md: "The Convention applies to contracts of **sale of goods** between parties whose **places of business are in different states**, where either those states are both **contracting states**, or the rules of private international law point to the law of a contracting state.",
+          md: "**Article 1(1)** sets the gateway: the Convention reaches contracts of *sale of goods* \"between parties whose places of business are in different states\", provided either that both states are **contracting states**, or that the rules of private international law point to the law of a contracting state. Note what the test does *not* turn on — nationality, where the goods travel, or where the contract was signed.",
         },
         {
           kind: "list",
@@ -174,14 +174,14 @@ export const LWG_TREE_06: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "CISG", def: "The United Nations Convention on Contracts for the International Sale of Goods, supplying uniform rules for cross-border sales between parties in contracting states." },
+    { term: "CISG", def: "The United Nations Convention on Contracts for the International Sale of Goods (1980), supplying uniform rules for cross-border sales between parties in contracting states." },
     { term: "Contracting state", def: "A state that has ratified the Convention, so that sales involving a place of business there fall within its scope." },
     { term: "Place of business", def: "The establishment through which a party trades — the connecting factor for the Convention, in place of nationality or incorporation." },
     { term: "Preponderant part test", def: "The rule taking a contract outside the Convention where the supplier's obligations consist preponderantly of labour or other services." },
     { term: "Party autonomy", def: "The parties' freedom to exclude the Convention or vary the effect of its provisions, making it a default regime." },
   ],
   summary: [
-    "The Convention applies to sales of goods between parties whose places of business are in different states, connected to contracting states.",
+    "Article 1(1): the Convention reaches sales \"between parties whose places of business are in different states\", where those states are contracting states or private international law leads to one.",
     "Place of business is the connecting factor — not nationality, incorporation or the location of the goods.",
     "Consumer, auction, execution, securities, ship and aircraft, and electricity sales are excluded.",
     "A contract whose obligations are preponderantly services falls outside entirely; it is not split.",
@@ -189,7 +189,7 @@ export const LWG_TREE_06: StudyChapter = {
     "It applies automatically where its conditions are met, and the parties may exclude or vary it by express agreement.",
   ],
   knowledgeDiagnostic: [
-    { q: "State the basic test for the Convention's application.", a: "A sale of goods between parties whose places of business are in different states, where both states are contracting states or private international law points to a contracting state's law." },
+    { q: "State the basic test for the Convention's application.", a: "Article 1(1) — a sale of goods \"between parties whose places of business are in different states\", where both states are contracting states or private international law points to a contracting state's law." },
     { q: "Name four excluded categories of sale.", a: "Consumer sales, auction sales, sales on execution or by authority of law, and sales of securities or money. Ships and aircraft, and electricity, are two more." },
     { q: "How is a mixed goods-and-services contract treated?", a: "By the preponderance test applied to the whole contract: if labour or services form the preponderant part of the supplier's obligations, the entire contract is outside the Convention." },
     { q: "Does the Convention decide whether a contract is void for illegality?", a: "No. It governs formation and the parties' rights and obligations; validity on grounds such as capacity, illegality or fraud is left to domestic law." },
@@ -229,7 +229,7 @@ export const LWG_TREE_07: StudyChapter = {
         {
           kind: "definition",
           term: "Offer",
-          md: "A proposal for concluding a contract addressed to **one or more specific persons**, which is **sufficiently definite** and indicates an **intention to be bound** on acceptance. It is sufficiently definite if it identifies the **goods** and makes provision, expressly or impliedly, for **quantity** and **price**.",
+          md: "**Article 14(1)** gives the test: \"a proposal for concluding a contract addressed to one or more specific persons\" which is *sufficiently definite* and indicates an **intention to be bound** on acceptance. The same article settles what definite means — the proposal must identify the **goods** and make provision, expressly or impliedly, for **quantity** and **price**. Miss any of those three and you have an invitation to treat.",
         },
         {
           kind: "callout",
@@ -347,7 +347,7 @@ export const LWG_TREE_07: StudyChapter = {
           kind: "callout",
           tone: "key",
           title: "No writing requirement",
-          md: "A contract of sale under the Convention **need not be in writing** and is not subject to any other requirement as to form. It may be proved by **any means**, including witnesses. The practical consequence is that an exchange of emails, or even conduct, can conclude a binding international sale — and parties who assume nothing is agreed until a formal document is signed are frequently wrong.",
+          md: "**Article 11** dispenses with formality altogether: a contract of sale \"need not be in writing and is not subject to any other requirement as to form\", and may be proved *by any means*, witnesses included. The practical consequence is that an exchange of emails, or even conduct, can conclude a binding international sale — and parties who assume nothing is agreed until a formal document is signed are frequently wrong.",
         },
         {
           kind: "list",
@@ -637,11 +637,11 @@ export const LWG_TREE_09: StudyChapter = {
       blocks: [
         {
           kind: "table",
-          caption: "Where the seller must deliver, in the absence of agreement",
+          caption: "Where the seller must deliver, in the absence of agreement — article 31",
           head: ["Situation", "Delivery is effected by"],
           rows: [
-            ["The contract **involves carriage** of the goods", "**Handing the goods to the first carrier** for transmission to the buyer"],
-            ["**Specific goods**, or goods drawn from a specified stock or to be manufactured, and the parties knew the place at conclusion", "**Placing the goods at the buyer's disposal** at that place"],
+            ["The contract **involves carriage** of the goods — art 31(a)", "\"Handing the goods to the first carrier for transmission to the buyer\""],
+            ["**Specific goods**, or goods drawn from a specified stock or to be manufactured, and the parties knew the place at conclusion — art 31(b)", "\"Placing the goods at the buyer's disposal at that place\""],
             ["**Any other case**", "Placing the goods at the buyer's disposal at the **seller's place of business** at conclusion of the contract"],
           ],
         },
@@ -670,21 +670,21 @@ export const LWG_TREE_09: StudyChapter = {
         {
           kind: "definition",
           term: "Conformity",
-          md: "Goods conform if they match the contract in **quantity, quality and description** and are **contained or packaged** as the contract requires. Failing contrary agreement, they do not conform unless they are: **fit for the purposes for which goods of the same description would ordinarily be used**; fit for any **particular purpose made known** to the seller, unless the buyer did not or could not reasonably rely on the seller's skill and judgement; of the **quality of any sample or model** held out; and packaged in the manner **usual** for such goods.",
+          md: "**Article 35(1)**: goods conform if they match the contract in **quantity, quality and description** and are **contained or packaged** as it requires. **Article 35(2)** then supplies four default standards, applying unless the parties agree otherwise — goods do not conform unless they are \"fit for the purposes for which goods of the same description would ordinarily be used\"; fit for any **particular purpose made known** to the seller, unless the buyer did not or could not reasonably rely on the seller's skill and judgement; of the **quality of any sample or model** held out; and packaged in the manner **usual** for such goods.",
         },
         {
           kind: "callout",
           tone: "rule",
           title: "When conformity is judged",
-          md: "The seller is liable for a lack of conformity **existing at the time risk passes to the buyer**, even if it only becomes apparent later. It is also liable for a lack of conformity arising **after** risk passes, if that is due to a **breach of its own obligations** — including breach of a guarantee that the goods would remain fit for a period. So the moment risk passes is the dividing line, which is why chapter 13 matters to this chapter.",
+          md: "**Article 36(1)** fixes the moment of judgement: the seller answers for a lack of conformity \"existing at the time risk passes to the buyer, even if it only becomes apparent later\". **Article 36(2)** extends that to a lack of conformity arising **after** risk passes, where the cause is the seller **breaching an obligation of its own** — breach of a guarantee that the goods would stay fit for a period among them. So the moment risk passes is the dividing line, which is why chapter 13 matters to this chapter.",
         },
         {
           kind: "list",
           title: "The buyer's own duties — and the trap in them",
           items: [
             "**Examine the goods**, or have them examined, within as **short a period as is practicable** in the circumstances. Where carriage is involved, examination may be deferred until **arrival**.",
-            "**Give notice** to the seller specifying the nature of the lack of conformity within a **reasonable time** after discovering it, or after it ought to have been discovered.",
-            "**The long-stop.** The buyer loses the right to rely on a lack of conformity if it does not give notice within **two years** of the goods being actually handed over, unless the contract gives a longer guarantee period.",
+            "**Article 39(1) — give notice.** The buyer must notify the seller, \"specifying the nature of the lack of conformity\", within a **reasonable time** after discovering it or after it ought to have been discovered.",
+            "**Article 39(2) — the long-stop.** \"The buyer loses the right to rely on a lack of conformity\" if it gives no notice within **two years** of the goods being actually handed over, unless the contract gives a longer guarantee period.",
             "**Consequence of failure.** A buyer who fails to give the required notice **loses the right to rely on the lack of conformity at all** — no rejection, no price reduction, no damages.",
             "**The exception.** The seller cannot rely on the buyer's failure to notify if the lack of conformity relates to facts it **knew or ought to have known** and did not disclose.",
           ],
@@ -698,7 +698,7 @@ export const LWG_TREE_09: StudyChapter = {
         {
           kind: "definition",
           term: "Third party claims",
-          md: "The seller must deliver goods **free from any right or claim of a third party** — unless the buyer agreed to take them subject to it. Where the claim is based on **industrial or other intellectual property**, the obligation is limited to rights the seller knew or ought to have known of, judged by the law of the state where the goods will be resold or used if the parties contemplated that, or otherwise of the buyer's place of business. The buyer must give **notice** of a third party claim within a reasonable time, on pain of losing the right to rely on it.",
+          md: "**Article 41** requires the seller to deliver goods \"free from any right or claim of a third party\" — unless the buyer agreed to take them subject to it. **Article 42** narrows that where the claim rests on **industrial or other intellectual property**: the seller answers only for rights it knew or ought to have known of, judged by \"the law of the state where the goods will be resold or used\" if the parties contemplated that state, and otherwise by the law of the buyer's place of business. Under **article 43** the buyer must give **notice** of a third party claim within a reasonable time, on pain of losing the right to rely on it.",
         },
         {
           kind: "example",
@@ -897,7 +897,7 @@ export const LWG_TREE_10: StudyChapter = {
             ["**Fundamental breach**", "The seller's failure to perform any obligation amounts to a fundamental breach"],
             ["**Missing the additional period**", "The seller has not delivered within the additional period the buyer fixed, or declares it will not deliver within it"],
             ["**Late delivery already made**", "Where the seller has delivered late, the buyer must declare avoidance within a **reasonable time** after becoming aware that delivery was made — or lose the right"],
-            ["**Other breaches already performed**", "Within a reasonable time after the buyer knew or ought to have known of the breach, or after any additional period expired"],
+            ["**Other breaches already performed**", "Article 49(2): within a reasonable time \"after the buyer knew or ought to have known of the breach\", or after any additional period expired"],
           ],
         },
         {
@@ -909,7 +909,7 @@ export const LWG_TREE_10: StudyChapter = {
         {
           kind: "definition",
           term: "Price reduction",
-          md: "Where the goods do not conform, the buyer may reduce the price **in the same proportion as the value that the goods actually delivered had at the time of delivery bears to the value that conforming goods would have had at that time**. It is available whether or not the price has already been paid — but not where the seller cures the defect, or where the buyer refuses to accept a cure the seller was entitled to make.",
+          md: "Where the goods do not conform, **article 50** lets the buyer reduce the price — and it states the fraction precisely, so learn it in the Convention's own words: \"in the same proportion as the value that the goods actually delivered had at the time of delivery bears to the value that conforming goods would have had at that time\". Two features to note. The remedy is available whether or not the price has already been paid; and it is lost where the seller cures the defect, or where the buyer refuses to accept a cure the seller was entitled to make.",
         },
         {
           kind: "example",
@@ -1243,8 +1243,8 @@ export const LWG_TREE_12: StudyChapter = {
           caption: "Damages where the contract is avoided",
           head: ["Situation", "Measure"],
           rows: [
-            ["The aggrieved party has made a **substitute transaction** — bought in or resold", "The difference between the **contract price** and the **price in the substitute transaction**, plus any further damages"],
-            ["**No substitute transaction**, but the goods have a **current price**", "The difference between the **contract price** and the **current price at the time of avoidance**, plus any further damages"],
+            ["The aggrieved party has made a **substitute transaction** — bought in or resold", "**Article 75** — \"the difference between the contract price and the price in the substitute transaction\", plus any further damages"],
+            ["**No substitute transaction**, but the goods have a **current price**", "**Article 76** — \"the difference between the contract price and the current price\" at the time of avoidance, plus any further damages"],
             ["Goods **taken over** before avoidance", "The current price at the time of **taking over** is used instead of the price at avoidance"],
           ],
         },
@@ -1277,7 +1277,7 @@ export const LWG_TREE_12: StudyChapter = {
         q: "A buyer avoids for the seller's fundamental breach and does NOT buy substitute goods, though the goods have a current market price. How are damages measured?",
         options: [
           "It recovers nothing, having made no substitute purchase",
-          "The difference between the contract price and the current price at the time of avoidance, plus any further damages",
+          "Article 76 — \"the difference between the contract price and the current price\" at the time of avoidance, plus any further damages",
           "The difference between the contract price and the price at the original delivery date",
           "Its lost profits only, with no price differential",
         ],
@@ -1452,7 +1452,7 @@ export const LWG_TREE_13: StudyChapter = {
           rows: [
             ["The seller is **not bound to hand the goods over at a particular place**", "When the goods are handed to the **first carrier** for transmission to the buyer"],
             ["The seller **is bound to hand them to a carrier at a particular place**", "When they are handed to the carrier **at that place**"],
-            ["Either way", "**Not** until the goods are **clearly identified to the contract** — by markings, shipping documents, notice to the buyer or otherwise"],
+            ["Either way — art 67(2)", "**Not** until \"the goods are clearly identified to the contract\" — by markings, shipping documents, notice to the buyer or otherwise"],
           ],
         },
         {
@@ -1522,7 +1522,7 @@ export const LWG_TREE_13: StudyChapter = {
     },
     {
       trap: "Passing risk on unidentified goods.",
-      fix: "Risk does not pass until the goods are clearly identified to the contract, by markings, documents or notice.",
+      fix: "Article 67(2): risk does not pass until \"the goods are clearly identified to the contract\", by markings, documents or notice.",
     },
     {
       trap: "Treating risk and ownership as the same thing.",

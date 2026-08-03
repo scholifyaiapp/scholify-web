@@ -12,12 +12,33 @@
  * copied prose. So the check reports at several window sizes and prints the actual
  * matched text for judgement. Target: zero matches at 10+ words.
  *
- * ── One documented exception, and why ─────────────────────────────
+ * ── Exception 1: official names ───────────────────────────────────
  * FA cannot reach zero at 10 words, because the OFFICIAL NAME of one of the
  * statements it teaches — "the statement of profit or loss and other comprehensive
  * income" — is itself ten words long. Two strings in the FA tree are that name and
  * nothing else: a section heading and one multiple-choice option. It is an IFRS term
  * of art and rewording it would make the content wrong, so both are left alone.
+ *
+ * ── Exception 2: quoted legal instruments (LW) ────────────────────
+ * LW is a law paper, and the thing a law paper teaches IS the wording of the
+ * instrument. A learner has to recognise the Partnership Act's "carrying on a
+ * business in common with a view of profit" and CISG art 35(2)(a)'s "fit for the
+ * purposes for which goods of the same description would ordinarily be used" — those
+ * exact formulas are what the examiner rewards. Paraphrasing them would make the
+ * content worse, and they are not the publisher's property in the first place: the
+ * CISG and the UNCITRAL Model Laws are UN instruments, the Acts are public law, and
+ * "bona fide for the benefit of the company as a whole" is a judge's phrase from
+ * 1900. The books quote them for the same reason Scholify does.
+ *
+ * So for LW the gate is NOT zero matches — it is zero UNATTRIBUTED matches. Every
+ * phrase in STATUTORY_QUOTES below is a quotation of the named instrument, is
+ * presented AS a quotation in the content (the article or section is cited next to
+ * it), and is excluded from the count while still being listed in the report so the
+ * list can never quietly grow. Anything not on the list is a real finding: it is
+ * either the publisher's own explanation or ACCA's syllabus wording, and gets
+ * reworded. That distinction is the whole point — the first cut of the LW check
+ * reported 91 hits, and the 20 that were genuinely the publisher's prose were
+ * invisible among the 71 that were statute.
  *
  * FA is otherwise clean: 0 matches at 12, 15 and above. Everything that WAS matching
  * on the first run has been reworded — the culprits were verbatim ACCA syllabus
@@ -39,32 +60,106 @@ const path = require("path")
  * the approved-provider texts (produce them with pdf-parse, already a dependency);
  * MINE are the authored source files for that paper.
  *
- * Current setting: FA (the third paper rebuilt). BT's and MA's settings are kept
- * below in comments so an earlier paper can be re-checked without rediscovering the
- * file names.
+ * Current setting: LW-GLOBAL (the fourth paper rebuilt). Earlier papers' settings are
+ * kept below in comments so one can be re-checked without rediscovering the file names.
+ *
+ * Note that all four LW books are indexed at once, including both ENGLISH texts. LW's
+ * two variants share Areas D–H almost entirely (agency, partnerships, companies,
+ * insolvency, fraud), so checking Global content against the English books too is the
+ * stricter test — and it pre-clears the shared chapters before the ENG rebuild reuses
+ * that ground.
  */
-const BOOKS = ["fa-study-text-2024-25.txt", "f3-kaplan-kit-2023-24.txt", "fa2-bpp-kit.txt"]
+const BOOKS = [
+  "lw-global-study-text-2025-26.txt",
+  "lw-eng-study-text-2025-26.txt",
+  "lw-eng-kaplan-kit-2026.txt",
+  "f4-bpp-kit.txt",
+]
 const SRC_DIR = "C:/Users/User/Desktop/scholify-web-main/scholify-web-main/src/lib"
 const MINE = [
-  "acca-study-fa-tree-ab.ts",
-  "acca-study-fa-tree-c.ts",
-  "acca-study-fa-tree-d1.ts",
-  "acca-study-fa-tree-d2.ts",
-  "acca-study-fa-tree-ef.ts",
-  "acca-study-fa-tree-g.ts",
-  "acca-study-fa-tree-hi.ts",
-  "acca-questions-fa-kit-abc.ts",
-  "acca-questions-fa-kit-d.ts",
-  "acca-questions-fa-kit-efg.ts",
-  "acca-questions-fa-kit-hi.ts",
-  "acca-cases-fa.ts",
+  "acca-study-lwg-tree-a.ts",
+  "acca-study-lwg-tree-b.ts",
+  "acca-study-lwg-tree-c.ts",
+  "acca-study-lwg-tree-d.ts",
+  "acca-study-lwg-tree-de.ts",
+  "acca-study-lwg-tree-ef.ts",
+  "acca-study-lwg-tree-fgh.ts",
+  "acca-questions-lwg-kit-a.ts",
+  "acca-questions-lwg-kit-b.ts",
+  "acca-questions-lwg-kit-cd.ts",
+  "acca-questions-lwg-kit-efgh.ts",
+  "acca-cases-lw-global.ts",
 ]
 
 /* BT: BOOKS = ["kaplan-st.txt", "kaplan-rk.txt", "bpp-kit.txt", "bpp-workbook.txt"]
  *     MINE  = acca-study-bt-tree-{a,b,c,d,ef}.ts, acca-questions-bt-kit-{a,b,c,def}.ts, acca-cases-bt.ts
  * MA: BOOKS = ["ma-kaplan-st.txt", "ma-kaplan-kit.txt", "ma-bpp-st.txt", "ma-bpp-kit.txt"]
  *     MINE  = acca-study-ma-tree-{a,b,c,d,ef}.ts, acca-questions-ma-kit-{ab,c,def}.ts, acca-cases-ma.ts
+ * FA: BOOKS = ["fa-study-text-2024-25.txt", "f3-kaplan-kit-2023-24.txt", "fa2-bpp-kit.txt"]
+ *     MINE  = acca-study-fa-tree-{ab,c,d1,d2,ef,g,hi}.ts, acca-questions-fa-kit-{abc,d,efg,hi}.ts, acca-cases-fa.ts
  */
+
+/*
+ * Quotations of legal instruments \u2014 see "Exception 2" in the header.
+ *
+ * Each entry is the instrument that owns the words, then the longest form of the
+ * quotation as it appears in the content. A hit is excluded when its window falls
+ * INSIDE one of these phrases, so the shorter recap and question-explanation forms
+ * are covered by the one entry rather than needing an entry each.
+ *
+ * Adding to this list is a deliberate act: the phrase must be traceable to the named
+ * article or section, and the content must cite that article or section beside it.
+ */
+const STATUTORY_QUOTES = [
+  // United Nations Convention on Contracts for the International Sale of Goods
+  ["CISG (official title)", "the united nations convention on contracts for the international sale of goods 1980"],
+  ["CISG art 1(1)", "between parties whose places of business are in different states"],
+  ["CISG art 11", "writing and is not subject to any other requirement as to form"],
+  ["CISG art 14(1)", "a proposal for concluding a contract addressed to one or more specific persons which is sufficiently definite and indicates"],
+  ["CISG art 31(a)", "handing the goods to the first carrier for transmission to the buyer"],
+  ["CISG art 31(b)-(c)", "placing the goods at the buyer s disposal at that place"],
+  ["CISG art 35(2)(a)", "unless they are fit for the purposes for which goods of the same description would ordinarily be used"],
+  ["CISG art 36", "existing at the time risk passes to the buyer even if it only becomes apparent later"],
+  ["CISG art 39(1)", "give notice to the seller specifying the nature of the lack of conformity"],
+  ["CISG art 39(2)", "the buyer loses the right to rely on a lack of conformity"],
+  ["CISG art 41", "free from any right or claim of a third party"],
+  ["CISG art 42(1)(a)", "the law of the state where the goods will be resold or used if"],
+  ["CISG art 49(2)", "the buyer knew or ought to have known of the breach"],
+  ["CISG art 50", "in the same proportion as the value that the goods actually delivered had at the time of delivery bears to the value that conforming goods would have had at that time"],
+  ["CISG art 67(2)", "the goods are clearly identified to the contract by markings"],
+  ["CISG art 75", "the difference between the contract price and the price in the substitute transaction"],
+  ["CISG art 76", "the difference between the contract price and the current price"],
+  // UNCITRAL Model Law on International Credit Transfers
+  ["UNCITRAL Credit Transfers art 2(a)", "the series of operations beginning with the originator s payment order made for the purpose of placing funds at the disposal of a beneficiary"],
+  ["UNCITRAL Credit Transfers art 2(a), 2nd sentence", "it includes any payment order issued by the originator s bank or by an intermediary bank in order to carry out the originator s payment order"],
+  ["UNCITRAL Credit Transfers art 2(b)", "the issuer of the first payment order in a credit transfer"],
+  ["UNCITRAL Credit Transfers art 2(f)", "any receiving bank other than the originator s bank and the beneficiary s bank"],
+  // Arbitration
+  ["UNCITRAL Model Law (official title)", "the uncitral model law on international commercial arbitration"],
+  ["New York Convention art II(3)", "null and void inoperative or incapable of being performed"],
+  // Partnership Act 1890
+  ["Partnership Act 1890 s.1(1)", "the relationship which exists between persons carrying on a business in common with a view of profit"],
+  // Companies Act 2006
+  ["CA 2006 s.67(2)", "the name is the same as or too like an existing one"],
+  ["CA 2006 s.174(2)", "the care of a reasonably diligent person with the general knowledge skill and experience"],
+  ["CA 2006 s.830(2)", "accumulated realised profits so far as not previously distributed or capitalised less accumulated realised losses so far as not previously written off"],
+  ["CA 2006 s.830(2) (short form)", "accumulated realised profits less accumulated realised losses a revaluation surplus is"],
+  // Insolvency Act 1986 and CDDA 1986
+  ["IA 1986 Sch B1 para 3(1)(b)", "achieving a better result for the creditors as a whole than would be likely on a winding up"],
+  ["IA 1986 Sch B1 para 11", "the company is or is likely to become unable to pay its debts and"],
+  ["IA 1986 s.213", "with intent to defraud creditors or for any fraudulent purpose"],
+  ["CDDA 1986 s.6", "unfit to be concerned in the management of a company"],
+  // Criminal Justice Act 1993 and FSMA 2000
+  ["CJA 1993 s.52", "disposing of price affected securities while in possession of inside information as an insider"],
+  ["CJA 1993 s.52 (dealing form)", "dealing in price affected securities while in possession of inside information as an insider"],
+  ["CJA 1993 s.53 (defence)", "did not expect the dealing to result in a profit"],
+  ["CJA 1993 s.53 (defence)", "believed on reasonable grounds that the information had been disclosed widely enough"],
+  ["CJA 1993 s.56(1)", "if made public would be likely to have a significant effect on the price of"],
+  ["CJA 1993 s.57(2)", "through being a director employee or shareholder of an issuer"],
+  ["FSMA 2000 s.118", "likely to give a regular user a false or misleading impression"],
+  // Case law
+  ["Allen v Gold Reefs (1900)", "be bona fide for the benefit of the company as a whole"],
+]
 
 const words = (s) =>
   s
@@ -74,6 +169,13 @@ const words = (s) =>
     .trim()
     .split(" ")
     .filter(Boolean)
+
+/* Normalised, space-padded, so containment tests land on word boundaries. */
+const QUOTES = STATUTORY_QUOTES.map(([instrument, phrase]) => ({
+  instrument,
+  padded: ` ${words(phrase).join(" ")} `,
+}))
+const quotedBy = (window) => QUOTES.find((q) => q.padded.includes(` ${window} `))
 
 /* ── The books, as one word stream per book ─────────────────────── */
 const bookWords = {}
@@ -127,12 +229,30 @@ for (const N of [8, 10, 12, 15]) {
   }
 
   const unique = [...new Map(hits.map((h) => [h.phrase, h])).values()]
-  console.log(`\n=== ${N}-word windows === ${unique.length} distinct match(es)`)
-  for (const h of unique.slice(0, 25)) {
+
+  /*
+   * Split before counting. A quoted instrument is not a finding, but it is still
+   * printed — an allow-list nobody ever reads is how an allow-list starts absorbing
+   * things it should not.
+   */
+  const findings = []
+  const quoted = new Map() // instrument -> distinct windows attributed to it
+  for (const h of unique) {
+    const q = quotedBy(h.phrase)
+    if (q) quoted.set(q.instrument, (quoted.get(q.instrument) || 0) + 1)
+    else findings.push(h)
+  }
+
+  console.log(`\n=== ${N}-word windows === ${findings.length} finding(s)` + (quoted.size ? `, plus ${[...quoted.values()].reduce((a, b) => a + b, 0)} window(s) inside quoted instruments` : ""))
+  for (const h of findings.slice(0, 40)) {
     console.log(`  [${h.book}] ${h.file}`)
     console.log(`     "${h.phrase}"`)
   }
-  if (unique.length > 25) console.log(`  … and ${unique.length - 25} more`)
+  if (findings.length > 40) console.log(`  … and ${findings.length - 40} more`)
+  if (quoted.size) {
+    console.log(`  ── attributed quotations (excluded, see STATUTORY_QUOTES) ──`)
+    for (const [instrument, n] of [...quoted].sort()) console.log(`     ${String(n).padStart(3)} × ${instrument}`)
+  }
 }
 
 console.log(`\nScholify authored text compared: ${mineWordCount.toLocaleString()} words across ${mineStrings.length} strings.`)
