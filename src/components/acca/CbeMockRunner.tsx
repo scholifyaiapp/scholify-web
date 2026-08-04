@@ -125,6 +125,9 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
   const [essayTab, setEssayTab] = useState<Record<string, "word" | "sheet">>({})
   const [flags, setFlags] = useState<Record<string, boolean>>({})
   const [navOpen, setNavOpen] = useState(false)
+  // The navigator is opt-in during an attempt. Moving into or out of the exam
+  // must always close it so the first question starts unobstructed.
+  useEffect(() => setNavOpen(false), [stage])
   // The sitting's wall-clock deadline, fixed once. ProCountdown ticks itself off
   // this, so the clock never re-renders the runner.
   const [deadline] = useState(() => Date.now() + mock.seconds * 1000)

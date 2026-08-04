@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react"
+import { useEffect, useState, type CSSProperties } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { C, Icon } from "@/components/acca/ui"
 
@@ -131,6 +131,9 @@ export function QuestionNavBar({
   finishDisabled?: boolean
 }) {
   const [mapOpen, setMapOpen] = useState(false)
+  // A new question set is a new attempt. Never carry an open sheet into it,
+  // even if React preserves this control while the parent swaps the questions.
+  useEffect(() => setMapOpen(false), [total])
   const atFirst = cursor <= 0
   const atLast = cursor >= total - 1
   const btn = (enabled: boolean): CSSProperties => ({
