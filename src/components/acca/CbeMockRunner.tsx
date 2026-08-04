@@ -498,7 +498,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         total={mock.seconds}
         right={
           <div style={{ display: "flex", gap: 6 }}>
-            <IconChip label={`${f.n}/${items.length}`} onClick={() => setNavOpen(true)} icon="stats" active={navOpen} />
+            <IconChip label={`Map · ${f.n}/${items.length}`} onClick={() => setNavOpen(true)} icon="stats" active={navOpen} />
             <IconChip label={flagged ? "Flagged" : "Flag"} icon="pin" active={flagged} onClick={() => setFlags((m) => ({ ...m, [f.key]: !m[f.key] }))} />
           </div>
         }
