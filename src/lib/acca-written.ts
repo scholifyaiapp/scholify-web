@@ -24,6 +24,16 @@ export interface WrittenQuestion {
   maxMarks: number
   /** Marking points — the examiner awards ~1 mark per valid point covered. */
   rubric: string[]
+  /**
+   * The study chapter this question examines, e.g. "PM-14".
+   *
+   * Optional because the legacy banks predate the chapter trees. It does two jobs where
+   * it is set: it lets a contract test assert that Section C actually covers the
+   * chapters it claims to, and — as with the OT kits — it marks the question as authored
+   * against the OFFICIAL syllabus, so the paper's legacy area-migration map must pass it
+   * through untouched instead of shifting its area.
+   */
+  chapter?: string
 }
 
 import { paperContent, loadedPaperIds } from "@/lib/acca-content-registry"
