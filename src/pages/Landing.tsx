@@ -346,14 +346,6 @@ function Hero() {
           {t("Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.")}
         </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.95, ease: EASE_DECISIVE }}
-        >
-          <CharlesVoiceIntro />
-        </motion.div>
-
         <div
           aria-label={t("Scholify performance telemetry")}
           className="grid grid-cols-1 sm:grid-cols-3"
@@ -2048,6 +2040,7 @@ export default function Landing() {
     <div className="scholify-race-shell race-grid-surface" style={{ backgroundColor: BG_PRIMARY, color: INK, minHeight: "100dvh", overflowX: "clip" }}>
       <LiquidGlassFilterDefs />
       <Nav />
+      <CharlesVoiceIntro />
       <Hero />
       <PartnerLogos
         heading="Built for the ACCA world"
