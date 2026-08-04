@@ -404,7 +404,15 @@ export default function Welcome() {
   }, [canAdvance, go, visibleStepIndex, visibleSteps.length])
 
   function persist(complete = true) {
-    if (!paper || target === null) return false
+    if (!paper) {
+      setFinishError("Please choose your ACCA paper before Charles builds the plan.")
+      goToStep(PAPER_STEP)
+      return false
+    }
+    // Older interrupted drafts can reach the summary without a target. The
+    // summary already presents 75% as the recommended default, so persist that
+    // same value instead of making the final CTA silently do nothing.
+    const effectiveTarget = target ?? 75
     const charlesPlan = buildOnboardingGuide({
       paperId: paper,
       route: learnerRoute,
@@ -412,7 +420,7 @@ export default function Welcome() {
       minutesPerDay: minutes,
       daysPerWeek,
       examDate,
-      targetPercentage: target,
+      targetPercentage: effectiveTarget,
     })
     setPassedPapers([...passed])
     setStudyingPapers([paper])
@@ -443,7 +451,7 @@ export default function Welcome() {
      * dashboard's daily goal and the plan disagreed, and neither matched the
      * minutes the learner had actually promised.
      */
-    const questionsPerDay = shapeDay(minutes, target).questionGoal
+    const questionsPerDay = shapeDay(minutes, effectiveTarget).questionGoal
     setPlan(paper, { examDate: charlesPlan.recommendedExamDate, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: charlesPlan.recommendedTarget })
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()

@@ -124,6 +124,10 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
     return <PrelaunchBlock email={user.email ?? null} />
   }
   if (gate) {
+    // The launch admin must always be able to exercise the complete learner
+    // journey before launch. An old/expired trial on the test account should
+    // not turn every app CTA into a paywall while the product is being audited.
+    if (isLaunchAdmin(user)) return <>{children}</>
     const e = entitlementOf(user)
     // Only block AFTER a trial has been used and expired — never a brand-new or
     // not-yet-onboarded account (they haven't started their 3 days yet).

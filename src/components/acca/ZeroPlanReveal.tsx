@@ -247,7 +247,10 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 whileHover={{ y: -1 }}
-                onClick={() => setStage("commit")}
+                onClick={() => {
+                  trackEvent("plan_day_one_started", { paper: paperId, days })
+                  onDone("study")
+                }}
                 style={{
                   width: "100%", padding: "16px 18px", borderRadius: 14, border: "none", cursor: "pointer",
                   background: IRIDESCENT, color: "#fff", fontWeight: 800, fontSize: 15.5,
