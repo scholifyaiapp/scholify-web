@@ -162,6 +162,13 @@ function LaunchHome() {
   return isLaunchAdmin(user) ? <Landing /> : <Waitlist />
 }
 
+function LaunchPricing() {
+  const { user, loading } = useAuth()
+  if (!PRELAUNCH_MODE) return <Pricing />
+  if (loading) return null
+  return isLaunchAdmin(user) ? <Pricing /> : <Navigate to="/" replace />
+}
+
 export default function App() {
   // Capture a partner link (?aff=CODE) once on load, wherever it lands.
   useEffect(() => {
@@ -199,7 +206,7 @@ export default function App() {
         <Route path="/notes" element={<ProtectedRoute gate><Page name="NotesHub"><NotesHub /></Page></ProtectedRoute>} />
 
         {/* Public info */}
-        <Route path="/pricing" element={PRELAUNCH_MODE ? <Navigate to="/" replace /> : <Page name="Pricing"><Pricing /></Page>} />
+        <Route path="/pricing" element={<Page name="Pricing"><LaunchPricing /></Page>} />
         <Route path="/privacy" element={<Page name="Privacy"><Privacy /></Page>} />
         <Route path="/terms" element={<Page name="Terms"><Terms /></Page>} />
         <Route path="/support" element={<Page name="Support"><Support /></Page>} />

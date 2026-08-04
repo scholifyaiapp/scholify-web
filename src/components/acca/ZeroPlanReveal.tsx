@@ -249,7 +249,7 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
                 whileHover={{ y: -1 }}
                 onClick={() => {
                   trackEvent("plan_day_one_started", { paper: paperId, days })
-                  onDone("study")
+                  setShowPaywall(true)
                 }}
                 style={{
                   width: "100%", padding: "16px 18px", borderRadius: 14, border: "none", cursor: "pointer",

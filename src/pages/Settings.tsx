@@ -1433,7 +1433,7 @@ export default function Settings() {
             {isPaid ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <Button variant="secondary" onClick={() => { void openStripeBillingPortal().then((ok) => { if (!ok) toast.error("Couldn't open billing management — please try again") }) }}>
-                  Manage plan
+                  Change plan & billing
                 </Button>
                 <button type="button" onClick={() => setDialog("cancel")} style={redGhost}>
                   Cancel plan
@@ -1441,7 +1441,7 @@ export default function Settings() {
               </div>
             ) : (
               <Button onClick={() => navigate("/pricing")}>
-                See plans
+                Choose Beginner or Pro
                 <Icon name="arrow" size={16} />
               </Button>
             )}

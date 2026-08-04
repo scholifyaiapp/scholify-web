@@ -33,7 +33,7 @@ import { StoreBadge } from "@/components/ui/store-badge"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
-import { rememberCheckoutPlan, type StripePlan } from "@/lib/stripe"
+import { startStripeCheckout, type StripePlan } from "@/lib/stripe"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
@@ -1875,8 +1875,7 @@ function Pricing() {
     const plan: StripePlan = tier === 1
       ? (period === 1 ? "annual_beginner" : "beginner")
       : (period === 1 ? "annual_pro" : "pro")
-    rememberCheckoutPlan(plan)
-    navigate(signUpPath(`/pricing?checkout=${plan}`))
+    void startStripeCheckout(plan)
   }
   return (
     <section id="pricing" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
@@ -1914,7 +1913,7 @@ function Pricing() {
               proAnnual={10.00}
               starterLabel={t("Beginner")}
               proLabel={t("Pro")}
-              ctaLabel={t("Start free")}
+              ctaLabel={(tier) => tier === 0 ? t("Start free") : tier === 1 ? t("Choose Beginner") : t("Choose Pro")}
               onCta={choosePlan}
             />
           </div>

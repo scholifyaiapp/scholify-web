@@ -21,7 +21,7 @@ import Stripe from "stripe"
  *
  * Entitlement lives in app_metadata (service-role-only) exactly like the Paddle
  * path, so the AI meter, the client gates and the subscriptions table are all
- * shared. The 7-day trial is separate (app-level, granted on signup) — Stripe is
+ * shared. The 3-day trial is separate (app-level, granted after onboarding) — Stripe is
  * only the PAID conversion, so its subscriptions carry no Stripe-side trial.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_BEGINNER,
@@ -124,7 +124,10 @@ async function writeEntitlement(
         ...(fields.billingInterval ? { billing_interval: fields.billingInterval } : {}),
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
-  await supa.auth.admin.updateUserById(userId, { app_metadata: meta })
+  const { data: existingUser } = await supa.auth.admin.getUserById(userId)
+  await supa.auth.admin.updateUserById(userId, {
+    app_metadata: { ...(existingUser?.user?.app_metadata ?? {}), ...meta },
+  })
 
   // The durable billing record behind app_metadata (best-effort — never blocks).
   try {

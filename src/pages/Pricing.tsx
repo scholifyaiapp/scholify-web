@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
@@ -203,6 +203,17 @@ export default function Pricing() {
       if (!ok) flash("Couldn't open checkout — please try again in a moment.")
     })
   }
+
+  // Resume a plan selected before authentication. This is intentionally
+  // one-shot: a failed checkout stays on the pricing page for a manual retry.
+  const resumedCheckout = useRef(false)
+  useEffect(() => {
+    if (!user || resumedCheckout.current) return
+    const requested = new URLSearchParams(window.location.search).get("checkout")
+    if (!["beginner", "annual_beginner", "pro", "annual_pro"].includes(requested ?? "")) return
+    resumedCheckout.current = true
+    checkout(requested as StripePlan)
+  }, [user])
 
   const beginnerCard = useMemo(
     () => ({

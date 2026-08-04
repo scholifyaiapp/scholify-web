@@ -10,7 +10,7 @@ interface PricingInteractionProps {
   freeLabel?: string
   starterLabel?: string
   proLabel?: string
-  ctaLabel?: string
+  ctaLabel?: string | ((selectedTier: 0 | 1 | 2) => string)
   onCta?: (selectedTier: 0 | 1 | 2, period: 0 | 1) => void
 }
 
@@ -224,7 +224,7 @@ export function PricingInteraction({
         onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.97)")}
         onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
       >
-        {ctaLabel}
+        {typeof ctaLabel === "function" ? ctaLabel(active) : ctaLabel}
       </button>
     </div>
   )
