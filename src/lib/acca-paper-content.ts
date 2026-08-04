@@ -417,7 +417,12 @@ export function loadPaperContent(paperId: string): Promise<void> {
         : (await import("@/lib/acca-study-tx-global")).TX_GLOBAL_CHAPTERS
       : isLwEng
         ? (await import("@/lib/acca-study-lw-eng")).LW_ENG_CHAPTERS
-        : collect<StudyChapter>(chapterMods, paperId)
+        : paperId === "PM"
+          // PM's four area-chapters covered a FIVE-area syllabus, so Area E had none at
+          // all. The tree is 33 chapters, one per sub-topic group, and replaces
+          // acca-study-pm-official entirely rather than sitting alongside it.
+          ? (await import("@/lib/acca-study-pm-tree")).PM_CHAPTERS
+          : collect<StudyChapter>(chapterMods, paperId)
     const chapters = usesOwnTree ? baseChapters : applyVariantStudyContent(paperId, baseChapters)
     const mappedFlashcards = usesGlobalBank ? [] : paperId === "BT"
       ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
