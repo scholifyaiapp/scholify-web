@@ -101,6 +101,27 @@ export function QuestionMapSheet({
   )
 }
 
+/** Always-visible compact map used during an active attempt. */
+function InlineQuestionMap({ total, cursor, isAnswered, isFlagged, onGo }: {
+  total: number
+  cursor: number
+  isAnswered: (i: number) => boolean
+  isFlagged: (i: number) => boolean
+  onGo: (i: number) => void
+}) {
+  return (
+    <div aria-label="Question map" style={{ marginTop: 14, padding: 12, borderRadius: 14, border: `1px solid ${C.border}`, background: "var(--sch-card)" }}>
+      <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: C.faint, marginBottom: 8 }}>QUESTION MAP</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+        {Array.from({ length: total }, (_, i) => {
+          const { bg, fg, border } = cellColors({ current: i === cursor, answered: isAnswered(i), flagged: isFlagged(i) })
+          return <button key={i} type="button" aria-label={`Question ${i + 1}`} onClick={() => onGo(i)} style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${border}`, background: bg, color: fg, fontSize: 11.5, fontWeight: 750, cursor: "pointer" }}>{i + 1}</button>
+        })}
+      </div>
+    </div>
+  )
+}
+
 /**
  * The control bar under the question card: Prev · Flag · Map(n/total) · Next,
  * plus a Finish action. Owns the map sheet. Exam-style: nothing grades here.
@@ -144,6 +165,7 @@ export function QuestionNavBar({
   })
   return (
     <>
+      <InlineQuestionMap total={total} cursor={cursor} isAnswered={isAnswered} isFlagged={isFlagged} onGo={onGo} />
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
         <button style={btn(!atFirst)} disabled={atFirst} onClick={() => !atFirst && onGo(cursor - 1)}>← Prev</button>
         <button

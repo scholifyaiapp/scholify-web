@@ -530,6 +530,12 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
         })}
       </div>
 
+      {/* Keep the exam map visible while the larger drawer remains available
+          from the Map button in the top bar. */}
+      <div style={{ marginBottom: 12, padding: 12, borderRadius: 14, border: `1px solid ${C.border}`, background: "var(--sch-card, #fff)" }}>
+        <NavigatorGrid mock={mock} items={items} answered={answered} flags={flags} cursor={cursor} onGo={goto} />
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div key={f.key} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} transition={{ duration: 0.2 }}>
           {/* scenario block for case questions */}

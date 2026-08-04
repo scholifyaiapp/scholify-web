@@ -114,12 +114,15 @@ export default function PaywallModal({
   type,
   onClose,
   required = false,
+  onTrialContinue,
 }: {
   open: boolean
   type: PaywallType
   onClose: () => void
   /** Prevent closing when this is the onboarding gate before paid access. */
   required?: boolean
+  /** Lets an eligible onboarding learner enter the already-started trial. */
+  onTrialContinue?: () => void
 }) {
   const { user, signOut } = useAuth()
   const isMobile = useIsMobile()
@@ -498,6 +501,18 @@ export default function PaywallModal({
                   ? "3-day free trial · Cancel anytime"
                   : "Payments open soon · 3-day free trial to start"}
               </div>
+              {onTrialContinue && type !== "expired" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent("trial_continue_clicked", { type })
+                    onTrialContinue()
+                  }}
+                  style={{ width: "100%", marginTop: 12, padding: "13px 16px", borderRadius: 12, border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: "var(--sch-text)", fontSize: 13.5, fontWeight: 750, cursor: "pointer" }}
+                >
+                  Continue with my 3-day free trial
+                </button>
+              )}
               {dismissible && (
                 <button
                   type="button"

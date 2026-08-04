@@ -413,6 +413,7 @@ export default function AccaDiagnostic() {
           open={showTrialPaywall}
           type="general"
           required
+          onTrialContinue={() => navigate("/dashboard")}
           onClose={() => {}}
         />
       </>
@@ -578,6 +579,7 @@ export default function AccaDiagnostic() {
         open={showTrialPaywall}
         type="general"
         required
+        onTrialContinue={() => navigate("/dashboard")}
         onClose={() => {}}
       />
     </DashboardLayout>

@@ -67,6 +67,22 @@ const SLOTS = [
 
 type SlotKey = (typeof SLOTS)[number]["key"]
 
+export type TrialReminderKey = "10h" | "day2" | "day3"
+const TRIAL_EMAILS: Array<{ key: TrialReminderKey; afterHours: number }> = [
+  { key: "10h", afterHours: 10 },
+  { key: "day2", afterHours: 48 },
+  { key: "day3", afterHours: 60 },
+]
+
+/** Earliest unsent lifecycle email currently due; null outside the 3-day trial. */
+export function dueTrialReminder(startedAt: string, sent: Partial<Record<TrialReminderKey, string>>, now = Date.now()): TrialReminderKey | null {
+  const start = Date.parse(startedAt)
+  if (!Number.isFinite(start)) return null
+  const hours = (now - start) / (60 * 60 * 1000)
+  if (hours < 0 || hours >= 72) return null
+  return TRIAL_EMAILS.find((item) => hours >= item.afterHours && !sent[item.key])?.key ?? null
+}
+
 /** How late a tick may be and still deliver a slot, in minutes. */
 const WINDOW = 20
 
@@ -314,7 +330,10 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
     if (error) {
       // A missing column here means migration 0026 has not been applied yet.
       console.warn("reminders send:", error.message)
-      res.status(200).json({ sent: 0, disabled: true })
+      // Trial lifecycle mail is sourced from Auth metadata, so it must keep
+      // working even when the optional practice-reminder table is unavailable.
+      const trialSent = await sendDueTrialEmails(db, resendKey, from, now)
+      res.status(200).json({ sent: 0, trialSent, practiceDisabled: true })
       return
     }
 
@@ -373,10 +392,61 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
         await db.from(TABLE).update({ [dateCol]: null }).eq("user_id", r.user_id)
       }
     }
-    res.status(200).json({ sent, considered })
+    const trialSent = await sendDueTrialEmails(db, resendKey, from, now)
+    res.status(200).json({ sent, considered, trialSent })
   } catch (err) {
     console.error("reminders send:", err)
     res.status(200).json({ sent: 0, disabled: true })
+  }
+}
+
+async function sendDueTrialEmails(db: NonNullable<ReturnType<typeof admin>>, apiKey: string, from: string, now: Date): Promise<number> {
+  let page = 1
+  let sentCount = 0
+  while (page <= 10) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 })
+    if (error || !data?.users?.length) break
+    for (const user of data.users) {
+      if (!user.email) continue
+      const meta = user.app_metadata ?? {}
+      if (String(meta.plan ?? "free") !== "free" || !meta.trial_started_at) continue
+      const sent = (meta.trial_reminders_sent ?? {}) as Partial<Record<TrialReminderKey, string>>
+      const due = dueTrialReminder(String(meta.trial_started_at), sent, now.getTime())
+      if (!due) continue
+      const ok = await sendTrialEmail(apiKey, from, user.email, due)
+      if (!ok) continue
+      await db.auth.admin.updateUserById(user.id, {
+        app_metadata: { ...meta, trial_reminders_sent: { ...sent, [due]: now.toISOString() } },
+      })
+      sentCount += 1
+    }
+    if (data.users.length < 200) break
+    page += 1
+  }
+  return sentCount
+}
+
+async function sendTrialEmail(apiKey: string, from: string, to: string, slot: TrialReminderKey): Promise<boolean> {
+  const copy = slot === "10h"
+    ? { subject: "Your Scholify plan is ready for tonight", heading: "Your first 10 hours are in.", body: "Your 3-day trial is active. Open today’s plan and complete the next learning block while Charles still has every mode unlocked for you.", cta: "Continue today’s plan" }
+    : slot === "day2"
+      ? { subject: "Day 2 of your Scholify trial", heading: "Your plan is learning from you.", body: "You are on day 2 of your trial. Every answer sharpens your readiness score and changes what Charles gives you next.", cta: "Start day 2" }
+      : { subject: "Your Scholify trial ends today", heading: "Your final trial day is running.", body: "Your progress and plan stay saved, but app access will lock when the 3-day trial ends unless you choose a plan.", cta: "Keep Scholify unlocked" }
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to,
+        subject: copy.subject,
+        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#14141A"><div style="font-size:12px;font-weight:800;color:#C80000;letter-spacing:1px">SCHOLIFY · 3-DAY TRIAL</div><h1 style="font-size:28px;line-height:1.2">${copy.heading}</h1><p style="font-size:15px;line-height:1.65;color:#5F5753">${copy.body}</p><a href="${SITE}/dashboard" style="display:inline-block;margin-top:10px;padding:13px 20px;border-radius:12px;background:#C80000;color:#fff;text-decoration:none;font-weight:800">${copy.cta} →</a><p style="margin-top:28px;font-size:12px;color:#8F8C85">Your learning data remains saved to your Scholify account.</p></div>`,
+        text: `${copy.heading}\n\n${copy.body}\n\n${copy.cta}: ${SITE}/dashboard`,
+      }),
+    })
+    return response.ok
+  } catch {
+    return false
   }
 }
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { entitlementOf } from "@/lib/entitlement"
@@ -97,6 +97,17 @@ function PrelaunchBlock({ email }: { email: string | null }) {
 export function ProtectedRoute({ children, gate = false }: { children: ReactNode; gate?: boolean }) {
   const { user, loading } = useAuth()
   const location = useLocation()
+  const [, setEntitlementClock] = useState(0)
+
+  // Re-evaluate access at the exact trial deadline. Without this, a learner who
+  // kept one tab open could continue until their next navigation or refresh.
+  useEffect(() => {
+    if (!gate || !user) return
+    const end = Date.parse(String(user.app_metadata?.trial_ends_at ?? ""))
+    if (!Number.isFinite(end) || end <= Date.now()) return
+    const timer = window.setTimeout(() => setEntitlementClock((n) => n + 1), Math.min(end - Date.now() + 250, 2_147_483_647))
+    return () => window.clearTimeout(timer)
+  }, [gate, user])
 
   if (loading) return <AuthLoading />
   if (!user) {

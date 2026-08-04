@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { dueSlot } from "../../api/reminders"
+import { dueSlot, dueTrialReminder } from "../../api/reminders"
 
 /*
  * The reminder scheduler.
@@ -103,5 +103,22 @@ describe("dueSlot — which reminder is due right now", () => {
     // would put the whole day 24 hours out. Guard the arithmetic that consumes it.
     const midnightSession = { practice_time: "03:00" }
     expect(dueSlot(midnightSession, { date: "2026-08-12", minutes: 0 })).toBe("lead")
+  })
+})
+
+describe("trial lifecycle reminders", () => {
+  const start = "2026-08-10T00:00:00.000Z"
+  const atHour = (hours: number) => Date.parse(start) + hours * 60 * 60 * 1000
+
+  it("sends at 10 hours, day 2, and during day 3 exactly once", () => {
+    expect(dueTrialReminder(start, {}, atHour(9))).toBeNull()
+    expect(dueTrialReminder(start, {}, atHour(10))).toBe("10h")
+    expect(dueTrialReminder(start, { "10h": start }, atHour(48))).toBe("day2")
+    expect(dueTrialReminder(start, { "10h": start, day2: start }, atHour(60))).toBe("day3")
+    expect(dueTrialReminder(start, { "10h": start, day2: start, day3: start }, atHour(65))).toBeNull()
+  })
+
+  it("does not send lifecycle nudges after the trial has expired", () => {
+    expect(dueTrialReminder(start, {}, atHour(72))).toBeNull()
   })
 })
