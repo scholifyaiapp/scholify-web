@@ -38,6 +38,7 @@ import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
+import CharlesVoiceIntro from "@/components/CharlesVoiceIntro"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
@@ -344,6 +345,14 @@ function Hero() {
         >
           {t("Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.")}
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.95, ease: EASE_DECISIVE }}
+        >
+          <CharlesVoiceIntro />
+        </motion.div>
 
         <div
           aria-label={t("Scholify performance telemetry")}

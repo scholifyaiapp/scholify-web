@@ -15,6 +15,7 @@
     "audit:verification": "tsx --tsconfig tsconfig.app.json scripts/audit-verification.ts",
     "audit:tx-fa2025": "tsx --tsconfig tsconfig.app.json scripts/audit-tx-fa2025.ts",
     "verify:loading": "tsx --tsconfig tsconfig.app.json scripts/verify-dynamic-load.ts",
+    "generate:charles-audio": "node --env-file-if-exists=.env.fish.local scripts/generate-charles-audio.mjs",
     "build": "npm run typecheck && npm test && vite build",
     "preview": "vite preview"
   },
