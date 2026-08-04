@@ -146,6 +146,7 @@ const TARGET_OPTIONS: { v: number; label: string; blurb: string }[] = [
   { v: 65, label: "65%", blurb: "Pass-ready" },
   { v: 75, label: "75%", blurb: "Confident · recommended" },
   { v: 85, label: "85%", blurb: "Bulletproof" },
+  { v: 90, label: "90%", blurb: "Ambitious" },
 ]
 
 
@@ -243,7 +244,7 @@ export default function Welcome() {
   const [examDate, setExamDate] = useState(draft?.examDate ?? "")
   const [pickedSitting, setPickedSitting] = useState<string | null>(draft?.pickedSitting ?? null)
   const [goal, setGoalState] = useState<Goal | null>(draft?.goal ?? null)
-  const [target, setTarget] = useState(draft?.target ?? 75)
+  const [target, setTarget] = useState<number | null>(draft?.target ?? null)
   const [englishLevel, setEnglishLevel] = useState<CefrLevel | null>(draft?.englishLevel ?? null)
   const [englishEvidence, setEnglishEvidence] = useState<EnglishEvidence | null>(draft?.englishEvidence ?? null)
   // Files are NOT restored — see the note in acca-onboarding-draft. The upload
@@ -307,7 +308,7 @@ export default function Welcome() {
       : step === 6
         ? examDate !== ""
       : step === 7
-        ? goal !== null
+        ? goal !== null && target !== null
         : step === 8
           ? resultChoice !== null
         : true
@@ -403,7 +404,7 @@ export default function Welcome() {
   }, [canAdvance, go, visibleStepIndex, visibleSteps.length])
 
   function persist(complete = true) {
-    if (!paper) return false
+    if (!paper || target === null) return false
     const charlesPlan = buildOnboardingGuide({
       paperId: paper,
       route: learnerRoute,
@@ -643,7 +644,7 @@ export default function Welcome() {
         examDate={examDate}
         sitting={sittings.find((s) => s.date === pickedSitting) ?? null}
         goal={goal}
-        target={target}
+        target={target ?? 75}
         uploadedResult={resultAnalysis}
         onDiagnostic={learnerRoute === "new" ? finishNewLearner : finishToDiagnostic}
         onUploaded={finishWithResult}
@@ -1454,7 +1455,7 @@ function GoalSlide({
 }: {
   goal: Goal | null
   setGoal: (g: Goal) => void
-  target: number
+  target: number | null
   setTarget: (n: number) => void
 }) {
   return (
@@ -1483,7 +1484,7 @@ function GoalSlide({
         <ChoiceGroup
           label="Target Exam Readiness Score"
           values={TARGET_OPTIONS.map((t) => String(t.v))}
-          value={String(target)}
+          value={target === null ? null : String(target)}
           onChange={(next) => setTarget(Number(next))}
           layout="grid"
           columns={TARGET_OPTIONS.length}
@@ -1658,7 +1659,6 @@ function ReadySlide({
     ["Schedule", `${minutes} min · ${daysPerWeek} days · ${slotLabel}`, TIME_STEP],
     ["Your target", `${guide.recommendedTarget}% readiness`, 7],
     ["Ready from", guide.estimatedReadyLabel, null],
-    ["Exam date", guide.recommendedExamLabel, EXAM_DATE_STEP],
   ]
 
   useEffect(() => {
@@ -1688,7 +1688,7 @@ function ReadySlide({
             <Icon name="tutor" size={30} color={RED} />
           </motion.div>
           <div style={{ font: `800 20px/1.25 ${SANS}`, color: INK }}>Charles is calculating your finish line…</div>
-          <div style={{ marginTop: 9, font: `500 13px/1.5 ${SANS}`, color: MUTE }}>Balancing your target, study pace and exam date.</div>
+          <div style={{ marginTop: 9, font: `500 13px/1.5 ${SANS}`, color: MUTE }}>Balancing your target and sustainable study pace.</div>
           <motion.div style={{ width: 220, height: 4, margin: "20px auto 0", borderRadius: 99, overflow: "hidden", background: BORDER }}>
             <motion.div initial={{ x: "-100%" }} animate={{ x: "0%" }} transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }} style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#C80000,#E50068,#F4A405)" }} />
           </motion.div>
@@ -1705,6 +1705,10 @@ function ReadySlide({
           <span style={{ display: "block", font: `850 15px/1.25 ${SANS}`, color: "#087A55" }}>Good news — your route is ready.</span>
           <span style={{ display: "block", marginTop: 3, font: `600 12.5px/1.4 ${SANS}`, color: BODY }}>From {guide.estimatedReadyLabel}, you’ll be ready to perform at your {target}% target.</span>
         </span>
+      </motion.div>
+      <motion.div initial={reducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .22 }} role="note" style={{ margin: "-4px 0 14px", padding: "11px 14px", borderRadius: 13, background: "rgba(244,164,5,.10)", border: "1px solid rgba(244,164,5,.30)", color: "#6B4E12", font: `700 12px/1.45 ${SANS}`, display: "flex", gap: 9, alignItems: "flex-start" }}>
+        <Icon name="diagnostic" size={16} color="#B37503" style={{ marginTop: 1, flex: "none" }} />
+        <span><b>Important:</b> it is just an estimated roadmap if you stay consistent.</span>
       </motion.div>
       {/* No mascot here any more. Charles now sits in this panel's corner on every
           slide including this one, so a second centred Charles put two of him on

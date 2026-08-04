@@ -26,7 +26,7 @@ import type { Goal, PaperVariant } from "@/lib/acca-profile"
  */
 
 const KEY = "scholify-onboarding-draft"
-const VERSION = 1
+const VERSION = 2
 
 /** How long an abandoned draft stays offerable. */
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
@@ -43,7 +43,7 @@ export interface OnboardingDraft {
   examDate: string
   pickedSitting: string | null
   goal: Goal | null
-  target: number
+  target: number | null
   englishLevel: CefrLevel | null
   englishEvidence: EnglishEvidence | null
   resultChoice: AssessmentPath | null
@@ -95,7 +95,7 @@ export function readOnboardingDraft(): OnboardingDraft | null {
       examDate: typeof parsed.examDate === "string" ? parsed.examDate : "",
       pickedSitting: typeof parsed.pickedSitting === "string" ? parsed.pickedSitting : null,
       goal: parsed.goal ?? null,
-      target: typeof parsed.target === "number" ? parsed.target : 75,
+      target: typeof parsed.target === "number" ? parsed.target : null,
       englishLevel: parsed.englishLevel ?? null,
       englishEvidence: parsed.englishEvidence ?? null,
       resultChoice: parsed.resultChoice ?? null,

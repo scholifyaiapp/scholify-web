@@ -92,13 +92,13 @@ describe("onboarding draft", () => {
   it("falls back to sane defaults for a partially-written draft", () => {
     window.localStorage.setItem(
       KEY,
-      JSON.stringify({ v: 1, savedAt: new Date().toISOString(), step: 3, learnerRoute: "new" }),
+      JSON.stringify({ v: 2, savedAt: new Date().toISOString(), step: 3, learnerRoute: "new" }),
     )
     const restored = readOnboardingDraft()
     expect(restored).not.toBeNull()
     expect(restored!.minutes).toBe(60)
     expect(restored!.daysPerWeek).toBe(6)
-    expect(restored!.target).toBe(75)
+    expect(restored!.target).toBeNull()
     expect(restored!.passed).toEqual([])
   })
 })
