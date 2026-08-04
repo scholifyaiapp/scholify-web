@@ -44,6 +44,9 @@ export interface OnboardingGuide {
   /** Provisional date; the live plan moves it as actual performance arrives. */
   recommendedExamDate: string
   recommendedExamLabel: string
+  /** Exact date the estimated study load is completed at the chosen pace. */
+  estimatedReadyDate: string
+  estimatedReadyLabel: string
   availableWeeks: number | null
   status: "comfortable" | "focused" | "risky"
   headline: string
@@ -133,6 +136,9 @@ export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date
   const recommendedHours = Math.round(base * routeFactor * languageFactor)
   const weeklyHours = weeklyHoursFor(input.minutesPerDay, input.daysPerWeek)
   const recommendedWeeks = weeksNeededFor(recommendedHours, weeklyHours)
+  const estimatedReady = new Date(now)
+  estimatedReady.setHours(12, 0, 0, 0)
+  estimatedReady.setDate(estimatedReady.getDate() + recommendedWeeks * 7)
   const charlesTarget = Math.min(82,
     (KNOWLEDGE_PAPERS.has(input.paperId) ? 72 : input.paperId === "SBL" || input.paperId === "SBR" || ["AFM", "APM", "ATX", "AAA"].includes(input.paperId) ? 79 : 76)
     + (input.route === "practice" ? 3 : input.route === "course" ? 1 : 0),
@@ -265,6 +271,10 @@ export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date
     recommendedTarget,
     recommendedExamDate: recommendedExam.date,
     recommendedExamLabel: recommendedExam.label,
+    estimatedReadyDate: isoDay(estimatedReady),
+    estimatedReadyLabel: estimatedReady.toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric",
+    }),
     availableWeeks,
     status,
     headline,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence, useReducedMotion } from "motion/react"
+import confetti from "canvas-confetti"
 import { useAuth } from "@/lib/auth"
 import { Icon, type IconName } from "@/components/acca/ui"
 import { ScholifyMark } from "@/components/brand"
@@ -1488,7 +1489,23 @@ function GoalSlide({
           columns={TARGET_OPTIONS.length}
           gap={8}
         >
-          {TARGET_OPTIONS.map((t) => <ChoiceTile key={t.v} value={String(t.v)} label={t.label} sub={t.blurb} />)}
+          {TARGET_OPTIONS.map((t, index) => {
+            const selected = target === t.v
+            return (
+              <motion.div
+                key={t.v}
+                layout
+                animate={{
+                  y: selected ? -4 : 0,
+                  scale: selected ? 1.035 : 1,
+                  filter: selected ? "drop-shadow(0 10px 14px rgba(200,0,0,.16))" : "drop-shadow(0 0 0 rgba(0,0,0,0))",
+                }}
+                transition={{ type: "spring", stiffness: 360, damping: 24, delay: selected ? index * 0.025 : 0 }}
+              >
+                <ChoiceTile value={String(t.v)} label={t.label} sub={t.blurb} />
+              </motion.div>
+            )
+          })}
         </ChoiceGroup>
         <p style={{ margin: "8px 0 0", font: `500 12px/1.4 ${SANS}`, color: MUTE }}>
           Exam Readiness Score — the number your diagnostic sets and your plan pushes to this line.
@@ -1630,6 +1647,8 @@ function ReadySlide({
   /** Jump to the step that owns a summary row. */
   onEdit: (step: number) => void
 }) {
+  const reducedMotion = useReducedMotion()
+  const [recommendationReady, setRecommendationReady] = useState(Boolean(reducedMotion))
   const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate, targetPercentage: target })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
@@ -1638,10 +1657,55 @@ function ReadySlide({
     ["Paper", paper, PAPER_STEP],
     ["Schedule", `${minutes} min · ${daysPerWeek} days · ${slotLabel}`, TIME_STEP],
     ["Your target", `${guide.recommendedTarget}% readiness`, 7],
+    ["Ready from", guide.estimatedReadyLabel, null],
     ["Exam date", guide.recommendedExamLabel, EXAM_DATE_STEP],
   ]
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setRecommendationReady(true)
+      return
+    }
+    setRecommendationReady(false)
+    const timer = window.setTimeout(() => {
+      setRecommendationReady(true)
+      try {
+        void confetti({ particleCount: 110, spread: 78, startVelocity: 32, origin: { x: 0.62, y: 0.34 }, colors: [RED, "#E50068", "#F4A405", "#10B981"] })
+      } catch { /* celebration is decorative */ }
+    }, 1150)
+    return () => window.clearTimeout(timer)
+  }, [paper, target, examDate, minutes, daysPerWeek, reducedMotion])
+
+  if (!recommendationReady) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: 500, minHeight: 330, display: "grid", placeItems: "center", textAlign: "center" }}>
+        <div>
+          <motion.div
+            animate={{ rotate: 360, scale: [1, 1.08, 1] }}
+            transition={{ rotate: { duration: 1.15, repeat: Infinity, ease: "linear" }, scale: { duration: .8, repeat: Infinity } }}
+            style={{ width: 66, height: 66, margin: "0 auto 20px", borderRadius: 22, display: "grid", placeItems: "center", background: "rgba(200,0,0,.07)", border: "1px solid rgba(200,0,0,.16)" }}
+          >
+            <Icon name="tutor" size={30} color={RED} />
+          </motion.div>
+          <div style={{ font: `800 20px/1.25 ${SANS}`, color: INK }}>Charles is calculating your finish line…</div>
+          <div style={{ marginTop: 9, font: `500 13px/1.5 ${SANS}`, color: MUTE }}>Balancing your target, study pace and exam date.</div>
+          <motion.div style={{ width: 220, height: 4, margin: "20px auto 0", borderRadius: 99, overflow: "hidden", background: BORDER }}>
+            <motion.div initial={{ x: "-100%" }} animate={{ x: "0%" }} transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }} style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#C80000,#E50068,#F4A405)" }} />
+          </motion.div>
+        </div>
+      </motion.div>
+    )
+  }
+
   return (
-    <div style={{ maxWidth: 500 }}>
+    <motion.div initial={reducedMotion ? false : { opacity: 0, y: 18, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 230, damping: 22 }} style={{ maxWidth: 500 }}>
+      <motion.div initial={reducedMotion ? false : { opacity: 0, scale: .92 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: .08, type: "spring", stiffness: 300, damping: 20 }} style={{ marginBottom: 14, padding: "14px 17px", borderRadius: 16, background: "linear-gradient(135deg,rgba(16,185,129,.13),rgba(244,164,5,.10))", border: "1px solid rgba(16,185,129,.25)", display: "flex", gap: 12, alignItems: "center" }}>
+        <span style={{ width: 38, height: 38, borderRadius: 99, display: "grid", placeItems: "center", background: "#10B981", flex: "none" }}><Icon name="done" size={20} color="#fff" /></span>
+        <span>
+          <span style={{ display: "block", font: `850 15px/1.25 ${SANS}`, color: "#087A55" }}>Good news — your route is ready.</span>
+          <span style={{ display: "block", marginTop: 3, font: `600 12.5px/1.4 ${SANS}`, color: BODY }}>From {guide.estimatedReadyLabel}, you’ll be ready to perform at your {target}% target.</span>
+        </span>
+      </motion.div>
       {/* No mascot here any more. Charles now sits in this panel's corner on every
           slide including this one, so a second centred Charles put two of him on
           the final screen. The capacity verdict he used to signal by pose is still
@@ -1722,7 +1786,7 @@ function ReadySlide({
           {finishError && <p role="alert" style={{ margin: "10px 0 0", color: RED, font: `600 12px/1.4 ${SANS}` }}>{finishError}</p>}
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
 

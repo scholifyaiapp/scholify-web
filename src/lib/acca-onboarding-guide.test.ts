@@ -50,6 +50,11 @@ describe("buildOnboardingGuide — the capacity verdict", () => {
     expect(g.recommendedTarget).toBe(85)
     expect(g.recommendedExamDate).toBe("2026-12-02")
     expect(g.recommendedExamLabel).toBe("Wednesday, 2 December 2026")
+    const exactReady = new Date(NOW)
+    exactReady.setHours(12, 0, 0, 0)
+    exactReady.setDate(exactReady.getDate() + g.recommendedWeeks * 7)
+    expect(g.estimatedReadyDate).toBe(exactReady.toISOString().slice(0, 10))
+    expect(g.estimatedReadyLabel).toMatch(/^[A-Z][a-z]+, \d{1,2} [A-Z][a-z]+ 20\d{2}$/)
   })
   it("offers no fixes when there is enough time", () => {
     const g = buildOnboardingGuide(base, NOW)
