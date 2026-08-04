@@ -5,6 +5,7 @@ import postgres from "postgres"
 import pdf from "pdf-parse/lib/pdf-parse.js"
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@supabase/supabase-js"
+import { createHash, createHmac, timingSafeEqual } from "node:crypto"
 
 /*
  * Combined Charles endpoint — dispatches by ?action= to keep us under the
@@ -441,9 +442,148 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "acca-postmortem") return handleAccaPostmortem(req, body, res)
   if (action === "acca-result-upload") return handleAccaResultUpload(req, body, res)
   if (action === "acca-language-evidence") return handleAccaLanguageEvidence(req, body, res)
+  if (action === "landing-voice-chat") return handleLandingVoiceChat(req, body, res)
+  if (action === "landing-voice-tts") return handleLandingVoiceTts(req, body, res)
   res.status(400).json({
     error: "Unknown ACCA action.",
   })
+}
+
+const LANDING_VOICE_DAILY_CAP = 3
+let landingVoiceSchemaReady: Promise<void> | null = null
+
+function ensureLandingVoiceSchema(): Promise<void> {
+  if (landingVoiceSchemaReady) return landingVoiceSchemaReady
+  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL
+  if (!url) return Promise.reject(new Error("Database unavailable"))
+  landingVoiceSchemaReady = (async () => {
+    const sql = postgres(url, { max: 1, idle_timeout: 5, connect_timeout: 8 })
+    try {
+      await sql`create table if not exists public.landing_voice_usage (
+        visitor_hash text not null,
+        day date not null,
+        turns integer not null default 0,
+        primary key (visitor_hash, day)
+      )`
+      await sql`alter table public.landing_voice_usage enable row level security`
+      await sql.unsafe(`create or replace function public.take_landing_voice_turn(p_visitor_hash text, p_day date, p_cap integer)
+        returns boolean language plpgsql security definer set search_path = public as $$
+        declare next_count integer;
+        begin
+          insert into public.landing_voice_usage (visitor_hash, day, turns) values (p_visitor_hash, p_day, 1)
+          on conflict (visitor_hash, day) do update set turns = landing_voice_usage.turns + 1
+            where landing_voice_usage.turns < p_cap returning turns into next_count;
+          return next_count is not null and next_count <= p_cap;
+        end; $$`)
+      await sql`revoke all on function public.take_landing_voice_turn(text, date, integer) from public, anon, authenticated`
+      await sql`grant execute on function public.take_landing_voice_turn(text, date, integer) to service_role`
+    } finally {
+      await sql.end()
+    }
+  })().catch((error) => {
+    landingVoiceSchemaReady = null
+    throw error
+  })
+  return landingVoiceSchemaReady
+}
+
+function visitorHash(req: VercelRequest): string {
+  const forwarded = String(req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim()
+  return createHash("sha256")
+    .update(`${process.env.LANDING_VOICE_SALT || "scholify-voice-demo"}:${forwarded}`)
+    .digest("hex")
+}
+
+function voiceToken(req: VercelRequest, text: string, expires: number): string {
+  const secret = process.env.LANDING_VOICE_SALT || "scholify-voice-demo"
+  const signature = createHmac("sha256", secret).update(`${visitorHash(req)}:${expires}:${text}`).digest("hex")
+  return `${expires}.${signature}`
+}
+
+function validVoiceToken(req: VercelRequest, text: string, token: string): boolean {
+  const [expiresText, supplied] = token.split(".")
+  const expires = Number(expiresText)
+  if (!Number.isFinite(expires) || expires < Date.now() || expires > Date.now() + 180_000 || !/^[a-f0-9]{64}$/.test(supplied || "")) return false
+  const expected = voiceToken(req, text, expires).split(".")[1]
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))
+}
+
+async function takeLandingVoiceTurn(req: VercelRequest): Promise<boolean> {
+  const supa = meteringAdmin()
+  if (!supa) return false
+  try {
+    await ensureLandingVoiceSchema()
+  } catch (error) {
+    console.error("landing voice schema:", error)
+    return false
+  }
+  const { data, error } = await supa.rpc("take_landing_voice_turn", {
+    p_visitor_hash: visitorHash(req),
+    p_day: todayUtc(),
+    p_cap: LANDING_VOICE_DAILY_CAP,
+  })
+  return !error && data === true
+}
+
+async function handleLandingVoiceChat(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const message = String(body.message || "").trim().slice(0, 280)
+  const history = Array.isArray(body.history)
+    ? (body.history as unknown[]).slice(-4).map((item) => {
+        const row = item as Record<string, unknown>
+        return `${row.role === "assistant" ? "Charles" : "Visitor"}: ${String(row.text || "").slice(0, 240)}`
+      }).join("\n")
+    : ""
+  if (!message) return void res.status(400).json({ error: "Say or type a question first." })
+  if (!aiProvider()) return void res.status(503).json({ error: "Charles is off the radio for a moment." })
+  if (!(await takeLandingVoiceTurn(req))) {
+    return void res.status(429).json({ error: "That is the end of today's pit-wall demo. Start free to keep learning with Charles." })
+  }
+
+  const system = `You are Charles, Scholify's fictional AI race engineer for ACCA students. You are original and are not Charles Leclerc or connected to any real driver, team, Formula 1, or championship. Speak naturally, warmly and confidently, using occasional generic racing metaphors such as telemetry, pit wall, next lap and comeback plan. Never claim a real racing history. Answer questions about Scholify, ACCA study planning, diagnostics, daily learning, mocks, pricing and the three-day free trial. Keep every spoken reply under 55 words. If asked something unrelated, briefly steer back to Scholify and ACCA. Never request personal, payment or account information.`
+  try {
+    const out = await callModel({
+      tier: "haiku",
+      system,
+      prompt: `${history ? `Recent conversation:\n${history}\n\n` : ""}Visitor: ${message}\nCharles:`,
+      maxTokens: 130,
+    })
+    const answer = out.text || "Let us put that on the next lap. Start your free diagnosis and I will build the plan with you."
+    const expires = Date.now() + 90_000
+    return void res.status(200).json({ answer, voiceToken: voiceToken(req, answer, expires) })
+  } catch (error) {
+    console.error("landing voice chat:", error)
+    return void res.status(503).json({ error: "Radio interference. Please try again in a moment." })
+  }
+}
+
+async function handleLandingVoiceTts(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
+  const text = String(body.text || "").trim().slice(0, 500)
+  const token = String(body.voiceToken || "")
+  const key = process.env.FISH_API_KEY
+  if (!key || !text) return void res.status(503).json({ error: "Voice unavailable." })
+  if (!validVoiceToken(req, text, token)) return void res.status(403).json({ error: "Voice authorization expired." })
+  try {
+    const response = await fetch("https://api.fish.audio/v1/tts", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", model: "s2.1-pro-free" },
+      body: JSON.stringify({
+        text,
+        reference_id: process.env.FISH_CHARLES_VOICE_ID || "802e3bc2b27e49c2995d23ef70e6ac89",
+        format: "mp3",
+        prosody: { speed: 1.04, volume: 0, normalize_loudness: true },
+        normalize: true,
+        mp3_bitrate: 128,
+      }),
+    })
+    if (!response.ok) throw new Error(`Fish ${response.status}`)
+    const audio = Buffer.from(await response.arrayBuffer())
+    res.setHeader("Content-Type", "audio/mpeg")
+    res.setHeader("Cache-Control", "private, no-store")
+    return void res.status(200).send(audio)
+  } catch (error) {
+    console.error("landing voice tts:", error)
+    return void res.status(503).json({ error: "Voice unavailable." })
+  }
 }
 
 async function handleAccaLanguageEvidence(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
