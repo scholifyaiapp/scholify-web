@@ -7,6 +7,7 @@ import { iriText } from "@/components/dashboard-layout"
 import { applyToAffiliate, type AffiliateApplication } from "@/lib/affiliate"
 import PaymentMethods from "@/components/PaymentMethods"
 import { Download, FileText } from "lucide-react"
+import NumberFlow from "@number-flow/react"
 
 /* ──────────────────────────────────────────────────────────────
  *  /partners/apply — the Scholify Preferred Partner landing.
@@ -110,6 +111,13 @@ const LADDER: Array<[string, string, boolean]> = [
   ["1,000", "$4,050", true],
 ]
 
+const CALCULATOR_PLANS = [
+  { id: "beginner", name: "Beginner", price: 9.99, cadence: "/mo" },
+  { id: "pro", name: "Pro", price: 14.99, cadence: "/mo" },
+  { id: "annual", name: "Annual Pro", price: 119.99, cadence: "/yr" },
+] as const
+const PARTNER_RATE = 0.27
+
 const STEPS = [
   {
     title: "Send your application",
@@ -160,6 +168,11 @@ export default function PartnersApply() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{ code: string } | null>(null)
+  const [calcCustomers, setCalcCustomers] = useState(25)
+  const [calcPlan, setCalcPlan] = useState<(typeof CALCULATOR_PLANS)[number]["id"]>("pro")
+  const selectedCalcPlan = CALCULATOR_PLANS.find((plan) => plan.id === calcPlan) ?? CALCULATOR_PLANS[1]
+  const perCustomer = selectedCalcPlan.price * PARTNER_RATE
+  const projectedEarnings = perCustomer * calcCustomers
 
   const set = (k: keyof AffiliateApplication) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -373,6 +386,40 @@ export default function PartnersApply() {
         </Section>
 
         {/* ── Commission + F1 bonus ── */}
+        <Section>
+          <motion.div {...rise()} style={{ ...card, position: "relative", overflow: "hidden", padding: "clamp(22px,4vw,38px)", borderRadius: 24 }}>
+            <motion.div aria-hidden animate={reduced ? undefined : { rotate: 360 }} transition={{ duration: 28, repeat: Infinity, ease: "linear" }} style={{ position: "absolute", width: 360, height: 360, borderRadius: "50%", right: -170, top: -190, background: "conic-gradient(from 90deg,rgba(200,0,0,.18),rgba(229,0,104,.08),rgba(244,164,5,.2),rgba(200,0,0,.18))" }} />
+            <div style={{ position: "relative" }}>
+              <div style={{ ...eyebrow, color: "#C80000", marginBottom: 10 }}>The maths</div>
+              <h2 style={{ margin: 0, color: "var(--sch-text)", fontSize: "clamp(25px,4vw,38px)", letterSpacing: "-.025em" }}>Do the maths on your audience.</h2>
+              <p style={{ margin: "9px 0 26px", color: "var(--sch-tx-2)", lineHeight: 1.55 }}>Move the audience slider and choose the plan your students are most likely to buy.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14 }}>
+                <div style={{ padding: 18, borderRadius: 18, background: "var(--sch-bg)", border: "1px solid var(--sch-border)" }}>
+                  <label htmlFor="partner-customers" style={{ ...labelStyle, display: "flex", justifyContent: "space-between", gap: 12 }}><span>Customers you refer</span><motion.strong key={calcCustomers} initial={reduced ? false : { scale: 1.25, color: "#C80000" }} animate={{ scale: 1, color: "var(--sch-text)" }} style={{ fontFamily: MONO, fontSize: 21 }}>{calcCustomers}</motion.strong></label>
+                  <input id="partner-customers" type="range" min="1" max="1000" step="1" value={calcCustomers} onChange={(event) => setCalcCustomers(Number(event.target.value))} style={{ width: "100%", accentColor: "#C80000", cursor: "pointer", marginTop: 14 }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, color: "var(--sch-tx-2)", font: `10px ${MONO}` }}><span>1</span><span>1,000</span></div>
+                </div>
+                <div style={{ padding: 18, borderRadius: 18, background: "var(--sch-bg)", border: "1px solid var(--sch-border)" }}>
+                  <div style={labelStyle}>On the plan</div>
+                  <div style={{ display: "grid", gap: 7, marginTop: 10 }}>
+                    {CALCULATOR_PLANS.map((plan) => <motion.button key={plan.id} type="button" onClick={() => setCalcPlan(plan.id)} whileHover={reduced ? undefined : { x: 3 }} whileTap={reduced ? undefined : { scale: .98 }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 11, cursor: "pointer", border: calcPlan === plan.id ? "1px solid #C80000" : "1px solid var(--sch-border)", background: calcPlan === plan.id ? "rgba(200,0,0,.07)" : "var(--sch-card)", color: "var(--sch-text)" }}><b>{plan.name}</b><span style={{ fontFamily: MONO, fontSize: 12 }}>${plan.price}{plan.cadence}</span></motion.button>)}
+                  </div>
+                </div>
+                <motion.div layout style={{ padding: 18, borderRadius: 18, color: "#fff", background: "linear-gradient(135deg,#0B0B0F,#251015)", border: "1px solid rgba(244,164,5,.3)", boxShadow: "0 22px 55px -35px rgba(200,0,0,.8)" }}>
+                  <div style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>Per customer · 27%</div>
+                  <div style={{ fontFamily: MONO, fontSize: 30, fontWeight: 800, marginTop: 5 }}><NumberFlow value={perCustomer} format={{ style: "currency", currency: "USD" }} /></div>
+                  <div style={{ height: 1, background: "rgba(255,255,255,.12)", margin: "16px 0" }} />
+                  <div style={{ color: GOLD, font: `700 10px ${MONO}`, letterSpacing: ".15em", textTransform: "uppercase" }}>You could earn</div>
+                  <motion.div animate={reduced ? undefined : { textShadow: ["0 0 0 rgba(244,164,5,0)", "0 0 22px rgba(244,164,5,.45)", "0 0 0 rgba(244,164,5,0)"] }} transition={{ duration: 2.2, repeat: Infinity }} style={{ fontFamily: MONO, fontSize: "clamp(34px,5vw,50px)", fontWeight: 900, marginTop: 5 }}><NumberFlow value={projectedEarnings} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} /></motion.div>
+                </motion.div>
+              </div>
+              <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(244,164,5,.08)", border: "1px solid rgba(244,164,5,.22)", color: "var(--sch-tx-1)", fontSize: 12.5, lineHeight: 1.55 }}>
+                <b>{calcCustomers} customers</b> × <b>${selectedCalcPlan.price.toFixed(2)}</b> first purchase × <b>27%</b> = <b style={{ color: "var(--sch-text)" }}>${projectedEarnings.toFixed(2)}</b>. Illustrative earnings before refunds or chargebacks; commissions clear after the 30-day validation period.
+              </div>
+            </div>
+          </motion.div>
+        </Section>
+
         <Section>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 24, alignItems: "start" }} className="partners-cols">
             {/* commission */}
