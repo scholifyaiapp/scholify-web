@@ -226,7 +226,7 @@ export default function PaywallModal({
               position: "relative",
               width: isMobile ? "100%" : "90%",
               maxWidth: 560,
-              maxHeight: isMobile ? "92vh" : "90vh",
+              maxHeight: isMobile ? "92dvh" : "90dvh",
               overflowY: "auto",
               background: "var(--sch-bg-2)",
               border: "1px solid rgba(200,0,0,0.25)",
