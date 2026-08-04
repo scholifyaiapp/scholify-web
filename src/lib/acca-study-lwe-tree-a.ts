@@ -407,7 +407,7 @@ export const LWE_TREE_03: StudyChapter = {
           rows: [
             ["**Ratio of a superior court** in the same hierarchy", "**Binding**"],
             ["**Obiter dicta**, from any court", "Persuasive only"],
-            ["Decisions of a **court of equal standing**", "Generally binding on itself, subject to limited exceptions; the Supreme Court is not bound by its own decisions"],
+            ["Decisions of a **court of equal standing**", "Generally binding on itself, subject to limited exceptions — though the Supreme Court may depart from its own earlier decisions"],
             ["Decisions of a **lower** court", "Persuasive only"],
             ["Decisions of courts in **other jurisdictions**, and dissenting judgments", "Persuasive only"],
           ],

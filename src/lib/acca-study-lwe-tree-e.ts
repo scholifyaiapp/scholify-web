@@ -73,7 +73,7 @@ export const LWE_TREE_34: StudyChapter = {
         {
           kind: "definition",
           term: "Varying class rights",
-          md: "Class rights may be varied only in accordance with any **procedure in the articles**, and otherwise with the **written consent of holders of at least three-quarters in nominal value** of the class, or a **special resolution passed at a separate class meeting**. Holders of **not less than 15%** of the class who did **not** consent may then apply to the **court** to have the variation cancelled, within **21 days**, and the variation does not take effect until the application is disposed of.",
+          md: "Under **s.630**, class rights may be varied only in accordance with any **procedure in the articles**, and otherwise with the **written consent of holders of at least three-quarters in nominal value** of the class, or a **special resolution passed at a separate class meeting**. Holders of **not less than 15%** of the class who did **not** consent may then apply to the **court** to have the variation cancelled, within **21 days**, and the variation does not take effect until the application is disposed of.",
         },
       ],
       check: {
@@ -140,7 +140,7 @@ export const LWE_TREE_34: StudyChapter = {
             { label: "Analyse the bonus issue", detail: "It raises NO CASH. £100,000 moves from RETAINED EARNINGS to SHARE CAPITAL, so net assets are unchanged and the ordinary holders are no richer — each just holds more shares. Its real effect is to REDUCE distributable reserves by £100,000, which restricts future dividends (chapter 36)." },
             { label: "Test the allotment for pre-emption", detail: "New EQUITY SECURITIES must first be offered to existing shareholders PRO RATA. Allotting 200,000 shares to one institution without doing so breaches pre-emption rights unless they have been DISAPPLIED BY SPECIAL RESOLUTION. As a plc, Netherby cannot simply exclude them by its articles." },
             { label: "Analyse the premium", detail: "£1.60 for a £1 share is a PREMIUM, which is permitted. £1 per share goes to share capital and 60p to the SHARE PREMIUM ACCOUNT, an UNDISTRIBUTABLE reserve — so it raises £320,000 of cash but only £200,000 of it is ever distributable." },
-            { label: "Test the preference dividend reduction", detail: "Reducing the rate VARIES CLASS RIGHTS. It CANNOT be done by the ordinary shareholders alone: it needs the procedure in the articles, or the written consent of 75% in nominal value of the PREFERENCE class, or a special resolution at a SEPARATE CLASS MEETING." },
+            { label: "Test the preference dividend reduction", detail: "Reducing the rate VARIES CLASS RIGHTS. It CANNOT be done by the ordinary shareholders alone: it needs, under s.630, the procedure in the articles, or the written consent of 75% in nominal value of the PREFERENCE class, or a special resolution at a SEPARATE CLASS MEETING." },
             { label: "Note the preference holders' position", detail: "Because their rights are being varied — and because the dividend is TWO YEARS IN ARREARS — the preference shares will typically CARRY A VOTE here, despite normally being non-voting. And being CUMULATIVE, the two years' arrears must be paid before any ordinary dividend." },
             { label: "Apply the minority protection", detail: "The objectors hold 20% of the class, which exceeds the 15% threshold, so if the variation is passed they may apply to the COURT within 21 DAYS to have it cancelled, and it does not take effect until that application is disposed of." },
           ],
@@ -202,7 +202,7 @@ export const LWE_TREE_34: StudyChapter = {
   ],
   knowledgeDiagnostic: [
     { q: "Distinguish a rights issue from a bonus issue.", a: "A rights issue offers new shares for cash pro rata and raises finance; a bonus issue gives free shares out of reserves, raises no cash, and reduces distributable reserves." },
-    { q: "How are class rights varied?", a: "By the procedure in the articles, or the written consent of 75% in nominal value of the class, or a special resolution at a separate class meeting." },
+    { q: "How are class rights varied?", a: "Under s.630 — by the procedure in the articles, or the written consent of 75% in nominal value of the class, or a special resolution at a separate class meeting." },
     { q: "What protection has a dissenting minority of a class?", a: "Holders of not less than 15% who did not consent may apply to the court within 21 days to cancel the variation, which does not take effect until the application is disposed of." },
     { q: "Why may shares not be issued at a discount?", a: "To protect creditors, who rely on the stated capital; an allottee taking shares at a discount must pay the shortfall with interest." },
   ],

@@ -53,7 +53,7 @@ export const LWE_TREE_19: StudyChapter = {
             ["**Source of the duty**", "**Imposed by law**", "**Agreed** by the parties"],
             ["**Who is owed it**", "Anyone within the scope of the duty, whether or not they dealt with the defendant", "Only a **party** to the contract (chapter 12)"],
             ["**Consideration**", "**Not required**", "**Required**, unless by deed"],
-            ["**Aim of damages**", "Put the claimant in the position they would have been in had the tort **not been committed** — restoring the status quo", "Put them in the position **performance** would have produced"],
+            ["**Aim of damages**", "Restore the claimant to the position occupied **before the tort happened** — putting the status quo back, so far as money can", "Put them in the position **performance** would have produced"],
             ["**Limitation**", "Generally six years from when the damage occurred, with special rules for latent damage and personal injury", "Generally six years from the breach"],
           ],
         },
@@ -124,7 +124,7 @@ export const LWE_TREE_19: StudyChapter = {
           kind: "callout",
           tone: "warn",
           title: "Registration of a company name is no defence",
-          md: "A point that recurs in company-law scenarios too (chapter 33). The registrar of companies accepting a name does **not** authorise its use: the new company may still be liable in **passing off**, and for **trade mark infringement**, and the registrar may separately direct a change where a name is the same as or too like an existing one. So \"Companies House allowed it\" answers nothing.",
+          md: "A point that recurs in company-law scenarios too (chapter 33). The registrar of companies accepting a name does **not** authorise its use: the new company may still be liable in **passing off**, and for **trade mark infringement**, and under s.67 the registrar may separately direct a change where a name is the same as or too like an existing one. So \"Companies House allowed it\" answers nothing.",
         },
         {
           kind: "list",
@@ -146,7 +146,7 @@ export const LWE_TREE_19: StudyChapter = {
             { label: "Test element 2 — misrepresentation", detail: "A near-identical name, similar script and the same dark green packaging is likely to lead the public to believe Fennmoor's shops are Corveley's. That customers ACTUALLY COMPLAINED to Corveley's about Fennmoor's goods is direct evidence of confusion." },
             { label: "Deal with the claim of independent choice", detail: "Irrelevant. Passing off does NOT require INTENTION — innocent passing off is still actionable. Fennmoor's honest belief is no defence." },
             { label: "Test element 3 — damage", detail: "Both limbs are present: LOST SALES from diverted custom, and DAMAGE TO REPUTATION from being associated with goods customers thought inferior. The complaints prove the second." },
-            { label: "Dispose of the Companies House point", detail: "Acceptance of the name by the registrar is NO DEFENCE. It does not authorise use, and the registrar may in any event direct a change where a name is the same as or too like an existing one." },
+            { label: "Dispose of the Companies House point", detail: "Acceptance of the name by the registrar is NO DEFENCE. It does not authorise use, and under s.67 the registrar may in any event direct a change where a name is the same as or too like an existing one." },
             { label: "Identify the remedies", detail: "An INJUNCTION restraining use of the name and get-up is the main objective, with DAMAGES or an ACCOUNT OF PROFITS, and DELIVERY UP of the offending packaging. The absence of a registered trade mark costs Corveley's the easier statutory route but not this claim." },
           ],
           result:
@@ -388,7 +388,7 @@ export const LWE_TREE_20: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "Caparo test", def: "Reasonable foreseeability, proximity, and that it is fair, just and reasonable to impose a duty." },
+    { term: "Caparo test", def: "From Caparo v Dickman — reasonable foreseeability, proximity, and that it is fair, just and reasonable to impose a duty." },
     { term: "Standard of care", def: "The objective standard of the reasonable person doing that activity; a professional is judged against competent members of that profession." },
     { term: "Res ipsa loquitur", def: "Where the thing was under the defendant's control and the accident does not ordinarily happen without negligence, the defendant must explain." },
     { term: "Vicarious liability", def: "An employer's liability for an employee's tort committed in the course of employment, in addition to the employee's own liability." },
@@ -403,7 +403,7 @@ export const LWE_TREE_20: StudyChapter = {
     "An employer is vicariously liable for an employee's tort in the course of employment, and a prohibition on the method of working does not displace that.",
   ],
   knowledgeDiagnostic: [
-    { q: "State the three limbs of the Caparo test.", a: "Reasonable foreseeability of the damage, sufficient proximity between the parties, and that it is fair, just and reasonable to impose a duty." },
+    { q: "State the three limbs of the Caparo test.", a: "Per Caparo v Dickman: reasonable foreseeability of the damage, sufficient proximity between the parties, and that it is fair, just and reasonable to impose a duty." },
     { q: "Does an express prohibition prevent vicarious liability?", a: "Not if the employee was doing the authorised job by a forbidden method. Only a prohibition defining the scope of employment takes the act outside it." },
     { q: "What is the effect of res ipsa loquitur?", a: "The court may infer negligence, so the defendant must explain the accident, where the thing was under its control and such accidents do not ordinarily happen without negligence." },
     { q: "Is an employer liable for an independent contractor's torts?", a: "Generally not vicariously, but it may be directly liable for negligent selection or supervision, or where the duty is non-delegable." },

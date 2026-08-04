@@ -66,7 +66,7 @@ export const LWE_TREE_41: StudyChapter = {
           rows: [
             ["**Who may petition**", "A **creditor** (the commonest), the **company** itself, the **directors**, a **contributory**, an **administrator** or administrative receiver, or the **Secretary of State**"],
             ["**The main ground**", "The company is **unable to pay its debts** — proved by an unsatisfied **statutory demand**, an unsatisfied **judgment**, or by showing that liabilities exceed assets"],
-            ["**Other grounds**", "A **special resolution** that the company be wound up by the court; the company has **not commenced business within a year** of incorporation or has **suspended** business for a year; a **public company** has not been issued a trading certificate; or it is **just and equitable** to wind the company up"],
+            ["**Other grounds**", "Under **s.122**: a **special resolution** that the company be wound up by the court; the company has **not commenced business within a year** of incorporation or has **suspended** business for a year; a **public company** has not been issued a trading certificate; or it is **just and equitable** to wind the company up"],
             ["**Procedure**", "Petition to the court, a **winding-up order**, and the **Official Receiver** becomes liquidator initially, with an insolvency practitioner usually appointed in their place"],
             ["**Effect of the order**", "The liquidator takes control, the directors' powers **cease**, employees are automatically **dismissed**, legal proceedings against the company are **stayed**, and any disposition of property after the petition is **void** unless the court orders otherwise"],
           ],
@@ -250,7 +250,7 @@ export const LWE_TREE_42: StudyChapter = {
           title: "The hierarchy of objectives — they must be taken in order",
           items: [
             "**Rescuing the company as a going concern.** The primary objective, and the administrator must pursue it unless it is not reasonably practicable, or the second objective would produce a better result for the creditors as a whole.",
-            "**Achieving a better result for the creditors as a whole** than would be likely on a winding up — pursued only if the first is not reasonably practicable.",
+            "**Achieving a better result for the creditors as a whole** than would be likely on a winding up (Sch B1 para 3(1)(b)) — pursued only if the first is not reasonably practicable.",
             "**Realising property to make a distribution to secured or preferential creditors** — permitted only if neither of the first two is reasonably practicable, and provided the administrator does not unnecessarily harm the interests of the creditors as a whole.",
           ],
         },
@@ -265,7 +265,7 @@ export const LWE_TREE_42: StudyChapter = {
           caption: "The three routes to appointment",
           head: ["Route", "How it works"],
           rows: [
-            ["**By the court**", "On an **administration application** by the company, its directors, or a **creditor**. The court must be satisfied the company \"is or is likely to become unable to pay its debts\" and that administration is likely to achieve its purpose"],
+            ["**By the court** — Sch B1 para 11", "On an **administration application** by the company, its directors, or a **creditor**. The court must be satisfied the company \"is or is likely to become unable to pay its debts\" and that administration is likely to achieve its purpose"],
             ["**By the holder of a qualifying floating charge**", "**Out of court**, by filing the prescribed documents. The charge holder must give notice to any prior qualifying charge holder"],
             ["**By the company or its directors**", "**Out of court**, by filing the prescribed documents — but they must give **five business days' notice** to any qualifying floating charge holder, who may then appoint its own choice of administrator instead"],
           ],
@@ -343,7 +343,7 @@ export const LWE_TREE_42: StudyChapter = {
             "Beckwell Ltd designs and installs commercial kitchens. It has £1.4m of debt, an order book worth £2.2m, 40 skilled employees, and a cash crisis after a customer failed. Bank R holds a qualifying floating charge for £600,000 and wants its money. A trade supplier has presented a winding-up petition and another has served notice to repossess £180,000 of stock under a retention of title clause. The directors believe that with three months' breathing space the order book could be delivered and the business sold as a going concern for more than break-up value.",
           steps: [
             { label: "Test the first objective", detail: "RESCUING THE COMPANY as a going concern is the primary objective. With a £2.2m order book and 40 skilled staff, that is at least arguable — and the administrator must pursue it unless it is not reasonably practicable." },
-            { label: "Test the second objective", detail: "If rescue of the COMPANY is not practicable, a sale of the BUSINESS as a going concern would very likely achieve a BETTER RESULT FOR THE CREDITORS AS A WHOLE than a break-up on winding up. Either way administration is justified on the hierarchy." },
+            { label: "Test the second objective", detail: "If rescue of the COMPANY is not practicable, a sale of the BUSINESS as a going concern would very likely achieve, in the words of Sch B1 para 3(1)(b), a BETTER RESULT FOR THE CREDITORS AS A WHOLE than a break-up on winding up. Either way administration is justified on the hierarchy." },
             { label: "Identify what the moratorium achieves here", detail: "It stops the WINDING-UP PETITION proceeding, prevents Bank R ENFORCING its security, and prevents the supplier REPOSSESSING the £180,000 of stock under retention of title. Without that stock the order book cannot be delivered, so the moratorium is what makes the plan possible at all." },
             { label: "Compare a liquidation", detail: "A winding-up order would DISMISS the 40 employees automatically, ending the ability to deliver the order book, and the assets would fetch BREAK-UP value. The order book — the company's most valuable asset — would be worth almost nothing." },
             { label: "Advise on the route to appointment", detail: "Speed matters with a petition pending. The directors may appoint OUT OF COURT, but must give Bank R FIVE BUSINESS DAYS' NOTICE, and Bank R may substitute its own administrator. Bank R could also appoint out of court itself as qualifying floating charge holder. The court route is available but slower." },
@@ -389,7 +389,7 @@ export const LWE_TREE_42: StudyChapter = {
     { term: "Administration", def: "A procedure in which an administrator, an officer of the court, manages a company in difficulty under a moratorium." },
     { term: "Moratorium", def: "The freeze on enforcement, petitions, repossessions and proceedings during administration." },
     { term: "Qualifying floating charge holder", def: "A charge holder entitled to appoint an administrator out of court and to be notified of a directors' appointment." },
-    { term: "Administration application", def: "The court route, requiring that the company is or is likely to become unable to pay its debts." },
+    { term: "Administration application", def: "The court route under Sch B1 para 11, requiring that the company is or is likely to become unable to pay its debts." },
     { term: "Hierarchy of objectives", def: "Rescue the company, then a better result for creditors as a whole, then realisation for secured and preferential creditors." },
   ],
   summary: [
@@ -400,7 +400,7 @@ export const LWE_TREE_42: StudyChapter = {
     "Administration ends automatically after a year unless extended, and may lead into a CVL or dissolution.",
   ],
   knowledgeDiagnostic: [
-    { q: "State the three statutory objectives in order.", a: "Rescue the company as a going concern; achieve a better result for the creditors as a whole than on a winding up; realise property for secured or preferential creditors without unnecessarily harming creditors as a whole." },
+    { q: "State the three statutory objectives in order.", a: "Per Sch B1 para 3(1): rescue the company as a going concern; achieve a better result for the creditors as a whole than on a winding up; realise property for secured or preferential creditors without unnecessarily harming creditors as a whole." },
     { q: "What does the moratorium prevent?", a: "Winding-up petitions proceeding, security being enforced, repossession under hire purchase or retention of title, and legal proceedings, without the administrator's consent or the court's permission." },
     { q: "What must directors do before appointing out of court?", a: "Give five business days' notice to any qualifying floating charge holder, who may appoint its own administrator instead." },
     { q: "How long does an administration last?", a: "One year, ending automatically unless extended by the court or with creditors' consent for a limited period." },

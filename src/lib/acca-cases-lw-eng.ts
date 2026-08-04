@@ -152,7 +152,7 @@ const MTQ_03: OtCase = {
       "What is the effect of the board's resolution to ratify?",
       [
         "It makes the company liable on all three contracts",
-        "None — a company cannot ratify a pre-incorporation contract, because it did not exist when they were made",
+        "None — a company cannot ratify a pre-incorporation contract, having had no existence at the moment of contracting",
         "It makes the company liable jointly with Averton",
         "It transfers the contracts subject to the third parties' consent",
       ],

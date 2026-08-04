@@ -261,7 +261,7 @@ const AREA_B: AccaQuestion[] = [
       "Where the consumer did not read it",
     ],
     1,
-    "Where, contrary to GOOD FAITH, it causes a SIGNIFICANT IMBALANCE in the parties' rights to the consumer's detriment. An unfair term is NOT BINDING on the consumer."),
+    "Under s.62, where contrary to GOOD FAITH it causes a SIGNIFICANT IMBALANCE in the parties' rights to the consumer's detriment. An unfair term is NOT BINDING on the consumer."),
 
   q2("LWEK-S1-14-02", "LWE-14", "B", "medium",
     "Are a consumer contract's core terms — the main subject matter and the price — subject to the fairness test?",

@@ -239,7 +239,7 @@ export const LWE_TREE_46: StudyChapter = {
           head: ["", "Fraudulent trading", "Wrongful trading"],
           rows: [
             ["**Provision**", "**s.213 IA 1986** (civil), with a parallel criminal offence under the Companies Act", "**s.214 IA 1986**"],
-            ["**Test**", "Carrying on business with **intent to defraud** creditors, or for any fraudulent purpose — **dishonesty required**", "Continuing to trade when the director **knew or ought to have concluded** there was **no reasonable prospect** of avoiding insolvent liquidation — **no dishonesty required**"],
+            ["**Test**", "Under s.213, carrying on business with **intent to defraud** creditors, or for any fraudulent purpose — **dishonesty required**", "Continuing to trade when the director **knew or ought to have concluded** there was **no reasonable prospect** of avoiding insolvent liquidation — **no dishonesty required**"],
             ["**Nature of the test**", "**Subjective** — actual dishonest intent", "**Objective**, raised by the director's own knowledge and skill, exactly as under s.174 (chapter 38)"],
             ["**Who can be liable**", "**Any person** knowingly party to the carrying on of the business that way — including a bank or a creditor, not just directors", "**Directors only**, including **de facto and shadow** directors (chapter 37)"],
             ["**Requires insolvent liquidation?**", "**No** for the criminal offence; the civil claim arises in a winding up", "**Yes** — the company must have gone into **insolvent liquidation**"],
@@ -377,7 +377,7 @@ export const LWE_TREE_46: StudyChapter = {
     "Both are statutory routes past the veil, and the contribution is compensatory and goes into the general estate.",
   ],
   knowledgeDiagnostic: [
-    { q: "State the wrongful trading test.", a: "Whether the director knew or ought to have concluded that there was no reasonable prospect of the company avoiding insolvent liquidation, judged objectively and raised by their own knowledge and skill." },
+    { q: "State the wrongful trading test.", a: "Under s.214, whether the director knew or ought to have concluded that there was no reasonable prospect of the company avoiding insolvent liquidation, judged objectively and raised by their own knowledge and skill." },
     { q: "Why is wrongful trading the claim that succeeds?", a: "Because it needs no dishonesty, so a director's honest but unreasonable optimism is no defence — whereas fraudulent trading requires dishonesty, which genuine belief negates." },
     { q: "Who can be liable for fraudulent trading?", a: "Any person knowingly party to carrying on the business with intent to defraud, including creditors and banks, not just directors." },
     { q: "What should a director in difficulty do?", a: "Get the numbers, take written insolvency advice early, document the board's reasoning, stop incurring new credit, avoid preferring connected creditors, consider administration, and record any dissent." },

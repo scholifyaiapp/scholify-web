@@ -43,14 +43,14 @@ export const LWE_TREE_43: StudyChapter = {
         {
           kind: "definition",
           term: "Inside information",
-          md: "Information which is **specific or precise**, **has not been made public**, relates to **particular securities or a particular issuer** rather than to securities generally, and which, **\"if made public would be likely to have a significant effect on the price\"** of those securities. **All four** elements are needed, so failing any one of them defeats the charge.",
+          md: "On the **s.56** definition, information which is **specific or precise**, **has not been made public**, relates to **particular securities or a particular issuer** rather than to securities generally, and which, **\"if made public would be likely to have a significant effect on the price\"** of those securities. **All four** elements are needed, so failing any one of them defeats the charge.",
         },
         {
           kind: "table",
           caption: "The three offences",
           head: ["Offence", "What it involves"],
           rows: [
-            ["**Dealing**", "Acquiring or disposing of **price-affected securities** while in possession of inside information **as an insider**"],
+            ["**Dealing** — s.52", "Acquiring or disposing of **price-affected securities** while in possession of inside information **as an insider**"],
             ["**Encouraging**", "**Encouraging another** to deal in price-affected securities, knowing or having reasonable cause to believe the dealing would take place"],
             ["**Disclosing**", "**Disclosing** inside information to another otherwise than in the proper performance of one's employment, office or profession"],
           ],
@@ -60,7 +60,7 @@ export const LWE_TREE_43: StudyChapter = {
           caption: "Who is an insider",
           head: ["Category", "How they got the information"],
           rows: [
-            ["**Primary insider**", "Through being a **director, employee or shareholder** of an issuer of securities, or through their **employment, office or profession**"],
+            ["**Primary insider** — s.57", "Through being a **director, employee or shareholder** of an issuer of securities, or through their **employment, office or profession**"],
             ["**Secondary insider**", "**Directly or indirectly from** a primary insider, where they know it is inside information from an inside source"],
           ],
         },
@@ -74,8 +74,8 @@ export const LWE_TREE_43: StudyChapter = {
           kind: "list",
           title: "The three defences",
           items: [
-            "**No expectation of profit.** The person did not expect the dealing to result in a profit, or the avoidance of a loss, attributable to the price-sensitive nature of the information.",
-            "**Belief in wide disclosure.** They believed on reasonable grounds that the information had been disclosed widely enough that no participant would be prejudiced by not having it.",
+            "**No expectation of profit** (s.53). The person did not expect the dealing to result in a profit, or the avoidance of a loss, attributable to the price-sensitive nature of the information.",
+            "**Belief in wide disclosure** (s.53). They believed on reasonable grounds that the information had been disclosed widely enough that no participant would be prejudiced by not having it.",
             "**Would have acted anyway.** They would have done what they did even if they had not had the information — which covers, for instance, a forced sale to meet an unrelated obligation.",
             "There are also **special defences** for **market makers** acting in good faith in the course of their business, and in relation to **market information** and **price stabilisation**.",
           ],
@@ -118,7 +118,7 @@ export const LWE_TREE_43: StudyChapter = {
             ["**Unlawful disclosure**", "Disclosing inside information outside the normal exercise of employment, profession or duties"],
             ["**Market manipulation**", "Transactions or orders giving **false or misleading signals** as to supply, demand or price, or securing the price at an abnormal or artificial level"],
             ["**Dissemination of false information**", "Giving out information likely to give a **false or misleading impression** about an investment"],
-            ["**Misleading behaviour and distortion**", "Behaviour **likely to give a regular user a false or misleading impression**, or to distort the market"],
+            ["**Misleading behaviour and distortion** — s.118", "Behaviour **likely to give a regular user a false or misleading impression**, or to distort the market"],
           ],
         },
         {
@@ -193,9 +193,9 @@ export const LWE_TREE_43: StudyChapter = {
   ],
   keyTerms: [
     { term: "Inside information", def: "Information that is specific or precise, not made public, issuer or security specific, and likely to have a significant price effect if published." },
-    { term: "Primary insider", def: "A person with inside information through being a director, employee or shareholder of an issuer, or through their employment, office or profession." },
+    { term: "Primary insider", def: "s.57 — a person with inside information through being a director, employee or shareholder of an issuer, or through their employment, office or profession." },
     { term: "Secondary insider", def: "A person who received inside information directly or indirectly from an inside source, knowing its character." },
-    { term: "Dealing offence", def: "Acquiring or disposing of price-affected securities while in possession of inside information as an insider." },
+    { term: "Dealing offence", def: "s.52 — acquiring or disposing of price-affected securities while in possession of inside information as an insider." },
     { term: "Market abuse", def: "A civil regime prohibiting insider dealing, unlawful disclosure, manipulation, false dissemination and misleading behaviour." },
     { term: "Market manipulation", def: "Transactions or orders giving false or misleading signals as to supply, demand or price, or securing an artificial price." },
   ],

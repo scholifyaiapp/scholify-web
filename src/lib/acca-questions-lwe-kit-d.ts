@@ -79,7 +79,7 @@ const CH29: AccaQuestion[] = [
     "What formality is required to create a partnership?",
     ["A written agreement", "Registration with the registrar", "None at all", "A deed"],
     2,
-    "NONE. A partnership is the relation between persons carrying on a business in common with a view of profit, and it can arise purely from conduct. A written agreement's function is to displace the 1890 Act's default rules."),
+    "NONE. Under s.1(1) a partnership is the relation between persons carrying on a business in common with a view of profit, and it can arise purely from conduct. A written agreement's function is to displace the 1890 Act's default rules."),
 
   q1("LWEK-29-02", "LWE-29", "D", "easy",
     "Is an incoming partner liable for debts incurred before joining?",

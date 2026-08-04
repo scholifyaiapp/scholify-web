@@ -42,7 +42,7 @@ export const LWE_TREE_37: StudyChapter = {
         {
           kind: "definition",
           term: "Director",
-          md: "The Act defines a director to include **any person occupying the position of director, by whatever name called**. So the label is irrelevant: what matters is the **function performed**. That definition is what pulls de facto and shadow directors into the same duties and the same liabilities as properly appointed ones.",
+          md: "**Section 250** defines a director to include **any person occupying the position of director, by whatever name called**. So the label is irrelevant: what matters is the **function performed**. That definition is what pulls de facto and shadow directors into the same duties and the same liabilities as properly appointed ones.",
         },
         {
           kind: "table",
@@ -72,7 +72,7 @@ export const LWE_TREE_37: StudyChapter = {
             "Later appointments are made as the **articles** provide — typically by the board or by ordinary resolution of the members.",
             "A **public company** must appoint directors by **separate resolution** for each, unless the meeting agrees otherwise without objection.",
             "Appointments must be **notified to the registrar** and entered in the **register of directors**.",
-            "A director must be at least **16**, and a company must have at least one director who is a **natural person**.",
+            "A director must be at least **16**, and under **s.155** a company must have at least one director who is a **natural person**.",
             "A service contract for a **guaranteed term of more than two years** requires **approval by ordinary resolution** of the members; without it the term is void and the contract terminable on reasonable notice.",
             "Members may **inspect** directors' service contracts.",
           ],
@@ -198,7 +198,7 @@ export const LWE_TREE_37: StudyChapter = {
     },
   ],
   keyTerms: [
-    { term: "Director", def: "Any person occupying the position of director, by whatever name called." },
+    { term: "Director", def: "s.250 — any person occupying the position of director, by whatever name called." },
     { term: "De facto director", def: "A person who acts as a director without valid appointment, owing the full duties." },
     { term: "Shadow director", def: "A person whose directions or instructions the board is accustomed to follow, excluding professional advisers." },
     { term: "Section 168 removal", def: "Removal by ordinary resolution notwithstanding the articles or any agreement, on 28 days' special notice." },

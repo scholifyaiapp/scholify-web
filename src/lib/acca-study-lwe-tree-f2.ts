@@ -110,11 +110,11 @@ export const LWE_TREE_39: StudyChapter = {
           kind: "list",
           title: "Duties, rights and powers",
           items: [
-            "**Report** to the members on whether the accounts give a **true and fair view** and have been properly prepared in accordance with the applicable framework.",
+            "**Report** under **s.495** to the members on whether the accounts give a **true and fair view** and have been properly prepared in accordance with the applicable framework.",
             "**Form an opinion** on whether **proper accounting records** were kept, whether the accounts **agree with** those records, and whether the information and explanations needed were received — and state in the report if any of those is unsatisfactory.",
             "A **right of access at all times** to the company's books, accounts and vouchers.",
             "A **right to require** information and explanations from officers and employees, and it is a **criminal offence** to make a knowingly or recklessly misleading statement to an auditor.",
-            "A **right to receive notice of, attend and speak at** general meetings on any matter concerning them as auditor.",
+            "A **s.502 right to receive notice of, attend and speak at** general meetings on any matter concerning them as auditor.",
             "A **right to be heard** on their removal, and to have representations circulated.",
           ],
         },
@@ -329,7 +329,7 @@ export const LWE_TREE_40: StudyChapter = {
             { label: "The poll", detail: "Ashby holds 6,000 of 10,000 shares — 60% — and may DEMAND A POLL, being a member representing at least 10% of the total voting rights. On a poll votes follow SHAREHOLDINGS, so he casts 60%. But a special resolution needs 75%, and 60% FALLS SHORT. The alteration FAILS even on the poll." },
             { label: "Removing Coleman as a director", detail: "Removal is by ORDINARY resolution — Ashby's 60% would suffice — but it requires 28 DAYS' SPECIAL NOTICE to the company, and none was given. The resolution is therefore INVALID and must be re-run with proper special notice, Coleman being entitled to be heard and to circulate representations." },
             { label: "The loan to Ashby", detail: "A loan to a director needs approval by ORDINARY resolution of the members (chapter 38). Ashby's 60% on a poll carries it, so the loan is validly approved — assuming the memorandum of terms was made available." },
-            { label: "The written resolution removing the auditor", detail: "INVALID whatever the percentage. A WRITTEN RESOLUTION CANNOT be used to remove an AUDITOR — or a director — because both are entitled to be heard and to have representations circulated, which requires a MEETING." },
+            { label: "The written resolution removing the auditor", detail: "INVALID whatever the percentage. A WRITTEN RESOLUTION is unavailable for removing an AUDITOR — or a director — because both are entitled to be heard and to have representations circulated, which requires a MEETING." },
             { label: "Summarise", detail: "The article alteration fails on the 75% threshold even after the poll; the removal of Coleman fails for want of special notice; the loan is approved; and the auditor removal fails because the wrong procedure was used entirely." },
           ],
           result:

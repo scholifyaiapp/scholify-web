@@ -217,7 +217,7 @@ export const LWE_TREE_08: StudyChapter = {
   intro:
     "Whoever makes the offer loses control of whether a contract comes into being — so the whole commercial point of a shop display, an advertisement or a tender is to invite offers rather than make one. Telling the two apart is the most heavily tested point in Area B.",
   outcomes: [
-    "Define an offer and distinguish it from an invitation to treat",
+    "Define an offer, and tell it apart from a mere invitation to receive offers",
     "Classify displays, advertisements, auctions and tenders correctly",
     "Distinguish an offer from a mere supply of information",
     "Explain a unilateral offer and how it is accepted",

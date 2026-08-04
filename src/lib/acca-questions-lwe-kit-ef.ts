@@ -46,12 +46,12 @@ const CH34: AccaQuestion[] = [
     "How may class rights be varied where the articles are silent?",
     [
       "By ordinary resolution of all the members",
-      "By written consent of holders of at least three-quarters in nominal value of the class, or a special resolution at a separate class meeting",
+      "Under s.630, by written consent of holders of at least three-quarters in nominal value of the class, or a special resolution at a separate class meeting",
       "By board resolution",
       "They cannot be varied at all",
     ],
     1,
-    "By the written consent of 75% IN NOMINAL VALUE of the class, or a SPECIAL RESOLUTION AT A SEPARATE CLASS MEETING. The ordinary shareholders alone cannot vary another class's rights."),
+    "Under s.630: by the written consent of 75% IN NOMINAL VALUE of the class, or a SPECIAL RESOLUTION AT A SEPARATE CLASS MEETING. The ordinary shareholders alone cannot vary another class's rights."),
 
   q2("LWEK-34-05", "LWE-34", "E", "medium",
     "Holders of 20% of a class did not consent to a variation of their rights. What can they do?",

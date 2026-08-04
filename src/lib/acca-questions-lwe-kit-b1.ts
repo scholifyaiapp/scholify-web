@@ -143,7 +143,7 @@ const CH09: AccaQuestion[] = [
     "When it ACTUALLY ARRIVES. The postal rule applies to ACCEPTANCE only, which is what produces the classic timing problem in these questions."),
 
   q1("LWEK-09-02", "LWE-09", "B", "easy",
-    "What is the effect of a counter-offer on the original offer?",
+    "A reply varies one term of an offer. What happens to that offer?",
     ["It suspends it", "It destroys it", "It accepts it conditionally", "It has no effect"],
     1,
     "It DESTROYS it, so the offeree cannot afterwards change their mind and accept the original terms."),

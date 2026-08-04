@@ -256,7 +256,7 @@ export const LWE_TREE_14: StudyChapter = {
           rows: [
             ["**Terms as to satisfactory quality, fitness for purpose and description**", "**Cannot be excluded or restricted** against a consumer at all"],
             ["**Liability for death or personal injury from negligence**", "**Cannot be excluded or restricted**"],
-            ["**The fairness test**", "A term is unfair if, contrary to good faith, it causes a **significant imbalance** in the parties' rights to the consumer's detriment. An unfair term is **not binding** on the consumer"],
+            ["**The fairness test** — s.62", "A term is unfair if, contrary to good faith, it causes a **significant imbalance** in the parties' rights to the consumer's detriment. An unfair term is **not binding** on the consumer"],
             ["**Transparency**", "Written terms must be **plain and intelligible**; ambiguity is resolved in the consumer's favour"],
             ["**Core terms**", "The main subject matter and the price are exempt from the fairness test **provided** they are transparent and prominent"],
           ],

@@ -146,7 +146,7 @@ export const LWE_TREE_32: StudyChapter = {
         ],
         correct: 1,
         explain:
-          "The PROMOTER PERSONALLY under s.51 CA 2006. A company CANNOT RATIFY a pre-incorporation contract because it did not exist when the contract was made (Kelner v Baxter), so the board's resolution is ineffective. Transferring the contract needs a NOVATION or a NEW contract, both of which require the third party's agreement.",
+          "The PROMOTER PERSONALLY under s.51 CA 2006. A company CANNOT RATIFY a pre-incorporation contract, having had no existence at the moment of contracting (Kelner v Baxter), so the board's resolution is ineffective. Transferring the contract needs a NOVATION or a NEW contract, both of which require the third party's agreement.",
       },
     },
   ],
@@ -221,7 +221,7 @@ export const LWE_TREE_33: StudyChapter = {
           items: [
             "The **proposed name**, and whether liability is to be limited by shares or by guarantee, and whether the company is private or public.",
             "The intended address of the **registered office**, and which part of the UK it is to be situated in.",
-            "The **articles of association**, unless the **model articles** are to apply by default.",
+            "The **articles of association** — omitted only where the company is content for the **model articles** to govern.",
             "A **statement of capital and initial shareholdings**, or for a guarantee company a **statement of guarantee**.",
             "A **statement of the proposed officers** — the first directors and, where applicable, the secretary.",
             "A **statement of compliance** that the registration requirements have been met.",
@@ -244,7 +244,7 @@ export const LWE_TREE_33: StudyChapter = {
             ["**Register of secretaries**", "Where the company has one"],
             ["**Register of people with significant control (PSC)**", "Those with significant influence or control over the company, so that ultimate ownership is visible"],
             ["**Register of charges**", "Charges created over the company's property, with the instruments (chapter 35)"],
-            ["**Accounting records**", "Sufficient to show and explain the company's transactions and its financial position, retained for the prescribed period"],
+            ["**Accounting records** — s.386", "Sufficient to show and explain the company's transactions and its financial position, retained for the prescribed period"],
             ["**Annual accounts and reports**", "Prepared, approved and filed with the registrar"],
             ["**Confirmation statement**", "Filed at least annually, confirming that the information held about the company is up to date"],
             ["**Minutes**", "Of general meetings and of directors' meetings, retained for the prescribed period"],
@@ -276,7 +276,7 @@ export const LWE_TREE_33: StudyChapter = {
         {
           kind: "definition",
           term: "The section 33 contract",
-          md: "The provisions of a company's constitution **bind the company and its members** to the same extent as if there were **covenants on the part of the company and of each member** to observe them. So the articles operate as a **statutory contract** — between the company and each member, and between the members themselves — but **only in respect of membership rights**.",
+          md: "**Section 33** is the source of it. The provisions of a company's constitution **bind the company and its members** to the same extent as if there were **covenants on the part of the company and of each member** to observe them. So the articles operate as a **statutory contract** — between the company and each member, and between the members themselves — but **only in respect of membership rights**.",
         },
         {
           kind: "callout",
@@ -289,7 +289,7 @@ export const LWE_TREE_33: StudyChapter = {
           title: "Altering the articles",
           items: [
             "By **special resolution** of the members — a supermajority of **not less than 75%** of those voting.",
-            "A copy of the **amended articles** and the resolution must be **filed with the registrar within 15 days**.",
+            "Both the resolution and a copy of the **amended articles** go to the **registrar inside 15 days**.",
             "**Entrenchment** is permitted: specified provisions may be made alterable only if additional conditions are met or a greater majority obtained. Entrenchment does not prevent amendment by **unanimous agreement of all members**, or by court order.",
             "The alteration must be **bona fide for the benefit of the company as a whole** — Lord Lindley's formula in *Allen v Gold Reefs* — so it may not be used simply to expropriate a minority.",
             "**No member's liability** to contribute to share capital may be increased without their **written consent**.",
@@ -395,7 +395,7 @@ export const LWE_TREE_33: StudyChapter = {
   knowledgeDiagnostic: [
     { q: "What does the certificate of incorporation prove?", a: "It is conclusive evidence that the registration requirements were complied with and that the company is duly registered." },
     { q: "What are the limits of the s.33 contract?", a: "It binds the company and members only in respect of membership rights, and a non-member cannot enforce the articles at all." },
-    { q: "How are the articles altered, and what constrains the alteration?", a: "By special resolution filed within 15 days; it must be bona fide for the benefit of the company as a whole, respect entrenchment, and cannot increase a member's liability without written consent." },
+    { q: "How are the articles altered, and what constrains the alteration?", a: "By special resolution filed within 15 days; it must be bona fide for the benefit of the company as a whole (Allen v Gold Reefs), respect entrenchment, and cannot increase a member's liability without written consent." },
     { q: "Name three routes open to a competitor troubled by a company's name.", a: "Ask the registrar to direct a change under s.67, apply to the company names adjudicator, and sue for passing off — plus trade mark infringement if a mark is registered." },
   ],
 }

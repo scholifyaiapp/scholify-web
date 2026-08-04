@@ -456,7 +456,7 @@ export const LWE_TREE_27: StudyChapter = {
         {
           kind: "definition",
           term: "Redundancy (ERA 1996 s.139)",
-          md: "A dismissal is by reason of redundancy where it is **wholly or mainly attributable** to one of three things: the employer has **ceased to carry on the business**; the employer has **ceased to carry on the business at the place** where the employee was employed; or the **requirement for employees to carry out work of a particular kind** has **ceased or diminished**, or is expected to.",
+          md: "Under **s.139** a dismissal is by reason of redundancy where it is **wholly or mainly attributable** to one of three things: the employer has **ceased to carry on the business**; the employer has **ceased to carry on the business at the place** where the employee was employed; or the **requirement for employees to carry out work of a particular kind** has **ceased or diminished**, or is expected to.",
         },
         {
           kind: "callout",

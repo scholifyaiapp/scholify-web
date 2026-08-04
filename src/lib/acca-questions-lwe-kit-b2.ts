@@ -322,7 +322,7 @@ const CH20: AccaQuestion[] = [
       "Control, integration and economic reality",
     ],
     0,
-    "Reasonable FORESEEABILITY, sufficient PROXIMITY, and that it is FAIR, JUST AND REASONABLE to impose a duty. Duty, breach and damage are the three elements of the tort itself."),
+    "Per Caparo v Dickman: reasonable FORESEEABILITY, sufficient PROXIMITY, and that it is FAIR, JUST AND REASONABLE to impose a duty. Duty, breach and damage are the three elements of the tort itself."),
 
   q1("LWEK-20-02", "LWE-20", "B", "easy",
     "What is the standard of care in negligence?",

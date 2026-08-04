@@ -112,7 +112,7 @@ export const LWE_TREE_28: StudyChapter = {
           kind: "callout",
           tone: "rule",
           title: "Apparent authority needs a representation BY THE PRINCIPAL",
-          md: "The point most often got wrong is the source of the representation. **The agent cannot create its own apparent authority** by asserting that it has authority. The holding out must come from the **principal** — by appointing the agent to a position that ordinarily carries such authority, by permitting it to act that way before, or by saying so expressly. *Freeman & Lockyer v Buckhurst Park Properties* is the standard authority: a director allowed by the board to act as if he were managing director bound the company, because the **board's acquiescence** was the representation. And the third party must have **relied** on it, so someone who knew the agent lacked authority cannot invoke it.",
+          md: "The point most often got wrong is the source of the representation. **The agent cannot create its own apparent authority** by asserting that it has authority. The holding out must come from the **principal** — by appointing the agent to a position that ordinarily carries such authority, by permitting it to act that way before, or by saying so expressly. *Freeman & Lockyer v Buckhurst Park Properties* is the standard authority: a director whom the board let behave as though he held the managing director's office bound the company, because the **board's acquiescence** was the representation. And the third party must have **relied** on it, so someone who knew the agent lacked authority cannot invoke it.",
         },
         {
           kind: "table",
@@ -236,7 +236,7 @@ export const LWE_TREE_29: StudyChapter = {
         {
           kind: "definition",
           term: "Partnership (Partnership Act 1890, s.1(1))",
-          md: "\"The relation which subsists between persons carrying on a business in common with a view of profit.\" Unpack it into three elements: a **business**, carried on **in common**, with a **view of profit**. Note what is absent — no writing, no registration, no formality of any kind is required, so a partnership can come into existence purely from conduct.",
+          md: "Section 1(1) reads: \"The relation which subsists between persons carrying on a business in common with a view of profit.\" Unpack it into three elements: a **business**, carried on **in common**, with a **view of profit**. Note what is absent — no writing, no registration, no formality of any kind is required, so a partnership can come into existence purely from conduct.",
         },
         {
           kind: "list",

@@ -19,7 +19,7 @@
  * nothing else: a section heading and one multiple-choice option. It is an IFRS term
  * of art and rewording it would make the content wrong, so both are left alone.
  *
- * ── Exception 2: quoted legal instruments (LW) ────────────────────
+ * ── Exception 2: quoted legal instruments (both LW variants) ──────
  * LW is a law paper, and the thing a law paper teaches IS the wording of the
  * instrument. A learner has to recognise the Partnership Act's "carrying on a
  * business in common with a view of profit" and CISG art 35(2)(a)'s "fit for the
@@ -60,7 +60,7 @@ const path = require("path")
  * the approved-provider texts (produce them with pdf-parse, already a dependency);
  * MINE are the authored source files for that paper.
  *
- * Current setting: LW-GLOBAL (the fourth paper rebuilt). Earlier papers' settings are
+ * Current setting: LW-ENG (the fifth paper rebuilt). Earlier papers' settings are
  * kept below in comments so one can be re-checked without rediscovering the file names.
  *
  * Note that all four LW books are indexed at once, including both ENGLISH texts. LW's
@@ -77,18 +77,37 @@ const BOOKS = [
 ]
 const SRC_DIR = "C:/Users/User/Desktop/scholify-web-main/scholify-web-main/src/lib"
 const MINE = [
-  "acca-study-lwg-tree-a.ts",
-  "acca-study-lwg-tree-b.ts",
-  "acca-study-lwg-tree-c.ts",
-  "acca-study-lwg-tree-d.ts",
-  "acca-study-lwg-tree-de.ts",
-  "acca-study-lwg-tree-ef.ts",
-  "acca-study-lwg-tree-fgh.ts",
-  "acca-questions-lwg-kit-a.ts",
-  "acca-questions-lwg-kit-b.ts",
-  "acca-questions-lwg-kit-cd.ts",
-  "acca-questions-lwg-kit-efgh.ts",
-  "acca-cases-lw-global.ts",
+  "acca-study-lwe-tree-a.ts",
+  "acca-study-lwe-tree-a2.ts",
+  "acca-study-lwe-tree-b1.ts",
+  "acca-study-lwe-tree-b2.ts",
+  "acca-study-lwe-tree-b3.ts",
+  "acca-study-lwe-tree-b4.ts",
+  "acca-study-lwe-tree-b5.ts",
+  "acca-study-lwe-tree-b6.ts",
+  "acca-study-lwe-tree-b7.ts",
+  "acca-study-lwe-tree-c.ts",
+  "acca-study-lwe-tree-c2.ts",
+  "acca-study-lwe-tree-d1.ts",
+  "acca-study-lwe-tree-d2.ts",
+  "acca-study-lwe-tree-d3.ts",
+  "acca-study-lwe-tree-e.ts",
+  "acca-study-lwe-tree-e2.ts",
+  "acca-study-lwe-tree-f1.ts",
+  "acca-study-lwe-tree-f2.ts",
+  "acca-study-lwe-tree-g.ts",
+  "acca-study-lwe-tree-h1.ts",
+  "acca-study-lwe-tree-h2.ts",
+  "acca-questions-lwe-kit-a.ts",
+  "acca-questions-lwe-kit-b1.ts",
+  "acca-questions-lwe-kit-b2.ts",
+  "acca-questions-lwe-kit-c.ts",
+  "acca-questions-lwe-kit-d.ts",
+  "acca-questions-lwe-kit-ef.ts",
+  "acca-questions-lwe-kit-gh.ts",
+  "acca-questions-lwe-kit-supp1.ts",
+  "acca-questions-lwe-kit-supp2.ts",
+  "acca-cases-lw-eng.ts",
 ]
 
 /* BT: BOOKS = ["kaplan-st.txt", "kaplan-rk.txt", "bpp-kit.txt", "bpp-workbook.txt"]
@@ -138,27 +157,45 @@ const STATUTORY_QUOTES = [
   ["UNCITRAL Model Law (official title)", "the uncitral model law on international commercial arbitration"],
   ["New York Convention art II(3)", "null and void inoperative or incapable of being performed"],
   // Partnership Act 1890
-  ["Partnership Act 1890 s.1(1)", "the relationship which exists between persons carrying on a business in common with a view of profit"],
+  ["Partnership Act 1890 s.1(1)", "the relation which subsists between persons carrying on a business in common with a view of profit"],
+  ["Partnership Act 1890 s.1(1) (paraphrase)", "the relationship which exists between persons carrying on a business in common with a view of profit"],
   // Companies Act 2006
   ["CA 2006 s.67(2)", "the name is the same as or too like an existing one"],
+  // ── UK instruments quoted directly by the ENG tree ──
+  ["CA 2006 s.33(1)", "the provisions of a company s constitution bind the company and its members to the same extent as if there were covenants on the part of the company and of each member to observe them"],
+  ["CA 2006 s.495(3)", "report to the members on whether the accounts give a true and fair view and have been properly prepared in accordance with the applicable framework"],
+  ["CA 2006 s.250", "any person occupying the position of director by whatever name called"],
+  ["CA 2006 s.155", "must have at least one director who is a natural person"],
+  ["CA 2006 s.386(2)", "sufficient to show and explain the company s transactions and its financial position"],
+  ["CA 2006 s.502(2)", "right to receive notice of attend and speak at general meetings"],
+  ["CA 2006 s.630(4)", "the written consent of 75 in nominal value of the class or a special resolution at a separate class meeting"],
+  ["Caparo Industries v Dickman (1990)", "sufficient proximity between the parties and it is fair just and reasonable to impose a duty"],
+  ["CRA 2015 s.62(4)", "contrary to good faith it causes a significant imbalance in the parties rights to the consumer s detriment"],
+  ["ERA 1996 s.139(1)", "the requirement for employees to carry out work of a particular kind has ceased or diminished"],
+  ["IA 1986 s.214(2)", "that there was no reasonable prospect of the company avoiding insolvent liquidation"],
+  ["IA 1986 s.122(1)", "the company has not commenced business within a year of incorporation or has suspended business for a year"],
   ["CA 2006 s.174(2)", "the care of a reasonably diligent person with the general knowledge skill and experience"],
   ["CA 2006 s.830(2)", "accumulated realised profits so far as not previously distributed or capitalised less accumulated realised losses so far as not previously written off"],
+  ["CA 2006 s.830(2) (statutory wording)", "accumulated realised profits so far as not previously utilised by distribution or capitalisation less accumulated realised losses so far as not previously written off in a reduction or reorganisation of capital"],
   ["CA 2006 s.830(2) (short form)", "accumulated realised profits less accumulated realised losses a revaluation surplus is"],
   // Insolvency Act 1986 and CDDA 1986
   ["IA 1986 Sch B1 para 3(1)(b)", "achieving a better result for the creditors as a whole than would be likely on a winding up"],
-  ["IA 1986 Sch B1 para 11", "the company is or is likely to become unable to pay its debts and"],
+  ["IA 1986 Sch B1 para 3(1) (hierarchy)", "rescue the company as a going concern achieve a better result for the creditors as a whole than on a winding up"],
+  ["IA 1986 Sch B1 para 11", "that the company is or is likely to become unable to pay its debts and"],
   ["IA 1986 s.213", "with intent to defraud creditors or for any fraudulent purpose"],
   ["CDDA 1986 s.6", "unfit to be concerned in the management of a company"],
   // Criminal Justice Act 1993 and FSMA 2000
   ["CJA 1993 s.52", "disposing of price affected securities while in possession of inside information as an insider"],
   ["CJA 1993 s.52 (dealing form)", "dealing in price affected securities while in possession of inside information as an insider"],
+  ["CJA 1993 s.52 (acquiring or disposing)", "acquiring or disposing of price affected securities while in possession of inside information as an insider"],
   ["CJA 1993 s.53 (defence)", "did not expect the dealing to result in a profit"],
   ["CJA 1993 s.53 (defence)", "believed on reasonable grounds that the information had been disclosed widely enough"],
   ["CJA 1993 s.56(1)", "if made public would be likely to have a significant effect on the price of"],
-  ["CJA 1993 s.57(2)", "through being a director employee or shareholder of an issuer"],
+  ["CJA 1993 s.57(2)", "through being a director employee or shareholder of an issuer of securities"],
   ["FSMA 2000 s.118", "likely to give a regular user a false or misleading impression"],
   // Case law
-  ["Allen v Gold Reefs (1900)", "be bona fide for the benefit of the company as a whole"],
+  ["Allen v Gold Reefs (1900)", "an alteration must be bona fide for the benefit of the company as a whole and"],
+  ["Allen v Gold Reefs (1900) (with citation)", "bona fide for the benefit of the company as a whole allen v gold reefs"],
 ]
 
 const words = (s) =>
