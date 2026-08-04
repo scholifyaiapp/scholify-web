@@ -28,7 +28,7 @@ export const LWE_TREE_41: StudyChapter = {
   minutes: 18,
   syllabusRefs: ["G1(a)", "G1(b)", "G1(c)"],
   intro:
-    "Liquidation is the end of the company's life, and the whole exercise comes down to one question: who gets paid, and in what order. Get the waterfall right and most of Area G answers itself.",
+    "Liquidation under the Insolvency Act 1986 is the end of the company's life, and the whole exercise comes down to one question: who gets paid, and in what order. Get the waterfall right and most of Area G answers itself.",
   outcomes: [
     "Distinguish members' from creditors' voluntary liquidation",
     "State the grounds for and the procedure in compulsory liquidation",

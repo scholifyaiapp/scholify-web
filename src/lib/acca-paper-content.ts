@@ -1,4 +1,4 @@
-import { registerPaperContent, isPaperContentLoaded, type PaperContent } from "@/lib/acca-content-registry"
+import { registerPaperContent, isPaperContentLoaded, forgetPaperContent, type PaperContent } from "@/lib/acca-content-registry"
 import type { AccaQuestion, OtCase } from "@/lib/acca-content"
 import type { Flashcard } from "@/lib/acca-flashcards"
 import type { WrittenQuestion } from "@/lib/acca-written"
@@ -18,7 +18,6 @@ import { mapApmFlashcardsToOfficialSyllabus, mapApmQuestionsToOfficialSyllabus, 
 import { mapAtxFlashcardsToOfficialSyllabus, mapAtxQuestionsToOfficialSyllabus, mapAtxWrittenToOfficialSyllabus } from "@/lib/acca-atx-syllabus-map"
 import { completeStudyFlashcards } from "@/lib/acca-study-flashcards"
 import { f1F4StudyDerived, studyDerivedQuestions } from "@/lib/acca-f1-f4-section-a"
-import { completeF1F4SectionB } from "@/lib/acca-f1-f4-section-b"
 import { completePmSectionB, completePmSectionC } from "@/lib/acca-pm-expansion"
 import { PM_CONTENT_TARGET } from "@/lib/pm-content-contract"
 import { completeTxSectionB, completeTxSectionC } from "@/lib/acca-tx-expansion"
@@ -251,6 +250,37 @@ const LW_GLOBAL_QUESTION_MODULES: Loader[] = [
  */
 const LW_GLOBAL_CASE_MODULES: Loader[] = [() => import("@/lib/acca-cases-lw-global")]
 
+/*
+ * LW-ENG's own content, loaded only when the UK variant is active.
+ *
+ * Symmetrical with the Global block above, and needed for the same reason: LW is one
+ * paper id with two genuinely different syllabuses, so neither variant's bank can serve
+ * the other. ENG's Area B is the English law of obligations, its Area C employment law
+ * and its Area G insolvency law, where Global has the CISG, transport and payment, and
+ * companies in difficulty.
+ *
+ * ── What this replaced ────────────────────────────────────────
+ * Before this, selecting United Kingdom gave the learner the GLOBAL reading tree with a
+ * single UK-flavoured overlay section prepended to chapter 1 by
+ * applyVariantStudyContent, plus the legacy ENG bank of four area-chapters' worth of
+ * questions. So the variant switch was very nearly cosmetic on the study side, and the
+ * ENG learner read two areas that were not on their exam while missing two that were.
+ */
+const LW_ENG_QUESTION_MODULES: Loader[] = [
+  () => import("@/lib/acca-questions-lwe-kit-a"),
+  () => import("@/lib/acca-questions-lwe-kit-b1"),
+  () => import("@/lib/acca-questions-lwe-kit-b2"),
+  () => import("@/lib/acca-questions-lwe-kit-c"),
+  () => import("@/lib/acca-questions-lwe-kit-d"),
+  () => import("@/lib/acca-questions-lwe-kit-ef"),
+  () => import("@/lib/acca-questions-lwe-kit-gh"),
+  () => import("@/lib/acca-questions-lwe-kit-supp1"),
+  () => import("@/lib/acca-questions-lwe-kit-supp2"),
+]
+
+/* LW-ENG's Section B: 15 authored MTQs at the real 6-mark unit size. */
+const LW_ENG_CASE_MODULES: Loader[] = [() => import("@/lib/acca-cases-lw-eng")]
+
 const BRIEF_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-briefs-fa-official")],
   FR: [() => import("@/lib/acca-briefs-fr-official")],
@@ -289,6 +319,23 @@ const pending = new Map<string, Promise<void>>()
  * every page: the second caller gets the first caller's promise. A failed load
  * is forgotten so a flaky network can be retried (the hook offers a retry).
  */
+export function reloadPaperContent(paperId: string): Promise<void> {
+  /*
+   * Rebuild a paper's content from scratch, for when the inputs to the load have changed
+   * rather than the paper.
+   *
+   * The registry is keyed by paper id, but LW and TX content also depends on the selected
+   * VARIANT — different chapters, different bank, different cases — so switching variant
+   * must discard the cached bundle or the learner keeps reading the tree they switched
+   * away from. Settings achieves that today with a full page reload, so nothing in the UI
+   * calls this yet; the contract tests need it because the Node bootstrap pre-fills every
+   * paper at its DEFAULT variant.
+   */
+  forgetPaperContent(paperId)
+  pending.delete(paperId)
+  return loadPaperContent(paperId)
+}
+
 export function loadPaperContent(paperId: string): Promise<void> {
   if (isPaperContentLoaded(paperId)) return Promise.resolve()
   const existing = pending.get(paperId)
@@ -297,9 +344,16 @@ export function loadPaperContent(paperId: string): Promise<void> {
   const job = (async () => {
     const variant = getPaperVariant(paperId)
     const isLwGlobal = paperId === "LW" && variant === "GLOBAL"
+    const isLwEng = paperId === "LW" && variant === "UK"
     const isTxGlobal = paperId === "TX" && variant === "GLOBAL"
     const usesGlobalBank = isLwGlobal || isTxGlobal
-    const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods, caseMods, lwGlobalMods, lwGlobalCaseMods] = await Promise.all([
+    /*
+     * Variants with their own authored reading tree, which therefore must NOT have the
+     * cosmetic `applyVariantStudyContent` overlay prepended to chapter 1: the overlay
+     * exists only for a variant that is still reading the other one's chapters.
+     */
+    const usesOwnTree = usesGlobalBank || isLwEng
+    const [questionMods, chapterMods, flashcardMods, writtenMods, briefMods, caseMods, lwGlobalMods, lwGlobalCaseMods, lwEngMods, lwEngCaseMods] = await Promise.all([
       loadAll(QUESTION_MODULES[paperId]),
       loadAll(CHAPTER_MODULES[paperId]),
       loadAll(FLASHCARD_MODULES[paperId]),
@@ -308,6 +362,8 @@ export function loadPaperContent(paperId: string): Promise<void> {
       loadAll(CASE_MODULES[paperId]),
       loadAll(isLwGlobal ? LW_GLOBAL_QUESTION_MODULES : undefined),
       loadAll(isLwGlobal ? LW_GLOBAL_CASE_MODULES : undefined),
+      loadAll(isLwEng ? LW_ENG_QUESTION_MODULES : undefined),
+      loadAll(isLwEng ? LW_ENG_CASE_MODULES : undefined),
     ])
     /*
      * LW-Global cannot use the ENG bank: three of the eight syllabus areas differ, so
@@ -318,9 +374,11 @@ export function loadPaperContent(paperId: string): Promise<void> {
      */
     const collectedQuestions = isLwGlobal
       ? collect<AccaQuestion>(lwGlobalMods, paperId)
-      : usesGlobalBank
-        ? []
-        : collect<AccaQuestion>(questionMods, paperId)
+      : isLwEng
+        ? collect<AccaQuestion>(lwEngMods, paperId)
+        : usesGlobalBank
+          ? []
+          : collect<AccaQuestion>(questionMods, paperId)
     const questions = paperId === "BT"
       ? mapBtQuestionsToOfficialSyllabus(collectedQuestions)
       : paperId === "MA"
@@ -329,10 +387,13 @@ export function loadPaperContent(paperId: string): Promise<void> {
           ? mapFaQuestionsToOfficialSyllabus(collectedQuestions)
           : paperId === "LW"
             // The LW mapper re-derives any area-"D" question from UK syllabus
-            // keywords. The Global questions are already tagged against the
-            // Global syllabus (Areas B and C being the CISG and international
-            // transport), so running them through it would scatter them.
-            ? isLwGlobal ? collectedQuestions : mapLwQuestionsToOfficialSyllabus(collectedQuestions)
+            // keywords, which is what the LEGACY bank needs. Both authored kits are
+            // already tagged against their own variant's syllabus and carry a
+            // `chapter`, so running either through it would scatter them — the Global
+            // questions because its Areas B and C are the CISG and international
+            // transport, and the ENG questions because a keyword re-derivation would
+            // move items off the very areas they were written for.
+            ? isLwGlobal || isLwEng ? collectedQuestions : mapLwQuestionsToOfficialSyllabus(collectedQuestions)
             : paperId === "PM"
               ? mapPmQuestionsToOfficialSyllabus(collectedQuestions)
               : paperId === "TX"
@@ -354,8 +415,10 @@ export function loadPaperContent(paperId: string): Promise<void> {
       ? paperId === "LW"
         ? (await import("@/lib/acca-study-lw-global")).LW_GLOBAL_CHAPTERS
         : (await import("@/lib/acca-study-tx-global")).TX_GLOBAL_CHAPTERS
-      : collect<StudyChapter>(chapterMods, paperId)
-    const chapters = usesGlobalBank ? baseChapters : applyVariantStudyContent(paperId, baseChapters)
+      : isLwEng
+        ? (await import("@/lib/acca-study-lw-eng")).LW_ENG_CHAPTERS
+        : collect<StudyChapter>(chapterMods, paperId)
+    const chapters = usesOwnTree ? baseChapters : applyVariantStudyContent(paperId, baseChapters)
     const mappedFlashcards = usesGlobalBank ? [] : paperId === "BT"
       ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
       : paperId === "MA"
@@ -433,11 +496,15 @@ export function loadPaperContent(paperId: string): Promise<void> {
           ? completeAaSectionA(collect<OtCase>(caseMods, paperId))
         : paperId === "FM"
           ? completeFmSectionB(collect<OtCase>(caseMods, paperId))
-        // LW-Global has its own 15 authored MTQs at the real 6-mark unit size, so it
-        // is served directly and never padded with generated conceptual cases.
+        // Both LW variants have their own 15 authored MTQs at the real 6-mark unit
+        // size, so each is served directly. LW was the last paper relying on the
+        // generated-case fallback, so that fallback and acca-f1-f4-section-b.ts were
+        // retired with this change — nothing now pads Section B with conceptual cases.
         : isLwGlobal
           ? collect<OtCase>(lwGlobalCaseMods, paperId)
-        : completeF1F4SectionB(paperId, usesGlobalBank ? [] : collect<OtCase>(caseMods, paperId), chapters),
+        : isLwEng
+          ? collect<OtCase>(lwEngCaseMods, paperId)
+        : usesGlobalBank ? [] : collect<OtCase>(caseMods, paperId),
     }
     registerPaperContent(paperId, content)
   })()

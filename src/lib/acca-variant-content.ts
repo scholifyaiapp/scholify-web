@@ -1,27 +1,20 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { getPaperVariant, type PaperVariant } from "@/lib/acca-profile"
 
-const VARIANT_SECTIONS: Record<"LW" | "TX", Record<PaperVariant, StudyChapter["sections"][number]>> = {
-  LW: {
-    UK: {
-      id: "lw-uk-foundation",
-      heading: "United Kingdom variant foundation",
-      blocks: [
-        { kind: "text", md: "The **LW-UK** route applies the English legal system. Build every answer from the hierarchy of legislation and precedent, then apply English contract, tort, employment, agency, partnership and company law to the facts." },
-        { kind: "callout", tone: "rule", title: "UK answer method", md: "Identify the English-law rule, state its elements, apply each element to the scenario, distinguish civil and criminal consequences, and conclude with the most likely remedy or liability." },
-        { kind: "text", md: "Core UK institutions include Parliament, the courts and tribunals. Binding precedent depends on court hierarchy and the ratio decidendi. Company-law answers distinguish the company from members and directors, then test authority, duty, procedure and remedy." },
-      ],
-    },
-    GLOBAL: {
-      id: "lw-global-foundation",
-      heading: "Global variant foundation",
-      blocks: [
-        { kind: "text", md: "The **LW-Global** route focuses on internationally transferable business-law principles. It covers legal systems, international commercial transactions, obligations, employment, agency, organisations, governance, insolvency, fraud and professional conduct without assuming one domestic court system." },
-        { kind: "callout", tone: "rule", title: "Global answer method", md: "Identify the governing principle and source, apply it to the commercial facts, recognise jurisdictional limits, and conclude without importing a domestic rule that the scenario has not supplied." },
-        { kind: "text", md: "Global learners compare civil-law and common-law reasoning, distinguish public and private international law, and recognise how conventions, model laws, contracts and chosen-law clauses support cross-border certainty." },
-      ],
-    },
-  },
+/*
+ * ── Why LW is no longer here ───────────────────────────────────
+ * This overlay exists for one purpose: to give a variant that is reading the OTHER
+ * variant's chapters some orientation about its own syllabus. That was LW's position
+ * until both variants got their own authored reading tree — LW-Global's 33 chapters and
+ * LW-ENG's 46 — at which point the overlay became not merely unnecessary but
+ * misleading, since it prepended a "United Kingdom variant foundation" section to a
+ * tree that is already entirely English law.
+ *
+ * `acca-paper-content.ts` routes each LW variant to its own tree and skips this
+ * function for both, so LW is deliberately absent from the record below. TX still needs
+ * it: TX-UK reads the shared TX chapters, and only TX-Global has its own tree.
+ */
+const VARIANT_SECTIONS: Record<"TX", Record<PaperVariant, StudyChapter["sections"][number]>> = {
   TX: {
     UK: {
       id: "tx-uk-foundation",
@@ -44,8 +37,8 @@ const VARIANT_SECTIONS: Record<"LW" | "TX", Record<PaperVariant, StudyChapter["s
 }
 
 export function applyVariantStudyContent(paperId: string, chapters: StudyChapter[]): StudyChapter[] {
-  if ((paperId !== "LW" && paperId !== "TX") || chapters.length === 0) return chapters
-  const variant = getPaperVariant(paperId) ?? (paperId === "LW" ? "GLOBAL" : "UK")
+  if (paperId !== "TX" || chapters.length === 0) return chapters
+  const variant = getPaperVariant(paperId) ?? "UK"
   const overlay = VARIANT_SECTIONS[paperId][variant]
   return chapters.map((chapter, index) => index === 0
     ? {

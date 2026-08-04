@@ -110,6 +110,23 @@ export function loadedPaperIds(): string[] {
   return Object.keys(REGISTRY)
 }
 
+/**
+ * Drop one paper's content so the next `loadPaperContent` call rebuilds it.
+ *
+ * This exists because a paper's content depends on more than its id: LW and TX each
+ * have two VARIANTS whose chapters, bank and cases are entirely different modules. The
+ * registry is keyed by paper id alone, so switching variant has to invalidate the entry
+ * or the learner keeps reading the tree they just switched away from.
+ *
+ * The app achieves that today with a full page reload after the variant is saved (see
+ * Settings), which is why nothing in the UI calls this yet. Tests need it because the
+ * Node bootstrap in acca-content-boot.ts pre-fills every paper at its DEFAULT variant,
+ * so a test measuring the non-default variant must discard that and reload.
+ */
+export function forgetPaperContent(paperId: string): void {
+  delete REGISTRY[paperId]
+}
+
 /*
  * This module must stay SYNCHRONOUS and dependency-free. The Node/test bootstrap
  * that pre-fills the registry lives in acca-content-boot.ts precisely because the

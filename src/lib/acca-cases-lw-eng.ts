@@ -283,16 +283,16 @@ const MTQ_06: OtCase = {
       ],
       1,
       "DISTINGUISH it, the notice here having been given BEFORE contracting, or hold it PER INCURIAM if a relevant statute was genuinely overlooked. A lower court can never OVERRULE a higher one, and reversing applies only within the same case."),
-    task("lwe-mtq-06", 3, "B", "LWE-14", "hard",
-      "Is Kelbrook's exclusion clause incorporated into the contract?",
+    task("lwe-mtq-06", 3, "A", "LWE-03", "hard",
+      "Kelbrook argues the earlier decision is not binding because it overlooked a relevant statute. What is that argument called, and can a County Court accept it?",
       [
-        "No, a notice can never incorporate a term",
-        "Yes — reasonable notice was given before the contract was concluded, and the guest read it",
-        "No, unless the guest signed the notice itself",
-        "Only if the clause is also reasonable",
+        "Overruling, and only a higher court may do it",
+        "Per incuriam, and a County Court may accept it — such a decision does not bind at all",
+        "Reversing, and it requires an appeal in the same case",
+        "Distinguishing, which needs the material facts to differ",
       ],
       1,
-      "YES. Notice was given BEFORE or AT the time of contracting and the guest actually read it, so the clause is INCORPORATED. Reasonableness is a separate, later hurdle — incorporation only gets Kelbrook past the first of three."),
+      "PER INCURIAM — decided in ignorance of a relevant statute or binding authority — and a County Court MAY accept it, because such a decision does not bind at all. It is one of the two routes open to a lower court, the other being to DISTINGUISH on the material facts. Overruling is closed to it and reversing applies only within the same case."),
   ],
 }
 

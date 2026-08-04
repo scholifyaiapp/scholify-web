@@ -292,6 +292,21 @@ export const LWE_TREE_02: StudyChapter = {
           title: "Why the Employment Tribunal matters to this paper",
           md: "Every claim in Area C — unfair dismissal, wrongful dismissal, redundancy — is heard in the **Employment Tribunal**, not a court. Two consequences follow that scenarios test. Costs are **not** normally awarded against the losing party, so an employee can bring a claim without risking the employer's legal bill; and the tribunal includes members with **industry experience**, which is why its procedure is designed for unrepresented claimants. When chapter 26 gets to unfair dismissal remedies, this is the forum granting them.",
         },
+        {
+          kind: "example",
+          title: "Sending four disputes to the right forum",
+          scenario:
+            "Marbury Ltd's managing director asks where four matters will be heard. (a) A minority shareholder wants to challenge the conduct of the company's affairs. (b) A former employee claims she was unfairly dismissed. (c) The company is prosecuted for an indictable offence under health and safety legislation. (d) A supplier claims £4,000 for unpaid invoices, and Marbury wants the cheapest possible route.",
+          steps: [
+            { label: "The shareholder claim", detail: "The HIGH COURT, CHANCERY DIVISION, which takes company, insolvency, partnership, trust, land and intellectual property work. King's Bench handles substantial contract and tort claims, so it is the wrong division." },
+            { label: "The unfair dismissal claim", detail: "The EMPLOYMENT TRIBUNAL, not a court at all — and costs are not normally awarded against the loser, which is why the former employee can bring it without risking Marbury's legal bill." },
+            { label: "The prosecution", detail: "It begins in the MAGISTRATES' COURT but, being INDICTABLE, is tried in the CROWN COURT WITH A JURY. Appeals against conviction or sentence go to the Court of Appeal Criminal Division." },
+            { label: "The £4,000 debt claim", detail: "The COUNTY COURT on the SMALL CLAIMS TRACK, which is designed to be used without lawyers and where costs are not generally recoverable — which is exactly what makes it the cheapest route." },
+            { label: "Note where an appeal would go", detail: "From Chancery and the County Court, to the COURT OF APPEAL CIVIL DIVISION and then the Supreme Court; but on a point of law of general public importance a LEAPFROG appeal from the High Court straight to the Supreme Court is possible with permission." },
+          ],
+          result:
+            "Four different forums — **Chancery**, the **Employment Tribunal**, the **Crown Court** and the **County Court small claims track**. The two questions that decide every such problem are **what kind of dispute is this** and, for a civil claim, **what is it worth and how complex is it**.",
+        },
       ],
       check: {
         q: "Which feature of the Employment Tribunal most affects an employee's decision to bring a claim?",

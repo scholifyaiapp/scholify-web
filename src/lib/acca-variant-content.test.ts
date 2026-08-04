@@ -24,13 +24,29 @@ describe("LW and TX paper variants", () => {
     expect(paperVariantLabel("TX")).toBe("TX · Global")
   })
 
-  it("injects different UK and Global study foundations", () => {
-    setPaperVariant("LW", "UK")
-    const uk = applyVariantStudyContent("LW", [chapter("LW")])
-    setPaperVariant("LW", "GLOBAL")
-    const global = applyVariantStudyContent("LW", [chapter("LW")])
+  it("injects different UK and Global study foundations for TX", () => {
+    setPaperVariant("TX", "UK")
+    const uk = applyVariantStudyContent("TX", [chapter("TX")])
+    setPaperVariant("TX", "GLOBAL")
+    const global = applyVariantStudyContent("TX", [chapter("TX")])
     expect(uk[0].sections[0].heading).toContain("United Kingdom")
     expect(global[0].sections[0].heading).toContain("Global")
     expect(JSON.stringify(uk)).not.toBe(JSON.stringify(global))
+  })
+
+  /*
+   * LW is deliberately NOT overlaid. The overlay exists to orient a variant that is
+   * reading the other variant's chapters, and both LW variants now have their own
+   * authored tree — Global's 33 chapters and ENG's 46 — which acca-paper-content.ts
+   * selects directly. Prepending a "United Kingdom variant foundation" section to a
+   * tree that is already entirely English law would be misleading, so this asserts the
+   * overlay leaves LW untouched.
+   */
+  it("leaves LW chapters untouched, both variants having their own tree", () => {
+    const base = [chapter("LW")]
+    setPaperVariant("LW", "UK")
+    expect(applyVariantStudyContent("LW", base)).toEqual(base)
+    setPaperVariant("LW", "GLOBAL")
+    expect(applyVariantStudyContent("LW", base)).toEqual(base)
   })
 })
