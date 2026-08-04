@@ -153,6 +153,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.status(200).json({ ok: false, reason: "not_configured" })
     return
   }
+  const action = String(req.query.action || "").trim().toLowerCase()
+  // Account deletion must not depend on affiliate tables being available.
+  if (action === "delete-account") return deleteAccount(req, res, supa)
   try {
     await ensureAffiliateSchema()
   } catch (error) {
@@ -160,7 +163,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.status(503).json({ ok: false, reason: "database_schema_unavailable" })
     return
   }
-  const action = String(req.query.action || "").trim().toLowerCase()
   if (action === "apply") return apply(req, res, supa)
   if (action === "resolve") return resolve(req, res, supa)
   if (action === "claim") return claim(req, res, supa)
@@ -174,6 +176,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 }
 
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
+
+/** Permanently delete only the caller's own authenticated account. */
+async function deleteAccount(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) {
+    res.status(401).json({ ok: false, reason: "auth_required" })
+    return
+  }
+  const { data, error } = await supa.auth.getUser(token)
+  const user = data?.user
+  if (error || !user) {
+    res.status(401).json({ ok: false, reason: "invalid_session" })
+    return
+  }
+
+  await supa.storage
+    .from("avatars")
+    .remove([`${user.id}/avatar.webp`, `${user.id}/avatar.jpg`])
+    .catch(() => undefined)
+
+  const { error: deleteError } = await supa.auth.admin.deleteUser(user.id)
+  if (deleteError) {
+    console.error("account deletion:", deleteError.message)
+    res.status(500).json({ ok: false, reason: "delete_failed" })
+    return
+  }
+  res.setHeader("Cache-Control", "no-store")
+  res.status(200).json({ ok: true })
+}
 
 /** Verify the caller is the Scholify admin (by verified JWT email). */
 async function requireAdmin(req: VercelRequest, supa: SupabaseClient): Promise<boolean> {

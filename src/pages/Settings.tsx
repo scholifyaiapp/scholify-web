@@ -1017,8 +1017,27 @@ export default function Settings() {
   }
 
   const doDelete = async () => {
-    // Deleting the auth user needs the service-role key on a server we don't
-    // have yet, so we say exactly what this does: local wipe + sign out.
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) {
+      toast.error("Your session expired. Sign in again before deleting the account.")
+      return
+    }
+    try {
+      const response = await fetch("/api/affiliate?action=delete-account", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const result = (await response.json().catch(() => ({}))) as { ok?: boolean }
+      if (!response.ok || !result.ok) {
+        toast.error("Account deletion failed. Nothing was erased — please try again.")
+        return
+      }
+    } catch {
+      toast.error("Account deletion failed. Nothing was erased — check your connection and try again.")
+      return
+    }
+
     try {
       for (const key of Object.keys(window.localStorage)) {
         if (key.startsWith("scholify-")) window.localStorage.removeItem(key)
@@ -1027,7 +1046,7 @@ export default function Settings() {
       /* ignore */
     }
     await signOut()
-    toast.info("Signed out and local data erased. Email support@scholifyapp.com to delete the account itself.")
+    toast.success("Account and saved data permanently deleted")
     navigate("/", { replace: true })
   }
 
@@ -2000,12 +2019,12 @@ export default function Settings() {
               </button>
             </SettingRow>
             <SettingRow
-              name="Erase local data & sign out"
-              desc="Removes all Scholify data from this device and signs you out. Deleting the account record itself needs a request to support."
+              name="Delete account"
+              desc="Permanently deletes your Scholify account and erases saved data from this device."
               last
             >
               <button type="button" onClick={() => setDialog("delete")} style={redGhost}>
-                Erase & sign out
+                Delete account
               </button>
             </SettingRow>
           </div>
@@ -2086,9 +2105,9 @@ export default function Settings() {
       />
       <ConfirmDialog
         open={dialog === "delete"}
-        title="Erase local data & sign out"
-        body="This removes all Scholify data from this device and signs you out. It does not delete your account record — email support@scholifyapp.com from your registered address and we'll delete it. Type DELETE to confirm."
-        confirmLabel="Erase & sign out"
+        title="Permanently delete account?"
+        body="This permanently deletes your Scholify account, cloud records and local study data. It cannot be undone. Type DELETE to confirm."
+        confirmLabel="Delete account"
         requireText="DELETE"
         onConfirm={doDelete}
         onCancel={() => setDialog(null)}
