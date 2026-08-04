@@ -40,6 +40,17 @@ describe("buildOnboardingGuide — the capacity verdict", () => {
     expect(new Date(strategicRetake.recommendedExamDate).getTime()).toBeGreaterThan(NOW.getTime())
     expect(strategicRetake.recommendedExamLabel).toContain("exam window")
   })
+
+  it("honours the learner's ambitious target and exact exam date", () => {
+    const g = buildOnboardingGuide({
+      ...base,
+      targetPercentage: 85,
+      examDate: "2026-12-02",
+    }, NOW)
+    expect(g.recommendedTarget).toBe(85)
+    expect(g.recommendedExamDate).toBe("2026-12-02")
+    expect(g.recommendedExamLabel).toBe("Wednesday, 2 December 2026")
+  })
   it("offers no fixes when there is enough time", () => {
     const g = buildOnboardingGuide(base, NOW)
     expect(g.status).not.toBe("risky")

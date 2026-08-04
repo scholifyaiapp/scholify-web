@@ -13,6 +13,8 @@ export interface OnboardingGuideInput {
   minutesPerDay: number
   daysPerWeek: number
   examDate: string | null
+  /** Learner-selected readiness target. Omit only when Charles should recommend one. */
+  targetPercentage?: number | null
 }
 
 /** The lowest daily commitment the onboarding picker offers. */
@@ -37,7 +39,7 @@ export interface OnboardingGuide {
   recommendedHours: number
   weeklyHours: number
   recommendedWeeks: number
-  /** Charles's evidence-aware readiness target, not a learner-selected wish. */
+  /** The learner's selected readiness target, or Charles's recommendation as fallback. */
   recommendedTarget: number
   /** Provisional date; the live plan moves it as actual performance arrives. */
   recommendedExamDate: string
@@ -131,14 +133,26 @@ export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date
   const recommendedHours = Math.round(base * routeFactor * languageFactor)
   const weeklyHours = weeklyHoursFor(input.minutesPerDay, input.daysPerWeek)
   const recommendedWeeks = weeksNeededFor(recommendedHours, weeklyHours)
-  const recommendedTarget = Math.min(82,
+  const charlesTarget = Math.min(82,
     (KNOWLEDGE_PAPERS.has(input.paperId) ? 72 : input.paperId === "SBL" || input.paperId === "SBR" || ["AFM", "APM", "ATX", "AAA"].includes(input.paperId) ? 79 : 76)
     + (input.route === "practice" ? 3 : input.route === "course" ? 1 : 0),
   )
-  const recommendedExam = recommendedExamFor(input.paperId, recommendedWeeks, now)
   const exam = input.examDate ? new Date(`${input.examDate}T12:00:00`) : null
-  const availableWeeks = exam && !Number.isNaN(exam.getTime())
-    ? Math.max(0, Math.ceil((exam.getTime() - now.getTime()) / 604800000))
+  const validExam = exam && !Number.isNaN(exam.getTime()) ? exam : null
+  const recommendedExam = validExam
+    ? {
+        date: isoDay(validExam),
+        label: validExam.toLocaleDateString("en-GB", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric",
+        }),
+      }
+    : recommendedExamFor(input.paperId, recommendedWeeks, now)
+  const selectedTarget = Number(input.targetPercentage)
+  const recommendedTarget = Number.isFinite(selectedTarget) && selectedTarget >= 50 && selectedTarget <= 95
+    ? Math.round(selectedTarget)
+    : charlesTarget
+  const availableWeeks = validExam
+    ? Math.max(0, Math.ceil((validExam.getTime() - now.getTime()) / 604800000))
     : null
 
   // This is a conservative planning estimate, not a pass/fail prediction.

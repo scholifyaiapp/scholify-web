@@ -412,10 +412,8 @@ export default function AccaDiagnostic() {
         <PaywallModal
           open={showTrialPaywall}
           type="general"
-          onClose={() => {
-            setShowTrialPaywall(false)
-            navigate("/dashboard")
-          }}
+          required
+          onClose={() => {}}
         />
       </>
     )
@@ -579,10 +577,8 @@ export default function AccaDiagnostic() {
       <PaywallModal
         open={showTrialPaywall}
         type="general"
-        onClose={() => {
-          setShowTrialPaywall(false)
-          navigate("/dashboard")
-        }}
+        required
+        onClose={() => {}}
       />
     </DashboardLayout>
   )

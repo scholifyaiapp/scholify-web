@@ -325,7 +325,8 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       subscription_data: { metadata: { userId: user.id, ...affMeta } },
       allow_promotion_codes: true,
       success_url: `${origin}/study?upgraded=true`,
-      cancel_url: `${origin}/pricing`,
+      // Cancellation returns to plan selection, never into the learning app.
+      cancel_url: `${origin}/pricing?checkout=cancelled`,
     })
     res.status(200).json({ ok: true, url: session.url })
   } catch (err) {

@@ -378,11 +378,11 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
                 <button
                   onClick={() => {
                     trackEvent("plan_commit_declined", { paper: paperId, days })
-                    onDone("study")
+                    setShowPaywall(true)
                   }}
                   style={{ width: "100%", marginTop: 10, padding: 13, borderRadius: 12, border: "none", background: "transparent", color: C.soft, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
                 >
-                  Start day 1 — I'll decide later
+                  Choose a plan to start day 1
                 </button>
               </Reveal>
             </div>
@@ -390,9 +390,8 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
         )}
       </AnimatePresence>
 
-      {/* Dismissing the paywall still starts day 1 — they have the rest of the
-          trial to decide, and Settings/pricing stay reachable after it. */}
-      <PaywallModal open={showPaywall} type="general" onClose={() => { setShowPaywall(false); onDone("study") }} />
+      {/* Onboarding is complete, but app access begins only after checkout. */}
+      <PaywallModal open={showPaywall} type="general" required onClose={() => {}} />
     </div>
   )
 }

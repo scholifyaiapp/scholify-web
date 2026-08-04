@@ -303,6 +303,8 @@ export default function Welcome() {
       ? englishLevel !== null && englishEvidence !== null
     : step === 3
     ? paper !== null && (!["LW", "TX"].includes(paper) || paperVariant !== null)
+      : step === 6
+        ? examDate !== ""
       : step === 7
         ? goal !== null
         : step === 8
@@ -407,7 +409,8 @@ export default function Welcome() {
       englishLevel,
       minutesPerDay: minutes,
       daysPerWeek,
-      examDate: null,
+      examDate,
+      targetPercentage: target,
     })
     setPassedPapers([...passed])
     setStudyingPapers([paper])
@@ -438,7 +441,7 @@ export default function Welcome() {
      * dashboard's daily goal and the plan disagreed, and neither matched the
      * minutes the learner had actually promised.
      */
-    const questionsPerDay = shapeDay(minutes, charlesPlan.recommendedTarget).questionGoal
+    const questionsPerDay = shapeDay(minutes, target).questionGoal
     setPlan(paper, { examDate: charlesPlan.recommendedExamDate, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: charlesPlan.recommendedTarget })
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()
@@ -639,6 +642,7 @@ export default function Welcome() {
         examDate={examDate}
         sitting={sittings.find((s) => s.date === pickedSitting) ?? null}
         goal={goal}
+        target={target}
         uploadedResult={resultAnalysis}
         onDiagnostic={learnerRoute === "new" ? finishNewLearner : finishToDiagnostic}
         onUploaded={finishWithResult}
@@ -1604,7 +1608,7 @@ function CapacityCoach({
 }
 
 function ReadySlide({
-  paper, minutes, slot, examDate, sitting, goal, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek, onApplyFix, onEdit,
+  paper, minutes, slot, examDate, sitting, goal, target, uploadedResult, onDiagnostic, onUploaded, finishBusy, finishError, isMobile, learnerRoute, englishLevel, daysPerWeek, onApplyFix, onEdit,
 }: {
   paper: string
   minutes: number
@@ -1612,6 +1616,7 @@ function ReadySlide({
   examDate: string
   sitting: Sitting | null
   goal: Goal | null
+  target: number
   uploadedResult: ResultUploadAnalysis | null
   onDiagnostic: () => void
   onUploaded: () => void
@@ -1625,15 +1630,15 @@ function ReadySlide({
   /** Jump to the step that owns a summary row. */
   onEdit: (step: number) => void
 }) {
-  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate: null })
+  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate, targetPercentage: target })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
   /** label, value, and the step that owns it — the third field makes it editable. */
   const rows: [string, string, number | null][] = [
     ["Paper", paper, PAPER_STEP],
     ["Schedule", `${minutes} min · ${daysPerWeek} days · ${slotLabel}`, TIME_STEP],
-    ["Charles's target", `${guide.recommendedTarget}% readiness`, null],
-    ["Exam estimate", guide.recommendedExamLabel, null],
+    ["Your target", `${guide.recommendedTarget}% readiness`, 7],
+    ["Exam date", guide.recommendedExamLabel, EXAM_DATE_STEP],
   ]
   return (
     <div style={{ maxWidth: 500 }}>
@@ -1678,7 +1683,7 @@ function ReadySlide({
           </motion.button>
         ))}
         <div style={{ padding: isMobile ? "10px 18px 14px" : "10px 22px 16px", borderTop: `1px solid ${BORDER}`, font: `500 11.5px/1.4 ${SANS}`, color: FAINT }}>
-          You choose your available schedule. Charles sets and continually adjusts the target and exam window.
+          Charles builds the plan around your chosen target and exact exam date, then adjusts the daily route as your readiness changes.
         </div>
       </div>
       {/* Charles's "why", warm and honest — the reason the recommended path

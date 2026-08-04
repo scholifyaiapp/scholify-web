@@ -113,10 +113,13 @@ export default function PaywallModal({
   open,
   type,
   onClose,
+  required = false,
 }: {
   open: boolean
   type: PaywallType
   onClose: () => void
+  /** Prevent closing when this is the onboarding gate before paid access. */
+  required?: boolean
 }) {
   const { user, signOut } = useAuth()
   const isMobile = useIsMobile()
@@ -127,7 +130,7 @@ export default function PaywallModal({
   // whole app is gated behind this modal until the learner pays (founder call),
   // so it has no close / Escape / backdrop-dismiss; the only ways out are to
   // upgrade, open Settings, or sign out (links in the footer below).
-  const dismissible = type !== "expired"
+  const dismissible = type !== "expired" && !required
   const header = HEADERS[type]
 
   // Payments only work when Stripe billing is configured — otherwise the buttons
