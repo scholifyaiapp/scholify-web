@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { signInPath, signUpPath } from "@/lib/launch"
-import { PRELAUNCH_MODE } from "@/lib/launch"
+import { isPrelaunchAt, LAUNCH_DATE_ISO, PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
 
 /*
  * The auth routes are wrapped in TeamSignIn (App.tsx), which redirects to "/"
@@ -19,6 +18,13 @@ import { PRELAUNCH_MODE } from "@/lib/launch"
  */
 
 describe("auth path helpers", () => {
+  it("opens automatically at the advertised Uzbekistan launch instant", () => {
+    const launch = Date.parse(LAUNCH_DATE_ISO)
+    expect(isPrelaunchAt(launch - 1)).toBe(true)
+    expect(isPrelaunchAt(new Date(launch))).toBe(false)
+    expect(isPrelaunchAt(launch + 1)).toBe(false)
+  })
+
   it("carries the team param exactly when the app is gated", () => {
     // Asserted against the real flag so this test tracks the launch cutover:
     // when PRELAUNCH_MODE flips to false the param must disappear by itself.

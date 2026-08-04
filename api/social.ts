@@ -49,6 +49,9 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     resend: !!process.env.RESEND_API_KEY,
     posthog: !!process.env.VITE_POSTHOG_KEY,
     cron_secret: !!process.env.CRON_SECRET,
+    google_client: !!process.env.VITE_GOOGLE_CLIENT_ID,
+    google_secret: !!process.env.GOOGLE_CLIENT_SECRET,
+    google_redirect: !!process.env.VITE_GOOGLE_REDIRECT_URI,
     paddle: !!process.env.VITE_PADDLE_TOKEN,
     paddle_webhook: !!process.env.PADDLE_WEBHOOK_SECRET,
     paddle_api: !!process.env.PADDLE_API_KEY,
@@ -104,6 +107,10 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     billing: billingConfigured ? "live" : billingHalfConfigured ? "half_configured" : "not_configured",
+    calendar:
+      keys.google_client && keys.google_secret && keys.google_redirect
+        ? "live"
+        : "not_configured",
     ...(billingHalfConfigured
       ? {
           error:
@@ -122,6 +129,13 @@ function securityCheck(_req: VercelRequest, res: VercelResponse): void {
   res.setHeader("Cache-Control", "no-store")
   res.status(200).json({
     anthropic_configured: !!process.env.ANTHROPIC_API_KEY,
+    openai_configured: !!process.env.OPENAI_API_KEY,
+    ai_configured: !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY),
+    ai_provider: process.env.ANTHROPIC_API_KEY
+      ? "anthropic"
+      : process.env.OPENAI_API_KEY
+        ? "openai"
+        : null,
     supabase_configured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
   })
 }

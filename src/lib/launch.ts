@@ -1,8 +1,19 @@
 import type { User } from "@supabase/supabase-js"
 
-export const PRELAUNCH_MODE = true
 export const LAUNCH_DATE_ISO = "2026-08-10T00:00:00+05:00"
 export const LAUNCH_DATE_LABEL = "10 August 2026"
+
+/**
+ * Keep the public waitlist gate up until the advertised launch instant, then
+ * open the product automatically. This is evaluated in each fresh browser
+ * session, so the launch does not depend on a last-minute code edit/deploy.
+ */
+export function isPrelaunchAt(now: number | Date = Date.now()): boolean {
+  const timestamp = now instanceof Date ? now.getTime() : now
+  return timestamp < Date.parse(LAUNCH_DATE_ISO)
+}
+
+export const PRELAUNCH_MODE = isPrelaunchAt()
 export const PARTNER_PROGRAM_VISIBLE = false
 export const LAUNCH_ADMIN_EMAIL = "scholifyaiapp@gmail.com"
 
