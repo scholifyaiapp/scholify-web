@@ -139,7 +139,7 @@ const CH22: AccaQuestion[] = [
     1,
     "AUGMENTED PROFITS — TTP plus non-group dividends received. TTP is what gets taxed; augmented profits decides at what rate. Testing the limits against TTP understates the rate wherever dividends are significant."),
 
-  q("TXK-22-04", "TX-22", "E", "medium",
+  q("TXK-22-04", "TX-22", "E", "easy",
     "What are the corporation tax rates and limits for FY2025?",
     [
       "19% up to £50,000, 25% from £250,000, standard fraction 3/200",
@@ -193,7 +193,7 @@ const CH22: AccaQuestion[] = [
     1,
     "THEY REDUCE MARGINAL RELIEF. Augmented profits move closer to the £250,000 upper limit, shrinking the relief, while the dividends themselves bear no tax. It is a genuinely counter-intuitive result and a reliable exam point."),
 
-  num("TXK-22-10", "TX-22", "E", "medium",
+  num("TXK-22-10", "TX-22", "E", "easy",
     "A company's augmented profits are £46,000 and its TTP is £46,000, with no associates. What is its corporation tax, in £?",
     8740, "£", 1,
     "£46,000 is below the £50,000 lower limit, so the small profits rate of 19% applies with no marginal relief: £46,000 × 19% = £8,740."),
@@ -240,7 +240,7 @@ const CH23: AccaQuestion[] = [
     1,
     "SAME DAY, THEN THE PREVIOUS NINE DAYS, THEN THE POOL. A company looks BACK nine days where an individual looks FORWARD thirty. Applying the individual's rule to a company is a routine and entirely avoidable error."),
 
-  q("TXK-23-05", "TX-23", "E", "medium",
+  q("TXK-23-05", "TX-23", "E", "easy",
     "Can a company claim business asset disposal relief?",
     [
       "Yes, on up to £1,000,000 of gains",
@@ -807,7 +807,7 @@ const CH29: AccaQuestion[] = [
     1,
     "METHOD MARKS MUST BE VISIBLE. A car benefit of £13,530 earns one mark; showing \"£41,000 × 33%\" earns the method marks even if the arithmetic slips. A single unexplained figure earns everything or nothing."),
 
-  q("TXK-29-04", "TX-29", "G", "medium",
+  q("TXK-29-04", "TX-29", "G", "easy",
     "What happens to work left on the CBE's scratch pad?",
     [
       "It is submitted with the answer",
@@ -829,7 +829,7 @@ const CH29: AccaQuestion[] = [
     1,
     "CHECK BRIEFLY, CARRY FORWARD, MOVE ON. Later parts are marked on YOUR figures under the own-figure rule, so an unreconciled part (a) does not forfeit them — provided the marker can see which numbers you are using. Time spent hunting one error costs marks elsewhere at the same rate."),
 
-  q("TXK-29-06", "TX-29", "G", "medium",
+  q("TXK-29-06", "TX-29", "G", "easy",
     "How much time should a 15-mark question receive in a three-hour, 100-mark paper?",
     ["15 minutes", "About 27 minutes", "About 40 minutes", "45 minutes"],
     1,

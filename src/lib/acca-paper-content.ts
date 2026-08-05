@@ -19,7 +19,6 @@ import { mapAtxFlashcardsToOfficialSyllabus, mapAtxQuestionsToOfficialSyllabus, 
 import { completeStudyFlashcards } from "@/lib/acca-study-flashcards"
 import { f1F4StudyDerived, studyDerivedQuestions } from "@/lib/acca-f1-f4-section-a"
 import { PM_CONTENT_TARGET } from "@/lib/pm-content-contract"
-import { completeTxSectionB, completeTxSectionC } from "@/lib/acca-tx-expansion"
 import { TX_CONTENT_TARGET } from "@/lib/tx-content-contract"
 import { completeFrSectionB, completeFrSectionC } from "@/lib/acca-fr-expansion"
 import { FR_CONTENT_TARGET } from "@/lib/fr-content-contract"
@@ -146,7 +145,22 @@ const QUESTION_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-questions-pm-kit-e"),
     () => import("@/lib/acca-questions-pm-kit-f"),
   ],
-  TX: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-tx2"), () => import("@/lib/acca-content-tx3"), () => import("@/lib/acca-content-tx4"), () => import("@/lib/acca-content-tx-official")],
+  /*
+   * TX-UK's bank is the per-chapter authored kit and nothing else. The legacy lists held
+   * 277 questions carrying no `chapter`, tagged against the SEVEN-area structure the tree
+   * replaced, topped up with 73 machine-derived recall drills. The kit is 316 authored
+   * questions across all 29 chapters on the FA2025 basis, so no drill is needed.
+   *
+   * Note this map is only reached for TX-UK: TX-Global uses the foundation track above.
+   */
+  TX: [
+    () => import("@/lib/acca-questions-tx-kit-a"),
+    () => import("@/lib/acca-questions-tx-kit-b1"),
+    () => import("@/lib/acca-questions-tx-kit-b2"),
+    () => import("@/lib/acca-questions-tx-kit-b3"),
+    () => import("@/lib/acca-questions-tx-kit-cd"),
+    () => import("@/lib/acca-questions-tx-kit-efg"),
+  ],
   AA: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-aa2"), () => import("@/lib/acca-content-aa3"), () => import("@/lib/acca-content-aa4"), () => import("@/lib/acca-content-aa-official")],
   FM: [() => import("@/lib/acca-content-core"), () => import("@/lib/acca-content-fm2"), () => import("@/lib/acca-content-fm3"), () => import("@/lib/acca-content-fm4"), () => import("@/lib/acca-content-fm-official")],
   SBL: [() => import("@/lib/acca-content-sbl2"), () => import("@/lib/acca-content-sbl3"), () => import("@/lib/acca-content-sbl-official")],
@@ -211,7 +225,10 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
   // real Section C unit size. Replaces acca-written-w3-pm, whose questions were 9 and 10
   // marks and padded to 50 by completePmSectionC.
   PM: [() => import("@/lib/acca-written-pm-kit"), () => import("@/lib/acca-written-pm-kit2")],
-  TX: [() => import("@/lib/acca-written-w3-tx")],
+  // Nine authored constructed responses at TX's real unit sizes - three at 10 marks and
+  // six at 15, completing three disjoint sittings. Replaces acca-written-w3-tx, whose 50
+  // questions were all 20 marks, which is not a TX Section C unit size at all.
+  TX: [() => import("@/lib/acca-written-tx-kit"), () => import("@/lib/acca-written-tx-kit2")],
   FM: [() => import("@/lib/acca-written-w3-fm")],
   SBL: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbl-official")],
   SBR: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbr-official")],
@@ -240,6 +257,9 @@ const CASE_MODULES: Record<string, Loader[]> = {
   FA: [() => import("@/lib/acca-cases-fa")],
   LW: [() => import("@/lib/acca-cases-knowledge")],
   FR: [() => import("@/lib/acca-cases-fr")],
+  // TX-UK's Section B is 9 authored OT cases of 5 linked 2-mark tasks - three disjoint
+  // sittings of three, at the real 10-mark unit size, replacing 70 generated cases.
+  TX: [() => import("@/lib/acca-cases-tx")],
   // PM's Section B is 9 authored OT cases of 5 linked 2-mark tasks — three disjoint
   // sittings of three, at the real 10-mark unit size. It previously composed 70
   // generated cases via completePmSectionB.
@@ -509,7 +529,10 @@ export function loadPaperContent(paperId: string): Promise<void> {
       // the exam (15 questions) nor the authored bank.
       ? PM_CONTENT_TARGET.bankInventoryTarget
       : paperId === "TX"
-        ? TX_CONTENT_TARGET.sectionA
+        // TX-UK's own authored total, so nothing is left for the drill filler to add. It
+        // was TX_CONTENT_TARGET.sectionA at 350 — a figure describing neither the exam
+        // (15 Section A questions) nor the authored bank.
+        ? TX_CONTENT_TARGET.bankInventoryTarget
         : paperId === "FR"
           ? FR_CONTENT_TARGET.sectionA
           : paperId === "AA"
@@ -529,10 +552,14 @@ export function loadPaperContent(paperId: string): Promise<void> {
       drills: studyDerived.drills,
       chapters,
       flashcards: completeStudyFlashcards(paperId, mappedFlashcards, chapters, paperId === "PM" ? PM_CONTENT_TARGET.flashcards : paperId === "TX" ? TX_CONTENT_TARGET.flashcards : paperId === "FR" ? FR_CONTENT_TARGET.flashcards : paperId === "AA" ? AA_CONTENT_TARGET.flashcards : paperId === "FM" ? FM_CONTENT_TARGET.flashcards : paperId === "SBL" ? SBL_CONTENT_TARGET.flashcards : ADVANCED_PAPERS.includes(paperId as typeof ADVANCED_PAPERS[number]) ? ADVANCED_CONTENT_TARGET.flashcards : undefined),
-      // PM serves its six authored 20-mark questions directly. They carry a `chapter`, so
-      // the written mapper passes them through untouched, and there is nothing left for
-      // completePmSectionC to pad.
-      written: paperId === "PM" ? mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "TX" ? isTxGlobal ? completeTxGlobalSectionC() : completeTxSectionC(mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "FR" ? completeFrSectionC(mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "AA" ? completeAaSectionB(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? completeFmSectionC(mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "SBL" ? completeSblWritten(mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)), chapters) : completeAdvancedWritten(paperId, paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId), chapters),
+      /*
+       * PM and TX-UK both serve their authored constructed responses directly. They carry a
+       * `chapter`, so each paper's written mapper passes them through untouched, and there
+       * is nothing left for completePmSectionC or completeTxSectionC to pad — both of those
+       * helpers have been deleted. TX-Global keeps its generated set, having no real exam
+       * behind it to model.
+       */
+      written: paperId === "PM" ? mapPmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "TX" ? isTxGlobal ? completeTxGlobalSectionC() : mapTxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FR" ? completeFrSectionC(mapFrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "AA" ? completeAaSectionB(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "FM" ? completeFmSectionC(mapFmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId))) : paperId === "SBL" ? completeSblWritten(mapSblWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)), chapters) : completeAdvancedWritten(paperId, paperId === "SBR" ? mapSbrWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "APM" ? mapApmWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : paperId === "ATX" ? mapAtxWrittenToOfficialSyllabus(collect<WrittenQuestion>(writtenMods, paperId)) : collect<WrittenQuestion>(writtenMods, paperId), chapters),
       briefs: isLwGlobal
         ? (await import("@/lib/acca-briefs-lw-global")).LW_GLOBAL_BRIEFS
         : isTxGlobal
@@ -544,7 +571,7 @@ export function loadPaperContent(paperId: string): Promise<void> {
         // 23 sittings' worth of a paper that examines three.
         ? collect<OtCase>(caseMods, paperId)
         : paperId === "TX"
-          ? isTxGlobal ? completeTxGlobalSectionB() : completeTxSectionB(collect<OtCase>(caseMods, paperId))
+          ? isTxGlobal ? completeTxGlobalSectionB() : collect<OtCase>(caseMods, paperId)
         : paperId === "FR"
           ? completeFrSectionB(collect<OtCase>(caseMods, paperId))
         : paperId === "AA"

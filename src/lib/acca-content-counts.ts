@@ -41,7 +41,7 @@ export const QUESTION_COUNTS: Record<string, number> = {
   // (25 × 2 plus 20 × 1), and no derived drills. Was 56 authored against 294 drills.
   LW: 444,
   PM: 468,
-  TX: 237,
+  TX: 359,
   FR: 247,
   AA: 174,
   FM: 177,
@@ -69,7 +69,7 @@ export const DRILL_COUNTS: Record<string, number> = {
   FA: 0,
   LW: 0,
   PM: 0,
-  TX: 113,
+  TX: 0,
   FR: 103,
   AA: 176,
   FM: 173,

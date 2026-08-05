@@ -8,6 +8,7 @@ import { completeStudyFlashcards } from "@/lib/acca-study-flashcards"
 import { LW_GLOBAL_CHAPTERS } from "@/lib/acca-study-lw-global"
 import { TX_GLOBAL_BRIEFS, TX_GLOBAL_CHAPTERS } from "@/lib/acca-study-tx-global"
 import { completeTxGlobalSectionB, completeTxGlobalSectionC } from "@/lib/acca-tx-global-expansion"
+import { TX_GLOBAL_CONTENT_TARGET } from "@/lib/tx-content-contract"
 import { LW_GLOBAL_BRIEFS } from "@/lib/acca-briefs-lw-global"
 
 describe("separate LW Global and TX international banks", () => {
@@ -69,6 +70,18 @@ describe("separate LW Global and TX international banks", () => {
     expect(LW_GLOBAL_CHAPTERS.some((chapter) => engIds.has(chapter.id))).toBe(false)
   })
 
+  /*
+   * ── Why these figures changed ─────────────────────────────────
+   * This test used to assert 70 cases and 50 written questions, because
+   * acca-tx-global-expansion.ts read TX_CONTENT_TARGET.sectionBCases and .sectionC — TX-UK's
+   * numbers. TX-UK's contract has been corrected to the real exam (3 cases, 3 constructed
+   * responses at 10/15/15), which would silently have collapsed the TX-Global track to three
+   * cases and three written questions.
+   *
+   * TX-Global now has its own TX_GLOBAL_CONTENT_TARGET, so the two cannot drift again. It is
+   * a jurisdiction-neutral FOUNDATION track with no ACCA exam behind it, so its figures are
+   * sized for practice rather than to reproduce a sitting.
+   */
   it("builds a complete jurisdiction-neutral TX foundation inventory", () => {
     const derived = studyDerivedQuestions("TX", [], TX_GLOBAL_CHAPTERS, 350)
     const cases = completeTxGlobalSectionB()
@@ -76,9 +89,9 @@ describe("separate LW Global and TX international banks", () => {
     const cards = completeStudyFlashcards("TX", [], TX_GLOBAL_CHAPTERS, 150)
     const questions = [...derived.authored, ...derived.drills]
     expect(questions).toHaveLength(350)
-    expect(cases).toHaveLength(70)
-    expect(cases.flatMap((item) => item.questions)).toHaveLength(350)
-    expect(written).toHaveLength(50)
+    expect(cases).toHaveLength(TX_GLOBAL_CONTENT_TARGET.foundationCases)
+    expect(cases.flatMap((item) => item.questions)).toHaveLength(TX_GLOBAL_CONTENT_TARGET.foundationCases * 5)
+    expect(written).toHaveLength(TX_GLOBAL_CONTENT_TARGET.foundationWritten)
     expect(cards).toHaveLength(150)
     expect(TX_GLOBAL_BRIEFS.map((brief) => brief.area)).toEqual(["A", "B", "C", "D", "E", "F", "G"])
     const source = JSON.stringify({ questions, cases, written, cards })

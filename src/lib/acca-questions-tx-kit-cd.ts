@@ -42,7 +42,7 @@ const CH15: AccaQuestion[] = [
     1,
     "CURRENT YEAR IN FULL, BROUGHT FORWARD RESTRICTED. So a year with £4,000 of gains and £4,000 of current year losses wastes the whole AEA, while £4,000 of brought forward losses would be restricted to £1,000. Reversing the two is the commonest error in Area C."),
 
-  q("TXK-15-04", "TX-15", "C", "medium",
+  q("TXK-15-04", "TX-15", "C", "easy",
     "What are the capital gains tax rates for 2025/26?",
     [
       "10% and 20%",
@@ -177,7 +177,7 @@ const CH16: AccaQuestion[] = [
     1,
     "WHERE IT QUALIFIED FOR CAPITAL ALLOWANCES. Business plant is not exempt, though a loss on it is still not allowable — the relief comes through capital allowances instead. A racehorse or a caravan, by contrast, is exempt as a wasting chattel."),
 
-  q("TXK-16-06", "TX-16", "C", "medium",
+  q("TXK-16-06", "TX-16", "C", "easy",
     "A painting bought for £4,000 is sold for £5,500. What is the position?",
     [
       "A £1,500 chargeable gain",
@@ -488,7 +488,7 @@ const CH19: AccaQuestion[] = [
     1,
     "ONE YEAR ONLY, and the current year's £3,000 must be used before any brought forward. So a donor who has made no gifts for two years has £6,000 available, not £9,000."),
 
-  q("TXK-19-08", "TX-19", "D", "medium",
+  q("TXK-19-08", "TX-19", "D", "easy",
     "What is the marriage exemption for a gift by a GRANDPARENT?",
     ["£5,000", "£2,500", "£1,000", "£250"],
     1,
@@ -580,7 +580,7 @@ const CH20: AccaQuestion[] = [
     1,
     "THE VALUE OF THE RESIDENCE AND THE DESCENDANT REQUIREMENT. A house worth £120,000 gives only £120,000 of band, and a house left to a sibling or a friend gives none at all. Direct descendants means children, grandchildren and their spouses."),
 
-  q("TXK-20-06", "TX-20", "D", "medium",
+  q("TXK-20-06", "TX-20", "D", "easy",
     "Which liability is deductible from the death estate?",
     [
       "A promise to pay a relative's school fees",
