@@ -211,7 +211,7 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
   // Six authored 20-mark constructed responses — three disjoint sittings of two, at the
   // real Section C unit size. Replaces acca-written-w3-pm, whose questions were 9 and 10
   // marks and padded to 50 by completePmSectionC.
-  PM: [() => import("@/lib/acca-written-pm-kit")],
+  PM: [() => import("@/lib/acca-written-pm-kit"), () => import("@/lib/acca-written-pm-kit2")],
   TX: [() => import("@/lib/acca-written-w3-tx")],
   FM: [() => import("@/lib/acca-written-w3-fm")],
   SBL: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbl-official")],

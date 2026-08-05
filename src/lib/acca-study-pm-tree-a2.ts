@@ -187,9 +187,9 @@ export const PM_TREE_04: StudyChapter = {
   outcomes: [
     "Describe the five characteristics of big data",
     "Explain the purpose of the big data pyramid",
-    "Explain the uses and benefits of big data, data mining and data analytics",
+    "Say what data mining and analytics are for, and what they deliver",
     "Distinguish descriptive, diagnostic, predictive and prescriptive analytics",
-    "Discuss the challenges and risks of implementing and using big data",
+    "Discuss what makes a big data programme difficult, costly or risky",
   ],
   sections: [
     {

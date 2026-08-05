@@ -40,7 +40,7 @@ export const QUESTION_COUNTS: Record<string, number> = {
   // questions across the 33-chapter tree, in both of the real Section A mark values
   // (25 × 2 plus 20 × 1), and no derived drills. Was 56 authored against 294 drills.
   LW: 444,
-  PM: 188,
+  PM: 468,
   TX: 237,
   FR: 247,
   AA: 174,
@@ -68,7 +68,7 @@ export const DRILL_COUNTS: Record<string, number> = {
   MA: 0,
   FA: 0,
   LW: 0,
-  PM: 162,
+  PM: 0,
   TX: 113,
   FR: 103,
   AA: 176,

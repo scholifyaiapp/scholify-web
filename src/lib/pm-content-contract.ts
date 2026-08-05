@@ -56,30 +56,28 @@ export const PM_CONTENT_TARGET = {
    * per-chapter kits, plus the chapters' own inline `check` questions promoted into the
    * bank — which are authored too, one per section, not machine-permuted.
    */
-  authoredBank: 466,
+  authoredBank: 468,
   /** The per-chapter kits alone, excluding the promoted chapter checks. */
-  kitQuestions: 396,
+  kitQuestions: 402,
   /**
    * The inventory the loader sizes the bank to. Set to the authored total, so
    * completeSectionAFromStudy has nothing left to fill and PaperContent.drills is empty.
    * It is deliberately NOT the old 350: a target below the authored bank would be
    * meaningless, and one above it would reintroduce derived filler.
    */
-  bankInventoryTarget: 466,
+  bankInventoryTarget: 468,
   /** Study chapters in the reading tree, one per syllabus sub-topic group. */
-  chapters: 33,
+  chapters: 34,
   /**
-   * Examinable CONTENT areas the chapters must cover between them: A to E.
+   * Official syllabus areas the chapters must cover between them: A to F.
    *
-   * Distinct from `paperAreas` below. PM's study guide declares a sixth area, F —
-   * employability and technology skills — which is about operating the CBE's spreadsheet
-   * and word processor rather than about management accounting. It has no reading chapter
-   * because there is no technique to teach in one, and inventing chapters for it would
-   * misrepresent the syllabus.
+   * Chapters 1 to 33 teach the management accounting content of Areas A to E. Chapter 34
+   * covers Area F, employability and technology skills, which is about operating the CBE
+   * rather than about a management accounting technique — the same treatment every other
+   * paper with an employability area gets. It earns its place: Section C is 40 of the 100
+   * marks and is answered entirely in the spreadsheet and word processor.
    */
-  syllabusAreas: 5,
-  /** Areas declared on the paper itself, including F, which the diagnostic still spans. */
-  paperAreas: 6,
+  syllabusAreas: 6,
   /**
    * Authored Section B OT cases. Three mocks × three cases = 9, so this is exactly
    * enough for three DISJOINT sittings at the real unit size.
@@ -88,10 +86,18 @@ export const PM_CONTENT_TARGET = {
   /** Marks per OT case: 5 linked questions × 2 marks. */
   otCaseMarks: 10,
   /**
-   * Authored Section C questions: three mocks × two questions = 6, again exactly three
-   * disjoint sittings.
+   * Authored Section C questions.
+   *
+   * SIX would be exactly three disjoint mock sittings of two, and that is the right number
+   * for MOCKS. It is far too few for PRACTICE: Section C is 40 of the 100 marks and is
+   * where the paper is passed or failed, so a learner who has sat three mocks would have
+   * nothing left to work on and the AI Examiner would have nothing left to mark. Fifteen
+   * is the practice bank; the mock composer shuffles it per form and fills each Section C
+   * greedily to 40 marks, so the three mocks still compose correctly.
    */
-  writtenQuestions: 6,
+  writtenQuestions: 15,
+  /** The floor the mocks alone require: three forms × two questions. */
+  minWrittenForMocks: 6,
   writtenMarks: 20,
   flashcards: 150,
   mixedBanks: 5,
@@ -122,8 +128,9 @@ export const PM_CONTENT_TARGET = {
    */
   numericAreas: ["B", "C", "D", "E"] as const,
   /**
-   * Section C must examine Areas C, D and E, which is where its marks come from in every
-   * real sitting. A Section C question on Area A or B alone would not be a PM Section C.
+   * Section C must examine Areas B, C, D and E — the four the real paper draws it from.
+   * Area A is examined in Section A and Area F is a skills area, so a Section C question
+   * on either would not be a PM Section C.
    */
-  writtenAreas: ["C", "D", "E"] as const,
+  writtenAreas: ["B", "C", "D", "E"] as const,
 } as const

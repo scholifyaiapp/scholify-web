@@ -32,7 +32,7 @@ import { MOCK_FORMS } from "@/lib/acca-mockforms"
  * here — the Node bootstrap fills the registry for PM directly.
  */
 
-const AREAS = ["A", "B", "C", "D", "E"] as const
+const AREAS = ["A", "B", "C", "D", "E", "F"] as const
 
 describe("PM content contract", () => {
   it("teaches the syllabus as a chapter tree, not one chapter per area", () => {
@@ -211,11 +211,15 @@ describe("PM content contract", () => {
     expect(new Set(cases.map((item) => item.area)).size, "OT case areas").toBeGreaterThanOrEqual(3)
   })
 
-  it("serves Section C as six authored 20-mark constructed responses", () => {
+  it("serves Section C as authored 20-mark constructed responses", () => {
     const written = getWrittenQuestions("PM")
     expect(written).toHaveLength(PM_CONTENT_TARGET.writtenQuestions)
-    // Three disjoint sittings of two.
-    expect(PM_CONTENT_TARGET.writtenQuestions).toBe(PM_CONTENT_TARGET.mockForms * PM_CONTENT_TARGET.sectionCQuestions)
+    /*
+     * Six would compose the three mocks and leave a learner nothing to practise on. The
+     * bank is fifteen, and must always be at least the mock floor.
+     */
+    expect(PM_CONTENT_TARGET.minWrittenForMocks).toBe(PM_CONTENT_TARGET.mockForms * PM_CONTENT_TARGET.sectionCQuestions)
+    expect(PM_CONTENT_TARGET.writtenQuestions).toBeGreaterThanOrEqual(PM_CONTENT_TARGET.minWrittenForMocks)
     expect(PM_CONTENT_TARGET.sectionCQuestions * PM_CONTENT_TARGET.writtenMarks).toBe(PM_CONTENT_TARGET.sectionCMarks)
     expect(new Set(written.map((item) => item.id)).size, "unique ids").toBe(written.length)
 
@@ -291,15 +295,10 @@ describe("PM content contract", () => {
 
   it("builds a diagnostic that spans every syllabus area from authored questions", () => {
     const diagnostic = buildDiagnostic("PM", 42)
-    /*
-     * Six, not five: the paper declares an Area F — employability and technology skills —
-     * alongside the five content areas. It carries no reading chapter, because it is about
-     * driving the CBE's spreadsheet rather than about a management accounting technique,
-     * so the tree covers A to E while the diagnostic spans all six declared areas.
-     */
-    expect(getPaper("PM")?.areas.length, "declared paper areas").toBe(PM_CONTENT_TARGET.paperAreas)
-    expect(new Set(diagnostic.map((q) => q.area)).size).toBe(PM_CONTENT_TARGET.paperAreas)
-    // Every CONTENT area must be represented, which is what the tree is answerable for.
+    // Six, including Area F — employability and technology skills, taught by chapter 34.
+    expect(getPaper("PM")?.areas.length, "declared paper areas").toBe(PM_CONTENT_TARGET.syllabusAreas)
+    expect(new Set(diagnostic.map((q) => q.area)).size).toBe(PM_CONTENT_TARGET.syllabusAreas)
+    // Every area must be represented, not just enough of them to hit the count.
     for (const area of AREAS) {
       expect(diagnostic.some((q) => q.area === area), `diagnostic covers area ${area}`).toBe(true)
     }

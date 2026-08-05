@@ -228,7 +228,7 @@ export const PM_TREE_12: StudyChapter = {
         {
           kind: "formula",
           name: "The CVP set",
-          expr: "Contribution per unit  =  Selling price  −  Variable cost per unit\n\nC/S ratio  =  Contribution per unit  ÷  Selling price\n\nBreakeven units  =  Fixed costs  ÷  Contribution per unit\n\nBreakeven revenue  =  Fixed costs  ÷  C/S ratio\n\nUnits for target profit  =  (Fixed costs  +  Target profit)  ÷  Contribution per unit\n\nMargin of safety (units)  =  Budgeted sales  −  Breakeven sales\n\nMargin of safety (%)  =  (Budgeted sales  −  Breakeven sales)  ÷  Budgeted sales  ×  100",
+          expr: "Contribution per unit  =  Selling price  −  Variable cost per unit\n\nC/S ratio  =  Contribution per unit  ÷  Selling price\n\nBreakeven units  =  Fixed costs  ÷  Contribution per unit\n\nBreakeven revenue  =  Fixed costs  ÷  C/S ratio\n\nUnits for target profit  =  (Fixed costs  +  Target profit)  ÷  Contribution per unit\n\nMargin of safety (units)  =  Budgeted sales  −  Breakeven sales\n\nMargin of safety (%)  =  Margin of safety (units)  ÷  Budgeted sales  ×  100",
           note: "Everything divides fixed cost by a measure of contribution. Divide by contribution PER UNIT to get units; divide by the C/S RATIO to get revenue. The margin of safety percentage is expressed on BUDGETED sales, not on breakeven — dividing by the wrong denominator is a frequent slip.",
         },
         {

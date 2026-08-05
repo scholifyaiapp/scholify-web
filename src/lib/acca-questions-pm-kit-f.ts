@@ -4,24 +4,22 @@ import type { AccaQuestion } from "@/lib/acca-content"
  * PM · Area F question kit — employability and technology skills.
  *
  * ── Why this file exists, and why it is small ───────────────────
- * PM's study guide declares SIX areas. A to E are management accounting content and are
- * taught by the 33-chapter reading tree. Area F is different in kind: it is about
- * operating the computer-based exam itself — using the spreadsheet and word processor to
- * produce workings and commentary, structuring an answer so a marker can follow it, and
- * presenting data so a conclusion is visible.
+ * PM's study guide declares SIX areas. A to E are management accounting content, taught by
+ * chapters 1 to 33. Area F is different in kind: it is about operating the computer-based
+ * exam itself — using the spreadsheet and word processor to produce workings and
+ * commentary, structuring an answer so a marker can follow it, and presenting figures so a
+ * conclusion is visible. Chapter 34 teaches it, and this is its kit.
  *
- * There is no reading chapter for it, and there should not be: there is no management
- * accounting technique to teach in one, and manufacturing chapters to fill the gap would
- * misrepresent the syllabus. But the area IS examined — a candidate who cannot lay out a
- * variance reconciliation in a spreadsheet loses Section C marks they had earned — so it
- * needs a bank, at every difficulty tier, and it needed one after the legacy PM questions
- * were retired.
+ * It is small because the area is small, and because most of what it examines is judgement
+ * rather than knowledge. But it is not optional: Section C is 40 of PM's 100 marks, it is
+ * answered entirely in those two tools, and a candidate who buries a variance calculation
+ * in prose loses method marks they had already earned.
  *
- * ── The id prefix is load-bearing ───────────────────────────────
+ * ── The id prefix is belt and braces ────────────────────────────
  * `PM-F-O` is whitelisted in acca-pm-syllabus-map.ts. The legacy PM bank was authored when
  * the paper had five areas, so the mapper shifts every legacy item up one area (A→B, B→C
- * and so on). These questions are written for the CURRENT Area F and must not be shifted,
- * and they carry no `chapter` to exempt them, so the prefix is what protects them.
+ * and so on). These questions carry a `chapter`, which already exempts them, but the prefix
+ * matches the convention the mapper was built around and costs nothing to keep.
  *
  * Original Scholify content. No ACCA or Kaplan question is reproduced.
  */
@@ -34,7 +32,7 @@ function q(
   correct: number,
   explanation: string,
 ): AccaQuestion {
-  return { id, paper: "PM", area: "F", type: "mcq", stem, options, correct, explanation, marks: 2, difficulty }
+  return { id, paper: "PM", area: "F", chapter: "PM-34", type: "mcq", stem, options, correct, explanation, marks: 2, difficulty }
 }
 
 export const PM_KIT_AREA_F: AccaQuestion[] = [

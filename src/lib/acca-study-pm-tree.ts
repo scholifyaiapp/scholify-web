@@ -17,9 +17,10 @@ import { PM_TREE_AREA_D_PART5 } from "@/lib/acca-study-pm-tree-d5"
 import { PM_TREE_AREA_E_PART1 } from "@/lib/acca-study-pm-tree-e"
 import { PM_TREE_AREA_E_PART2 } from "@/lib/acca-study-pm-tree-e2"
 import { PM_TREE_AREA_E_PART3 } from "@/lib/acca-study-pm-tree-e3"
+import { PM_TREE_AREA_F } from "@/lib/acca-study-pm-tree-f"
 
 /*
- * PM · the Study reading tree — 33 chapters across the five official syllabus areas
+ * PM · the Study reading tree — 34 chapters across the six official syllabus areas
  * of the ACCA Performance Management study guide.
  *
  * ── What it replaced ──────────────────────────────────────────
@@ -48,6 +49,8 @@ import { PM_TREE_AREA_E_PART3 } from "@/lib/acca-study-pm-tree-e3"
  *                                  measures and the three frameworks, ROI and residual
  *                                  income, transfer pricing, not-for-profit and public
  *                                  sector performance
+ *   Area F ·  1 chapter (F)        employability and technology skills — laying out a
+ *                                  CBE answer so that method marks survive
  *
  * ── The ordering decisions worth recording ────────────────────
  * Two placements are deliberate and should not be "tidied" later.
@@ -93,4 +96,5 @@ export const PM_CHAPTERS: StudyChapter[] = [
   ...PM_TREE_AREA_E_PART1,
   ...PM_TREE_AREA_E_PART2,
   ...PM_TREE_AREA_E_PART3,
+  ...PM_TREE_AREA_F,
 ].sort((a, b) => (a.number ?? 0) - (b.number ?? 0))

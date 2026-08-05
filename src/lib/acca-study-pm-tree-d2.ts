@@ -49,7 +49,7 @@ export const PM_TREE_22: StudyChapter = {
         {
           kind: "formula",
           name: "The learning curve",
-          expr: "y  =  ax^b\n\nwhere  y  =  cumulative AVERAGE time per unit for x units\n       a  =  time taken for the FIRST unit\n       x  =  cumulative number of units produced\n       b  =  the learning index  =  log of the learning rate  ÷  log of 2\n\nTotal time for x units  =  y  ×  x\n\nIncremental time for a batch  =  total time for the new cumulative total  −  total time for the previous cumulative total",
+          expr: "y  =  ax^b\n\nwhere  y  =  the AVERAGE time per unit taken across all x units\n       a  =  time taken for the FIRST unit\n       x  =  cumulative number of units produced\n       b  =  the learning index  =  log of the learning rate  ÷  log of 2\n\nTotal time for x units  =  y  ×  x\n\nIncremental time for a batch  =  total time for the new cumulative total  −  total time for the previous cumulative total",
           note: "Provided in the exam. The single most important point is that y is the cumulative AVERAGE, not the time for the xth unit — so the total must be found by multiplying, and an incremental batch time by SUBTRACTING two totals. For an 80% curve b = log 0.8 / log 2 = −0.3219; for 90%, b = −0.1520. Where x is an exact power of 2 the doubling shortcut avoids the formula altogether.",
         },
         {

@@ -248,7 +248,7 @@ const CH22: AccaQuestion[] = [
     "An 80% learning curve is quoted. What does the 80% refer to?",
     [
       "Each unit takes 80% of the time of the previous unit",
-      "Each time CUMULATIVE OUTPUT DOUBLES, the cumulative average time per unit falls to 80% of its previous level",
+      "The cumulative average time per unit drops to 80% of its previous level at each DOUBLING of cumulative output",
       "Total time falls by 20% each period",
       "80% of the workforce achieves the standard",
     ],

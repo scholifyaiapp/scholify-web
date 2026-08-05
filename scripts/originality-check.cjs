@@ -70,50 +70,51 @@ const path = require("path")
  * that ground.
  */
 const BOOKS = [
-  "lw-global-study-text-2025-26.txt",
-  "lw-eng-study-text-2025-26.txt",
-  "lw-eng-kaplan-kit-2026.txt",
-  "f4-bpp-kit.txt",
+  "pm-kaplan-study-text-2025-26.txt",
+  "pm-kaplan-kit-2026.txt",
+  "pm-bpp-workbook.txt",
 ]
 const SRC_DIR = "C:/Users/User/Desktop/scholify-web-main/scholify-web-main/src/lib"
 const MINE = [
-  "acca-study-lwe-tree-a.ts",
-  "acca-study-lwe-tree-a2.ts",
-  "acca-study-lwe-tree-b1.ts",
-  "acca-study-lwe-tree-b2.ts",
-  "acca-study-lwe-tree-b3.ts",
-  "acca-study-lwe-tree-b4.ts",
-  "acca-study-lwe-tree-b5.ts",
-  "acca-study-lwe-tree-b6.ts",
-  "acca-study-lwe-tree-b7.ts",
-  "acca-study-lwe-tree-c.ts",
-  "acca-study-lwe-tree-c2.ts",
-  "acca-study-lwe-tree-d1.ts",
-  "acca-study-lwe-tree-d2.ts",
-  "acca-study-lwe-tree-d3.ts",
-  "acca-study-lwe-tree-e.ts",
-  "acca-study-lwe-tree-e2.ts",
-  "acca-study-lwe-tree-f1.ts",
-  "acca-study-lwe-tree-f2.ts",
-  "acca-study-lwe-tree-g.ts",
-  "acca-study-lwe-tree-h1.ts",
-  "acca-study-lwe-tree-h2.ts",
-  "acca-questions-lwe-kit-a.ts",
-  "acca-questions-lwe-kit-b1.ts",
-  "acca-questions-lwe-kit-b2.ts",
-  "acca-questions-lwe-kit-c.ts",
-  "acca-questions-lwe-kit-d.ts",
-  "acca-questions-lwe-kit-ef.ts",
-  "acca-questions-lwe-kit-gh.ts",
-  "acca-questions-lwe-kit-supp1.ts",
-  "acca-questions-lwe-kit-supp2.ts",
-  "acca-cases-lw-eng.ts",
+  "acca-study-pm-tree-a.ts",
+  "acca-study-pm-tree-a2.ts",
+  "acca-study-pm-tree-b.ts",
+  "acca-study-pm-tree-b2.ts",
+  "acca-study-pm-tree-b3.ts",
+  "acca-study-pm-tree-c.ts",
+  "acca-study-pm-tree-c2.ts",
+  "acca-study-pm-tree-c3.ts",
+  "acca-study-pm-tree-c4.ts",
+  "acca-study-pm-tree-c5.ts",
+  "acca-study-pm-tree-d.ts",
+  "acca-study-pm-tree-d2.ts",
+  "acca-study-pm-tree-d3.ts",
+  "acca-study-pm-tree-d4.ts",
+  "acca-study-pm-tree-d5.ts",
+  "acca-study-pm-tree-e.ts",
+  "acca-study-pm-tree-e2.ts",
+  "acca-study-pm-tree-e3.ts",
+  "acca-questions-pm-kit-a.ts",
+  "acca-questions-pm-kit-b.ts",
+  "acca-questions-pm-kit-c1.ts",
+  "acca-questions-pm-kit-c2.ts",
+  "acca-questions-pm-kit-d1.ts",
+  "acca-questions-pm-kit-d2.ts",
+  "acca-questions-pm-kit-e.ts",
+  "acca-questions-pm-kit-f.ts",
+  "acca-cases-pm.ts",
+  "acca-written-pm-kit.ts",
+  "acca-written-pm-kit2.ts",
+  "acca-study-pm-tree-f.ts",
 ]
 
 /* BT: BOOKS = ["kaplan-st.txt", "kaplan-rk.txt", "bpp-kit.txt", "bpp-workbook.txt"]
  *     MINE  = acca-study-bt-tree-{a,b,c,d,ef}.ts, acca-questions-bt-kit-{a,b,c,def}.ts, acca-cases-bt.ts
  * MA: BOOKS = ["ma-kaplan-st.txt", "ma-kaplan-kit.txt", "ma-bpp-st.txt", "ma-bpp-kit.txt"]
  *     MINE  = acca-study-ma-tree-{a,b,c,d,ef}.ts, acca-questions-ma-kit-{ab,c,def}.ts, acca-cases-ma.ts
+ * LW: BOOKS = ["lw-global-study-text-2025-26.txt", "lw-eng-study-text-2025-26.txt", "lw-eng-kaplan-kit-2026.txt", "f4-bpp-kit.txt"]
+ *     MINE  = acca-study-lw{g,e}-tree-*.ts, acca-questions-lw{g,e}-kit-*.ts, acca-cases-lw-{global,eng}.ts
+ *     Both variants' trees were checked against all four books at once; see the STATUTORY_QUOTES note.
  * FA: BOOKS = ["fa-study-text-2024-25.txt", "f3-kaplan-kit-2023-24.txt", "fa2-bpp-kit.txt"]
  *     MINE  = acca-study-fa-tree-{ab,c,d1,d2,ef,g,hi}.ts, acca-questions-fa-kit-{abc,d,efg,hi}.ts, acca-cases-fa.ts
  */
