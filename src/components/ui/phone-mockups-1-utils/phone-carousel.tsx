@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export interface ImageItem {
-  src: string
+  src?: string
   alt: string
+  content?: React.ReactNode
 }
 
 interface PhoneCarouselProps {
@@ -46,16 +47,20 @@ export function PhoneCarousel({ images, className }: PhoneCarouselProps) {
         <div className="absolute left-1/2 top-[17px] z-20 h-[25px] w-[88px] -translate-x-1/2 rounded-full bg-black shadow-[0_1px_0_rgba(255,255,255,.08)]" />
         <div className="relative aspect-[9/19.5] overflow-hidden rounded-[2.72rem] bg-[#17171d]">
           <AnimatePresence mode="wait" initial={false}>
-            <motion.img
-              key={images[active].src}
-              src={images[active].src}
-              alt={images[active].alt}
-              className="absolute inset-0 h-full w-full object-cover"
+            <motion.div
+              key={images[active].src ?? images[active].alt}
+              role="img"
+              aria-label={images[active].alt}
+              className="absolute inset-0 h-full w-full overflow-hidden"
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.04, x: 18 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, x: -18 }}
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            />
+            >
+              {images[active].content ?? (
+                <img src={images[active].src} alt="" className="h-full w-full object-cover" />
+              )}
+            </motion.div>
           </AnimatePresence>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10" />
           <div className="absolute bottom-[7px] left-1/2 h-1 w-24 -translate-x-1/2 rounded-full bg-white/80" />
@@ -70,7 +75,7 @@ export function PhoneCarousel({ images, className }: PhoneCarouselProps) {
           <div className="flex items-center gap-2">
             {images.map((image, index) => (
               <button
-                key={image.src}
+                key={image.src ?? image.alt}
                 type="button"
                 onClick={() => select(index)}
                 className={cn("h-2 rounded-full transition-all", index === active ? "w-7 bg-[#c80000]" : "w-2 bg-black/20 hover:bg-black/35")}
