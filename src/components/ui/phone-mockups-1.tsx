@@ -1,5 +1,5 @@
 import React from "react"
-import { BarChart3, BookOpen, Check, ChevronRight, Clock3, Flame, Sparkles, Target, Trophy } from "lucide-react"
+import { BookOpen, Check, ChevronRight, Clock3, Flame, Mic, Send, Sparkles, Target } from "lucide-react"
 import {
   type ImageItem,
   PhoneCarousel,
@@ -59,15 +59,19 @@ const exampleImages: ImageItem[] = [
     </Shell>,
   },
   {
-    alt: "Scholify mobile exam readiness analytics",
-    content: <Shell step="PROGRESS">
-      <div className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#c80000]">Exam intelligence</div><h3 className="mt-1 text-[24px] font-black tracking-[-.055em]">Your readiness</h3>
-      <Card className="mt-4 text-center">
-        <div className="relative mx-auto grid size-32 place-items-center rounded-full bg-[conic-gradient(#c80000_0_72%,#efe9e6_72%)]"><div className="grid size-[106px] place-items-center rounded-full bg-white"><div><div className="text-[29px] font-black tracking-[-.06em]">72%</div><div className="text-[7px] font-extrabold tracking-[.1em] text-[#8e817b]">EXAM READY</div></div></div></div>
-        <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#ddfaf4] px-2 py-1 text-[8px] font-black text-[#168c7d]"><Trophy size={10}/> +8% this week</div>
-      </Card>
-      <div className="mt-3 grid grid-cols-2 gap-2"><Card className="!p-3"><BarChart3 size={14} className="text-[#c80000]"/><b className="mt-2 block text-[16px]">186</b><span className="text-[7px] text-[#8e817b]">Questions answered</span></Card><Card className="!p-3"><Target size={14} className="text-[#e50068]"/><b className="mt-2 block text-[16px]">68%</b><span className="text-[7px] text-[#8e817b]">Average accuracy</span></Card></div>
-      <Card className="mt-3"><div className="mb-3 text-[9px] font-extrabold">Topic mastery</div>{[["Revenue",84],["Leases",71],["Groups",52]].map(([topic,score]) => <div key={String(topic)} className="mb-2"><div className="mb-1 flex justify-between text-[8px]"><span>{topic}</span><b>{score}%</b></div><div className="h-1.5 rounded-full bg-black/[.06]"><div className="h-full rounded-full bg-gradient-to-r from-[#c80000] to-[#e50068]" style={{width:`${score}%`}}/></div></div>)}</Card>
+    alt: "Scholify mobile Charles AI Tutor conversation",
+    content: <Shell step="AI TUTOR">
+      <div className="flex items-center gap-3 border-b border-black/[.06] pb-4">
+        <div className="relative grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-[#c80000] via-[#e50068] to-[#f4a405] text-[16px] font-black text-white shadow-lg shadow-red-900/15">C<span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-[#f8f5f2] bg-[#2dd4bf]" /></div>
+        <div><h3 className="text-[14px] font-black tracking-[-.03em]">Charles</h3><p className="text-[8px] font-bold text-[#168c7d]">AI race engineer · Online</p></div>
+      </div>
+      <div className="mt-4 space-y-3">
+        <div className="flex gap-2"><div className="grid size-6 shrink-0 place-items-center rounded-lg bg-[#c80000] text-[8px] font-black text-white">C</div><div className="max-w-[82%] rounded-2xl rounded-tl-sm bg-white p-3 text-[9px] leading-[1.55] shadow-sm">You selected <b>£30,000</b>—that’s correct. Want to see the fastest way to solve it?</div></div>
+        <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-sm bg-[#201b1a] p-3 text-[9px] leading-[1.5] text-white">Yes. Why do we only recognise three months?</div>
+        <div className="flex gap-2"><div className="grid size-6 shrink-0 place-items-center rounded-lg bg-[#c80000] text-[8px] font-black text-white">C</div><div className="max-w-[84%] rounded-2xl rounded-tl-sm bg-white p-3 text-[9px] leading-[1.55] shadow-sm"><b>Contract starts 1 October.</b><br/>By 31 December, 3 of 12 months are complete.<div className="mt-2 rounded-xl bg-[#fff1ef] p-2 font-black text-[#a60000]">£120,000 × 3/12 = £30,000</div><p className="mt-2 text-[#8e817b]">Exam cue: recognise revenue as the performance obligation is satisfied.</p></div></div>
+      </div>
+      <div className="mt-4 flex gap-1.5 overflow-hidden">{["Give me a similar question","Explain IFRS 15"].map(prompt => <button key={prompt} className="whitespace-nowrap rounded-full border border-[#c80000]/15 bg-[#fff1ef] px-2.5 py-1.5 text-[7px] font-extrabold text-[#a60000]">{prompt}</button>)}</div>
+      <div className="mt-4 flex items-center gap-2 rounded-2xl border border-black/[.07] bg-white p-2 shadow-sm"><button className="grid size-7 place-items-center rounded-full bg-[#f2eeeb] text-[#8e817b]"><Mic size={12}/></button><span className="flex-1 text-[8px] text-[#a1948d]">Ask Charles anything…</span><button className="grid size-8 place-items-center rounded-xl bg-[#c80000] text-white"><Send size={12}/></button></div>
     </Shell>,
   },
 ]
