@@ -281,8 +281,8 @@ export const TX_TREE_05: StudyChapter = {
         {
           kind: "formula",
           name: "The high income child benefit charge",
-          expr: "Applies where ADJUSTED NET INCOME is between £60,000 and £80,000.\n\n   CHARGE  =  child benefit received  ×  1%  for every £200 of\n              adjusted net income above £60,000\n\n           =  child benefit  ×  (ANI − £60,000) / £200  %\n\nAt an adjusted net income of £80,000 or more the charge equals the WHOLE\nof the child benefit received.\n\nWhere both partners have income over £60,000, the charge falls on the one\nwith the HIGHER adjusted net income.",
-          note: "Round the number of £200 steps DOWN to a whole number. And note the charge is collected through self assessment as an addition to the tax liability — it is not a reduction of the benefit, which is why a claimant may instead elect not to receive the benefit at all.",
+          expr: "Applies where ADJUSTED NET INCOME is between £60,000 and £80,000.\n\n   CHARGE  =  child benefit received  ×  1%  for every £200 of\n              adjusted net income above £60,000\n\n           =  child benefit  ×  (ANI − £60,000) / £200  %\n\nAt an adjusted net income of £80,000 or more the charge equals the WHOLE\nof the child benefit received.",
+          note: "Round DOWN TWICE: the percentage to a whole number, and then the resulting charge to a whole pound. So an excess of £7,500 gives 37.5%, which becomes 37%. The charge is collected through self assessment as an ADDITION to the tax liability — it is not a reduction of the benefit paid, which is why receiving child benefit can itself create a filing obligation. Note that where BOTH partners have adjusted net income above £60,000 the charge falls on the higher earner, but the examining team has said that scenario will not be examined in TX.",
         },
         {
           kind: "example",
@@ -290,8 +290,8 @@ export const TX_TREE_05: StudyChapter = {
           scenario:
             "Ruth has adjusted net income of £71,400 for 2025/26. She received child benefit of £1,900 during the year. Her partner's adjusted net income is £38,000.",
           steps: [
-            { label: "Check who is liable", detail: "The charge falls on the partner with the higher adjusted net income where both exceed £60,000. Only Ruth exceeds £60,000, so the charge is hers." },
-            { label: "Compute the excess and the number of steps", detail: "£71,400 − £60,000 = £11,400. Divided by £200 = 57 steps exactly. Where the division is not exact, round DOWN." },
+            { label: "Check who is liable", detail: "Only Ruth's adjusted net income exceeds £60,000, so the charge is hers. Where BOTH partners exceed £60,000 it falls on the higher earner, but the examining team has confirmed that scenario is not examined in TX — so a question will always leave one partner clearly liable." },
+            { label: "Compute the excess and the number of steps", detail: "£71,400 − £60,000 = £11,400. Divided by £200 = 57 steps exactly. Where the division is not exact, round the PERCENTAGE down to a whole number — an excess of £7,500 would give 37.5%, which becomes 37%." },
             { label: "Compute the percentage and the charge", detail: "57 steps × 1% = 57%. Charge = £1,900 × 57% = £1,083." },
             { label: "Place it in the computation", detail: "The £1,083 is ADDED to Ruth's income tax liability — it is not a deduction from income and not a reduction of the benefit paid. It is collected through self assessment, which is why receiving child benefit can itself create a filing obligation." },
             { label: "Note the alternative", detail: "Ruth could elect not to receive the child benefit, which avoids the charge and the administration. But she should not do so lightly: continuing to claim while electing not to be paid preserves the national insurance credits that protect her state pension entitlement." },
