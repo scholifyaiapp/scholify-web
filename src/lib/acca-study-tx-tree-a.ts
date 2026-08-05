@@ -261,24 +261,24 @@ export const TX_TREE_02: StudyChapter = {
         {
           kind: "formula",
           name: "Payments on account",
-          expr: "RELEVANT AMOUNT  =  previous year's income tax  +  Class 4 NIC\n                     LESS tax deducted at source (PAYE, and tax credits)\n                     EXCLUDING capital gains tax and Class 2 NIC\n\nEACH payment on account  =  50% × relevant amount\n\nBALANCING PAYMENT  =  this year's total liability  −  payments on account made\n\nNOT REQUIRED where either:\n   · the relevant amount is under £1,000, OR\n   · more than 80% of the previous year's liability was met at source",
-          note: "Two exclusions decide most of these questions. CAPITAL GAINS TAX is never part of a payment on account — it is all paid with the balancing payment on 31 January. And CLASS 2 NIC is likewise excluded from the relevant amount but is payable with the balancing payment.",
+          expr: "RELEVANT AMOUNT  =  previous year's income tax  +  Class 4 NIC\n                     LESS tax deducted at source (PAYE)\n                     EXCLUDING capital gains tax\n\nEACH payment on account  =  50% × relevant amount\n\nBALANCING PAYMENT  =  this year's total liability  −  payments on account made\n\nNOT REQUIRED where either:\n   · the relevant amount is under £1,000, OR\n   · more than 80% of the previous year's liability was met at source",
+          note: "One exclusion decides most of these questions: CAPITAL GAINS TAX is never part of a payment on account. It is paid in FULL with the balancing payment on 31 January, so a year with a large gain produces a balancing payment far bigger than the payments on account would suggest.",
         },
         {
           kind: "example",
           title: "Computing the payments and their dates",
           scenario:
-            "Priya is self-employed. For 2024/25 her income tax liability was £14,800, her Class 4 NIC £2,600 and her Class 2 NIC £180. £3,400 of tax was deducted at source from her employment income. For 2025/26 her income tax liability is £17,200, Class 4 NIC £3,100, Class 2 NIC £180, tax deducted at source £3,400, and she also has capital gains tax of £4,500.",
+            "Priya is self-employed. For 2024/25 her income tax liability was £14,800 and her Class 4 NIC £2,600, and £3,400 of tax was deducted at source from her employment income. For 2025/26 her income tax liability is £17,200, Class 4 NIC £3,100 and tax deducted at source £3,400, and she also has capital gains tax of £4,500.",
           steps: [
-            { label: "Compute the relevant amount for 2024/25", detail: "Income tax £14,800 + Class 4 NIC £2,600 = £17,400, less tax deducted at source £3,400 = £14,000. Class 2 NIC of £180 is EXCLUDED." },
+            { label: "Compute the relevant amount for 2024/25", detail: "Income tax £14,800 + Class 4 NIC £2,600 = £17,400, less tax deducted at source £3,400 = £14,000." },
             { label: "Check whether payments on account are due", detail: "The relevant amount of £14,000 exceeds £1,000, and tax at source of £3,400 is only 19.5% of the £17,400 gross liability — well under 80%. So payments on account ARE required." },
-            { label: "Compute each payment on account", detail: "50% × £14,000 = £7,000 each. First due 31 JANUARY 2026, second due 31 JULY 2026. Both are based on the PREVIOUS year, which is why they can be computed before 2025/26 has ended." },
-            { label: "Compute the 2025/26 total payable", detail: "Income tax £17,200 + Class 4 £3,100 = £20,300, less tax at source £3,400 = £16,900. Add Class 2 NIC £180 and capital gains tax £4,500: total due for the year = £21,580." },
-            { label: "Compute the balancing payment", detail: "£21,580 − £14,000 already paid on account = £7,580, due 31 JANUARY 2027. Note this figure includes the WHOLE of the £4,500 CGT and the £180 Class 2, neither of which entered the payments on account." },
-            { label: "Note the payments on account for 2026/27", detail: "The 2025/26 relevant amount is £16,900 (excluding CGT and Class 2), so the 2026/27 payments on account are £8,450 each — the first also falling due on 31 January 2027. Priya therefore pays £7,580 + £8,450 = £16,030 on that single date, which is the cash-flow point worth making to a client." },
+            { label: "Compute each payment on account", detail: "50% × £14,000 = £7,000 each. First due 31 JANUARY 2026, second due 31 JULY 2026. Both are based on the PREVIOUS year, which is why they can be computed before 2025/26 has even ended." },
+            { label: "Compute the 2025/26 total payable", detail: "Income tax £17,200 + Class 4 £3,100 = £20,300, less tax at source £3,400 = £16,900. Add capital gains tax of £4,500: total due for the year = £21,400." },
+            { label: "Compute the balancing payment", detail: "£21,400 − £14,000 already paid on account = £7,400, due 31 JANUARY 2027. Note this figure includes the WHOLE of the £4,500 CGT, none of which entered the payments on account." },
+            { label: "Note the payments on account for 2026/27", detail: "The 2025/26 relevant amount is £16,900 — CGT excluded again — so the 2026/27 payments on account are £8,450 each, the first also falling due on 31 January 2027. Priya therefore pays £7,400 + £8,450 = £15,850 on that single date, which is the cash-flow point worth making to a client." },
           ],
           result:
-            "**Payments on account of £7,000 on 31 Jan 2026 and 31 Jul 2026; a balancing payment of £7,580 on 31 Jan 2027.** The two traps are excluding CGT and Class 2 from the payments on account while including both in the balancing payment.",
+            "**Payments on account of £7,000 on 31 Jan 2026 and 31 Jul 2026; a balancing payment of £7,400 on 31 Jan 2027.** The trap is excluding CGT from the payments on account while including all of it in the balancing payment — and then the 2026/27 first instalment lands on the same day.",
         },
         {
           kind: "callout",
@@ -288,16 +288,16 @@ export const TX_TREE_02: StudyChapter = {
         },
       ],
       check: {
-        q: "Which amounts are EXCLUDED from the relevant amount used to compute payments on account?",
+        q: "Which amount is EXCLUDED from the relevant amount used to compute payments on account?",
         options: [
-          "Class 4 NIC and income tax",
-          "Capital gains tax and Class 2 NIC",
-          "Tax deducted at source only",
+          "Class 4 national insurance",
+          "Capital gains tax",
+          "Income tax",
           "Nothing is excluded",
         ],
         correct: 1,
         explain:
-          "CAPITAL GAINS TAX AND CLASS 2 NIC. Both are excluded from the relevant amount, so neither affects the payments on account — but both are payable in full with the balancing payment on 31 January. Tax deducted at source is deducted in arriving at the relevant amount rather than excluded from the computation.",
+          "CAPITAL GAINS TAX. It is excluded from the relevant amount, so it does not affect the payments on account — but it is payable IN FULL with the balancing payment on 31 January. Income tax and Class 4 NIC both form part of the relevant amount, and tax deducted at source is deducted in arriving at it rather than excluded from the computation.",
       },
     },
     {
@@ -408,8 +408,8 @@ export const TX_TREE_02: StudyChapter = {
   ],
   keyTerms: [
     { term: "Payment on account", def: "An instalment of the coming year's liability, each 50% of the previous year's relevant amount." },
-    { term: "Relevant amount", def: "Previous year's income tax and Class 4 NIC less tax at source, excluding CGT and Class 2 NIC." },
-    { term: "Balancing payment", def: "The remainder of the year's liability, plus all CGT and Class 2 NIC, due on 31 January after the tax year." },
+    { term: "Relevant amount", def: "Previous year's income tax and Class 4 NIC less tax deducted at source, excluding capital gains tax." },
+    { term: "Balancing payment", def: "The remainder of the year's liability, plus all of the capital gains tax, due on 31 January after the tax year." },
     { term: "Unprompted disclosure", def: "A disclosure made before the taxpayer has reason to believe HMRC has discovered or is about to discover the error." },
     { term: "Discovery assessment", def: "An assessment made outside the enquiry window, with a window of 4, 6 or 20 years by behaviour." },
     { term: "Determination", def: "HMRC's estimate of tax due where no return is filed; not appealable, displaced only by filing the return." },
@@ -417,7 +417,7 @@ export const TX_TREE_02: StudyChapter = {
   summary: [
     "Electronic returns are due by 31 January after the tax year, paper returns by 31 October.",
     "Payments on account are 50% each of the previous year's relevant amount, due 31 January and 31 July.",
-    "CGT and Class 2 NIC are excluded from payments on account and paid with the balancing payment.",
+    "Capital gains tax is excluded from payments on account and paid in full with the balancing payment.",
     "Late filing penalties are cumulative: £100, then £10 a day, then 5%-or-£300 at 6 and 12 months.",
     "Error penalties turn on behaviour and on whether disclosure was prompted, ranging from nil to 100%.",
   ],
