@@ -119,7 +119,7 @@ const CH10: AccaQuestion[] = [
     "TRADE LOAN INTEREST IS ALLOWABLE, so it is not added back. Depreciation, drawings and a national charity donation are all disallowed — the last because it goes through gift aid instead, though a small LOCAL donation with a trade benefit would be allowable."),
 
   q("TXK-10-12", "TX-10", "B", "medium",
-    "A business with a 31 March year end has profits of £96,000 for the year ended 31 March 2026. What is assessable for 2025/26?",
+    "A trader draws accounts up to 31 March and made a tax adjusted profit of £96,000 in the twelve months to 31 March 2026. How much is assessed for 2025/26?",
     [
       "£48,000, half apportioned",
       "£96,000 — a 31 March year end needs no apportionment, since the accounting period effectively IS the tax year",

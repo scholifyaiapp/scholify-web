@@ -342,7 +342,7 @@ const CASE_07: OtCase = {
   area: "E",
   title: "Kvitfjell Ltd — relieving a trading loss",
   scenario:
-    "Kvitfjell Ltd has the following results. Year ended 31 March 2025: trading profit £82,000, property income £12,000, qualifying charitable donations £6,000. Year ended 31 March 2026: trading LOSS of £180,000, property income £26,000, qualifying charitable donations £6,000. The company expects substantial profits from the year ending 31 March 2027 onwards. It wishes to obtain relief as early as possible. It has no associated companies.",
+    "Kvitfjell Ltd's last two accounting periods run as follows. Year to 31 March 2025: trading profit £82,000, property income £12,000, qualifying charitable donations £6,000. Year ended 31 March 2026: trading LOSS of £180,000, property income £26,000, qualifying charitable donations £6,000. The company expects substantial profits from the year ending 31 March 2027 onwards. It wishes to obtain relief as early as possible. It has no associated companies.",
   questions: [
     numTask("tx-otc-07", 1, "E", "TX-24", "medium",
       "How much of the loss is relieved by a current period claim, in £?",

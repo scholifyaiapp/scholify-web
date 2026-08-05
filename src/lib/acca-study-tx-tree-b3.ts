@@ -251,7 +251,7 @@ export const TX_TREE_10: StudyChapter = {
           kind: "callout",
           tone: "rule",
           title: "From 2024/25 the basis is the TAX YEAR — overlap profits are gone",
-          md: "An unincorporated business is now taxed on the profits **arising in the tax year**, 6 April to 5 April. Where the accounting year end is **not 31 March or 5 April**, the profits of the relevant accounting periods are **TIME APPORTIONED** into the tax year.\n\nThis replaced the old current-year basis. So there are **no opening year rules**, **no overlap profits** and **no overlap relief** for a continuing business — and reaching for them, as anyone taught the old regime will, produces a wrong answer. Basis period reform itself is only an **awareness** item: the calculation of transition profits and the election to override the five-year spreading are **not examinable**.",
+          md: "An unincorporated business is now taxed on the profits **arising in the tax year**, 6 April to 5 April. Where the accounting year end is **not 31 March or 5 April**, the profits of the relevant accounting periods are **TIME APPORTIONED** into the tax year.\n\nThis replaced the old current-year basis. So there are **no opening year rules**, **no overlap profits** and **no overlap relief** for a continuing business — and reaching for them, as anyone taught the old regime will, produces a wrong answer. Basis period reform itself is only an **awareness** item. You will not be asked to derive a transition figure from first principles, nor to deal with the election that pulls the spreading forward — both sit outside TX.",
         },
         {
           kind: "formula",
@@ -263,7 +263,7 @@ export const TX_TREE_10: StudyChapter = {
           kind: "example",
           title: "Time-apportioning to the tax year",
           scenario:
-            "Farhan has traded for many years, preparing accounts to 30 September. His tax adjusted trading profit for the year ended 30 September 2025 was £84,000, and for the year ended 30 September 2026 it was £96,000.",
+            "Farhan draws his accounts up to 30 September and has done since he started. His tax adjusted trading profit came to £84,000 for the twelve months to 30 September 2025, and £96,000 for the twelve months after that.",
           steps: [
             { label: "Identify the tax year", detail: "2025/26 runs from 6 April 2025 to 5 April 2026." },
             { label: "Identify which accounting periods overlap it", detail: "The year ended 30 September 2025 covers 1 October 2024 to 30 September 2025, of which April to September 2025 — six months — falls in the tax year. The year ended 30 September 2026 covers October 2025 to September 2026, of which October 2025 to March 2026 — again six months — falls in the tax year." },
@@ -281,8 +281,8 @@ export const TX_TREE_10: StudyChapter = {
           items: [
             "Transition profits arose on the **move** to the tax year basis, where a business with a non-March year end had a longer transition period.",
             "They are **spread over five years**, one fifth taxed in each of 2023/24 to 2027/28.",
-            "In TX you may be **given** the amount of transition profits and asked to tax them in any of **2025/26 to 2027/28** — so one fifth of the figure is added to that year's trading income.",
-            "The **calculation** of transition profits, and the election to override the five-year spreading, are **not examinable**.",
+            "TX hands you the transition figure and asks only where it lands. Any of **2025/26 to 2027/28** can be the year in question, and one fifth of the figure joins that year's trading income.",
+            "What is **out of scope**: deriving the transition figure yourself, and the election that accelerates the spreading. Neither is examined.",
             "Neither is the interaction of transition profits with the annual allowance, the child benefit charge or the cap on income tax reliefs — so treat them simply as additional trading income for the year.",
           ],
         },

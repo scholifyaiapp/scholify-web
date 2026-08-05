@@ -69,7 +69,7 @@ export const TX_TREE_23: StudyChapter = {
           kind: "callout",
           tone: "warn",
           title: "Companies match shares looking BACKWARDS",
-          md: "The share identification rules for a **company** are:\n\n1. Shares acquired on the **same day**\n2. Shares acquired in the **previous NINE DAYS**\n3. The **share pool**\n\nAn **individual** looks **forward 30 days** (chapter 17); a company looks **back 9 days**. Applying the individual's rule to a company, or the reverse, is a routine and avoidable error.\n\nA company's pool is also **indexed**: it is maintained with an indexed cost as well as a historic cost, with indexation added at each operative event up to December 2017. TX keeps this manageable, and note that a **detailed question on the pooling provisions as they apply to companies is an excluded topic** — so the mechanics will be kept simple.\n\n**Bonus and rights issues, takeovers and reorganisations** work as for individuals: a bonus issue adds shares but no cost, a rights issue adds both, and a paper for paper exchange is not a disposal.",
+          md: "The share identification rules for a **company** are:\n\n1. Shares acquired on the **same day**\n2. Shares acquired in the **previous NINE DAYS**\n3. The **share pool**\n\nAn **individual** looks **forward 30 days** (chapter 17); a company looks **back 9 days**. Applying the individual's rule to a company, or the reverse, is a routine and avoidable error.\n\nA company's pool is also **indexed**: it is maintained with an indexed cost as well as a historic cost, with indexation added at each operative event up to December 2017. TX keeps this manageable: the syllabus **excludes** any detailed treatment of how a company pools its shares, so expect a single purchase and a single sale rather than a long history to unwind.\n\n**Bonus and rights issues, takeovers and reorganisations** work as for individuals: a bonus issue adds shares but no cost, a rights issue adds both, and a paper for paper exchange is not a disposal.",
         },
       ],
       check: {
@@ -223,7 +223,7 @@ export const TX_TREE_24: StudyChapter = {
           kind: "example",
           title: "Choosing a relief, and costing the waste",
           scenario:
-            "Buttermere Ltd has the following results. Year ended 31 March 2024: trading profit £90,000, property income £20,000, QCDs £5,000. Year ended 31 March 2025: trading profit £60,000, property income £20,000, QCDs £5,000. Year ended 31 March 2026: trading LOSS of £150,000, property income £20,000, QCDs £5,000. It expects healthy profits from 2027 onwards. Relief is to be obtained as early as possible.",
+            "Buttermere Ltd's three most recent accounting periods run as follows. Year to 31 March 2024: trading profit £90,000, property income £20,000, QCDs £5,000. Year ended 31 March 2025: trading profit £60,000, property income £20,000, QCDs £5,000. Year ended 31 March 2026: trading LOSS of £150,000, property income £20,000, QCDs £5,000. It expects healthy profits from 2027 onwards. Relief is to be obtained as early as possible.",
           steps: [
             { label: "Deal with the current period first", detail: "A current period claim is compulsory before any carry back, and it is all or nothing. Total profits for the year to 31 March 2026 before QCDs are £20,000 of property income, so £20,000 of the loss is relieved there. Loss remaining: £150,000 − £20,000 = £130,000." },
             { label: "Note the immediate cost", detail: "That claim reduces total profits to nil, so the £5,000 of QCDs for the year is WASTED. QCDs cannot create a loss, cannot be carried forward and cannot be surrendered — so the claim has thrown away relief on £5,000." },
@@ -421,7 +421,7 @@ export const TX_TREE_25: StudyChapter = {
           kind: "list",
           title: "What a gains group allows",
           items: [
-            "**Intra-group transfers at no gain, no loss.** Automatic and mandatory — no claim is needed. The transfer is deemed to take place at a price giving neither gain nor loss, being the original cost plus indexation to the date of transfer or December 2017 if earlier, and that figure becomes the acquiring company's cost.",
+            "**Intra-group transfers at no gain, no loss.** Automatic and mandatory — no claim is needed. The consideration is treated as whatever figure produces neither a gain nor a loss — original cost plus indexation to the transfer date, or to December 2017 if that comes first — and the acquiring company takes that figure as its cost.",
             "**Matching gains with losses.** Because assets move freely and tax-free, a group can transfer an asset to whichever company has capital losses available before selling it outside the group. This is how a gains group works round the rule that a capital loss cannot be surrendered.",
             "**Rollover relief on a group basis.** One company can dispose of a qualifying asset and another reinvest, and the group is treated as a single entity — so the relief is not lost merely because the replacement was bought by a different member.",
             "**When the asset leaves the group**, a chargeable gain or allowable loss arises in the normal way in the company that sells it, computed from the cost it inherited on the intra-group transfer.",

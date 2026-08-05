@@ -48,34 +48,84 @@
  * exactly what this check exists to catch: the syllabus and the standards are public,
  * but a learner is paying for Scholify's explanation of them, not a transcription.
  *
- * Run it from the directory holding the extracted book text, with BOOKS and MINE set
- * for the paper being authored:
- *   node scripts/originality-check.cjs
+ * ── Exception 3: statutory formulas (TX) ──────────────────────────
+ * TX needed the same treatment as LW for the same reason, and the reasoning is set out
+ * beside the TX block in STATUTORY_QUOTES. In short: a tax paper's statute is mostly
+ * deadlines, definitions and prescribed figures, and there is one correct way to state
+ * each of them. TX ran to zero unattributed matches at 10, 12 and 15 words, with 92
+ * windows at 10 words falling inside 27 named provisions.
+ *
+ * The order of work matters and was followed strictly — REWORD FIRST, allow-list only
+ * the residue. TX opened at 139 findings at 10 words and rewording took it to 94 before
+ * a single exception was written: the study text's own examinability notes on basis
+ * period reform and company share pooling, its explanation of how above-basic-rate gift
+ * aid relief is delivered, and a dozen "X Ltd has the following results for the year
+ * ended 31 March 2026" scenario openings. An allow-list written before that pass would
+ * have quietly absorbed all of them.
+ *
+ * Run it from the directory holding the extracted book text, passing the books and the
+ * authored files for the paper under review:
+ *   node scripts/originality-check.cjs --books a.txt,b.txt --mine "acca-study-xx-*.ts,…"
+ * Set ORIG_ALL=1 to print every finding rather than the first 40.
  */
 const fs = require("fs")
 const path = require("path")
 
 /*
- * Set these two arrays for the paper under review. BOOKS are plain-text extracts of
- * the approved-provider texts (produce them with pdf-parse, already a dependency);
- * MINE are the authored source files for that paper.
+ * BOOKS are plain-text extracts of the approved-provider texts (produce them with
+ * pdf-parse, already a dependency); MINE are the authored source files for that paper.
+ * Both are best passed on the command line — see the note immediately below. The arrays
+ * here are the fallback, and hold the last paper checked without arguments (PM).
  *
- * Current setting: LW-ENG (the fifth paper rebuilt). Earlier papers' settings are
- * kept below in comments so one can be re-checked without rediscovering the file names.
- *
- * Note that all four LW books are indexed at once, including both ENGLISH texts. LW's
- * two variants share Areas D–H almost entirely (agency, partnerships, companies,
- * insolvency, fraud), so checking Global content against the English books too is the
- * stricter test — and it pre-clears the shared chapters before the ENG rebuild reuses
- * that ground.
+ * The per-paper settings used so far are recorded after MINE, so any paper can be
+ * re-checked without rediscovering its file names. One of them is worth reading before
+ * setting up a new paper: for LW, all four books are indexed at once, including both
+ * ENGLISH texts, because LW's two variants share Areas D–H almost entirely. Checking
+ * Global content against the English books too is the stricter test.
  */
-const BOOKS = [
-  "pm-kaplan-study-text-2025-26.txt",
-  "pm-kaplan-kit-2026.txt",
-  "pm-bpp-workbook.txt",
-]
+/*
+ * ── Overriding from the command line ──────────────────────────────
+ * Editing these arrays for every paper was how the PM run left the script pointing at
+ * PM's extracts, which then made the TX run die on a missing file. Both can now be
+ * passed instead, so a re-check never requires an edit:
+ *
+ *   node scripts/originality-check.cjs \
+ *     --books /tmp/tx-study-text-fa25.txt,/tmp/tx-kaplan-kit-fa25.txt \
+ *     --mine "acca-study-tx-tree-*.ts,acca-questions-tx-kit-*.ts,acca-cases-tx.ts,acca-written-tx-kit*.ts"
+ *
+ * --mine takes comma-separated shell-style patterns resolved against SRC_DIR, so a
+ * paper's files can be named by their shape rather than listed one by one — and a file
+ * added later is picked up automatically instead of being silently unchecked.
+ */
+const argv = process.argv.slice(2)
+const argOf = (name) => {
+  const i = argv.indexOf(name)
+  return i >= 0 && argv[i + 1] ? argv[i + 1] : null
+}
 const SRC_DIR = "C:/Users/User/Desktop/scholify-web-main/scholify-web-main/src/lib"
-const MINE = [
+
+const expandPatterns = (patterns) => {
+  const names = fs.readdirSync(SRC_DIR)
+  const out = []
+  for (const raw of patterns) {
+    const pattern = raw.trim()
+    if (!pattern) continue
+    const rx = new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`)
+    const matched = names.filter((n) => rx.test(n)).sort()
+    if (!matched.length) throw new Error(`--mine pattern matched nothing: ${pattern}`)
+    for (const m of matched) if (!out.includes(m)) out.push(m)
+  }
+  return out
+}
+
+const BOOKS = argOf("--books")
+  ? argOf("--books").split(",").map((s) => s.trim()).filter(Boolean)
+  : [
+      "pm-kaplan-study-text-2025-26.txt",
+      "pm-kaplan-kit-2026.txt",
+      "pm-bpp-workbook.txt",
+    ]
+const MINE = argOf("--mine") ? expandPatterns(argOf("--mine").split(",")) : [
   "acca-study-pm-tree-a.ts",
   "acca-study-pm-tree-a2.ts",
   "acca-study-pm-tree-b.ts",
@@ -117,6 +167,12 @@ const MINE = [
  *     Both variants' trees were checked against all four books at once; see the STATUTORY_QUOTES note.
  * FA: BOOKS = ["fa-study-text-2024-25.txt", "f3-kaplan-kit-2023-24.txt", "fa2-bpp-kit.txt"]
  *     MINE  = acca-study-fa-tree-{ab,c,d1,d2,ef,g,hi}.ts, acca-questions-fa-kit-{abc,d,efg,hi}.ts, acca-cases-fa.ts
+ * TX: BOOKS = ["tx-study-text-fa25.txt", "tx-kaplan-kit-fa25.txt"]
+ *     MINE  = "acca-study-tx-tree-*.ts,acca-questions-tx-kit-*.ts,acca-cases-tx.ts,acca-written-tx-kit*.ts"
+ *     Only TWO books, not three: "TX Exam Kit FA25 BPP.pdf" is a SCANNED pdf with no text
+ *     layer at all (pdf-parse returns 1,156 bytes of whitespace for 578 pages), so it
+ *     cannot be indexed. The study text and the Kaplan kit give ~700k words of benchmark
+ *     between them, which is comparable to the other papers' corpora.
  */
 
 /*
@@ -129,8 +185,79 @@ const MINE = [
  *
  * Adding to this list is a deliberate act: the phrase must be traceable to the named
  * article or section, and the content must cite that article or section beside it.
+ *
+ * ── Why TX needs the same treatment as LW ─────────────────────────
+ * TX is a statute paper too, and its statute is mostly ARITHMETIC AND DEADLINES. There
+ * is exactly one correct way to say when corporation tax falls due for a company that
+ * is not large: "9 months and 1 day after the end of the accounting period". Any
+ * paraphrase is either longer or wrong, and a learner who cannot produce that phrase
+ * loses the mark. The same is true of every entry in the TX block below — a filing
+ * window, a payment date, a statutory definition, or a prescribed figure.
+ *
+ * The discipline is identical to LW's, and it was applied in the same order: reword
+ * FIRST, allow-list only what survives. The TX run opened at 139 findings at 10 words.
+ * The publisher's own examinability notes, its explanation of how higher rate gift aid
+ * relief is delivered, and about a dozen "X Ltd has the following results for the year
+ * ended 31 March 2026" scenario openings were all REWORDED, not excepted — that took it
+ * to 94. What is listed below is the residue: statute, and nothing else.
+ *
+ * Two entries need their own note.
+ *
+ *  · The income tax and corporation tax PROFORMAS. What matches is the row sequence
+ *    (total income → less reliefs → net income → less personal allowance → taxable
+ *    income) with X in the money columns. That sequence is the statutory order of
+ *    computation in ITA 2007 s.23, not a house style — laying it out in a different
+ *    order would teach the computation wrongly. The X placeholder is universal notation
+ *    and is not prose in the first place.
+ *
+ *  · The MARRIAGE EXEMPTION ladder and the CT LIMIT apportionment. These are prescribed
+ *    figures in a prescribed order: £5,000 from a parent, £2,500 from a grandparent or
+ *    remoter ancestor, £2,500 from a party to the marriage, £1,000 from anyone else, and
+ *    £50,000 / £250,000 time-apportioned. The books show the same numbers because there
+ *    are no other numbers to show.
  */
 const STATUTORY_QUOTES = [
+  /* ── TX (UK tax): statutory deadlines, definitions and prescribed figures ── */
+  // Administration and payment dates
+  ["TMA 1970 s.29 (discovery)", "within 4 years of the end of the tax year"],
+  ["TMA 1970 s.59D / CTA 2009 (CT due date)", "9 months and 1 day after the end of the accounting period"],
+  ["SI 1998/3175 reg 5 (CT instalments)", "the 14th day of the 7th month after the start of the accounting period"],
+  ["SI 1998/3175 reg 5 (CT instalments)", "on the 14th of months 7 10 13 and 16 from the start of the period"],
+  ["SI 2001/1004 reg 71 (Class 1A)", "by 22 july following the end of the tax year"],
+  ["IHTA 1984 s.226(1) (IHT due date)", "6 months after the end of the month of death"],
+  ["IHTA 1984 s.226(1) (IHT due date)", "it is due six months after the end of the month of death"],
+  ["IHTA 1984 s.226(3) (estate account)", "the earlier of six months after the end of the month of death and delivery of the estate account to hmrc"],
+  ["IHTA 1984 s.226(3) (estate account)", "6 months after the end of the month of death and delivery of the estate account to hmrc"],
+  ["CTA 2010 s.37(7) (carry back claim)", "within two years of the end of the loss making accounting period"],
+  ["CTA 2010 s.37(7) (carry back claim)", "2 years of the end of the loss making accounting period"],
+  ["CTA 2010 s.130 (group relief claim)", "the claim must be made within two years of the end of the claimant s accounting period"],
+  // VAT: registration, tax point, returns and penalties
+  ["VATA 1994 Sch 1 para 5 (notification)", "within 30 days of the end of the month in which the threshold was exceeded"],
+  ["VATA 1994 Sch 1 para 5 (notification)", "notify hmrc within 30 days of the end of the month in which the limit was exceeded"],
+  ["VATA 1994 Sch 1 para 5 (effective date)", "registered from the first day of the second month after the month in which the limit was exceeded"],
+  ["VATA 1994 s.6(4) (actual tax point)", "an invoice is issued or payment received before the basic tax point"],
+  ["VATA 1994 s.6(5) (14 day rule)", "an invoice is issued within 14 days after the basic tax point"],
+  ["VAT Regs 1995 reg 25 (return and payment)", "one month and seven days after the end of the period"],
+  ["FA 2021 Sch 26 (VAT late payment)", "then 6 plus a daily penalty at an annual rate of 10 from day 31"],
+  // Statutory definitions
+  ["CTA 2009 s.14 (company residence)", "a company is uk resident if it is incorporated in the uk or"],
+  ["CTA 2009 s.61 (pre-trading expenditure)", "treated as incurred on the first day of trading provided it would have been allowable had the trade already started"],
+  ["CTA 2009 s.61 (pre-trading expenditure)", "is treated as incurred on the first day of trading if it would otherwise have been allowable"],
+  ["TCGA 1992 s.44(1)(a) (wasting asset)", "a chattel with a predictable life of 50 years or less"],
+  ["TCGA 1992 s.42 (part disposal)", "a divided by a plus b where a is the proceeds of the part disposed of b market value of the part retained"],
+  ["TCGA 1992 s.58 (spouse transfers)", "any actual proceeds are ignored the transferor is deemed to dispose at their own acquisition cost"],
+  ["TCGA 1992 s.170 (gains group)", "a gains group comprises the parent company and its 75 subsidiaries and"],
+  ["TCGA 1992 s.223(3)(a) (deemed occupation)", "and d must be preceded and followed by a period of actual occupation"],
+  ["TCGA 1992 s.223(4) (lodger)", "the owner has a lodger who lives as a member of the"],
+  ["TCGA 1992 s.223B (letting relief)", "it is the lowest of 40 000 the amount of the gain exempted by prr"],
+  ["ITA 2007 s.24A (cap on reliefs)", "capped at the higher of 50 000 and 25 of income"],
+  // Prescribed figures, in the order the statute prescribes them
+  ["IHTA 1984 s.22 (marriage exemption)", "5 000 by a parent 2 500 by a grandparent or remoter ancestor 2 500 by a party to the marriage 1 000 by anyone else"],
+  ["CTA 2010 s.18D (limits, apportioned)", "lower limit 50 000 9 12 37 500 upper limit 250 000 9 12 187 500"],
+  // The statutory order of computation, not a house layout — see the note above
+  ["ITA 2007 s.23 (income tax proforma)", "dividends received x x total income x x x x less reliefs loss relief qualifying loan interest x x x x net income x x x x less personal allowance x x x x taxable income x x x x"],
+  ["CTA 2009 (corporation tax proforma)", "chargeable gains x total profits x less qualifying charitable donations x taxable total profits x"],
+
   // United Nations Convention on Contracts for the International Sale of Goods
   ["CISG (official title)", "the united nations convention on contracts for the international sale of goods 1980"],
   ["CISG art 1(1)", "between parties whose places of business are in different states"],
@@ -282,11 +409,11 @@ for (const N of [8, 10, 12, 15]) {
   }
 
   console.log(`\n=== ${N}-word windows === ${findings.length} finding(s)` + (quoted.size ? `, plus ${[...quoted.values()].reduce((a, b) => a + b, 0)} window(s) inside quoted instruments` : ""))
-  for (const h of findings.slice(0, 40)) {
+  for (const h of (process.env.ORIG_ALL ? findings : findings.slice(0, 40))) {
     console.log(`  [${h.book}] ${h.file}`)
     console.log(`     "${h.phrase}"`)
   }
-  if (findings.length > 40) console.log(`  … and ${findings.length - 40} more`)
+  if (!process.env.ORIG_ALL && findings.length > 40) console.log(`  … and ${findings.length - 40} more`)
   if (quoted.size) {
     console.log(`  ── attributed quotations (excluded, see STATUTORY_QUOTES) ──`)
     for (const [instrument, n] of [...quoted].sort()) console.log(`     ${String(n).padStart(3)} × ${instrument}`)

@@ -136,7 +136,7 @@ export const TX_TREE_04: StudyChapter = {
             "**Qualifying loan interest** — interest on a loan to buy plant or machinery for a partnership or employment, to invest in a partnership, or to buy shares in a close company. Not interest on a mortgage or a personal loan.",
             "**Trading losses** relieved against total income (chapter 13).",
             "Both are deducted in the order that produces the best result for the taxpayer: against **non-savings** income first, since it is taxed first and at the higher rates.",
-            "Note the **cap on income tax reliefs**: unless otherwise restricted, these reliefs are capped at the higher of **£50,000** or 25% of income.",
+            "Note the **cap on income tax reliefs**: unless a tighter restriction already applies, no more than **£50,000** — or 25% of income, whichever gives the larger figure — can be relieved.",
             "Gift aid donations and personal pension contributions are **NOT** deducted here. They extend the basic rate band instead (chapter 5), which is a different mechanism with a different effect.",
           ],
         },
@@ -228,7 +228,7 @@ export const TX_TREE_05: StudyChapter = {
           kind: "callout",
           tone: "rule",
           title: "The mechanism, and why it is not a deduction",
-          md: "A gift aid donation and a personal pension contribution are both paid **net of basic rate tax**, so the charity or the pension provider reclaims the 20% from HMRC. The donor has therefore already had basic rate relief **at source**. Higher and additional rate relief is given by **EXTENDING THE BASIC RATE BAND** — and the additional rate threshold with it — by the **GROSS** amount.\n\nSo: **gross up at 100/80**, then add the gross figure to the £37,700 basic rate limit and to the £125,140 additional rate threshold. Do **not** deduct it from income. A basic rate taxpayer gets no further relief, which is correct: they have already had all of it at source.",
+          md: "A gift aid donation and a personal pension contribution are both paid **net of basic rate tax**, so the charity or the pension provider reclaims the 20% from HMRC. The donor has therefore already had basic rate relief **at source**. Anything above basic rate is delivered a different way: the **GROSS** figure **WIDENS THE BASIC RATE BAND**, and pushes the additional rate threshold out by the same amount.\n\nSo: **gross up at 100/80**, then add the gross figure to the £37,700 basic rate limit and to the £125,140 additional rate threshold. Do **not** deduct it from income. A basic rate taxpayer gets no further relief, which is correct: they have already had all of it at source.",
         },
         {
           kind: "formula",

@@ -321,7 +321,7 @@ export const TX_TREE_18: StudyChapter = {
     { q: "When is the reoccupation condition waived?", a: "For absences due to working overseas or elsewhere in the UK, where the employer required the individual to work away." },
     { q: "At what rate are business asset disposal relief gains taxed for 2025/26?", a: "14%, on up to £1,000,000 of qualifying gains over the individual's lifetime." },
     { q: "How is rollover relief restricted on a partial reinvestment?", a: "The lower of the gain and the proceeds not reinvested is chargeable immediately; the balance is rolled into the replacement's base cost." },
-    { q: "What limits gift holdover relief where the donee pays something?", a: "Any excess of the consideration over the donor's original cost is chargeable immediately, and only the balance of the gain is held over." },
+    { q: "What limits gift holdover relief where the donee pays something?", a: "Consideration above the donor's original cost is taxed there and then; whatever is left of the gain is what gets held over." },
   ],
 }
 

@@ -257,7 +257,7 @@ export const TX_TREE_13: StudyChapter = {
           kind: "callout",
           tone: "key",
           title: "The cap on income tax reliefs",
-          md: "A claim against **total income** is capped at the **higher of £50,000 and 25% of income**, where income for this purpose is broadly total income less gross pension contributions. So a very large loss cannot be relieved against a modest income in one go, however the taxpayer would prefer it.\n\nTwo important points: the cap applies to relief against **total income** and against **opening year** relief, but **not** to **carry forward** relief and **not** to relief against the **profits of the same trade** — so terminal loss relief is uncapped too. And the cap does not apply to the extent the loss is set against profits of the same trade within total income.",
+          md: "A claim against **total income** cannot exceed **£50,000**, or 25% of income if that is the larger — income here meaning, broadly, total income after deducting gross pension contributions. So a very large loss cannot be relieved against a modest income in one go, however the taxpayer would prefer it.\n\nTwo important points: the cap applies to relief against **total income** and against **opening year** relief, but **not** to **carry forward** relief and **not** to relief against the **profits of the same trade** — so terminal loss relief is uncapped too. And the cap does not apply to the extent the loss is set against profits of the same trade within total income.",
         },
         {
           kind: "list",

@@ -73,7 +73,7 @@ export const TX_TREE_21: StudyChapter = {
           kind: "example",
           title: "Building taxable total profits and augmented profits",
           scenario:
-            "Westmorland Ltd has the following results for the year ended 31 March 2026: tax adjusted trading profit £420,000; property business income £36,000; bank interest receivable £14,000; a chargeable gain of £58,000; qualifying charitable donations paid of £10,000; and dividends of £25,000 received from a company in which it holds 10%.",
+            "For its accounting period to 31 March 2026 Westmorland Ltd records: tax adjusted trading profit £420,000; property business income £36,000; bank interest receivable £14,000; a chargeable gain of £58,000; qualifying charitable donations paid of £10,000; and dividends of £25,000 received from a company in which it holds 10%.",
           steps: [
             { label: "Total the profits from all sources", detail: "£420,000 + £36,000 + £14,000 + £58,000 = £528,000. The chargeable gain goes into the same computation as the income — a company pays no capital gains tax." },
             { label: "Exclude the dividends", detail: "The £25,000 of dividends is EXEMPT and does not enter total profits. This is the single biggest structural difference from an individual's computation." },
@@ -215,7 +215,7 @@ export const TX_TREE_22: StudyChapter = {
           kind: "example",
           title: "Marginal relief with dividends",
           scenario:
-            "Grasmere Ltd has taxable total profits of £180,000 for the year ended 31 March 2026 and received dividends of £20,000 from a company in which it holds 6%. It has no associated companies.",
+            "Grasmere Ltd's taxable total profits come to £180,000 for its accounting period to 31 March 2026, and it received £20,000 of dividends from a company in which it holds 6%. It has no associated companies.",
           steps: [
             { label: "Compute augmented profits and test the limits", detail: "£180,000 + £20,000 = £200,000. That falls between £50,000 and £250,000, so the main rate applies with marginal relief." },
             { label: "Compute tax at the main rate", detail: "The tax is charged on TTP, not augmented profits: £180,000 × 25% = £45,000." },
