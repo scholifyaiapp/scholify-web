@@ -215,8 +215,20 @@ describe("TX-UK content contract", () => {
   it("serves Section C at the real 10 + 15 + 15 unit sizes", () => {
     const written = getWrittenQuestions("TX")
     expect(written).toHaveLength(TX_CONTENT_TARGET.writtenQuestions)
-    // Three disjoint sittings of three.
-    expect(TX_CONTENT_TARGET.writtenQuestions).toBe(TX_CONTENT_TARGET.mockForms * TX_CONTENT_TARGET.sectionCQuestions)
+    /*
+     * The bank must cover at least three DISJOINT sittings of three, and does so with room
+     * to spare — nine was the structural floor, not a practice bank. Both the 10-marker and
+     * 15-marker sub-banks are checked, because a form needs one of the former and two of the
+     * latter: a bank of fifteen that happened to be fourteen 10-markers could not build one.
+     */
+    const perForm10 = TX_CONTENT_TARGET.sectionCUnitMarks.filter((m) => m === 10).length
+    const perForm15 = TX_CONTENT_TARGET.sectionCUnitMarks.filter((m) => m === 15).length
+    expect(TX_CONTENT_TARGET.writtenQuestions)
+      .toBeGreaterThanOrEqual(TX_CONTENT_TARGET.mockForms * TX_CONTENT_TARGET.sectionCQuestions)
+    expect(TX_CONTENT_TARGET.writtenTenMarkers).toBeGreaterThanOrEqual(TX_CONTENT_TARGET.mockForms * perForm10)
+    expect(TX_CONTENT_TARGET.writtenFifteenMarkers).toBeGreaterThanOrEqual(TX_CONTENT_TARGET.mockForms * perForm15)
+    expect(TX_CONTENT_TARGET.writtenTenMarkers + TX_CONTENT_TARGET.writtenFifteenMarkers)
+      .toBe(TX_CONTENT_TARGET.writtenQuestions)
     // The unit marks must add up to the section's marks.
     expect(TX_CONTENT_TARGET.sectionCUnitMarks.reduce((a, b) => a + b, 0)).toBe(TX_CONTENT_TARGET.sectionCMarks)
     expect(new Set(written.map((item) => item.id)).size, "unique ids").toBe(written.length)

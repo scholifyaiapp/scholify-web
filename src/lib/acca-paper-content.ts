@@ -228,7 +228,7 @@ const WRITTEN_MODULES: Record<string, Loader[]> = {
   // Nine authored constructed responses at TX's real unit sizes - three at 10 marks and
   // six at 15, completing three disjoint sittings. Replaces acca-written-w3-tx, whose 50
   // questions were all 20 marks, which is not a TX Section C unit size at all.
-  TX: [() => import("@/lib/acca-written-tx-kit"), () => import("@/lib/acca-written-tx-kit2")],
+  TX: [() => import("@/lib/acca-written-tx-kit"), () => import("@/lib/acca-written-tx-kit2"), () => import("@/lib/acca-written-tx-kit3")],
   FM: [() => import("@/lib/acca-written-w3-fm")],
   SBL: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbl-official")],
   SBR: [() => import("@/lib/acca-written-core"), () => import("@/lib/acca-written-wave2"), () => import("@/lib/acca-written-s1"), () => import("@/lib/acca-written-sbr-official")],

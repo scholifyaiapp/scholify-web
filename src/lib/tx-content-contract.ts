@@ -90,9 +90,9 @@ export const TX_CONTENT_TARGET = {
    * Authored Section C questions. Three mocks × three questions = 9, being three 10-markers
    * and six 15-markers — again exactly three disjoint sittings.
    */
-  writtenQuestions: 9,
-  writtenTenMarkers: 3,
-  writtenFifteenMarkers: 6,
+  writtenQuestions: 15,
+  writtenTenMarkers: 5,
+  writtenFifteenMarkers: 10,
   flashcards: 150,
   mixedBanks: 5,
   mixedBankSize: 30,
