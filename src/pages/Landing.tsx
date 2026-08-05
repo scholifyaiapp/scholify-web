@@ -30,6 +30,7 @@ import { ImageSwiper } from "@/components/ui/image-swiper"
 import { InteractiveFolderGallery } from "@/components/ui/interactive-folder-gallery"
 import AnimatedCardStack, { type StackFact } from "@/components/ui/animated-card-stack"
 import { StoreBadge } from "@/components/ui/store-badge"
+import PhoneMockupBasic from "@/components/ui/phone-mockups-1"
 import LazyOnView from "@/components/LazyOnView"
 import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-underline-text-one"
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
@@ -2019,16 +2020,38 @@ function FinalCTA() {
 function MobileAppsTeaser() {
   const t = useT()
   return (
-    <section style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter)" }}>
-      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
-        <p className="font-mono-pro" style={{ color: INK_MUTED, fontSize: 11, letterSpacing: "0.14em", marginBottom: 24 }}>
-          {t("MOBILE APPS — COMING SEPTEMBER 1, 2026")}
-        </p>
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 20 }}>
-          <StoreBadge type="app-store" comingSoonLabel={t("Coming soon")} note={t("From September 1, 2026")} />
-          <StoreBadge type="google-play" comingSoonLabel={t("Coming soon")} note={t("From September 1, 2026")} />
+    <section style={{ padding: "calc(var(--section-y) * 0.72) var(--page-gutter)" }}>
+      <motion.div
+        className="race-panel"
+        style={{ maxWidth: "var(--page-max)", margin: "0 auto", borderRadius: 32, padding: "clamp(28px, 6vw, 72px)", background: "linear-gradient(135deg, rgba(255,255,255,.96), rgba(251,231,228,.72))" }}
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(300px,.72fr)] lg:gap-20">
+          <div>
+            <div className="race-kicker inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-2 text-[#6b6b76] shadow-sm backdrop-blur">
+              <span className="race-live-dot size-2 rounded-full bg-[#c80000]" />
+              {t("MOBILE — ARRIVING 15 SEPTEMBER 2026")}
+            </div>
+            <h2 className="font-display text-pro-h mt-6 text-[clamp(42px,6vw,76px)] text-[#14141a]">
+              {t("Your study plan.")} <em className="font-normal">{t("Now in your pocket.")}</em>
+            </h2>
+            <p className="mt-6 max-w-xl text-base leading-7 text-[#6b6b76] sm:text-lg">
+              {t("Practice, review and keep your exam-day momentum wherever the day takes you. Your progress stays in sync across web and mobile.")}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <StoreBadge type="app-store" comingSoonLabel={t("Coming soon")} note={t("From September 15, 2026")} />
+              <StoreBadge type="google-play" comingSoonLabel={t("Coming soon")} note={t("From September 15, 2026")} />
+            </div>
+            <p className="mt-5 text-sm text-[#6b6b76]">
+              {t("From 15 September, the Scholify mobile experience will be available on iOS and Android.")}
+            </p>
+          </div>
+          <PhoneMockupBasic />
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }
@@ -2058,8 +2081,8 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
+      <LazyOnView style={{ minHeight: 760 }}><MobileAppsTeaser /></LazyOnView>
       <PaymentMethods style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter) 8px", maxWidth: "var(--page-max)", margin: "0 auto" }} />
-      <LazyOnView style={{ minHeight: 300 }}><MobileAppsTeaser /></LazyOnView>
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
     </div>
   )
