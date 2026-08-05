@@ -27,7 +27,6 @@ import { completeAaSectionA, completeAaSectionB } from "@/lib/acca-aa-expansion"
 import { AA_CONTENT_TARGET } from "@/lib/aa-content-contract"
 import { completeFmSectionB, completeFmSectionC } from "@/lib/acca-fm-expansion"
 import { FM_CONTENT_TARGET } from "@/lib/fm-content-contract"
-import { applyVariantStudyContent } from "@/lib/acca-variant-content"
 import { getPaperVariant } from "@/lib/acca-profile"
 import { completeTxGlobalSectionB, completeTxGlobalSectionC } from "@/lib/acca-tx-global-expansion"
 import { tierCompletionQuestions } from "@/lib/acca-tier-completion"
@@ -446,8 +445,26 @@ export function loadPaperContent(paperId: string): Promise<void> {
           // all. The tree is 33 chapters, one per sub-topic group, and replaces
           // acca-study-pm-official entirely rather than sitting alongside it.
           ? (await import("@/lib/acca-study-pm-tree")).PM_CHAPTERS
-          : collect<StudyChapter>(chapterMods, paperId)
-    const chapters = usesOwnTree ? baseChapters : applyVariantStudyContent(paperId, baseChapters)
+          : paperId === "TX"
+            // TX-UK's SEVEN chapters for a SEVEN-area syllabus was the most extreme case
+            // of the one-chapter-per-area defect: Area B alone is eleven chapters of any
+            // approved-provider text and had one. The tree is 29 chapters on the FA2025
+            // basis. Note this branch is reached only for TX-UK — isTxGlobal is handled
+            // by usesGlobalBank above.
+            ? (await import("@/lib/acca-study-tx-tree")).TX_CHAPTERS
+            : collect<StudyChapter>(chapterMods, paperId)
+    /*
+     * No variant overlay is applied to anything any more, and acca-variant-content.ts has
+     * been deleted with this change. TX-UK was its last caller: it read the shared TX
+     * chapters, so the overlay prepended a "United Kingdom variant · FA2025" orientation
+     * section to give it some idea of its own syllabus. Now that TX-UK has its own
+     * 29-chapter FA2025 tree, that overlay would prepend a UK orientation to a tree that
+     * is entirely UK — exactly the cosmetic-variant defect LW had before its rebuild.
+     *
+     * Every variant that ships now selects its own authored chapters above: LW-Global,
+     * LW-ENG, TX-UK, and TX-Global's own foundation track.
+     */
+    const chapters = baseChapters
     const mappedFlashcards = usesGlobalBank ? [] : paperId === "BT"
       ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
       : paperId === "MA"

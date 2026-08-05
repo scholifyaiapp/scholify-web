@@ -52,9 +52,19 @@ export function setPaperVariant(paperId: string, variant: PaperVariant): void {
   } catch { /* ignore */ }
 }
 
+/*
+ * The label shown wherever the learner's chosen route is displayed.
+ *
+ * LW's GLOBAL option is an OFFICIAL ACCA exam variant, so it is labelled "Global". TX's is
+ * not — it is a jurisdiction-neutral foundation track with no exam behind it — so it is
+ * labelled "Foundation" instead. Calling both "Global" implied TX-Global was an exam route
+ * a learner could sit, which it is not.
+ */
 export function paperVariantLabel(paperId: string): string {
   const variant = getPaperVariant(paperId)
-  return variant ? `${paperId} · ${variant === "UK" ? "United Kingdom" : "Global"}` : paperId
+  if (!variant) return paperId
+  if (variant === "UK") return `${paperId} · United Kingdom`
+  return `${paperId} · ${paperId === "TX" ? "Foundation" : "Global"}`
 }
 
 const START_KEY = "scholify-acca-startmode"

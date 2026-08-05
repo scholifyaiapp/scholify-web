@@ -1244,9 +1244,11 @@ function PaperSlide({
           animate={{ opacity: 1, y: 0 }}
           style={{ marginTop: 16, padding: 14, border: `1px solid ${BORDER}`, borderRadius: 14, background: "#FAFAF9" }}
         >
-          <FieldLabel style={{ color: INK, letterSpacing: ".08em", marginBottom: 9 }}>Choose {paper} variant</FieldLabel>
+          <FieldLabel style={{ color: INK, letterSpacing: ".08em", marginBottom: 9 }}>
+            {paper === "LW" ? `Choose ${paper} variant` : `Choose ${paper} route`}
+          </FieldLabel>
           <ChoiceGroup
-            label={`${paper} syllabus variant`}
+            label={paper === "LW" ? `${paper} syllabus variant` : `${paper} study route`}
             values={["UK", "GLOBAL"]}
             value={variant}
             onChange={(next) => setVariant(next as PaperVariant)}
@@ -1254,9 +1256,16 @@ function PaperSlide({
             columns={2}
             gap={8}
           >
+            {/*
+              LW's two options are both OFFICIAL ACCA exam variants, so either is a valid
+              exam route. TX's are not symmetrical: TX-UK is the exam (FA2025), while
+              TX-Global is a jurisdiction-neutral FOUNDATION track with no ACCA exam behind
+              it — so it offers no mocks. The copy has to say so, or a learner sitting a
+              non-UK TX variant will pick it expecting exam preparation and get principles.
+            */}
             {([
-              ["UK", "United Kingdom", paper === "LW" ? "English legal system and UK business law" : "UK taxation and Finance Act rules"],
-              ["GLOBAL", "Global", paper === "LW" ? "Official LW Global syllabus" : "Global taxation route"],
+              ["UK", "United Kingdom", paper === "LW" ? "English legal system and UK business law" : "The TX-UK exam — Finance Act 2025 rates and rules"],
+              ["GLOBAL", paper === "LW" ? "Global" : "Foundation", paper === "LW" ? "Official LW Global syllabus" : "Jurisdiction-neutral principles · not an ACCA exam variant, so no mocks"],
             ] as const).map(([value, label, blurb]) => (
               <ChoiceTile key={value} value={value} label={label} sub={blurb} />
             ))}
