@@ -69,7 +69,18 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     // key-only setup means partner emails, feedback receipts and study reminders all
     // fail while health still reported "ok". That is billing config's exact failure
     // shape - half-set is the dangerous state - so it is checked as first-class.
-    email_from: !!(process.env.FEEDBACK_FROM || process.env.REMINDER_FROM),
+    // Two separate variables, because the senders do not treat them as
+    // interchangeable and the difference is silent:
+    //   api/affiliate.ts   FEEDBACK_FROM || REMINDER_FROM, and THROWS without either
+    //   api/reminders.ts   REMINDER_FROM only, else falls back to onboarding@resend.dev
+    //   api/waitlist.ts    REMINDER_FROM only, same fallback
+    // That fallback is Resend's shared SANDBOX sender: it can only deliver to the
+    // Resend account owner's own address. So with FEEDBACK_FROM set and
+    // REMINDER_FROM missing, partner emails work while every waitlist confirmation
+    // and every study reminder is rejected for real recipients - and the old
+    // combined check reported "live" throughout.
+    feedback_from: !!process.env.FEEDBACK_FROM,
+    reminder_from: !!process.env.REMINDER_FROM,
     posthog: !!process.env.VITE_POSTHOG_KEY,
     cron_secret: !!process.env.CRON_SECRET,
     google_client: !!process.env.VITE_GOOGLE_CLIENT_ID,
@@ -127,9 +138,13 @@ function health(_req: VercelRequest, res: VercelResponse): void {
    * degrading. So it gets its own verdict instead of letting a set key imply
    * working email.
    */
-  const emailStatus = keys.resend && keys.email_from
+  // REMINDER_FROM is required for "live", not merely one of the two addresses:
+  // without it the waitlist and reminder senders fall back to a sandbox address
+  // that cannot reach real recipients.
+  const anyFrom = keys.feedback_from || keys.reminder_from
+  const emailStatus = keys.resend && keys.reminder_from
     ? "live"
-    : keys.resend || keys.email_from
+    : keys.resend || anyFrom
       ? "half_configured"
       : "not_configured"
 
@@ -196,8 +211,9 @@ function health(_req: VercelRequest, res: VercelResponse): void {
       : {}),
     ...(emailStatus === "half_configured"
       ? {
-          email_error:
-            "Email is half-configured: RESEND_API_KEY and a FROM address (FEEDBACK_FROM or REMINDER_FROM) are BOTH required. Without the FROM address, partner emails, feedback receipts and study reminders all throw.",
+          email_error: !keys.resend
+            ? "RESEND_API_KEY is not set: no email of any kind can be sent."
+            : "REMINDER_FROM is not set. Waitlist confirmations and study reminders fall back to Resend's SANDBOX sender (onboarding@resend.dev), which can only deliver to the Resend account owner - so real recipients get nothing, with no error surfaced to them. Set REMINDER_FROM to a verified sending address.",
         }
       : {}),
     keys,
@@ -222,9 +238,9 @@ function securityCheck(_req: VercelRequest, res: VercelResponse): void {
     supabase_configured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     // Booleans and a derived mode only - never key material. See health() for why
     // the MODE matters more than the presence of a key.
-    email_configured: !!(
-      process.env.RESEND_API_KEY && (process.env.FEEDBACK_FROM || process.env.REMINDER_FROM)
-    ),
+    // REMINDER_FROM specifically: see health() for why the two FROM variables are
+    // not interchangeable.
+    email_configured: !!(process.env.RESEND_API_KEY && process.env.REMINDER_FROM),
     stripe_mode: /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY || "")
       ? "live"
       : /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY || "")
