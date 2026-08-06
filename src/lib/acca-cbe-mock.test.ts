@@ -191,9 +191,14 @@ describe("authored OT cases", () => {
     }
   })
 
-  it("FR has 70 × 10-mark cases and FA has at least 2 × 15-mark MTQ cases", () => {
+  /*
+   * FR's case count changed from 70 to 9 when its Section B was authored. Seventy was the
+   * output of completeFrSectionB - over twenty-three sittings' worth of a paper that examines
+   * three - and nine is exactly three DISJOINT sittings at the real 10-mark unit size.
+   */
+  it("FR has 9 × 10-mark cases and FA has at least 2 × 15-mark MTQ cases", () => {
     const fr = getOtCases("FR")
-    expect(fr).toHaveLength(70)
+    expect(fr).toHaveLength(9)
     for (const c of fr) expect(otCaseMarks(c)).toBe(10)
     const fa = getOtCases("FA")
     expect(fa.length).toBeGreaterThanOrEqual(2)

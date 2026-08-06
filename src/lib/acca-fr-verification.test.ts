@@ -24,6 +24,12 @@ describe("FR official Areas B–D independently recomputed examples", () => {
 
   it("keeps the five official syllabus areas complete", () => {
     expect(new Set(getQuestions("FR").map((item) => item.area))).toEqual(new Set(["A", "B", "C", "D", "E"]))
-    expect(chaptersForPaper("FR").map((chapter) => chapter.area).sort()).toEqual(["A", "B", "C", "D", "E"])
+    const chapters = chaptersForPaper("FR")
+    expect([...new Set(chapters.map((chapter) => chapter.area))].sort()).toEqual(["A", "B", "C", "D", "E"])
+    // FR is now a chapter TREE, so this asserts COVERAGE plus a contiguous reading order
+    // rather than one chapter per area.
+    expect(chapters.length).toBeGreaterThan(5)
+    expect(chapters.map((chapter) => chapter.number))
+      .toEqual(Array.from({ length: chapters.length }, (_, i) => i + 1))
   })
 })
