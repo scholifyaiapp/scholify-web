@@ -181,6 +181,15 @@ function PrimaryCTA({ children, onClick, large = false }: { children: React.Reac
 function Nav() {
   const navigate = useNavigate()
   const t = useT()
+  const scrollToSection = (id: string) => {
+    const section = document.getElementById(id)
+    if (!section) return
+    section.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    })
+    window.history.replaceState(null, "", `#${id}`)
+  }
   return (
     <motion.header
       initial={{ y: -20, opacity: 0, x: "-50%" }}
@@ -227,9 +236,9 @@ function Nav() {
       >
         <NavHeader
           items={[
-            { label: t("Features"), href: "#features" },
-            { label: t("How it works"), href: "#how-it-works" },
-            { label: t("Pricing"), href: "#pricing" },
+            { label: t("Features"), href: "#features", onClick: () => scrollToSection("features") },
+            { label: t("How it works"), href: "#how-it-works", onClick: () => scrollToSection("how-it-works") },
+            { label: t("Pricing"), href: "/pricing", onClick: () => navigate("/pricing") },
             { label: t("Partners"), href: "/partners/apply", onClick: () => navigate("/partners/apply") },
           ]}
         />
@@ -1877,7 +1886,9 @@ function Pricing() {
     const plan: StripePlan = tier === 1
       ? (period === 1 ? "annual_beginner" : "beginner")
       : (period === 1 ? "annual_pro" : "pro")
-    void startStripeCheckout(plan)
+    void startStripeCheckout(plan).then((started) => {
+      if (!started) navigate(signUpPath(`/pricing?checkout=${plan}`))
+    })
   }
   return (
     <section id="pricing" style={{ padding: "var(--section-y) var(--page-gutter)" }}>

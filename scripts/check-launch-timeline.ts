@@ -19,10 +19,10 @@ const MINUTE = 60_000
 const MOMENTS: { label: string; at: number }[] = [
   { label: "now", at: Date.now() },
   { label: "1 min BEFORE partner date", at: Date.parse(PARTNER_LAUNCH_DATE_ISO) - MINUTE },
-  { label: "partner date (8 Aug 00:00 +05)", at: Date.parse(PARTNER_LAUNCH_DATE_ISO) },
+  { label: "partner date (6 Aug 00:00 +05)", at: Date.parse(PARTNER_LAUNCH_DATE_ISO) },
   { label: "1 min AFTER partner date", at: Date.parse(PARTNER_LAUNCH_DATE_ISO) + MINUTE },
   { label: "1 min BEFORE launch", at: Date.parse(LAUNCH_DATE_ISO) - MINUTE },
-  { label: "launch (10 Aug 00:00 +05)", at: Date.parse(LAUNCH_DATE_ISO) },
+  { label: "launch (10 Aug 15:00 +05)", at: Date.parse(LAUNCH_DATE_ISO) },
   { label: "1 min AFTER launch", at: Date.parse(LAUNCH_DATE_ISO) + MINUTE },
 ]
 
@@ -85,4 +85,4 @@ if (problems.length) {
   for (const p of problems) console.log(`  - ${p}`)
   process.exit(1)
 }
-console.log("OK  8 Aug: waitlist + partner link.  10 Aug: landing, app and pricing open, partner link stays.")
+console.log("OK  6 Aug: waitlist + partner link.  10 Aug at 15:00: landing, app and pricing open, partner link stays.")

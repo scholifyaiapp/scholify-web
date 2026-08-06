@@ -30,6 +30,8 @@ import {
 describe("auth path helpers", () => {
   it("opens automatically at the advertised Uzbekistan launch instant", () => {
     const launch = Date.parse(LAUNCH_DATE_ISO)
+    expect(LAUNCH_DATE_ISO).toBe("2026-08-10T15:00:00+05:00")
+    expect(launch).toBe(Date.parse("2026-08-10T10:00:00Z"))
     expect(isPrelaunchAt(launch - 1)).toBe(true)
     expect(isPrelaunchAt(new Date(launch))).toBe(false)
     expect(isPrelaunchAt(launch + 1)).toBe(false)
@@ -85,11 +87,11 @@ describe("auth path helpers", () => {
  * risk: social posts going out to a waitlist page with no partner link on it.
  *
  * These assertions pin the two instants and, critically, their ORDER — the partner
- * programme is announced two days BEFORE the product opens, so an off-by-one in
+ * programme is public BEFORE the product opens, so an off-by-one in
  * either date would be caught here rather than in public.
  */
 describe("launch gates open themselves on their own dates", () => {
-  it("reveals the partner programme exactly at midnight Tashkent on 8 August", () => {
+  it("reveals the partner programme exactly at midnight Tashkent on 6 August", () => {
     const open = Date.parse(PARTNER_LAUNCH_DATE_ISO)
     expect(isPartnerProgramVisibleAt(open - 1)).toBe(false)
     expect(isPartnerProgramVisibleAt(new Date(open))).toBe(true)
@@ -102,7 +104,7 @@ describe("launch gates open themselves on their own dates", () => {
 
   it("keeps the partner programme visible after the product launches", () => {
     // A gate that re-hid itself at launch would remove the link the social posts
-    // point at, two days after publishing them.
+    // point at after publishing them.
     expect(isPartnerProgramVisibleAt(Date.parse(LAUNCH_DATE_ISO))).toBe(true)
     expect(isPartnerProgramVisibleAt(Date.parse(LAUNCH_DATE_ISO) + 365 * 864e5)).toBe(true)
   })
@@ -121,6 +123,6 @@ describe("launch gates open themselves on their own dates", () => {
         timeZone: "Asia/Tashkent", day: "numeric", month: "long", year: "numeric",
       }).format(d)
     expect(inTashkent(partner)).toBe(PARTNER_LAUNCH_DATE_LABEL)
-    expect(inTashkent(product)).toBe(LAUNCH_DATE_LABEL)
+    expect(LAUNCH_DATE_LABEL).toBe(`${inTashkent(product)} at 15:00 Uzbekistan time`)
   })
 })
