@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { commissionAmount, priceForPlan, planForPrice } from "../../api/stripe.js"
+import { commissionAmount, priceForPlan, planForPrice, resolveAffiliateMetadata } from "../../api/stripe.js"
 
 /*
  * Stripe plan ↔ price mapping. Every bug here either charges for the wrong plan
@@ -66,5 +66,126 @@ describe("partner commission calculation", () => {
     expect(commissionAmount(-100)).toBe(0)
     expect(commissionAmount(10.5)).toBe(0)
     expect(commissionAmount(Number.NaN)).toBe(0)
+  })
+})
+
+/*
+ * Partner attribution at checkout.
+ *
+ * This is the regression test for the bug that made the whole partner programme
+ * pay nothing. The client sent the code it had captured from `?aff=CODE` in
+ * localStorage — but `claimCapturedAffiliate()` DELETES that code at signup once
+ * the attribution is banked in `affiliate_referrals`. Since checkout requires a
+ * signed-in user, the code was always already gone by the time anyone paid, so
+ * the session carried no `affiliate_id` and `recordCommission` returned at its
+ * first line. Partners watched their invited-user count rise and their earnings
+ * stay at zero.
+ *
+ * The fix reads `affiliate_referrals` as the fallback, so the durable row written
+ * at signup is what earns the commission weeks later.
+ */
+
+/** Minimal Supabase query-builder stub: enough for the two lookups under test. */
+function supaStub(tables: {
+  affiliates?: Record<string, { id: string; code: string; status: string }>
+  referrals?: Record<string, { affiliate_id: string }>
+}) {
+  return {
+    from(table: string) {
+      const filters: Record<string, string> = {}
+      const builder = {
+        select: () => builder,
+        eq(column: string, value: string) {
+          filters[column] = value
+          return builder
+        },
+        maybeSingle: async () => {
+          if (table === "affiliates") {
+            const rows = Object.values(tables.affiliates ?? {})
+            const row = rows.find(
+              (r) =>
+                (filters.code === undefined || r.code === filters.code) &&
+                (filters.id === undefined || r.id === filters.id) &&
+                (filters.status === undefined || r.status === filters.status),
+            )
+            return { data: row ?? null }
+          }
+          if (table === "affiliate_referrals") {
+            return { data: tables.referrals?.[filters.referred_user_id] ?? null }
+          }
+          return { data: null }
+        },
+      }
+      return builder
+    },
+  } as never
+}
+
+describe("resolveAffiliateMetadata (which partner earns the commission)", () => {
+  const ACTIVE = { id: "aff-1", code: "PARTNER27", status: "active" }
+
+  it("credits the code sent with the request when it belongs to an active partner", async () => {
+    const meta = await resolveAffiliateMetadata(
+      supaStub({ affiliates: { a: ACTIVE } }),
+      "user-1",
+      "partner27",
+    )
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
+  })
+
+  it("falls back to the signup attribution when the client sends NO code", async () => {
+    // The bug: this returned {} and no commission was ever recorded.
+    const meta = await resolveAffiliateMetadata(
+      supaStub({ affiliates: { a: ACTIVE }, referrals: { "user-1": { affiliate_id: "aff-1" } } }),
+      "user-1",
+      undefined,
+    )
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
+  })
+
+  it("falls back when the client sends an unknown code rather than dropping the referral", async () => {
+    const meta = await resolveAffiliateMetadata(
+      supaStub({ affiliates: { a: ACTIVE }, referrals: { "user-1": { affiliate_id: "aff-1" } } }),
+      "user-1",
+      "NOSUCHCODE",
+    )
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
+  })
+
+  it("pays nobody when the user was never referred", async () => {
+    const meta = await resolveAffiliateMetadata(supaStub({ affiliates: { a: ACTIVE } }), "user-9", undefined)
+    expect(meta).toEqual({})
+  })
+
+  it("pays nobody when the referring partner is no longer active", async () => {
+    const revoked = { id: "aff-2", code: "REVOKED", status: "rejected" }
+    const meta = await resolveAffiliateMetadata(
+      supaStub({ affiliates: { a: revoked }, referrals: { "user-1": { affiliate_id: "aff-2" } } }),
+      "user-1",
+      undefined,
+    )
+    expect(meta).toEqual({})
+  })
+
+  it("ignores a code belonging to an INACTIVE partner and falls back to the referral", async () => {
+    const pending = { id: "aff-3", code: "PENDING1", status: "pending" }
+    const meta = await resolveAffiliateMetadata(
+      supaStub({
+        affiliates: { p: pending, a: ACTIVE },
+        referrals: { "user-1": { affiliate_id: "aff-1" } },
+      }),
+      "user-1",
+      "PENDING1",
+    )
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
+  })
+
+  it("normalises a lowercase or punctuated code before matching", async () => {
+    const meta = await resolveAffiliateMetadata(
+      supaStub({ affiliates: { a: ACTIVE } }),
+      "user-1",
+      " partner-27 ",
+    )
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
   })
 })

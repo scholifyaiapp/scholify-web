@@ -9,6 +9,21 @@
  * added here without touching consumers.
  */
 
+/**
+ * Whether ANY notification source is currently wired up.
+ *
+ * `deriveNotifications` has returned an empty summary since the ACCA pivot retired
+ * the vocab-era sources, which left the header bell rendering a control that could
+ * never do anything: a learner clicks it, gets an empty dropdown, and learns to
+ * ignore it. A dead affordance is worse than no affordance, so the bell reads this
+ * flag and renders nothing while it is false.
+ *
+ * Flip it to true in the same commit that adds a real source (exam-date reminders,
+ * leaderboard movements, streak nudges) and the bell comes back on its own — no
+ * consumer needs to change.
+ */
+export const NOTIFICATION_SOURCES_ACTIVE = false
+
 export type NotificationKind = "partner" | "room" | "community" | "quiz"
 
 export interface NotificationItem {

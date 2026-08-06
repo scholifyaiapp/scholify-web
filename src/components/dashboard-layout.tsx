@@ -8,6 +8,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, type IconName, C, SP, R, SHADOW, GRAD } from "@/components/acca/ui"
 import { ScholifyLockup } from "@/components/brand"
 import NotificationBell from "@/components/NotificationBell"
+import { NOTIFICATION_SOURCES_ACTIVE } from "@/lib/notification-center"
 import { deriveNotifications, subscribeNotifications, type NotificationKind } from "@/lib/notification-center"
 import { getTodayStats } from "@/lib/acca"
 import { qualificationProgress } from "@/lib/acca-qualification"
@@ -342,7 +343,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 <span className="hidden sm:inline">ADMIN</span>
               </Link>
             )}
-            <NotificationBell />
+            {/*
+              * No notification source is wired up yet (see notification-center.ts), so the
+              * bell would open an empty dropdown every time it is clicked. A dead
+              * affordance teaches learners to ignore the control, so it is not rendered
+              * at all until a real signal exists - flipping the flag brings it back.
+              */}
+            {NOTIFICATION_SOURCES_ACTIVE && <NotificationBell />}
           </div>
         </div>
 

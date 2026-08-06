@@ -20,6 +20,23 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
  * (`leaderboard` also returned raw user ids to anonymous callers.)
  */
 
+/**
+ * Which Stripe MODE a key belongs to, from its prefix alone.
+ *
+ * Exported so it can be tested directly: telling live from test is the difference
+ * between collecting money and only appearing to, and it must never be decided by
+ * a guess. Returns null for an absent or unrecognised key rather than assuming
+ * either mode - failing to "unknown" is safe, defaulting to "live" would not be.
+ *
+ * Only the derived mode is ever returned to a caller; no key material is exposed.
+ */
+export function stripeKeyMode(raw: string | undefined): "live" | "test" | null {
+  if (!raw) return null
+  if (/^(sk|rk)_live_/.test(raw) || /^pk_live_/.test(raw)) return "live"
+  if (/^(sk|rk)_test_/.test(raw) || /^pk_test_/.test(raw)) return "test"
+  return null
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const action = String((req.query.action || (req.body as Record<string, unknown> | undefined)?.action) || "")
     .trim()
@@ -47,6 +64,12 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     supabase_anon: !!(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY),
     supabase_service: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     resend: !!process.env.RESEND_API_KEY,
+    // The API key alone does not send an email. Every sender in api/ resolves its
+    // FROM address from FEEDBACK_FROM || REMINDER_FROM and THROWS without one, so a
+    // key-only setup means partner emails, feedback receipts and study reminders all
+    // fail while health still reported "ok". That is billing config's exact failure
+    // shape - half-set is the dangerous state - so it is checked as first-class.
+    email_from: !!(process.env.FEEDBACK_FROM || process.env.REMINDER_FROM),
     posthog: !!process.env.VITE_POSTHOG_KEY,
     cron_secret: !!process.env.CRON_SECRET,
     google_client: !!process.env.VITE_GOOGLE_CLIENT_ID,
@@ -98,15 +121,57 @@ function health(_req: VercelRequest, res: VercelResponse): void {
   const billingHalfConfigured =
     [...stripeStack, ...paddleStack].some(Boolean) && !billingConfigured
 
+  /*
+   * Email is a two-part stack for the same reason billing is: the Resend key
+   * without a FROM address sends nothing, and every sender THROWS rather than
+   * degrading. So it gets its own verdict instead of letting a set key imply
+   * working email.
+   */
+  const emailStatus = keys.resend && keys.email_from
+    ? "live"
+    : keys.resend || keys.email_from
+      ? "half_configured"
+      : "not_configured"
+
+  /*
+   * Stripe LIVE vs TEST mode.
+   *
+   * "billing: live" above means CONFIGURED, not "collecting real money" - and the
+   * two look identical from outside. A test-mode secret key gives a working
+   * checkout, a Stripe dashboard full of payments and not one cent in the bank.
+   * Nothing in the app surfaced that, so the question "if a user pays, does it
+   * reach our account?" had no answer anywhere.
+   *
+   * Key PREFIXES are safe to inspect - they are metadata, not secret material -
+   * and only the derived mode is ever returned. A MISMATCH between the secret and
+   * the publishable key is reported separately because it is the worst case: the
+   * client believes one mode while the server uses the other.
+   */
+  const secretMode = stripeKeyMode(process.env.STRIPE_SECRET_KEY)
+  const publishableMode = stripeKeyMode(process.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  const stripeModeMismatch = !!secretMode && !!publishableMode && secretMode !== publishableMode
+
   const coreReady =
     (keys.anthropic || keys.openai) && keys.supabase_url && keys.supabase_anon && keys.supabase_service
-  const ok = coreReady && !billingHalfConfigured
+  // A half-configured email stack, or a live/test key mismatch, each fail health
+  // LOUDLY for the same reason a half-configured billing stack does: the app looks
+  // healthy while a user-visible promise silently breaks.
+  const ok =
+    coreReady && !billingHalfConfigured && emailStatus !== "half_configured" && !stripeModeMismatch
 
   res.status(ok ? 200 : 503).json({
     status: ok ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     billing: billingConfigured ? "live" : billingHalfConfigured ? "half_configured" : "not_configured",
+    // "billing" answers "is it configured?"; "stripe_mode" answers "is it real money?".
+    stripe_mode: secretMode ?? "unknown",
+    stripe_publishable_mode: publishableMode ?? "unknown",
+    email: emailStatus,
+    // Which provider is actually serving Charles. Anthropic is the intended one and
+    // OpenAI is only a temporary bridge (see api/lara.ts callModel), so running on
+    // the bridge is worth seeing here rather than discovering later.
+    ai_provider: keys.anthropic ? "anthropic" : keys.openai ? "openai" : null,
     calendar:
       keys.google_client && keys.google_secret && keys.google_redirect
         ? "live"
@@ -115,6 +180,24 @@ function health(_req: VercelRequest, res: VercelResponse): void {
       ? {
           error:
             "Billing is half-configured: checkout will open but the webhook cannot grant plans. Set the ENTIRE Stripe (or Paddle) stack — secret + webhook secret + publishable + all 3 price ids.",
+        }
+      : {}),
+    ...(stripeModeMismatch
+      ? {
+          stripe_mode_error:
+            "Stripe key MODE MISMATCH: the secret key and the publishable key are from different Stripe modes (one live, one test). Checkout will fail or charge in the wrong mode. Both must come from the same mode.",
+        }
+      : {}),
+    ...(secretMode === "test"
+      ? {
+          stripe_mode_warning:
+            "Stripe is in TEST mode. Checkout works and payments appear in the Stripe dashboard, but NO REAL MONEY is collected. Move STRIPE_SECRET_KEY, VITE_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET and all four price ids to their live-mode equivalents before taking customers.",
+        }
+      : {}),
+    ...(emailStatus === "half_configured"
+      ? {
+          email_error:
+            "Email is half-configured: RESEND_API_KEY and a FROM address (FEEDBACK_FROM or REMINDER_FROM) are BOTH required. Without the FROM address, partner emails, feedback receipts and study reminders all throw.",
         }
       : {}),
     keys,
@@ -137,5 +220,15 @@ function securityCheck(_req: VercelRequest, res: VercelResponse): void {
         ? "openai"
         : null,
     supabase_configured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    // Booleans and a derived mode only - never key material. See health() for why
+    // the MODE matters more than the presence of a key.
+    email_configured: !!(
+      process.env.RESEND_API_KEY && (process.env.FEEDBACK_FROM || process.env.REMINDER_FROM)
+    ),
+    stripe_mode: /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY || "")
+      ? "live"
+      : /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY || "")
+        ? "test"
+        : "unknown",
   })
 }

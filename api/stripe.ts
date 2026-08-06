@@ -168,6 +168,67 @@ export function commissionAmount(saleAmount: number, rate = 0.27): number {
 }
 
 /**
+ * Resolve the partner a checkout should be credited to.
+ *
+ * ── Why this reads the DATABASE and not only the request ─────────
+ * The client sends the code it captured from `?aff=CODE` in localStorage. That
+ * used to be the ONLY source, and it silently lost every commission the
+ * programme was supposed to pay:
+ *
+ *   1. a visitor arrives on `?aff=CODE` — the code goes into localStorage;
+ *   2. they sign up — `claimCapturedAffiliate()` records the attribution in
+ *      `affiliate_referrals` and then CLEARS the code from localStorage;
+ *   3. days or weeks later they upgrade — `getCapturedAffiliate()` returns null,
+ *      the checkout session carries no `affiliate_id`, and `recordCommission`
+ *      returns immediately.
+ *
+ * Because checkout requires a signed-in user, step 2 ALWAYS happens before step
+ * 3, so there was no path in which a commission was ever recorded. Partners saw
+ * their invited-user count rise and their earnings stay at zero.
+ *
+ * `affiliate_referrals` already holds the durable attribution written at signup,
+ * so it is the right source of truth here: it survives a cleared localStorage, a
+ * different browser, a different device, and the months between a free signup and
+ * a paid upgrade. The request code is still honoured first — it covers the case
+ * of a visitor who arrives on a partner link and buys in the same session before
+ * any referral row exists — and the database is the fallback.
+ */
+export async function resolveAffiliateMetadata(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  userId: string,
+  rawCode: unknown,
+): Promise<Record<string, string>> {
+  const code = String(rawCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20)
+  if (code) {
+    const { data: aff } = await supa
+      .from("affiliates")
+      .select("id, code")
+      .eq("code", code)
+      .eq("status", "active")
+      .maybeSingle()
+    if (aff) return { affiliate_id: aff.id, affiliate_code: aff.code }
+  }
+
+  // Fall back to the attribution recorded when this user signed up.
+  const { data: referral } = await supa
+    .from("affiliate_referrals")
+    .select("affiliate_id")
+    .eq("referred_user_id", userId)
+    .maybeSingle()
+  if (!referral?.affiliate_id) return {}
+
+  // Only an ACTIVE partner earns — a revoked one keeps the referral row but not
+  // the commission, which is the same rule recordCommission applies.
+  const { data: aff } = await supa
+    .from("affiliates")
+    .select("id, code, status")
+    .eq("id", referral.affiliate_id)
+    .maybeSingle()
+  if (!aff || aff.status !== "active") return {}
+  return { affiliate_id: aff.id, affiliate_code: aff.code }
+}
+
+/**
  * Record a 27% (or the affiliate's own rate) commission for a completed
  * checkout, if the session was attributed to an affiliate. Idempotent via the
  * unique `stripe_session_id`. Best-effort — the caller swallows any error so a
@@ -241,7 +302,169 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "checkout") return checkout(req, res)
   if (action === "cancel") return cancel(req, res)
   if (action === "portal") return portal(req, res)
-  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal." })
+  if (action === "selftest") return selftest(req, res)
+  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal | selftest." })
+}
+
+/* ── Self-test: does a payment actually reach OUR account? ───────────── */
+
+/** The only account permitted to run the self-test (it returns account details). */
+const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
+
+/** The webhook events this file handles. A subscription missing any of these means
+ * the corresponding entitlement change silently never happens. */
+const REQUIRED_WEBHOOK_EVENTS = [
+  "checkout.session.completed",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+] as const
+
+/**
+ * Prove, against the live Stripe API, that a payment would reach this account —
+ * the question "/api/health" cannot answer.
+ *
+ * Health reports whether keys are SET. That is not the same as money arriving, and
+ * three separate misconfigurations produce a working-looking checkout that pays
+ * nobody:
+ *
+ *   · a TEST-mode key — payments appear in the Stripe dashboard, the bank stays empty;
+ *   · an account with `charges_enabled: false` or `payouts_enabled: false` — Stripe
+ *     accepts the customer but will not settle to the bank;
+ *   · a webhook endpoint that is missing, disabled, or not subscribed to
+ *     `checkout.session.completed` — the customer pays and is never granted a plan.
+ *
+ * Each is invisible until a real customer is affected, so this endpoint checks all
+ * three plus the four price ids, and returns a single `verdict`.
+ *
+ * Admin-only: it reveals account and price configuration. POST with the admin's
+ * Supabase JWT.
+ */
+async function selftest(req: VercelRequest, res: VercelResponse): Promise<void> {
+  res.setHeader("Cache-Control", "no-store")
+  const stripe = stripeClient()
+  const supa = admin()
+  if (!supa) {
+    res.status(200).json({ ok: false, reason: "missing_supabase_admin" })
+    return
+  }
+  const user = await authedUser(req, supa)
+  if (!user || user.email.toLowerCase() !== ADMIN_EMAIL) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  if (!stripe) {
+    res.status(200).json({ ok: false, reason: "not_configured", verdict: "STRIPE_SECRET_KEY is not set" })
+    return
+  }
+
+  const secret = process.env.STRIPE_SECRET_KEY || ""
+  const mode = /^(sk|rk)_live_/.test(secret) ? "live" : /^(sk|rk)_test_/.test(secret) ? "test" : "unknown"
+  const problems: string[] = []
+
+  /* 1. The account itself — can it charge, and can it pay out to a bank? */
+  let account: {
+    id?: string
+    business_name?: string | null
+    country?: string | null
+    default_currency?: string | null
+    charges_enabled?: boolean
+    payouts_enabled?: boolean
+  } = {}
+  try {
+    const acct = await stripe.accounts.retrieve()
+    account = {
+      id: acct.id,
+      business_name: acct.business_profile?.name ?? acct.settings?.dashboard?.display_name ?? null,
+      country: acct.country ?? null,
+      default_currency: acct.default_currency ?? null,
+      charges_enabled: acct.charges_enabled,
+      payouts_enabled: acct.payouts_enabled,
+    }
+    if (!acct.charges_enabled) problems.push("Stripe account cannot accept charges (charges_enabled is false).")
+    if (!acct.payouts_enabled)
+      problems.push("Stripe account cannot pay out (payouts_enabled is false) — money would be collected but never settle to the bank.")
+  } catch (err) {
+    problems.push(`Could not read the Stripe account: ${(err as Error).message.slice(0, 140)}`)
+  }
+
+  /* 2. The four price ids — do they exist in THIS account, and are they active? */
+  const plans = ["beginner", "annual_beginner", "pro", "annual_pro"] as const
+  const prices: Record<string, unknown> = {}
+  for (const plan of plans) {
+    const id = priceForPlan(plan)
+    if (!id) {
+      prices[plan] = { configured: false }
+      problems.push(`No price id configured for the "${plan}" plan.`)
+      continue
+    }
+    try {
+      const price = await stripe.prices.retrieve(id)
+      prices[plan] = {
+        configured: true,
+        id: price.id,
+        active: price.active,
+        unit_amount: price.unit_amount,
+        currency: price.currency,
+        interval: price.recurring?.interval ?? null,
+        livemode: price.livemode,
+      }
+      if (!price.active) problems.push(`The "${plan}" price (${price.id}) is ARCHIVED in Stripe — checkout will fail.`)
+      if (!price.recurring)
+        problems.push(`The "${plan}" price (${price.id}) is not recurring, but checkout runs in subscription mode.`)
+    } catch (err) {
+      prices[plan] = { configured: true, id, error: (err as Error).message.slice(0, 140) }
+      problems.push(
+        `The "${plan}" price id does not exist in this Stripe account — a price id from the OTHER mode (live vs test) is the usual cause.`,
+      )
+    }
+  }
+
+  /* 3. The webhook — without it, customers pay and are never granted a plan. */
+  let webhookReport: unknown = { checked: false }
+  try {
+    const endpoints = await stripe.webhookEndpoints.list({ limit: 100 })
+    const enabled = endpoints.data.filter((e) => e.status === "enabled")
+    const subscribed = new Set<string>()
+    for (const e of enabled) for (const ev of e.enabled_events) subscribed.add(ev)
+    const wildcard = subscribed.has("*")
+    const missing = REQUIRED_WEBHOOK_EVENTS.filter((ev) => !wildcard && !subscribed.has(ev))
+    webhookReport = {
+      checked: true,
+      endpoints_total: endpoints.data.length,
+      endpoints_enabled: enabled.length,
+      urls: enabled.map((e) => e.url),
+      missing_events: missing,
+    }
+    if (enabled.length === 0)
+      problems.push("No ENABLED webhook endpoint in Stripe — customers would pay and never be granted their plan.")
+    if (missing.length > 0)
+      problems.push(
+        `Webhook endpoint(s) do not subscribe to: ${missing.join(", ")}. Each missing event is an entitlement change that silently never happens.`,
+      )
+  } catch (err) {
+    webhookReport = { checked: false, error: (err as Error).message.slice(0, 140) }
+  }
+
+  /* 4. The mode warning is last because it is a statement of fact, not a fault. */
+  if (mode === "test")
+    problems.push(
+      "Stripe is in TEST mode: checkout works and payments show in the dashboard, but NO REAL MONEY is collected.",
+    )
+  if (mode === "unknown") problems.push("STRIPE_SECRET_KEY has an unrecognised prefix — cannot tell live from test.")
+
+  const collectsRealMoney = mode === "live" && account.charges_enabled === true && account.payouts_enabled === true
+  res.status(200).json({
+    ok: problems.length === 0,
+    mode,
+    collects_real_money: collectsRealMoney,
+    verdict: problems.length === 0
+      ? `Payments reach the Stripe account ${account.id ?? ""} (${account.business_name ?? "unnamed"}) in ${mode} mode, and the webhook grants plans.`
+      : `${problems.length} problem(s) would stop payments reaching the account or stop plans being granted.`,
+    problems,
+    account,
+    prices,
+    webhook: webhookReport,
+  })
 }
 
 /* ── Checkout: app → Stripe hosted checkout ─────────────────────────── */
@@ -302,19 +525,7 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
     }
   }
 
-  // Affiliate attribution — resolve an active partner code to its id, so the
-  // webhook can record a commission after payment (more reliable than UTM).
-  const affCode = String(body.affiliateCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20)
-  let affMeta: Record<string, string> = {}
-  if (affCode) {
-    const { data: aff } = await supa
-      .from("affiliates")
-      .select("id, code")
-      .eq("code", affCode)
-      .eq("status", "active")
-      .maybeSingle()
-    if (aff) affMeta = { affiliate_id: aff.id, affiliate_code: aff.code }
-  }
+  const affMeta = await resolveAffiliateMetadata(supa, user.id, body.affiliateCode)
 
   try {
     const session = await stripe.checkout.sessions.create({
