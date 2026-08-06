@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
+import { timingSafeEqual } from "node:crypto"
 
 /*
  * Stripe Billing — single Vercel function dispatched by `?action=` (12-function
@@ -311,6 +312,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 /** The only account permitted to run the self-test (it returns account details). */
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
 
+/** Constant-time bearer comparison — a length-safe equality that does not leak the
+ * secret through timing. */
+function bearerMatches(req: VercelRequest, expected: string | undefined): boolean {
+  if (!expected) return false
+  const supplied = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!supplied || supplied.length !== expected.length) return false
+  return timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
+}
+
+/** May this caller run the self-test? The admin's JWT, or CRON_SECRET. */
+async function selftestAuthorised(
+  req: VercelRequest,
+  supa: NonNullable<ReturnType<typeof admin>>,
+): Promise<boolean> {
+  if (bearerMatches(req, process.env.CRON_SECRET)) return true
+  const user = await authedUser(req, supa)
+  return !!user && user.email.toLowerCase() === ADMIN_EMAIL
+}
+
 /** The webhook events this file handles. A subscription missing any of these means
  * the corresponding entitlement change silently never happens. */
 const REQUIRED_WEBHOOK_EVENTS = [
@@ -347,8 +367,19 @@ async function selftest(req: VercelRequest, res: VercelResponse): Promise<void> 
     res.status(200).json({ ok: false, reason: "missing_supabase_admin" })
     return
   }
-  const user = await authedUser(req, supa)
-  if (!user || user.email.toLowerCase() !== ADMIN_EMAIL) {
+  /*
+   * Two ways in, because the point of this endpoint is that it gets RUN.
+   *
+   * The admin's Supabase JWT is the primary path, but extracting one from the
+   * browser to paste into a terminal is enough friction that a pre-launch check
+   * quietly never happens. CRON_SECRET is already set in production, is held only
+   * by the founder, and is compared in constant time — so `curl -H "Authorization:
+   * Bearer $CRON_SECRET"` is a one-liner from any shell.
+   *
+   * Nothing secret is returned either way: account id, business name, price amounts
+   * and webhook URLs are configuration, not credentials.
+   */
+  if (!(await selftestAuthorised(req, supa))) {
     res.status(403).json({ ok: false, reason: "forbidden" })
     return
   }
