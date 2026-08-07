@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "./vercel-types"
+import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import postgres from "postgres"
 

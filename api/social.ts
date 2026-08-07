@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "./vercel-types"
+import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 
 /*
  * Ops endpoint — health + security introspection. Dispatches by `?action=` to

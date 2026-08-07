@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "./vercel-types"
+import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient } from "@supabase/supabase-js"
 import crypto from "node:crypto"
 
