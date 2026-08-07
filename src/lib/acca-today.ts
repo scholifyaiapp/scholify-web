@@ -84,12 +84,11 @@ export function todayHeadline(paperId: string): string {
 }
 
 /**
- * Build today's ordered plan for a paper. The distributed schedule engine is
- * the source of truth: it handles the onboarding route, diagnostic and live
- * weaknesses, paper coverage, current method phase, exam date, daily time,
- * target score and flashcard queue. Do not expand this into a fixed checklist;
- * doing so makes every learner see the same Study/Quiz/Practice pattern and
- * discards the personalisation the schedule already calculated.
+ * Build the four in-app steps of the universal daily loop. The fifth step,
+ * Technical Article, is rendered from the paper's official ACCA resource in
+ * AccaStudy. The shape never changes: limited-time learners should understand
+ * the routine instantly. The schedule engine personalises the CONTENT inside
+ * Study and Practice (topic, weak area and volume), not the number of tasks.
  */
 export function buildTodayPlan(paperId: string): TodayTask[] {
   const scheduled: TodayTask[] = buildDailyTasks(paperId).map((t) => ({
@@ -100,15 +99,48 @@ export function buildTodayPlan(paperId: string): TodayTask[] {
     action: t.action,
     area: t.area,
   }))
-  if (scheduled.length > 0) return scheduled
-  return [{
-    id: "study",
-    icon: "📖",
-    title: "Study today's priority topic",
-    detail: "Charles selected the next lesson from your paper progress",
-    action: "study",
-    area: getPaper(paperId)?.areas[0]?.code,
-  }]
+  const paper = getPaper(paperId)
+  const studySource = scheduled.find((task) => task.action === "study")
+  const practiceSource = scheduled.find((task) => task.action === "weak" || task.action === "practice" || task.action === "bank")
+  const cardSource = scheduled.find((task) => task.action === "flashcards")
+  const area = studySource?.area ?? practiceSource?.area ?? paper?.areas[0]?.code
+  const areaLabel = paper?.areas.find((item) => item.code === area)?.label
+  const topic = area ? `${area}${areaLabel ? ` · ${areaLabel}` : ""}` : paperId
+
+  return [
+    {
+      id: "study",
+      icon: "📖",
+      title: "Study",
+      detail: studySource?.detail ?? `Learn today's priority topic: ${topic}`,
+      action: "study",
+      area,
+    },
+    {
+      id: "essentials",
+      icon: "🎯",
+      title: "Quiz",
+      detail: `Check the essential ideas from ${topic} with instant explanations`,
+      action: "essentials",
+      area,
+    },
+    {
+      id: "practice",
+      icon: "✏️",
+      title: "Practice",
+      detail: practiceSource?.detail ?? `Apply ${topic} in targeted exam-style questions`,
+      action: practiceSource?.action === "weak" ? "weak" : "practice",
+      area: practiceSource?.area ?? area,
+    },
+    {
+      id: "flashcards",
+      icon: "🧠",
+      title: "Flashcards",
+      detail: cardSource?.detail ?? "Review the facts, formulas and rules due today",
+      action: "flashcards",
+      area,
+    },
+  ]
 }
 
 /* ── Sequential unlock: one task at a time ────────────────────────────────

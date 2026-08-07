@@ -36,14 +36,20 @@ describe("allocateTaskMinutes", () => {
 })
 
 describe("adaptive daily-plan structure", () => {
-  it("uses the adaptive schedule instead of injecting every exam section each day", () => {
-    const plan = buildTodayPlan("PM")
-    expect(plan.some((item) => item.action === "study" || item.action === "diagnostic")).toBe(true)
-    expect(plan.filter((item) => item.action === "section")).toHaveLength(0)
+  it("always exposes one clear four-step in-app loop", () => {
+    for (const paper of ["BT", "PM", "SBR", "AAA"]) {
+      expect(buildTodayPlan(paper).map((item) => item.title)).toEqual(["Study", "Quiz", "Practice", "Flashcards"])
+    }
   })
 
-  it("uses learner-facing Practice language instead of Drill", () => {
-    expect(buildTodayPlan("BT").every((item) => !/^Drill\b/i.test(item.title))).toBe(true)
+  it("keeps stable task ids so completion never duplicates or re-locks steps", () => {
+    expect(buildTodayPlan("PM").map((item) => item.id)).toEqual(["study", "essentials", "practice", "flashcards"])
+  })
+
+  it("targets a real syllabus area while keeping the universal labels", () => {
+    const plan = buildTodayPlan("BT")
+    expect(plan.every((item) => item.area)).toBe(true)
+    expect(plan[1].detail).toContain(plan[0].area)
   })
 })
 

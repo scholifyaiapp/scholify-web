@@ -1419,7 +1419,7 @@ function Overview({
         </motion.button>
 
         <div style={{ marginTop: 12, padding: "11px 13px", borderRadius: 12, background: "var(--sch-card-2)", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-          Charles has built today from your {paper.id} syllabus coverage, onboarding answers, diagnostic and live weak areas, exam date, {plan.targetProb}% target, and {plan.dailyMinutes || 60}-minute commitment. The mix adapts between Study, Quiz, Practice, Flashcards, mocks and an ACCA Technical Article as your evidence changes.
+          One clear loop for your limited time: Study → Quiz → Practice → Flashcards → Technical Article. Charles uses your {paper.id} coverage, onboarding answers, diagnostic, weak areas, exam date and {plan.targetProb}% target to choose the topic and difficulty inside each step.
         </div>
       </motion.div>
       </motion.div>
@@ -2512,7 +2512,7 @@ function MissionTasks({
           <IconBadge name={articleDone ? "done" : "learn"} tone={articleDone ? "green" : "neutral"} size={38} />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-              {tasks.length + 1}. Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
+              {tasks.length + 1}. Technical Article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
             </span>
             <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{articleLocked ? "Finish the step above to unlock this" : `Examining-team explainer for ${paperId} · ~${articleMinutes} min`}</span>
           </span>
