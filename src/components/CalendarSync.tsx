@@ -120,7 +120,7 @@ function StatusBadge({ kind }: { kind: "connected" | "idle" | "warn" }) {
       bg: "rgba(255,159,10,0.08)",
       fg: "#FFB454",
       dot: "#FFB454",
-      label: "Not configured",
+      label: "Unavailable",
     },
   }
   const c = colors[kind]
@@ -373,7 +373,7 @@ export default function CalendarSync() {
 
   const handleConnectGoogle = useCallback(() => {
     if (!isGoogleConfigured) {
-      toast.warning("Add Google Calendar credentials in Vercel env first.")
+      toast.info("Google Calendar sync is not available yet. Cal.com can still be connected below.")
       return
     }
     const url = getGoogleAuthUrl(user?.id)
@@ -668,7 +668,7 @@ export default function CalendarSync() {
               >
                 {isGoogleConfigured
                   ? "Connect Google Calendar"
-                  : "Configure on server first"}
+                  : "Google Calendar coming soon"}
               </motion.button>
             )}
           </AnimatePresence>

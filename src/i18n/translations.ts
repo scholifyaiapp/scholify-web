@@ -401,7 +401,8 @@ export const ru: Record<string, string> = {
   "Pro costs less than one tutoring hour": "Pro стоит меньше одного часа с репетитором",
 
   /* ── How it works ── */
-  "Your exam plan in 60 seconds": "Ваш план подготовки за 60 секунд",
+  "A plan built from your real constraints": "План, построенный на ваших реальных условиях",
+  "Built into the AI Examiner": "Встроено в AI Examiner",
   "YOUR RECORD": "ВАШ ПУТЬ",
   "Tell Charles where you are": "Скажите Чарльзу, где вы сейчас",
   "Mark the papers you've passed, pick your next one, and set your exam date. Takes a minute.":
@@ -494,6 +495,8 @@ export const ru: Record<string, string> = {
   "Type your answer, get your mark in seconds": "Напишите ответ — получите оценку за секунды",
   "Point-by-point feedback against the rubric": "Обратная связь по каждому пункту схемы оценивания",
   "445 written practice tasks with examiner rubrics": "445 письменных практических заданий с критериями экзаменатора",
+  "The Pro trial unlocks all 15 papers, mocks, the AI Examiner and custom AI practice for 3 days.":
+    "Пробный период Pro на 3 дня открывает все 15 экзаменов, пробные тесты, AI Examiner и персональную практику с ИИ.",
   "Trains the skill OT questions can't teach": "Тренирует навык, который не дают OT-вопросы",
   "MEET YOUR AI TUTOR": "ЗНАКОМЬТЕСЬ: ВАШ AI-РЕПЕТИТОР",
   "Charles is built into Scholify. He knows which papers you've passed, your weak syllabus areas, and today's task. Ask him to explain deferred tax like you're five — he will, at 2am, without judgement.":
@@ -585,7 +588,7 @@ export const ru: Record<string, string> = {
   "Then the next one.": "А потом следующий.",
   "Pass this paper.": "Сдайте этот экзамен.",
   "Start prepping — free": "Начать подготовку — бесплатно",
-  "No credit card · A plan in 60 seconds · Cancel anytime": "Без карты · План за 60 секунд · Отмена в любой момент",
+  "Free diagnosis · 3 free days on Pro · Cancel anytime": "Бесплатная диагностика · 3 бесплатных дня Pro · Отмена в любой момент",
   "Your next paper is waiting.": "Ваш следующий экзамен ждёт.",
 
   /* ── Plan-generator phases (hero visual) ── */

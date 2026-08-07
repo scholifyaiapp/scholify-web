@@ -113,9 +113,9 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     stripe_price_annual: !!process.env.STRIPE_PRICE_ANNUAL,
   }
 
-  // A billing rail is "live" only when its WHOLE stack is set — a half-set stack
-  // is the dangerous state (checkout opens, fulfilment silently can't), so it
-  // fails health loudly. Either rail (Stripe or Paddle) fully set = billing live.
+  // Stripe is the only checkout rail exposed by the current app. Health must
+  // therefore require its WHOLE stack; dormant legacy Paddle variables cannot
+  // make production look billable when every visible checkout would fail.
   const stripeStack = [
     keys.stripe_secret,
     keys.stripe_webhook,
@@ -125,17 +125,8 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     keys.stripe_price_pro,
     keys.stripe_price_annual,
   ]
-  const paddleStack = [
-    keys.paddle,
-    keys.paddle_webhook,
-    keys.paddle_api,
-    keys.paddle_price_beginner_monthly,
-    keys.paddle_price_pro_monthly,
-    keys.paddle_price_annual_pro,
-  ]
-  const billingConfigured = stripeStack.every(Boolean) || paddleStack.every(Boolean)
-  const billingHalfConfigured =
-    [...stripeStack, ...paddleStack].some(Boolean) && !billingConfigured
+  const billingConfigured = stripeStack.every(Boolean)
+  const billingHalfConfigured = stripeStack.some(Boolean) && !billingConfigured
 
   /*
    * Email is a two-part stack for the same reason billing is: the Resend key
@@ -197,7 +188,7 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     ...(billingHalfConfigured
       ? {
           error:
-            "Billing is half-configured: checkout will open but the webhook cannot grant plans. Set the ENTIRE Stripe (or Paddle) stack — secret + webhook secret + publishable + all 3 price ids.",
+            "Billing is half-configured: checkout will open but the webhook cannot grant plans. Set the ENTIRE Stripe stack — secret + webhook secret + publishable + all 4 price ids.",
         }
       : {}),
     ...(stripeModeMismatch

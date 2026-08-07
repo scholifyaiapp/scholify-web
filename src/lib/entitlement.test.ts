@@ -70,13 +70,21 @@ describe("trial", () => {
     expect(e.trialDaysLeft).toBe(5)
   })
 
-  it("grants Pro features on the chosen paper but not all-paper access", () => {
+  it("grants the complete Pro workspace during the trial", () => {
     const trial = user({ plan: "free", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
     expect(canUsePlanFeature(trial, "timed_mocks", NOW)).toBe(true)
     expect(canUsePlanFeature(trial, "ai_examiner", NOW)).toBe(true)
     expect(canUsePlanFeature(trial, "custom_practice", NOW)).toBe(true)
-    expect(canUsePlanFeature(trial, "all_papers", NOW)).toBe(false)
-    expect(canAccessPaper(trial, "AAA", ["FA"], NOW)).toBe(false)
+    expect(canUsePlanFeature(trial, "all_papers", NOW)).toBe(true)
+    expect(canAccessPaper(trial, "AAA", ["FA"], NOW)).toBe(true)
+  })
+
+  it("recognises a Stripe trialing subscription without treating it as ordinary paid time", () => {
+    const e = entitlementOf(user({ plan: "pro", plan_status: "trialing", trial_started_at: inDays(-1), trial_ends_at: inDays(2) }), NOW)
+    expect(e.isTrial).toBe(true)
+    expect(e.isPaid).toBe(true)
+    expect(e.isPro).toBe(true)
+    expect(e.trialDaysLeft).toBe(2)
   })
 
   it("revokes Pro the moment the trial has passed", () => {
@@ -147,10 +155,10 @@ describe("TRIAL_DAYS", () => {
 describe("canAccessPaper", () => {
   const TARGET = ["FA"]
 
-  it("limits a trial user to their onboarding target paper", () => {
+  it("gives a Pro trial user every paper", () => {
     const trialUser = user({ plan: "free", trial_started_at: inDays(0), trial_ends_at: inDays(3) })
     expect(canAccessPaper(trialUser, "FA", TARGET, NOW)).toBe(true)
-    expect(canAccessPaper(trialUser, "AA", TARGET, NOW)).toBe(false)
+    expect(canAccessPaper(trialUser, "AA", TARGET, NOW)).toBe(true)
   })
 
   it("gives a paid subscriber every paper", () => {
@@ -166,10 +174,10 @@ describe("canAccessPaper", () => {
     expect(canAccessPaper(expired, "AA", TARGET, NOW)).toBe(false)
   })
 
-  it("supports two target papers (the studying cap)", () => {
+  it("does not apply the studying cap during a Pro trial", () => {
     const trialUser = user({ trial_ends_at: inDays(3) })
     expect(canAccessPaper(trialUser, "MA", ["FA", "MA"], NOW)).toBe(true)
-    expect(canAccessPaper(trialUser, "LW", ["FA", "MA"], NOW)).toBe(false)
+    expect(canAccessPaper(trialUser, "LW", ["FA", "MA"], NOW)).toBe(true)
   })
 })
 

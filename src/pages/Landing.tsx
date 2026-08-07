@@ -516,7 +516,7 @@ function Problem() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
           <StatCard tone="blue" value="50%" label={t("average pass rate on Applied Skills exams")} source={t("Published ACCA global pass rates")} delay={0.05} />
           <StatCard tone="green" value="13" label={t("exams to qualify — one system for all of them")} source={t("BT to Strategic Professional")} delay={0.15} />
-          <StatCard tone="purple" value="10×" label={t("cheaper than a private ACCA tutor")} source={t("Pro costs less than one tutoring hour")} delay={0.25} />
+          <StatCard tone="purple" value="445" label={t("written practice tasks with examiner rubrics")} source={t("Built into the AI Examiner")} delay={0.25} />
         </div>
       </div>
     </section>
@@ -546,7 +546,7 @@ function HowItWorks() {
         </div>
         <SectionLabel>{t("HOW IT WORKS")}</SectionLabel>
         <AnimatedUnderlineText
-          text={t("Your exam plan in 60 seconds")}
+          text={t("A plan built from your real constraints")}
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
           underlineClassName="text-[#C80000]"
@@ -1939,7 +1939,7 @@ function Pricing() {
               {t("Every paper. Every mode.")}
             </h3>
             <p style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>
-              {t("The trial covers your chosen paper. Beginner unlocks all 15 papers; Pro adds mocks, the AI Examiner and custom AI practice.")}
+              {t("The Pro trial unlocks all 15 papers, mocks, the AI Examiner and custom AI practice for 3 days.")}
             </p>
 
             <div style={{ height: 1, background: HAIR, margin: "22px 0" }} />
@@ -2018,7 +2018,7 @@ function FinalCTA() {
             {t("Start prepping — free")} <ArrowRight size={20} strokeWidth={2.4} />
           </PrimaryCTA>
           <p style={{ color: INK_MUTED, fontSize: 14 }}>
-            {t("No credit card · A plan in 60 seconds · Cancel anytime")}
+            {t("Free diagnosis · 3 free days on Pro · Cancel anytime")}
           </p>
         </div>
       </div>

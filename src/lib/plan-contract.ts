@@ -17,7 +17,7 @@ export interface PlanFeatureContract {
 
 export const PLAN_FEATURES: readonly PlanFeatureContract[] = [
   { key: "target_paper", label: "Chosen ACCA paper", trial: true, beginner: true, pro: true },
-  { key: "all_papers", label: "All 15 ACCA papers", trial: false, beginner: true, pro: true },
+  { key: "all_papers", label: "All 15 ACCA papers", trial: true, beginner: true, pro: true },
   { key: "study_chapters", label: "Study chapters", trial: true, beginner: true, pro: true },
   { key: "question_banks", label: "Expert-written question banks", trial: true, beginner: true, pro: true },
   { key: "instant_marking", label: "Instant marking and explanations", trial: true, beginner: true, pro: true },

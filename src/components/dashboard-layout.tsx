@@ -206,7 +206,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const ent = entitlementOf(user)
   const planPaidLook = ent.isPaid || ent.isTrial
-  const planLabel = ent.isTrial ? `TRIAL · ${ent.trialDaysLeft}d` : ent.isPro ? "PRO" : ent.isBeginner ? "BEGINNER" : "FREE PLAN"
+  const planLabel = ent.isTrial ? `TRIAL · ${ent.trialDaysLeft}d` : ent.isPro ? "PRO" : ent.isBeginner ? "BEGINNER" : "PLAN LOCKED"
 
   // Re-read the avatar when Settings changes it (uploads fire this event;
   // cloud saves also refresh `user` via USER_UPDATED — either path lands here).

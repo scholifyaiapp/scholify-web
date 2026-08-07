@@ -1286,16 +1286,16 @@ export default function Settings() {
               <div style={{ fontSize: 14, color: TEXT2, marginTop: 4 }}>{user?.email}</div>
               <div style={{ marginTop: 10 }}>
                 <Badge tone={isPaid || ent.isTrial ? "brand" : "neutral"}>
-                  {isPaid ? (
-                    <>
-                      <Icon name="trophy" size={12} /> Pro
-                    </>
-                  ) : ent.isTrial ? (
+                  {ent.isTrial ? (
                     <>
                       <Icon name="trophy" size={12} /> Pro trial · {ent.trialDaysLeft}d left
                     </>
+                  ) : isPaid ? (
+                    <>
+                      <Icon name="trophy" size={12} /> {planLabel}
+                    </>
                   ) : (
-                    "Free plan"
+                    "Plan locked"
                   )}
                 </Badge>
               </div>
@@ -1410,14 +1410,14 @@ export default function Settings() {
             <div>
               <div style={{ ...sectionHead, display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon name="trophy" size={18} color={C.brand} />
-                {isPaid ? planLabel : ent.isTrial ? "Pro trial" : "Free plan"}
+                {ent.isTrial ? "Pro trial" : isPaid ? planLabel : "Plan locked"}
               </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4, lineHeight: 1.6 }}>
-                {isPaid
-                  ? planBilling
-                  : ent.isTrial
-                    ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} of Pro left — mocks, the AI Examiner and custom practice are unlocked on your chosen paper. Choose a paid plan to continue after the trial.`
-                    : "Your trial has ended. Choose Beginner or Pro to continue; your progress remains saved."}
+                {ent.isTrial
+                  ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} free. All 15 papers and every Pro mode are unlocked. Cancel before the Stripe trial deadline to avoid the first charge.`
+                  : isPaid
+                    ? planBilling
+                    : "Choose Beginner or Pro to unlock the workspace; your diagnosis and personalised plan remain saved."}
               </div>
               {!isPaid && (
                 <motion.div

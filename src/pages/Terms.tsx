@@ -10,7 +10,7 @@ interface PageContent {
 
 const en: PageContent = {
   title: "Terms of Service",
-  updated: "May 20, 2026",
+  updated: "August 7, 2026",
   intro:
     "These terms are the agreement between you and Scholify. By creating an account or using the app, you agree to them. We have kept them as plain and short as we can.",
   sections: [
@@ -31,7 +31,8 @@ const en: PageContent = {
     {
       heading: "Subscriptions and billing",
       body: [
-        "Scholify offers free and paid plans. Paid plans renew automatically until you cancel, and you can cancel at any time from your account settings.",
+        "Onboarding, diagnosis and your personalised plan are free. Pro may include a 3-day trial after you add a payment method at checkout. Unless you cancel before the trial deadline shown by Stripe, the selected subscription starts automatically when the trial ends.",
+        "Beginner subscriptions start billing at checkout. Paid subscriptions renew automatically until cancelled. You can cancel from account settings; access continues until the end of the current paid or trial period.",
         "Unless required by law, fees already paid are non-refundable. Prices may change, and we will give you notice before any change affects you.",
       ],
     },
@@ -75,7 +76,7 @@ const en: PageContent = {
 
 const ru: PageContent = {
   title: "Условия использования",
-  updated: "20 мая 2026",
+  updated: "7 августа 2026",
   intro:
     "Эти условия — соглашение между вами и Scholify. Создавая аккаунт или пользуясь приложением, вы соглашаетесь с ними. Мы постарались сделать их максимально простыми и короткими.",
   sections: [
@@ -96,7 +97,8 @@ const ru: PageContent = {
     {
       heading: "Подписки и оплата",
       body: [
-        "Scholify предлагает бесплатный и платные тарифы. Платные тарифы продлеваются автоматически до отмены, и вы можете отменить их в любой момент в настройках аккаунта.",
+        "Регистрация, диагностика и персональный план бесплатны. Pro может включать 3-дневный пробный период после добавления способа оплаты в Stripe. Если вы не отмените подписку до указанного срока, выбранный тариф начнёт действовать автоматически после окончания пробного периода.",
+        "Тариф Beginner оплачивается сразу при оформлении. Платные подписки продлеваются автоматически до отмены. Отменить подписку можно в настройках аккаунта; доступ сохранится до конца оплаченного или пробного периода.",
         "Если иное не требуется законом, уже уплаченные суммы возврату не подлежат. Цены могут меняться, и мы уведомим вас до того, как изменение вас коснётся.",
       ],
     },

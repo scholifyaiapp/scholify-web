@@ -68,7 +68,7 @@ const HEADERS: Record<
   },
 }
 
-/* Only the modes a paid plan actually unlocks — the rest of the app is free. */
+/* The concrete value unlocked by a paid plan or card-backed Pro trial. */
 const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
   { text: "Your adaptive daily plan, rebuilt from every answer", badge: "PRO" },
   { text: "Full mock exams with pass-probability tracking", badge: "PRO" },

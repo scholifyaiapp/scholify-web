@@ -260,7 +260,7 @@ export function trialActive(meta: Record<string, unknown> | undefined, now: numb
  * hand out a plan nobody paid for. A missing table (migration 0015 not run)
  * simply leaves app_metadata in charge — it is defence in depth, not a gate.
  *
- * A user on the free plan may still have Pro-level access from an active 7-day
+ * A user may still have Pro-level access from an active 3-day
  * trial (also server-written in app_metadata). The trial grants Pro caps; when
  * it lapses, this returns free again with no other action needed.
  */
@@ -542,7 +542,7 @@ SCHOLIFY KNOWLEDGE BASE:
 - Independent AI-native ACCA study platform covering all 15 papers, with 2,400+ expert-written questions and 1,000+ flashcards.
 - Features: diagnostics, adaptive daily plans, practice, timed mocks, question maps, readiness analytics, study briefs and an AI Examiner for written answers.
 - New learners can start from zero; experienced learners can diagnose gaps or assess readiness.
-- Three-day free trial after onboarding. Beginner $9.99 monthly, Pro $14.99 monthly, Annual Pro $119.99 yearly. Checkout uses Stripe.
+- Onboarding, diagnosis and the personalised plan are free. Pro checkout securely collects a payment method, charges nothing for 3 days, then starts the selected monthly or annual subscription unless cancelled before the deadline. Beginner $9.99 monthly; Pro $14.99 monthly; Annual Beginner $79.99 yearly; Annual Pro $119.99 yearly. Checkout uses Stripe.
 - Partner programme: 27% of qualifying first purchases after 30-day validation; refunds and chargebacks do not qualify.
 - Launch date: 10 August 2026. Scholify is independent from ACCA and racing organisations.
 Answer Scholify, ACCA-study, pricing, feature, payment, trial, onboarding and partner questions only from this knowledge. If unknown, say so and direct the visitor to Scholify support. Never invent facts or request personal, payment or account information.`

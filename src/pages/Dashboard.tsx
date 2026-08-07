@@ -108,7 +108,7 @@ export default function Dashboard() {
   // both the cadence and the "not day 1" rule).
   useEffect(() => {
     const e = entitlementOf(user)
-    if (e.isTrial) maybeShowTrialReminder(e.trialDaysLeft)
+    if (e.isTrial && !e.isPaid) maybeShowTrialReminder(e.trialDaysLeft)
   }, [user, maybeShowTrialReminder])
 
   // The loop starts at onboarding — a brand-new user goes there first

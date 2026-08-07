@@ -409,7 +409,9 @@ async function sendDueTrialEmails(db: NonNullable<ReturnType<typeof admin>>, api
     for (const user of data.users) {
       if (!user.email) continue
       const meta = user.app_metadata ?? {}
-      if (String(meta.plan ?? "free") !== "free" || !meta.trial_started_at) continue
+      const stripeTrial = String(meta.plan_status ?? "") === "trialing"
+      const legacyTrial = String(meta.plan ?? "free") === "free"
+      if ((!stripeTrial && !legacyTrial) || !meta.trial_started_at) continue
       const sent = (meta.trial_reminders_sent ?? {}) as Partial<Record<TrialReminderKey, string>>
       const due = dueTrialReminder(String(meta.trial_started_at), sent, now.getTime())
       if (!due) continue
@@ -428,10 +430,10 @@ async function sendDueTrialEmails(db: NonNullable<ReturnType<typeof admin>>, api
 
 async function sendTrialEmail(apiKey: string, from: string, to: string, slot: TrialReminderKey): Promise<boolean> {
   const copy = slot === "10h"
-    ? { subject: "Your Scholify plan is ready for tonight", heading: "Your first 10 hours are in.", body: "Your 3-day trial is active. Open today’s plan and complete the next learning block while Charles still has every mode unlocked for you.", cta: "Continue today’s plan" }
+    ? { subject: "Your Scholify plan is ready for tonight", heading: "Your first study block is ready.", body: "Your 3-day Pro trial is active. Open today’s plan and complete the next learning block while every mode is unlocked.", cta: "Continue today’s plan" }
     : slot === "day2"
       ? { subject: "Day 2 of your Scholify trial", heading: "Your plan is learning from you.", body: "You are on day 2 of your trial. Every answer sharpens your readiness score and changes what Charles gives you next.", cta: "Start day 2" }
-      : { subject: "Your Scholify trial ends today", heading: "Your final trial day is running.", body: "Your progress and plan stay saved, but app access will lock when the 3-day trial ends unless you choose a plan.", cta: "Keep Scholify unlocked" }
+      : { subject: "Your Scholify trial ends today", heading: "Your final free day is running.", body: "Your subscription begins when the trial ends. If you do not want to continue, cancel from Settings before the trial deadline and you will not be charged.", cta: "Review my subscription" }
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",

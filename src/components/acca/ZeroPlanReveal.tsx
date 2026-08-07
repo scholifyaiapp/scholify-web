@@ -329,10 +329,9 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               </Reveal>
 
               {/*
-                * The ask, stated truthfully. There is NO free tier to fall back
-                * on: ProtectedRoute hard-blocks the app once a used trial
-                * expires (see route-guards.tsx), so any "free forever" framing
-                * here would be a lie the learner discovers on day 4.
+                * The ask, stated truthfully. Diagnosis and the plan are free;
+                * the learning workspace requires a paid plan or card-backed
+                * Pro trial (see route-guards.tsx).
                 *
                 * The true version is the stronger one anyway — the gap between
                 * a 3-day trial and a plan measured in months is real tension

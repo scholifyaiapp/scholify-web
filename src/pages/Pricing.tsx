@@ -36,7 +36,7 @@ const FREE_FEATURES: PlanFeature[] = [
 
 const BEGINNER_FEATURES: PlanFeature[] = [
   { text: "All 15 papers unlocked — study & practise any of them" },
-  { text: "Unlimited expert-written practice, marked instantly" },
+  { text: "Unlimited practice sessions, marked instantly" },
   { text: "Ask Charles — up to 25 tutor questions/day" },
   { text: "Flashcards, diagnostic & readiness analytics" },
   { text: "Upgrade to Pro anytime for mocks, Examiner & custom practice" },

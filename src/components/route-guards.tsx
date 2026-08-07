@@ -25,8 +25,8 @@ function TrialExpiredBlock() {
 }
 
 /**
- * Full-screen, non-dismissible upgrade wall. Shown by the entitlement gate once
- * a learner's 3-day trial has ended without a paid plan — the PaywallModal is a
+ * Full-screen, non-dismissible purchase wall. Shown by the entitlement gate when
+ * an onboarded learner has no paid subscription or card-backed trial — the PaywallModal is a
  * fixed inset-0 overlay, so the app behind it is unreachable until they upgrade
  * (or use the Settings / sign-out links in the modal footer).
  */
@@ -85,8 +85,8 @@ function PrelaunchBlock({ email }: { email: string | null }) {
 
 /**
  * Wraps routes that require authentication. Redirects guests to /sign-in.
- * With `gate`, ALSO enforces entitlement: an onboarded learner whose trial has
- * expired without paying is hard-blocked behind the upgrade wall. Settings and
+ * With `gate`, ALSO enforces entitlement: an onboarded unpaid learner is
+ * hard-blocked behind the purchase wall. Settings and
  * the public /pricing page are intentionally left ungated so they can still pay
  * or manage their account.
  */

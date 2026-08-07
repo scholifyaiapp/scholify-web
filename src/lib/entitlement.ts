@@ -7,14 +7,15 @@
  * gate now asks this one function.
  *
  * The model, in priority order:
- *   1. A PAID plan (beginner / pro / annual_pro) — set only by the Paddle
+ *   1. A PAID plan (beginner / pro / annual_pro) — set only by the billing
  *      webhook, in service-role-only app_metadata. This is the real thing.
  *   2. An active TRIAL — `trial_ends_at` in the future, also written only by the
- *      server (see api/paddle.ts start-trial). A user cannot forge either field,
+ *      server. A user cannot forge either field,
  *      because app_metadata is not client-writable.
  *   3. Otherwise, free.
  *
- * A trial grants Pro-level access; it does not touch `plan`, so Paddle logic
+ * A legacy promotional trial grants Pro-level access without touching `plan`;
+ * Stripe-backed Pro trials use `plan_status: trialing`.
  * stays clean and a real subscription always wins over (and outlives) a trial.
  */
 
@@ -69,11 +70,11 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   // webhook reports the subscription actually lapsed (which writes "canceled"
   // and plan "free"). Treating it as inactive revoked access the instant someone
   // pressed Cancel — while Settings promised "access stays until then" and the
-  // dialog promised "you'll switch to the free tier at the end of your billing
+  // dialog promised "you'll lose workspace access at the end of your billing
   // period". It bit hardest exactly where the clause above is meant to help: a
   // customer on an unmapped price id has no PAID_PLANS entry to fall back on, so
   // `plan_status` was the only thing keeping them entitled.
-  const planStatusActive = meta.plan_status === "active" || meta.plan_status === "canceling"
+  const planStatusActive = meta.plan_status === "active" || meta.plan_status === "trialing" || meta.plan_status === "canceling"
   const isPaid = PAID_PLANS.has(plan) || planStatusActive
   const isBeginner = plan === "beginner"
 
@@ -81,7 +82,8 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   const hadTrial = Boolean(meta.trial_started_at)
 
   const trialEndMs = trialEndsAt ? Date.parse(trialEndsAt) : NaN
-  const trialActive = !isPaid && Number.isFinite(trialEndMs) && trialEndMs > now
+  const stripeTrial = meta.plan_status === "trialing"
+  const trialActive = Number.isFinite(trialEndMs) && trialEndMs > now && (stripeTrial || !isPaid)
   const trialDaysLeft = trialActive ? Math.max(0, Math.ceil((trialEndMs - now) / DAY_MS)) : 0
 
   // PRO = the Pro/Annual tier, OR an active-but-unmapped subscription (unknown
@@ -143,7 +145,8 @@ export function canAccessPaper(
   targetPaperIds: readonly string[],
   now: number = Date.now(),
 ): boolean {
-  if (entitlementOf(user, now).isPaid) return true
+  const entitlement = entitlementOf(user, now)
+  if (entitlement.isPaid || entitlement.isTrial) return true
   return targetPaperIds.includes(paperId)
 }
 

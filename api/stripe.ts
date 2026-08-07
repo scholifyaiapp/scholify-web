@@ -20,10 +20,9 @@ import { timingSafeEqual } from "node:crypto"
  *   POST /api/stripe?action=cancel     (auth: Supabase JWT)
  *     → schedules cancellation at period end.
  *
- * Entitlement lives in app_metadata (service-role-only) exactly like the Paddle
- * path, so the AI meter, the client gates and the subscriptions table are all
- * shared. The 3-day trial is separate (app-level, granted after onboarding) — Stripe is
- * only the PAID conversion, so its subscriptions carry no Stripe-side trial.
+ * Entitlement lives in service-role-only app_metadata: the browser can request
+ * checkout, but cannot grant itself access. Pro checkout carries the one-time,
+ * card-backed 3-day trial; Beginner starts billing immediately.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_BEGINNER,
  * STRIPE_PRICE_BEGINNER_ANNUAL, STRIPE_PRICE_PRO, STRIPE_PRICE_ANNUAL,
@@ -704,7 +703,7 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
         const plan = planForPrice(priceId)
         await writeEntitlement(supa, userId, {
           plan: plan ?? undefined,
-          status: "active",
+          status: sub.status === "trialing" ? "trialing" : "active",
           priceId,
           billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
@@ -734,8 +733,10 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
         // active/trialing → grant; past_due → keep access but flag; anything
         // terminal (canceled/unpaid) → revoke.
         const status =
-          sub.status === "active" || sub.status === "trialing"
-            ? "active"
+          sub.status === "trialing"
+            ? "trialing"
+            : sub.status === "active"
+              ? "active"
             : sub.status === "past_due"
               ? "past_due"
               : "canceled"
