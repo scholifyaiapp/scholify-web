@@ -87,7 +87,7 @@ export default function Dashboard() {
       })
     : baseMission
   const ent = entitlementOf(user)
-  const { showPaywall, paywallType, maybeShowTrialReminder, closePaywall } = usePaywall()
+  const { showPaywall, paywallType, triggerFeaturePaywall, maybeShowTrialReminder, closePaywall } = usePaywall()
 
   useEffect(() => {
     snapshotProbability(paperId)
@@ -412,8 +412,8 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12.5, color: C.soft }}>Practise a little and this finds itself.</div>
               )}
             </VitalTile>
-            <VitalTile icon={gate.unlocked ? "mock" : "lock"} label={gate.unlocked ? "Mock exams" : "Mock gate"} onClick={() => navigate(gate.unlocked ? "/study?do=mock" : "/study?do=weak")}>
-              {gate.unlocked ? (
+            <VitalTile icon={gate.unlocked && ent.isPro ? "mock" : "lock"} label={gate.unlocked ? "Mock exams" : "Mock gate"} onClick={() => gate.unlocked && !ent.isPro ? triggerFeaturePaywall() : navigate(gate.unlocked ? "/study?do=mock" : "/study?do=weak")}>
+              {gate.unlocked && ent.isPro ? (
                 <>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                     {Array.from({ length: MOCKS_REQUIRED }, (_, i) => {
@@ -428,6 +428,11 @@ export default function Dashboard() {
                   <div style={{ ...TYPE.small, color: C.faint, marginTop: 8 }}>
                     {mocks.examReady ? "Exam-ready — keep it warm" : history.length ? `best ${Math.max(...history.map((m) => m.percent))}%` : "Sit Mock 1"}
                   </div>
+                </>
+              ) : gate.unlocked ? (
+                <>
+                  <div style={{ fontSize: 12.5, fontWeight: 750, color: C.text }}>Pro feature</div>
+                  <div style={{ ...TYPE.small, color: C.faint, marginTop: 8 }}>Upgrade to sit timed mocks and view mock history.</div>
                 </>
               ) : (
                 <>

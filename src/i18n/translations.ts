@@ -493,7 +493,7 @@ export const ru: Record<string, string> = {
     "Экзамены Strategic Professional — письменные, и никто не даёт мгновенной обратной связи по письменным ответам. AI-Экзаменатор Scholify проверяет ваш ответ по схеме оценивания, пункт за пунктом, за секунды. Раньше на это уходили репетитор и неделя.",
   "Type your answer, get your mark in seconds": "Напишите ответ — получите оценку за секунды",
   "Point-by-point feedback against the rubric": "Обратная связь по каждому пункту схемы оценивания",
-  "190 written questions, each with its rubric": "190 письменных вопросов, у каждого свои критерии оценки",
+  "445 written practice tasks with examiner rubrics": "445 письменных практических заданий с критериями экзаменатора",
   "Trains the skill OT questions can't teach": "Тренирует навык, который не дают OT-вопросы",
   "MEET YOUR AI TUTOR": "ЗНАКОМЬТЕСЬ: ВАШ AI-РЕПЕТИТОР",
   "Charles is built into Scholify. He knows which papers you've passed, your weak syllabus areas, and today's task. Ask him to explain deferred tax like you're five — he will, at 2am, without judgement.":
@@ -580,7 +580,7 @@ export const ru: Record<string, string> = {
   "Timed mock exams": "Пробные экзамены на время",
   "AI Examiner — instant written marking": "AI-Экзаменатор — мгновенная проверка письменных ответов",
   "Custom practice from topics or your notes": "Своя практика по темам или вашим конспектам",
-  "Charles AI race engineer on every plan": "ИИ-гоночный инженер Чарльз на любом плане",
+  "Charles AI tutor — allowance on every plan": "ИИ-репетитор Чарльз — лимит доступен на каждом тарифе",
   "Mock history & readiness trend": "История пробных экзаменов и динамика готовности",
   "Then the next one.": "А потом следующий.",
   "Pass this paper.": "Сдайте этот экзамен.",

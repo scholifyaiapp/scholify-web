@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
-import { entitlementOf } from "@/lib/entitlement"
+import { shouldBlockForExpiredTrial } from "@/lib/entitlement"
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { isStripeConfigured } from "@/lib/stripe"
 import PaywallModal from "@/components/PaywallModal"
@@ -139,13 +139,12 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
     // journey before launch. An old/expired trial on the test account should
     // not turn every app CTA into a paywall while the product is being audited.
     if (isLaunchAdmin(user)) return <>{children}</>
-    const e = entitlementOf(user)
     // Only block AFTER a trial has been used and expired — never a brand-new or
     // not-yet-onboarded account (they haven't started their 3 days yet).
     // CRITICAL: only when payments are actually open. If checkout can't run yet,
     // a hard block would trap the user with no way to pay — so we let them
     // through and rely on the (dismissible) trial reminder instead.
-    if (isStripeConfigured() && isAccaOnboarded() && e.hadTrial && !e.isPro) {
+    if (isStripeConfigured() && isAccaOnboarded() && shouldBlockForExpiredTrial(user)) {
       return <TrialExpiredBlock />
     }
   }

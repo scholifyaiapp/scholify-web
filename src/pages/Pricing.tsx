@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { startStripeCheckout, isStripeConfigured, openStripeBillingPortal, type StripePlan } from "@/lib/stripe"
-import { isSupabaseConfigured } from "@/lib/supabase"
+import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
@@ -26,7 +26,7 @@ const accountsOpen = isSupabaseConfigured
 const FREE_FEATURES: PlanFeature[] = [
   { text: "Expert-written practice on your chosen paper" },
   { text: "Instant marking + teaching explanations" },
-  { text: "1,057 SRS flashcards" },
+  { text: "SRS flashcards for your chosen paper" },
   { text: "Diagnostic with an Exam Readiness Score (± margin)" },
   { text: "Study chapters for your chosen paper" },
   { text: "Charles AI race engineer" },
@@ -37,14 +37,15 @@ const FREE_FEATURES: PlanFeature[] = [
 const BEGINNER_FEATURES: PlanFeature[] = [
   { text: "All 15 papers unlocked — study & practise any of them" },
   { text: "Unlimited expert-written practice, marked instantly" },
-  { text: "Ask Charles (AI tutor) — daily allowance" },
+  { text: "Ask Charles — up to 25 tutor questions/day" },
   { text: "Flashcards, diagnostic & readiness analytics" },
   { text: "Upgrade to Pro anytime for mocks, Examiner & custom practice" },
 ]
 
 const PRO_FEATURES: PlanFeature[] = [
   { text: "Timed mock exams", badge: "PRO" },
-  { text: "AI Examiner on all 190 written questions", badge: "NEW" },
+  { text: "AI Examiner across 445 written practice tasks", badge: "NEW" },
+  { text: "Up to 100 Charles tutor questions/day" },
   { text: "Custom practice from any topic or your notes" },
   { text: "Mock history & readiness trend" },
   { text: "Annual option — 33% cheaper" },
@@ -71,7 +72,7 @@ const FAQS: Array<[string, string]> = [
   ],
   [
     "Which papers does Scholify cover?",
-    "All 15 papers of the ACCA qualification, BT to AAA. Nine papers (BT, MA, FA, LW, PM, TX, FR, AA, FM) have curated, expert-written question banks; every paper has study chapters and supports AI-generated practice, and the AI Examiner marks 190 written questions against their rubrics.",
+    "All 15 papers of the ACCA qualification, BT to AAA. Seven papers have fully authored question banks with no generated drills; the other eight combine authored questions with generated drills. Every paper has study chapters, and Pro includes the AI Examiner for written practice.",
   ],
   [
     "What is the AI Examiner?",
@@ -215,6 +216,31 @@ export default function Pricing() {
     checkout(requested as StripePlan)
   }, [user])
 
+  // Stripe's billing portal can change Beginner ↔ Pro. app_metadata reaches the
+  // browser through a fresh JWT, so refresh after the portal returns instead of
+  // leaving the old gates in place until the next sign-in.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("billing") !== "updated" || !user || !isSupabaseConfigured) return
+    window.history.replaceState({}, "", window.location.pathname)
+    let cancelled = false
+    const attempt = async (retriesLeft: number) => {
+      try {
+        const { data } = await supabase.auth.refreshSession()
+        if (data.session?.user) {
+          flash("Subscription updated — your access is now refreshed.")
+          return
+        }
+      } catch {
+        /* webhook/session propagation can briefly lag the portal redirect */
+      }
+      if (!cancelled && retriesLeft > 0) window.setTimeout(() => void attempt(retriesLeft - 1), 3000)
+    }
+    void attempt(4)
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
   const beginnerCard = useMemo(
     () => ({
       price: annual ? "$6.67" : "$9.99",
@@ -231,6 +257,16 @@ export default function Pricing() {
     }),
     [annual],
   )
+  const beginnerCta = entitlement.isBeginner
+    ? "Current plan · Manage"
+    : entitlement.isPro && !entitlement.isTrial
+      ? "Manage subscription"
+      : "Choose Beginner"
+  const proCta = entitlement.isPro && !entitlement.isTrial
+    ? "Current plan · Manage"
+    : entitlement.isBeginner
+      ? "Upgrade to Pro →"
+      : "Choose Pro →"
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
@@ -401,7 +437,7 @@ export default function Pricing() {
             description="For steady daily practice"
             featuresHeader="The full study loop:"
             features={BEGINNER_FEATURES}
-            cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
+            cta={paymentsOpen ? beginnerCta : "Payments open soon"}
             disabled={!paymentsOpen}
             onCta={() => checkout(annual ? "annual_beginner" : "beginner")}
           />
@@ -416,7 +452,7 @@ export default function Pricing() {
             description="Mocks, AI Examiner & custom practice"
             featuresHeader="Everything in Beginner, plus:"
             features={PRO_FEATURES}
-            cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
+            cta={paymentsOpen ? proCta : "Payments open soon"}
             disabled={!paymentsOpen}
             badge="Most Popular"
             onCta={() => checkout(annual ? "annual_pro" : "pro")}

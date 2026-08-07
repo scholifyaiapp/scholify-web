@@ -545,7 +545,7 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       if (existing.status !== "canceled" && existing.status !== "incomplete_expired") {
         const portalSession = await stripe.billingPortal.sessions.create({
           customer: existingCustomerId,
-          return_url: `${origin}/pricing`,
+          return_url: `${origin}/pricing?billing=updated`,
         })
         res.status(200).json({ ok: true, url: portalSession.url, destination: "portal" })
         return

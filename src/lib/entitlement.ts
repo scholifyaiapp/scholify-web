@@ -105,6 +105,16 @@ export function isProUser(user: MetaCarrier | null | undefined, now: number = Da
   return entitlementOf(user, now).isPro
 }
 
+/** The hard post-trial wall applies only when the trial is over and no paid
+ * plan exists. Beginner is paid and must never be mistaken for expired/free. */
+export function shouldBlockForExpiredTrial(
+  user: MetaCarrier | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  const entitlement = entitlementOf(user, now)
+  return entitlement.hadTrial && !entitlement.isTrial && !entitlement.isPaid
+}
+
 /** Feature-level gate tied to the same contract rendered on /pricing. */
 export function canUsePlanFeature(
   user: MetaCarrier | null | undefined,

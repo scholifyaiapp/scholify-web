@@ -10,6 +10,7 @@ import { iriText } from "@/components/dashboard-layout"
 import CharlesMascot from "@/components/CharlesMascot"
 import { Icon, type IconName } from "@/components/acca/ui"
 import type { PaywallType } from "@/hooks/usePaywall"
+import { entitlementOf } from "@/lib/entitlement"
 
 /* ──────────────────────────────────────────────────────────────
  *  In-app paywall modal. Appears on streak milestones (7/14/21),
@@ -67,7 +68,7 @@ const HEADERS: Record<
 /* Only the modes a paid plan actually unlocks — the rest of the app is free. */
 const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
   { text: "Timed mock exams with pass-line tracking", badge: "PRO" },
-  { text: "AI Examiner — 190 written questions, marked in seconds", badge: "NEW" },
+  { text: "AI Examiner — 445 written practice tasks", badge: "NEW" },
   { text: "Custom practice from any topic or your notes", badge: "PRO" },
   { text: "Mock history & readiness trend" },
 ]
@@ -134,7 +135,15 @@ export default function PaywallModal({
   // so it has no close / Escape / backdrop-dismiss; the only ways out are to
   // upgrade, open Settings, or sign out (links in the footer below).
   const dismissible = type !== "expired" && !required
-  const header = HEADERS[type]
+  const entitlement = entitlementOf(user)
+  const header = type === "feature" && entitlement.isBeginner
+    ? {
+        kind: "lock" as const,
+        icon: "lock" as IconName,
+        title: "This feature needs Pro",
+        sub: "Your Beginner plan includes all 15 papers, practice, flashcards, analytics and Charles. Upgrade to Pro for timed mocks, the AI Examiner, custom practice and mock history.",
+      }
+    : HEADERS[type]
 
   // Payments only work when Stripe billing is configured — otherwise the buttons
   // say so rather than inviting a retry that can never succeed.
@@ -395,7 +404,7 @@ export default function PaywallModal({
                 gap: 12,
               }}
             >
-              <PlanMini
+              {!entitlement.isBeginner && <PlanMini
                 name="Beginner"
                 price="$9.99"
                 unit="/month"
@@ -403,7 +412,7 @@ export default function PaywallModal({
                 cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
                 disabled={!paymentsOpen}
                 onClick={() => handleCheckout("beginner")}
-              />
+              />}
               <PlanMini
                 featured
                 name="Pro"
@@ -416,7 +425,7 @@ export default function PaywallModal({
               />
             </div>
 
-            <div style={{ padding: "12px 32px 0" }}>
+            {!entitlement.isBeginner && <div style={{ padding: "12px 32px 0" }}>
               <motion.button
                 type="button"
                 onClick={() => handleCheckout("annual_beginner")}
@@ -434,7 +443,7 @@ export default function PaywallModal({
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: "var(--sch-text)" }}>Choose →</span>
               </motion.button>
-            </div>
+            </div>}
 
             {/* Annual row */}
             <div style={{ padding: "12px 32px 0" }}>

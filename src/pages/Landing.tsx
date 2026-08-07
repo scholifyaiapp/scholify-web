@@ -408,7 +408,7 @@ function Hero() {
         >
           {[
             { n: "2,494", label: t("expert-written questions") },
-            { n: "1,057", label: t("flashcards") },
+            { n: "2,130", label: t("flashcards") },
             { n: "15", label: t("ACCA papers") },
           ].map((s, i) => (
             <motion.span
@@ -1064,7 +1064,7 @@ function Features() {
           bullets={[
             "Type your answer, get your mark in seconds",
             "Point-by-point feedback against the rubric",
-            "190 written questions, each with its rubric",
+            "445 written practice tasks with examiner rubrics",
             "Trains the skill OT questions can't teach",
           ]}
           visual={<VisualExaminer />}
@@ -1862,13 +1862,13 @@ interface ScholifyFeature {
 }
 
 const scholifyFeatures: ScholifyFeature[] = [
-  { label: "Curated question banks — all nine OT papers" },
+  { label: "Question banks across all 15 ACCA papers" },
   { label: "Instant marking + teaching explanations" },
   { label: "SRS flashcards for standards, rules & formulas" },
   { label: "Personalised study plan to exam day" },
   { label: "Readiness score & per-area analytics" },
   { label: "Full BT → AAA qualification roadmap" },
-  { label: "Charles AI race engineer on every plan" },
+  { label: "Charles AI tutor — allowance on every plan" },
   { label: "Timed mock exams", pro: true },
   { label: "AI Examiner — instant written marking", pro: true },
   { label: "Custom practice from topics or your notes", pro: true },

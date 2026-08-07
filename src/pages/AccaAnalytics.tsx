@@ -20,6 +20,10 @@ import { getStudyPath, pathProgress } from "@/lib/acca-topics"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import CharlesMascot from "@/components/CharlesMascot"
+import { useAuth } from "@/lib/auth"
+import { canUsePlanFeature } from "@/lib/entitlement"
+import { usePaywall } from "@/hooks/usePaywall"
+import PaywallModal from "@/components/PaywallModal"
 import {
   probabilityMomentum,
   masteryScore,
@@ -56,6 +60,9 @@ const SECTIONS: { key: Section; icon: IconName; label: string; question: string 
 ]
 
 export default function AccaAnalytics() {
+  const { user } = useAuth()
+  const canUseMockHistory = canUsePlanFeature(user, "mock_history")
+  const { showPaywall, paywallType, triggerFeaturePaywall, closePaywall } = usePaywall()
   const studying = getStudyingPapers()
   const [paperId, setPaperId] = useState<string>(() => getCurrentPaper() ?? studying[0] ?? "FA")
   const [section, setSection] = useState<Section>("progress")
@@ -162,10 +169,11 @@ export default function AccaAnalytics() {
             {section === "progress" && <ProgressSection paperId={paperId} paper={paper} />}
             {section === "learning" && <LearningSection paperId={paperId} paper={paper} />}
             {section === "study" && <StudySection paperId={paperId} />}
-            {section === "exam" && <ExamSection paperId={paperId} paper={paper} />}
+            {section === "exam" && <ExamSection paperId={paperId} paper={paper} canUseMockHistory={canUseMockHistory} onUpgrade={triggerFeaturePaywall} />}
           </motion.div>
         </AnimatePresence>
       </div>
+      <PaywallModal open={showPaywall} type={paywallType} onClose={closePaywall} />
     </DashboardLayout>
   )
 }
@@ -884,7 +892,7 @@ function StudySection({ paperId }: { paperId: string }) {
 
 /* ── 🎯 EXAM — Am I exam-ready? ───────────────────────────────── */
 
-function ExamSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) {
+function ExamSection({ paperId, paper, canUseMockHistory, onUpgrade }: { paperId: string; paper: AccaPaper; canUseMockHistory: boolean; onUpgrade: () => void }) {
   const mocks = getMockHistory(paperId)
   const pace = getPace(paperId)
   const mistakes = getMistakes(paperId)
@@ -901,7 +909,16 @@ function ExamSection({ paperId, paper }: { paperId: string; paper: AccaPaper }) 
           <CardTitle icon="mock" right={best != null ? <span style={{ fontSize: 12, color: C.soft, textTransform: "none", letterSpacing: 0 }}>best <b style={{ color: C.green }}>{best}%</b></span> : undefined}>
             Mock trends
           </CardTitle>
-          {mocks.length >= 2 ? (
+          {!canUseMockHistory ? (
+            <button
+              type="button"
+              onClick={onUpgrade}
+              style={{ width: "100%", padding: "14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.card2, color: C.text, textAlign: "left", cursor: "pointer" }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 750, fontSize: 13 }}><Icon name="lock" size={14} color={C.brand} /> Pro feature</span>
+              <span style={{ display: "block", marginTop: 5, fontSize: 12, color: C.soft }}>Upgrade to view mock history and score trends.</span>
+            </button>
+          ) : mocks.length >= 2 ? (
             <TrendBars points={[...mocks].reverse().map((m) => ({ date: m.date, percent: m.percent }))} passLine={MOCK_PASS} unit="mock score" />
           ) : (
             <Measuring>Sit two timed mocks and the trend against the pass line draws itself.</Measuring>

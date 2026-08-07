@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canUsePlanFeature, TRIAL_DAYS } from "@/lib/entitlement"
+import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canUsePlanFeature, shouldBlockForExpiredTrial, TRIAL_DAYS } from "@/lib/entitlement"
 
 /*
  * Entitlement decides who gets Pro. Every case here is a real gate: a wrong
@@ -121,6 +121,20 @@ describe("canStartTrial", () => {
 
   it("is false for a paying customer", () => {
     expect(canStartTrial(user({ plan: "pro" }))).toBe(false)
+  })
+})
+
+describe("expired-trial app wall", () => {
+  const expiredTrial = { trial_started_at: inDays(-5), trial_ends_at: inDays(-2) }
+
+  it("never blocks a paid Beginner subscriber", () => {
+    expect(shouldBlockForExpiredTrial(user({ ...expiredTrial, plan: "beginner" }), NOW)).toBe(false)
+  })
+
+  it("blocks only an expired trial with no paid plan", () => {
+    expect(shouldBlockForExpiredTrial(user({ ...expiredTrial, plan: "free" }), NOW)).toBe(true)
+    expect(shouldBlockForExpiredTrial(user({ ...expiredTrial, plan: "pro" }), NOW)).toBe(false)
+    expect(shouldBlockForExpiredTrial(user({ trial_started_at: inDays(-1), trial_ends_at: inDays(2) }), NOW)).toBe(false)
   })
 })
 

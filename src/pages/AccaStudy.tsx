@@ -207,7 +207,7 @@ export default function AccaStudy() {
     }
   }, [])
 
-  // Paddle checkout lands back on /study?upgraded=true. The webhook writes
+  // Stripe checkout lands back on /study?upgraded=true. The webhook writes
   // the plan onto the user server-side, so refresh the session (with a
   // couple of retries — the webhook can lag the redirect by a few seconds)
   // until the entitlement shows up.
@@ -216,7 +216,7 @@ export default function AccaStudy() {
     if (params.get("upgraded") !== "true") return
     window.history.replaceState({}, "", window.location.pathname)
     trackEvent("subscription_activated")
-    toast.success("Payment received — welcome aboard! Unlocking Pro…")
+    toast.success("Payment received — welcome aboard! Unlocking your plan…")
     if (!isSupabaseConfigured) return
     let cancelled = false
     const attempt = async (retriesLeft: number) => {
@@ -621,6 +621,7 @@ export default function AccaStudy() {
               onLoopAction={runLoopAction}
               onRefresh={() => setTick((t) => t + 1)}
               onSwitchPaper={(pid) => { setPaperId(pid); setTick((t) => t + 1); setMode("overview") }}
+              onUpgrade={triggerFeaturePaywall}
             />
           )}
 
@@ -1099,6 +1100,7 @@ function Overview({
   onLoopAction,
   onRefresh,
   onSwitchPaper,
+  onUpgrade,
 }: {
   paper: AccaPaper
   isPro: boolean
@@ -1118,6 +1120,7 @@ function Overview({
   onLoopAction: (a: PostMortemAction) => void
   onRefresh: () => void
   onSwitchPaper: (pid: string) => void
+  onUpgrade: () => void
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -1729,7 +1732,7 @@ function Overview({
       {tab === "progress" && (
       <motion.div key="progress-b" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* mock history — score trend against the pass line, then the receipts */}
-      {mocks.length > 0 && (
+      {mocks.length > 0 && isPro && (
         <div style={{ marginBottom: 20 }}>
           <SectionHead icon="mock" right={<span style={{ fontSize: 12, color: MUTED, textTransform: "none", letterSpacing: 0 }}>best <b style={{ color: TEXT }}>{Math.max(...mocks.map((m) => m.percent))}%</b></span>}>
             Recent mocks
@@ -1755,6 +1758,18 @@ function Overview({
             ))}
           </div>
         </div>
+      )}
+      {mocks.length > 0 && !isPro && (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          style={{ ...card({ padding: 16 }), width: "100%", marginBottom: 20, textAlign: "left", cursor: "pointer", color: TEXT }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, fontSize: 13.5 }}>
+            <Icon name="lock" size={16} color="#C80000" /> Mock history requires Pro
+          </div>
+          <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>Upgrade to view past mock scores and your readiness trend.</div>
+        </button>
       )}
       </motion.div>
       )}
