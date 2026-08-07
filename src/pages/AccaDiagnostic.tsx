@@ -412,9 +412,8 @@ export default function AccaDiagnostic() {
         <PaywallModal
           open={showTrialPaywall}
           type="general"
-          required
-          onTrialContinue={() => navigate("/dashboard")}
-          onClose={() => {}}
+          onFreeContinue={() => navigate("/dashboard")}
+          onClose={() => navigate("/dashboard")}
         />
       </>
     )
@@ -574,13 +573,12 @@ export default function AccaDiagnostic() {
         </AnimatePresence>
       </div>
 
-      {/* /welcome funnel: results → the trial paywall → the dashboard. */}
+      {/* /welcome funnel: show value first, then offer an optional upgrade. */}
       <PaywallModal
         open={showTrialPaywall}
         type="general"
-        required
-        onTrialContinue={() => navigate("/dashboard")}
-        onClose={() => {}}
+        onFreeContinue={() => navigate("/dashboard")}
+        onClose={() => navigate("/dashboard")}
       />
     </DashboardLayout>
   )

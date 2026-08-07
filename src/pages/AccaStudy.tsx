@@ -10,6 +10,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
+import { DailyMissionCelebration } from "@/components/acca/DailyMissionCelebration"
 import { ProCountdown } from "@/components/acca/ProCountdown"
 import PaywallModal from "@/components/PaywallModal"
 import ExaminerView from "@/components/acca/ExaminerView"
@@ -56,7 +57,7 @@ import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, resumeFocusSession, pauseFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
-import { recordDayActive } from "@/lib/acca-schedule"
+import { recordDayActive, shieldState } from "@/lib/acca-schedule"
 import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, type StudyChapter } from "@/lib/acca-study-content"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
@@ -1247,6 +1248,20 @@ function Overview({
   const missionDone = doneTasks + (articleDone ? 1 : 0)
   const missionTotal = todayPlan.length + (techArticle ? 1 : 0)
   const missionPct = missionTotal > 0 ? Math.round((missionDone / missionTotal) * 100) : 0
+  const [showMissionCelebration, setShowMissionCelebration] = useState(false)
+  useEffect(() => {
+    if (missionPct < 100) return
+    const now = new Date()
+    const day = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, "0")}-${`${now.getDate()}`.padStart(2, "0")}`
+    const key = `scholify-mission-celebrated-${paper.id}-${day}`
+    try {
+      if (window.localStorage.getItem(key)) return
+      window.localStorage.setItem(key, "1")
+    } catch { /* a private session can still celebrate */ }
+    recordDayActive(paper.id)
+    trackEvent("daily_mission_completed", { paper: paper.id, tasks: missionTotal, readiness: prob })
+    setShowMissionCelebration(true)
+  }, [missionPct, missionTotal, paper.id, prob])
 
   // Keep the Pass Momentum trend fed even on read-only visits.
   useEffect(() => {
@@ -1259,6 +1274,18 @@ function Overview({
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      <DailyMissionCelebration
+        open={showMissionCelebration}
+        paperId={paper.id}
+        paperName={paper.name}
+        streak={shieldState(paper.id).streak}
+        readiness={prob}
+        targetReadiness={plan.targetProb ?? 75}
+        daysToExam={days}
+        completedTasks={missionTotal}
+        onClose={() => setShowMissionCelebration(false)}
+        onRoadmap={() => { setShowMissionCelebration(false); setTab("plan") }}
+      />
       {/* ── "Locked In" — full-focus takeover: only today's mission on screen,
           an animated countdown in the corner. Covers the app chrome; returns
           when the timer's done (or Exit). Persists across launching a task. ── */}

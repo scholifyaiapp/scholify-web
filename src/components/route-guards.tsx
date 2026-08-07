@@ -1,10 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react"
+import type { ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
-import { shouldBlockForExpiredTrial } from "@/lib/entitlement"
-import { isAccaOnboarded } from "@/lib/acca-profile"
-import { isStripeConfigured } from "@/lib/stripe"
-import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
 import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
 
@@ -26,14 +22,6 @@ function AuthLoading() {
  * fixed inset-0 overlay, so the app behind it is unreachable until they upgrade
  * (or use the Settings / sign-out links in the modal footer).
  */
-function TrialExpiredBlock() {
-  return (
-    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
-      <PaywallModal open type="expired" onClose={() => {}} />
-    </div>
-  )
-}
-
 /**
  * Shown when a real, signed-in account reaches the app before launch.
  *
@@ -97,17 +85,7 @@ function PrelaunchBlock({ email }: { email: string | null }) {
 export function ProtectedRoute({ children, gate = false }: { children: ReactNode; gate?: boolean }) {
   const { user, loading } = useAuth()
   const location = useLocation()
-  const [, setEntitlementClock] = useState(0)
-
-  // Re-evaluate access at the exact trial deadline. Without this, a learner who
-  // kept one tab open could continue until their next navigation or refresh.
-  useEffect(() => {
-    if (!gate || !user) return
-    const end = Date.parse(String(user.app_metadata?.trial_ends_at ?? ""))
-    if (!Number.isFinite(end) || end <= Date.now()) return
-    const timer = window.setTimeout(() => setEntitlementClock((n) => n + 1), Math.min(end - Date.now() + 250, 2_147_483_647))
-    return () => window.clearTimeout(timer)
-  }, [gate, user])
+  void gate
 
   if (loading) return <AuthLoading />
   if (!user) {
@@ -134,20 +112,8 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
      */
     return <PrelaunchBlock email={user.email ?? null} />
   }
-  if (gate) {
-    // The launch admin must always be able to exercise the complete learner
-    // journey before launch. An old/expired trial on the test account should
-    // not turn every app CTA into a paywall while the product is being audited.
-    if (isLaunchAdmin(user)) return <>{children}</>
-    // Only block AFTER a trial has been used and expired — never a brand-new or
-    // not-yet-onboarded account (they haven't started their 3 days yet).
-    // CRITICAL: only when payments are actually open. If checkout can't run yet,
-    // a hard block would trap the user with no way to pay — so we let them
-    // through and rely on the (dismissible) trial reminder instead.
-    if (isStripeConfigured() && isAccaOnboarded() && shouldBlockForExpiredTrial(user)) {
-      return <TrialExpiredBlock />
-    }
-  }
+  // Legacy expired trials now fall back to the free plan. Paid features keep
+  // their contextual gates, but learning itself is never time-locked.
   return <>{children}</>
 }
 

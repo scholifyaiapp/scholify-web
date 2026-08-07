@@ -49,7 +49,7 @@ const HEADERS: Record<
     kind: "lara",
     icon: "tutor",
     title: "Unlock the full Scholify",
-    sub: "Timed mocks, instant written marking, custom practice — the three modes only Pro includes.",
+    sub: "Your personalised plan is ready. Upgrade for timed mocks, instant written marking and custom practice, or keep learning free.",
   },
   reminder: {
     kind: "lara",
@@ -115,15 +115,15 @@ export default function PaywallModal({
   type,
   onClose,
   required = false,
-  onTrialContinue,
+  onFreeContinue,
 }: {
   open: boolean
   type: PaywallType
   onClose: () => void
   /** Prevent closing when this is the onboarding gate before paid access. */
   required?: boolean
-  /** Lets an eligible onboarding learner enter the already-started trial. */
-  onTrialContinue?: () => void
+  /** Lets an onboarding learner continue on the free plan after seeing the offer. */
+  onFreeContinue?: () => void
 }) {
   const { user, signOut } = useAuth()
   const isMobile = useIsMobile()
@@ -507,19 +507,19 @@ export default function PaywallModal({
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 {paymentsOpen
-                  ? "3-day free trial · Cancel anytime"
-                  : "Payments open soon · 3-day free trial to start"}
+                  ? "Free plan has no time limit · Paid plans cancel anytime"
+                  : "Your free plan has no time limit"}
               </div>
-              {onTrialContinue && type !== "expired" && (
+              {onFreeContinue && type !== "expired" && (
                 <button
                   type="button"
                   onClick={() => {
-                    trackEvent("trial_continue_clicked", { type })
-                    onTrialContinue()
+                    trackEvent("free_plan_continue_clicked", { type })
+                    onFreeContinue()
                   }}
                   style={{ width: "100%", marginTop: 12, padding: "13px 16px", borderRadius: 12, border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: "var(--sch-text)", fontSize: 13.5, fontWeight: 750, cursor: "pointer" }}
                 >
-                  Continue with my 3-day free trial
+                  Continue with the free plan
                 </button>
               )}
               {dismissible && (

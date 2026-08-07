@@ -393,8 +393,8 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
         )}
       </AnimatePresence>
 
-      {/* Onboarding is complete, but app access begins only after checkout. */}
-      <PaywallModal open={showPaywall} type="general" required onTrialContinue={() => onDone("study")} onClose={() => {}} />
+      {/* Show the upgrade after the plan reveal, while preserving a free path. */}
+      <PaywallModal open={showPaywall} type="general" onFreeContinue={() => onDone("study")} onClose={() => onDone("study")} />
     </div>
   )
 }
