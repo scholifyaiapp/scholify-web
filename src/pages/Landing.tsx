@@ -535,7 +535,7 @@ function HowItWorks() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-120px")
   const t = useT()
   return (
-    <section id="how-it-works" style={{ padding: "var(--section-y) var(--page-gutter)", textAlign: "center" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)", textAlign: "center" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", position: "relative" }}>
         <div
           aria-hidden
@@ -1031,7 +1031,7 @@ function VisualProgress() {
 function Features() {
   const t = useT()
   return (
-    <section id="features" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("FEATURES")}</SectionLabel>
@@ -1891,7 +1891,7 @@ function Pricing() {
     })
   }
   return (
-    <section id="pricing" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("PRICING")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>

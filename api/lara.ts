@@ -32,25 +32,22 @@ const HAIKU = "claude-haiku-4-5"
 // Sonnet 5: better model, intro pricing ($2/$10 per MTok through 2026-08-31).
 const SONNET = "claude-sonnet-5"
 
-/* ── AI provider — Anthropic primary, OpenAI as a TEMPORARY bridge ──────────
+/* ── AI provider policy ────────────────────────────────────────────────────
  *
- * Scholify is built on Claude (the model mix was chosen deliberately: Haiku for
- * volume, Sonnet for marking/generation). OpenAI is here ONLY as a stopgap for
- * when the Anthropic org is unavailable — set OPENAI_API_KEY and the four AI
- * actions route through it instead, with no other change. Anthropic always wins
- * when its key is present, so restoring it is a one-line env change and the app
- * reverts to Claude automatically. Remove this path once Anthropic is back.
+ * Scholify intentionally runs Charles on OpenAI. Anthropic remains a dormant
+ * disaster-recovery fallback, but an accidentally retained Anthropic key must
+ * never override a configured OpenAI key.
  */
 type ModelTier = "haiku" | "sonnet"
 
 /** Which provider serves AI right now, or null when none is configured. */
-function aiProvider(): "anthropic" | "openai" | null {
-  if (process.env.ANTHROPIC_API_KEY) return "anthropic"
+export function aiProvider(): "anthropic" | "openai" | null {
   if (process.env.OPENAI_API_KEY) return "openai"
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic"
   return null
 }
 
-// The OpenAI models the bridge uses, mirroring the Claude split: a strong model
+// The OpenAI model mix uses a strong model
 // for marking/generation (the quality-critical tier), a fast/cheap one for the
 // high-volume tutor.
 //

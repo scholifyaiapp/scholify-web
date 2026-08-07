@@ -37,6 +37,11 @@ export function stripeKeyMode(raw: string | undefined): "live" | "test" | null {
   return null
 }
 
+/** OpenAI is Scholify's primary AI provider; Anthropic is fallback-only. */
+export function configuredAiProvider(openai: boolean, anthropic: boolean): "openai" | "anthropic" | null {
+  return openai ? "openai" : anthropic ? "anthropic" : null
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const action = String((req.query.action || (req.body as Record<string, unknown> | undefined)?.action) || "")
     .trim()
@@ -183,10 +188,8 @@ function health(_req: VercelRequest, res: VercelResponse): void {
     stripe_mode: secretMode ?? "unknown",
     stripe_publishable_mode: publishableMode ?? "unknown",
     email: emailStatus,
-    // Which provider is actually serving Charles. Anthropic is the intended one and
-    // OpenAI is only a temporary bridge (see api/lara.ts callModel), so running on
-    // the bridge is worth seeing here rather than discovering later.
-    ai_provider: keys.anthropic ? "anthropic" : keys.openai ? "openai" : null,
+    // Which provider is actually serving Charles. This must mirror api/lara.ts.
+    ai_provider: configuredAiProvider(keys.openai, keys.anthropic),
     calendar:
       keys.google_client && keys.google_secret && keys.google_redirect
         ? "live"
@@ -230,11 +233,10 @@ function securityCheck(_req: VercelRequest, res: VercelResponse): void {
     anthropic_configured: !!process.env.ANTHROPIC_API_KEY,
     openai_configured: !!process.env.OPENAI_API_KEY,
     ai_configured: !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY),
-    ai_provider: process.env.ANTHROPIC_API_KEY
-      ? "anthropic"
-      : process.env.OPENAI_API_KEY
-        ? "openai"
-        : null,
+    ai_provider: configuredAiProvider(
+      !!process.env.OPENAI_API_KEY,
+      !!process.env.ANTHROPIC_API_KEY,
+    ),
     supabase_configured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     // Booleans and a derived mode only - never key material. See health() for why
     // the MODE matters more than the presence of a key.
