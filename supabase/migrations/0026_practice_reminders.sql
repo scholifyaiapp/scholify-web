@@ -79,7 +79,7 @@ comment on column public.study_reminders.practice_time is
  *
  *        select cron.schedule(
  *          'scholify-practice-reminders',
- *          '*/5 * * * *',
+ *          '<every five minutes>',
  *          $$
  *          select net.http_get(
  *            url     := 'https://www.scholifyapp.com/api/reminders?action=send',
@@ -106,7 +106,7 @@ comment on column public.study_reminders.practice_time is
  * is wider than the tick interval precisely so a single skipped run does not
  * drop a learner's reminder.
  *
- * The `*/5` above is inside a SQL comment, so nothing here executes it — these
+ * The schedule example above is inside a SQL comment, so nothing here executes it — these
  * are instructions, run by hand once, because enabling extensions and writing
  * to vault both need privileges a migration run by the app role does not have.
  * ────────────────────────────────────────────────────────────────────────── */
