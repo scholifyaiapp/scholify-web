@@ -430,10 +430,28 @@ async function sendDueTrialEmails(db: NonNullable<ReturnType<typeof admin>>, api
 
 async function sendTrialEmail(apiKey: string, from: string, to: string, slot: TrialReminderKey): Promise<boolean> {
   const copy = slot === "10h"
-    ? { subject: "Your Scholify plan is ready for tonight", heading: "Your first study block is ready.", body: "Your 3-day Pro trial is active. Open today’s plan and complete the next learning block while every mode is unlocked.", cta: "Continue today’s plan" }
+    ? { subject: "Your Scholify plan is ready for tonight", kicker: "Pro trial · Day 1", heading: "Your first study block is ready.", body: "Charles has turned your diagnosis into a focused session for today. Your 3-day Pro trial currently unlocks all 15 ACCA papers, full mocks, the AI Examiner, analytics and custom AI practice—so this is the best time to test the complete Scholify workspace.", detail: "Open your dashboard, follow the first recommended task, and answer enough questions for Scholify to begin adapting tomorrow’s workload to your real performance.", cta: "Continue today’s plan", href: `${SITE}/dashboard` }
     : slot === "day2"
-      ? { subject: "Day 2 of your Scholify trial", heading: "Your plan is learning from you.", body: "You are on day 2 of your trial. Every answer sharpens your readiness score and changes what Charles gives you next.", cta: "Start day 2" }
-      : { subject: "Your Scholify trial ends today", heading: "Your final free day is running.", body: "Your subscription begins when the trial ends. If you do not want to continue, cancel from Settings before the trial deadline and you will not be charged.", cta: "Review my subscription" }
+      ? { subject: "Day 2 of your Scholify trial", kicker: "Pro trial · Day 2", heading: "Your plan is learning from you.", body: "Every answer updates your accuracy, weak-topic map and readiness trend. Charles uses that evidence to move the highest-impact work forward instead of giving you another generic revision list.", detail: "Complete today’s recommended session, then open Analytics to see which syllabus areas are strengthening and which ones still need deliberate practice.", cta: "Start day 2", href: `${SITE}/dashboard` }
+      : { subject: "Your Scholify trial ends today", kicker: "Pro trial · Final day", heading: "Your final free day is running.", body: "Your personalized plan, answers and progress remain saved. Your selected Pro subscription begins when the Stripe trial ends, using the payment method added at checkout.", detail: "Want to continue? No action is needed. If you do not want the subscription to start, open Settings and cancel before the exact trial deadline shown there; cancelling before that deadline prevents the first charge.", cta: "Review my subscription", href: `${SITE}/settings` }
+  const avatar = `${SITE}/charles/email-avatar.png`
+  const logo = `${SITE}/icon-192.png`
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F7F3F1;"><tr><td align="center" style="padding:28px 12px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
+      <tr><td style="height:5px;background:linear-gradient(90deg,#C80000,#E50068,#F4A405);font-size:0;">&nbsp;</td></tr>
+      <tr><td style="padding:28px 32px 18px;"><table role="presentation" width="100%"><tr>
+        <td><img src="${avatar}" width="72" height="72" alt="Charles, Scholify study coach" style="display:block;border-radius:18px;border:1px solid #E8E0DC;"></td>
+        <td align="right"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
+      </tr></table></td></tr>
+      <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#C80000;text-transform:uppercase;">Charles &middot; ${copy.kicker}</td></tr>
+      <tr><td style="padding:8px 32px 0;font-size:28px;line-height:35px;font-weight:800;color:#14141A;">${copy.heading}</td></tr>
+      <tr><td style="padding:14px 32px 8px;font-size:15px;line-height:24px;color:#5F5753;">${copy.body}</td></tr>
+      <tr><td style="padding:8px 32px 18px;"><div style="padding:16px 18px;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;font-size:14px;line-height:22px;color:#5F5753;"><strong style="color:#14141A;">Your next move</strong><br>${copy.detail}</div></td></tr>
+      <tr><td style="padding:4px 32px 30px;"><a href="${copy.href}" style="display:inline-block;padding:13px 22px;border-radius:12px;background:#C80000;color:#fff;text-decoration:none;font-size:14px;font-weight:800;">${copy.cta} &rarr;</a></td></tr>
+      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify study coach<br>Your learning data remains saved to your account.<br><a href="${SITE}/settings" style="color:#C80000;text-decoration:none;">Manage subscription</a> &middot; <a href="${SITE}/support" style="color:#C80000;text-decoration:none;">Get support</a></td></tr>
+    </table>
+  </td></tr></table></body></html>`
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -442,8 +460,9 @@ async function sendTrialEmail(apiKey: string, from: string, to: string, slot: Tr
         from,
         to,
         subject: copy.subject,
-        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#14141A"><div style="font-size:12px;font-weight:800;color:#C80000;letter-spacing:1px">SCHOLIFY · 3-DAY TRIAL</div><h1 style="font-size:28px;line-height:1.2">${copy.heading}</h1><p style="font-size:15px;line-height:1.65;color:#5F5753">${copy.body}</p><a href="${SITE}/dashboard" style="display:inline-block;margin-top:10px;padding:13px 20px;border-radius:12px;background:#C80000;color:#fff;text-decoration:none;font-weight:800">${copy.cta} →</a><p style="margin-top:28px;font-size:12px;color:#8F8C85">Your learning data remains saved to your Scholify account.</p></div>`,
-        text: `${copy.heading}\n\n${copy.body}\n\n${copy.cta}: ${SITE}/dashboard`,
+        reply_to: "scholifyaiapp@gmail.com",
+        html,
+        text: `${copy.heading}\n\n${copy.body}\n\nYour next move: ${copy.detail}\n\n${copy.cta}: ${copy.href}\n\nManage subscription: ${SITE}/settings\nSupport: ${SITE}/support`,
       }),
     })
     return response.ok

@@ -371,6 +371,7 @@ async function submitFeedback(req: VercelRequest, res: VercelResponse, supa: Sup
     title: "Scholify loves you.",
     intro: `Thanks for your feedback${name ? `, ${escapeHtml(name.split(/\s+/)[0])}` : ""}. We read every message and use it to decide what Scholify should improve next.`,
     content: `<div style="padding:16px;border-radius:14px;background:#FFF7F7;border:1px solid #F1D5D5;color:#5F5753;font-size:14px;line-height:22px;">Your feedback is safely in our product inbox. If we need more detail, we’ll reply to this email.</div>`,
+    footerLabel: "Scholify Product Team",
   })
   const notificationResults = await Promise.allSettled([
     sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: email, subject: `New Scholify feedback · ${category}`, html: adminHtml }),
@@ -499,6 +500,7 @@ function emailFrame(options: {
   content: string
   cta?: { label: string; href: string }
   charles?: boolean
+  footerLabel?: string
 }): string {
   const cta = options.cta
     ? `<tr><td style="padding:8px 32px 30px;">
@@ -524,7 +526,7 @@ function emailFrame(options: {
         <tr><td style="padding:0 32px 20px;">${options.content}</td></tr>
         ${cta}
         <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">
-          Scholify Preferred Partner Program<br>
+          ${escapeHtml(options.footerLabel || "Scholify Preferred Partner Program")}<br>
           <a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>
         </td></tr>
       </table>
