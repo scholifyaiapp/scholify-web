@@ -10,10 +10,10 @@ import { markAffiliateDuePaid, setAffiliateStatus } from "@/lib/affiliate"
 
 type Data = {
   generatedAt: string
-  summary: { users: number; active7d: number; waitlist: number; partners: number; activePartners: number; partnerClicks: number; partnerInvitedUsers: number; partnerSales: number; revenue: number; feedback: number; newFeedback: number }
+  summary: { users: number; active7d: number; waitlist: number; partners: number; activePartners: number; partnerClicks: number; partnerInvitedUsers: number; partnerPaidInvitedUsers: number; partnerSales: number; revenue: number; feedback: number; newFeedback: number }
   users: Array<{ id: string; email?: string; name: string; createdAt: string; lastSignInAt?: string; provider: string; plan: string; firstTaskAt?: string; day3: boolean; day7: boolean; converted: boolean }>
   waitlist: Array<{ id: string; email: string; name: string; source?: string; created_at: string }>
-  partners: Array<{ id: string; name: string; email: string; code: string; status: string; clicks: number; invitedUsers: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number; created_at: string }>
+  partners: Array<{ id: string; name: string; email: string; code: string; status: string; clicks: number; invitedUsers: number; paidInvitedUsers: number; conversionRate: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number; created_at: string }>
   feedback: Array<{ id: string; name?: string; email: string; category: string; rating?: number; message: string; source: string; page_url?: string; status: string; created_at: string }>
   posthog: { connected: boolean; events: unknown[][]; funnel: unknown[]; error?: string }
 }
@@ -64,10 +64,33 @@ export default function AdminDashboard() {
   }
 
   const markDuePaid = async (id: string) => {
+    const reference = window.prompt("Enter the Visa/bank transfer reference. Only continue after the money has actually been sent.")?.trim()
+    if (!reference) return
+    if (!window.confirm("Confirm the external payout is complete and record these matured commissions as paid?")) return
     setReviewing(id)
-    const ok = await markAffiliateDuePaid(id)
+    const ok = await markAffiliateDuePaid(id, reference)
     if (ok) await load()
-    else setError("Matured commissions could not be marked paid.")
+    else setError("Payout was not recorded. Check the reference and matured commission balance.")
+    setReviewing("")
+  }
+
+  const refundUser = async (id: string, email?: string) => {
+    const reason = window.prompt(`Reason for fully refunding ${email || "this customer"}?`)?.trim()
+    if (!reason) return
+    if (!window.confirm("This will refund the latest paid invoice and immediately cancel access. Continue?")) return
+    setReviewing(id)
+    setError("")
+    const { data: sessionData } = await supabase.auth.getSession()
+    const response = await fetch("/api/stripe?action=refund", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionData.session?.access_token || ""}` },
+      body: JSON.stringify({ userId: id, reason }),
+    })
+    const result = (await response.json().catch(() => ({}))) as { ok?: boolean; refundId?: string; reason?: string }
+    if (result.ok) {
+      window.alert(`Refund completed. Stripe reference: ${result.refundId || "available in Stripe"}`)
+      await load()
+    } else setError(`Refund failed: ${result.reason || "unknown_error"}. No access change was made by this screen.`)
     setReviewing("")
   }
 
@@ -116,7 +139,7 @@ export default function AdminDashboard() {
         {error && <div style={{ ...card, padding: 24, color: C.red }}>{error}</div>}
         {data && !loading && <>
           {tab === "overview" && <Overview data={data} />}
-          {tab === "users" && <Table title="Registered users" columns={["User", "Plan", "Joined", "Last sign-in", "Journey"]} rows={data.users.map((u) => [<span><b>{u.name || "Unnamed"}</b><small>{u.email}</small></span>, u.plan, date(u.createdAt), date(u.lastSignInAt), <Journey user={u} />])} />}
+          {tab === "users" && <Table title="Registered users" columns={["User", "Plan", "Joined", "Last sign-in", "Journey", "Refund"]} rows={data.users.map((u) => [<span><b>{u.name || "Unnamed"}</b><small>{u.email}</small></span>, u.plan, date(u.createdAt), date(u.lastSignInAt), <Journey user={u} />, u.converted || u.plan !== "free" ? <Action label="Full refund" disabled={reviewing === u.id} onClick={() => void refundUser(u.id, u.email)} /> : "—"])} />}
           {tab === "waitlist" && <Table title={`Launch waitlist · ${data.waitlist.length}`} columns={["Contact", "Source", "Joined"]} rows={data.waitlist.map((w) => [<span><b>{w.name}</b><small>{w.email}</small></span>, w.source || "website", date(w.created_at)])} />}
           {tab === "partners" && <PartnerTable partners={data.partners} reviewing={reviewing} onReview={reviewPartner} onMarkPaid={markDuePaid} />}
           {tab === "feedback" && <FeedbackInbox feedback={data.feedback} onStatus={updateFeedback} />}
@@ -129,7 +152,8 @@ export default function AdminDashboard() {
 }
 
 function PartnerTable({ partners, reviewing, onReview, onMarkPaid }: { partners: Data["partners"]; reviewing: string; onReview: (id: string, status: "active" | "rejected" | "pending") => Promise<void>; onMarkPaid: (id: string) => Promise<void> }) {
-  return <section style={{ ...card, overflow: "hidden" }}><div style={{ padding: "18px 20px", fontWeight: 850, borderBottom: "1px solid rgba(20,20,26,.07)" }}>Partner applications and traction · {partners.length}</div><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1020 }}><thead><tr>{["Partner", "Status", "Clicks", "Invited", "Sales", "Revenue", "Commission", "Decision / payout"].map((column) => <th key={column} style={{ padding: "11px 16px", textAlign: "left", color: C.muted, background: "rgba(20,20,26,.025)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em" }}>{column}</th>)}</tr></thead><tbody>{partners.length ? partners.map((partner) => <tr key={partner.id}><td style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)", fontSize: 12 }}><b>{partner.name} · {partner.code}</b><small>{partner.email}</small></td><td style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)" }}><Pill value={partner.status} /></td>{[partner.clicks, partner.invitedUsers, partner.sales, money(partner.revenue), money(partner.commission)].map((value, index) => <td key={index} style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)", fontSize: 12 }}>{value}</td>)}<td style={{ padding: "10px 16px", borderTop: "1px solid rgba(20,20,26,.055)", whiteSpace: "nowrap" }}><div style={{ display: "flex", gap: 6 }}>{partner.status !== "active" && <Action label="Approve" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "active")} primary />}{partner.status !== "rejected" && <Action label="Reject" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "rejected")} />}{partner.status !== "pending" && <Action label="Pending" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "pending")} />}{partner.dueCommission > 0 && <Action label={`Paid ${money(partner.dueCommission)}`} disabled={reviewing === partner.id} onClick={() => void onMarkPaid(partner.id)} primary />}</div></td></tr>) : <tr><td colSpan={8} style={{ padding: 30, color: C.muted, textAlign: "center" }}>No partner applications yet.</td></tr>}</tbody></table></div></section>
+  const columns = ["Partner", "Status", "Clicks", "Invited", "Paid invites", "Conversion", "Sales", "Revenue", "Commission", "Decision / payout"]
+  return <section style={{ ...card, overflow: "hidden" }}><div style={{ padding: "18px 20px", fontWeight: 850, borderBottom: "1px solid rgba(20,20,26,.07)" }}>Partner applications and traction · {partners.length}</div><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1180 }}><thead><tr>{columns.map((column) => <th key={column} style={{ padding: "11px 16px", textAlign: "left", color: C.muted, background: "rgba(20,20,26,.025)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em" }}>{column}</th>)}</tr></thead><tbody>{partners.length ? partners.map((partner) => <tr key={partner.id}><td style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)", fontSize: 12 }}><b>{partner.name} · {partner.code}</b><small>{partner.email}</small></td><td style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)" }}><Pill value={partner.status} /></td>{[partner.clicks, partner.invitedUsers, partner.paidInvitedUsers, `${partner.conversionRate}%`, partner.sales, money(partner.revenue), money(partner.commission)].map((value, index) => <td key={index} style={{ padding: "13px 16px", borderTop: "1px solid rgba(20,20,26,.055)", fontSize: 12 }}>{value}</td>)}<td style={{ padding: "10px 16px", borderTop: "1px solid rgba(20,20,26,.055)", whiteSpace: "nowrap" }}><div style={{ display: "flex", gap: 6 }}>{partner.status !== "active" && <Action label="Approve" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "active")} primary />}{partner.status !== "rejected" && <Action label="Reject" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "rejected")} />}{partner.status !== "pending" && <Action label="Pending" disabled={reviewing === partner.id} onClick={() => void onReview(partner.id, "pending")} />}{partner.dueCommission > 0 && <Action label={`Record payout ${money(partner.dueCommission)}`} disabled={reviewing === partner.id} onClick={() => void onMarkPaid(partner.id)} primary />}</div></td></tr>) : <tr><td colSpan={columns.length} style={{ padding: 30, color: C.muted, textAlign: "center" }}>No partner applications yet.</td></tr>}</tbody></table></div></section>
 }
 
 function Action({ label, disabled, onClick, primary = false }: { label: string; disabled: boolean; onClick: () => void; primary?: boolean }) {
@@ -141,7 +165,7 @@ function FeedbackInbox({ feedback, onStatus }: { feedback: Data["feedback"]; onS
 }
 
 function Overview({ data }: { data: Data }) {
-  const stats = [[Users, "Registered users", data.summary.users], [Activity, "Active · 7 days", data.summary.active7d], [Clock3, "Launch waitlist", data.summary.waitlist], [UserRoundCheck, "Active partners", data.summary.activePartners], [BarChart3, "Partner clicks", data.summary.partnerClicks], [Users, "Partner invited users", data.summary.partnerInvitedUsers], [CheckCircle2, "Partner sales", data.summary.partnerSales], [Activity, "New feedback", data.summary.newFeedback]]
+  const stats = [[Users, "Registered users", data.summary.users], [Activity, "Active · 7 days", data.summary.active7d], [Clock3, "Launch waitlist", data.summary.waitlist], [UserRoundCheck, "Active partners", data.summary.activePartners], [BarChart3, "Partner clicks", data.summary.partnerClicks], [Users, "Partner invited users", data.summary.partnerInvitedUsers], [CheckCircle2, "Paid invited users", data.summary.partnerPaidInvitedUsers], [Activity, "New feedback", data.summary.newFeedback]]
   return <><div className="admin-grid">{stats.map(([Icon, label, value]) => { const I = Icon as typeof Users; return <div key={String(label)} style={{ ...card, padding: 18 }}><I size={18} color={C.red} /><div style={{ fontSize: 25, fontWeight: 900, marginTop: 15 }}>{String(value)}</div><div style={{ color: C.muted, fontSize: 11, marginTop: 4 }}>{String(label)}</div></div> })}</div><div style={{ ...card, padding: 20, marginTop: 16 }}><b>Data status</b><p style={{ color: C.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 0 }}>Supabase account, waitlist and partner records are live. {data.posthog.connected ? "PostHog’s private query API is connected and reporting the last 30 days." : "Add POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID in Vercel to display live event funnels and journeys here."}</p></div></>
 }
 

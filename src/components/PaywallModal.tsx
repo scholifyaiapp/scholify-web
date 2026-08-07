@@ -49,7 +49,7 @@ const HEADERS: Record<
     kind: "lara",
     icon: "tutor",
     title: "Unlock the full Scholify",
-    sub: "Your personalised plan is ready. Upgrade for timed mocks, instant written marking and custom practice, or keep learning free.",
+    sub: "Your personalised plan is ready. Choose a plan now, or activate three days of full Pro with no card.",
   },
   reminder: {
     kind: "lara",
@@ -115,20 +115,21 @@ export default function PaywallModal({
   type,
   onClose,
   required = false,
-  onFreeContinue,
+  onTrialContinue,
 }: {
   open: boolean
   type: PaywallType
   onClose: () => void
   /** Prevent closing when this is the onboarding gate before paid access. */
   required?: boolean
-  /** Lets an onboarding learner continue on the free plan after seeing the offer. */
-  onFreeContinue?: () => void
+  /** Activates the post-plan trial and then enters the app. */
+  onTrialContinue?: () => Promise<boolean> | boolean | void
 }) {
   const { user, signOut } = useAuth()
   const isMobile = useIsMobile()
   const [notice, setNotice] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
+  const [startingTrial, setStartingTrial] = useState(false)
 
   // Paywalls are dismissible — EXCEPT "expired". Once the 3-day trial ends, the
   // whole app is gated behind this modal until the learner pays (founder call),
@@ -507,19 +508,24 @@ export default function PaywallModal({
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 {paymentsOpen
-                  ? "Free plan has no time limit · Paid plans cancel anytime"
-                  : "Your free plan has no time limit"}
+                  ? "3-day Pro trial · No card · Paid plans cancel anytime"
+                  : "3-day Pro trial · No card required"}
               </div>
-              {onFreeContinue && type !== "expired" && (
+              {onTrialContinue && type !== "expired" && (
                 <button
                   type="button"
+                  disabled={startingTrial}
                   onClick={() => {
-                    trackEvent("free_plan_continue_clicked", { type })
-                    onFreeContinue()
+                    trackEvent("trial_continue_clicked", { type })
+                    setStartingTrial(true)
+                    setNotice(null)
+                    void Promise.resolve(onTrialContinue()).then((ok) => {
+                      if (ok === false) setNotice("We couldn't activate your trial. Please try again.")
+                    }).catch(() => setNotice("We couldn't activate your trial. Please try again.")).finally(() => setStartingTrial(false))
                   }}
                   style={{ width: "100%", marginTop: 12, padding: "13px 16px", borderRadius: 12, border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: "var(--sch-text)", fontSize: 13.5, fontWeight: 750, cursor: "pointer" }}
                 >
-                  Continue with the free plan
+                  {startingTrial ? "Activating your plan…" : "Start my 3-day Pro trial"}
                 </button>
               )}
               {dismissible && (

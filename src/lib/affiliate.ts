@@ -118,18 +118,19 @@ export interface CommissionRow {
   status: string
   available_after: string
   created_at: string
+  payout_reference?: string | null
 }
 
 export interface AffiliateDashboard {
   affiliate: AffiliateRow | null
   commissions: CommissionRow[]
-  totals: { pending: number; approved: number; paid: number; sales: number; invitedUsers: number }
+  totals: { pending: number; approved: number; paid: number; sales: number; invitedUsers: number; paidInvitedUsers: number }
 }
 
 const EMPTY: AffiliateDashboard = {
   affiliate: null,
   commissions: [],
-  totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0 },
+  totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0, paidInvitedUsers: 0 },
 }
 
 /** Credit the signed-in user to the captured partner once. Server-side uniqueness
@@ -234,14 +235,14 @@ export async function setAffiliateStatus(id: string, status: string): Promise<bo
 
 /** Admin: after manually sending money, mark all matured pending commissions
  * for one partner as paid. The server refuses commissions still on hold. */
-export async function markAffiliateDuePaid(id: string): Promise<boolean> {
+export async function markAffiliateDuePaid(id: string, reference: string): Promise<boolean> {
   const token = await adminToken()
   if (!token) return false
   try {
     const res = await fetch("/api/affiliate?action=mark-due-paid", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id, reference }),
     })
     const json = (await res.json()) as { ok: boolean }
     return json.ok

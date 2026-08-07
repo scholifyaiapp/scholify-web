@@ -303,8 +303,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "checkout") return checkout(req, res)
   if (action === "cancel") return cancel(req, res)
   if (action === "portal") return portal(req, res)
+  if (action === "refund") return refundPayment(req, res)
   if (action === "selftest") return selftest(req, res)
-  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal | selftest." })
+  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal | refund | selftest." })
+}
+
+/** Founder-only full refund. Refund first, then cancel immediately; webhook
+ * delivery remains the durable entitlement/commission reconciliation path. */
+async function refundPayment(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const stripe = stripeClient()
+  const supa = admin()
+  if (!stripe || !supa) return void res.status(200).json({ ok: false, reason: "not_configured" })
+  if (!(await selftestAuthorised(req, supa))) return void res.status(403).json({ ok: false, reason: "forbidden" })
+  const raw = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {})
+  const userId = String(raw.userId || "")
+  const reason = String(raw.reason || "requested_by_customer").slice(0, 300)
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) return void res.status(400).json({ ok: false, reason: "bad_user" })
+  const { data } = await supa.auth.admin.getUserById(userId)
+  const user = data.user
+  const subId = String(user?.app_metadata?.stripe_subscription_id || "")
+  if (!subId) return void res.status(200).json({ ok: false, reason: "no_subscription" })
+  try {
+    const invoices = await stripe.invoices.list({ subscription: subId, status: "paid", limit: 1 })
+    const invoice = invoices.data[0] as Stripe.Invoice & { charge?: string | Stripe.Charge | null; payment_intent?: string | Stripe.PaymentIntent | null }
+    const charge = typeof invoice?.charge === "string" ? invoice.charge : invoice?.charge?.id
+    const paymentIntent = typeof invoice?.payment_intent === "string" ? invoice.payment_intent : invoice?.payment_intent?.id
+    if (!charge && !paymentIntent) return void res.status(200).json({ ok: false, reason: "no_refundable_payment" })
+    const refunded = await stripe.refunds.create({ ...(charge ? { charge } : { payment_intent: paymentIntent! }), metadata: { refunded_user_id: userId, admin_reason: reason } })
+    // A successful refund must revoke app access even if Stripe reports the
+    // subscription was already canceled between the invoice lookup and here.
+    try {
+      await stripe.subscriptions.cancel(subId)
+    } catch (cancelError) {
+      console.warn("stripe refund subscription cancel:", cancelError)
+    }
+    await writeEntitlement(supa, userId, { plan: "free", status: "refunded", subscriptionId: subId, eventType: "admin.refund" })
+    res.status(200).json({ ok: true, refundId: refunded.id, amount: refunded.amount, currency: refunded.currency })
+  } catch (error) {
+    console.error("stripe refund:", error)
+    res.status(200).json({ ok: false, reason: "refund_failed" })
+  }
 }
 
 /* ── Self-test: does a payment actually reach OUR account? ───────────── */

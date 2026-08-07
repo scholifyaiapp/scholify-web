@@ -12,6 +12,7 @@ import { getPaper } from "@/lib/acca"
 import { getPlan, daysUntilExam } from "@/lib/acca-plan"
 import { MOCK_GATE } from "@/lib/acca-loop"
 import { TRIAL_DAYS } from "@/lib/entitlement"
+import { useAuth } from "@/lib/auth"
 
 /*
  * ZeroPlanReveal — the plan-generation moment for the learner who chose
@@ -43,6 +44,7 @@ import { TRIAL_DAYS } from "@/lib/entitlement"
 type Stage = "building" | "plan" | "commit"
 
 export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; onDone: (dest: "study" | "dashboard") => void }) {
+  const { startTrial } = useAuth()
   const paper = getPaper(paperId)
   const plan = getPlan(paperId)
   const days = daysUntilExam(paperId)
@@ -393,8 +395,8 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
         )}
       </AnimatePresence>
 
-      {/* Show the upgrade after the plan reveal, while preserving a free path. */}
-      <PaywallModal open={showPaywall} type="general" onFreeContinue={() => onDone("study")} onClose={() => onDone("study")} />
+      {/* The trial begins only after the personalised plan has been revealed. */}
+      <PaywallModal open={showPaywall} type="general" required onTrialContinue={async () => { const ok = await startTrial(); if (ok) onDone("study"); return ok }} onClose={() => {}} />
     </div>
   )
 }

@@ -450,7 +450,7 @@ export default function SignUp() {
             Start learning today
           </h1>
           <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 6 }}>
-            The free plan has no time limit. No credit card required.
+            Diagnose your gaps, receive your plan, then try Pro free for 3 days. No credit card required.
           </p>
         </motion.div>
 

@@ -42,6 +42,7 @@ import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
 import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
+import { useAuth } from "@/lib/auth"
 
 /* ──────────────────────────────────────────────────────────────
  *  /study/diagnostic — the pass-probability diagnostic.
@@ -177,6 +178,7 @@ function QuestionCard({
 
 export default function AccaDiagnostic() {
   const navigate = useNavigate()
+  const { startTrial } = useAuth()
   const papers = useMemo(() => getPapers().filter((p) => hasCuratedContent(p.id)), [])
   const defaultPaper = getCurrentPaper() && hasCuratedContent(getCurrentPaper()!) ? getCurrentPaper()! : papers[0]?.id ?? "FA"
 
@@ -412,8 +414,9 @@ export default function AccaDiagnostic() {
         <PaywallModal
           open={showTrialPaywall}
           type="general"
-          onFreeContinue={() => navigate("/dashboard")}
-          onClose={() => navigate("/dashboard")}
+          required
+          onTrialContinue={async () => { const ok = await startTrial(); if (ok) navigate("/dashboard"); return ok }}
+          onClose={() => {}}
         />
       </>
     )
@@ -577,8 +580,9 @@ export default function AccaDiagnostic() {
       <PaywallModal
         open={showTrialPaywall}
         type="general"
-        onFreeContinue={() => navigate("/dashboard")}
-        onClose={() => navigate("/dashboard")}
+        required
+        onTrialContinue={async () => { const ok = await startTrial(); if (ok) navigate("/dashboard"); return ok }}
+        onClose={() => {}}
       />
     </DashboardLayout>
   )

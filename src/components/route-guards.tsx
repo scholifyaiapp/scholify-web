@@ -1,6 +1,10 @@
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
+import { shouldBlockForExpiredTrial } from "@/lib/entitlement"
+import { isAccaOnboarded } from "@/lib/acca-profile"
+import { isStripeConfigured } from "@/lib/stripe"
+import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
 import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
 
@@ -14,6 +18,10 @@ function AuthLoading() {
       <LogoSpinner size={52} />
     </div>
   )
+}
+
+function TrialExpiredBlock() {
+  return <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}><PaywallModal open type="expired" onClose={() => {}} /></div>
 }
 
 /**
@@ -85,7 +93,14 @@ function PrelaunchBlock({ email }: { email: string | null }) {
 export function ProtectedRoute({ children, gate = false }: { children: ReactNode; gate?: boolean }) {
   const { user, loading } = useAuth()
   const location = useLocation()
-  void gate
+  const [, setEntitlementClock] = useState(0)
+  useEffect(() => {
+    if (!gate || !user) return
+    const end = Date.parse(String(user.app_metadata?.trial_ends_at ?? ""))
+    if (!Number.isFinite(end) || end <= Date.now()) return
+    const timer = window.setTimeout(() => setEntitlementClock((n) => n + 1), Math.min(end - Date.now() + 250, 2_147_483_647))
+    return () => window.clearTimeout(timer)
+  }, [gate, user])
 
   if (loading) return <AuthLoading />
   if (!user) {
@@ -112,8 +127,9 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
      */
     return <PrelaunchBlock email={user.email ?? null} />
   }
-  // Legacy expired trials now fall back to the free plan. Paid features keep
-  // their contextual gates, but learning itself is never time-locked.
+  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && shouldBlockForExpiredTrial(user)) {
+    return <TrialExpiredBlock />
+  }
   return <>{children}</>
 }
 

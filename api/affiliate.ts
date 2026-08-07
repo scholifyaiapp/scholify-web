@@ -276,17 +276,31 @@ async function markDuePaid(req: VercelRequest, res: VercelResponse, supa: Supaba
   }
   const b = await body(req)
   const id = String(b.id || "")
-  if (!id) {
+  const reference = String(b.reference || "").trim().slice(0, 160)
+  if (!id || reference.length < 3) {
     res.status(400).json({ ok: false, reason: "bad_params" })
     return
   }
-  const { data, error } = await supa
+  let { data, error } = await supa
     .from("affiliate_commissions")
-    .update({ status: "paid", paid_at: new Date().toISOString() })
+    .update({ status: "paid", paid_at: new Date().toISOString(), payout_reference: reference })
     .eq("affiliate_id", id)
     .eq("status", "pending")
     .lte("available_after", new Date().toISOString())
     .select("id, commission_amount")
+  // Backward-compatible during rollout if the additive migration has not reached
+  // production yet. The founder confirmation still prevents accidental marking.
+  if (error && /payout_reference/i.test(String(error.message || ""))) {
+    const fallback = await supa
+      .from("affiliate_commissions")
+      .update({ status: "paid", paid_at: new Date().toISOString() })
+      .eq("affiliate_id", id)
+      .eq("status", "pending")
+      .lte("available_after", new Date().toISOString())
+      .select("id, commission_amount")
+    data = fallback.data
+    error = fallback.error
+  }
   if (error) {
     res.status(200).json({ ok: false, reason: "update_failed" })
     return
@@ -677,7 +691,7 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
       ok: true,
       affiliate: null,
       commissions: [],
-      totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0 },
+      totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0, paidInvitedUsers: 0 },
     })
     return
   }
@@ -685,7 +699,7 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
   const [{ data: commissions }, { count: invitedUsers }] = await Promise.all([
     supa
       .from("affiliate_commissions")
-      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at")
+      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at, stripe_customer_id")
       .eq("affiliate_id", affiliate.id)
       .order("created_at", { ascending: false }),
     supa
@@ -693,7 +707,8 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
       .select("id", { count: "exact", head: true })
       .eq("affiliate_id", affiliate.id),
   ])
-  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0 }
+  const paidCustomers = new Set((commissions ?? []).filter((row) => row.status !== "canceled" && row.stripe_customer_id).map((row) => row.stripe_customer_id))
+  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0, paidInvitedUsers: paidCustomers.size }
   for (const commission of commissions ?? []) {
     if (commission.status !== "canceled") totals.sales += Number(commission.sale_amount || 0)
     if (commission.status === "pending") totals.pending += Number(commission.commission_amount || 0)

@@ -136,6 +136,8 @@ export default function Partners() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
               <Stat label="Clicks" value={String(aff.clicks ?? 0)} />
               <Stat label="Invited users" value={String(data.totals.invitedUsers)} />
+              <Stat label="Paid invited users" value={String(data.totals.paidInvitedUsers)} />
+              <Stat label="Invite conversion" value={`${data.totals.invitedUsers ? Math.round(data.totals.paidInvitedUsers / data.totals.invitedUsers * 100) : 0}%`} />
               <Stat label="Sales" value={formatMoney(data.totals.sales)} />
               <Stat label="Pending" value={formatMoney(data.totals.pending)} />
               <Stat label="Approved" value={formatMoney(data.totals.approved + data.totals.paid)} />
