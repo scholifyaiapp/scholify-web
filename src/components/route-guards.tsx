@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
-import { shouldBlockForExpiredTrial } from "@/lib/entitlement"
+import { entitlementOf } from "@/lib/entitlement"
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { isStripeConfigured } from "@/lib/stripe"
 import PaywallModal from "@/components/PaywallModal"
@@ -127,7 +127,8 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
      */
     return <PrelaunchBlock email={user.email ?? null} />
   }
-  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && shouldBlockForExpiredTrial(user)) {
+  const isFreeValueRoute = location.pathname === "/study/diagnostic"
+  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && !isFreeValueRoute && !entitlementOf(user).isPaid) {
     return <TrialExpiredBlock />
   }
   return <>{children}</>

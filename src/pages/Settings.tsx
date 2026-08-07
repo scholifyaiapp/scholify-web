@@ -1524,7 +1524,7 @@ export default function Settings() {
         <Section>
           <SectionHead icon="support">Invite Friends</SectionHead>
           <p style={{ fontSize: 13, color: TEXT2, marginTop: 6, lineHeight: 1.6 }}>
-            Share your link — anyone who joins gets the 3-day Pro trial, no card needed.
+            Share your link — anyone who joins can build their personalised plan free, then try Pro for 3 days after secure checkout.
           </p>
 
           <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>

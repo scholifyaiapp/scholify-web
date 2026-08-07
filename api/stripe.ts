@@ -111,6 +111,8 @@ async function writeEntitlement(
     billingInterval?: "month" | "year"
     subscriptionId?: string
     customerId?: string
+    trialStartsAt?: string
+    trialEndsAt?: string
     eventType: string
   },
 ): Promise<void> {
@@ -123,6 +125,8 @@ async function writeEntitlement(
         ...(fields.subscriptionId ? { stripe_subscription_id: fields.subscriptionId } : {}),
         ...(fields.customerId ? { stripe_customer_id: fields.customerId } : {}),
         ...(fields.billingInterval ? { billing_interval: fields.billingInterval } : {}),
+        ...(fields.trialStartsAt ? { trial_started_at: fields.trialStartsAt } : {}),
+        ...(fields.trialEndsAt ? { trial_ends_at: fields.trialEndsAt } : {}),
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
   const { data: existingUser } = await supa.auth.admin.getUserById(userId)
@@ -595,6 +599,8 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
   }
 
   const affMeta = await resolveAffiliateMetadata(supa, user.id, body.affiliateCode)
+  const isProPlan = plan === "pro" || plan === "annual_pro"
+  const hadTrial = Boolean(user.app_metadata?.trial_started_at)
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -605,7 +611,11 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       // Both the session AND the subscription carry the user id, so every
       // webhook (checkout + later renewals/cancellations) can map to the account.
       metadata: { userId: user.id, ...affMeta },
-      subscription_data: { metadata: { userId: user.id, ...affMeta } },
+      subscription_data: {
+        metadata: { userId: user.id, ...affMeta },
+        ...(isProPlan && !hadTrial ? { trial_period_days: 3 } : {}),
+      },
+      payment_method_collection: "always",
       allow_promotion_codes: true,
       success_url: `${origin}/study?upgraded=true`,
       // Cancellation returns to plan selection, never into the learning app.
@@ -699,6 +709,8 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
+          trialStartsAt: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : undefined,
+          trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : undefined,
           eventType: event.type,
         })
       }

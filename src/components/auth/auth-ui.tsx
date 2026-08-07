@@ -305,7 +305,7 @@ export function SubmitButton({
  *  accounts are open, so it can't promise what a keyless build can't grant. */
 const productProof: { icon: IconName; text: string }[] = [
   ...(isSupabaseConfigured
-    ? [{ icon: "trophy" as IconName, text: "3 days of Pro free — no card" }]
+    ? [{ icon: "trophy" as IconName, text: "Build your plan free before checkout" }]
     : []),
   { icon: "practice", text: "2,418 expert-written practice questions" },
   { icon: "examiner", text: "445 written practice tasks with examiner rubrics" },

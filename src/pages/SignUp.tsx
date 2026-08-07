@@ -450,7 +450,7 @@ export default function SignUp() {
             Start learning today
           </h1>
           <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 6 }}>
-            Diagnose your gaps, receive your plan, then try Pro free for 3 days. No credit card required.
+            Diagnose your gaps and receive your plan before checkout. Pro starts with 3 free days and no charge today.
           </p>
         </motion.div>
 

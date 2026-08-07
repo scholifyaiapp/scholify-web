@@ -67,8 +67,8 @@ const FAQS: Array<[string, string]> = [
   [
     "How does the free trial work?",
     accountsOpen
-      ? "Every new account starts with a 3-day free trial of full Pro — timed mocks, the AI Examiner and custom practice unlocked on your chosen paper, with no card. When the 3 days end, choose Beginner (all 15 papers + unlimited practice) or Pro (adds mocks, the AI Examiner and custom practice) to keep going. Cancel anytime."
-      : "Accounts aren't open yet. When they are, every new account will start with a 3-day free trial of full Pro (no card), then choose Beginner or Pro to continue.",
+      ? "Complete onboarding and your diagnosis free. If you choose Pro, secure checkout collects a payment method and unlocks a 3-day free trial of the complete workspace. Cancel during the trial and pay nothing."
+      : "Accounts aren't open yet. When they are, onboarding and diagnosis will be free, followed by a card-backed 3-day Pro trial.",
   ],
   [
     "Which papers does Scholify cover?",
@@ -327,8 +327,8 @@ export default function Pricing() {
             Cheaper than one tutoring hour.
           </h1>
           <p style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 12 }}>
-            Start with a 3-day free trial of full Pro — no card. Then Beginner for all-papers practice,
-            or Pro for mocks, the AI Examiner and custom practice.
+            Build your personalised plan free. Choose Pro for 3 days free, then keep the adaptive plan,
+            mocks, AI Examiner and custom practice unlocked.
           </p>
 
           {/* Billing toggle */}
@@ -418,10 +418,10 @@ export default function Pricing() {
           <PricingCard
             index={0}
             variant="free"
-            name="Free trial"
+            name="Personal plan"
             price="$0"
-            priceUnit="3 days"
-            description="Full Pro to start — no card. Then pick Beginner or Pro."
+            priceUnit="before checkout"
+            description="Onboarding, diagnosis and your personalised roadmap."
             features={FREE_FEATURES}
             cta={user ? "Go to app →" : "Start free"}
             onCta={() => (window.location.href = user ? "/study" : "/sign-up")}
@@ -564,8 +564,8 @@ export default function Pricing() {
             plan itself never has a clock either way. */}
         <p style={{ textAlign: "center", fontSize: 13, color: TEXT2, marginTop: 24, lineHeight: 1.7 }}>
           {accountsOpen
-            ? "Every new account starts with a 3-day free trial of full Pro — no card. When it ends, pick Beginner or Pro. Cancel anytime."
-            : "Accounts aren't open yet. When they are, every new account starts with a 3-day free trial, then Beginner or Pro."}
+            ? "Build your plan free. Pro starts with 3 free days after secure checkout; cancel during the trial and pay nothing."
+            : "Accounts aren't open yet. When they are, diagnosis is free and Pro starts with a card-backed 3-day trial."}
           <br />
           Beginner unlocks all 15 papers and unlimited practice; Pro adds timed mocks, the AI Examiner
           and custom practice. Cancel anytime.
