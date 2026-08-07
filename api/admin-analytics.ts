@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types"
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js"
 
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"

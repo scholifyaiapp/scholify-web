@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types"
 import { createHmac, timingSafeEqual } from "node:crypto"
 
 /*

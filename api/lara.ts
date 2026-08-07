@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types"
 import postgres from "postgres"
 // Import the parser implementation directly. The package root runs its bundled
 // demo fixture when loaded by Vitest/ESM, which is not part of the runtime API.

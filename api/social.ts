@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types"
 
 /*
  * Ops endpoint — health + security introspection. Dispatches by `?action=` to
@@ -62,8 +62,8 @@ function health(_req: VercelRequest, res: VercelResponse): void {
   res.setHeader("Cache-Control", "no-store")
   const keys = {
     anthropic: !!process.env.ANTHROPIC_API_KEY,
-    // OpenAI is only a TEMPORARY bridge for when the Anthropic org is unavailable
-    // (see api/lara.ts callModel). Either provider satisfies the AI requirement.
+    // OpenAI is the primary provider; Anthropic remains an optional fallback.
+    // Either provider satisfies the AI requirement.
     openai: !!process.env.OPENAI_API_KEY,
     supabase_url: !!(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
     supabase_anon: !!(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY),
