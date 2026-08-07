@@ -35,13 +35,15 @@ describe("allocateTaskMinutes", () => {
   })
 })
 
-describe("official daily-plan structure", () => {
-  it("separates Sections A and B for an F1–F4 paper", () => {
-    expect(buildTodayPlan("BT").filter((item) => item.action === "section").map((item) => item.section)).toEqual(["A", "B"])
+describe("adaptive daily-plan structure", () => {
+  it("uses the adaptive schedule instead of injecting every exam section each day", () => {
+    const plan = buildTodayPlan("PM")
+    expect(plan.some((item) => item.action === "study" || item.action === "diagnostic")).toBe(true)
+    expect(plan.filter((item) => item.action === "section")).toHaveLength(0)
   })
 
-  it("separates Sections A, B and C where the official exam has all three", () => {
-    expect(buildTodayPlan("PM").filter((item) => item.action === "section").map((item) => item.section)).toEqual(["A", "B", "C"])
+  it("uses learner-facing Practice language instead of Drill", () => {
+    expect(buildTodayPlan("BT").every((item) => !/^Drill\b/i.test(item.title))).toBe(true)
   })
 })
 

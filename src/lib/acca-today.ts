@@ -17,7 +17,6 @@
 import { getPaper } from "@/lib/acca"
 import { readinessState, recoveryState } from "@/lib/acca-loop"
 import { buildDailyTasks } from "@/lib/acca-schedule"
-import { examBlueprint } from "@/lib/acca-exam-structure"
 
 export type TodayAction = "diagnostic" | "weak" | "practice" | "section" | "essentials" | "flashcards" | "mock" | "study" | "bank"
 
@@ -85,39 +84,31 @@ export function todayHeadline(paperId: string): string {
 }
 
 /**
- * Build today's ordered plan for a paper. Delegates to the distributed
- * schedule engine (acca-schedule) — which handles the zero/assess personas,
- * the A·B·C deferred-diagnostic gate, the current method phase, the daily time
- * budget and the target %, and self-heals around missed days.
+ * Build today's ordered plan for a paper. The distributed schedule engine is
+ * the source of truth: it handles the onboarding route, diagnostic and live
+ * weaknesses, paper coverage, current method phase, exam date, daily time,
+ * target score and flashcard queue. Do not expand this into a fixed checklist;
+ * doing so makes every learner see the same Study/Quiz/Practice pattern and
+ * discards the personalisation the schedule already calculated.
  */
 export function buildTodayPlan(paperId: string): TodayTask[] {
-  const scheduled = buildDailyTasks(paperId).map((t) => ({
+  const scheduled: TodayTask[] = buildDailyTasks(paperId).map((t) => ({
     id: t.id,
     icon: t.icon,
-    title: t.title,
+    title: t.title.replace(/^Drill\b/i, "Practice"),
     detail: t.detail,
     action: t.action,
     area: t.area,
   }))
-  const study: TodayTask = scheduled.find((task) => task.action === "study") ?? {
-    id: "study", icon: "📖", title: "Study today's topic", detail: "Charles selected the next lesson from your live progress", action: "study" as const, area: getPaper(paperId)?.areas[0]?.code,
-  }
-  const quizzes: TodayTask = scheduled.find((task) => task.action === "essentials") ?? {
-    id: "essentials", icon: "🎯", title: "5 Quizzes", detail: "Five guided checks unlocked after the lesson", action: "essentials" as const, area: study.area,
-  }
-  const sections: TodayTask[] = (examBlueprint(paperId)?.sections ?? []).map((section) => ({
-    id: `section-${section.id}`,
-    icon: "📝",
-    title: `Practice · Section ${section.id}`,
-    detail: `${section.makeup} · practised separately in the official exam shape`,
-    action: "section",
-    section: section.id,
-  }))
-  const flashcards = scheduled.find((task) => task.action === "flashcards") ?? {
-    id: "flashcards", icon: "🗂️", title: "Flashcards", detail: "Spaced recall chosen from today's learning and weak areas", action: "flashcards" as const,
-  }
-  const diagnostic = scheduled.find((task) => task.action === "diagnostic")
-  return diagnostic ? [diagnostic, study, quizzes, ...sections, flashcards] : [study, quizzes, ...sections, flashcards]
+  if (scheduled.length > 0) return scheduled
+  return [{
+    id: "study",
+    icon: "📖",
+    title: "Study today's priority topic",
+    detail: "Charles selected the next lesson from your paper progress",
+    action: "study",
+    area: getPaper(paperId)?.areas[0]?.code,
+  }]
 }
 
 /* ── Sequential unlock: one task at a time ────────────────────────────────
