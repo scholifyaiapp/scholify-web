@@ -579,6 +579,8 @@ export function SystemWalkthrough() {
 
         {/* The day, drawn. The single most useful thing this page can show. */}
         <DayShapeVisual />
+        {/* Then what a run of those days does. */}
+        <CompoundingVisual />
       </div>
     </section>
   )
@@ -603,6 +605,59 @@ const minutesBefore = (index: number) =>
 
 const BAR_STAGGER = 0.16
 const BAR_SEGMENT = 0.5
+
+/* ── The compounding run ──────────────────────────────────────────
+ *
+ * Every number on this chart is arithmetic the visitor can redo, because a
+ * landing-page graph that invents its own numbers is the stale-copy problem
+ * in picture form. The sources:
+ *
+ *   BT_HOURS      PAPER_LOAD.BT in src/lib/acca-onboarding-guide.ts:3
+ *   PASS_MARK     MOCK_PASS in src/lib/acca-loop.ts:39 — the ACCA pass line
+ *   EVENING_*     the "Intensive" preset in src/pages/Welcome.tsx:124-129
+ *   RUN_DAYS      75h ÷ 9h a week = 8.3 weeks — derived below, not typed
+ *
+ * The two curves are illustrative shapes, not measured cohorts, and the
+ * caption says so. What is NOT illustrative is the day count and the pass
+ * line, which is why those are the only two numbers printed.
+ */
+const BT_HOURS = 75
+const PASS_MARK = 50
+const EVENING_MINUTES = 90
+const EVENING_DAYS_PER_WEEK = 6
+const WEEKLY_HOURS = (EVENING_MINUTES * EVENING_DAYS_PER_WEEK) / 60
+const RUN_DAYS = Math.ceil((BT_HOURS / WEEKLY_HOURS) * 7)
+
+/** Chart colours: validated for CVD separation against the #F1EFEA card. */
+const SERIES_STEADY = "#0B7F58"
+const SERIES_ERRATIC = "#C80000"
+
+const PLOT = { left: 52, right: 636, top: 30, bottom: 224 }
+const Y_MAX = 80
+
+const plotX = (day: number) => PLOT.left + (day / RUN_DAYS) * (PLOT.right - PLOT.left)
+const plotY = (pct: number) => PLOT.bottom - (pct / Y_MAX) * (PLOT.bottom - PLOT.top)
+
+/** Consistency compounds: slow, then it breaks out. Ends at 62%, past the pass line. */
+const STEADY_END = 62
+const steadyAt = (day: number) => STEADY_END * Math.pow(day / RUN_DAYS, 1.4)
+
+/** The day the steady line clears the pass mark — solved, not eyeballed. */
+const CROSSING_DAY = Math.round(RUN_DAYS * Math.pow(PASS_MARK / STEADY_END, 1 / 1.4))
+
+/** Study in bursts and the forgetting curve takes it back between them. */
+const ERRATIC_POINTS: Array<[number, number]> = [
+  [0, 0], [4, 10], [8, 6], [13, 17], [18, 11], [24, 21],
+  [29, 14], [35, 23], [40, 16], [46, 26], [51, 18], [55, 24], [RUN_DAYS, 20],
+]
+
+const steadyPath = Array.from({ length: RUN_DAYS + 1 }, (_, day) =>
+  `${day === 0 ? "M" : "L"} ${plotX(day).toFixed(1)} ${plotY(steadyAt(day)).toFixed(1)}`,
+).join(" ")
+
+const erraticPath = ERRATIC_POINTS.map(
+  ([day, pct], i) => `${i === 0 ? "M" : "L"} ${plotX(day).toFixed(1)} ${plotY(pct).toFixed(1)}`,
+).join(" ")
 
 /*
  * The day, drawn — and drawn ADDING UP, which is the whole claim. The five
@@ -772,6 +827,340 @@ function DayShapeVisual() {
 
       <div style={{ textAlign: "center", marginTop: 24, fontSize: 13.5, color: INK_MUTED, lineHeight: 1.6 }}>
         {t("Then it closes. Tomorrow's plan is visible but locked until your study time — because rest is part of the plan.")}
+      </div>
+    </motion.div>
+  )
+}
+
+/* ── Fifty-nine evenings ──────────────────────────────────────────
+ *
+ * The block above shows one day. This one shows what a run of them does,
+ * for the reader who has already decided they have no time — the 9-to-6, the
+ * second degree, the shift pattern. The argument is not "study more". It is
+ * that an evening you can actually protect, repeated, beats the weekend
+ * binge that the forgetting curve unwinds before the next one.
+ *
+ * The Clear line is quoted and attributed rather than adopted as a slogan:
+ * it is the subtitle of someone else's book, and passing it off as Scholify's
+ * own motto would be both a legal risk and a worse sentence than crediting it.
+ */
+function CompoundingVisual() {
+  const t = useT()
+  const reduced = useReducedMotion()
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-90px" })
+
+  const draw = 2.1
+  const day = useMotionValue(reduced ? RUN_DAYS : 0)
+  const shownDay = useTransform(day, (value) => Math.round(value))
+
+  useEffect(() => {
+    if (!inView) return
+    if (reduced) {
+      day.set(RUN_DAYS)
+      return
+    }
+    const controls = animate(day, RUN_DAYS, { duration: draw, ease: EASE })
+    return () => controls.stop()
+  }, [inView, reduced, day])
+
+  const appear = (delay: number) => ({
+    initial: reduced ? false : { opacity: 0 },
+    animate: inView ? { opacity: 1 } : undefined,
+    transition: { duration: 0.45, delay, ease: EASE },
+  })
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={reduced ? false : { opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, ease: EASE }}
+      className="soft-card"
+      style={{ marginTop: 18, padding: "clamp(22px,3.4vw,38px)", borderRadius: 28, background: BG_SECONDARY }}
+    >
+      <div style={{ textAlign: "center" }}>
+        <SectionLabel>{t("THE COMPOUNDING RUN")}</SectionLabel>
+
+        <blockquote
+          className="font-display"
+          style={{
+            margin: "16px auto 0",
+            maxWidth: 560,
+            fontSize: "clamp(22px,2.9vw,34px)",
+            color: INK,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.2,
+            fontStyle: "italic",
+          }}
+        >
+          {t("“Tiny changes, remarkable results.”")}
+        </blockquote>
+        <div className="font-mono-pro" style={{ marginTop: 10, fontSize: 11, letterSpacing: "0.14em", color: INK_MUTED }}>
+          {t("JAMES CLEAR · ATOMIC HABITS")}
+        </div>
+
+        <p style={{ color: INK_MUTED, fontSize: 15, maxWidth: 600, margin: "22px auto 0", lineHeight: 1.7 }}>
+          {t(
+            "Most people who fail a paper were never short of ability — they were short of an evening that survived a nine-to-six, a second degree, or a shift pattern. So Scholify doesn't ask for your weekends. It asks for one evening you can actually keep, and then it makes that evening count.",
+          )}
+        </p>
+      </div>
+
+      {/* Legend first: with two series, identity is never colour alone. */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: 18,
+          marginTop: 28,
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: INK }}>
+          <svg width="22" height="8" aria-hidden>
+            <line x1="0" y1="4" x2="22" y2="4" stroke={SERIES_STEADY} strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+          {t("90 minutes, six evenings a week")}
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: INK }}>
+          <svg width="22" height="8" aria-hidden>
+            <line
+              x1="0"
+              y1="4"
+              x2="22"
+              y2="4"
+              stroke={SERIES_ERRATIC}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray="5 4"
+            />
+          </svg>
+          {t("Whenever there's time")}
+        </span>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <svg
+          viewBox={`0 0 ${PLOT.right + 24} 268`}
+          width="100%"
+          role="img"
+          aria-label={t(
+            "Exam readiness over 59 days. Consistent daily study compounds past the 50% ACCA pass line; studying whenever there is time stays flat below it.",
+          )}
+          style={{ display: "block", overflow: "visible" }}
+        >
+          {/* Recessive grid */}
+          {[0, 20, 40, 60, 80].map((tick) => (
+            <g key={tick}>
+              <line
+                x1={PLOT.left}
+                y1={plotY(tick)}
+                x2={PLOT.right}
+                y2={plotY(tick)}
+                stroke={INK}
+                strokeOpacity="0.07"
+                strokeWidth="1"
+              />
+              <text
+                x={PLOT.left - 12}
+                y={plotY(tick) + 4}
+                textAnchor="end"
+                fontSize="11"
+                fill={INK_MUTED}
+                className="font-mono-pro tabular"
+              >
+                {tick}
+              </text>
+            </g>
+          ))}
+
+          {/* The pass line is a threshold, so it is neutral and dashed — not a series. */}
+          <line
+            x1={PLOT.left}
+            y1={plotY(PASS_MARK)}
+            x2={PLOT.right}
+            y2={plotY(PASS_MARK)}
+            stroke={INK}
+            strokeOpacity="0.38"
+            strokeWidth="1.5"
+            strokeDasharray="6 5"
+          />
+          <text
+            x={PLOT.left + 6}
+            y={plotY(PASS_MARK) - 9}
+            fontSize="11"
+            fill={INK_MUTED}
+            className="font-mono-pro"
+            letterSpacing="0.1em"
+          >
+            {t("ACCA PASS · 50%")}
+          </text>
+
+          {/* Series. Dashed vs solid carries identity beyond colour. */}
+          <motion.path
+            d={erraticPath}
+            fill="none"
+            stroke={SERIES_ERRATIC}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="6 5"
+            initial={reduced ? false : { pathLength: 0 }}
+            animate={inView ? { pathLength: 1 } : undefined}
+            transition={{ duration: draw, ease: EASE }}
+          />
+          <motion.path
+            d={steadyPath}
+            fill="none"
+            stroke={SERIES_STEADY}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={reduced ? false : { pathLength: 0 }}
+            animate={inView ? { pathLength: 1 } : undefined}
+            transition={{ duration: draw, ease: EASE }}
+          />
+
+          {/* Where consistency clears the pass line. */}
+          <motion.g {...appear(draw * (CROSSING_DAY / RUN_DAYS))}>
+            <circle
+              cx={plotX(CROSSING_DAY)}
+              cy={plotY(PASS_MARK)}
+              r="6"
+              fill={BG_SECONDARY}
+              stroke={SERIES_STEADY}
+              strokeWidth="2.5"
+            />
+            <text
+              x={plotX(CROSSING_DAY)}
+              y={plotY(PASS_MARK) + 24}
+              textAnchor="middle"
+              fontSize="11"
+              fill={INK_MUTED}
+              className="font-mono-pro"
+            >
+              {t("DAY")} {CROSSING_DAY}
+            </text>
+          </motion.g>
+
+          {/* Direct labels — the contrast check obliges visible labels. */}
+          <motion.g {...appear(draw)}>
+            <circle cx={plotX(RUN_DAYS)} cy={plotY(STEADY_END)} r="5" fill={SERIES_STEADY} />
+            <text
+              x={plotX(RUN_DAYS)}
+              y={plotY(STEADY_END) - 14}
+              textAnchor="end"
+              fontSize="13"
+              fontWeight="600"
+              fill={INK}
+            >
+              {STEADY_END}%
+            </text>
+            <circle cx={plotX(RUN_DAYS)} cy={plotY(20)} r="5" fill={SERIES_ERRATIC} />
+            <text x={plotX(RUN_DAYS)} y={plotY(20) + 22} textAnchor="end" fontSize="13" fontWeight="600" fill={INK}>
+              20%
+            </text>
+          </motion.g>
+
+          {/* X axis */}
+          <line
+            x1={PLOT.left}
+            y1={PLOT.bottom}
+            x2={PLOT.right}
+            y2={PLOT.bottom}
+            stroke={INK}
+            strokeOpacity="0.16"
+            strokeWidth="1"
+          />
+          <text x={PLOT.left} y={PLOT.bottom + 22} fontSize="11" fill={INK_MUTED} className="font-mono-pro">
+            {t("DAY 1")}
+          </text>
+          <text
+            x={PLOT.right}
+            y={PLOT.bottom + 22}
+            textAnchor="end"
+            fontSize="11"
+            fill={INK_MUTED}
+            className="font-mono-pro"
+          >
+            {t("DAY")} {RUN_DAYS}
+          </text>
+          <text
+            x={PLOT.left - 12}
+            y={PLOT.top - 12}
+            textAnchor="end"
+            fontSize="10"
+            fill={INK_MUTED}
+            className="font-mono-pro"
+            letterSpacing="0.1em"
+          >
+            %
+          </text>
+        </svg>
+      </div>
+
+      {/* The arithmetic, so the 59 is checkable rather than claimed. */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "10px 14px",
+          marginTop: 26,
+        }}
+      >
+        {[
+          `${EVENING_MINUTES} ${t("min")} × ${EVENING_DAYS_PER_WEEK} ${t("evenings")} = ${WEEKLY_HOURS} ${t("h a week")}`,
+          `${t("BT is about")} ${BT_HOURS} ${t("hours")}`,
+        ].map((line) => (
+          <span
+            key={line}
+            className="font-mono-pro"
+            style={{
+              padding: "7px 14px",
+              borderRadius: 999,
+              background: BG_PRIMARY,
+              border: `1px solid ${HAIR}`,
+              fontSize: 12,
+              color: INK_MUTED,
+            }}
+          >
+            {line}
+          </span>
+        ))}
+        <span
+          className="font-mono-pro"
+          style={{
+            padding: "7px 14px",
+            borderRadius: 999,
+            background: INK,
+            fontSize: 12,
+            color: INK_INVERSE,
+            fontWeight: 600,
+          }}
+        >
+          <motion.span className="tabular">{shownDay}</motion.span> {t("DAYS")}
+        </span>
+      </div>
+
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: 20,
+          fontSize: 12.5,
+          color: INK_MUTED,
+          lineHeight: 1.6,
+          maxWidth: 620,
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        {t(
+          "The day count is arithmetic: BT's workload divided by the hours you commit. The two curves are illustrative shapes, not measured cohorts — your own date comes from your paper, your minutes and your days, and Charles shows you that sum before you start.",
+        )}
       </div>
     </motion.div>
   )
