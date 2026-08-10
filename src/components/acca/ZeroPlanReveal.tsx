@@ -5,6 +5,7 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, C, type IconName } from "@/components/acca/ui"
 import { type RevealPhase } from "@/components/acca/CinematicReveal"
 import PlanBuildLoader from "@/components/acca/PlanBuildLoader"
+import ExamDateReveal from "@/components/acca/ExamDateReveal"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import PaywallModal from "@/components/PaywallModal"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -36,7 +37,14 @@ import { TRIAL_DAYS } from "@/lib/entitlement"
  *                button: the learner sees their own numbers before checkout.
  */
 
-type Stage = "building" | "plan" | "commit"
+/*
+ * "date" sits between the build and the plan on purpose. Charles computes a
+ * recommended sitting and a target from the learner's answers and both were
+ * written straight into localStorage without ever being said out loud — the
+ * most committing fact in the product arriving as a saved field. It gets its
+ * own beat now, and only when there is a real date to announce.
+ */
+type Stage = "building" | "date" | "plan" | "commit"
 
 export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; onDone: (dest: "study" | "dashboard") => void }) {
   const paper = getPaper(paperId)
@@ -73,8 +81,11 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
   }, [])
 
   useEffect(() => {
-    if (choreographyDone && (content.ready || content.error || waitedLongEnough)) setStage("plan")
-  }, [choreographyDone, content.ready, content.error, waitedLongEnough])
+    if (!choreographyDone || !(content.ready || content.error || waitedLongEnough)) return
+    // Announce the date only when there IS one. A learner with no sitting yet
+    // gets the plan directly rather than a ceremony around an empty field.
+    setStage(plan.examDate && days !== null && days > 0 ? "date" : "plan")
+  }, [choreographyDone, content.ready, content.error, waitedLongEnough, plan.examDate, days])
 
   const foundations = (paper?.areas ?? []).slice(0, 3)
   const firstArea = foundations[0]
@@ -163,6 +174,22 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
                 </motion.div>
               )}
             </div>
+          </motion.div>
+        ) : stage === "date" ? (
+          <motion.div
+            key="date"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.985 }}
+            transition={{ duration: 0.4 }}
+          >
+            <ExamDateReveal
+              examDate={plan.examDate ?? ""}
+              target={plan.targetProb}
+              daysAway={days}
+              paperCode={paper.code ?? paperId}
+              onContinue={() => setStage("plan")}
+            />
           </motion.div>
         ) : stage === "plan" ? (
           <motion.div
