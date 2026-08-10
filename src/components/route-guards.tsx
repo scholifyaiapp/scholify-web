@@ -7,6 +7,8 @@ import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
 import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
 import { isAccaOnboarded } from "@/lib/acca-profile"
+import { getCurrentPaper } from "@/lib/acca-qualification"
+import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
 
@@ -73,6 +75,22 @@ function usePostCheckoutSync(): boolean {
   }, [justPaid])
 
   return syncing
+}
+
+/**
+ * Has this learner already had their free diagnosis?
+ *
+ * Checks the paper they are actually on; falls back to "not yet" when there is
+ * no current paper, so a learner mid-onboarding is never locked out of the one
+ * thing they were promised for free.
+ */
+function hasCompletedDiagnostic(): boolean {
+  try {
+    const paper = getCurrentPaper()
+    return Boolean(paper && getLatestDiagnostic(paper))
+  } catch {
+    return false
+  }
 }
 
 /** Shown for the few seconds between Stripe's redirect and the new token. */
@@ -209,7 +227,24 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
     syncingPayment,
     // What is free, exhaustively: sign-up, onboarding (/welcome, ungated) and
     // the diagnosis with the plan it generates.
-    freeValueRoute: location.pathname === "/study/diagnostic",
+    /*
+     * THE DIAGNOSIS IS FREE ONCE.
+     *
+     * Reported: after the diagnostic and the plan results, the paywall shows —
+     * and refreshing, or coming back to the diagnostic, let the learner
+     * straight back in. Correct: this route was exempt from the gate
+     * permanently, so it was a door that never shut. They could retake the
+     * diagnostic indefinitely and re-watch the plan reveal, without paying and
+     * without the trial they were promised.
+     *
+     * The free tier is one diagnosis and the plan it produces. Once a result
+     * exists, this route is gated like everything else.
+     *
+     * Reading it from localStorage is safe HERE for the same reason the
+     * onboarding check is: it decides what is FREE, not what is ENTITLED.
+     * Clearing it buys another free diagnostic — never the workspace.
+     */
+    freeValueRoute: location.pathname === "/study/diagnostic" && !hasCompletedDiagnostic(),
     onboarded: isAccaOnboarded(),
     entitled: canAccessApp(user),
   })

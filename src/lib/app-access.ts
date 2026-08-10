@@ -48,7 +48,16 @@ export interface AccessInput {
   gate: boolean
   /** A checkout redirect is being reconciled (?upgraded=true). */
   syncingPayment: boolean
-  /** Free even when gated — the diagnosis and the plan it generates. */
+  /**
+   * Free even when gated — the diagnosis and the plan it generates, and ONLY
+   * until one has been completed.
+   *
+   * This used to be "is the path /study/diagnostic", full stop, which made the
+   * route a permanent open door: an unpaid learner could go back to it forever,
+   * retake the diagnostic, watch the plan reveal again, and refresh into it at
+   * will. The free tier is one diagnosis and one plan — not a room you can
+   * keep re-entering.
+   */
   freeValueRoute: boolean
   /**
    * Has this browser completed onboarding. ROUTING ONLY — it comes from

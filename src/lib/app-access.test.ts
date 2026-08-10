@@ -91,6 +91,26 @@ describe("what is free stays free", () => {
     expect(at({ freeValueRoute: true, entitled: false })).toBe("allow")
   })
 
+  /*
+   * THE DIAGNOSIS IS FREE ONCE — reported live.
+   *
+   * The learner finished the diagnostic, saw the plan results, met the paywall,
+   * and then simply went back to the diagnostic route and was let in again. It
+   * was exempt from the gate permanently, so it was a door that never shut:
+   * retake forever, re-watch the plan reveal, refresh straight back in, without
+   * paying and without the trial they were promised.
+   *
+   * The caller now computes freeValueRoute as "on the diagnostic route AND no
+   * result exists yet", so the second visit is walled like anything else.
+   */
+  it("walls the diagnostic route once the free diagnosis has been used", () => {
+    // First visit: no result yet, the caller passes freeValueRoute true.
+    expect(at({ freeValueRoute: true, entitled: false })).toBe("allow")
+    // Second visit: a result exists, so the caller passes false — and this is
+    // the case that used to let an unpaid learner back in indefinitely.
+    expect(at({ freeValueRoute: false, entitled: false })).toBe("paywall")
+  })
+
   it("sends a brand-new account to onboarding, not to a price", () => {
     // Sign-in lands on /dashboard, which is gated. Without this, the first
     // screen a new learner saw was a paywall — before onboarding, before a
