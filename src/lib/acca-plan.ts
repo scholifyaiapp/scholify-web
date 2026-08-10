@@ -24,14 +24,52 @@ export interface PaperPlan {
   studyTime: string | null
   /** Minutes the learner committed to per day. */
   dailyMinutes: number
-  /** Honest consistency commitment selected during onboarding. */
+  /** Honest consistency commitment — always studyDays.length once picked. */
   daysPerWeek: number
+  /**
+   * WHICH days, 0=Sunday … 6=Saturday. `daysPerWeek: 5` never said which five,
+   * so the plan could not line up with a real week and the reminder emails went
+   * out on all seven regardless — and a learner emailed on days they never
+   * agreed to study stops reading the emails.
+   *
+   * Optional: a plan saved before this existed has no opinion, and studyDaysOf()
+   * reads that as every day rather than silently narrowing a live schedule.
+   */
+  studyDays?: number[]
   /**
    * Target pass probability before exam day (the learner's ambition, set at
    * onboarding: 65 pass-ready · 75 confident · 85 bulletproof). The
    * diagnostic "wow" moment and Charles's plan are framed against this number.
    */
   targetProb: number
+}
+
+/** Monday-first, the way a study week is actually read. 0=Sun per Date#getDay. */
+export const WEEK_DAYS: Array<{ day: number; short: string; long: string }> = [
+  { day: 1, short: "Mon", long: "Monday" },
+  { day: 2, short: "Tue", long: "Tuesday" },
+  { day: 3, short: "Wed", long: "Wednesday" },
+  { day: 4, short: "Thu", long: "Thursday" },
+  { day: 5, short: "Fri", long: "Friday" },
+  { day: 6, short: "Sat", long: "Saturday" },
+  { day: 0, short: "Sun", long: "Sunday" },
+]
+
+/** A sensible starting selection of `count` days: weekdays first, then weekend. */
+export function defaultStudyDays(count: number): number[] {
+  return WEEK_DAYS.slice(0, Math.max(1, Math.min(7, count))).map((d) => d.day).sort((a, b) => a - b)
+}
+
+/** The days this plan studies on — every day when it predates the picker. */
+export function studyDaysOf(plan: PaperPlan): number[] {
+  const days = plan.studyDays
+  if (!Array.isArray(days) || days.length === 0) return [0, 1, 2, 3, 4, 5, 6]
+  return days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+}
+
+/** Is `date` one of this plan's study days? */
+export function isStudyDay(plan: PaperPlan, date: Date = new Date()): boolean {
+  return studyDaysOf(plan).includes(date.getDay())
 }
 
 type Store = Record<string, PaperPlan>

@@ -10,6 +10,7 @@ import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qual
 import { METHOD_PHASES, setPlan } from "@/lib/acca-plan"
 import { paperWorkHours } from "@/lib/acca-topic-plan"
 import { setDailyGoal } from "@/lib/acca"
+import { WEEK_DAYS, defaultStudyDays } from "@/lib/acca-plan"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, setPaperVariant, type Goal, type PaperVariant } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
 import { persistAccountSetup } from "@/lib/account-state"
@@ -240,7 +241,15 @@ export default function Welcome() {
   const [paper, setPaper] = useState<string | null>(draft?.paper ?? null)
   const [paperVariant, setPaperVariantState] = useState<PaperVariant | null>(draft?.paperVariant ?? null)
   const [minutes, setMinutes] = useState(draft?.minutes ?? 60)
-  const [daysPerWeek, setDaysPerWeek] = useState(draft?.daysPerWeek ?? 6)
+  const [studyDays, setStudyDays] = useState<number[]>(
+    () => draft?.studyDays ?? defaultStudyDays(draft?.daysPerWeek ?? 6),
+  )
+  // The count is DERIVED — never stored separately, so it cannot drift.
+  const daysPerWeek = studyDays.length
+  const toggleStudyDay = (day: number) =>
+    setStudyDays((current) =>
+      current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort((a, b) => a - b),
+    )
   const [slot, setSlot] = useState(draft?.slot ?? "19:00")
   const [examDate, setExamDate] = useState(draft?.examDate ?? "")
   const [pickedSitting, setPickedSitting] = useState<string | null>(draft?.pickedSitting ?? null)
@@ -295,10 +304,10 @@ export default function Welcome() {
   useEffect(() => {
     if (step === 0) return
     saveOnboardingDraft({
-      step, learnerRoute, passed: [...passed], paper, paperVariant, minutes, daysPerWeek,
+      step, learnerRoute, passed: [...passed], paper, paperVariant, minutes, daysPerWeek, studyDays,
       slot, examDate, pickedSitting, goal, target, englishLevel, englishEvidence, resultChoice,
     })
-  }, [step, learnerRoute, passed, paper, paperVariant, minutes, daysPerWeek, slot, examDate, pickedSitting, goal, target, englishLevel, englishEvidence, resultChoice])
+  }, [step, learnerRoute, passed, paper, paperVariant, minutes, daysPerWeek, slot, examDate, pickedSitting, goal, target, englishLevel, englishEvidence, resultChoice, studyDays])
 
   const canAdvance = step === 1
     ? learnerRoute !== null
@@ -358,7 +367,8 @@ export default function Welcome() {
       return
     }
     if (fix.kind === "days") {
-      setDaysPerWeek(fix.to)
+      // "days" fixes now adjust the SELECTION; the count follows from it.
+      setStudyDays(defaultStudyDays(fix.to))
       goToStep(TIME_STEP)
       return
     }
@@ -456,7 +466,7 @@ export default function Welcome() {
      * minutes the learner had actually promised.
      */
     const questionsPerDay = shapeDay(minutes, effectiveTarget).questionGoal
-    setPlan(paper, { examDate: charlesPlan.recommendedExamDate, studyTime: slot, dailyMinutes: minutes, daysPerWeek, dailyGoal: questionsPerDay, targetProb: charlesPlan.recommendedTarget })
+    setPlan(paper, { examDate: charlesPlan.recommendedExamDate, studyTime: slot, dailyMinutes: minutes, daysPerWeek, studyDays, dailyGoal: questionsPerDay, targetProb: charlesPlan.recommendedTarget })
     setDailyGoal(questionsPerDay)
     if (complete) markAccaOnboarded()
     if (complete) void persistAccountSetup()
@@ -613,7 +623,7 @@ export default function Welcome() {
         isMobile={isMobile}
       />
     ),
-    5: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} daysPerWeek={daysPerWeek} setDaysPerWeek={setDaysPerWeek} />,
+    5: <TimeSlide minutes={minutes} setMinutes={setMinutes} slot={slot} setSlot={setSlot} studyDays={studyDays} setStudyDays={setStudyDays} toggleStudyDay={toggleStudyDay} />,
     6: (
       <SittingSlide
         sessionPaper={sessionPaper}
@@ -1306,14 +1316,15 @@ function PaperSlide({
 }
 
 function TimeSlide({
-  minutes, setMinutes, slot, setSlot, daysPerWeek, setDaysPerWeek,
+  minutes, setMinutes, slot, setSlot, studyDays, setStudyDays, toggleStudyDay,
 }: {
   minutes: number
   setMinutes: (n: number) => void
   slot: string
   setSlot: (s: string) => void
-  daysPerWeek: number
-  setDaysPerWeek: (n: number) => void
+  studyDays: number[]
+  setStudyDays: (days: number[]) => void
+  toggleStudyDay: (day: number) => void
 }) {
   const preset = MINUTE_OPTIONS.find((m) => m.v === minutes)
   const micro =
@@ -1398,18 +1409,78 @@ function TimeSlide({
         Charles will remind you 3 hours ahead, 10 minutes before you start, and once more
         later if the day gets away from you. You can change all of this in Settings.
       </div>
-      <FieldLabel style={{ marginTop: 18, color: FAINT }}>Days I can honestly protect</FieldLabel>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginTop: 18 }}>
+        <FieldLabel style={{ color: FAINT, margin: 0 }}>Days I can honestly protect</FieldLabel>
+        {/* 05 / 07 — the count reads off the days, so the two can never
+            disagree. Zero-padded and monospaced so it does not jitter as it
+            changes. */}
+        <motion.span
+          key={studyDays.length}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          style={{ font: `800 13px/1 ${MONO}`, color: studyDays.length ? RED : FAINT, fontVariantNumeric: "tabular-nums" }}
+        >
+          {String(studyDays.length).padStart(2, "0")} / 07
+        </motion.span>
+      </div>
+
+      {/*
+        The count tiles are PRESETS, not a separate answer. Tapping "5 days"
+        fills five days; tapping a day adjusts the count. Version one of this
+        let the two contradict each other and then printed a warning about it,
+        which is the app arguing with the learner about something only the app
+        cared about.
+      */}
       <ChoiceGroup
         label="Days a week I can protect"
         values={["4", "5", "6", "7"]}
-        value={String(daysPerWeek)}
-        onChange={(next) => setDaysPerWeek(Number(next))}
+        value={String(studyDays.length)}
+        onChange={(next) => setStudyDays(defaultStudyDays(Number(next)))}
         layout="grid"
         columns={4}
         gap={8}
       >
         {[4, 5, 6, 7].map((days) => <ChoiceTile key={days} value={String(days)} label={`${days} days`} />)}
       </ChoiceGroup>
+
+      <FieldLabel style={{ marginTop: 16, color: FAINT }}>Which days?</FieldLabel>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {WEEK_DAYS.map(({ day, short, long }, i) => {
+          const on = studyDays.includes(day)
+          return (
+            <motion.button
+              key={day}
+              type="button"
+              onClick={() => toggleStudyDay(day)}
+              aria-pressed={on}
+              aria-label={long}
+              // Stagger in left-to-right so the week reads as a week.
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04 * i, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              whileTap={{ scale: 0.93 }}
+              style={{
+                flex: "1 1 60px", minWidth: 56, minHeight: 50, borderRadius: 12, cursor: "pointer",
+                font: `800 12.5px/1 ${MONO}`,
+                letterSpacing: "0.04em",
+                color: on ? "#fff" : INK,
+                background: on ? RED : "#fff",
+                border: `1.5px solid ${on ? RED : BORDER}`,
+                boxShadow: on ? "0 6px 16px -8px rgba(200,0,0,.55)" : "none",
+                transition: "background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease",
+              }}
+            >
+              {short.toUpperCase()}
+            </motion.button>
+          )
+        })}
+      </div>
+      <div style={{ marginTop: 8, font: `500 12px/1.5 ${SANS}`, color: FAINT }}>
+        {studyDays.length === 0
+          ? "Pick at least one day — the plan needs somewhere to put the work."
+          : `Charles plans around these days, and only emails you on them.`}
+      </div>
     </div>
   )
 }

@@ -38,6 +38,8 @@ export interface OnboardingDraft {
   paper: string | null
   paperVariant: PaperVariant | null
   minutes: number
+  /** Which weekdays the learner picked (0=Sun). Optional — older drafts predate it. */
+  studyDays?: number[]
   daysPerWeek: number
   slot: string
   examDate: string
