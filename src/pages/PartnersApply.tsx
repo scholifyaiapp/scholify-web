@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { motion, useReducedMotion } from "motion/react"
 import { ScholifyLockup } from "@/components/brand"
@@ -73,6 +73,276 @@ const labelStyle: CSSProperties = {
 
 function Section({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return <section style={{ marginTop: 64, ...style }}>{children}</section>
+}
+
+/* ── Application received ─────────────────────────────────────────
+ *
+ * The old success state said "we'll review it and email you" and showed the code.
+ * The applicant then sat on the page with no idea whether anything had actually
+ * been sent, and the confirmation email — which IS sent, immediately, by
+ * /api/affiliate?action=apply — routinely lands in Promotions or takes a minute to
+ * clear the queue. So the two most common next actions were "refresh the page" and
+ * "email the founder asking if it worked".
+ *
+ * This state answers the only question the applicant has: it names the exact
+ * address the mail is going to, counts the two minutes down so the wait is
+ * bounded and visible, and then — once the countdown is done — tells them where
+ * to look if it has not arrived. Below it, the three real stages of the process,
+ * including the one nobody explained before: after approval the partner dashboard
+ * opens by itself when they sign in with this address. No code to paste, no second
+ * form.
+ */
+
+/** How long we tell the applicant to wait, in seconds. */
+const CONFIRM_WAIT_SECONDS = 120
+
+const RECEIVED_STAGES: Array<{ badge: string; title: string; detail: string }> = [
+  {
+    badge: "Now",
+    title: "Confirmation email on its way",
+    detail: "It confirms we have your application, repeats your partner code, and comes from Charles at Scholify. Nothing to do — it is a receipt, not a step.",
+  },
+  {
+    badge: "24–48h",
+    title: "Personal review by our founder",
+    detail: "Every partner application is read by a person, not a filter. We look at where you'll promote and who you reach, and reply either way.",
+  },
+  {
+    badge: "On approval",
+    title: "Your dashboard opens itself",
+    detail: "You'll get an approval email, and from then on signing in with this same address takes you straight to your partner dashboard — link, clicks, commissions and payouts. Nothing to claim or paste.",
+  },
+]
+
+function ApplicationReceived({ code, email, reduced }: { code: string; email: string; reduced: boolean }) {
+  const [left, setLeft] = useState(CONFIRM_WAIT_SECONDS)
+  useEffect(() => {
+    if (left <= 0) return
+    const id = window.setInterval(() => setLeft((n) => Math.max(0, n - 1)), 1000)
+    return () => window.clearInterval(id)
+  }, [left])
+
+  const mm = Math.floor(left / 60)
+  const ss = `${left % 60}`.padStart(2, "0")
+  const progress = 1 - left / CONFIRM_WAIT_SECONDS
+  const R = 26
+  const CIRC = 2 * Math.PI * R
+  const waiting = left > 0
+
+  return (
+    <div>
+      {/* The tick — a spring, once, then it stops moving. */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+        <motion.div
+          initial={reduced ? false : { scale: 0, rotate: -30 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 16 }}
+          style={{
+            width: 68,
+            height: 68,
+            borderRadius: "50%",
+            background: IRIDESCENT,
+            display: "grid",
+            placeItems: "center",
+            boxShadow: "0 10px 30px rgba(200,0,0,0.28)",
+          }}
+        >
+          <motion.svg width={30} height={30} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <motion.path
+              d="M4 12.5 L9.5 18 L20 6.5"
+              stroke="#fff"
+              strokeWidth={2.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              initial={reduced ? false : { pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.45, delay: 0.15, ease: "easeOut" }}
+            />
+          </motion.svg>
+        </motion.div>
+      </div>
+
+      <h2 style={{ fontSize: "clamp(22px,4.4vw,28px)", fontWeight: 800, color: "var(--sch-text)", margin: "0 0 8px", textAlign: "center", letterSpacing: "-0.02em" }}>
+        Application received
+      </h2>
+      <p style={{ fontSize: 15, color: "var(--sch-tx-2)", lineHeight: 1.6, maxWidth: 460, margin: "0 auto 22px", textAlign: "center" }}>
+        It's with our founder now. Your partner code is reserved for you.
+      </p>
+
+      {/* ── The headline instruction: check your email in ~2 minutes ── */}
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "16px 18px",
+          borderRadius: 18,
+          border: `1px solid ${waiting ? "rgba(200,0,0,0.28)" : "rgba(14,159,110,0.32)"}`,
+          background: waiting
+            ? "linear-gradient(135deg, rgba(200,0,0,0.06), rgba(244,164,5,0.05))"
+            : "linear-gradient(135deg, rgba(14,159,110,0.08), rgba(14,159,110,0.03))",
+          marginBottom: 14,
+        }}
+      >
+        {/* Countdown ring — the wait made visible and bounded. */}
+        <div style={{ position: "relative", width: 62, height: 62, flexShrink: 0 }}>
+          <svg width={62} height={62} viewBox="0 0 62 62" aria-hidden>
+            <circle cx={31} cy={31} r={R} fill="none" stroke="var(--sch-border)" strokeWidth={5} />
+            <motion.circle
+              cx={31}
+              cy={31}
+              r={R}
+              fill="none"
+              stroke={waiting ? "#C80000" : "#0E9F6E"}
+              strokeWidth={5}
+              strokeLinecap="round"
+              strokeDasharray={CIRC}
+              strokeDashoffset={CIRC * (1 - progress)}
+              transform="rotate(-90 31 31)"
+              transition={{ duration: 0.9, ease: "linear" }}
+            />
+          </svg>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              placeItems: "center",
+              fontSize: waiting ? 13 : 18,
+              fontWeight: 800,
+              color: waiting ? "var(--sch-text)" : "#0E9F6E",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {waiting ? `${mm}:${ss}` : "✓"}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--sch-text)", lineHeight: 1.35 }}>
+            {waiting ? "Check your email in about 2 minutes" : "Your confirmation email should be there now"}
+          </div>
+          <div style={{ fontSize: 13.5, color: "var(--sch-tx-2)", marginTop: 4, lineHeight: 1.5, wordBreak: "break-word" }}>
+            {waiting ? (
+              <>
+                We've sent your confirmation to <b style={{ color: "var(--sch-text)" }}>{email}</b>. Leave this page open
+                or close it — either is fine.
+              </>
+            ) : (
+              <>
+                Sent to <b style={{ color: "var(--sch-text)" }}>{email}</b>. Not there? Check{" "}
+                <b style={{ color: "var(--sch-text)" }}>Promotions</b> and <b style={{ color: "var(--sch-text)" }}>Spam</b>,
+                and add our address to your contacts so the approval email lands in your inbox.
+              </>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Reserved code */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+          padding: "13px 16px",
+          borderRadius: 14,
+          background: "var(--sch-bg)",
+          border: "1px solid var(--sch-border)",
+          marginBottom: 22,
+        }}
+      >
+        <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--sch-tx-2)" }}>
+          Your partner code
+        </span>
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 19,
+            fontWeight: 800,
+            letterSpacing: "0.08em",
+            padding: "7px 16px",
+            borderRadius: 10,
+            color: "#fff",
+            background: IRIDESCENT,
+          }}
+        >
+          {code}
+        </span>
+      </div>
+
+      {/* What happens next — three real stages, not reassurance */}
+      <div style={{ ...secHead, marginBottom: 12 }}>What happens next</div>
+      <div style={{ display: "grid", gap: 10 }}>
+        {RECEIVED_STAGES.map((stage, i) => (
+          <motion.div
+            key={stage.title}
+            initial={reduced ? false : { opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 + i * 0.09, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            style={{ display: "flex", gap: 13, alignItems: "flex-start" }}
+          >
+            <span
+              style={{
+                flexShrink: 0,
+                minWidth: 72,
+                textAlign: "center",
+                fontFamily: MONO,
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                padding: "6px 8px",
+                borderRadius: 8,
+                color: i === 0 ? "#C80000" : "var(--sch-tx-2)",
+                background: i === 0 ? "rgba(200,0,0,0.08)" : "var(--sch-bg)",
+                border: `1px solid ${i === 0 ? "rgba(200,0,0,0.2)" : "var(--sch-border)"}`,
+                marginTop: 2,
+              }}
+            >
+              {stage.badge}
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 14.5, fontWeight: 750, color: "var(--sch-text)" }}>{stage.title}</span>
+              <span style={{ display: "block", fontSize: 13, color: "var(--sch-tx-2)", lineHeight: 1.55, marginTop: 3 }}>{stage.detail}</span>
+            </span>
+          </motion.div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 24, display: "flex", gap: 14, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+        <Link
+          to="/partners"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "12px 20px",
+            borderRadius: 12,
+            background: "var(--sch-bg)",
+            border: "1px solid var(--sch-border)",
+            fontSize: 14,
+            fontWeight: 700,
+            color: "var(--sch-text)",
+            textDecoration: "none",
+          }}
+        >
+          Check application status →
+        </Link>
+        <a
+          href="mailto:scholifyaiapp@gmail.com"
+          style={{ fontSize: 13.5, fontWeight: 600, color: "var(--sch-tx-2)", textDecoration: "none" }}
+        >
+          Email didn't arrive?
+        </a>
+      </div>
+    </div>
+  )
 }
 
 /* ── Content ─────────────────────────────────────────────────── */
@@ -167,7 +437,7 @@ export default function PartnersApply() {
   const [agree, setAgree] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ code: string } | null>(null)
+  const [done, setDone] = useState<{ code: string; email: string } | null>(null)
   const [calcCustomers, setCalcCustomers] = useState(25)
   const [calcPlan, setCalcPlan] = useState<(typeof CALCULATOR_PLANS)[number]["id"]>("pro")
   const selectedCalcPlan = CALCULATOR_PLANS.find((plan) => plan.id === calcPlan) ?? CALCULATOR_PLANS[1]
@@ -191,7 +461,7 @@ export default function PartnersApply() {
     setBusy(true)
     const res = await applyToAffiliate(form)
     setBusy(false)
-    if (res.ok && res.code) setDone({ code: res.code })
+    if (res.ok && res.code) setDone({ code: res.code, email: form.email.trim() })
     else
       setError(
         res.reason === "not_configured"
@@ -701,55 +971,7 @@ export default function PartnersApply() {
             style={{ ...card, borderRadius: 22, padding: "clamp(22px,4vw,36px)", maxWidth: 720, margin: "0 auto" }}
           >
             {done ? (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  <motion.div
-                    initial={reduced ? false : { scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 16 }}
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: "50%",
-                      background: IRIDESCENT,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: 30,
-                      fontWeight: 800,
-                    }}
-                  >
-                    ✓
-                  </motion.div>
-                </div>
-                <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--sch-text)", margin: "0 0 8px" }}>
-                  Application received
-                </h2>
-                <p style={{ fontSize: 15, color: "var(--sch-tx-2)", lineHeight: 1.6, maxWidth: 440, margin: "0 auto 18px" }}>
-                  We'll review it and email you when your partner account is live. Your code will be:
-                </p>
-                <div
-                  style={{
-                    display: "inline-block",
-                    fontFamily: MONO,
-                    fontSize: 22,
-                    fontWeight: 800,
-                    letterSpacing: "0.08em",
-                    padding: "10px 22px",
-                    borderRadius: 12,
-                    color: "#fff",
-                    background: IRIDESCENT,
-                  }}
-                >
-                  {done.code}
-                </div>
-                <div style={{ marginTop: 22 }}>
-                  <Link to="/partners" style={{ fontSize: 14, fontWeight: 600, color: "var(--sch-tx-1)", textDecoration: "none" }}>
-                    Go to your partner dashboard →
-                  </Link>
-                </div>
-              </div>
+              <ApplicationReceived code={done.code} email={done.email} reduced={Boolean(reduced)} />
             ) : (
               <form onSubmit={submit}>
                 <div style={{ ...eyebrow, fontSize: 10, color: "#C80000", marginBottom: 8 }}>Join the program</div>

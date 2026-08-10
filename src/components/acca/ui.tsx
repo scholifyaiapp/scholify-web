@@ -8,8 +8,8 @@
  * (`--sch-*`), so light/dark themes keep working untouched.
  */
 
-import { forwardRef, type CSSProperties, type ReactNode } from "react"
-import { motion, type HTMLMotionProps } from "motion/react"
+import { forwardRef, useState, type CSSProperties, type ReactNode } from "react"
+import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react"
 import {
   GraduationCap, TrendingUp, Settings, Target, Timer, Brain, BookOpen,
   FlaskConical, Sparkles, Flame, Trophy, RotateCw, Lock, CheckCircle2,
@@ -195,39 +195,158 @@ export function Badge({
   )
 }
 
-type BtnProps = HTMLMotionProps<"button"> & {
-  variant?: "primary" | "secondary" | "ghost"
-  size?: "md" | "lg"
+/* ── THE BUTTON ────────────────────────────────────────────────────
+ *
+ * One primitive, refreshed. The old one had three variants, two sizes, a tap
+ * scale and nothing else — so every surface that needed a loading state, a
+ * destructive action, an icon-only control or a full-width CTA hand-rolled its
+ * own `<motion.button style={{…}}>`, and the app ended up with dozens of
+ * near-identical buttons that agreed on nothing: different heights, different
+ * radii, different disabled treatments, no focus ring on most of them.
+ *
+ * What this adds, and why each one is here rather than in a caller:
+ *
+ *   · LOADING — an async button that stays clickable submits twice. `loading`
+ *     disables, swaps in a spinner, and preserves the label's width so the button
+ *     does not resize mid-submit (which moves everything below it).
+ *   · DESTRUCTIVE and SUBTLE variants — both existed in the wild as one-offs.
+ *   · ICON size — a 40×40 square control with a real 44px touch target via
+ *     padding, because icon buttons were the worst offenders for tap size.
+ *   · A VISIBLE FOCUS RING that follows the variant. Keyboard and screen-reader
+ *     users cannot use a button they cannot see focus on, and `:focus-visible`
+ *     cannot be expressed in an inline style — hence the local state.
+ *   · PRESS PHYSICS that read as physical: a spring on release rather than a
+ *     linear scale, and a hover LIFT on pointer devices only. Both are dropped
+ *     entirely under prefers-reduced-motion.
+ *
+ * Every value comes from the tokens above (SP / R / SHADOW / C), so a button here
+ * cannot drift from the cards it sits inside.
+ */
+
+type BtnVariant = "primary" | "secondary" | "ghost" | "subtle" | "destructive"
+type BtnSize = "sm" | "md" | "lg" | "icon"
+
+type BtnProps = Omit<HTMLMotionProps<"button">, "children"> & {
+  variant?: BtnVariant
+  size?: BtnSize
   full?: boolean
+  /** Disables, shows a spinner, and holds the label's width. */
+  loading?: boolean
+  /** Leading icon — sized and coloured to match the variant automatically. */
+  icon?: IconName
+  /** Trailing icon, e.g. an arrow on a CTA. */
+  trailingIcon?: IconName
+  children?: ReactNode
+}
+
+const BTN_PAD: Record<BtnSize, string> = {
+  sm: "8px 13px",
+  md: "11px 18px",
+  lg: "15px 24px",
+  icon: "10px",
+}
+const BTN_FONT: Record<BtnSize, number> = { sm: 13, md: 14, lg: 15.5, icon: 14 }
+const BTN_ICON: Record<BtnSize, number> = { sm: 14, md: 16, lg: 18, icon: 18 }
+
+/** A one-element spinner — no dependency, respects the button's own colour. */
+function BtnSpinner({ size, color }: { size: number; color: string }) {
+  return (
+    <motion.span
+      aria-hidden
+      animate={{ rotate: 360 }}
+      transition={{ duration: 0.75, repeat: Infinity, ease: "linear" }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        border: `2px solid ${color}`,
+        borderTopColor: "transparent",
+        display: "inline-block",
+        flexShrink: 0,
+      }}
+    />
+  )
 }
 
 /** The one button. Stable hover (no layout shift), real focus ring, 44px+ tall. */
 export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
-  { variant = "primary", size = "md", full, style, children, disabled, ...rest }, ref,
+  { variant = "primary", size = "md", full, loading, icon, trailingIcon, style, children, disabled, ...rest }, ref,
 ) {
-  const pad = size === "lg" ? "15px 22px" : "11px 18px"
+  const [focusRing, setFocusRing] = useState(false)
+  const reduced = useReducedMotion()
+  const off = Boolean(disabled) || Boolean(loading)
+
+  const palette: Record<BtnVariant, { bg: string; fg: string; border: string; shadow: string; ring: string }> = {
+    primary: { bg: GRAD, fg: "#fff", border: "transparent", shadow: SHADOW.brand, ring: "rgba(200,0,0,0.35)" },
+    secondary: { bg: C.card, fg: C.text, border: C.border, shadow: SHADOW.sm, ring: "rgba(200,0,0,0.3)" },
+    subtle: { bg: C.card2, fg: C.muted, border: "transparent", shadow: "none", ring: "rgba(200,0,0,0.25)" },
+    ghost: { bg: "transparent", fg: C.muted, border: "transparent", shadow: "none", ring: "rgba(200,0,0,0.25)" },
+    destructive: { bg: C.redSoft, fg: C.red, border: "rgba(220,38,38,0.28)", shadow: "none", ring: "rgba(220,38,38,0.35)" },
+  }
+  const v = palette[variant]
+
   const base: CSSProperties = {
-    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SP.sm,
-    padding: pad, minHeight: 44, borderRadius: R.lg, fontWeight: 700,
-    fontSize: size === "lg" ? 15.5 : 14, cursor: disabled ? "not-allowed" : "pointer",
-    width: full ? "100%" : undefined, border: "1px solid transparent",
-    transition: "background .18s ease, border-color .18s ease, color .18s ease, opacity .18s ease",
-    opacity: disabled ? 0.55 : 1,
+    position: "relative",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: size === "sm" ? 6 : SP.sm,
+    padding: BTN_PAD[size],
+    minHeight: 44,
+    minWidth: size === "icon" ? 44 : undefined,
+    borderRadius: size === "icon" ? R.md : R.lg,
+    fontWeight: 750,
+    fontSize: BTN_FONT[size],
+    letterSpacing: size === "lg" ? "-0.01em" : undefined,
+    lineHeight: 1.2,
+    cursor: off ? "not-allowed" : "pointer",
+    width: full ? "100%" : undefined,
+    border: `1px solid ${off ? C.border : v.border}`,
+    background: off && variant === "primary" ? C.card2 : v.bg,
+    color: off && variant === "primary" ? C.faint : v.fg,
+    boxShadow: off ? "none" : focusRing ? `${v.shadow === "none" ? "" : `${v.shadow}, `}0 0 0 3px ${v.ring}` : v.shadow,
+    opacity: disabled && !loading ? 0.55 : 1,
+    // Colour/shadow only — never width or padding, so a hover cannot shift layout.
+    transition: "background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, opacity .18s ease",
+    outline: "none",
+    WebkitTapHighlightColor: "transparent",
   }
-  const variants: Record<string, CSSProperties> = {
-    primary: { background: disabled ? C.card2 : GRAD, color: disabled ? C.faint : "#fff", boxShadow: disabled ? "none" : SHADOW.brand },
-    secondary: { background: C.card, color: C.text, borderColor: C.border, boxShadow: SHADOW.sm },
-    ghost: { background: "transparent", color: C.muted },
-  }
+
+  const iconColor = off && variant === "primary" ? C.faint : v.fg
+
   return (
     <motion.button
       ref={ref}
-      disabled={disabled}
-      whileTap={disabled ? undefined : { scale: 0.98 }}
-      style={{ ...base, ...variants[variant], ...style }}
+      disabled={off}
+      aria-busy={loading || undefined}
+      onFocus={(e) => {
+        // Keyboard focus only: a ring drawn on every mouse click reads as a bug.
+        if (e.currentTarget.matches(":focus-visible")) setFocusRing(true)
+        rest.onFocus?.(e)
+      }}
+      onBlur={(e) => {
+        setFocusRing(false)
+        rest.onBlur?.(e)
+      }}
+      whileHover={off || reduced ? undefined : { y: -1 }}
+      whileTap={off || reduced ? undefined : { scale: 0.975, y: 0 }}
+      transition={{ type: "spring", stiffness: 480, damping: 30, mass: 0.6 }}
+      style={{ ...base, ...style }}
       {...rest}
     >
-      {children}
+      {loading ? (
+        <>
+          <BtnSpinner size={BTN_ICON[size]} color={iconColor} />
+          {/* The label stays in the flow, invisible, so the width never jumps. */}
+          {children ? <span style={{ visibility: "hidden" }}>{children}</span> : null}
+        </>
+      ) : (
+        <>
+          {icon && <Icon name={icon} size={BTN_ICON[size]} color={iconColor} />}
+          {children}
+          {trailingIcon && <Icon name={trailingIcon} size={BTN_ICON[size]} color={iconColor} />}
+        </>
+      )}
     </motion.button>
   )
 })

@@ -29,6 +29,8 @@ import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 import { activePaperPause } from "@/lib/acca-plan-adjustment"
 import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
 import { chapterForLearningDay, getStudyResource, PROVIDER_LABEL } from "@/lib/acca-study-resources"
+import { chaptersForArea, chapterKey } from "@/lib/acca-study-content"
+import { isChapterRead } from "@/lib/acca-topic-plan"
 
 /* ── Task vocabulary ──────────────────────────────────────────── */
 
@@ -49,7 +51,30 @@ export interface SchedTask {
 /** Minutes-per-unit model — the single source for "~N min" sizing. */
 const COST = { study: 7, perQ: 1.1, perCard: 0.6, bank: 40, mock: 45, diagnostic: 15 }
 
-/* ── The A·B·C diagnostic gate (brand-new learners) ───────────── */
+/* ── The A·B·C diagnostic gate (brand-new learners) ─────────────
+ *
+ * Onboarding step 2 asks where the learner is starting from, and the answer
+ * changes the whole first month:
+ *
+ *   "practice"/"course" (a RETURNER) → measure first. They have knowledge to
+ *      measure, so a diagnostic on day one is the fastest honest read available
+ *      and the plan is tuned from it immediately.
+ *
+ *   "new" (a BEGINNER) → do NOT measure first. A 25-question diagnostic handed to
+ *      someone who has never opened the syllabus returns ~random noise, and the
+ *      number it produces ("you're at 23%") is both meaningless and demoralising.
+ *      Their readiness instead ACCRUES from daily work — coverage of the paper,
+ *      accuracy on what they have covered, and the hardness of what is left (see
+ *      projectReadiness in acca-topic-plan) — and the diagnostic appears once they
+ *      have genuinely covered the essential ground, at which point it measures
+ *      something real and lands as a reward rather than a verdict.
+ *
+ * "Essential ground" is the first three syllabus areas, each of them READ (the
+ * chapters, not merely attempted), PRACTISED past a floor, and REVISED once
+ * through flashcards. Reading is measured at chapter level now
+ * (acca-topic-plan/markChapterRead) — before that "studied" meant "attempted a
+ * knowledge check", which a learner could satisfy without opening the chapter.
+ */
 
 /** Sections a zero-start learner must cover before the diagnostic unlocks. */
 const GATE_SECTION_COUNT = 3
@@ -62,6 +87,9 @@ export interface SectionGate {
   practised: boolean
   revised: boolean
   done: boolean
+  /** Chapters of this area read / total, so the UI can show real progress. */
+  chaptersRead: number
+  chaptersTotal: number
 }
 
 /** Per-section readiness for the deferred diagnostic (first three areas). */
@@ -77,10 +105,26 @@ export function diagnosticGate(paperId: string): {
   const sections: SectionGate[] = areas.map((a) => {
     const topic = getTopicResult(paperId, a.code)
     const stat = stats.areas.find((s) => s.code === a.code)
-    const studied = topic.attempts > 0 || topic.mastered
+    const chapters = chaptersForArea(paperId, a.code)
+    const read = chapters.filter((c) => isChapterRead(paperId, chapterKey(c))).length
+    /*
+     * An area counts as STUDIED when its chapters have been read. Papers with no
+     * authored chapters for an area fall back to the old signal (a knowledge check
+     * attempted) rather than becoming permanently ungateable.
+     */
+    const studied = chapters.length > 0 ? read >= chapters.length : topic.attempts > 0 || topic.mastered
     const practised = (stat?.seen ?? 0) >= GATE_PRACTICE_MIN
     const revised = areaReviewed(paperId, a.code)
-    return { area: a.code, label: a.label, studied, practised, revised, done: studied && practised && revised }
+    return {
+      area: a.code,
+      label: a.label,
+      studied,
+      practised,
+      revised,
+      done: studied && practised && revised,
+      chaptersRead: read,
+      chaptersTotal: chapters.length,
+    }
   })
   const done = sections.filter((s) => s.done).length
   return { sections, done, total: sections.length || GATE_SECTION_COUNT, unlocked: sections.length > 0 && done >= sections.length }

@@ -8,6 +8,7 @@ import { ScholifyMark } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
 import { METHOD_PHASES, setPlan } from "@/lib/acca-plan"
+import { paperWorkHours } from "@/lib/acca-topic-plan"
 import { setDailyGoal } from "@/lib/acca"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, setPaperVariant, type Goal, type PaperVariant } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
@@ -421,6 +422,9 @@ export default function Welcome() {
       daysPerWeek,
       examDate,
       targetPercentage: effectiveTarget,
+      // Hours measured from THIS paper's real chapters and their hardness, not a
+      // hand-maintained table — see paperWorkHours in acca-topic-plan.
+      contentHours: paperWorkHours(paper),
     })
     setPassedPapers([...passed])
     setStudyingPapers([paper])
@@ -1667,7 +1671,7 @@ function ReadySlide({
 }) {
   const reducedMotion = useReducedMotion()
   const [recommendationReady, setRecommendationReady] = useState(Boolean(reducedMotion))
-  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate, targetPercentage: target })
+  const guide = buildOnboardingGuide({ paperId: paper, route: learnerRoute, englishLevel, minutesPerDay: minutes, daysPerWeek, examDate, targetPercentage: target, contentHours: paperWorkHours(paper) })
   const slotLabel = SLOT_OPTIONS.find((s) => s.time === slot)?.label ?? slot
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
   /** label, value, and the step that owns it — the third field makes it editable. */

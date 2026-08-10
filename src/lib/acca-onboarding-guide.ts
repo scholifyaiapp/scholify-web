@@ -15,6 +15,18 @@ export interface OnboardingGuideInput {
   examDate: string | null
   /** Learner-selected readiness target. Omit only when Charles should recommend one. */
   targetPercentage?: number | null
+  /**
+   * Guided hours measured from the paper's OWN content (acca-topic-plan's
+   * paperWorkHours): every chapter's hardness-adjusted reading time plus its
+   * quizzes and practice, grossed up for the strengthen/revise/rehearse phases.
+   *
+   * Supplied by the caller rather than read here so this module stays pure and its
+   * tests stay deterministic. When omitted — or when the paper's content chunk has
+   * not loaded — the PAPER_LOAD table below is used instead. The table cannot track
+   * the content programme (a paper rebuilt from 6 chapters to 26 kept quoting its
+   * old hours), so a measured figure always wins where one exists.
+   */
+  contentHours?: number | null
 }
 
 /** The lowest daily commitment the onboarding picker offers. */
@@ -128,7 +140,9 @@ function statusFor(
 }
 
 export function buildOnboardingGuide(input: OnboardingGuideInput, now = new Date()): OnboardingGuide {
-  const base = PAPER_LOAD[input.paperId] ?? 150
+  // Measured from the paper's real content where we have it; the table otherwise.
+  const measured = Number(input.contentHours)
+  const base = Number.isFinite(measured) && measured >= 30 ? measured : PAPER_LOAD[input.paperId] ?? 150
   const routeFactor = input.route === "practice" ? 0.72 : input.route === "course" ? 0.85 : 1.12
   const languageFactor = input.englishLevel === "A1" || input.englishLevel === "A2"
     ? 1.2

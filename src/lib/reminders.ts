@@ -17,17 +17,25 @@ import { getOverallProgress } from "@/lib/acca"
 const API_BASE = import.meta.env.VITE_API_URL || ""
 const SETTINGS_KEY = "scholify-settings"
 
-/** Which of the three daily reminders this learner wants. */
+/** Which daily reminders this learner wants. */
 export interface ReminderSlots {
-  /** Three hours ahead — "your session is at 19:00". */
+  /** Three hours ahead — "your session is at 19:00". Opt-in extra. */
   lead: boolean
-  /** Ten minutes ahead — the one that actually starts sessions. */
+  /** Thirty minutes ahead — the one that actually starts sessions. */
   soon: boolean
-  /** Late catch-up, only sent if the day was skipped. */
+  /** Two hours after the start time, only sent if the day is still open. */
   catchup: boolean
 }
 
-export const DEFAULT_SLOTS: ReminderSlots = { lead: true, soon: true, catchup: true }
+/**
+ * TWO reminders by default: T−30 and T+2h.
+ *
+ * `lead` is off because three unrequested emails a day from one sender is how a
+ * domain earns a spam reputation, and because the −30 nudge is the one that
+ * actually starts sessions. A learner who wants the morning heads-up can switch
+ * it on in Settings; the server default matches (migration 0028).
+ */
+export const DEFAULT_SLOTS: ReminderSlots = { lead: false, soon: true, catchup: true }
 
 /** The browser's IANA zone, e.g. "Asia/Tashkent". */
 export function localTimeZone(): string {
@@ -97,6 +105,45 @@ export function maybeSyncReminder(): void {
     ...DEFAULT_SLOTS,
     ...(s.reminderSlots || {}),
   })
+}
+
+/* ── The day-complete congratulation ──────────────────────────────
+ *
+ * Sent by the app the moment the LAST block of the day is finished, because only
+ * the client knows the day is complete and knows what tomorrow holds. Carries the
+ * streak and tomorrow's start time so the mail can link straight at it.
+ *
+ * Fire-and-forget and idempotent on the server (sent_done_date, migration 0028),
+ * so a double call — two tabs, a reload — sends one email.
+ */
+export interface DayCompleteFacts {
+  paperId: string
+  streak: number
+  /** "07:00" — when tomorrow's session unlocks. */
+  nextStartTime?: string | null
+  /** Tomorrow's exact chapter title. */
+  nextTopic?: string
+  /** Minutes worked today. */
+  minutes?: number
+  /** Questions answered today. */
+  questions?: number
+}
+
+export async function notifyDayComplete(facts: DayCompleteFacts): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return false
+    const res = await fetch(`${API_BASE}/api/reminders?action=complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...facts, timezone: localTimeZone() }),
+    })
+    const json = (await res.json()) as { ok?: boolean }
+    return Boolean(json.ok)
+  } catch {
+    return false
+  }
 }
 
 /**

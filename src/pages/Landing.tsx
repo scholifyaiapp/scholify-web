@@ -36,6 +36,7 @@ import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { startStripeCheckout, type StripePlan } from "@/lib/stripe"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
+import { SystemWalkthrough, MissionSection, ThreeReasons, StudyHubComparison } from "@/components/landing-system"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
@@ -522,6 +523,15 @@ const steps = [
   { num: "03", label: "ADAPT TO THE SITTING", title: "Practise. Measure. Recalculate.", desc: "Every result updates your priorities and readiness, continuously steering the next plan toward your sitting.", Icon: Flame, accent: FIRE_500 },
 ]
 
+/**
+ * NO LONGER MOUNTED — superseded by SystemWalkthrough (components/landing-system).
+ *
+ * It described a product that predates chapter-level planning, the computed exam
+ * date, the five-block day and the strategic route, so it taught visitors a
+ * different product than the one they signed up to. Kept only because its
+ * three-step scroll-line motion is worth lifting if a future section wants it;
+ * delete freely once that is no longer true.
+ */
 function HowItWorks() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-120px")
   const t = useT()
@@ -1107,6 +1117,12 @@ const featureCardImages = [
   "/card-6.webp",
 ].join(",")
 
+/**
+ * NO LONGER MOUNTED. A second feature grid immediately after `Features` said the
+ * same things twice; the slot now carries StudyHubComparison, which answers the
+ * question a visitor is actually holding (the Study Hub is free with their ACCA
+ * registration). Rollup drops this from the bundle since nothing references it.
+ */
 function FeatureSwiper() {
   const t = useT()
   const [dims, setDims] = useState<{ w: number; h: number }>(() => {
@@ -1518,6 +1534,11 @@ function FutureQualification() {
 
 /* ─────────────────────── IDENTITY (dark) ─────────────────────── */
 
+/**
+ * NO LONGER MOUNTED. A brand-transformation showcase between the feature grid and
+ * the ROI table — beautiful, and answering no question a buyer has. MissionSection
+ * now carries the "why" at that altitude, in the founder's words.
+ */
 function Identity() {
   const t = useT()
   return (
@@ -2071,13 +2092,28 @@ export default function Landing() {
       />
       <CharlesCarousel />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
-      <LazyOnView id="how-it-works" style={{ minHeight: 700 }}><HowItWorks /></LazyOnView>
+      {/*
+        THE SYSTEM, TAUGHT. The old three-column "how it works" described a product
+        that predated chapter-level planning, the computed exam date, the five-block
+        day and the strategic route — so a visitor read one product and signed up to
+        another. SystemWalkthrough replaces it with the real sequence plus a diagram
+        of an actual day. See components/landing-system.tsx.
+      */}
+      <LazyOnView id="how-it-works" style={{ minHeight: 900 }}><SystemWalkthrough /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
+      {/* WHY it exists, before what it costs. */}
+      <LazyOnView style={{ minHeight: 620 }}><MissionSection /></LazyOnView>
+      <LazyOnView style={{ minHeight: 900 }}><ThreeReasons /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><MilestoneGallery /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
-      <LazyOnView style={{ minHeight: 700 }}><FeatureSwiper /></LazyOnView>
-      <LazyOnView style={{ minHeight: 800 }}><Identity /></LazyOnView>
+      {/*
+        The comparison a visitor is already running in their head: the Study Hub is
+        free with ACCA registration. Answering it explicitly — including the row the
+        Study Hub wins — is worth more than another feature grid, which is what the
+        FeatureSwiper and Identity showcases that sat here were.
+      */}
+      <LazyOnView style={{ minHeight: 900 }}><StudyHubComparison /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>

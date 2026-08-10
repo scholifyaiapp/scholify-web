@@ -24,6 +24,7 @@ import JourneyMap from "@/components/acca/JourneyMap"
 import PostMortemPanel from "@/components/acca/PostMortemPanel"
 import { getQuestions,
   getPaper,
+  getPracticeInventory,
   buildSession,
   buildAdaptiveSession,
   gradeQuestion,
@@ -56,12 +57,29 @@ import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
 import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, resumeFocusSession, pauseFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
-import { recordDayActive } from "@/lib/acca-schedule"
-import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, type StudyChapter } from "@/lib/acca-study-content"
+import { recordDayActive, shieldState } from "@/lib/acca-schedule"
+import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, chaptersForPaper, type StudyChapter } from "@/lib/acca-study-content"
+/* ── The rebuilt Learning section ──────────────────────────────────
+ * Today / Plan / Practice / Progress are now driven by the chapter-level plan
+ * engine rather than by syllabus areas. See acca-topic-plan (what to study and
+ * when), acca-today-composer (the five blocks of one day), acca-no-repeat (why
+ * nothing is served twice), acca-day-gate (why tomorrow is locked) and
+ * acca-strategy (which paper comes next). */
+import { TodayBoard } from "@/components/acca/TodayBoard"
+import { ArticleReader } from "@/components/acca/ArticleReader"
+import { PlanBoard } from "@/components/acca/PlanBoard"
+import { PracticeHub } from "@/components/acca/PracticeHub"
+import { ProgressBoard } from "@/components/acca/ProgressBoard"
+import { composeToday, blockComplete, type TodayBlock, type TodayComposition } from "@/lib/acca-today-composer"
+import { markChapterRead, recordChapterPace, nextChapter } from "@/lib/acca-topic-plan"
+import { recordDayComplete, congratulationSent, markCongratulationSent, tomorrowGate } from "@/lib/acca-day-gate"
+import { notifyDayComplete } from "@/lib/reminders"
+import { markServed, servedIds, type PoolKind } from "@/lib/acca-no-repeat"
+import type { TechArticle } from "@/lib/acca-tech-article"
 import { StudyChapterReader } from "@/components/acca/StudyChapterReader"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import { mockGate, MOCK_GATE, MOCK_PASS, mockProgress, MOCKS_REQUIRED, examDayDue, currentStage, recoveryState, getJourneyStages, passProbability } from "@/lib/acca-loop"
-import { recordMistake, snapshotProbability } from "@/lib/acca-analytics"
+import { recordMistake, snapshotProbability, recordAnswerTiming } from "@/lib/acca-analytics"
 import { isAccaOnboarded, getStartMode } from "@/lib/acca-profile"
 import { getTopicBrief } from "@/lib/acca-briefs"
 import { BANK_RUN_SIZE, BANK_RUN_SECONDS_PER_Q, MIXED_BANK_SIZES, recordBankRun, bankRunProgress, bankRunTarget, type MixedBankSize } from "@/lib/acca-bankruns"
@@ -90,7 +108,7 @@ const DIM = "var(--sch-tx-3)"
 const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
 
-type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "cbemock" | "examiner" | "flashcards" | "generate" | "results" | "journey"
+type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "cbemock" | "examiner" | "flashcards" | "generate" | "results" | "journey" | "article"
 
 const SESSION_SIZE = 8
 const LEARN_SIZE = 5 // the guided first questions after a Topic Brief
@@ -179,6 +197,33 @@ export default function AccaStudy() {
   /** Set when the clock actually ran out, so results can attribute lost marks to time. */
   const expiredRef = useRef(false)
   const finishRef = useRef<() => void>(() => {})
+  /**
+   * Which no-repeat pool this session came from, so its questions can be marked
+   * SERVED when the session is graded (not when it is composed — a session the
+   * learner abandons must stay available). See acca-no-repeat.
+   */
+  const [sessionPool, setSessionPool] = useState<PoolKind | null>(null)
+  /** The technical article currently open, when mode === "article". */
+  const [activeArticle, setActiveArticle] = useState<TechArticle | null>(null)
+  /**
+   * Per-question timing for ordinary practice. Only the CBE mock recorded this
+   * before, so the per-section pace read (Progress → "time per question by
+   * section") stayed empty for every learner who had not sat a mock — which is
+   * every learner in their first month, i.e. the ones who most need to know they
+   * are slow.
+   */
+  const shownAt = useRef<number>(0)
+  const timedIdx = useRef<Set<number>>(new Set())
+  /**
+   * When the current chapter was opened, so a finished read can feed this
+   * learner's own READING PACE (acca-topic-plan). The authored `minutes` on a
+   * chapter is an average student's time; a learner who consistently differs from
+   * it should see their own number, or every future estimate is wrong by exactly
+   * the amount they differ.
+   */
+  const chapterOpenedAt = useRef<number>(0)
+  const chapterReadMinutes = (): number =>
+    chapterOpenedAt.current ? Math.max(1, Math.round((Date.now() - chapterOpenedAt.current) / 60000)) : 0
 
   // topic path (Kaplan-style chapter flow)
   const [topicArea, setTopicArea] = useState<string | null>(null)
@@ -275,6 +320,29 @@ export default function AccaStudy() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content.ready, paperId])
 
+  /*
+   * Per-question timing for ordinary practice. Recorded on LEAVING a question
+   * (index change or finish), once per question, with the question's marks so the
+   * per-section pace read is measured against ACCA's minutes-per-mark rather than
+   * a flat number. Marks-based bucketing is inferred here (see sectionForMarks) —
+   * the CBE mock knows the real section and passes it explicitly.
+   */
+  useEffect(() => {
+    if (mode !== "session") {
+      timedIdx.current = new Set()
+      return
+    }
+    const previous = idx
+    shownAt.current = performance.now()
+    return () => {
+      const q = questions[previous]
+      if (!q || !paperId || timedIdx.current.has(previous)) return
+      timedIdx.current.add(previous)
+      recordAnswerTiming(paperId, (performance.now() - shownAt.current) / 1000, q.marks)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, idx])
+
   // One exam-paced countdown for every objective practice session — a single
   // timeout at the deadline, replacing a per-second interval that re-rendered
   // the entire page on every tick.
@@ -355,14 +423,20 @@ export default function AccaStudy() {
     }
     const seed = (Date.now() % 100000) + 1
     const size = SESSION_SIZE
+    // Nothing the learner has already worked through this cycle: a fresh seed
+    // reshuffles the pool, it does not exclude anything (see acca-no-repeat).
+    const served = servedIds(paperId, weakFirst ? "drill" : "practice")
     // "Target my weak areas" uses the adaptive engine (weak areas + matched
     // difficulty + spaced reinforcement); plain practice stays a fresh shuffle.
-    const qs = weakFirst ? buildAdaptiveSession(paperId, size, seed) : buildSession(paperId, size, { weakFirst }, seed)
+    const qs = weakFirst
+      ? buildAdaptiveSession(paperId, size, seed, served)
+      : buildSession(paperId, size, { weakFirst, excludeIds: served }, seed)
     if (qs.length === 0) {
       toast.info("No questions available yet for this paper.")
       return
     }
     loadQuestions(qs)
+    setSessionPool(weakFirst ? "drill" : "practice")
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -373,6 +447,55 @@ export default function AccaStudy() {
     setDeadline(Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000); expiredRef.current = false
     resetQuestion()
     setMode("session")
+  }
+
+  /* ── Today's composed blocks ────────────────────────────────────
+   *
+   * The quiz and practice blocks of the daily plan are launched from the set the
+   * composer ALREADY selected (acca-today-composer), not rebuilt here. That is
+   * what makes the counts on the Today board true: the card says "12 practice
+   * questions" because there are twelve, and they are the twelve that have been
+   * claimed for today and excluded from every other pick.
+   */
+  function startComposedSession(qs: AccaQuestion[], pool: PoolKind, area: string | null, timed = true) {
+    if (!paperId) return
+    if (qs.length === 0) {
+      toast.info("No curated questions for this topic yet — try Custom practice.")
+      return
+    }
+    loadQuestions(qs)
+    setSessionPool(pool)
+    setIdx(0)
+    setCorrectCount(0)
+    setLog([])
+    setIsMock(false)
+    setIsBankRun(false)
+    setIsTopicTest(false)
+    setTopicArea(area)
+    setDeadline(timed ? Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000 : null)
+    expiredRef.current = false
+    resetQuestion()
+    setMode("session")
+  }
+
+  /** Open one EXACT chapter in the reader (the Today plan's study block). */
+  function startStudyChapter(key: string, area: string) {
+    setTopicArea(area)
+    setStudyChapterKey(key)
+    setIsTopicTest(false)
+    chapterOpenedAt.current = Date.now()
+    setMode("brief")
+  }
+
+  /** "Test yourself" on one chapter — the ACCA Study Hub's per-chapter check. */
+  function startChapterTest(key: string, area: string, count: number) {
+    if (!paperId) return
+    const pool = getPracticeInventory(paperId).filter((q) => q.chapter === key)
+    const scoped = pool.length >= 3 ? pool : getPracticeInventory(paperId).filter((q) => q.area === area)
+    const served = servedIds(paperId, "practice")
+    const fresh = scoped.filter((q) => !served.has(q.id))
+    const chosen = [...(fresh.length >= count ? fresh : [...fresh, ...scoped.filter((q) => served.has(q.id))])].slice(0, count)
+    startComposedSession(chosen, "practice", area)
   }
 
   /** A daily practice block for one official exam section only. */
@@ -417,12 +540,15 @@ export default function AccaStudy() {
   function startTopicSession(area: string, test: boolean, size = SESSION_SIZE) {
     if (!paperId) return
     const seed = (Date.now() % 100000) + 1
-    const qs = buildSession(paperId, test ? TOPIC_TEST_SIZE : size, { area }, seed)
+    // A knowledge CHECK is a measurement, so it must not re-ask questions the
+    // learner has already answered — that would measure memory of the answer.
+    const qs = buildSession(paperId, test ? TOPIC_TEST_SIZE : size, { area, excludeIds: servedIds(paperId, test ? "quiz" : "practice") }, seed)
     if (qs.length === 0) {
       toast.info("No curated questions for this topic yet — try Custom practice.")
       return
     }
     loadQuestions(qs)
+    setSessionPool(test ? "quiz" : "practice")
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -440,12 +566,13 @@ export default function AccaStudy() {
   function startBankRun(size: MixedBankSize = bankRunSize) {
     if (!paperId) return
     const seed = (Date.now() % 100000) + 1
-    const qs = buildSession(paperId, size, {}, seed)
+    const qs = buildSession(paperId, size, { excludeIds: servedIds(paperId, "bank") }, seed)
     if (qs.length < 10) {
       toast.info("Not enough questions in this paper's bank yet for a bank run.")
       return
     }
     loadQuestions(qs)
+    setSessionPool("bank")
     setIdx(0)
     setCorrectCount(0)
     setLog([])
@@ -551,6 +678,13 @@ export default function AccaStudy() {
         review.push({ q, response: undefined, correct: false })
       }
     })
+    /*
+     * Mark the whole set SERVED now, at grading — not at composition. A session
+     * the learner opens and abandons must stay available (otherwise a mis-tap
+     * burns twelve questions), and a session they finished must never come back,
+     * whether or not each individual question was answered.
+     */
+    if (paperId && sessionPool) markServed(paperId, sessionPool, questions.map((q) => q.id))
     queueAccaProgressPush()
     setCorrectCount(correct)
     setLog(newLog)
@@ -615,12 +749,17 @@ export default function AccaStudy() {
               onGenerate={openGenerate}
               onFlashcards={() => { setTopicArea(null); setMode("flashcards") }}
               onTopic={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
-              onStudyTopic={(area) => { setTopicArea(area); setStudyChapterKey(null); setIsTopicTest(false); setMode("brief") }}
+              onStudyTopic={(area) => { setTopicArea(area); setStudyChapterKey(null); setIsTopicTest(false); chapterOpenedAt.current = Date.now(); setMode("brief") }}
               onEssentials={startEssentials}
               onJourney={() => setMode("journey")}
               onLoopAction={runLoopAction}
               onRefresh={() => setTick((t) => t + 1)}
               onSwitchPaper={(pid) => { setPaperId(pid); setTick((t) => t + 1); setMode("overview") }}
+              /* ── the rebuilt Learning section ── */
+              onStudyChapter={startStudyChapter}
+              onTestChapter={startChapterTest}
+              onComposed={startComposedSession}
+              onOpenArticle={(article) => { setActiveArticle(article); setMode("article") }}
             />
           )}
 
@@ -667,10 +806,39 @@ export default function AccaStudy() {
                   if (areaChapters.length > 1) setStudyChapterKey(null)
                   else setMode("topic")
                 }}
-                onPractice={() => { completePendingTodayTask(paper.id); startTopicSession(topicArea, false, LEARN_SIZE) }}
+                onPractice={() => {
+                  /*
+                   * Reaching the end of a chapter is what "read" means. Recording
+                   * it here is what lets tomorrow's plan advance to the NEXT
+                   * chapter — before this, chapter-level progress did not exist at
+                   * all, so the daily study block repeated the same area for days.
+                   */
+                  markChapterRead(paper.id, chapterKey(chapter))
+                  recordChapterPace(paper.id, chapter.minutes, chapterReadMinutes())
+                  markTodayTaskDone(paper.id, `study-${chapterKey(chapter)}`)
+                  completePendingTodayTask(paper.id)
+                  setTick((t) => t + 1)
+                  setMode("overview")
+                }}
               />
             )
           })()}
+
+          {mode === "article" && paperId && activeArticle && (
+            <ArticleReader
+              key={`article-${activeArticle.id}`}
+              article={activeArticle}
+              paperId={paperId}
+              onBack={() => { setActiveArticle(null); setMode("overview") }}
+              onDone={() => {
+                markTodayTaskDone(paperId, activeArticle.id)
+                recordDayActive(paperId)
+                setActiveArticle(null)
+                setTick((t) => t + 1)
+                setMode("overview")
+              }}
+            />
+          )}
 
           {mode === "topic" && paper && topicArea && (
             <TopicView
@@ -1099,6 +1267,10 @@ function Overview({
   onLoopAction,
   onRefresh,
   onSwitchPaper,
+  onStudyChapter,
+  onTestChapter,
+  onComposed,
+  onOpenArticle,
 }: {
   paper: AccaPaper
   isPro: boolean
@@ -1118,6 +1290,10 @@ function Overview({
   onLoopAction: (a: PostMortemAction) => void
   onRefresh: () => void
   onSwitchPaper: (pid: string) => void
+  onStudyChapter: (chapterKey: string, area: string) => void
+  onTestChapter: (chapterKey: string, area: string, count: number) => void
+  onComposed: (qs: AccaQuestion[], pool: PoolKind, area: string | null, timed?: boolean) => void
+  onOpenArticle: (article: TechArticle) => void
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -1189,6 +1365,69 @@ function Overview({
     resolvePendingTodayTask(paper.id)
     setTodayDone(getTodayDone(paper.id))
   }, [paper.id])
+
+  /* ── The composed day ───────────────────────────────────────────
+   *
+   * Today's five blocks come from acca-today-composer, which has ALREADY selected
+   * the exact questions and cards (and claimed them against the no-repeat ledger).
+   * So launching a block hands over that set rather than rebuilding one — which is
+   * what makes the count on the card true.
+   */
+  const todayComposition = useMemo(() => composeToday(paper.id, /* dryRun */ true), [paper.id, todayDone.length])
+  const dayIsComplete = todayComposition.blocks.length > 0 && todayComposition.blocks.every((b) => blockComplete(paper.id, b, todayDone))
+
+  function runComposedBlock(block: TodayBlock, composition: TodayComposition) {
+    switch (block.kind) {
+      case "study":
+        if (block.chapterKey && composition.chapter) onStudyChapter(block.chapterKey, composition.chapter.area)
+        else onPractice()
+        return
+      case "quiz":
+        setPendingTodayTask(paper.id, block.id)
+        onComposed(composition.quiz, "quiz", block.area ?? null)
+        return
+      case "practice":
+        setPendingTodayTask(paper.id, block.id)
+        onComposed(composition.practice, "practice", block.area ?? null)
+        return
+      case "flashcards":
+        setPendingTodayTask(paper.id, block.id)
+        onFlashcards()
+        return
+      case "article":
+        if (composition.article) onOpenArticle(composition.article)
+        return
+    }
+  }
+
+  /*
+   * The day just completed. Three things happen exactly once: the streak advances
+   * through the shield scheme, Charles's congratulation email goes out with
+   * tomorrow's start time and topic, and the confetti fires. recordDayComplete is
+   * idempotent per calendar day, so a reload cannot repeat any of it.
+   */
+  function handleDayComplete(composition: TodayComposition) {
+    const result = recordDayComplete(paper.id)
+    if (!result.firstTime) return
+    trackEvent("day_completed", { paper: paper.id, streak: result.streak, minutes: composition.totalMinutes })
+    void import("canvas-confetti").then((m) => {
+      m.default({ particleCount: result.milestone ? 160 : 90, spread: 78, origin: { y: 0.65 }, disableForReducedMotion: true })
+    }).catch(() => { /* confetti is decoration — never let it break the day */ })
+    if (!congratulationSent(paper.id)) {
+      const gate = tomorrowGate(paper.id)
+      const preview = composeToday(paper.id, true)
+      void notifyDayComplete({
+        paperId: paper.id,
+        streak: result.streak,
+        nextStartTime: `${`${gate.unlocksAt.getHours()}`.padStart(2, "0")}:${`${gate.unlocksAt.getMinutes()}`.padStart(2, "0")}`,
+        nextTopic: preview.chapter?.title ?? "",
+        minutes: composition.totalMinutes,
+        questions: composition.quiz.length + composition.practice.length,
+      }).then((ok) => {
+        if (ok) markCongratulationSent(paper.id)
+      })
+    }
+  }
 
   // "Locked In" focus mode: full-focus takeover with a countdown. It persists in
   // localStorage, so launching a task (which unmounts this view) and coming back
@@ -1371,393 +1610,82 @@ function Overview({
 
       {tab === "today" && (
       <motion.div key="today-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-      {/* AI Study OS — your plan for today */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{ ...card({ padding: 18, marginBottom: 16 }), background: "linear-gradient(135deg, rgba(200,0,0,0.05), var(--sch-card))" }}
-      >
-        <div style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>{greeting(firstName)}</div>
-        <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{todayHeadline(paper.id)}</div>
+        {/* The day itself — one topic, five ways. See TodayBoard. */}
+        <TodayBoard
+          paperId={paper.id}
+          paperName={paper.name}
+          firstName={firstName}
+          done={todayDone}
+          onRun={runComposedBlock}
+          onArticle={onOpenArticle}
+          onDayComplete={handleDayComplete}
+        />
 
-        {/* Animated today-mission ring — fills as each part of the plan is done.
-            At 100%, Charles takes over to celebrate. */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, margin: "18px 0 6px" }}>
-          {missionPct >= 100 ? (
-            <>
-              <CharlesMascot pose="celebrate" size="clamp(108px, 32vw, 132px)" />
-              <div style={{ fontSize: 13, fontWeight: 800, color: C.green }}>Today's mission complete — great work!</div>
-            </>
-          ) : (
-            <RingGauge
-              value={missionPct}
-              size={126}
-              stroke={11}
-              color="#C80000"
-              label="TODAY'S MISSION"
-              sublabel={`${missionDone} of ${missionTotal} done`}
-            />
-          )}
-        </div>
-
-        {/* Charles's exam-timing read — honest, tied to readiness + daily pace */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "var(--sch-card-2)" }}>
-          <Icon name="tutor" size={15} color="#C80000" style={{ marginTop: 1, flexShrink: 0 }} />
-          <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{examTimingLine}</span>
-        </div>
-
-        {/* Enter "Locked In" — full-focus takeover for the daily commitment */}
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={enterLockedIn}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12, padding: "11px 18px", borderRadius: 12, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 800, fontSize: 13.5, cursor: "pointer" }}
-        >
-          <Icon name="mock" size={15} color="#fff" /> Start {plan.dailyMinutes || 60}-min Locked In session
-        </motion.button>
-
-        <div style={{ marginTop: 12, padding: "11px 13px", borderRadius: 12, background: "var(--sch-card-2)", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-          Charles has divided your {plan.dailyMinutes || 60} minutes across study, 5 Quizzes, each official exam section, flashcards and an ACCA technical article. Start Locked In to see and work the sequence.
-        </div>
-      </motion.div>
+        {/* Locked In stays available as an OPTION, not the only way in. */}
+        {!dayIsComplete && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={enterLockedIn}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              marginTop: 16,
+              padding: "11px 18px",
+              borderRadius: 12,
+              border: `1px solid ${BORDER}`,
+              background: CARD,
+              color: TEXT,
+              fontWeight: 750,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="mock" size={15} color="#C80000" /> Work it in Locked In mode ({plan.dailyMinutes || 60} min)
+          </motion.button>
+        )}
       </motion.div>
       )}
 
       {tab === "progress" && (
-      <motion.div key="progress-a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-      {/* readiness — live pass probability once there's practice, else coverage-based */}
-      <SectionHead
-        icon="stats"
-        right={
-          <button onClick={() => navigate("/study/analytics")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 750, color: "#C80000", display: "inline-flex", alignItems: "center", gap: 4, padding: 0, textTransform: "none", letterSpacing: 0 }}>
-            Full analytics <Icon name="arrow" size={12} color="#C80000" />
-          </button>
-        }
-      >
-        Progress check
-      </SectionHead>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
-        <StatCard
-          index={0}
-          icon="diagnostic"
-          label={band.label}
-          value={readinessValue}
-          footnote={live ? "live from your practice" : hasHistory ? "readiness from coverage" : "start practising to measure"}
+        <ProgressBoard
+          key="progress-tab"
+          paperId={paper.id}
+          onDiagnostic={() => navigate("/study/diagnostic")}
+          onFullAnalytics={() => navigate("/study/analytics")}
+          onWeak={onWeak}
         />
-        <StatCard
-          index={1}
-          icon="done"
-          label="Accuracy"
-          value={hasHistory ? Math.round(stats.accuracy * 100) : "—"}
-          suffix={hasHistory ? "%" : undefined}
-          footnote={hasHistory ? `${stats.correct} of ${stats.answered} correct` : undefined}
-        />
-        <StatCard
-          index={2}
-          icon="practice"
-          label="Answered"
-          value={stats.answered}
-          footnote={`${Math.round(stats.coverage * 100)}% of the bank seen`}
-        />
-      </div>
-
-      {/* pass-probability diagnostic — the headline number */}
-      <motion.button
-        whileHover={{ y: -1 }}
-        whileTap={{ scale: 0.99 }}
-        onClick={() => navigate("/study/diagnostic")}
-        style={{
-          width: "100%",
-          textAlign: "left",
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          padding: "14px 16px",
-          marginBottom: 16,
-          borderRadius: 14,
-          cursor: "pointer",
-          border: passShown ? `1px solid ${BORDER}` : "1px solid rgba(200,0,0,0.25)",
-          background: passShown ? CARD : "linear-gradient(135deg, rgba(200,0,0,0.06), rgba(200,0,0,0.02))",
-        }}
-      >
-        {passShown ? (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 12, background: "var(--sch-card-2)", flexShrink: 0 }}>
-              <span style={{ fontSize: 19, fontWeight: 800, color: passBand(passShown.passProbability).color, lineHeight: 1 }}>{passShown.passProbability}%</span>
-              <span style={{ fontSize: 8.5, fontWeight: 700, color: MUTED, marginTop: 2 }}>PASS</span>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 750, fontSize: 14.5, color: TEXT }}>{passBand(passShown.passProbability).label}</div>
-              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>
-                {passIsLive
-                  ? "Live estimate from practice · tap for the full diagnostic"
-                  : `Est. score ${passShown.estimatedScore}% · tap to retake the diagnostic`}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <IconBadge name="diagnostic" tone="brand" size={44} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 14.5, color: "#C80000" }}>What's your chance of passing?</div>
-              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>Take the ~15-min diagnostic → Exam Readiness Score + your weakest areas</div>
-            </div>
-          </>
-        )}
-        <Icon name="arrow" size={17} color={MUTED} />
-      </motion.button>
-      </motion.div>
       )}
 
       {tab === "plan" && (
-      <motion.div key="plan-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-      {/* the method — where you are in the 4 phases */}
-      <MethodTracker activeKey={phase.key} />
-
-      {/* the journey loop — where you are in the whole arc of this paper */}
-      <motion.button
-        whileHover={{ y: -1 }}
-        whileTap={{ scale: 0.99 }}
-        onClick={onJourney}
-        style={{ ...card({ padding: "13px 16px", marginBottom: 12, cursor: "pointer" }), display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left" }}
-      >
-        <IconBadge name="loop" tone="brand" size={38} />
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontWeight: 750, fontSize: 13.5, color: TEXT }}>The journey loop</span>
-          <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-            You are here: <b style={{ color: "#C80000" }}>{stage.label}</b>
-          </span>
-        </span>
-        <Icon name="chevron" size={16} color={C.faint} />
-      </motion.button>
-
-      {/* study plan */}
-      <div style={card({ marginBottom: 16 })}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14, color: TEXT }}><Icon name="calendar" size={16} color={C.brand} /> Exam date</div>
-            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>
-              {days === null ? "Set your sitting to get a countdown." : days === 0 ? "That's today — good luck!" : `${days} days to go`}
-            </div>
-          </div>
-          <input
-            type="date"
-            value={plan.examDate ?? ""}
-            onChange={(e) => updateExamDate(e.target.value)}
-            style={{ padding: "9px 12px", borderRadius: 10, border: `1px solid ${BORDER}`, background: "var(--sch-bg)", color: TEXT, fontSize: 13.5, colorScheme: "dark light" }}
-          />
-        </div>
-      </div>
-
-      {/* personalised plan */}
-      {studyPlan.phases.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <h3 style={sectionH}>YOUR PLAN{studyPlan.daysLeft ? ` · ${studyPlan.daysLeft} DAYS · ~${studyPlan.dailyTarget}/DAY` : ""}</h3>
-          <div style={{ display: "grid", gap: 8 }}>
-            {studyPlan.phases.map((ph) => (
-              <div key={ph.label} style={{ ...card({ padding: 14 }), display: "flex", gap: 12 }}>
-                <IconBadge name={PHASE_ICON[ph.label.toLowerCase()] ?? "learn"} tone="brand" size={36} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{ph.label}</span>
-                    <span style={{ fontSize: 11.5, color: "#C80000", whiteSpace: "nowrap" }}>{ph.range}</span>
-                  </div>
-                  <div style={{ fontSize: 12.5, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{ph.focus}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* recommendations */}
-      {recs.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <h3 style={sectionH}>COACH'S NOTES</h3>
-          <div style={{ display: "grid", gap: 8 }}>
-            {recs.map((r, i) => (
-              <div key={i} style={card({ padding: 14 })}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{r.title}</div>
-                <div style={{ fontSize: 13, color: MUTED, marginTop: 3, lineHeight: 1.5 }}>{r.detail}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      </motion.div>
+        <PlanBoard
+          key="plan-tab"
+          paperId={paper.id}
+          paperName={paper.name}
+          onRefresh={onRefresh}
+          onJourney={onJourney}
+          onSwitchPaper={onSwitchPaper}
+        />
       )}
 
       {tab === "practice" && (
-      <motion.div key="practice-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-      {/* ── THE STUDY CATEGORIES — the founder's five, in daily order, each
-             proportioned from the onboarding answers (today's plan carries the
-             exact minutes; the chips repeat them here so the weighting is
-             visible, not implied). ─────────────────────────────────────── */}
-      {(() => {
-        const minutesFor = (ids: string[]) => {
-          const m = todayPlan.filter((t) => ids.includes(t.action)).reduce((a, t) => a + MISSION_MINUTES[t.action], 0)
-          return m > 0 ? `~${m} min today` : undefined
-        }
-        const studyTask = todayPlan.find((t) => t.action === "study")
-        const essTask = todayPlan.find((t) => t.action === "essentials")
-        const minChip = (label?: string) =>
-          label ? <span style={{ fontSize: 11, fontWeight: 750, color: DIM, textTransform: "none", letterSpacing: 0 }}>{label}</span> : undefined
-        return (
-          <>
-            {/* 1 · Topic learning — the main content */}
-            <SectionHead icon="learn" right={minChip(minutesFor(["study"]))}>1 · Topic learning</SectionHead>
-            <div style={{ display: "grid", gap: 10, marginBottom: 6 }}>
-              {studyTask?.area ? (
-                <ModeTile
-                  icon="study"
-                  title={`Continue: ${studyTask.area} · ${paper.areas.find((a) => a.code === studyTask.area)?.label ?? "next topic"}`}
-                  sub="Today's chapter — concept, formulas, worked example, the classic traps"
-                  onClick={() => onStudyTopic(studyTask.area!)}
-                  primary={phase.key === "learn"}
-                />
-              ) : (
-                <ModeTile icon="study" title="Continue the study path" sub="Pick up the next topic below" onClick={() => onTopic(paper.areas[0].code)} />
-              )}
-            </div>
-            {/* the full path — topic by topic, Kaplan-style (the main content lives here) */}
-
-            {/* 2 · Quizzes after study */}
-            <SectionHead icon="mission" right={minChip(minutesFor(["essentials"]))}>2 · Quizzes</SectionHead>
-            <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-              <ModeTile
-                icon="mission"
-                title={`${LEARN_SIZE} Quizzes${essTask?.area ? ` — ${essTask.area}` : ""}`}
-                sub="Unlocked after the lesson, with guided questions on what you just studied"
-                onClick={() => onEssentials(essTask?.area)}
-                primary={Boolean(essTask) && phase.key === "learn"}
-              />
-            </div>
-
-            {/* 3 · Daily practice — the pain point leads */}
-            <SectionHead icon="practice" right={minChip(minutesFor(["weak", "practice"]))}>3 · Daily practice</SectionHead>
-            <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-              {curated ? (
-                <>
-                  {hasHistory && <ModeTile icon="weak" title="Target my pain points" sub="Adaptive drill on your lowest-scoring areas — the plan's biggest block" onClick={onWeak} primary={phase.key === "strengthen"} />}
-                  <ModeTile icon="practice" title={`Practice · ${SESSION_SIZE} questions`} sub="Instant marking, explanations & AI tutor" onClick={onPractice} primary={phase.key === "learn" && !hasHistory} />
-                  <ModeTile icon="generate" title="Custom practice" sub="Charles generates fresh training laps on any topic — or from your notes" onClick={onGenerate} locked={!isPro} />
-                </>
-              ) : (
-                <>
-                  <ModeTile icon="generate" title="Custom practice" sub="Charles generates fresh training laps on any topic — or from your notes" onClick={onGenerate} primary locked={!isPro} />
-                  <div style={{ ...card({ padding: 14 }), display: "flex", gap: 10, fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-                    <Icon name="learn" size={16} color={C.soft} style={{ marginTop: 1 }} />
-                    <span>
-                      A curated question bank for {paper.id} is on the way. Meanwhile, Custom practice (Pro) generates
-                      unlimited AI questions for this paper — or switch to a paper with a full bank from <b style={{ color: TEXT }}>← All papers</b>.
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* 4 · Flashcards daily */}
-            <SectionHead icon="flashcards" right={minChip(minutesFor(["flashcards"]))}>4 · Flashcards daily</SectionHead>
-            <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-              <ModeTile icon="flashcards" title="Flashcards" sub={fcStats.total ? `${fcStats.due} due · ${fcStats.mastered}/${fcStats.total} mastered` : "Coming soon"} onClick={onFlashcards} primary={fcStats.due > 0} />
-            </div>
-
-            {/* 5 · Official resources */}
-            <SectionHead icon="exam">5 · Official ACCA resources</SectionHead>
-            <OfficialResourcesSection paperId={paper.id} />
-          </>
-        )
-      })()}
-
-      <SectionHead icon="mock">Exam room</SectionHead>
-      {/* The official CBE shape of THIS paper — what exam day actually looks
-          like, so every rehearsal below is aimed at the real thing. */}
-      <CbeBlueprintCard paperId={paper.id} />
-      <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-        {curated && (() => {
-          const br = bankRunProgress(paper.id)
-          return (
-            <>
-              {MIXED_BANK_SIZES.map((size) => (
-                <ModeTile
-                  key={size}
-                  icon="check"
-                  title={`Mixed bank · ${size} questions`}
-                  sub={`${Math.round((size * BANK_RUN_SECONDS_PER_Q) / 60)} min · whole syllabus · mixed difficulty${size === BANK_RUN_SIZE ? ` · bank run ${Math.min(br.done + 1, br.target)} of ${br.target}` : ""}${br.best !== null ? ` · best ${br.best}%` : ""}`}
-                  onClick={() => onBankRun(size)}
-                  primary={size === BANK_RUN_SIZE && !gate.unlocked && br.done < br.target && phase.key !== "learn"}
-                />
-              ))}
-            </>
-          )
-        })()}
-        {curated && (
-          gate.unlocked ? (
-            (() => {
-              const bp = examBlueprint(paper.id)
-              const sectionsLabel = bp ? bp.sections.map((s) => `Section ${s.id}`).join(" → ") : "the official sections"
-              const hours = bp ? `${Math.floor(bp.durationMin / 60)}h${bp.durationMin % 60 ? String(bp.durationMin % 60).padStart(2, "0") : ""}` : ""
-              return (
-                <ModeTile
-                  icon="mock"
-                  title={mockProgress(paper.id).examReady ? `CBE mock — keep it warm · Form ${nextMockForm(mockProgress(paper.id).attempts)}` : `CBE mock ${Math.min(mockProgress(paper.id).attempts + 1, MOCKS_REQUIRED)} of ${MOCKS_REQUIRED} · Form ${nextMockForm(mockProgress(paper.id).attempts)}`}
-                  sub={`The full sitting: ${sectionsLabel} · ${hours} clock, navigator, flag for review — pass line ${MOCK_PASS}%`}
-                  onClick={onMock}
-                  locked={!isPro}
-                  primary={phase.key === "rehearse"}
-                />
-              )
-            })()
-          ) : (
-            <MockGateTile prob={gate.prob} onWeak={onWeak} />
-          )
-        )}
-        {/* BT/MA/FA/LW are 100% objective-test exams — there is no written section
-            to mark, so we hide the Examiner rather than promise it forever. */}
-        {!paper.objectiveOnly && writtenCount > 0 && (
-          <ModeTile
-            icon="examiner"
-            title={`${constructedSectionLabel(paper.id)} studio — CBE`}
-            sub={`Word processor + spreadsheet + exam clock · Charles debriefs your answer · ${writtenCount} questions`}
-            onClick={onExaminer}
-            locked={!isPro}
-          />
-        )}
-      </div>
-      </motion.div>
+        <PracticeHub
+          key="practice-tab"
+          paperId={paper.id}
+          isPro={isPro}
+          onStudyChapter={onStudyChapter}
+          onTestChapter={onTestChapter}
+          onArea={(area) => onStudyTopic(area)}
+          onWeak={onWeak}
+          onSection={onSection}
+          onBankRun={(size) => onBankRun(size as MixedBankSize | undefined)}
+          onMock={onMock}
+          onExaminer={onExaminer}
+          onGenerate={onGenerate}
+          onFlashcards={() => onFlashcards()}
+        />
       )}
 
-      {tab === "progress" && (
-      <motion.div key="progress-b" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-      {/* mock history — score trend against the pass line, then the receipts */}
-      {mocks.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <SectionHead icon="mock" right={<span style={{ fontSize: 12, color: MUTED, textTransform: "none", letterSpacing: 0 }}>best <b style={{ color: TEXT }}>{Math.max(...mocks.map((m) => m.percent))}%</b></span>}>
-            Recent mocks
-          </SectionHead>
-          {mocks.length >= 2 && (
-            <div style={{ ...card({ padding: 16 }), marginBottom: 8 }}>
-              <TrendBars
-                points={[...mocks].reverse().map((m) => ({ date: m.date, percent: m.percent }))}
-                passLine={MOCK_PASS}
-                unit="mock score"
-              />
-            </div>
-          )}
-          <div style={{ display: "grid", gap: 8 }}>
-            {mocks.slice(0, 5).map((m, i) => (
-              <div key={i} style={{ ...card({ padding: "12px 14px" }), display: "flex", alignItems: "center", gap: 12 }}>
-                <Icon name={m.percent >= MOCK_PASS ? "done" : "stats"} size={17} color={m.percent >= MOCK_PASS ? C.green : "#C2740B"} />
-                <span style={{ flex: 1, fontSize: 13.5, color: TEXT }}>{m.date}</span>
-                <span style={{ fontSize: 13, color: MUTED }}>{m.correct}/{m.total}</span>
-                <MeterBar value={m.percent} color={bandColor(m.percent, MOCK_PASS)} target={MOCK_PASS} height={6} style={{ width: 56, flexShrink: 0 }} />
-                <span style={{ fontWeight: 800, fontSize: 14, color: TEXT, width: 44, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{m.percent}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      </motion.div>
-      )}
 
     </motion.div>
   )

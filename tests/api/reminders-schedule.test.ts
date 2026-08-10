@@ -28,12 +28,19 @@ describe("dueSlot — which reminder is due right now", () => {
     expect(dueSlot(ROW, at("16:00"))).toBe("lead")
   })
 
-  it("fires the ten-minute nudge ten minutes before the session", () => {
-    expect(dueSlot(ROW, at("18:50"))).toBe("soon")
+  /*
+   * THE reminder: half an hour ahead, not ten minutes. Ten minutes is not enough
+   * notice to change what you are doing — it arrives, you are mid-something, and
+   * the session is already late. Thirty minutes is the smallest window in which
+   * someone can finish what they are on and be at the desk. The catch-up moved to
+   * +2h for the same reason: it should arrive while the evening is still usable.
+   */
+  it("fires the main nudge thirty minutes before the session", () => {
+    expect(dueSlot(ROW, at("18:30"))).toBe("soon")
   })
 
-  it("fires the catch-up well after the session was due", () => {
-    expect(dueSlot(ROW, at("21:30"))).toBe("catchup")
+  it("fires the catch-up two hours after the session was due", () => {
+    expect(dueSlot(ROW, at("21:00"))).toBe("catchup")
   })
 
   it("stays silent at every other time of day", () => {
@@ -48,22 +55,22 @@ describe("dueSlot — which reminder is due right now", () => {
    * only safe because the sent-date guard below makes delivery exactly-once.
    */
   it("still delivers when a tick is late, within the tolerance window", () => {
-    expect(dueSlot(ROW, at("18:55")), "5 min late").toBe("soon")
-    expect(dueSlot(ROW, at("19:05")), "15 min late").toBe("soon")
-    expect(dueSlot(ROW, at("19:12")), "past the window — the session has started").toBeNull()
+    expect(dueSlot(ROW, at("18:35")), "5 min late").toBe("soon")
+    expect(dueSlot(ROW, at("18:45")), "15 min late").toBe("soon")
+    expect(dueSlot(ROW, at("18:52")), "past the window — too late to be useful notice").toBeNull()
   })
 
   it("never sends the same slot twice on the same local day", () => {
     const already = { ...ROW, sent_soon_date: "2026-08-12" }
-    expect(dueSlot(already, at("18:50"))).toBeNull()
+    expect(dueSlot(already, at("18:30"))).toBeNull()
     // ...and the guard is per-DAY, not permanent: tomorrow it fires again.
-    expect(dueSlot(already, { date: "2026-08-13", minutes: 18 * 60 + 50 })).toBe("soon")
+    expect(dueSlot(already, { date: "2026-08-13", minutes: 18 * 60 + 30 })).toBe("soon")
   })
 
   it("respects a slot the learner switched off, without affecting the others", () => {
     const noLead = { ...ROW, lead_on: false }
     expect(dueSlot(noLead, at("16:00"))).toBeNull()
-    expect(dueSlot(noLead, at("18:50"))).toBe("soon")
+    expect(dueSlot(noLead, at("18:30"))).toBe("soon")
   })
 
   it("honours an exact, non-preset practice time", () => {
@@ -71,8 +78,8 @@ describe("dueSlot — which reminder is due right now", () => {
     // presets could not express 06:40, so reminders would have aimed at 08:00.
     const early = { practice_time: "06:40" }
     expect(dueSlot(early, at("03:40"))).toBe("lead")
-    expect(dueSlot(early, at("06:30"))).toBe("soon")
-    expect(dueSlot(early, at("09:10"))).toBe("catchup")
+    expect(dueSlot(early, at("06:10"))).toBe("soon")
+    expect(dueSlot(early, at("08:40"))).toBe("catchup")
   })
 
   /*
@@ -85,16 +92,16 @@ describe("dueSlot — which reminder is due right now", () => {
   it("skips an offset that would land on a different calendar day", () => {
     const nearMidnightStart = { practice_time: "01:00" }
     expect(dueSlot(nearMidnightStart, at("22:00")), "lead would be yesterday").toBeNull()
-    expect(dueSlot(nearMidnightStart, at("00:50")), "soon still fits").toBe("soon")
+    expect(dueSlot(nearMidnightStart, at("00:30")), "soon still fits").toBe("soon")
 
     const lateStart = { practice_time: "23:00" }
     expect(dueSlot(lateStart, at("20:00")), "lead fits").toBe("lead")
-    expect(dueSlot(lateStart, at("01:30")), "catchup would be tomorrow").toBeNull()
+    expect(dueSlot(lateStart, at("01:00")), "catchup would be tomorrow").toBeNull()
   })
 
   it("refuses to guess when the stored time is malformed", () => {
     for (const bad of ["", "nonsense", "25:00", "19:60", "7pm"]) {
-      expect(dueSlot({ practice_time: bad }, at("18:50")), `"${bad}"`).toBeNull()
+      expect(dueSlot({ practice_time: bad }, at("18:30")), `"${bad}"`).toBeNull()
     }
   })
 

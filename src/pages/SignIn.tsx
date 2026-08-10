@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { safeInternalPath } from "@/lib/navigation"
+import { resolveAuthLanding } from "@/lib/affiliate"
 import {
   AuthSplitLayout,
   BackToHome,
@@ -308,7 +309,9 @@ export default function SignIn() {
     }
     setAttempts(0)
     const requested = new URLSearchParams(location.search).get("next")
-    navigate(safeInternalPath(requested))
+    // An approved partner signing in with their registered address lands on their
+    // own dashboard, not the student app. An explicit ?next= still wins.
+    navigate(safeInternalPath(await resolveAuthLanding(requested)))
   }
 
   const handleGoogle = async () => {
@@ -329,7 +332,7 @@ export default function SignIn() {
      */
     setGoogleLoading(false)
     const requested = new URLSearchParams(location.search).get("next")
-    navigate(safeInternalPath(requested))
+    navigate(safeInternalPath(await resolveAuthLanding(requested)))
   }
 
   return (

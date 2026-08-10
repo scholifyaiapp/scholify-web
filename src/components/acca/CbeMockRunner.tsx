@@ -172,7 +172,11 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
   function noteTiming(it: FlatItem | undefined) {
     if (!it || it.item.kind === "task" || timed.current.has(it.key)) return
     timed.current.add(it.key)
-    recordAnswerTiming(paperId, (performance.now() - shownAt.current) / 1000)
+    // Marks and the REAL section come from the composed exam, so the per-section
+    // pace read (paceBySection) is measured rather than inferred here — this is
+    // the one surface that knows the section for certain.
+    const q = it.item.kind === "ot" ? it.item.q : it.item.kind === "caseq" ? it.item.q : undefined
+    recordAnswerTiming(paperId, (performance.now() - shownAt.current) / 1000, q?.marks ?? 2, it.section.id)
   }
 
   function answered(f: FlatItem): boolean {

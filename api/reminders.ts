@@ -44,14 +44,25 @@ function admin() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-/* ── The three reminders, as offsets from the learner's practice time ──────
+/* ── The reminders, as offsets from the learner's practice time ────────────
  *
- * One clock (practice_time, set at onboarding 5/8) drives all three, so they
- * cannot drift apart or contradict each other:
+ * One clock (practice_time, set at onboarding) drives all of them, so they cannot
+ * drift apart or contradict each other:
  *
- *   lead     −180 min   "your session is at 19:00"       — plan the day around it
- *   soon      −10 min   "10 minutes"                     — the one that starts sessions
- *   catchup  +150 min   "you still have time today"      — only if they skipped
+ *   soon      −30 min   "you start in half an hour"      — THE reminder
+ *   catchup  +120 min   "two hours on, still open"       — only if they skipped
+ *   lead     −180 min   "your session is at 19:00"       — opt-in extra
+ *
+ * TWO BY DEFAULT, deliberately. The founder's spec is two reminders a day: one
+ * half an hour before the session so there is time to sit down for it, and one
+ * two hours after the start time if the day is still not done. Three unrequested
+ * emails a day from the same sender is how a domain earns a spam reputation, so
+ * `lead` is now off unless a learner asks for it in Settings (see handleSync).
+ *
+ * −30 rather than −10 because ten minutes is not enough notice to change what you
+ * are doing: it arrives, you are mid-something, and the session is already late.
+ * Thirty minutes is the smallest window in which someone can actually finish what
+ * they are on and be at the desk.
  *
  * WINDOW. The sender is called every ~5 minutes, so it fires a slot when the
  * learner's local clock is between the target and target + WINDOW. The window is
@@ -61,8 +72,8 @@ function admin() {
  */
 const SLOTS = [
   { key: "lead", offset: -180, onCol: "lead_on", dateCol: "sent_lead_date" },
-  { key: "soon", offset: -10, onCol: "soon_on", dateCol: "sent_soon_date" },
-  { key: "catchup", offset: 150, onCol: "catchup_on", dateCol: "sent_catchup_date" },
+  { key: "soon", offset: -30, onCol: "soon_on", dateCol: "sent_soon_date" },
+  { key: "catchup", offset: 120, onCol: "catchup_on", dateCol: "sent_catchup_date" },
 ] as const
 
 type SlotKey = (typeof SLOTS)[number]["key"]
@@ -177,7 +188,227 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const action = String(req.query.action || "").toLowerCase()
   if (action === "send") return handleSend(req, res)
   if (action === "unsubscribe") return handleUnsubscribe(req, res)
+  if (action === "complete") return handleComplete(req, res)
   return handleSync(req, res)
+}
+
+/* ── The congratulation email ──────────────────────────────────────
+ *
+ * Fired by the app the moment the learner's LAST block of the day is finished —
+ * not by the cron, because only the client knows the day is complete and knows
+ * what tomorrow holds. It is the one email in the system that arrives because
+ * something went RIGHT, which is why it carries the streak and a link straight to
+ * tomorrow's start rather than a generic "open the app".
+ *
+ * Exactly-once is enforced server-side on `sent_done_date` (migration 0028), not
+ * by the client's own localStorage flag: a learner with two tabs open, or one who
+ * clears storage, must not be able to trigger a second send.
+ */
+async function handleComplete(req: VercelRequest, res: VercelResponse): Promise<void> {
+  if (req.method !== "POST") {
+    res.status(405).json({ ok: false, reason: "post_only" })
+    return
+  }
+  const db = admin()
+  const resendKey = process.env.RESEND_API_KEY
+  const secret = process.env.CRON_SECRET
+  if (!db || !resendKey) {
+    res.status(200).json({ ok: true, disabled: true })
+    return
+  }
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!token) {
+    res.status(401).json({ ok: false, reason: "auth_required" })
+    return
+  }
+  try {
+    const { data: userData, error } = await db.auth.getUser(token)
+    if (error || !userData.user?.email) {
+      res.status(401).json({ ok: false, reason: "invalid_session" })
+      return
+    }
+    const user = userData.user
+    const to = String(user.email)
+    const body = (req.body || {}) as Record<string, unknown>
+    const paperId = String(body.paperId || "").slice(0, 8).toUpperCase()
+    const streak = Math.max(0, Math.min(3650, Number(body.streak) || 0))
+    const timezone = String(body.timezone || "UTC").slice(0, 64)
+    const nextTime = /^\d{2}:\d{2}$/.test(String(body.nextStartTime || "")) ? String(body.nextStartTime) : null
+    const nextTopic = String(body.nextTopic || "").slice(0, 160)
+    const minutes = Math.max(0, Math.min(600, Number(body.minutes) || 0))
+    const questions = Math.max(0, Math.min(999, Number(body.questions) || 0))
+
+    const local = localNow(timezone, new Date())
+    const localDate = local?.date ?? new Date().toISOString().slice(0, 10)
+
+    /*
+     * Claim the day before sending, same discipline as the reminder slots: a
+     * conditional update is the concurrency guard, so two tabs finishing the day
+     * within the same second cannot both send. A row that does not exist yet
+     * (learner never opened Settings) is created opted-out — we are not
+     * subscribing anyone to the daily reminders as a side effect of finishing a
+     * day, only recording the send.
+     */
+    const { data: existing } = await db
+      .from(TABLE)
+      .select("user_id, sent_done_date, opt_in")
+      .eq("user_id", user.id)
+      .maybeSingle()
+
+    if (!existing) {
+      await db.from(TABLE).upsert(
+        { user_id: user.id, email: to, opt_in: false, timezone, sent_done_date: localDate, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      )
+    } else {
+      if (existing.sent_done_date === localDate) {
+        res.status(200).json({ ok: true, alreadySent: true })
+        return
+      }
+      const { data: claimed, error: claimErr } = await db
+        .from(TABLE)
+        .update({ sent_done_date: localDate })
+        .eq("user_id", user.id)
+        .or(`sent_done_date.is.null,sent_done_date.neq.${localDate}`)
+        .select("user_id")
+      if (claimErr) {
+        // Column missing → migration 0028 not applied. Don't block the learner;
+        // just skip the mail rather than risking a duplicate on every reload.
+        console.warn("reminders complete:", claimErr.message)
+        res.status(200).json({ ok: true, disabled: true })
+        return
+      }
+      if (!claimed || claimed.length === 0) {
+        res.status(200).json({ ok: true, alreadySent: true })
+        return
+      }
+    }
+
+    const unsubUrl = secret
+      ? `${SITE}/api/reminders?action=unsubscribe&u=${encodeURIComponent(user.id)}&t=${unsubToken(user.id, secret)}`
+      : `${SITE}/settings`
+    const ok = await sendCompletionEmail(resendKey, process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>", to, unsubUrl, {
+      paperId,
+      streak,
+      nextTime,
+      nextTopic,
+      minutes,
+      questions,
+    })
+    if (!ok) await db.from(TABLE).update({ sent_done_date: null }).eq("user_id", user.id)
+    res.status(200).json({ ok })
+  } catch (err) {
+    console.error("reminders complete:", err)
+    res.status(200).json({ ok: false })
+  }
+}
+
+interface CompletionFacts {
+  paperId: string
+  streak: number
+  nextTime: string | null
+  nextTopic: string
+  minutes: number
+  questions: number
+}
+
+/**
+ * The streak line. It escalates, because "day 2" and "day 30" are not the same
+ * achievement and pretending otherwise is how streak mail becomes wallpaper.
+ */
+function streakLine(streak: number): { badge: string; line: string } {
+  if (streak <= 1) return { badge: "Day 1", line: "Day one is on the board. The second day is the one that decides whether this becomes a habit, and it is already scheduled." }
+  if (streak === 2) return { badge: "2-day streak", line: "Two days back to back. This is the point most people never reach — the plan now has enough of your data to start tuning itself around you." }
+  if (streak < 7) return { badge: `${streak}-day streak`, line: `${streak} days in a row. Your readiness score is now moving on evidence rather than an estimate.` }
+  if (streak === 7) return { badge: "One week", line: "A full week without a gap. A week of consistent daily work is worth more than a weekend of cramming, and the numbers in your plan now reflect that." }
+  if (streak < 30) return { badge: `${streak}-day streak`, line: `${streak} consecutive days. At this rate the syllabus finishes ahead of your exam date, which is exactly where you want the slack.` }
+  return { badge: `${streak}-day streak`, line: `${streak} days. This is the discipline that passes ACCA papers — nothing about your exam is in doubt except the date.` }
+}
+
+async function sendCompletionEmail(apiKey: string, from: string, to: string, unsubUrl: string, facts: CompletionFacts): Promise<boolean> {
+  const s = streakLine(facts.streak)
+  const paper = facts.paperId || "your paper"
+  const avatar = `${SITE}/charles/email-avatar.png`
+  const logo = `${SITE}/icon-192.png`
+  const subject = facts.streak >= 2 ? `${paper} done — ${s.badge}` : `${paper} done for today`
+  const heading = "Today's mission is complete"
+  const did = [
+    facts.minutes > 0 ? `${facts.minutes} minutes` : null,
+    facts.questions > 0 ? `${facts.questions} questions` : null,
+  ].filter(Boolean).join(" · ")
+
+  const tomorrow = facts.nextTime
+    ? `Tomorrow opens at <strong>${facts.nextTime}</strong>${facts.nextTopic ? ` with ${escapeHtmlLite(facts.nextTopic)}` : ""}. It is locked until then on purpose — working ahead tonight is how a daily plan turns into a backlog.`
+    : `Tomorrow's plan is already built and waiting${facts.nextTopic ? `: ${escapeHtmlLite(facts.nextTopic)}` : ""}.`
+
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
+        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
+        <tr><td style="padding:28px 32px 18px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td valign="middle"><img src="${avatar}" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;"></td>
+            <td align="right" valign="middle"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#0E9F6E;text-transform:uppercase;">Charles &middot; ${escapeHtmlLite(paper)} &middot; ${escapeHtmlLite(s.badge)}</td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${heading}</td></tr>
+        <tr><td style="padding:14px 32px 4px;font-size:15px;line-height:24px;color:#5F5753;">${escapeHtmlLite(s.line)}</td></tr>
+        ${did ? `<tr><td style="padding:10px 32px 4px;"><div style="display:inline-block;background:#F2FBF6;border:1px solid #CFEEDF;border-radius:12px;padding:11px 15px;font-size:13px;font-weight:700;color:#0B7A55;">Today: ${escapeHtmlLite(did)}</div></td></tr>` : ""}
+        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${tomorrow}</td></tr>
+        <tr><td style="padding:0 32px 22px;font-size:14px;line-height:22px;color:#8F8C85;">Now stop. Rest is part of the plan, not a reward for finishing it.</td></tr>
+        <tr><td style="padding:0 32px 30px;"><a href="${SITE}/study?tab=tomorrow" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">See tomorrow's plan &rarr;</a></td></tr>
+        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you completed a day of your ${escapeHtmlLite(paper)} plan.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change what you get in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+  </body></html>`
+
+  const text = [
+    heading,
+    "",
+    s.line,
+    did ? `Today: ${did}` : "",
+    "",
+    facts.nextTime ? `Tomorrow opens at ${facts.nextTime}${facts.nextTopic ? ` with ${facts.nextTopic}` : ""}.` : "Tomorrow's plan is already built.",
+    "Now stop. Rest is part of the plan.",
+    "",
+    `See tomorrow's plan: ${SITE}/study?tab=tomorrow`,
+    "",
+    "— Charles · Your Scholify race engineer",
+    `Unsubscribe: ${unsubUrl}`,
+  ].filter(Boolean).join("\n")
+
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        html,
+        text,
+        headers: {
+          "List-Unsubscribe": `<${unsubUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+      }),
+    })
+    return r.ok
+  } catch {
+    return false
+  }
+}
+
+/** Minimal HTML escape for the few learner-supplied strings in the mail. */
+function escapeHtmlLite(value: string): string {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
 }
 
 /**
@@ -275,7 +506,10 @@ async function handleSync(req: VercelRequest, res: VercelResponse): Promise<void
       practice_time: practice,
       // Kept in step so anything still reading the legacy column agrees.
       reminder_time: practice,
-      lead_on: slots.lead !== false,
+      // Two reminders by default (soon + catchup). The 3-hour heads-up is
+      // opt-IN — `=== true`, not `!== false` — so a client that omits the slots
+      // object gets the two the product promises and not a third.
+      lead_on: slots.lead === true,
       soon_on: slots.soon !== false,
       catchup_on: slots.catchup !== false,
       last_session_date: body.lastSessionDate ? String(body.lastSessionDate).slice(0, 10) : null,
@@ -474,20 +708,20 @@ function copyFor(slot: SlotKey, at: string): { subject: string; kicker: string; 
   }
   if (slot === "soon") {
     return {
-      subject: time ? `Starting at ${time} — 10 minutes` : "Your session starts in 10 minutes",
-      kicker: "Starting shortly",
-      heading: "Ten minutes until your session",
+      subject: time ? `You start at ${time} — half an hour` : "Your session starts in 30 minutes",
+      kicker: "Starting in 30 minutes",
+      heading: time ? `Half an hour until ${time}` : "Half an hour until your session",
       body:
-        "Your topic, practice set and flashcards are loaded and ready. Opening the session now is the whole task — Charles takes it from there.",
-      cta: "Open my session",
+        "Enough time to finish what you are on and be at the desk. Today's chapter, five quizzes, your practice set, flashcards and the technical article are already selected — opening the session is the whole task, and Charles takes it from there.",
+      cta: "Open today's session",
     }
   }
   return {
-    subject: "There is still time for today's session",
-    heading: "There is still time today",
-    kicker: "End of day",
+    subject: "Today's session is still open",
+    heading: "Two hours on, and today is still open",
+    kicker: "Still open",
     body:
-      "Today's session has not been opened yet. A shortened version still counts: covering even one topic keeps your plan on its schedule and your streak intact, and the plan will absorb the difference tomorrow.",
+      "Your start time passed two hours ago and today's plan has not been opened. A shortened version still counts: the chapter alone keeps your plan on its schedule and your streak intact, and tomorrow absorbs the difference. Nothing is piling up.",
     cta: "Start a shorter session",
   }
 }

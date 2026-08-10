@@ -173,6 +173,104 @@ export async function fetchAffiliateDashboard(): Promise<AffiliateDashboard> {
   }
 }
 
+/* ── Approved partners land on their own dashboard ────────────────
+ *
+ * ── The problem ───────────────────────────────────────────────────
+ * A partner's application is approved, they get the approval email, they sign in
+ * with the address they applied with — and land on /dashboard, the STUDENT app.
+ * Nothing in that screen mentions the partner program. Their tracked link,
+ * clicks, commissions and payout status all live at /partners, which they have to
+ * know exists and navigate to by hand every single time. For someone whose whole
+ * relationship with Scholify is the partner program, the product opens on the
+ * wrong page.
+ *
+ * ── The fix ───────────────────────────────────────────────────────
+ * Post-auth landing asks one question first: is this verified address an ACTIVE
+ * partner? The `dashboard` action already answers it, and already adopts an
+ * application that was submitted anonymously before the account existed (matching
+ * on the verified email), so a partner who applied without signing up is linked
+ * on their first sign-in and routed correctly on the same trip.
+ *
+ * An explicit `?next=` always wins — a partner following a deep link into the
+ * study app must still get there. The result is cached per user id so the check
+ * costs one request per session, and a partner whose status is later revoked
+ * stops being routed as soon as the cache is refreshed on their next sign-in.
+ */
+
+const PARTNER_LANDING_KEY = "scholify-partner-active"
+
+interface PartnerLandingCache {
+  userId: string
+  active: boolean
+  at: number
+}
+
+function readLandingCache(): PartnerLandingCache | null {
+  try {
+    const raw = window.localStorage.getItem(PARTNER_LANDING_KEY)
+    const parsed = raw ? (JSON.parse(raw) as PartnerLandingCache) : null
+    if (parsed && typeof parsed.userId === "string" && typeof parsed.active === "boolean") return parsed
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writeLandingCache(userId: string, active: boolean): void {
+  try {
+    window.localStorage.setItem(PARTNER_LANDING_KEY, JSON.stringify({ userId, active, at: Date.now() } satisfies PartnerLandingCache))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Forget the cached partner flag — call on sign-out so the next account re-checks. */
+export function clearPartnerLandingCache(): void {
+  try {
+    window.localStorage.removeItem(PARTNER_LANDING_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * True when the signed-in account is an APPROVED partner.
+ *
+ * `pending` and `rejected` deliberately return false: a pending applicant sent to
+ * the partner dashboard would see an empty earnings screen and read it as a
+ * broken approval, which is worse than landing in the study app and checking
+ * status from the partner page when they choose to.
+ */
+export async function isActivePartner(): Promise<boolean> {
+  if (!isSupabaseConfigured) return false
+  try {
+    const { data } = await supabase.auth.getSession()
+    const userId = data.session?.user?.id
+    if (!userId) return false
+    const cached = readLandingCache()
+    // A fresh cache for THIS user answers immediately; the check itself is cheap
+    // but it is on the critical path of the first paint after sign-in.
+    if (cached && cached.userId === userId && Date.now() - cached.at < 12 * 60 * 60 * 1000) return cached.active
+    const dash = await fetchAffiliateDashboard()
+    const active = dash.affiliate?.status === "active"
+    writeLandingCache(userId, active)
+    return active
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Where this account should land after signing in.
+ *
+ * `requested` is the `?next=` the guard captured when it bounced them to sign-in.
+ * It wins outright — the partner check only decides the DEFAULT landing.
+ */
+export async function resolveAuthLanding(requested: string | null, fallback = "/dashboard"): Promise<string> {
+  if (requested) return requested
+  return (await isActivePartner()) ? "/partners" : fallback
+}
+
 /* ── Admin (Scholify staff only — server verifies the JWT email) ── */
 
 export interface AdminAffiliate {

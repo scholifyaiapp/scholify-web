@@ -106,6 +106,36 @@ const KEY_PACE = "scholify-acca-pace"
 export const QUESTION_BUDGET_SEC = 90
 const RUSHED_SEC = 30
 
+/* ── Per-SECTION pace ─────────────────────────────────────────────
+ *
+ * A single average seconds-per-question is close to useless on an ACCA paper,
+ * because the sections are not the same exam. FR's Section A is 2-mark objective
+ * tests at ~1.8 min each; its Section C is a 20-mark constructed answer at ~36
+ * min. Averaging them produces a number that describes no question the learner
+ * will ever meet, and it hides the failure mode that actually loses papers:
+ * spending Section A's budget at Section C's pace and running out of clock.
+ *
+ * So timing is recorded per section, with the official minutes-per-mark budget as
+ * the reference. ACCA prices every paper at 1.8 minutes per mark, so a section's
+ * per-question budget is (marks per question × 1.8), which is where SECTION_BUDGET
+ * comes from rather than from a flat 90 seconds.
+ */
+export type ExamSectionId = "A" | "B" | "C"
+
+/** ACCA's own pricing: 1.8 minutes of exam time per mark. */
+export const SECONDS_PER_MARK = 108
+
+interface SectionPace {
+  count: number
+  totalSec: number
+  /** Answers inside the mark-based budget. */
+  inBudget: number
+  /** Answers that ran over it. */
+  over: number
+  /** Marks attempted, so the budget can be per-mark rather than per-question. */
+  marks: number
+}
+
 interface PaceStore {
   [paperId: string]: {
     count: number
@@ -115,11 +145,28 @@ interface PaceStore {
     overtime: number
     /** yyyy-MM-dd → study seconds that day (all modes). */
     daily: Record<string, number>
+    /** Per official exam section — see the note above. */
+    sections?: Partial<Record<ExamSectionId, SectionPace>>
   }
 }
 
-export function recordAnswerTiming(paperId: string, seconds: number): void {
-  const sec = Math.max(1, Math.min(600, Math.round(seconds)))
+/**
+ * Which official section a question belongs to, from its marks.
+ *
+ * The CBE composer knows the section explicitly and passes it; general practice
+ * does not, so it is inferred: ACCA objective tests are 1–2 marks (Section A),
+ * multi-task/case questions are 4–15 (Section B), and anything larger is a
+ * constructed response (Section C). The inference is only used for the pace
+ * breakdown, never for grading, so a mis-bucketed edge case costs nothing.
+ */
+export function sectionForMarks(marks: number): ExamSectionId {
+  if (marks <= 2) return "A"
+  if (marks <= 15) return "B"
+  return "C"
+}
+
+export function recordAnswerTiming(paperId: string, seconds: number, marks = 2, section?: ExamSectionId): void {
+  const sec = Math.max(1, Math.min(3600, Math.round(seconds)))
   const store = readStore<PaceStore>(KEY_PACE, {})
   const p = store[paperId] ?? { count: 0, totalSec: 0, rushed: 0, onpace: 0, overtime: 0, daily: {} }
   p.count += 1
@@ -131,8 +178,61 @@ export function recordAnswerTiming(paperId: string, seconds: number): void {
   p.daily[todayStr()] = (p.daily[todayStr()] ?? 0) + sec
   const keys = Object.keys(p.daily).sort()
   for (const k of keys.slice(0, Math.max(0, keys.length - 60))) delete p.daily[k]
+
+  // Per-section
+  const m = Math.max(1, Math.min(50, Math.round(marks)))
+  const id = section ?? sectionForMarks(m)
+  p.sections = p.sections ?? {}
+  const sp = p.sections[id] ?? { count: 0, totalSec: 0, inBudget: 0, over: 0, marks: 0 }
+  sp.count += 1
+  sp.totalSec += sec
+  sp.marks += m
+  if (sec <= m * SECONDS_PER_MARK) sp.inBudget += 1
+  else sp.over += 1
+  p.sections[id] = sp
+
   store[paperId] = p
   writeStore(KEY_PACE, store)
+}
+
+export interface SectionPaceRead {
+  section: ExamSectionId
+  count: number
+  /** Average seconds per question in this section. */
+  avgSec: number
+  /** Average seconds per MARK — the number comparable across sections. */
+  secPerMark: number
+  /** The exam's own allowance per mark. */
+  budgetPerMark: number
+  /** Share of answers inside the budget, 0–1. */
+  inBudgetShare: number
+  /** Positive = slower than the exam allows. */
+  deltaPerMark: number
+}
+
+/**
+ * Seconds per question in each official section, against the exam's own budget.
+ * Sections with no timed answers yet are omitted rather than reported as zero.
+ */
+export function paceBySection(paperId: string): SectionPaceRead[] {
+  const p = readStore<PaceStore>(KEY_PACE, {})[paperId]
+  if (!p?.sections) return []
+  const out: SectionPaceRead[] = []
+  for (const id of ["A", "B", "C"] as ExamSectionId[]) {
+    const sp = p.sections[id]
+    if (!sp || sp.count === 0) continue
+    const secPerMark = sp.marks > 0 ? sp.totalSec / sp.marks : sp.totalSec / sp.count
+    out.push({
+      section: id,
+      count: sp.count,
+      avgSec: Math.round(sp.totalSec / sp.count),
+      secPerMark: Math.round(secPerMark),
+      budgetPerMark: SECONDS_PER_MARK,
+      inBudgetShare: sp.count > 0 ? sp.inBudget / sp.count : 0,
+      deltaPerMark: Math.round(secPerMark - SECONDS_PER_MARK),
+    })
+  }
+  return out
 }
 
 export interface Pace {

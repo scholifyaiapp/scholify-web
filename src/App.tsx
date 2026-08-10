@@ -3,7 +3,7 @@ import { Suspense, lazy, useEffect, type ComponentType } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
 import { useAuth } from "@/lib/auth"
-import { captureAffiliateRef } from "@/lib/affiliate"
+import { captureAffiliateRef, resolveAuthLanding } from "@/lib/affiliate"
 import { ownsAuthHash } from "@/lib/navigation"
 import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
 
@@ -138,7 +138,10 @@ function OAuthReturnHandler() {
     }
 
     if (user) {
-      navigate("/dashboard", { replace: true })
+      // Approved partners land on their own dashboard (see resolveAuthLanding).
+      // Optimistic /dashboard first would flash the student app, so we wait for
+      // the one cached check rather than navigating twice.
+      void resolveAuthLanding(null).then((to) => navigate(to, { replace: true }))
     } else if (looksLikeAuthHash) {
       navigate("/auth/callback", { replace: true })
     }

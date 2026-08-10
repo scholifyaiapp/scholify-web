@@ -204,6 +204,34 @@ export interface SessionOptions {
   area?: string
   /** Prioritise questions from the learner's weakest areas. */
   weakFirst?: boolean
+  /**
+   * Question ids to keep OUT of this session — the no-repeat ledger
+   * (acca-no-repeat) and the day's already-claimed ids.
+   *
+   * A fresh `seed` reshuffles the same pool; it does not exclude anything, which
+   * is why every session used to be able to re-serve questions the learner
+   * answered an hour earlier. Repetition inflates accuracy (you remember the
+   * answer, not the rule) and therefore inflates the readiness score, so this is
+   * a correctness concern rather than a nicety.
+   *
+   * The exclusion is a PREFERENCE, not a hard filter: if honouring it would leave
+   * fewer than `count` questions, the excluded ones are appended back at the end
+   * rather than returning a short session. A learner who has worked through a
+   * small area's whole bank still gets a full set — they simply see the freshest
+   * material first.
+   */
+  excludeIds?: Iterable<string>
+}
+
+/** Split a pool into (never-served, already-served) preserving order. */
+function partitionByExclusion<T extends { id: string }>(pool: T[], exclude?: Iterable<string>): { fresh: T[]; seen: T[] } {
+  if (!exclude) return { fresh: pool, seen: [] }
+  const blocked = exclude instanceof Set ? exclude : new Set(exclude)
+  if (blocked.size === 0) return { fresh: pool, seen: [] }
+  const fresh: T[] = []
+  const seen: T[] = []
+  for (const item of pool) (blocked.has(item.id) ? seen : fresh).push(item)
+  return { fresh, seen }
 }
 
 /** Deterministic-ish shuffle seeded by a rotating counter (no Math.random ban issues in tests). */
@@ -232,18 +260,21 @@ export function buildSession(
   if (opts.area) pool = pool.filter((q) => q.area === opts.area)
   if (pool.length === 0) return []
 
+  // Freshest material first, already-served material only as backfill.
+  const { fresh, seen } = partitionByExclusion(pool, opts.excludeIds)
+
   if (opts.weakFirst) {
     const stats = getPaperStats(paperId)
     const areaAcc = new Map(stats.areas.map((a) => [a.code, a.accuracy]))
     // Shuffle FIRST so the seed decides which questions surface from each area,
     // then stable-sort by area accuracy so the weakest areas still lead. Sorting
     // the raw pool alone is seed-blind: every session would be byte-identical.
-    return shuffle(pool, seed)
-      .sort((a, b) => (areaAcc.get(a.area) ?? 0) - (areaAcc.get(b.area) ?? 0))
-      .slice(0, count)
+    const byWeakness = (list: AccaQuestion[]) =>
+      shuffle(list, seed).sort((a, b) => (areaAcc.get(a.area) ?? 0) - (areaAcc.get(b.area) ?? 0))
+    return [...byWeakness(fresh), ...byWeakness(seen)].slice(0, count)
   }
 
-  return shuffle(pool, seed).slice(0, count)
+  return [...shuffle(fresh, seed), ...shuffle(seen, seed)].slice(0, count)
 }
 
 /**
@@ -256,9 +287,20 @@ export function buildSession(
  *  - unseen > previously-wrong > already-correct (reinforce, don't re-quiz mastery).
  * A small seeded jitter keeps repeat sessions from being identical.
  */
-export function buildAdaptiveSession(paperId: string, count = 8, seed = Date.now()): AccaQuestion[] {
-  const pool = getQuestions(paperId)
-  if (pool.length === 0) return []
+export function buildAdaptiveSession(
+  paperId: string,
+  count = 8,
+  seed = Date.now(),
+  excludeIds?: Iterable<string>,
+): AccaQuestion[] {
+  const all = getQuestions(paperId)
+  if (all.length === 0) return []
+  // Already-served questions drop to the back of the ranking rather than out of
+  // it: the adaptive engine's job is to pick the most USEFUL question, and on a
+  // small area whose bank is exhausted the most useful question is a repeat.
+  const { fresh, seen } = partitionByExclusion(all, excludeIds)
+  const servedSet = new Set(seen.map((q) => q.id))
+  const pool = [...fresh, ...seen]
 
   const stats = getPaperStats(paperId)
   const areaInfo = new Map(stats.areas.map((a) => [a.code, { acc: a.accuracy, seen: a.seen }]))
@@ -276,7 +318,11 @@ export function buildAdaptiveSession(paperId: string, count = 8, seed = Date.now
     const diffMatch = q.difficulty === targetDifficulty(a.acc) ? 1 : 0.5
     const qs = qStats[q.id]
     const familiarity = !qs || qs.attempts === 0 ? 1 : qs.correct < qs.attempts ? 0.8 : 0.25
-    return areaWeakness * 2 + diffMatch + familiarity
+    // Served this cycle → a real penalty, big enough that any unserved question
+    // of comparable usefulness outranks it, small enough that a drained pool
+    // still fills the session.
+    const staleness = servedSet.has(q.id) ? 2.5 : 0
+    return areaWeakness * 2 + diffMatch + familiarity - staleness
   }
 
   let s = seed || 1

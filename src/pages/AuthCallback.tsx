@@ -4,7 +4,7 @@ import { motion } from "motion/react"
 import { supabase } from "@/lib/supabase"
 import { Spinner } from "@/components/auth/auth-ui"
 import { Icon } from "@/components/acca/ui"
-import { claimCapturedAffiliate } from "@/lib/affiliate"
+import { claimCapturedAffiliate, resolveAuthLanding } from "@/lib/affiliate"
 import { identifyUser, trackEvent } from "@/lib/analytics"
 import { signInPath } from "@/lib/launch"
 
@@ -45,7 +45,9 @@ export default function AuthCallback() {
           trackEvent("signup_completed", { method: "google" })
         }
         await claimCapturedAffiliate()
-        navigate("/dashboard", { replace: true })
+        // An approved partner returning through OAuth lands on their partner
+        // dashboard rather than the student app — same rule as password sign-in.
+        navigate(await resolveAuthLanding(null), { replace: true })
         return
       }
       if (++tries > 24) {

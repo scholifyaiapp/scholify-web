@@ -13,6 +13,7 @@ import { canStartTrial } from "./entitlement"
 import { isAccaOnboarded } from "./acca-profile"
 import { identifyUser, trackEvent } from "@/lib/analytics"
 import { hydrateAccountSetup, persistAccountSetup, releaseAccountSetup } from "@/lib/account-state"
+import { clearPartnerLandingCache } from "@/lib/affiliate"
 import { markAppRetention } from "@/lib/retention"
 
 /*
@@ -343,6 +344,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    // Drop the cached partner flag: it is keyed to a user id, and leaving it
+    // behind would route the NEXT account signing in on this browser by the
+    // previous person's partner status until the cache expired.
+    clearPartnerLandingCache()
     if (!isSupabaseConfigured) {
       writeDemoUser(null)
       setUser(null)
