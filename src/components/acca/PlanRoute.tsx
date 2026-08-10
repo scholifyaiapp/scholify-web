@@ -2,7 +2,8 @@ import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { useNavigate } from "react-router-dom"
 import { Icon, Card, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
-import { projectPlan, shieldState, type SchedAction } from "@/lib/acca-schedule"
+import { shieldState } from "@/lib/acca-schedule"
+import { projectTopicPlan, type PlannedDay } from "@/lib/acca-topic-plan"
 import { getPlan, daysUntilExam, daysSinceStart } from "@/lib/acca-plan"
 import { getPaperStats } from "@/lib/acca"
 
@@ -16,12 +17,15 @@ import { getPaperStats } from "@/lib/acca"
 
 const EASE = [0.16, 1, 0.3, 1] as const
 
-const KIND_ICON: Record<SchedAction, IconName> = {
-  study: "study", essentials: "mission", practice: "practice", weak: "weak" as IconName, flashcards: "flashcards" as IconName,
-  bank: "practice", mock: "mock" as IconName, diagnostic: "diagnostic",
+/* The blocks a chapter-level day is made of — study the topic, then the work
+   that belongs to it. Same vocabulary the Today screen uses. */
+const BLOCK_ICON: Record<PlannedDay["blocks"][number]["kind"], IconName> = {
+  study: "learn", quiz: "check", practice: "practice", flashcards: "flashcards",
+  article: "notes", mock: "mock", revise: "loop", bank: "practice",
 }
-const KIND_LABEL: Record<SchedAction, string> = {
-  study: "Study", essentials: "Quizzes", practice: "Practise", weak: "Drill", flashcards: "Cards", bank: "Bank 50", mock: "Mock", diagnostic: "Diagnostic",
+const BLOCK_LABEL: Record<PlannedDay["blocks"][number]["kind"], string> = {
+  study: "Study topic", quiz: "Quizzes", practice: "Practise", flashcards: "Cards",
+  article: "Article", mock: "Mock", revise: "Revise", bank: "Bank run",
 }
 const PHASE_TINT: Record<string, string> = {
   learn: C.brand, strengthen: C.amber, revise: "#7C6BD6", rehearse: C.green,
@@ -31,7 +35,26 @@ export function PlanRoute({ paperId }: { paperId: string }) {
   const navigate = useNavigate()
   const days = daysUntilExam(paperId)
   const plan = getPlan(paperId)
-  const route = useMemo(() => projectPlan(paperId, 14), [paperId])
+  /*
+   * ── THE ROUTE SHOWS THE DAILY TOPIC, NOT THE WHOLE AREA ──
+   *
+   * This strip used projectPlan(), which plans at AREA level: every Learn day
+   * read "Study D · Financial instruments" — a whole syllabus area, which on a
+   * real paper is many chapters and many days of work. Meanwhile the day the
+   * learner actually gets is built by composeToday(), which assigns ONE
+   * chapter and draws that day's quizzes and technical article from it.
+   *
+   * So the plan on the dashboard was not the plan they were living. That is the
+   * same class of mismatch shapeDay() was introduced to end — a preview sized
+   * by different rules from the real day — and it is the more damaging half,
+   * because this is the screen that makes the plan feel credible.
+   *
+   * projectTopicPlan() is the chapter-level planner that already backs the week
+   * view in PlanBoard: it queues every unread chapter and spreads them one per
+   * day across the days that remain, respecting rest days. Same source, so the
+   * route, the week and today can no longer disagree.
+   */
+  const route = useMemo(() => projectTopicPlan(paperId, 14), [paperId])
   const shield = shieldState(paperId)
   const reduced = useReducedMotion()
   const stats = getPaperStats(paperId)
@@ -187,11 +210,35 @@ export function PlanRoute({ paperId }: { paperId: string }) {
               </span>
               <span style={{ width: 7, height: 7, borderRadius: 99, background: PHASE_TINT[d.phase] ?? C.brand }} title={d.phaseLabel} />
             </div>
+
+            {/* THE DAY'S TOPIC — the one thing this card exists to say. A learner
+                scanning the route wants to know what they are studying on
+                Thursday, not that Thursday contains "Study". */}
+            {d.chapter ? (
+              <div style={{ marginBottom: 7 }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.06em", color: C.brand }}>
+                  {d.chapter.area}
+                  {d.chapter.number ? ` · CH ${d.chapter.number}` : ""}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11.5, fontWeight: 750, color: C.text, lineHeight: 1.3, marginTop: 2,
+                    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                  }}
+                  title={d.chapter.title}
+                >
+                  {d.chapter.title}
+                </div>
+              </div>
+            ) : d.isRest ? (
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.faint, marginBottom: 7 }}>Rest day</div>
+            ) : null}
+
             <div style={{ display: "grid", gap: 5 }}>
-              {d.tasks.map((t, ti) => (
+              {d.blocks.map((b, ti) => (
                 <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Icon name={KIND_ICON[t.kind]} size={12} color={C.faint} />
-                  <span style={{ fontSize: 11, fontWeight: 650, color: C.soft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{KIND_LABEL[t.kind]}</span>
+                  <Icon name={BLOCK_ICON[b.kind]} size={12} color={C.faint} />
+                  <span style={{ fontSize: 11, fontWeight: 650, color: C.soft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{BLOCK_LABEL[b.kind]}</span>
                 </div>
               ))}
             </div>
