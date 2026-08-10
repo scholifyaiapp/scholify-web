@@ -1092,20 +1092,14 @@ function LearnerRouteSlide({ value, onChange }: { value: LearnerRoute | null; on
     { value: "new", icon: "rocket", title: "Learn from the beginning", detail: "I am starting this paper from zero or near zero.", path: ["Foundations", "Daily lessons", "Checks as I learn"] },
     { value: "course", icon: "study", title: "Continue my current studies", detail: "I already use a course, tutor, books, or self-study.", path: ["Map progress", "Verify gaps", "Complement my course"] },
     /*
-     * "Practise for my exam" was removed from this choice (founder's call).
-     *
-     * The route itself still exists everywhere downstream — the LearnerRoute
-     * type, the readiness-mode diagnostic, its own build sequence, and the
-     * assessment options keyed on it — because learners who already chose it
-     * have it saved in their baseline, and stripping the branches would leave
-     * those accounts pointing at a route the code no longer understands.
-     * Nobody NEW can select it; nobody existing is broken by it.
-     *
-     * The two remaining answers still cover everyone: someone who has finished
-     * the syllabus and only wants mocks is, truthfully, continuing their own
-     * studies — and that route maps their progress first rather than assuming
-     * it, which is the safer of the two errors to make about a learner.
+     * Restored, with a different promise. This route is now PRACTICE ONLY:
+     * quizzes, question practice and flashcards. No chapters to read, no
+     * technical articles in the daily plan — because someone who has covered
+     * the syllabus does not need to be taught it again, and a day that opens
+     * with "read chapter 4" is a day they will skip. Both remain available on
+     * demand from the study screens if they want them; see projectPlan.
      */
+    { value: "practice", icon: "mock", title: "Practise for my exam", detail: "I have covered the syllabus — give me quizzes, practice and flashcards only.", path: ["Readiness check", "Timed practice", "Mock plan"] },
   ]
   return (
     <ChoiceGroup

@@ -607,6 +607,22 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
     ? { code: focus.area, label: focus.label }
     : nextLearnArea(paperId) ?? { code: "", label: "the syllabus" }
 
+  /*
+   * ── PRACTICE-ONLY ROUTE ────────────────────────────────────────────
+   *
+   * A learner who chose "Practise for my exam" has covered the syllabus. They
+   * do not need to be taught it again, and a day that opens with "read chapter
+   * 4" is a day they will skip — which costs the streak, the plan and
+   * eventually the subscription.
+   *
+   * So the reading is dropped from the DAILY PLAN and its minutes are handed to
+   * questions, where that learner's marks actually come from. Nothing is taken
+   * away: every chapter and technical article stays open on the study screens
+   * for the moment they hit something they have genuinely forgotten. Removed
+   * from the plan, not from the product.
+   */
+  const practiceOnly = getLearnerBaseline()?.route === "practice" && !gateFocus
+
   const shape = shapeDay(budget, targetProb, due)
   const resource = getStudyResource(paperId)
   const provider = resource && !resource.providers.includes("none")
@@ -630,8 +646,8 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
     const cycleArea = c === 0 ? area : nextLearnArea(paperId, [area.code]) ?? area
     const suffix = c === 0 ? "" : String(c + 1)
 
-    // 1 · Topic learning.
-    tasks.push({
+    // 1 · Topic learning — skipped entirely on the practice-only route.
+    if (!practiceOnly) tasks.push({
       id: `study${suffix}`,
       icon: "📖",
       title: provider && c === 0
@@ -660,7 +676,15 @@ function categoryDay(paperId: string, budget: number, targetProb: number, due: n
 
     // 3 · Daily practice — the biggest block.
     if (cycle.practiceQ > 0) {
-      const n = cycle.practiceQ
+      /*
+       * The reading minutes are not saved, they are SPENT. Dropping the chapter
+       * and leaving the day short would quietly shrink the commitment a learner
+       * made — they promised those minutes, so they get more questions instead,
+       * which is the whole point of choosing this route.
+       */
+      const n = practiceOnly
+        ? cycle.practiceQ + Math.max(0, Math.floor(cycle.studyMinutes / COST.perQ))
+        : cycle.practiceQ
       const aimWeak = c === 0 && weak && weak.code !== cycleArea.code
       tasks.push(
         aimWeak
@@ -883,22 +907,31 @@ export function projectPlan(paperId: string, maxDays = 45): PlanDay[] {
       ? PROVIDER_LABEL[resource.primaryProvider]
       : null
     const tasks: PlanDayTask[] = []
+    // Mirrors categoryDay: the practice-only route sees no chapters in its
+    // projected route either, or the preview would promise a plan the live day
+    // does not deliver — the exact mismatch shapeDay was introduced to end.
+    const practiceOnlyRoute = getLearnerBaseline()?.route === "practice"
     shape.cycles.forEach((cycle, c) => {
       // The second cycle studies the NEXT area in syllabus order, not the same
       // one twice — that is what a long day actually buys.
       const ca = c === 0 ? a : areas[Math.min(areas.length - 1, areaIdx + 1)]
       const clabel = ca ? `${ca.code} · ${ca.label}` : "the syllabus"
-      tasks.push({
-        kind: "study",
-        title: provider && c === 0 ? `${provider}${chapter ? ` · Chapter ${chapter}` : ""} · ${clabel}` : `Study ${clabel}`,
-        minutes: cycle.studyMinutes,
-        area: ca?.code,
-      })
+      if (!practiceOnlyRoute) {
+        tasks.push({
+          kind: "study",
+          title: provider && c === 0 ? `${provider}${chapter ? ` · Chapter ${chapter}` : ""} · ${clabel}` : `Study ${clabel}`,
+          minutes: cycle.studyMinutes,
+          area: ca?.code,
+        })
+      }
       if (cycle.essentials > 0) {
         tasks.push({ kind: "essentials", title: `Quizzes ×${cycle.essentials} — ${ca?.code ?? "area"}`, minutes: Math.round(cycle.essentials * COST.perQ), area: ca?.code })
       }
-      if (cycle.practiceQ > 0) {
-        tasks.push({ kind: "weak", title: `Practise ${cycle.practiceQ} in ${ca?.code ?? "area"}`, minutes: Math.round(cycle.practiceQ * COST.perQ), area: ca?.code })
+      const practiceQ = practiceOnlyRoute
+        ? cycle.practiceQ + Math.max(0, Math.floor(cycle.studyMinutes / COST.perQ))
+        : cycle.practiceQ
+      if (practiceQ > 0) {
+        tasks.push({ kind: "weak", title: `Practise ${practiceQ} in ${ca?.code ?? "area"}`, minutes: Math.round(practiceQ * COST.perQ), area: ca?.code })
       }
     })
     tasks.push({ kind: "flashcards", title: `Revise ${shape.cards} ${a?.code ?? ""} flashcards`.replace("  ", " "), minutes: Math.round(shape.cards * COST.perCard), area: a?.code })

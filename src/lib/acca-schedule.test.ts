@@ -246,6 +246,7 @@ describe("focusArea", () => {
 import { buildDailyTasks, ESSENTIALS_SIZE } from "@/lib/acca-schedule"
 import { setPlan } from "@/lib/acca-plan"
 import { setStartMode } from "@/lib/acca-profile"
+import { saveLearnerBaseline } from "@/lib/acca-learner-baseline"
 
 describe("buildDailyTasks — the categorised day", () => {
   it("produces the four categories in order once a baseline exists", () => {
@@ -365,5 +366,68 @@ describe("shapeDay — filling the daily minute budget", () => {
 
   it("clears the cards that are actually due rather than inventing a session", () => {
     expect(shapeDay(180, 75, 4).cards).toBeLessThan(shapeDay(180, 75, 0).cards)
+  })
+})
+
+/*
+ * ── The practice-only route ────────────────────────────────────────
+ *
+ * "Practise for my exam" means the learner has covered the syllabus. A day that
+ * opens with "read chapter 4" is a day they will skip, and a skipped day costs
+ * the streak, the plan and eventually the subscription.
+ *
+ * So the daily plan drops the reading and spends those minutes on questions.
+ * Nothing is removed from the PRODUCT — every chapter and article stays open on
+ * the study screens — only from the plan.
+ */
+describe("buildDailyTasks — practice-only route", () => {
+  /* A realistic practice learner: some answers on record and a baseline. */
+  const seedRoute = (route: "practice" | "course") => {
+    setStartMode("assess")
+    setPlan("FA", { dailyMinutes: 25, targetProb: 75 })
+    for (const q of getQuestions("FA").slice(0, 12)) recordAnswer("FA", q, true)
+    saveLearnerBaseline({
+      route,
+      englishLevel: "B2",
+      englishEvidence: "self",
+      assessmentPath: "diagnostic",
+      updatedAt: new Date().toISOString(),
+    })
+  }
+
+  it("schedules no chapter reading at all", () => {
+    seedRoute("practice")
+    const tasks = buildDailyTasks("FA")
+    expect(tasks.some((t) => t.action === "study"), "the practice route must not be told to read").toBe(false)
+  })
+
+  it("still schedules quizzes, questions and flashcards", () => {
+    seedRoute("practice")
+    const actions = new Set(buildDailyTasks("FA").map((t) => t.action))
+    expect(actions.has("essentials"), "quizzes").toBe(true)
+    expect(actions.has("weak") || actions.has("practice"), "question practice").toBe(true)
+    expect(actions.has("flashcards"), "flashcards").toBe(true)
+  })
+
+  it("spends the freed reading minutes on questions rather than shortening the day", () => {
+    seedRoute("practice")
+    const practiceOnly = buildDailyTasks("FA")
+
+    saveLearnerBaseline({
+      route: "course",
+      englishLevel: "B2",
+      englishEvidence: "self",
+      assessmentPath: "diagnostic",
+      updatedAt: new Date().toISOString(),
+    })
+    const withStudy = buildDailyTasks("FA")
+
+    const questionMinutes = (tasks: { action: string; minutes: number }[]) =>
+      tasks.filter((t) => t.action === "weak" || t.action === "practice").reduce((s, t) => s + t.minutes, 0)
+
+    expect(
+      questionMinutes(practiceOnly),
+      "the learner promised those minutes — they buy more questions, not a shorter day",
+    ).toBeGreaterThan(questionMinutes(withStudy))
   })
 })
