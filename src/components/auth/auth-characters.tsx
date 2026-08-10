@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { ScholifyLockup } from "@/components/brand"
+import ReadinessCurve from "@/components/auth/ReadinessCurve"
 
 /* ──────────────────────────────────────────────────────────────
  *  The 4 little "Scholify stones" — purple, dark, orange, yellow.
@@ -462,6 +463,8 @@ export function CharacterLeftPanel(props: AuthCharactersProps) {
         <p style={{ fontSize: 14, color: "var(--sch-tx-2)", marginTop: 12 }}>
           Know your chance of passing ACCA — and how to raise it.
         </p>
+        {/* The sentence above promises two things; this draws the second one. */}
+        <ReadinessCurve />
       </div>
 
       {/* Animated characters */}

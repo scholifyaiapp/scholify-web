@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
-import { Eye, EyeOff, Check, Mail } from "lucide-react"
+import { Eye, EyeOff, Mail } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 import { trackEvent, identifyUser } from "@/lib/analytics"
@@ -135,82 +135,8 @@ function ProgressSteps({ active }: { active: number }) {
   )
 }
 
-/* ── Terms checkbox ──────────────────────────────────────────── */
-
-function TermsCheckbox({
-  checked,
-  onChange,
-}: {
-  checked: boolean
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <label
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
-        cursor: "pointer",
-        fontSize: 13,
-        color: "var(--sch-tx-2)",
-      }}
-    >
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        style={{
-          width: 18,
-          height: 18,
-          flexShrink: 0,
-          marginTop: 1,
-          borderRadius: 5,
-          border: checked ? "none" : "1px solid var(--sch-border-2)",
-          background: checked ? IRIDESCENT : "transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          padding: 0,
-          transition: "all 0.2s ease",
-        }}
-      >
-        <AnimatePresence>
-          {checked && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              style={{ display: "flex" }}
-            >
-              <Check size={13} strokeWidth={3.5} color="#fff" />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </button>
-      <span>
-        I agree to the{" "}
-        <Link
-          to="/terms"
-          onClick={(e) => e.stopPropagation()}
-          style={{ color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
-        >
-          Terms of Service
-        </Link>{" "}
-        and{" "}
-        <Link
-          to="/privacy"
-          onClick={(e) => e.stopPropagation()}
-          style={{ color: "rgba(200,0,0,0.8)", textDecoration: "none" }}
-        >
-          Privacy Policy
-        </Link>
-      </span>
-    </label>
-  )
-}
-
+/* The Terms checkbox was removed with the field it guarded — consent is now
+ * stated under the form instead of demanded before it. */
 /* ── "Check your inbox" panel ────────────────────────────────── */
 
 function ConfirmEmailPanel({ email }: { email: string }) {
@@ -291,11 +217,11 @@ export default function SignUp() {
   const { signUp, signInWithGoogle } = useAuth()
 
   const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
+  // Last name is no longer asked for at sign-up. Settings still edits it, and
+  // nothing a learner sees has ever used it.
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -318,14 +244,12 @@ export default function SignUp() {
   const emailInvalid = email.trim().length > 0 && !EMAIL_RE.test(email.trim())
   const passwordInvalid = password.length > 0 && password.length < 8
 
+  // Three requirements, matching the three fields. Consent is given by
+  // creating the account, stated under the form, so it is no longer a
+  // separate control that can silently block the button.
   const isValid = useMemo(
-    () =>
-      firstName.trim().length > 0 &&
-      lastName.trim().length > 0 &&
-      EMAIL_RE.test(email.trim()) &&
-      password.length >= 8 &&
-      agreed,
-    [firstName, lastName, email, password, agreed],
+    () => firstName.trim().length > 0 && EMAIL_RE.test(email.trim()) && password.length >= 8,
+    [firstName, email, password],
   )
 
   const handleSubmit = async (e: FormEvent) => {
@@ -344,13 +268,11 @@ export default function SignUp() {
      */
     if (!isValid) {
       setFormError(
-        !firstName.trim() || !lastName.trim()
-          ? "Please enter your first and last name."
+        !firstName.trim()
+          ? "What should Charles call you? Just a first name."
           : !EMAIL_RE.test(email.trim())
             ? "Please enter a valid email address."
-            : password.length < 8
-              ? "Your password needs at least 8 characters."
-              : "Please accept the Terms and Privacy Policy to continue.",
+            : "Your password needs at least 8 characters.",
       )
       return
     }
@@ -359,7 +281,7 @@ export default function SignUp() {
     setFormError(null)
     const { error, needsEmailConfirmation } = await signUp({
       firstName: firstName.trim(),
-      lastName: lastName.trim(),
+      lastName: "",
       email: email.trim(),
       password,
     })
@@ -459,33 +381,47 @@ export default function SignUp() {
           <ProgressSteps active={0} />
         </motion.div>
 
-        <form onSubmit={handleSubmit} style={{ marginTop: 28 }} noValidate>
-          {/* Name row */}
-          <motion.div
-            variants={itemVariants}
-            custom={3}
-            style={{ display: "flex", gap: 12 }}
-          >
-            <div style={{ flex: 1 }}>
-              <AuthInput
-                id="signup-first"
-                label="First name"
-                autoComplete="given-name"
-                placeholder="Ada"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <AuthInput
-                id="signup-last"
-                label="Last name"
-                autoComplete="family-name"
-                placeholder="Lovelace"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </div>
+        {/*
+          GOOGLE FIRST. One tap, no password to invent, nothing to forget —
+          and it is the route that cannot lock someone out of their own
+          account later. The email form sits directly under it for anyone who
+          would rather type.
+        */}
+        <motion.div variants={itemVariants} custom={2} style={{ marginTop: 26 }}>
+          <GoogleButton
+            label="Sign up with Google"
+            onClick={handleGoogle}
+            disabled={googleLoading}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants} custom={3} style={{ marginTop: 18 }}>
+          <OrDivider />
+        </motion.div>
+
+        <form onSubmit={handleSubmit} style={{ marginTop: 18 }} noValidate>
+          {/*
+            THREE FIELDS, not five.
+            "Start for free" asked for first name, last name, email, password
+            and a ticked checkbox before it would do anything — five obstacles
+            in front of a product nobody has seen yet. Last name was never used
+            anywhere a learner sees; Charles greets people by first name and
+            the welcome email does the same. So it is gone, and the checkbox
+            became a line of consent text, which is the standard pattern and
+            removes the one control people miss and then get refused by.
+
+            First name stays, deliberately: this product speaks to you by name
+            from the first screen, and an app that calls you "there" for a
+            month has quietly given something up.
+          */}
+          <motion.div variants={itemVariants} custom={4}>
+            <AuthInput
+              id="signup-first"
+              label="First name"
+              autoComplete="given-name"
+              placeholder="Ada"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
           </motion.div>
 
           {/* Email */}
@@ -538,10 +474,16 @@ export default function SignUp() {
             <PasswordStrength password={password} />
           </motion.div>
 
-          {/* Terms */}
-          <motion.div variants={itemVariants} custom={6} style={{ marginTop: 16 }}>
-            <TermsCheckbox checked={agreed} onChange={setAgreed} />
-          </motion.div>
+          {/* Consent, stated rather than demanded — see the note above. */}
+          <motion.p
+            variants={itemVariants}
+            custom={6}
+            style={{ fontSize: 12.5, lineHeight: 1.55, color: "var(--sch-tx-2)", marginTop: 16 }}
+          >
+            By creating an account you agree to our{" "}
+            <Link to="/terms" style={{ color: "var(--sch-tx-1)", fontWeight: 600 }}>Terms</Link> and{" "}
+            <Link to="/privacy" style={{ color: "var(--sch-tx-1)", fontWeight: 600 }}>Privacy Policy</Link>.
+          </motion.p>
 
           {/* Form-level error */}
           <AnimatePresence>
@@ -570,19 +512,7 @@ export default function SignUp() {
           </motion.div>
         </form>
 
-        {/* Divider */}
-        <motion.div variants={itemVariants} custom={8} style={{ marginTop: 24 }}>
-          <OrDivider />
-        </motion.div>
-
-        {/* Google */}
-        <motion.div variants={itemVariants} custom={9} style={{ marginTop: 16 }}>
-          <GoogleButton
-            label="Sign up with Google"
-            onClick={handleGoogle}
-            disabled={googleLoading}
-          />
-        </motion.div>
+        {/* Google and its divider now sit ABOVE the form — see the note there. */}
 
         {/* Bottom link */}
         <motion.div

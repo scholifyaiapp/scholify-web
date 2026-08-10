@@ -374,7 +374,28 @@ export default function SignIn() {
           </p>
         </motion.div>
 
-        <form onSubmit={handleSubmit} style={{ marginTop: 32 }} noValidate>
+        {/*
+          GOOGLE FIRST, above the form.
+          It used to sit under the password field behind an "or" divider, which
+          reads as the fallback. It is the better route for most people and by
+          some distance the more reliable one: nothing to remember, nothing to
+          mistype, and no way to lock yourself out of an account by changing a
+          password to something you never saw — which is exactly how the
+          founder lost access on launch night. The email form is still right
+          here, one divider below, for anyone who prefers it.
+        */}
+        <motion.div variants={itemVariants} custom={2} style={{ marginTop: 28 }}>
+          <GoogleButton
+            label="Continue with Google"
+            onClick={handleGoogle}
+            disabled={googleLoading}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants} custom={3} style={{ marginTop: 20 }}>
+          <OrDivider />
+        </motion.div>
+
+        <form onSubmit={handleSubmit} style={{ marginTop: 20 }} noValidate>
           {/* Email */}
           <motion.div variants={itemVariants} custom={2}>
             <AuthInput
@@ -479,19 +500,7 @@ export default function SignIn() {
           </motion.div>
         </form>
 
-        {/* Divider */}
-        <motion.div variants={itemVariants} custom={5} style={{ marginTop: 24 }}>
-          <OrDivider />
-        </motion.div>
-
-        {/* Google */}
-        <motion.div variants={itemVariants} custom={6} style={{ marginTop: 16 }}>
-          <GoogleButton
-            label="Continue with Google"
-            onClick={handleGoogle}
-            disabled={googleLoading}
-          />
-        </motion.div>
+        {/* Google and its divider now sit ABOVE the form — see the note there. */}
 
         {/* Bottom link */}
         <motion.div
