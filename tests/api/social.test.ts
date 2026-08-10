@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { stripeKeyMode } from "../../api/social.js"
+import { configuredAiProvider, stripeKeyMode } from "../../api/social.js"
 
 /*
  * Stripe key MODE detection.
@@ -50,5 +50,16 @@ describe("stripeKeyMode", () => {
 
   it("distinguishes the two modes, which is the whole point", () => {
     expect(stripeKeyMode("sk_live_x")).not.toBe(stripeKeyMode("sk_test_x"))
+  })
+})
+
+describe("configuredAiProvider", () => {
+  it("reports OpenAI when both keys exist because OpenAI is primary", () => {
+    expect(configuredAiProvider(true, true)).toBe("openai")
+  })
+
+  it("falls back to Anthropic only when OpenAI is absent", () => {
+    expect(configuredAiProvider(false, true)).toBe("anthropic")
+    expect(configuredAiProvider(false, false)).toBeNull()
   })
 })

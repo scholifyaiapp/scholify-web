@@ -100,11 +100,11 @@ export function usePaywall() {
 
   /**
    * The gentle mid-trial reminder: shown once per calendar day, and only from
-   * day 2 of the trial onward (day 1 stays clean — let them fall in love first).
-   * `trialDaysLeft` comes from the entitlement; on day 1 it equals TRIAL_DAYS.
+   * every trial day. The learner has already seen their personalised value;
+   * this is a clear daily billing reminder, never a surprise expiry.
    */
   const maybeShowTrialReminder = useCallback((trialDaysLeft: number) => {
-    if (trialDaysLeft <= 0 || trialDaysLeft >= TRIAL_DAYS) return
+    if (trialDaysLeft <= 0 || trialDaysLeft > TRIAL_DAYS) return
     try {
       if (window.localStorage.getItem(TRIAL_REMINDER_KEY) === todayStamp()) return
       window.localStorage.setItem(TRIAL_REMINDER_KEY, todayStamp())

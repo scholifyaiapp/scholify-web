@@ -1,4 +1,4 @@
--- 0028 · The day-completion congratulation email.
+-- 0029 · The day-completion congratulation email.
 --
 -- WHY A COLUMN AND NOT A CLIENT FLAG. The app already knows locally that the day
 -- is finished (scholify-day-complete in localStorage) and could simply refuse to

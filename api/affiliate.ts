@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import postgres from "postgres"
 
@@ -276,17 +276,31 @@ async function markDuePaid(req: VercelRequest, res: VercelResponse, supa: Supaba
   }
   const b = await body(req)
   const id = String(b.id || "")
-  if (!id) {
+  const reference = String(b.reference || "").trim().slice(0, 160)
+  if (!id || reference.length < 3) {
     res.status(400).json({ ok: false, reason: "bad_params" })
     return
   }
-  const { data, error } = await supa
+  let { data, error } = await supa
     .from("affiliate_commissions")
-    .update({ status: "paid", paid_at: new Date().toISOString() })
+    .update({ status: "paid", paid_at: new Date().toISOString(), payout_reference: reference })
     .eq("affiliate_id", id)
     .eq("status", "pending")
     .lte("available_after", new Date().toISOString())
     .select("id, commission_amount")
+  // Backward-compatible during rollout if the additive migration has not reached
+  // production yet. The founder confirmation still prevents accidental marking.
+  if (error && /payout_reference/i.test(String(error.message || ""))) {
+    const fallback = await supa
+      .from("affiliate_commissions")
+      .update({ status: "paid", paid_at: new Date().toISOString() })
+      .eq("affiliate_id", id)
+      .eq("status", "pending")
+      .lte("available_after", new Date().toISOString())
+      .select("id, commission_amount")
+    data = fallback.data
+    error = fallback.error
+  }
   if (error) {
     res.status(200).json({ ok: false, reason: "update_failed" })
     return
@@ -357,6 +371,7 @@ async function submitFeedback(req: VercelRequest, res: VercelResponse, supa: Sup
     title: "Scholify loves you.",
     intro: `Thanks for your feedback${name ? `, ${escapeHtml(name.split(/\s+/)[0])}` : ""}. We read every message and use it to decide what Scholify should improve next.`,
     content: `<div style="padding:16px;border-radius:14px;background:#FFF7F7;border:1px solid #F1D5D5;color:#5F5753;font-size:14px;line-height:22px;">Your feedback is safely in our product inbox. If we need more detail, we’ll reply to this email.</div>`,
+    footerLabel: "Scholify Product Team",
   })
   const notificationResults = await Promise.allSettled([
     sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: email, subject: `New Scholify feedback · ${category}`, html: adminHtml }),
@@ -485,6 +500,7 @@ function emailFrame(options: {
   content: string
   cta?: { label: string; href: string }
   charles?: boolean
+  footerLabel?: string
 }): string {
   const cta = options.cta
     ? `<tr><td style="padding:8px 32px 30px;">
@@ -510,7 +526,7 @@ function emailFrame(options: {
         <tr><td style="padding:0 32px 20px;">${options.content}</td></tr>
         ${cta}
         <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">
-          Scholify Preferred Partner Program<br>
+          ${escapeHtml(options.footerLabel || "Scholify Preferred Partner Program")}<br>
           <a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>
         </td></tr>
       </table>
@@ -677,7 +693,7 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
       ok: true,
       affiliate: null,
       commissions: [],
-      totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0 },
+      totals: { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: 0, paidInvitedUsers: 0 },
     })
     return
   }
@@ -685,7 +701,7 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
   const [{ data: commissions }, { count: invitedUsers }] = await Promise.all([
     supa
       .from("affiliate_commissions")
-      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at")
+      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at, stripe_customer_id")
       .eq("affiliate_id", affiliate.id)
       .order("created_at", { ascending: false }),
     supa
@@ -693,7 +709,8 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
       .select("id", { count: "exact", head: true })
       .eq("affiliate_id", affiliate.id),
   ])
-  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0 }
+  const paidCustomers = new Set((commissions ?? []).filter((row) => row.status !== "canceled" && row.stripe_customer_id).map((row) => row.stripe_customer_id))
+  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0, paidInvitedUsers: paidCustomers.size }
   for (const commission of commissions ?? []) {
     if (commission.status !== "canceled") totals.sales += Number(commission.sale_amount || 0)
     if (commission.status === "pending") totals.pending += Number(commission.commission_amount || 0)

@@ -10,7 +10,6 @@ import {
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
 import { canStartTrial } from "./entitlement"
-import { isAccaOnboarded } from "./acca-profile"
 import { identifyUser, trackEvent } from "@/lib/analytics"
 import { hydrateAccountSetup, persistAccountSetup, releaseAccountSetup } from "@/lib/account-state"
 import { clearPartnerLandingCache } from "@/lib/affiliate"
@@ -102,8 +101,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>
   /** Email a password-reset link. Errors honestly when Supabase isn't configured. */
   resetPassword: (email: string) => Promise<AuthResult>
-  /** Start the free trial now (called the moment onboarding completes). Idempotent. */
-  startTrial: () => Promise<void>
+  /** Start the one-per-account trial after the personalised plan is revealed. */
+  startTrial: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -144,31 +143,16 @@ function writeDemoUser(user: User | null) {
   }
 }
 
-/**
- * Grant the 3-day Pro trial to a user who is eligible and hasn't got one.
- *
- * This runs on the FIRST authenticated session rather than only at sign-up, so
- * it covers both paths: instant sign-in (email confirmation off) AND a user who
- * signs in for the first time after confirming their email. The server is the
- * gate — it refuses a second trial — so calling it once per fresh account is
- * safe, and a failure just leaves the user on the free tier (never broken).
- * Returns the refreshed User when a trial was granted, else null.
- */
 async function ensureTrial(user: User): Promise<User | null> {
   if (!isSupabaseConfigured || !canStartTrial(user)) return null
   try {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
     if (!token) return null
-    const res = await fetch("/api/paddle?action=start-trial", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await fetch("/api/paddle?action=start-trial", { method: "POST", headers: { Authorization: `Bearer ${token}` } })
     const body = (await res.json().catch(() => ({}))) as { ok?: boolean; alreadyStarted?: boolean }
     if (!body.ok) return null
-    // Count only a FIRST grant as a conversion-funnel "trial_started".
-    if (!body.alreadyStarted) trackEvent("trial_started")
-    // The trial lives in app_metadata → it only reaches the client in a NEW JWT.
+    if (!body.alreadyStarted) trackEvent("trial_started", { source: "personalised_plan_paywall" })
     const { data: refreshed } = await supabase.auth.refreshSession()
     return refreshed.user ?? null
   } catch {
@@ -202,23 +186,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Only one trial-grant attempt per app load, whichever path fires first.
-    // Gated on onboarding: the 3-day clock starts when the learner FINISHES the
-    // wizard (Welcome calls startTrial() at that moment), not the instant they
-    // sign up. This auto-grant is the safety net for an already-onboarded user
-    // whose explicit grant didn't land (offline at finish, etc.).
-    let trialChecked = false
-    const maybeGrantTrial = (u: User | null) => {
-      if (trialChecked || !u || !isAccaOnboarded()) return
-      trialChecked = true
-      void ensureTrial(u).then((granted) => {
-        if (granted) {
-          setSession((s) => (s ? { ...s, user: granted } : s))
-          setUser(granted)
-        }
-      })
-    }
-
     // One authenticated "app_opened" per load — the retention/WAU signal, scoped
     // to signed-in learners so anonymous landing-page visits don't dilute it.
     let openedTracked = false
@@ -241,7 +208,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(data.session)
         setUser(data.session?.user ?? null)
         setLoading(false)
-        maybeGrantTrial(data.session?.user ?? null)
       })
       // If the session check ever rejects (corrupt stored session, a network
       // blip), loading must still resolve — otherwise every route guard is stuck
@@ -261,7 +227,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
       trackOpen(nextSession?.user ?? null)
-      maybeGrantTrial(nextSession?.user ?? null)
     })
 
     return () => {
@@ -374,16 +339,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? friendlyError(error.message) : { error: null }
   }, [])
 
-  // Called by the onboarding wizard the instant it completes, so the 3-day clock
-  // starts from "finished onboarding". Idempotent (server is one-per-account), so
-  // it's safe alongside the auto-grant safety net in the effect above.
-  const startTrial = useCallback(async () => {
-    if (!user) return
+  const startTrial = useCallback(async (): Promise<boolean> => {
+    if (!user) return false
     const granted = await ensureTrial(user)
-    if (granted) {
-      setSession((s) => (s ? { ...s, user: granted } : s))
-      setUser(granted)
-    }
+    if (!granted) return false
+    setSession((current) => (current ? { ...current, user: granted } : current))
+    setUser(granted)
+    return true
   }, [user])
 
   const value = useMemo<AuthContextValue>(

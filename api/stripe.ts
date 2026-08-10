@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
@@ -20,10 +20,9 @@ import { timingSafeEqual } from "node:crypto"
  *   POST /api/stripe?action=cancel     (auth: Supabase JWT)
  *     → schedules cancellation at period end.
  *
- * Entitlement lives in app_metadata (service-role-only) exactly like the Paddle
- * path, so the AI meter, the client gates and the subscriptions table are all
- * shared. The 3-day trial is separate (app-level, granted after onboarding) — Stripe is
- * only the PAID conversion, so its subscriptions carry no Stripe-side trial.
+ * Entitlement lives in service-role-only app_metadata: the browser can request
+ * checkout, but cannot grant itself access. Pro checkout carries the one-time,
+ * card-backed 3-day trial; Beginner starts billing immediately.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_BEGINNER,
  * STRIPE_PRICE_BEGINNER_ANNUAL, STRIPE_PRICE_PRO, STRIPE_PRICE_ANNUAL,
@@ -111,6 +110,8 @@ async function writeEntitlement(
     billingInterval?: "month" | "year"
     subscriptionId?: string
     customerId?: string
+    trialStartsAt?: string
+    trialEndsAt?: string
     eventType: string
   },
 ): Promise<void> {
@@ -123,6 +124,8 @@ async function writeEntitlement(
         ...(fields.subscriptionId ? { stripe_subscription_id: fields.subscriptionId } : {}),
         ...(fields.customerId ? { stripe_customer_id: fields.customerId } : {}),
         ...(fields.billingInterval ? { billing_interval: fields.billingInterval } : {}),
+        ...(fields.trialStartsAt ? { trial_started_at: fields.trialStartsAt } : {}),
+        ...(fields.trialEndsAt ? { trial_ends_at: fields.trialEndsAt } : {}),
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
   const { data: existingUser } = await supa.auth.admin.getUserById(userId)
@@ -303,8 +306,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "checkout") return checkout(req, res)
   if (action === "cancel") return cancel(req, res)
   if (action === "portal") return portal(req, res)
+  if (action === "refund") return refundPayment(req, res)
   if (action === "selftest") return selftest(req, res)
-  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal | selftest." })
+  res.status(400).json({ error: "Unknown action. Use ?action=checkout | webhook | cancel | portal | refund | selftest." })
+}
+
+/** Founder-only full refund. Refund first, then cancel immediately; webhook
+ * delivery remains the durable entitlement/commission reconciliation path. */
+async function refundPayment(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const stripe = stripeClient()
+  const supa = admin()
+  if (!stripe || !supa) return void res.status(200).json({ ok: false, reason: "not_configured" })
+  if (!(await selftestAuthorised(req, supa))) return void res.status(403).json({ ok: false, reason: "forbidden" })
+  const raw = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {})
+  const userId = String(raw.userId || "")
+  const reason = String(raw.reason || "requested_by_customer").slice(0, 300)
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) return void res.status(400).json({ ok: false, reason: "bad_user" })
+  const { data } = await supa.auth.admin.getUserById(userId)
+  const user = data.user
+  const subId = String(user?.app_metadata?.stripe_subscription_id || "")
+  if (!subId) return void res.status(200).json({ ok: false, reason: "no_subscription" })
+  try {
+    const invoices = await stripe.invoices.list({ subscription: subId, status: "paid", limit: 1 })
+    const invoice = invoices.data[0] as Stripe.Invoice & { charge?: string | Stripe.Charge | null; payment_intent?: string | Stripe.PaymentIntent | null }
+    const charge = typeof invoice?.charge === "string" ? invoice.charge : invoice?.charge?.id
+    const paymentIntent = typeof invoice?.payment_intent === "string" ? invoice.payment_intent : invoice?.payment_intent?.id
+    if (!charge && !paymentIntent) return void res.status(200).json({ ok: false, reason: "no_refundable_payment" })
+    const refunded = await stripe.refunds.create({ ...(charge ? { charge } : { payment_intent: paymentIntent! }), metadata: { refunded_user_id: userId, admin_reason: reason } })
+    // A successful refund must revoke app access even if Stripe reports the
+    // subscription was already canceled between the invoice lookup and here.
+    try {
+      await stripe.subscriptions.cancel(subId)
+    } catch (cancelError) {
+      console.warn("stripe refund subscription cancel:", cancelError)
+    }
+    await writeEntitlement(supa, userId, { plan: "free", status: "refunded", subscriptionId: subId, eventType: "admin.refund" })
+    res.status(200).json({ ok: true, refundId: refunded.id, amount: refunded.amount, currency: refunded.currency })
+  } catch (error) {
+    console.error("stripe refund:", error)
+    res.status(200).json({ ok: false, reason: "refund_failed" })
+  }
 }
 
 /* ── Self-test: does a payment actually reach OUR account? ───────────── */
@@ -545,7 +586,7 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       if (existing.status !== "canceled" && existing.status !== "incomplete_expired") {
         const portalSession = await stripe.billingPortal.sessions.create({
           customer: existingCustomerId,
-          return_url: `${origin}/pricing`,
+          return_url: `${origin}/pricing?billing=updated`,
         })
         res.status(200).json({ ok: true, url: portalSession.url, destination: "portal" })
         return
@@ -557,6 +598,8 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
   }
 
   const affMeta = await resolveAffiliateMetadata(supa, user.id, body.affiliateCode)
+  const isProPlan = plan === "pro" || plan === "annual_pro"
+  const hadTrial = Boolean(user.app_metadata?.trial_started_at)
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -567,7 +610,11 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       // Both the session AND the subscription carry the user id, so every
       // webhook (checkout + later renewals/cancellations) can map to the account.
       metadata: { userId: user.id, ...affMeta },
-      subscription_data: { metadata: { userId: user.id, ...affMeta } },
+      subscription_data: {
+        metadata: { userId: user.id, ...affMeta },
+        ...(isProPlan && !hadTrial ? { trial_period_days: 3 } : {}),
+      },
+      payment_method_collection: "always",
       allow_promotion_codes: true,
       success_url: `${origin}/study?upgraded=true`,
       // Cancellation returns to plan selection, never into the learning app.
@@ -656,11 +703,13 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
         const plan = planForPrice(priceId)
         await writeEntitlement(supa, userId, {
           plan: plan ?? undefined,
-          status: "active",
+          status: sub.status === "trialing" ? "trialing" : "active",
           priceId,
           billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
+          trialStartsAt: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : undefined,
+          trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : undefined,
           eventType: event.type,
         })
       }
@@ -684,8 +733,10 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
         // active/trialing → grant; past_due → keep access but flag; anything
         // terminal (canceled/unpaid) → revoke.
         const status =
-          sub.status === "active" || sub.status === "trialing"
-            ? "active"
+          sub.status === "trialing"
+            ? "trialing"
+            : sub.status === "active"
+              ? "active"
             : sub.status === "past_due"
               ? "past_due"
               : "canceled"

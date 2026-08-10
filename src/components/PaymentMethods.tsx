@@ -3,7 +3,8 @@ import type { CSSProperties, ReactNode } from "react"
 
 /*
  * Shared "Secure payments, powered by Stripe" trust strip.
- * Stripe · Visa · Mastercard · Link · PayPal — clean inline marks in uniform
+ * Stripe · Visa · Mastercard · Link — methods supported by the current hosted
+ * checkout, shown as clean inline marks in uniform
  * white chips so they render crisply and consistently on any surface.
  * Used on /partners/apply and the landing page (after pricing).
  */
@@ -91,12 +92,6 @@ export default function PaymentMethods({
             <path d="M15 11 L25 20 L15 29" fill="none" stroke="#011E0F" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span style={{ fontWeight: 800, fontSize: 19, color: "#0A2540", letterSpacing: "-0.02em", marginLeft: 6 }}>link</span>
-        </Chip>
-        <Chip>
-          <span style={{ fontWeight: 800, fontStyle: "italic", fontSize: 19, letterSpacing: "-0.01em" }}>
-            <span style={{ color: "#003087" }}>Pay</span>
-            <span style={{ color: "#009CDE" }}>Pal</span>
-          </span>
         </Chip>
       </motion.div>
     </div>

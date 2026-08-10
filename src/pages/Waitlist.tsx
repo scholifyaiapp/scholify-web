@@ -7,7 +7,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import PaymentMethods from "@/components/PaymentMethods"
 import PartnerLogos from "@/components/ui/partner-logos"
 import FeedbackForm from "@/components/FeedbackForm"
-import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, PARTNER_PROGRAM_VISIBLE, signInPath } from "@/lib/launch"
+import { LAUNCH_DATE_ISO, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
 
 const RED = "#C80000"
 const INK = "#14141A"
@@ -110,6 +110,15 @@ export default function Waitlist() {
     return () => window.clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    // A visitor may leave the waitlist open across the launch instant. Reload
+    // at the shared cutover time so App re-evaluates PRELAUNCH_MODE and opens
+    // the full public product without requiring a manual refresh or deploy.
+    const delay = Math.max(0, Date.parse(LAUNCH_DATE_ISO) - Date.now())
+    const timer = window.setTimeout(() => window.location.reload(), delay)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError("")
@@ -147,26 +156,24 @@ export default function Waitlist() {
             <span style={{ width: 7, height: 7, borderRadius: 99, background: RED, boxShadow: "0 0 0 5px rgba(200,0,0,.08)" }} />
             PRE-LAUNCH
           </div>
-          {PARTNER_PROGRAM_VISIBLE && (
-            <Link
-              to="/partners/apply"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "9px 15px",
-                borderRadius: 999,
-                background: INK,
-                color: "#fff",
-                fontSize: 12,
-                fontWeight: 800,
-                textDecoration: "none",
-                boxShadow: "0 8px 24px rgba(20,20,26,.14)",
-              }}
-            >
-              Partner Program <ArrowRight size={14} />
-            </Link>
-          )}
+          <Link
+            to="/partners/apply"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "9px 15px",
+              borderRadius: 999,
+              background: INK,
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 800,
+              textDecoration: "none",
+              boxShadow: "0 8px 24px rgba(20,20,26,.14)",
+            }}
+          >
+            Partner Program <ArrowRight size={14} />
+          </Link>
         </div>
       </header>
 

@@ -10,6 +10,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { usePaywall } from "@/hooks/usePaywall"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
+import { DailyMissionCelebration } from "@/components/acca/DailyMissionCelebration"
 import { ProCountdown } from "@/components/acca/ProCountdown"
 import PaywallModal from "@/components/PaywallModal"
 import ExaminerView from "@/components/acca/ExaminerView"
@@ -70,7 +71,7 @@ import { ArticleReader } from "@/components/acca/ArticleReader"
 import { PlanBoard } from "@/components/acca/PlanBoard"
 import { PracticeHub } from "@/components/acca/PracticeHub"
 import { ProgressBoard } from "@/components/acca/ProgressBoard"
-import { composeToday, blockComplete, type TodayBlock, type TodayComposition } from "@/lib/acca-today-composer"
+import { composeToday, dayProgress, type TodayBlock, type TodayComposition } from "@/lib/acca-today-composer"
 import { markChapterRead, recordChapterPace, nextChapter } from "@/lib/acca-topic-plan"
 import { recordDayComplete, congratulationSent, markCongratulationSent, tomorrowGate } from "@/lib/acca-day-gate"
 import { notifyDayComplete } from "@/lib/reminders"
@@ -252,7 +253,7 @@ export default function AccaStudy() {
     }
   }, [])
 
-  // Paddle checkout lands back on /study?upgraded=true. The webhook writes
+  // Stripe checkout lands back on /study?upgraded=true. The webhook writes
   // the plan onto the user server-side, so refresh the session (with a
   // couple of retries — the webhook can lag the redirect by a few seconds)
   // until the entitlement shows up.
@@ -261,7 +262,7 @@ export default function AccaStudy() {
     if (params.get("upgraded") !== "true") return
     window.history.replaceState({}, "", window.location.pathname)
     trackEvent("subscription_activated")
-    toast.success("Payment received — welcome aboard! Unlocking Pro…")
+    toast.success("Payment received — welcome aboard! Unlocking your plan…")
     if (!isSupabaseConfigured) return
     let cancelled = false
     const attempt = async (retriesLeft: number) => {
@@ -760,6 +761,7 @@ export default function AccaStudy() {
               onTestChapter={startChapterTest}
               onComposed={startComposedSession}
               onOpenArticle={(article) => { setActiveArticle(article); setMode("article") }}
+              onUpgrade={triggerFeaturePaywall}
             />
           )}
 
@@ -1271,6 +1273,7 @@ function Overview({
   onTestChapter,
   onComposed,
   onOpenArticle,
+  onUpgrade,
 }: {
   paper: AccaPaper
   isPro: boolean
@@ -1294,6 +1297,7 @@ function Overview({
   onTestChapter: (chapterKey: string, area: string, count: number) => void
   onComposed: (qs: AccaQuestion[], pool: PoolKind, area: string | null, timed?: boolean) => void
   onOpenArticle: (article: TechArticle) => void
+  onUpgrade: () => void
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -1325,37 +1329,14 @@ function Overview({
   const examDue = examDayDue(paper.id)
   const stage = currentStage(paper.id)
   const recovery = recoveryState(paper.id)
-  // AI Study OS: today's auto-generated plan — the student never has to choose.
-  const todayPlan = buildTodayPlan(paper.id)
-  // Task → surface. Study opens the CHAPTER (the main content), essentials the
-  // 5-question guided set — both carry the plan's area so the tap lands exactly
-  // on today's topic.
-  function runToday(t: (typeof todayPlan)[number]) {
-    if (t.action === "diagnostic") navigate("/study/diagnostic")
-    else if (t.action === "weak") onWeak()
-    else if (t.action === "practice") onPractice()
-    else if (t.action === "section" && t.section) onSection(t.section)
-    else if (t.action === "essentials") onEssentials(t.area)
-    else if (t.action === "flashcards") onFlashcards()
-    else if (t.action === "mock") onMock()
-    else if (t.action === "study") (t.area ? onStudyTopic(t.area) : onPractice())
-    else if (t.action === "bank") onBankRun()
-  }
-  // Launch a today task. Only stamp it "pending" (which auto-completes it on
-  // return) if it will ACTUALLY start — a gated mock (locked gate or non-Pro)
-  // just shows a toast/paywall and stays on this screen, so stamping it would
-  // false-complete the task and wrongly advance the mission on the next visit.
-  function runTodayTask(t: (typeof todayPlan)[number]) {
-    const constructedSection = t.action === "section" && t.section
-      ? examBlueprint(paper.id)?.sections.find((section) => section.id === t.section)?.kind === "constructed"
-      : false
-    const bounces = (t.action === "mock" && (!gate.unlocked || !isPro)) || (constructedSection && !isPro)
-    if (!bounces) setPendingTodayTask(paper.id, t.id, t.action === "study")
-    runToday(t)
-  }
-  const todayIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", section: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
-  }
+  /*
+   * The old action-based today plan (buildTodayPlan → runToday → MissionTasks) is
+   * gone from this screen. It built a SECOND definition of today alongside the
+   * composer's, in a different vocabulary (actions and syllabus areas rather than
+   * blocks and chapters), and the two disagreed on the counts, the topic and on
+   * what "done" meant. Today's blocks now come from acca-today-composer, and
+   * runComposedBlock below is the single launcher. See the composed-day block.
+   */
 
   // Sequential unlock — only the first unfinished task is active; later ones wait.
   // On mount, resolve any task the learner just returned from (runToday stamped
@@ -1374,7 +1355,8 @@ function Overview({
    * what makes the count on the card true.
    */
   const todayComposition = useMemo(() => composeToday(paper.id, /* dryRun */ true), [paper.id, todayDone.length])
-  const dayIsComplete = todayComposition.blocks.length > 0 && todayComposition.blocks.every((b) => blockComplete(paper.id, b, todayDone))
+  const todayDayProgress = dayProgress(paper.id, todayComposition, todayDone)
+  const dayIsComplete = todayDayProgress.complete
 
   function runComposedBlock(block: TodayBlock, composition: TodayComposition) {
     switch (block.kind) {
@@ -1461,11 +1443,6 @@ function Overview({
     clearFocusSession()
     setLockedIn(false)
   }
-  const activeTodayIdx = todayPlan.findIndex((t) => !todayDone.includes(t.id))
-  // Split the daily-minutes commitment across today's tasks (≈10/10/20/… of 60).
-  const techArticle = officialResources(paper.id).find((r) => /technical article/i.test(r.title))
-  const articleMinutes = techArticle ? Math.max(5, Math.round((plan.dailyMinutes || 60) * 0.1)) : 0
-  const taskMins = allocateTaskMinutes(todayPlan, Math.max(todayPlan.length, (plan.dailyMinutes || 60) - articleMinutes))
   // Charles's honest exam-timing read, from readiness vs target + daily pace.
   const targetProb = plan.targetProb ?? 75
   const examTimingLine =
@@ -1476,13 +1453,33 @@ function Overview({
         : prob >= targetProb
           ? `You're at ${prob}% — above target on knowledge. Clear the mock gate and you're ready to book ${paper.id}.`
           : `You're at ${prob}% vs a ${targetProb}% target. At ${plan.dailyMinutes || 60} min/day, keep the loop — I'll green-light your ${paper.id} sitting the moment your readiness holds there.`
-  // Today-mission completion: the plan's tasks (topic learn, essentials, practice,
-  // flashcards…) plus the optional technical article — drives the animated ring.
-  const doneTasks = todayPlan.filter((t) => todayDone.includes(t.id)).length
-  const articleDone = techArticle ? todayDone.includes("article") : false
-  const missionDone = doneTasks + (articleDone ? 1 : 0)
-  const missionTotal = todayPlan.length + (techArticle ? 1 : 0)
-  const missionPct = missionTotal > 0 ? Math.round((missionDone / missionTotal) * 100) : 0
+  /*
+   * Today-mission completion — read from the COMPOSED day (acca-today-composer),
+   * which is the same source the Today board, the Locked In overlay and tomorrow's
+   * preview all render from.
+   *
+   * It used to be counted from a second, independently-built plan. Two sources of
+   * truth for "what is today" is how the board came to say "12 practice questions
+   * on chapter BT-04" while the focus overlay said "practise 8 — area A focus", and
+   * how the celebration could fire on one definition of done and not the other.
+   */
+  const missionDone = todayDayProgress.done
+  const missionTotal = todayDayProgress.total
+  const missionPct = todayDayProgress.percent
+  const [showMissionCelebration, setShowMissionCelebration] = useState(false)
+  useEffect(() => {
+    if (missionPct < 100) return
+    const now = new Date()
+    const day = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, "0")}-${`${now.getDate()}`.padStart(2, "0")}`
+    const key = `scholify-mission-celebrated-${paper.id}-${day}`
+    try {
+      if (window.localStorage.getItem(key)) return
+      window.localStorage.setItem(key, "1")
+    } catch { /* a private session can still celebrate */ }
+    recordDayActive(paper.id)
+    trackEvent("daily_mission_completed", { paper: paper.id, tasks: missionTotal, readiness: prob })
+    setShowMissionCelebration(true)
+  }, [missionPct, missionTotal, paper.id, prob])
 
   // Keep the Pass Momentum trend fed even on read-only visits.
   useEffect(() => {
@@ -1495,6 +1492,18 @@ function Overview({
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+      <DailyMissionCelebration
+        open={showMissionCelebration}
+        paperId={paper.id}
+        paperName={paper.name}
+        streak={shieldState(paper.id).streak}
+        readiness={prob}
+        targetReadiness={plan.targetProb ?? 75}
+        daysToExam={days}
+        completedTasks={missionTotal}
+        onClose={() => setShowMissionCelebration(false)}
+        onRoadmap={() => { setShowMissionCelebration(false); setTab("plan") }}
+      />
       {/* ── "Locked In" — full-focus takeover: only today's mission on screen,
           an animated countdown in the corner. Covers the app chrome; returns
           when the timer's done (or Exit). Persists across launching a task. ── */}
@@ -1513,21 +1522,19 @@ function Overview({
               <div style={{ fontSize: 20, fontWeight: 850, color: TEXT, marginTop: 6 }}>Full focus — today's mission only</div>
               <div style={{ fontSize: 12.5, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>Work each step. Everything else comes back when the timer's done.</div>
             </div>
-            <div style={{ display: "flex", justifyContent: "center", margin: "18px 0" }}>
-              <RingGauge value={missionPct} size={120} stroke={11} color={missionPct >= 100 ? C.green : "#C80000"} label="TODAY'S MISSION" sublabel={missionPct >= 100 ? "Complete!" : `${missionDone} of ${missionTotal} done`} />
-            </div>
-            <MissionTasks
-              tasks={todayPlan}
-              done={todayDone}
-              activeIdx={activeTodayIdx}
-              mins={taskMins}
-              icons={todayIcons}
-              onRun={runTodayTask}
-              techArticle={techArticle}
-              articleMinutes={articleMinutes}
-              articleDone={articleDone}
-              onArticle={() => { markTodayTaskDone(paper.id, "article"); setTodayDone(getTodayDone(paper.id)) }}
+            {/*
+              The SAME board the Today tab renders. Locked In is a frame around the
+              day — a countdown and no chrome — not a second rendering of it, because
+              a second rendering is a second definition of what today contains.
+            */}
+            <TodayBoard
               paperId={paper.id}
+              paperName={paper.name}
+              firstName={firstName}
+              done={todayDone}
+              onRun={runComposedBlock}
+              onArticle={onOpenArticle}
+              onDayComplete={handleDayComplete}
             />
           </div>
         </div>
@@ -1651,9 +1658,11 @@ function Overview({
         <ProgressBoard
           key="progress-tab"
           paperId={paper.id}
+          isPro={isPro}
           onDiagnostic={() => navigate("/study/diagnostic")}
           onFullAnalytics={() => navigate("/study/analytics")}
           onWeak={onWeak}
+          onUpgrade={onUpgrade}
         />
       )}
 
@@ -2345,6 +2354,14 @@ function CircleTimer({ secondsLeft, totalSeconds, size = 72 }: { secondsLeft: nu
 
 /* The today-mission task list + optional ACCA technical article — shared by the
  * normal Today card and the Locked-In focus overlay so both stay in sync. */
+/**
+ * NO LONGER MOUNTED — replaced by TodayBoard (components/acca/TodayBoard).
+ *
+ * It rendered the action-based today list ("Practise 8 questions — A focus"), a
+ * second definition of today alongside the composer’s chapter-based one. Do not
+ * wire it back in: two renderings of one day is how the board and the Locked In
+ * overlay came to show different counts for the same afternoon.
+ */
 function MissionTasks({
   tasks, done, activeIdx, mins, icons, onRun, techArticle, articleMinutes, articleDone, onArticle, paperId,
 }: {
@@ -2425,7 +2442,7 @@ function MissionTasks({
           <IconBadge name={articleDone ? "done" : "learn"} tone={articleDone ? "green" : "neutral"} size={38} />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: TEXT }}>
-              {tasks.length + 1}. Read a technical article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
+              {tasks.length + 1}. Technical Article <span style={{ fontSize: 11, fontWeight: 700, color: DIM }}>· ACCA official</span>
             </span>
             <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>{articleLocked ? "Finish the step above to unlock this" : `Examining-team explainer for ${paperId} · ~${articleMinutes} min`}</span>
           </span>

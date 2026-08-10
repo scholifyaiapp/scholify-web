@@ -1,7 +1,7 @@
 import type { User } from "@supabase/supabase-js"
 
-export const LAUNCH_DATE_ISO = "2026-08-10T00:00:00+05:00"
-export const LAUNCH_DATE_LABEL = "10 August 2026"
+export const LAUNCH_DATE_ISO = "2026-08-10T15:00:00+05:00"
+export const LAUNCH_DATE_LABEL = "10 August 2026 at 15:00 Uzbekistan time"
 
 /**
  * Keep the public waitlist gate up until the advertised launch instant, then
@@ -20,7 +20,7 @@ export const PRELAUNCH_MODE = isPrelaunchAt()
  *
  * ── Why this is a DATE and not a boolean ────────────────────────
  * It was `export const PARTNER_PROGRAM_VISIBLE = false`, a hardcoded flag. The
- * plan is to announce the programme on 8 August and the product on 10 August, and
+ * The programme opened publicly on 6 August and the product opens on 10 August.
  * a hardcoded false does not become true on a date: it would have needed someone
  * to edit this line and ship a deploy on the morning of the 8th, at the same time
  * as posting to every social channel. Miss it, or have the deploy fail, and every
@@ -34,8 +34,8 @@ export const PRELAUNCH_MODE = isPrelaunchAt()
  *
  * Both dates carry +05:00 because that is where the announcements are timed from.
  */
-export const PARTNER_LAUNCH_DATE_ISO = "2026-08-08T00:00:00+05:00"
-export const PARTNER_LAUNCH_DATE_LABEL = "8 August 2026"
+export const PARTNER_LAUNCH_DATE_ISO = "2026-08-06T00:00:00+05:00"
+export const PARTNER_LAUNCH_DATE_LABEL = "6 August 2026"
 
 /** True once the partner programme is publicly announced. */
 export function isPartnerProgramVisibleAt(now: number | Date = Date.now()): boolean {
@@ -44,7 +44,6 @@ export function isPartnerProgramVisibleAt(now: number | Date = Date.now()): bool
 }
 
 export const PARTNER_PROGRAM_VISIBLE = isPartnerProgramVisibleAt()
-
 export const LAUNCH_ADMIN_EMAIL = "scholifyaiapp@gmail.com"
 
 export function isLaunchAdmin(user: User | null | undefined): boolean {

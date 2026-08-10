@@ -10,7 +10,7 @@ interface PageContent {
 
 const en: PageContent = {
   title: "Support",
-  updated: "May 20, 2026",
+  updated: "August 7, 2026",
   intro:
     "Stuck on something, or just have a question? We are here to help you keep your learning streak alive. Here is how to get answers fast.",
   sections: [
@@ -32,8 +32,8 @@ const en: PageContent = {
       body: [
         "Lost your streak? A streak counts the consecutive days you answer questions — miss a day and it restarts, but every answer, readiness score and mock result you have earned is kept.",
         "Need to change your plan? Open Settings to adjust your goal, daily minutes, or sitting, and Charles will recalculate your route.",
-        "Billing or subscription help? Manage or cancel your plan in account settings, or email us and we will sort it out.",
-        "Forgot your password? Click \"Forgot password?\" on the sign-in page and we will email you a reset link. Open it and you are signed in — then set a new password under Settings → Account.",
+        "Billing or subscription help? Manage or cancel your plan in account settings. To avoid a Pro trial charge, cancel before the trial deadline shown at checkout. You can also email us for help.",
+        "Forgot your password? Click \"Forgot password?\" on the sign-in page. Open the secure link in the email, choose a new password on the reset page, then continue to Scholify.",
       ],
     },
     {
@@ -53,7 +53,7 @@ const en: PageContent = {
 
 const ru: PageContent = {
   title: "Поддержка",
-  updated: "20 мая 2026",
+  updated: "7 августа 2026",
   intro:
     "Застряли на чём-то или просто есть вопрос? Мы здесь, чтобы помочь вам сохранить вашу серию обучения. Вот как быстро получить ответы.",
   sections: [
@@ -75,8 +75,8 @@ const ru: PageContent = {
       body: [
         "Потеряли серию? Серия — это подряд идущие дни, когда вы отвечали на вопросы: пропустили день — счёт начинается заново, но все ваши ответы, показатели готовности и результаты пробных экзаменов сохраняются.",
         "Нужно изменить план? Откройте «Настройки», чтобы изменить цель, ежедневные минуты или срок, — и Чарльз перестроит ваш план.",
-        "Вопросы по оплате или подписке? Управляйте тарифом или отмените его в настройках аккаунта либо напишите нам, и мы всё уладим.",
-        "Забыли пароль? Нажмите «Забыли пароль?» на странице входа — мы пришлём ссылку для сброса. Откройте её, и вы войдёте в аккаунт; затем задайте новый пароль в «Настройки → Аккаунт».",
+        "Вопросы по оплате или подписке? Управляйте тарифом или отмените его в настройках аккаунта. Чтобы избежать списания после пробного периода Pro, отмените подписку до срока, указанного при оформлении.",
+        "Забыли пароль? Нажмите «Забыли пароль?» на странице входа. Откройте защищённую ссылку из письма, задайте новый пароль на странице сброса и продолжите работу в Scholify.",
       ],
     },
     {

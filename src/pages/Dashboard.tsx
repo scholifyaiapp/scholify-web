@@ -16,7 +16,7 @@ import { passBand } from "@/lib/acca-diagnostic"
 import { daysUntilExam, currentPhase, METHOD_PHASES, getPlan } from "@/lib/acca-plan"
 import { getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
 import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
-import { buildTodayPlan, greeting, todayHeadline, type TodayAction } from "@/lib/acca-today"
+import { buildTodayPlan, getTodayDone, greeting, setPendingTodayTask, todayHeadline, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import CharlesMascot from "@/components/CharlesMascot"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
@@ -49,6 +49,13 @@ const MISSION_ICONS: Record<TodayAction, IconName> = {
 /** Deep-link for a mission task — carries the area so study/essentials land on today's topic. */
 function missionHref(t: { action: TodayAction; area?: string }): string {
   return `/study?do=${t.action}${t.area ? `&area=${t.area}` : ""}`
+}
+
+function launchMissionTask(navigate: ReturnType<typeof useNavigate>, paperId: string, task: TodayTask): void {
+  // Reading is completed only by the end-of-lesson action. Other task surfaces
+  // resolve their pending marker when the learner returns to Today's plan.
+  setPendingTodayTask(paperId, task.id, task.action === "study")
+  navigate(missionHref(task))
 }
 
 export default function Dashboard() {
@@ -86,8 +93,12 @@ export default function Dashboard() {
         return priority(a.action) - priority(b.action)
       })
     : baseMission
+  const completedMissionIds = new Set(getTodayDone(paperId))
+  const remainingMission = mission.filter((task) => !completedMissionIds.has(task.id))
+  const missionDone = mission.length - remainingMission.length
+  const nextMission = remainingMission[0]
   const ent = entitlementOf(user)
-  const { showPaywall, paywallType, maybeShowTrialReminder, closePaywall } = usePaywall()
+  const { showPaywall, paywallType, triggerFeaturePaywall, maybeShowTrialReminder, closePaywall } = usePaywall()
 
   useEffect(() => {
     snapshotProbability(paperId)
@@ -97,7 +108,7 @@ export default function Dashboard() {
   // both the cadence and the "not day 1" rule).
   useEffect(() => {
     const e = entitlementOf(user)
-    if (e.isTrial) maybeShowTrialReminder(e.trialDaysLeft)
+    if (e.isTrial && !e.isPaid) maybeShowTrialReminder(e.trialDaysLeft)
   }, [user, maybeShowTrialReminder])
 
   // The loop starts at onboarding — a brand-new user goes there first
@@ -142,7 +153,8 @@ export default function Dashboard() {
   // on every session), not the answer-only streak from getTodayStats — otherwise
   // the "shields keep your streak alive" promise has no effect on the number the
   // learner actually sees, which would still reset on the first missed day.
-  const shieldStreak = shieldState(paperId).streak
+  const streak = shieldState(paperId)
+  const shieldStreak = streak.streak
 
   return (
     <DashboardLayout>
@@ -347,25 +359,29 @@ export default function Dashboard() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.md }}>
               <span style={{ ...TYPE.label, color: C.faint }}>Your next action · the plan already chose</span>
               <span style={{ fontSize: 11.5, fontWeight: 750, color: today.goalMet ? C.green : C.faint }}>
-                {today.goalMet ? "goal met" : today.answered > 0 ? `${today.answered}/${today.goal} today` : `0 of ${mission.length} done`}
+                {missionDone === mission.length ? "mission complete" : `${missionDone} of ${mission.length} done`}
               </span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: SP.lg, flexWrap: "wrap", padding: "4px 0 2px" }}>
+            {nextMission ? <div style={{ display: "flex", alignItems: "center", gap: SP.lg, flexWrap: "wrap", padding: "4px 0 2px" }}>
               <span style={{ width: 46, height: 46, borderRadius: 13, background: IRIDESCENT, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                <Icon name={MISSION_ICONS[mission[0].action]} size={21} color="#fff" />
+                <Icon name={MISSION_ICONS[nextMission.action]} size={21} color="#fff" />
               </span>
               <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>① {mission[0].title}</div>
-                <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{mission[0].detail} · ~{MISSION_MINUTES[mission[0].action]} min</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Next · {nextMission.title}</div>
+                <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{nextMission.detail} · ~{MISSION_MINUTES[nextMission.action]} min</div>
               </div>
-              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(missionHref(mission[0]))} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
-                {mission[0].action === "study" || mission[0].action === "essentials" ? "Start learning" : "Start now"}
+              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => launchMissionTask(navigate, paperId, nextMission)} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
+                Continue mission
               </motion.button>
-            </div>
-            {mission.slice(1).map((t, i) => (
+            </div> : (
+              <div style={{ padding: "8px 0 2px", color: C.green, fontWeight: 800, fontSize: 16 }}>
+                ✓ Today's mission is complete. Your streak is secured — see you tomorrow.
+              </div>
+            )}
+            {remainingMission.slice(1).map((t) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: SP.sm, padding: "9px 12px", borderRadius: R.md, background: C.card2, fontSize: 13, color: C.muted }}>
                 <Icon name={MISSION_ICONS[t.action]} size={14} color={C.faint} />
-                <span style={{ flex: 1 }}>{["②", "③", "④", "⑤"][i] ?? ""} {t.title}</span>
+                <span style={{ flex: 1 }}>{t.title}</span>
                 <span style={{ color: C.faint, fontSize: 12 }}>~{MISSION_MINUTES[t.action]} min</span>
               </div>
             ))}
@@ -384,6 +400,9 @@ export default function Dashboard() {
                 {week.map((d) => (
                   <span key={d.date} style={{ width: 15, height: 15, borderRadius: 4.5, background: d.count > 0 ? C.green : C.card2 }} />
                 ))}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 750, color: streak.activeToday ? C.green : C.brand }}>
+                {streak.activeToday ? "Secured for today ✓" : "Complete one task to secure today"}
               </div>
             </VitalTile>
             <VitalTile icon="practice" label="Daily goal">
@@ -412,8 +431,8 @@ export default function Dashboard() {
                 <div style={{ fontSize: 12.5, color: C.soft }}>Practise a little and this finds itself.</div>
               )}
             </VitalTile>
-            <VitalTile icon={gate.unlocked ? "mock" : "lock"} label={gate.unlocked ? "Mock exams" : "Mock gate"} onClick={() => navigate(gate.unlocked ? "/study?do=mock" : "/study?do=weak")}>
-              {gate.unlocked ? (
+            <VitalTile icon={gate.unlocked && ent.isPro ? "mock" : "lock"} label={gate.unlocked ? "Mock exams" : "Mock gate"} onClick={() => gate.unlocked && !ent.isPro ? triggerFeaturePaywall() : navigate(gate.unlocked ? "/study?do=mock" : "/study?do=weak")}>
+              {gate.unlocked && ent.isPro ? (
                 <>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                     {Array.from({ length: MOCKS_REQUIRED }, (_, i) => {
@@ -428,6 +447,11 @@ export default function Dashboard() {
                   <div style={{ ...TYPE.small, color: C.faint, marginTop: 8 }}>
                     {mocks.examReady ? "Exam-ready — keep it warm" : history.length ? `best ${Math.max(...history.map((m) => m.percent))}%` : "Sit Mock 1"}
                   </div>
+                </>
+              ) : gate.unlocked ? (
+                <>
+                  <div style={{ fontSize: 12.5, fontWeight: 750, color: C.text }}>Pro feature</div>
+                  <div style={{ ...TYPE.small, color: C.faint, marginTop: 8 }}>Upgrade to sit timed mocks and view mock history.</div>
                 </>
               ) : (
                 <>

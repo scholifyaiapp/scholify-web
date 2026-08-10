@@ -202,7 +202,7 @@ const fadeVariants = {
 
 export default function Welcome() {
   const navigate = useNavigate()
-  const { user, startTrial } = useAuth()
+  const { user } = useAuth()
   const reduced = useReducedMotion()
   const isMobile = useIsMobile()
 
@@ -470,9 +470,6 @@ export default function Welcome() {
     // The answers are now committed to the real stores, so the draft has served
     // its purpose. Leaving it would offer to "resume" a finished onboarding.
     if (complete) clearOnboardingDraft()
-    // Onboarding is done → start the 3-day free trial now. Fire-and-forget:
-    // it's idempotent server-side, and the auth effect re-grants as a safety net.
-    if (complete) void startTrial()
     return true
   }
 
@@ -522,7 +519,6 @@ export default function Welcome() {
       await useUploadedResult(resultAnalysis, resultFile.name)
       markAccaOnboarded()
       void persistAccountSetup()
-      void startTrial()
       setStartMode("assess")
       trackEvent("onboarding_complete", { ...onboardingProps(), exit: "uploaded_result", resultKind: resultAnalysis.resultKind })
       navigate("/dashboard")

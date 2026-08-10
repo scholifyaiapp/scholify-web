@@ -20,20 +20,16 @@ function AuthLoading() {
   )
 }
 
+function TrialExpiredBlock() {
+  return <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}><PaywallModal open type="expired" onClose={() => {}} /></div>
+}
+
 /**
- * Full-screen, non-dismissible upgrade wall. Shown by the entitlement gate once
- * a learner's 3-day trial has ended without a paid plan — the PaywallModal is a
+ * Full-screen, non-dismissible purchase wall. Shown by the entitlement gate when
+ * an onboarded learner has no paid subscription or card-backed trial — the PaywallModal is a
  * fixed inset-0 overlay, so the app behind it is unreachable until they upgrade
  * (or use the Settings / sign-out links in the modal footer).
  */
-function TrialExpiredBlock() {
-  return (
-    <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
-      <PaywallModal open type="expired" onClose={() => {}} />
-    </div>
-  )
-}
-
 /**
  * Shown when a real, signed-in account reaches the app before launch.
  *
@@ -89,8 +85,8 @@ function PrelaunchBlock({ email }: { email: string | null }) {
 
 /**
  * Wraps routes that require authentication. Redirects guests to /sign-in.
- * With `gate`, ALSO enforces entitlement: an onboarded learner whose trial has
- * expired without paying is hard-blocked behind the upgrade wall. Settings and
+ * With `gate`, ALSO enforces entitlement: an onboarded unpaid learner is
+ * hard-blocked behind the purchase wall. Settings and
  * the public /pricing page are intentionally left ungated so they can still pay
  * or manage their account.
  */
@@ -98,9 +94,6 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   const { user, loading } = useAuth()
   const location = useLocation()
   const [, setEntitlementClock] = useState(0)
-
-  // Re-evaluate access at the exact trial deadline. Without this, a learner who
-  // kept one tab open could continue until their next navigation or refresh.
   useEffect(() => {
     if (!gate || !user) return
     const end = Date.parse(String(user.app_metadata?.trial_ends_at ?? ""))
@@ -134,20 +127,9 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
      */
     return <PrelaunchBlock email={user.email ?? null} />
   }
-  if (gate) {
-    // The launch admin must always be able to exercise the complete learner
-    // journey before launch. An old/expired trial on the test account should
-    // not turn every app CTA into a paywall while the product is being audited.
-    if (isLaunchAdmin(user)) return <>{children}</>
-    const e = entitlementOf(user)
-    // Only block AFTER a trial has been used and expired — never a brand-new or
-    // not-yet-onboarded account (they haven't started their 3 days yet).
-    // CRITICAL: only when payments are actually open. If checkout can't run yet,
-    // a hard block would trap the user with no way to pay — so we let them
-    // through and rely on the (dismissible) trial reminder instead.
-    if (isStripeConfigured() && isAccaOnboarded() && e.hadTrial && !e.isPro) {
-      return <TrialExpiredBlock />
-    }
+  const isFreeValueRoute = location.pathname === "/study/diagnostic"
+  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && !isFreeValueRoute && !entitlementOf(user).isPaid) {
+    return <TrialExpiredBlock />
   }
   return <>{children}</>
 }

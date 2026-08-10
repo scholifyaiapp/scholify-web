@@ -196,14 +196,14 @@ export const ru: Record<string, string> = {
   "PRICING": "ЦЕНЫ",
   "Start free.": "Начните бесплатно.",
   "Upgrade when you're ready.": "Перейдите на платный план, когда будете готовы.",
-  "Start with a 3-day free trial — no card. Annual saves 33%.":
-    "Начните с 3-дневного бесплатного пробного периода — без карты. Годовой план экономит 33%.",
+  "Build your plan free. Pro starts with 3 free days. Annual saves 33%.":
+    "Создайте свой план бесплатно. Pro начинается с 3 бесплатных дней. Годовой план экономит 33%.",
   "Beginner": "Новичок",
   "Pro": "Pro",
   "Start free": "Начать бесплатно",
   "WHAT'S INCLUDED": "ЧТО ВХОДИТ",
-  "No card to start. A 3-day free trial, then Beginner or Pro.":
-    "Карта не нужна. 3-дневный бесплатный пробный период, затем Beginner или Pro.",
+  "No charge today on Pro. Cancel during the 3-day trial and pay nothing.":
+    "Сегодня плата за Pro не взимается. Отмените в течение 3-дневного пробного периода и ничего не платите.",
   "Google Calendar sync": "Синхронизация с Google Календарём",
 
   /* ── Footer ── */
@@ -401,7 +401,8 @@ export const ru: Record<string, string> = {
   "Pro costs less than one tutoring hour": "Pro стоит меньше одного часа с репетитором",
 
   /* ── How it works ── */
-  "Your exam plan in 60 seconds": "Ваш план подготовки за 60 секунд",
+  "A plan built from your real constraints": "План, построенный на ваших реальных условиях",
+  "Built into the AI Examiner": "Встроено в AI Examiner",
   "YOUR RECORD": "ВАШ ПУТЬ",
   "Tell Charles where you are": "Скажите Чарльзу, где вы сейчас",
   "Mark the papers you've passed, pick your next one, and set your exam date. Takes a minute.":
@@ -493,7 +494,9 @@ export const ru: Record<string, string> = {
     "Экзамены Strategic Professional — письменные, и никто не даёт мгновенной обратной связи по письменным ответам. AI-Экзаменатор Scholify проверяет ваш ответ по схеме оценивания, пункт за пунктом, за секунды. Раньше на это уходили репетитор и неделя.",
   "Type your answer, get your mark in seconds": "Напишите ответ — получите оценку за секунды",
   "Point-by-point feedback against the rubric": "Обратная связь по каждому пункту схемы оценивания",
-  "190 written questions, each with its rubric": "190 письменных вопросов, у каждого свои критерии оценки",
+  "445 written practice tasks with examiner rubrics": "445 письменных практических заданий с критериями экзаменатора",
+  "The Pro trial unlocks all 15 papers, mocks, the AI Examiner and custom AI practice for 3 days.":
+    "Пробный период Pro на 3 дня открывает все 15 экзаменов, пробные тесты, AI Examiner и персональную практику с ИИ.",
   "Trains the skill OT questions can't teach": "Тренирует навык, который не дают OT-вопросы",
   "MEET YOUR AI TUTOR": "ЗНАКОМЬТЕСЬ: ВАШ AI-РЕПЕТИТОР",
   "Charles is built into Scholify. He knows which papers you've passed, your weak syllabus areas, and today's task. Ask him to explain deferred tax like you're five — he will, at 2am, without judgement.":
@@ -580,12 +583,12 @@ export const ru: Record<string, string> = {
   "Timed mock exams": "Пробные экзамены на время",
   "AI Examiner — instant written marking": "AI-Экзаменатор — мгновенная проверка письменных ответов",
   "Custom practice from topics or your notes": "Своя практика по темам или вашим конспектам",
-  "Charles AI race engineer on every plan": "ИИ-гоночный инженер Чарльз на любом плане",
+  "Charles AI tutor — allowance on every plan": "ИИ-репетитор Чарльз — лимит доступен на каждом тарифе",
   "Mock history & readiness trend": "История пробных экзаменов и динамика готовности",
   "Then the next one.": "А потом следующий.",
   "Pass this paper.": "Сдайте этот экзамен.",
   "Start prepping — free": "Начать подготовку — бесплатно",
-  "No credit card · A plan in 60 seconds · Cancel anytime": "Без карты · План за 60 секунд · Отмена в любой момент",
+  "Free diagnosis · 3 free days on Pro · Cancel anytime": "Бесплатная диагностика · 3 бесплатных дня Pro · Отмена в любой момент",
   "Your next paper is waiting.": "Ваш следующий экзамен ждёт.",
 
   /* ── Plan-generator phases (hero visual) ── */

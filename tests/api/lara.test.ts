@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest"
-import { trialActive, envInt } from "../../api/lara.js"
+import { trialActive, envInt, aiProvider } from "../../api/lara.js"
 
 /*
  * The server-side trial gate for AI metering. A trial grants Pro-level AI caps,
@@ -10,6 +10,30 @@ import { trialActive, envInt } from "../../api/lara.js"
 
 const NOW = Date.parse("2026-07-15T12:00:00Z")
 const at = (deltaDays: number) => new Date(NOW + deltaDays * 86400000).toISOString()
+
+describe("aiProvider", () => {
+  const originalOpenAi = process.env.OPENAI_API_KEY
+  const originalAnthropic = process.env.ANTHROPIC_API_KEY
+
+  afterEach(() => {
+    if (originalOpenAi === undefined) delete process.env.OPENAI_API_KEY
+    else process.env.OPENAI_API_KEY = originalOpenAi
+    if (originalAnthropic === undefined) delete process.env.ANTHROPIC_API_KEY
+    else process.env.ANTHROPIC_API_KEY = originalAnthropic
+  })
+
+  it("keeps OpenAI primary even if an Anthropic fallback key also exists", () => {
+    process.env.OPENAI_API_KEY = "openai-test-key"
+    process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
+    expect(aiProvider()).toBe("openai")
+  })
+
+  it("uses Anthropic only when OpenAI is unavailable", () => {
+    delete process.env.OPENAI_API_KEY
+    process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
+    expect(aiProvider()).toBe("anthropic")
+  })
+})
 
 describe("trialActive (metering)", () => {
   it("is true for a trial ending in the future", () => {

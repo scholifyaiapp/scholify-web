@@ -55,11 +55,14 @@ import { examBlueprint } from "@/lib/acca-exam-structure"
  *   RETENTION               what is going cold, and the streak keeping it warm.
  */
 
-export function ProgressBoard({ paperId, onDiagnostic, onFullAnalytics, onWeak }: {
+export function ProgressBoard({ paperId, isPro, onDiagnostic, onFullAnalytics, onWeak, onUpgrade }: {
   paperId: string
+  /** Mock history is a Pro entitlement — see the block at the bottom. */
+  isPro: boolean
   onDiagnostic: () => void
   onFullAnalytics: () => void
   onWeak: () => void
+  onUpgrade: () => void
 }) {
   const reduced = useReducedMotion()
   const stats = getPaperStats(paperId)
@@ -298,8 +301,17 @@ export function ProgressBoard({ paperId, onDiagnostic, onFullAnalytics, onWeak }
         )}
       </Block>
 
-      {/* ── 8 · Mocks ── */}
-      {mocks.length > 0 && (
+      {/* ── 8 · Mocks — a Pro entitlement (see plan-contract) ── */}
+      {mocks.length > 0 && !isPro && (
+        <Block icon="mock" title="Mock history">
+          <ActionRow
+            icon="lock"
+            label="Mock history and your readiness trend are part of Pro — upgrade to see every past score"
+            onClick={onUpgrade}
+          />
+        </Block>
+      )}
+      {mocks.length > 0 && isPro && (
         <Block icon="mock" title="Mock history" action={{ label: `best ${Math.max(...mocks.map((m) => m.percent))}%`, onClick: onFullAnalytics }}>
           {mocks.length >= 2 && (
             <TrendBars points={[...mocks].reverse().map((m) => ({ date: m.date, percent: m.percent }))} passLine={MOCK_PASS} unit="mock score" />

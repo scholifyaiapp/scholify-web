@@ -35,13 +35,21 @@ describe("allocateTaskMinutes", () => {
   })
 })
 
-describe("official daily-plan structure", () => {
-  it("separates Sections A and B for an F1–F4 paper", () => {
-    expect(buildTodayPlan("BT").filter((item) => item.action === "section").map((item) => item.section)).toEqual(["A", "B"])
+describe("adaptive daily-plan structure", () => {
+  it("always exposes one clear four-step in-app loop", () => {
+    for (const paper of ["BT", "PM", "SBR", "AAA"]) {
+      expect(buildTodayPlan(paper).map((item) => item.title)).toEqual(["Study", "Quiz", "Practice", "Flashcards"])
+    }
   })
 
-  it("separates Sections A, B and C where the official exam has all three", () => {
-    expect(buildTodayPlan("PM").filter((item) => item.action === "section").map((item) => item.section)).toEqual(["A", "B", "C"])
+  it("keeps stable task ids so completion never duplicates or re-locks steps", () => {
+    expect(buildTodayPlan("PM").map((item) => item.id)).toEqual(["study", "essentials", "practice", "flashcards"])
+  })
+
+  it("targets a real syllabus area while keeping the universal labels", () => {
+    const plan = buildTodayPlan("BT")
+    expect(plan.every((item) => item.area)).toBe(true)
+    expect(plan[1].detail).toContain(plan[0].area)
   })
 })
 

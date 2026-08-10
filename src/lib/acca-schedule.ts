@@ -183,6 +183,8 @@ function writeShields(s: Record<string, ShieldRec>): void {
 export interface ShieldState {
   streak: number
   shieldsLeft: number
+  /** A meaningful learning action has already secured today's streak. */
+  activeToday: boolean
   /** Days missed since the last active day (0 if active today/never). */
   missedDays: number
   /** A shield is currently absorbing a gap — the streak is protected. */
@@ -246,6 +248,7 @@ function shieldStateFrom(rec: ShieldRec, today: string, paused = false): ShieldS
     // the one who watches their streak collapse to zero.
     streak: paused || protectedToday || missed === 0 ? rec.streak : 0,
     shieldsLeft,
+    activeToday: rec.lastActive === today,
     missedDays: rec.lastActive === today ? 0 : missed,
     protectedToday,
   }

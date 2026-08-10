@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { startStripeCheckout, isStripeConfigured, openStripeBillingPortal, type StripePlan } from "@/lib/stripe"
-import { isSupabaseConfigured } from "@/lib/supabase"
+import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import PricingCard, { type PlanFeature } from "@/components/PricingCard"
@@ -26,7 +26,7 @@ const accountsOpen = isSupabaseConfigured
 const FREE_FEATURES: PlanFeature[] = [
   { text: "Expert-written practice on your chosen paper" },
   { text: "Instant marking + teaching explanations" },
-  { text: "1,057 SRS flashcards" },
+  { text: "SRS flashcards for your chosen paper" },
   { text: "Diagnostic with an Exam Readiness Score (± margin)" },
   { text: "Study chapters for your chosen paper" },
   { text: "Charles AI race engineer" },
@@ -36,15 +36,16 @@ const FREE_FEATURES: PlanFeature[] = [
 
 const BEGINNER_FEATURES: PlanFeature[] = [
   { text: "All 15 papers unlocked — study & practise any of them" },
-  { text: "Unlimited expert-written practice, marked instantly" },
-  { text: "Ask Charles (AI tutor) — daily allowance" },
+  { text: "Unlimited practice sessions, marked instantly" },
+  { text: "Ask Charles — up to 25 tutor questions/day" },
   { text: "Flashcards, diagnostic & readiness analytics" },
   { text: "Upgrade to Pro anytime for mocks, Examiner & custom practice" },
 ]
 
 const PRO_FEATURES: PlanFeature[] = [
   { text: "Timed mock exams", badge: "PRO" },
-  { text: "AI Examiner on all 190 written questions", badge: "NEW" },
+  { text: "AI Examiner across 445 written practice tasks", badge: "NEW" },
+  { text: "Up to 100 Charles tutor questions/day" },
   { text: "Custom practice from any topic or your notes" },
   { text: "Mock history & readiness trend" },
   { text: "Annual option — 33% cheaper" },
@@ -66,12 +67,12 @@ const FAQS: Array<[string, string]> = [
   [
     "How does the free trial work?",
     accountsOpen
-      ? "Every new account starts with a 3-day free trial of full Pro — timed mocks, the AI Examiner and custom practice unlocked on your chosen paper, with no card. When the 3 days end, choose Beginner (all 15 papers + unlimited practice) or Pro (adds mocks, the AI Examiner and custom practice) to keep going. Cancel anytime."
-      : "Accounts aren't open yet. When they are, every new account will start with a 3-day free trial of full Pro (no card), then choose Beginner or Pro to continue.",
+      ? "Complete onboarding and your diagnosis free. If you choose Pro, secure checkout collects a payment method and unlocks a 3-day free trial of the complete workspace. Cancel during the trial and pay nothing."
+      : "Accounts aren't open yet. When they are, onboarding and diagnosis will be free, followed by a card-backed 3-day Pro trial.",
   ],
   [
     "Which papers does Scholify cover?",
-    "All 15 papers of the ACCA qualification, BT to AAA. Nine papers (BT, MA, FA, LW, PM, TX, FR, AA, FM) have curated, expert-written question banks; every paper has study chapters and supports AI-generated practice, and the AI Examiner marks 190 written questions against their rubrics.",
+    "All 15 papers of the ACCA qualification, BT to AAA. Seven papers have fully authored question banks with no generated drills; the other eight combine authored questions with generated drills. Every paper has study chapters, and Pro includes the AI Examiner for written practice.",
   ],
   [
     "What is the AI Examiner?",
@@ -215,6 +216,31 @@ export default function Pricing() {
     checkout(requested as StripePlan)
   }, [user])
 
+  // Stripe's billing portal can change Beginner ↔ Pro. app_metadata reaches the
+  // browser through a fresh JWT, so refresh after the portal returns instead of
+  // leaving the old gates in place until the next sign-in.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("billing") !== "updated" || !user || !isSupabaseConfigured) return
+    window.history.replaceState({}, "", window.location.pathname)
+    let cancelled = false
+    const attempt = async (retriesLeft: number) => {
+      try {
+        const { data } = await supabase.auth.refreshSession()
+        if (data.session?.user) {
+          flash("Subscription updated — your access is now refreshed.")
+          return
+        }
+      } catch {
+        /* webhook/session propagation can briefly lag the portal redirect */
+      }
+      if (!cancelled && retriesLeft > 0) window.setTimeout(() => void attempt(retriesLeft - 1), 3000)
+    }
+    void attempt(4)
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
   const beginnerCard = useMemo(
     () => ({
       price: annual ? "$6.67" : "$9.99",
@@ -231,6 +257,16 @@ export default function Pricing() {
     }),
     [annual],
   )
+  const beginnerCta = entitlement.isBeginner
+    ? "Current plan · Manage"
+    : entitlement.isPro && !entitlement.isTrial
+      ? "Manage subscription"
+      : "Choose Beginner"
+  const proCta = entitlement.isPro && !entitlement.isTrial
+    ? "Current plan · Manage"
+    : entitlement.isBeginner
+      ? "Upgrade to Pro →"
+      : "Choose Pro →"
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--sch-bg)" }}>
@@ -291,8 +327,8 @@ export default function Pricing() {
             Cheaper than one tutoring hour.
           </h1>
           <p style={{ fontSize: 16, color: "var(--sch-tx-2)", marginTop: 12 }}>
-            Start with a 3-day free trial of full Pro — no card. Then Beginner for all-papers practice,
-            or Pro for mocks, the AI Examiner and custom practice.
+            Build your personalised plan free. Choose Pro for 3 days free, then keep the adaptive plan,
+            mocks, AI Examiner and custom practice unlocked.
           </p>
 
           {/* Billing toggle */}
@@ -382,10 +418,10 @@ export default function Pricing() {
           <PricingCard
             index={0}
             variant="free"
-            name="Free trial"
+            name="Personal plan"
             price="$0"
-            priceUnit="3 days"
-            description="Full Pro to start — no card. Then pick Beginner or Pro."
+            priceUnit="before checkout"
+            description="Onboarding, diagnosis and your personalised roadmap."
             features={FREE_FEATURES}
             cta={user ? "Go to app →" : "Start free"}
             onCta={() => (window.location.href = user ? "/study" : "/sign-up")}
@@ -401,7 +437,7 @@ export default function Pricing() {
             description="For steady daily practice"
             featuresHeader="The full study loop:"
             features={BEGINNER_FEATURES}
-            cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
+            cta={paymentsOpen ? beginnerCta : "Payments open soon"}
             disabled={!paymentsOpen}
             onCta={() => checkout(annual ? "annual_beginner" : "beginner")}
           />
@@ -416,7 +452,7 @@ export default function Pricing() {
             description="Mocks, AI Examiner & custom practice"
             featuresHeader="Everything in Beginner, plus:"
             features={PRO_FEATURES}
-            cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
+            cta={paymentsOpen ? proCta : "Payments open soon"}
             disabled={!paymentsOpen}
             badge="Most Popular"
             onCta={() => checkout(annual ? "annual_pro" : "pro")}
@@ -528,8 +564,8 @@ export default function Pricing() {
             plan itself never has a clock either way. */}
         <p style={{ textAlign: "center", fontSize: 13, color: TEXT2, marginTop: 24, lineHeight: 1.7 }}>
           {accountsOpen
-            ? "Every new account starts with a 3-day free trial of full Pro — no card. When it ends, pick Beginner or Pro. Cancel anytime."
-            : "Accounts aren't open yet. When they are, every new account starts with a 3-day free trial, then Beginner or Pro."}
+            ? "Build your plan free. Pro starts with 3 free days after secure checkout; cancel during the trial and pay nothing."
+            : "Accounts aren't open yet. When they are, diagnosis is free and Pro starts with a card-backed 3-day trial."}
           <br />
           Beginner unlocks all 15 papers and unlimited practice; Pro adds timed mocks, the AI Examiner
           and custom practice. Cancel anytime.

@@ -182,6 +182,15 @@ function PrimaryCTA({ children, onClick, large = false }: { children: React.Reac
 function Nav() {
   const navigate = useNavigate()
   const t = useT()
+  const scrollToSection = (id: string) => {
+    const section = document.getElementById(id)
+    if (!section) return
+    section.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    })
+    window.history.replaceState(null, "", `#${id}`)
+  }
   return (
     <motion.header
       initial={{ y: -20, opacity: 0, x: "-50%" }}
@@ -228,9 +237,9 @@ function Nav() {
       >
         <NavHeader
           items={[
-            { label: t("Features"), href: "#features" },
-            { label: t("How it works"), href: "#how-it-works" },
-            { label: t("Pricing"), href: "#pricing" },
+            { label: t("Features"), href: "#features", onClick: () => scrollToSection("features") },
+            { label: t("How it works"), href: "#how-it-works", onClick: () => scrollToSection("how-it-works") },
+            { label: t("Pricing"), href: "/pricing", onClick: () => navigate("/pricing") },
             { label: t("Partners"), href: "/partners/apply", onClick: () => navigate("/partners/apply") },
           ]}
         />
@@ -400,7 +409,7 @@ function Hero() {
         >
           {[
             { n: "2,494", label: t("expert-written questions") },
-            { n: "1,057", label: t("flashcards") },
+            { n: "2,130", label: t("flashcards") },
             { n: "15", label: t("ACCA papers") },
           ].map((s, i) => (
             <motion.span
@@ -508,7 +517,7 @@ function Problem() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
           <StatCard tone="blue" value="50%" label={t("average pass rate on Applied Skills exams")} source={t("Published ACCA global pass rates")} delay={0.05} />
           <StatCard tone="green" value="13" label={t("exams to qualify — one system for all of them")} source={t("BT to Strategic Professional")} delay={0.15} />
-          <StatCard tone="purple" value="10×" label={t("cheaper than a private ACCA tutor")} source={t("Pro costs less than one tutoring hour")} delay={0.25} />
+          <StatCard tone="purple" value="445" label={t("written practice tasks with examiner rubrics")} source={t("Built into the AI Examiner")} delay={0.25} />
         </div>
       </div>
     </section>
@@ -536,7 +545,7 @@ function HowItWorks() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-120px")
   const t = useT()
   return (
-    <section id="how-it-works" style={{ padding: "var(--section-y) var(--page-gutter)", textAlign: "center" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)", textAlign: "center" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", position: "relative" }}>
         <div
           aria-hidden
@@ -547,7 +556,7 @@ function HowItWorks() {
         </div>
         <SectionLabel>{t("HOW IT WORKS")}</SectionLabel>
         <AnimatedUnderlineText
-          text={t("Your exam plan in 60 seconds")}
+          text={t("A plan built from your real constraints")}
           className="mt-[18px]"
           textClassName="font-display font-normal leading-[1.05] text-[#14141A] text-[clamp(40px,5vw,80px)]"
           underlineClassName="text-[#C80000]"
@@ -1032,7 +1041,7 @@ function VisualProgress() {
 function Features() {
   const t = useT()
   return (
-    <section id="features" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("FEATURES")}</SectionLabel>
@@ -1065,7 +1074,7 @@ function Features() {
           bullets={[
             "Type your answer, get your mark in seconds",
             "Point-by-point feedback against the rubric",
-            "190 written questions, each with its rubric",
+            "445 written practice tasks with examiner rubrics",
             "Trains the skill OT questions can't teach",
           ]}
           visual={<VisualExaminer />}
@@ -1874,13 +1883,13 @@ interface ScholifyFeature {
 }
 
 const scholifyFeatures: ScholifyFeature[] = [
-  { label: "Curated question banks — all nine OT papers" },
+  { label: "Question banks across all 15 ACCA papers" },
   { label: "Instant marking + teaching explanations" },
   { label: "SRS flashcards for standards, rules & formulas" },
   { label: "Personalised study plan to exam day" },
   { label: "Readiness score & per-area analytics" },
   { label: "Full BT → AAA qualification roadmap" },
-  { label: "Charles AI race engineer on every plan" },
+  { label: "Charles AI tutor — allowance on every plan" },
   { label: "Timed mock exams", pro: true },
   { label: "AI Examiner — instant written marking", pro: true },
   { label: "Custom practice from topics or your notes", pro: true },
@@ -1898,17 +1907,19 @@ function Pricing() {
     const plan: StripePlan = tier === 1
       ? (period === 1 ? "annual_beginner" : "beginner")
       : (period === 1 ? "annual_pro" : "pro")
-    void startStripeCheckout(plan)
+    void startStripeCheckout(plan).then((started) => {
+      if (!started) navigate(signUpPath(`/pricing?checkout=${plan}`))
+    })
   }
   return (
-    <section id="pricing" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
         <SectionLabel>{t("PRICING")}</SectionLabel>
         <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(40px, 5vw, 72px)", color: INK, margin: "18px 0 0" }}>
           {t("Start free.")} <em style={{ fontStyle: "italic" }}>{t("Upgrade when you're ready.")}</em>
         </h2>
         <p style={{ color: INK_MUTED, fontSize: 16, marginTop: 14, maxWidth: 560, marginInline: "auto" }}>
-          {t("Start with a 3-day free trial — no card. Annual saves 33%.")}
+          {t("Build your plan free. Pro starts with 3 free days. Annual saves 33%.")}
         </p>
 
         <div
@@ -1949,7 +1960,7 @@ function Pricing() {
               {t("Every paper. Every mode.")}
             </h3>
             <p style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.6, marginTop: 4 }}>
-              {t("The trial covers your chosen paper. Beginner unlocks all 15 papers; Pro adds mocks, the AI Examiner and custom AI practice.")}
+              {t("The Pro trial unlocks all 15 papers, mocks, the AI Examiner and custom AI practice for 3 days.")}
             </p>
 
             <div style={{ height: 1, background: HAIR, margin: "22px 0" }} />
@@ -1999,7 +2010,7 @@ function Pricing() {
         </div>
 
         <p style={{ color: INK_MUTED, fontSize: 13, marginTop: 28 }}>
-          {t("No card to start. A 3-day free trial, then Beginner or Pro.")}
+          {t("No charge today on Pro. Cancel during the 3-day trial and pay nothing.")}
         </p>
       </div>
     </section>
@@ -2028,7 +2039,7 @@ function FinalCTA() {
             {t("Start prepping — free")} <ArrowRight size={20} strokeWidth={2.4} />
           </PrimaryCTA>
           <p style={{ color: INK_MUTED, fontSize: 14 }}>
-            {t("No credit card · A plan in 60 seconds · Cancel anytime")}
+            {t("Free diagnosis · 3 free days on Pro · Cancel anytime")}
           </p>
         </div>
       </div>

@@ -10,17 +10,19 @@ interface PageContent {
 
 const en: PageContent = {
   title: "Privacy Policy",
-  updated: "May 20, 2026",
+  updated: "August 7, 2026",
   intro:
     "Scholify helps you prepare for the ACCA exams. To do that well, we collect a small amount of information about you and how you use the app. This page explains exactly what we collect, why, and the control you have over it.",
   sections: [
     {
       heading: "Information we collect",
       body: [
-        "Account details: your name, email address, and password (stored encrypted) when you create an account.",
+        "Account details: your name and email address when you create an account. Authentication is handled by Supabase; Scholify does not receive or store your readable password.",
         "Learning data: the papers and exam dates you set, your study plans, answers, mock results, streaks and readiness scores — this is what powers your personalized experience.",
         "Conversations with Charles: messages you exchange with your AI race engineer, so he can give you relevant, continuous support.",
-        "Usage and device data: basic analytics such as which features you use, app version, and device type, used only to improve Scholify.",
+        "Usage and device data: product events, pages and features used, app version, and device or browser type. We use this to operate Scholify, understand conversion and improve the product.",
+        "Billing data: Stripe processes your payment method and subscription. Scholify receives identifiers, plan and subscription status, but not your complete card number.",
+        "Optional integrations: if you connect Google Calendar, we process the authorization tokens and calendar settings needed to provide synchronization until you disconnect it.",
       ],
     },
     {
@@ -35,7 +37,7 @@ const en: PageContent = {
     {
       heading: "How we share information",
       body: [
-        "We share data only with trusted service providers who help us run Scholify — for example, cloud hosting and the AI provider that powers Charles. They may only use it to deliver their service to us.",
+        "We share data only with service providers needed to run Scholify, including Supabase for authentication and data, Vercel for hosting, Stripe for billing, PostHog for product analytics, Resend for email, Google when you enable Calendar, and the configured AI provider for Charles. Their handling is governed by their service terms and our configuration.",
         "We may disclose information if required by law, or to protect the safety and rights of our users.",
       ],
     },
@@ -49,7 +51,7 @@ const en: PageContent = {
       heading: "Your rights",
       body: [
         "You can view and edit your account information at any time inside the app.",
-        "You can request a copy of your data, or ask us to delete your account and associated data, by emailing support@scholifyapp.com.",
+        "You can export study data and delete your account from Settings. You may also request help, a copy, correction or deletion by emailing support@scholifyapp.com.",
       ],
     },
     {
@@ -69,17 +71,19 @@ const en: PageContent = {
 
 const ru: PageContent = {
   title: "Политика конфиденциальности",
-  updated: "20 мая 2026",
+  updated: "7 августа 2026",
   intro:
     "Scholify помогает готовиться к экзаменам ACCA. Чтобы делать это хорошо, мы собираем небольшой объём информации о вас и о том, как вы пользуетесь приложением. На этой странице подробно описано, что именно мы собираем, зачем и как вы можете этим управлять.",
   sections: [
     {
       heading: "Какие данные мы собираем",
       body: [
-        "Данные аккаунта: ваше имя, адрес электронной почты и пароль (хранится в зашифрованном виде) при создании аккаунта.",
+        "Данные аккаунта: ваше имя и адрес электронной почты. Аутентификацию обрабатывает Supabase; Scholify не получает и не хранит ваш пароль в читаемом виде.",
         "Данные об обучении: выбранные экзамены и их даты, планы занятий, ответы, результаты пробных экзаменов, серии и показатели готовности — именно это обеспечивает персональный опыт.",
-        "Разговоры с Ларой: сообщения, которыми вы обмениваетесь с вашим ИИ-партнёром по обучению, чтобы она могла давать актуальную и постоянную поддержку.",
-        "Данные об использовании и устройстве: базовая аналитика — какими функциями вы пользуетесь, версия приложения и тип устройства — используется только для улучшения Scholify.",
+        "Разговоры с Чарльзом: сообщения, которыми вы обмениваетесь с ИИ-помощником, чтобы он мог давать актуальную поддержку.",
+        "Данные об использовании и устройстве: события продукта, посещённые страницы и функции, версия приложения, тип устройства или браузера. Мы используем их для работы и улучшения Scholify.",
+        "Платёжные данные: Stripe обрабатывает способ оплаты и подписку. Scholify получает идентификаторы, тариф и статус подписки, но не полный номер карты.",
+        "Дополнительные интеграции: если вы подключаете Google Календарь, мы обрабатываем токены авторизации и настройки, необходимые для синхронизации, пока вы её не отключите.",
       ],
     },
     {
@@ -94,7 +98,7 @@ const ru: PageContent = {
     {
       heading: "Как мы передаём информацию",
       body: [
-        "Мы передаём данные только проверенным поставщикам услуг, которые помогают нам обеспечивать работу Scholify — например, облачному хостингу и ИИ-провайдеру, на котором работает Чарльз. Они могут использовать данные только для оказания своих услуг нам.",
+        "Мы передаём данные только сервисам, необходимым для работы Scholify: Supabase для аккаунтов и данных, Vercel для хостинга, Stripe для оплаты, PostHog для аналитики, Resend для писем, Google при подключении Календаря и настроенному ИИ-провайдеру для Чарльза.",
         "Мы можем раскрыть информацию, если этого требует закон, или для защиты безопасности и прав наших пользователей.",
       ],
     },
@@ -108,7 +112,7 @@ const ru: PageContent = {
       heading: "Ваши права",
       body: [
         "Вы можете просматривать и изменять данные своего аккаунта в любое время прямо в приложении.",
-        "Вы можете запросить копию своих данных или попросить удалить аккаунт и связанные с ним данные, написав на support@scholifyapp.com.",
+        "Вы можете экспортировать учебные данные и удалить аккаунт в Настройках. Также можно запросить помощь, копию, исправление или удаление данных по адресу support@scholifyapp.com.",
       ],
     },
     {

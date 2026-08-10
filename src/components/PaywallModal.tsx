@@ -10,6 +10,10 @@ import { iriText } from "@/components/dashboard-layout"
 import CharlesMascot from "@/components/CharlesMascot"
 import { Icon, type IconName } from "@/components/acca/ui"
 import type { PaywallType } from "@/hooks/usePaywall"
+import { entitlementOf } from "@/lib/entitlement"
+import { getCurrentPaper } from "@/lib/acca-qualification"
+import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
+import { getPlan } from "@/lib/acca-plan"
 
 /* ──────────────────────────────────────────────────────────────
  *  In-app paywall modal. Appears on streak milestones (7/14/21),
@@ -47,8 +51,8 @@ const HEADERS: Record<
   general: {
     kind: "lara",
     icon: "tutor",
-    title: "Unlock the full Scholify",
-    sub: "Timed mocks, instant written marking, custom practice — the three modes only Pro includes.",
+    title: "Your pass plan is built. Unlock day one.",
+    sub: "Scholify has diagnosed your gaps and sequenced the work. Start Pro free for 3 days to put the plan into motion.",
   },
   reminder: {
     kind: "lara",
@@ -59,17 +63,19 @@ const HEADERS: Record<
   expired: {
     kind: "lock",
     icon: "lock",
-    title: "Your free trial has ended",
-    sub: "Upgrade to keep studying — your plan, progress and readiness are all saved and waiting for you.",
+    title: "Your personalised plan is ready",
+    sub: "Your diagnosis, priorities and daily roadmap are saved. Choose a plan to unlock the learning workspace.",
   },
 }
 
-/* Only the modes a paid plan actually unlocks — the rest of the app is free. */
+/* The concrete value unlocked by a paid plan or card-backed Pro trial. */
 const FEATURES: Array<{ text: string; badge?: "PRO" | "NEW" }> = [
-  { text: "Timed mock exams with pass-line tracking", badge: "PRO" },
-  { text: "AI Examiner — 190 written questions, marked in seconds", badge: "NEW" },
-  { text: "Custom practice from any topic or your notes", badge: "PRO" },
-  { text: "Mock history & readiness trend" },
+  { text: "Your adaptive daily plan, rebuilt from every answer", badge: "PRO" },
+  { text: "Full mock exams with pass-probability tracking", badge: "PRO" },
+  { text: "AI Examiner feedback on written practice", badge: "NEW" },
+  { text: "Question bank, targeted drills and smart flashcards" },
+  { text: "Advanced analytics across every practice session" },
+  { text: "Charles AI tutor whenever you get stuck" },
 ]
 
 /* ── Celebration particles ───────────────────────────────────── */
@@ -114,15 +120,12 @@ export default function PaywallModal({
   type,
   onClose,
   required = false,
-  onTrialContinue,
 }: {
   open: boolean
   type: PaywallType
   onClose: () => void
   /** Prevent closing when this is the onboarding gate before paid access. */
   required?: boolean
-  /** Lets an eligible onboarding learner enter the already-started trial. */
-  onTrialContinue?: () => void
 }) {
   const { user, signOut } = useAuth()
   const isMobile = useIsMobile()
@@ -134,7 +137,18 @@ export default function PaywallModal({
   // so it has no close / Escape / backdrop-dismiss; the only ways out are to
   // upgrade, open Settings, or sign out (links in the footer below).
   const dismissible = type !== "expired" && !required
-  const header = HEADERS[type]
+  const entitlement = entitlementOf(user)
+  const currentPaper = getCurrentPaper()
+  const diagnostic = currentPaper ? getLatestDiagnostic(currentPaper) : null
+  const personalPlan = currentPaper ? getPlan(currentPaper) : null
+  const header = type === "feature" && entitlement.isBeginner
+    ? {
+        kind: "lock" as const,
+        icon: "lock" as IconName,
+        title: "This feature needs Pro",
+        sub: "Your Beginner plan includes all 15 papers, practice, flashcards, analytics and Charles. Upgrade to Pro for timed mocks, the AI Examiner, custom practice and mock history.",
+      }
+    : HEADERS[type]
 
   // Payments only work when Stripe billing is configured — otherwise the buttons
   // say so rather than inviting a retry that can never succeed.
@@ -314,6 +328,20 @@ export default function PaywallModal({
               >
                 {header.sub}
               </p>
+              {(type === "general" || type === "expired") && currentPaper && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, margin: "20px auto 0", maxWidth: 430 }}>
+                  {[
+                    { value: currentPaper, label: "TARGET PAPER" },
+                    { value: diagnostic ? `${diagnostic.passProbability}%` : "Mapped", label: diagnostic ? "PASS PROBABILITY" : "SYLLABUS" },
+                    { value: personalPlan ? `${personalPlan.dailyMinutes} min` : "Daily", label: "STUDY BLOCK" },
+                  ].map((proof) => (
+                    <div key={proof.label} style={{ padding: "12px 8px", borderRadius: 14, background: "var(--sch-card)", border: "1px solid var(--sch-border)" }}>
+                      <div style={{ fontSize: 17, fontWeight: 850, ...iriText }}>{proof.value}</div>
+                      <div style={{ marginTop: 4, fontSize: 8.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--sch-tx-3)" }}>{proof.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ── 7-day streak visual (Day-7 paywall only) ── */}
@@ -342,7 +370,7 @@ export default function PaywallModal({
             {/* ── Feature list ── */}
             <div style={{ padding: sectionPad, marginTop: 24 }}>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "var(--sch-tx-3)", marginBottom: 14 }}>
-                PRO ADDS
+                EVERYTHING YOUR PLAN NEEDS
               </div>
               {FEATURES.map((f) => (
                 <div
@@ -395,7 +423,7 @@ export default function PaywallModal({
                 gap: 12,
               }}
             >
-              <PlanMini
+              {!entitlement.isBeginner && <PlanMini
                 name="Beginner"
                 price="$9.99"
                 unit="/month"
@@ -403,20 +431,20 @@ export default function PaywallModal({
                 cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
                 disabled={!paymentsOpen}
                 onClick={() => handleCheckout("beginner")}
-              />
+              />}
               <PlanMini
                 featured
                 name="Pro"
                 price="$14.99"
                 unit="/month"
-                description="Mocks, Examiner, custom practice"
-                cta={paymentsOpen ? "Choose Pro →" : "Payments open soon"}
+                description="Your complete adaptive system"
+                cta={paymentsOpen ? "Start 3 days free →" : "Payments open soon"}
                 disabled={!paymentsOpen}
                 onClick={() => handleCheckout("pro")}
               />
             </div>
 
-            <div style={{ padding: "12px 32px 0" }}>
+            {!entitlement.isBeginner && <div style={{ padding: "12px 32px 0" }}>
               <motion.button
                 type="button"
                 onClick={() => handleCheckout("annual_beginner")}
@@ -434,7 +462,7 @@ export default function PaywallModal({
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: "var(--sch-text)" }}>Choose →</span>
               </motion.button>
-            </div>
+            </div>}
 
             {/* Annual row */}
             <div style={{ padding: "12px 32px 0" }}>
@@ -461,7 +489,7 @@ export default function PaywallModal({
                     Annual Pro
                   </span>
                   <span style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>
-                    Billed annually · Best value
+                    3 days free · then billed annually
                   </span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -498,20 +526,17 @@ export default function PaywallModal({
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 {paymentsOpen
-                  ? "3-day free trial · Cancel anytime"
-                  : "Payments open soon · 3-day free trial to start"}
+                  ? "No charge today · Cancel during the trial and pay nothing"
+                  : "Secure checkout will open here"}
               </div>
-              {onTrialContinue && type !== "expired" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    trackEvent("trial_continue_clicked", { type })
-                    onTrialContinue()
-                  }}
-                  style={{ width: "100%", marginTop: 12, padding: "13px 16px", borderRadius: 12, border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: "var(--sch-text)", fontSize: 13.5, fontWeight: 750, cursor: "pointer" }}
+              {type !== "feature" && (
+                <a
+                  href={`mailto:?subject=${encodeURIComponent("Can you help me unlock my Scholify study plan?")}&body=${encodeURIComponent("I completed my Scholify diagnosis and it built a personalised ACCA study plan for me. Could you help me unlock Pro so I can start it? https://www.scholifyapp.com/pricing")}`}
+                  onClick={() => trackEvent("parent_unlock_clicked", { type })}
+                  style={{ display: "block", width: "100%", marginTop: 12, padding: "13px 16px", borderRadius: 12, border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: "var(--sch-text)", fontSize: 13.5, fontWeight: 750, textDecoration: "none" }}
                 >
-                  Continue with my 3-day free trial
-                </button>
+                  Ask a parent or sponsor to unlock
+                </a>
               )}
               {dismissible && (
                 <button

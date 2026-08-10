@@ -33,7 +33,7 @@ export interface ReminderSlots {
  * `lead` is off because three unrequested emails a day from one sender is how a
  * domain earns a spam reputation, and because the −30 nudge is the one that
  * actually starts sessions. A learner who wants the morning heads-up can switch
- * it on in Settings; the server default matches (migration 0028).
+ * it on in Settings; the server default matches (migration 0029).
  */
 export const DEFAULT_SLOTS: ReminderSlots = { lead: false, soon: true, catchup: true }
 
@@ -113,7 +113,7 @@ export function maybeSyncReminder(): void {
  * the client knows the day is complete and knows what tomorrow holds. Carries the
  * streak and tomorrow's start time so the mail can link straight at it.
  *
- * Fire-and-forget and idempotent on the server (sent_done_date, migration 0028),
+ * Fire-and-forget and idempotent on the server (sent_done_date, migration 0029),
  * so a double call — two tabs, a reload — sends one email.
  */
 export interface DayCompleteFacts {

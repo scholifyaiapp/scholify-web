@@ -32,12 +32,7 @@ import { TRIAL_DAYS } from "@/lib/entitlement"
  *                get, before anything is asked of them.
  *   3. COMMIT    The emotional close, then the paywall. Deliberately a separate
  *                beat rather than a modal that ambushes the "Start day 1"
- *                button: the learner sees their own numbers, is told plainly
- *                that their trial is shorter than their plan, and chooses.
- *                Declining still starts day 1 — this beat never blocks the app.
- *                (The hard block is route-guards.tsx, and only after the trial
- *                actually expires. Copy here must not promise a free tier,
- *                because there isn't one.)
+ *                button: the learner sees their own numbers before checkout.
  */
 
 type Stage = "building" | "plan" | "commit"
@@ -334,10 +329,9 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               </Reveal>
 
               {/*
-                * The ask, stated truthfully. There is NO free tier to fall back
-                * on: ProtectedRoute hard-blocks the app once a used trial
-                * expires (see route-guards.tsx), so any "free forever" framing
-                * here would be a lie the learner discovers on day 4.
+                * The ask, stated truthfully. Diagnosis and the plan are free;
+                * the learning workspace requires a paid plan or card-backed
+                * Pro trial (see route-guards.tsx).
                 *
                 * The true version is the stronger one anyway — the gap between
                 * a 3-day trial and a plan measured in months is real tension
@@ -356,8 +350,8 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
                     {scale
                       ? <><b style={{ color: C.text }}>Your plan runs {days} days. Your trial covers {TRIAL_DAYS}.</b>{" "}</>
                       : <><b style={{ color: C.text }}>Your trial covers the next {TRIAL_DAYS} days.</b>{" "}</>}
-                    It's already running and no card was needed — nothing is charged today. Choosing a plan is
-                    what keeps the mocks, the AI Examiner and every paper open after that.
+                    Pro starts with three free days. Checkout securely saves a payment method, charges nothing
+                    today, and unlocks the workspace immediately.
                   </div>
                 </div>
               </Reveal>
@@ -393,8 +387,8 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
         )}
       </AnimatePresence>
 
-      {/* Onboarding is complete, but app access begins only after checkout. */}
-      <PaywallModal open={showPaywall} type="general" required onTrialContinue={() => onDone("study")} onClose={() => {}} />
+      {/* Checkout begins only after the personalised plan has been revealed. */}
+      <PaywallModal open={showPaywall} type="general" required onClose={() => {}} />
     </div>
   )
 }

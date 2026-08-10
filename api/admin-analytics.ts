@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node"
+import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js"
 
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
@@ -100,13 +100,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       inviteCountByPartner.set(id, (inviteCountByPartner.get(id) || 0) + 1)
     }
 
-    const partnerRows: Array<Row & { invitedUsers: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number }> = partners
+    const partnerRows: Array<Row & { invitedUsers: number; paidInvitedUsers: number; conversionRate: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number }> = partners
       .map((partner) => {
         const rows = commissionByPartner.get(String(partner.id)) || []
         const validRows = rows.filter((row) => row.status !== "canceled")
+        const invitedUsers = inviteCountByPartner.get(String(partner.id)) || 0
+        const paidInvitedUsers = new Set(validRows.map((row) => String(row.stripe_customer_id || "")).filter(Boolean)).size
         return {
           ...partner,
-          invitedUsers: inviteCountByPartner.get(String(partner.id)) || 0,
+          invitedUsers,
+          paidInvitedUsers,
+          conversionRate: invitedUsers ? Math.round((paidInvitedUsers / invitedUsers) * 1000) / 10 : 0,
           sales: validRows.length,
           revenue: validRows.reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
           commission: validRows.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
@@ -116,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           approvedCommission: rows
             .filter((row) => row.status === "approved" || row.status === "paid")
             .reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
-        } as Row & { invitedUsers: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number }
+        } as Row & { invitedUsers: number; paidInvitedUsers: number; conversionRate: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number }
       })
       .sort((a, b) => String(b["created_at"]).localeCompare(String(a["created_at"])))
 
@@ -172,6 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         activePartners: partnerRows.filter((partner) => partner.status === "active").length,
         partnerClicks: partnerRows.reduce((sum, partner) => sum + Number(partner.clicks || 0), 0),
         partnerInvitedUsers: partnerReferrals.length,
+        partnerPaidInvitedUsers: partnerRows.reduce((sum, partner) => sum + partner.paidInvitedUsers, 0),
         partnerSales: commissions.filter((row) => row.status !== "canceled").length,
         revenue: commissions.filter((row) => row.status !== "canceled").reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
         feedback: feedback.length,
