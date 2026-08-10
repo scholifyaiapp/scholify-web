@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "./vercel-types.js"
+import { timingSafeEqual } from "node:crypto"
 
 /*
  * Ops endpoint — health + security introspection. Dispatches by `?action=` to
@@ -58,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
  * are configured server-side — values are NEVER returned, only booleans.
  * 503 when a critical key is missing so uptime monitors can alert.
  */
-function health(_req: VercelRequest, res: VercelResponse): void {
+function health(req: VercelRequest, res: VercelResponse): void {
   res.setHeader("Cache-Control", "no-store")
   const keys = {
     anthropic: !!process.env.ANTHROPIC_API_KEY,
@@ -170,6 +171,40 @@ function health(_req: VercelRequest, res: VercelResponse): void {
   const ok =
     coreReady && !billingHalfConfigured && emailStatus !== "half_configured" && !stripeModeMismatch
 
+  /*
+   * ── WHO GETS THE DETAIL ────────────────────────────────────────────
+   *
+   * This endpoint published a complete inventory of the server's
+   * configuration to anyone who asked: every key set or unset, the Stripe
+   * mode, the AI provider, and — the worst of them — `cron_secret: true/false`,
+   * which tells a stranger whether the cron endpoint is protected before they
+   * try it. That is a map of which defences are missing, served publicly, and
+   * uptime monitoring never needed any of it.
+   *
+   * A monitor needs one thing: is it up. That stays public, with the 503 on a
+   * degraded stack intact so alerting still works. The inventory now requires
+   * the same CRON_SECRET the other operational endpoints use, compared in
+   * constant time.
+   */
+  const supplied = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  const expected = process.env.CRON_SECRET || ""
+  let detailed = false
+  if (supplied && expected && supplied.length === expected.length) {
+    try {
+      detailed = timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
+    } catch {
+      detailed = false
+    }
+  }
+
+  if (!detailed) {
+    res.status(ok ? 200 : 503).json({
+      status: ok ? "ok" : "degraded",
+      timestamp: new Date().toISOString(),
+    })
+    return
+  }
+
   res.status(ok ? 200 : 503).json({
     status: ok ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
@@ -218,8 +253,27 @@ function health(_req: VercelRequest, res: VercelResponse): void {
  * Reachable at /api/security-check via a vercel.json rewrite. Confirms the
  * secret keys live server-side. Booleans only — never the key values.
  */
-function securityCheck(_req: VercelRequest, res: VercelResponse): void {
+function securityCheck(req: VercelRequest, res: VercelResponse): void {
   res.setHeader("Cache-Control", "no-store")
+  /*
+   * Same reasoning as health: this told anyone which providers are wired and
+   * whether Stripe is in live mode. Nobody outside the team has a use for it,
+   * and an attacker does. Operational callers already hold CRON_SECRET.
+   */
+  const supplied = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  const expected = process.env.CRON_SECRET || ""
+  let authorised = false
+  if (supplied && expected && supplied.length === expected.length) {
+    try {
+      authorised = timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
+    } catch {
+      authorised = false
+    }
+  }
+  if (!authorised) {
+    res.status(401).json({ error: "Unauthorised." })
+    return
+  }
   res.status(200).json({
     anthropic_configured: !!process.env.ANTHROPIC_API_KEY,
     openai_configured: !!process.env.OPENAI_API_KEY,
