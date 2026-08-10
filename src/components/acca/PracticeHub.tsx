@@ -87,8 +87,31 @@ export function PracticeHub(props: PracticeHubProps) {
   const [openArea, setOpenArea] = useState<string | null>(null)
 
   /*
-   * The chapter index, with each row's real numbers. Built once per paper: it
-   * walks the whole bank, and the bank is thousands of items on a mature paper.
+   * ── Invalidation signals for the index below ──
+   *
+   * The memo used to depend on [paperId, paper, stats], which cached NOTHING:
+   * getPaperStats() rebuilds its `areas` array on every call, and getPaper()
+   * returns a fresh object for any paper carrying variant labels. Both
+   * therefore changed identity on every render, so the walk described below as
+   * "built once per paper" ran on every single one — including every expand and
+   * collapse of an area, synchronously, over thousands of questions. That is
+   * the jank a learner feels when they tap an area on a mature paper.
+   *
+   * These two scalars change exactly when the index's numbers can change:
+   * answering a question always increments `answered`, and marking a chapter
+   * read always changes the read count. Depending on values instead of object
+   * identities is what makes the memo actually memoise.
+   */
+  const answeredSignal = stats.answered
+  const readSignal = Object.keys(chaptersRead(paperId)).length
+  // Labels are the only thing a paper VARIANT changes here, so a value
+  // signature keeps a variant switch correct without reintroducing an
+  // identity dependency.
+  const areaSignature = (paper?.areas ?? []).map((a) => `${a.code}:${a.label}`).join("|")
+
+  /*
+   * The chapter index, with each row's real numbers. It walks the whole bank,
+   * and the bank is thousands of items on a mature paper.
    */
   const index = useMemo(() => {
     const chapters = chaptersForPaper(paperId)
@@ -156,7 +179,8 @@ export function PracticeHub(props: PracticeHubProps) {
     })
 
     return { rows, areas }
-  }, [paperId, paper, stats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paperId, areaSignature, answeredSignal, readSignal])
 
   const bank = poolHealth(paperId, "practice", getQuestions(paperId).length)
   const cards = flashcardStats(paperId)
