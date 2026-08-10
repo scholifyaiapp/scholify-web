@@ -13,10 +13,11 @@ const GRAIN = `url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http:
 
 /* White copy sits on brand colours that only reach 3.2–4.9:1 on their own, and the
    CHARLES wordmark can slide under the text block on short viewports. These scrims
-   sit above both and lift every slide past 4.5:1 while leaving the middle full-bleed. */
+   sit above both and lift every slide past 4.5:1 while leaving the middle full-bleed.
+   The horizontal pass leans right, where the copy block lives. */
 const SCRIM = [
   "linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.28) 24%, rgba(0,0,0,0) 50%)",
-  "linear-gradient(to right, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0) 46%)",
+  "linear-gradient(to left, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0) 46%)",
   "linear-gradient(to bottom, rgba(0,0,0,0.34) 0%, rgba(0,0,0,0) 16%)",
 ].join(", ")
 
@@ -146,7 +147,7 @@ export default function CharlesCarousel() {
           })}
         </div>
 
-        <div className="absolute bottom-6 left-4 max-w-[300px] sm:bottom-20 sm:left-24 sm:max-w-[420px]" style={{ zIndex: 60 }}>
+        <div className="absolute bottom-6 right-4 max-w-[300px] text-right sm:bottom-20 sm:right-10 sm:max-w-[420px]" style={{ zIndex: 60 }}>
           <p className="mb-2 text-base font-bold uppercase tracking-widest text-white sm:mb-3 sm:text-[22px]" style={{ letterSpacing: "0.02em" }}>
             Meet Charles
           </p>
@@ -156,7 +157,7 @@ export default function CharlesCarousel() {
           <p className="mb-4 text-xs font-semibold uppercase text-white sm:hidden" style={{ letterSpacing: "0.12em" }}>
             {CHARLES[activeIndex].label}
           </p>
-          <div className="flex gap-3">
+          <div className="flex justify-end gap-3">
             {(["prev", "next"] as const).map((direction) => (
               <button
                 key={direction}
@@ -174,7 +175,7 @@ export default function CharlesCarousel() {
 
         <a
           href="#how-it-works"
-          className="absolute bottom-6 right-4 flex items-center gap-2 uppercase text-white no-underline transition-opacity duration-200 hover:opacity-80 sm:bottom-20 sm:right-10"
+          className="absolute bottom-6 left-4 flex items-center gap-2 uppercase text-white no-underline transition-opacity duration-200 hover:opacity-80 sm:bottom-20 sm:left-24"
           style={{ zIndex: 60, fontFamily: "'Anton', sans-serif", fontSize: "clamp(24px, 4vw, 56px)", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}
         >
           Meet him <ArrowRight className="h-5 w-5 sm:h-8 sm:w-8" strokeWidth={2.25} />
