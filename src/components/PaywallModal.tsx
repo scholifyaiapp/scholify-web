@@ -478,25 +478,15 @@ export default function PaywallModal({
               />
             </div>
 
-            {!entitlement.isBeginner && <div style={{ padding: "12px 32px 0" }}>
-              <motion.button
-                type="button"
-                onClick={() => handleCheckout("annual_beginner")}
-                whileHover={paymentsOpen ? { scale: 1.01 } : undefined}
-                style={{
-                  width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "14px 16px", borderRadius: 14, border: "1px solid var(--sch-border)",
-                  background: "var(--sch-card)", cursor: paymentsOpen ? "pointer" : "not-allowed",
-                  opacity: paymentsOpen ? 1 : 0.55, textAlign: "left",
-                }}
-              >
-                <span>
-                  <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--sch-text)" }}>Annual Beginner</span>
-                  <span style={{ display: "block", fontSize: 11, color: "var(--sch-tx-2)", marginTop: 2 }}>All 15 papers · $79.99/year</span>
-                </span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--sch-text)" }}>Choose →</span>
-              </motion.button>
-            </div>}
+            {/*
+              The Annual Beginner row was removed from this modal (founder's
+              call). Four prices on the one screen that has to produce a single
+              decision is three too many: the cheapest annual option sitting
+              under the two cards pulls attention downward and competes with
+              Pro, which is the plan this modal exists to sell. It remains
+              available on /pricing, where a visitor has come specifically to
+              compare and has the room to.
+            */}
 
             {/* Annual row */}
             <div style={{ padding: "12px 32px 0" }}>
