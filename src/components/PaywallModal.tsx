@@ -4,6 +4,7 @@ import confetti from "canvas-confetti"
 import { useAuth } from "@/lib/auth"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { startStripeCheckout, type StripePlan } from "@/lib/stripe"
+import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
@@ -131,6 +132,8 @@ export default function PaywallModal({
   const isMobile = useIsMobile()
   const [notice, setNotice] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshNote, setRefreshNote] = useState<string | null>(null)
 
   // Paywalls are dismissible — EXCEPT "expired". Once the 3-day trial ends, the
   // whole app is gated behind this modal until the learner pays (founder call),
@@ -190,6 +193,40 @@ export default function PaywallModal({
     }
     setCelebrating(false)
   }, [open, type])
+
+  /*
+   * Pull a fresh token and see whether the entitlement has landed. Reloads on
+   * success rather than relying on state propagation, because this wall is
+   * rendered BY the route guard — the surest way to re-run that decision with
+   * the new token is to re-enter the app.
+   */
+  const refreshAccess = async () => {
+    if (refreshing) return
+    setRefreshing(true)
+    setRefreshNote(null)
+    trackEvent("paywall_refresh_access_clicked")
+    if (!isSupabaseConfigured) {
+      setRefreshNote("Accounts aren't connected on this build. Email founder@flowlifyai.com and we'll sort it.")
+      setRefreshing(false)
+      return
+    }
+    try {
+      const { data } = await supabase.auth.refreshSession()
+      const meta = data.session?.user?.app_metadata ?? {}
+      const plan = typeof meta.plan === "string" ? meta.plan : "free"
+      if (plan !== "free" || meta.plan_status === "active" || meta.plan_status === "trialing") {
+        setRefreshNote("Found it — unlocking now.")
+        window.location.reload()
+        return
+      }
+      setRefreshNote(
+        "No active subscription on this account yet. If you've just paid, give it a minute and try again — or check you're signed in with the email you paid with.",
+      )
+    } catch {
+      setRefreshNote("Couldn't reach the account service. Check your connection and try again.")
+    }
+    setRefreshing(false)
+  }
 
   const handleCheckout = (plan: StripePlan) => {
     trackEvent("upgrade_started", { plan })
@@ -552,18 +589,79 @@ export default function PaywallModal({
               {/* Expired trial can't be dismissed into the app — but the learner
                   must still be able to manage their account or leave. */}
               {type === "expired" && (
-                <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 18, fontSize: 13 }}>
-                  <a href="/settings" style={{ color: "var(--sch-tx-2)", textDecoration: "none", fontWeight: 600 }}>
-                    Account & billing
-                  </a>
-                  <button
+                <>
+                  {/*
+                    THE RECOVERY PATH FOR SOMEONE WHO HAS ALREADY PAID.
+                    Stripe's webhook can land seconds after the redirect. When it
+                    does, the token in the browser still says "free" and this wall
+                    appears to a paying customer — with nothing on it acknowledging
+                    that possibility. The only cure was to guess "sign out and sign
+                    back in", which mints a fresh token; a real customer instead
+                    concludes they were charged for nothing and asks for their money
+                    back. One button now does the same thing, named for the problem.
+                  */}
+                  <motion.button
                     type="button"
-                    onClick={() => void signOut()}
-                    style={{ background: "transparent", border: "none", fontSize: 13, color: "var(--sch-tx-4)", cursor: "pointer" }}
+                    onClick={refreshAccess}
+                    disabled={refreshing}
+                    whileHover={refreshing ? undefined : { scale: 1.015 }}
+                    whileTap={refreshing ? undefined : { scale: 0.985 }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      width: "100%",
+                      minHeight: 44,
+                      marginTop: 14,
+                      borderRadius: 12,
+                      cursor: refreshing ? "progress" : "pointer",
+                      background: "transparent",
+                      border: "1px solid var(--sch-border)",
+                      color: "var(--sch-tx-1)",
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      fontFamily: "inherit",
+                    }}
                   >
-                    Sign out
-                  </button>
-                </div>
+                    <motion.span
+                      aria-hidden
+                      animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
+                      transition={refreshing ? { duration: 0.9, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
+                      style={{ display: "inline-flex" }}
+                    >
+                      <Icon name="arrow" size={15} />
+                    </motion.span>
+                    {refreshing ? "Checking your payment…" : "Already paid? Refresh my access"}
+                  </motion.button>
+                  <AnimatePresence>
+                    {refreshNote && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        style={{ fontSize: 12.5, color: "var(--sch-tx-2)", marginTop: 8, lineHeight: 1.5 }}
+                      >
+                        {refreshNote}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div style={{ marginTop: 14, display: "flex", justifyContent: "center", gap: 18, fontSize: 13 }}>
+                    <a href="/settings" style={{ color: "var(--sch-tx-2)", textDecoration: "none", fontWeight: 600 }}>
+                      Account & billing
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => void signOut()}
+                      style={{ background: "transparent", border: "none", fontSize: 13, color: "var(--sch-tx-4)", cursor: "pointer" }}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </motion.div>
