@@ -3,7 +3,8 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, C, type IconName } from "@/components/acca/ui"
-import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
+import { type RevealPhase } from "@/components/acca/CinematicReveal"
+import PlanBuildLoader from "@/components/acca/PlanBuildLoader"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
 import PaywallModal from "@/components/PaywallModal"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -60,7 +61,11 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
    * loader at all. After this we go on without the chunk: PlanDashboard falls
    * back to the syllabus-derived week, which is still a real plan.
    */
-  const CONTENT_WAIT_CEILING_MS = 9000
+  // Comfortably past the ring's ten seconds, so a slow connection gets its
+  // honest "Loading your material…" line for a few seconds before we go on
+  // without the chunk. At 9000 the ceiling expired before the loader even
+  // finished, so that message could never appear.
+  const CONTENT_WAIT_CEILING_MS = 14_000
   const [waitedLongEnough, setWaitedLongEnough] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setWaitedLongEnough(true), CONTENT_WAIT_CEILING_MS)
@@ -135,7 +140,15 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
             style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
           >
             <div style={{ width: "100%", maxWidth: 420 }}>
-              <CinematicReveal phases={phases} accent={C.brand} perPhaseMs={950} onComplete={() => setChoreographyDone(true)} />
+              {/*
+                Ten seconds, on a ring, counting 0 → 100.
+                The previous choreography was four phases at 950ms and was over
+                in under four — a plan that appears that fast reads as a
+                template with your name typed into it, and this one is not.
+                The paper's content chunk downloads behind it, so the time is
+                real work rather than a stall with a spinner over it.
+              */}
+              <PlanBuildLoader phases={phases} accent={C.brand} totalMs={10_000} onComplete={() => setChoreographyDone(true)} />
               {/* Only shown if the content download is the thing still running —
                   i.e. the learner is on a slow connection and the choreography
                   finished first. Never a fake message. */}
