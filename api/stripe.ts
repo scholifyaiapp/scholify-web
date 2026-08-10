@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
+import { sendPurchaseEmail } from "./purchase-email.js"
 
 /*
  * Stripe Billing — single Vercel function dispatched by `?action=` (12-function
@@ -770,8 +771,45 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
           trialStartsAt: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : undefined,
           trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : undefined,
+          periodStartsAt: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : undefined,
+          periodEndsAt: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : undefined,
           eventType: event.type,
         })
+
+        /*
+         * WELCOME EMAIL — the one that was never sent.
+         *
+         * A learner paid and nothing arrived in their inbox: no receipt (that
+         * one is Stripe's "Successful payments" toggle, not ours) and no word
+         * from us at all. This is the single moment they are guaranteed to feel
+         * good about the decision, so it is the right place to set the habit
+         * the qualification actually rewards — showing up tomorrow.
+         *
+         * Strictly best-effort and after the entitlement write: a Resend
+         * outage must never cost someone the plan they paid for.
+         */
+        const priceAmount = sub.items.data[0]?.price?.unit_amount
+        const interval = sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month"
+        const email =
+          session.customer_details?.email || (typeof session.customer_email === "string" ? session.customer_email : "")
+        if (email) {
+          const firstName =
+            (await supa.auth.admin
+              .getUserById(userId)
+              .then((r) => (r.data?.user?.user_metadata?.first_name as string | undefined) ?? null)
+              .catch(() => null)) ?? null
+          const nextCharge = sub.trial_end ?? sub.current_period_end
+          await sendPurchaseEmail(email, {
+            firstName,
+            planLabel: plan === "beginner" ? "Beginner" : plan === "annual_pro" ? "Annual Pro" : "Pro",
+            priceLabel:
+              typeof priceAmount === "number" ? `$${(priceAmount / 100).toFixed(2)}/${interval}` : "",
+            onTrial: sub.status === "trialing",
+            chargeDate: nextCharge
+              ? new Date(nextCharge * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+              : null,
+          }).catch((e) => console.error("purchase email:", e))
+        }
       }
       // Affiliate commission — best-effort side effect, never blocks entitlement.
       await recordCommission(supa, session).catch((e) => console.error("affiliate commission:", e))
