@@ -828,6 +828,7 @@ export default function Settings() {
   const [communityOptIn, setCommunityOptIn] = useState(readCommunityOptIn)
 
   const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [savingPassword, setSavingPassword] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
   const [firstName, setFirstName] = useState((user?.user_metadata?.first_name as string) || "")
@@ -977,6 +978,10 @@ export default function Settings() {
       toast.error("Use at least 8 characters")
       return
     }
+    if (newPassword !== confirmPassword) {
+      toast.error("The two passwords don't match")
+      return
+    }
     if (!isSupabaseConfigured) {
       toast.error("Password changes need a connected account — email support@scholifyapp.com")
       return
@@ -984,11 +989,23 @@ export default function Settings() {
     setSavingPassword(true)
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
-      if (error) throw error
+      /*
+       * Show what actually went wrong. This used to swallow the message and
+       * always say "sign in again and retry", so a user told "your new password
+       * must differ from the old one", or asked to reauthenticate, was instead
+       * sent to re-login — which fixed nothing and taught them nothing. On the
+       * one screen that can lock someone out of their own account, a vague
+       * error is worse than no error.
+       */
+      if (error) {
+        toast.error(error.message || "Couldn't update your password")
+        return
+      }
       setNewPassword("")
-      toast.success("Password updated")
+      setConfirmPassword("")
+      toast.success("Password updated — use it next time you sign in")
     } catch {
-      toast.error("Couldn't update your password — sign in again and retry")
+      toast.error("Couldn't reach the account service — check your connection and try again")
     } finally {
       setSavingPassword(false)
     }
@@ -1362,6 +1379,14 @@ export default function Settings() {
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: TEXT2, marginBottom: 5 }}>
                       New password
                     </div>
+                    {/*
+                      TWO fields, not one. With a single field a typo becomes
+                      your new password silently — you are then locked out of an
+                      account whose password you have never seen, and the only
+                      way back is the reset email. This is the one form where a
+                      mistake cannot be noticed and cannot be undone, so it is
+                      the one form that must be typed twice.
+                    */}
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <input
                         type="password"
@@ -1381,13 +1406,44 @@ export default function Settings() {
                           outline: "none",
                         }}
                       />
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        autoComplete="new-password"
+                        placeholder="Repeat it"
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        style={{
+                          flex: "1 1 200px",
+                          height: 44,
+                          padding: "0 14px",
+                          borderRadius: 10,
+                          fontSize: 14,
+                          color: "var(--sch-text)",
+                          background: "var(--sch-card-2)",
+                          border: `1px solid ${
+                            confirmPassword.length > 0 && confirmPassword !== newPassword
+                              ? "rgba(200,0,0,0.55)"
+                              : "var(--sch-border-2)"
+                          }`,
+                          outline: "none",
+                        }}
+                      />
                       <Button
                         variant="secondary"
                         onClick={changePassword}
-                        disabled={savingPassword || newPassword.length === 0}
+                        disabled={savingPassword || newPassword.length === 0 || confirmPassword !== newPassword}
                       >
                         {savingPassword ? "Updating…" : "Update password"}
                       </Button>
+                    </div>
+                    {confirmPassword.length > 0 && confirmPassword !== newPassword && (
+                      <div style={{ fontSize: 12, color: "#C80000", marginTop: 6 }}>
+                        The two passwords don’t match.
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11.5, color: TEXT2, marginTop: 6, lineHeight: 1.5 }}>
+                      Changing this signs you in with the new password next time. Your email stays the same — it
+                      cannot be changed here.
                     </div>
                   </div>
 
