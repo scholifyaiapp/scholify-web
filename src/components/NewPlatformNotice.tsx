@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { Sparkles, X } from "lucide-react"
+import { X } from "lucide-react"
+import { ScholifyMark } from "@/components/brand"
 
 /*
  * The honest opening line of a platform that launched yesterday.
@@ -68,17 +69,16 @@ export default function NewPlatformNotice() {
           }}
         >
           <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+            {/* Our own mark, not a generic sparkle. This is the first thing a
+                new visitor is shown; it should be the brand introducing itself. */}
             <motion.span
               aria-hidden
-              initial={reduced ? false : { rotate: -12, scale: 0.8 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ delay: 0.15, type: "spring", stiffness: 260, damping: 16 }}
-              style={{
-                display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                background: "linear-gradient(135deg,#C80000,#E50068)", color: "#fff",
-              }}
+              initial={reduced ? false : { scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.12, type: "spring", stiffness: 280, damping: 15 }}
+              style={{ display: "grid", placeItems: "center", flexShrink: 0, width: 32, height: 32 }}
             >
-              <Sparkles size={17} strokeWidth={2.3} />
+              <ScholifyMark size={30} />
             </motion.span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 750, color: "var(--sch-text)", lineHeight: 1.35 }}>

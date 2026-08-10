@@ -1550,6 +1550,17 @@ export default function Settings() {
               * a stale zone is the one error that silently sends every reminder at
               * the wrong hour with no visible symptom in the UI.
               */}
+            {/* A tour you cannot rewatch is a tour people skip and then regret
+                skipping. Dispatching the event keeps the storage key owned by
+                one file (AppTour) instead of duplicated here. */}
+            <SettingRow name="Guided tour" desc="Replay the seven-step introduction to your workspace">
+              <Button
+                variant="secondary"
+                onClick={() => window.dispatchEvent(new Event("scholify:app-tour:replay"))}
+              >
+                Show me again
+              </Button>
+            </SettingRow>
             <SettingRow name="Practice reminders" desc="Email reminders around your daily session">
               <Toggle
                 on={settings.notifyDaily}

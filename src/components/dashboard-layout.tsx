@@ -17,6 +17,7 @@ import { avatarUrlOf, onAvatarChange } from "@/lib/avatar"
 import { isLaunchAdmin } from "@/lib/launch"
 import { initNotesSync } from "@/lib/acca-notes-cloud"
 import FeedbackLauncher from "@/components/FeedbackLauncher"
+import AppTour, { hasSeenAppTour } from "@/components/AppTour"
 
 /* ──────────────────────────────────────────────────────────────
  *  Shared app shell for the signed-in ACCA screens (Study, Progress,
@@ -221,6 +222,24 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
   // Re-read the avatar when Settings changes it (uploads fire this event;
   // cloud saves also refresh `user` via USER_UPDATED — either path lands here).
+  /*
+   * Offered once, and only after the shell has actually painted — opening a
+   * modal on the same frame as a route transition reads as a glitch rather
+   * than a greeting. `scholify:app-tour:replay` lets Settings (or any link)
+   * ask for it again without duplicating the storage key here.
+   */
+  const [tourOpen, setTourOpen] = useState(false)
+  useEffect(() => {
+    if (hasSeenAppTour()) return
+    const timer = window.setTimeout(() => setTourOpen(true), 900)
+    return () => window.clearTimeout(timer)
+  }, [])
+  useEffect(() => {
+    const replay = () => setTourOpen(true)
+    window.addEventListener("scholify:app-tour:replay", replay)
+    return () => window.removeEventListener("scholify:app-tour:replay", replay)
+  }, [])
+
   const [avatarTick, setAvatarTick] = useState(0)
   useEffect(() => onAvatarChange(() => setAvatarTick((t) => t + 1)), [])
   const avatarSrc = useMemo(() => avatarUrlOf(user), [user, avatarTick])
@@ -416,6 +435,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         name={[user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ")}
         email={user?.email || ""}
       />
+      {/* The seven-step introduction, once per browser on first entry to the
+          workspace. It opens from the shell rather than from a page so it
+          cannot be missed by landing on Notes or Analytics first. */}
+      <AppTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   )
 }
