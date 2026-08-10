@@ -1091,7 +1091,21 @@ function LearnerRouteSlide({ value, onChange }: { value: LearnerRoute | null; on
   const routes: { value: LearnerRoute; icon: IconName; title: string; detail: string; path: string[] }[] = [
     { value: "new", icon: "rocket", title: "Learn from the beginning", detail: "I am starting this paper from zero or near zero.", path: ["Foundations", "Daily lessons", "Checks as I learn"] },
     { value: "course", icon: "study", title: "Continue my current studies", detail: "I already use a course, tutor, books, or self-study.", path: ["Map progress", "Verify gaps", "Complement my course"] },
-    { value: "practice", icon: "mock", title: "Practise for my exam", detail: "I have covered most of the syllabus and need practice and mocks.", path: ["Readiness check", "Timed practice", "Mock plan"] },
+    /*
+     * "Practise for my exam" was removed from this choice (founder's call).
+     *
+     * The route itself still exists everywhere downstream — the LearnerRoute
+     * type, the readiness-mode diagnostic, its own build sequence, and the
+     * assessment options keyed on it — because learners who already chose it
+     * have it saved in their baseline, and stripping the branches would leave
+     * those accounts pointing at a route the code no longer understands.
+     * Nobody NEW can select it; nobody existing is broken by it.
+     *
+     * The two remaining answers still cover everyone: someone who has finished
+     * the syllabus and only wants mocks is, truthfully, continuing their own
+     * studies — and that route maps their progress first rather than assuming
+     * it, which is the safer of the two errors to make about a learner.
+     */
   ]
   return (
     <ChoiceGroup
