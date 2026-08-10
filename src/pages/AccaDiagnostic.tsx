@@ -35,7 +35,8 @@ import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
 import { ProCountdown } from "@/components/acca/ProCountdown"
 import CharlesMascot from "@/components/CharlesMascot"
 import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
-import { CinematicReveal, type RevealPhase } from "@/components/acca/CinematicReveal"
+import { type RevealPhase } from "@/components/acca/CinematicReveal"
+import PlanBuildLoader from "@/components/acca/PlanBuildLoader"
 import RevealExperience from "@/components/acca/RevealExperience"
 import PaywallModal from "@/components/PaywallModal"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
@@ -547,7 +548,16 @@ export default function AccaDiagnostic() {
 
           {phase === "analyzing" && (
             <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <CinematicReveal phases={diagnosticPhases} onComplete={revealResults} />
+              {/*
+                Same ring as the plan build, and for the same reason: this is
+                the moment the learner finds out where they stand, and it was
+                over in under four seconds. Scoring every answer by difficulty,
+                mapping eight syllabus areas and computing a readiness figure
+                with a margin is real work — ten seconds lets it be seen being
+                done, and the four steps below the ring name exactly what is
+                happening at each point.
+              */}
+              <PlanBuildLoader phases={diagnosticPhases} totalMs={10_000} onComplete={revealResults} />
             </motion.div>
           )}
 
@@ -937,7 +947,15 @@ function PlanReveal({ result, onDone }: { result: DiagnosticResult; onDone: () =
         <div style={{ textAlign: "center", fontSize: 11, fontWeight: 800, letterSpacing: 1, color: C.brand, marginTop: 8 }}>
           CHARLES · BUILDING YOUR RACE PLAN
         </div>
-        <CinematicReveal phases={planPhases} accent={C.brand} perPhaseMs={880} onComplete={() => setReady(true)} />
+        {/*
+          The SECOND build — the personalised plan, after the diagnostic. It
+          ran at 880ms a phase, so the learner watched their result get turned
+          into a twelve-week plan in three and a half seconds. Same ring, same
+          ten seconds: this one is drawing on their actual scores, which is the
+          most personalised thing the product ever does and should not go past
+          in a blink.
+        */}
+        <PlanBuildLoader phases={planPhases} accent={C.brand} totalMs={10_000} onComplete={() => setReady(true)} />
       </motion.div>
     )
   }
