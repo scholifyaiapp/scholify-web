@@ -635,11 +635,53 @@ const RUN_DAYS = Math.ceil((BT_HOURS / WEEKLY_HOURS) * 7)
 const SERIES_STEADY = "#0B7F58"
 const SERIES_ERRATIC = "#C80000"
 
-const PLOT = { left: 52, right: 636, top: 30, bottom: 224 }
 const Y_MAX = 80
 
-const plotX = (day: number) => PLOT.left + (day / RUN_DAYS) * (PLOT.right - PLOT.left)
-const plotY = (pct: number) => PLOT.bottom - (pct / Y_MAX) * (PLOT.bottom - PLOT.top)
+/*
+ * Two geometries, not one scaled down. A 660-unit viewBox squeezed into a
+ * phone's ~250px of content renders its 11px labels at about 4px — measured,
+ * not guessed. So narrow screens get their own near-square chart with fewer
+ * labels and type sized in ITS units, which lands around 10–13 CSS px.
+ */
+interface ChartConfig {
+  w: number
+  h: number
+  left: number
+  right: number
+  top: number
+  bottom: number
+  font: number
+  endFont: number
+  /** Gridline values. Empty on compact: the pass line is the only one that argues. */
+  ticks: number[]
+}
+
+const CHART_WIDE: ChartConfig = {
+  w: 660,
+  h: 268,
+  left: 52,
+  right: 636,
+  top: 30,
+  bottom: 224,
+  font: 11,
+  endFont: 13,
+  ticks: [0, 20, 40, 60, 80],
+}
+
+const CHART_COMPACT: ChartConfig = {
+  w: 330,
+  h: 300,
+  left: 14,
+  right: 316,
+  top: 40,
+  bottom: 236,
+  font: 14,
+  endFont: 16,
+  ticks: [],
+}
+
+const xOf = (c: ChartConfig, day: number) => c.left + (day / RUN_DAYS) * (c.right - c.left)
+const yOf = (c: ChartConfig, pct: number) => c.bottom - (pct / Y_MAX) * (c.bottom - c.top)
 
 /** Consistency compounds: slow, then it breaks out. Ends at 62%, past the pass line. */
 const STEADY_END = 62
@@ -654,13 +696,34 @@ const ERRATIC_POINTS: Array<[number, number]> = [
   [29, 14], [35, 23], [40, 16], [46, 26], [51, 18], [55, 24], [RUN_DAYS, 20],
 ]
 
-const steadyPath = Array.from({ length: RUN_DAYS + 1 }, (_, day) =>
-  `${day === 0 ? "M" : "L"} ${plotX(day).toFixed(1)} ${plotY(steadyAt(day)).toFixed(1)}`,
-).join(" ")
+const steadyPathFor = (c: ChartConfig) =>
+  Array.from({ length: RUN_DAYS + 1 }, (_, day) =>
+    `${day === 0 ? "M" : "L"} ${xOf(c, day).toFixed(1)} ${yOf(c, steadyAt(day)).toFixed(1)}`,
+  ).join(" ")
 
-const erraticPath = ERRATIC_POINTS.map(
-  ([day, pct], i) => `${i === 0 ? "M" : "L"} ${plotX(day).toFixed(1)} ${plotY(pct).toFixed(1)}`,
-).join(" ")
+const erraticPathFor = (c: ChartConfig) =>
+  ERRATIC_POINTS.map(
+    ([day, pct], i) => `${i === 0 ? "M" : "L"} ${xOf(c, day).toFixed(1)} ${yOf(c, pct).toFixed(1)}`,
+  ).join(" ")
+
+const CHART_PATHS = {
+  wide: { steady: steadyPathFor(CHART_WIDE), erratic: erraticPathFor(CHART_WIDE) },
+  compact: { steady: steadyPathFor(CHART_COMPACT), erratic: erraticPathFor(CHART_COMPACT) },
+}
+
+/** Narrow-screen switch, shared by the chart and the alternating reason frames. */
+function useCompactLayout(): boolean {
+  const [compact, setCompact] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
+  )
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)")
+    const onChange = (e: MediaQueryListEvent) => setCompact(e.matches)
+    query.addEventListener("change", onChange)
+    return () => query.removeEventListener("change", onChange)
+  }, [])
+  return compact
+}
 
 /*
  * The day, drawn — and drawn ADDING UP, which is the whole claim. The five
@@ -850,6 +913,9 @@ function DayShapeVisual() {
 function CompoundingVisual() {
   const t = useT()
   const reduced = useReducedMotion()
+  const compact = useCompactLayout()
+  const chart = compact ? CHART_COMPACT : CHART_WIDE
+  const paths = compact ? CHART_PATHS.compact : CHART_PATHS.wide
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: "-90px" })
 
@@ -946,7 +1012,7 @@ function CompoundingVisual() {
 
       <div style={{ marginTop: 16 }}>
         <svg
-          viewBox={`0 0 ${PLOT.right + 24} 268`}
+          viewBox={`0 0 ${chart.w} ${chart.h}`}
           width="100%"
           role="img"
           aria-label={t(
@@ -954,23 +1020,24 @@ function CompoundingVisual() {
           )}
           style={{ display: "block", overflow: "visible" }}
         >
-          {/* Recessive grid */}
-          {[0, 20, 40, 60, 80].map((tick) => (
+          {/* Recessive grid. Compact drops it entirely — at phone width the
+              gridlines cost more legibility than they buy. */}
+          {chart.ticks.map((tick) => (
             <g key={tick}>
               <line
-                x1={PLOT.left}
-                y1={plotY(tick)}
-                x2={PLOT.right}
-                y2={plotY(tick)}
+                x1={chart.left}
+                y1={yOf(chart, tick)}
+                x2={chart.right}
+                y2={yOf(chart, tick)}
                 stroke={INK}
                 strokeOpacity="0.07"
                 strokeWidth="1"
               />
               <text
-                x={PLOT.left - 12}
-                y={plotY(tick) + 4}
+                x={chart.left - 12}
+                y={yOf(chart, tick) + 4}
                 textAnchor="end"
-                fontSize="11"
+                fontSize={chart.font}
                 fill={INK_MUTED}
                 className="font-mono-pro tabular"
               >
@@ -981,32 +1048,32 @@ function CompoundingVisual() {
 
           {/* The pass line is a threshold, so it is neutral and dashed — not a series. */}
           <line
-            x1={PLOT.left}
-            y1={plotY(PASS_MARK)}
-            x2={PLOT.right}
-            y2={plotY(PASS_MARK)}
+            x1={chart.left}
+            y1={yOf(chart, PASS_MARK)}
+            x2={chart.right}
+            y2={yOf(chart, PASS_MARK)}
             stroke={INK}
             strokeOpacity="0.38"
             strokeWidth="1.5"
             strokeDasharray="6 5"
           />
           <text
-            x={PLOT.left + 6}
-            y={plotY(PASS_MARK) - 9}
-            fontSize="11"
+            x={chart.left + 4}
+            y={yOf(chart, PASS_MARK) - 9}
+            fontSize={chart.font}
             fill={INK_MUTED}
             className="font-mono-pro"
-            letterSpacing="0.1em"
+            letterSpacing="0.08em"
           >
             {t("ACCA PASS · 50%")}
           </text>
 
           {/* Series. Dashed vs solid carries identity beyond colour. */}
           <motion.path
-            d={erraticPath}
+            d={paths.erratic}
             fill="none"
             stroke={SERIES_ERRATIC}
-            strokeWidth="2"
+            strokeWidth={compact ? 2.6 : 2}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray="6 5"
@@ -1015,10 +1082,10 @@ function CompoundingVisual() {
             transition={{ duration: draw, ease: EASE }}
           />
           <motion.path
-            d={steadyPath}
+            d={paths.steady}
             fill="none"
             stroke={SERIES_STEADY}
-            strokeWidth="2.5"
+            strokeWidth={compact ? 3.2 : 2.5}
             strokeLinecap="round"
             strokeLinejoin="round"
             initial={reduced ? false : { pathLength: 0 }}
@@ -1029,18 +1096,18 @@ function CompoundingVisual() {
           {/* Where consistency clears the pass line. */}
           <motion.g {...appear(draw * (CROSSING_DAY / RUN_DAYS))}>
             <circle
-              cx={plotX(CROSSING_DAY)}
-              cy={plotY(PASS_MARK)}
-              r="6"
+              cx={xOf(chart, CROSSING_DAY)}
+              cy={yOf(chart, PASS_MARK)}
+              r={compact ? 7 : 6}
               fill={BG_SECONDARY}
               stroke={SERIES_STEADY}
               strokeWidth="2.5"
             />
             <text
-              x={plotX(CROSSING_DAY)}
-              y={plotY(PASS_MARK) + 24}
+              x={xOf(chart, CROSSING_DAY)}
+              y={yOf(chart, PASS_MARK) + (compact ? 28 : 24)}
               textAnchor="middle"
-              fontSize="11"
+              fontSize={chart.font}
               fill={INK_MUTED}
               className="font-mono-pro"
             >
@@ -1050,56 +1117,52 @@ function CompoundingVisual() {
 
           {/* Direct labels — the contrast check obliges visible labels. */}
           <motion.g {...appear(draw)}>
-            <circle cx={plotX(RUN_DAYS)} cy={plotY(STEADY_END)} r="5" fill={SERIES_STEADY} />
+            <circle cx={xOf(chart, RUN_DAYS)} cy={yOf(chart, STEADY_END)} r={compact ? 6 : 5} fill={SERIES_STEADY} />
             <text
-              x={plotX(RUN_DAYS)}
-              y={plotY(STEADY_END) - 14}
+              x={xOf(chart, RUN_DAYS)}
+              y={yOf(chart, STEADY_END) - 14}
               textAnchor="end"
-              fontSize="13"
+              fontSize={chart.endFont}
               fontWeight="600"
               fill={INK}
             >
               {STEADY_END}%
             </text>
-            <circle cx={plotX(RUN_DAYS)} cy={plotY(20)} r="5" fill={SERIES_ERRATIC} />
-            <text x={plotX(RUN_DAYS)} y={plotY(20) + 22} textAnchor="end" fontSize="13" fontWeight="600" fill={INK}>
+            <circle cx={xOf(chart, RUN_DAYS)} cy={yOf(chart, 20)} r={compact ? 6 : 5} fill={SERIES_ERRATIC} />
+            <text
+              x={xOf(chart, RUN_DAYS)}
+              y={yOf(chart, 20) + 24}
+              textAnchor="end"
+              fontSize={chart.endFont}
+              fontWeight="600"
+              fill={INK}
+            >
               20%
             </text>
           </motion.g>
 
           {/* X axis */}
           <line
-            x1={PLOT.left}
-            y1={PLOT.bottom}
-            x2={PLOT.right}
-            y2={PLOT.bottom}
+            x1={chart.left}
+            y1={chart.bottom}
+            x2={chart.right}
+            y2={chart.bottom}
             stroke={INK}
             strokeOpacity="0.16"
             strokeWidth="1"
           />
-          <text x={PLOT.left} y={PLOT.bottom + 22} fontSize="11" fill={INK_MUTED} className="font-mono-pro">
+          <text x={chart.left} y={chart.bottom + 24} fontSize={chart.font} fill={INK_MUTED} className="font-mono-pro">
             {t("DAY 1")}
           </text>
           <text
-            x={PLOT.right}
-            y={PLOT.bottom + 22}
+            x={chart.right}
+            y={chart.bottom + 24}
             textAnchor="end"
-            fontSize="11"
+            fontSize={chart.font}
             fill={INK_MUTED}
             className="font-mono-pro"
           >
             {t("DAY")} {RUN_DAYS}
-          </text>
-          <text
-            x={PLOT.left - 12}
-            y={PLOT.top - 12}
-            textAnchor="end"
-            fontSize="10"
-            fill={INK_MUTED}
-            className="font-mono-pro"
-            letterSpacing="0.1em"
-          >
-            %
           </text>
         </svg>
       </div>
@@ -1516,6 +1579,10 @@ const REASONS: Reason[] = [
 export function ThreeReasons() {
   const t = useT()
   const reduced = useReducedMotion()
+  // The alternating sides are a desktop rhythm. On a phone every frame is a
+  // full-width column, so flipping only produces right-aligned body copy —
+  // harder to read at a narrow measure, and it buys nothing.
+  const compact = useCompactLayout()
 
   return (
     <section style={{ padding: "calc(var(--section-y) * 1.1) var(--page-gutter)", overflow: "hidden" }}>
@@ -1548,7 +1615,7 @@ export function ThreeReasons() {
 
         <div style={{ marginTop: 64, display: "grid", gap: "clamp(28px,5vw,64px)" }}>
           {REASONS.map((reason, i) => {
-            const flip = i % 2 === 1
+            const flip = !compact && i % 2 === 1
             return (
               <motion.div
                 key={reason.num}
