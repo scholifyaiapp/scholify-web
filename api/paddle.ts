@@ -145,6 +145,26 @@ async function claimEvent(
   return true
 }
 
+/**
+ * Undo a claim when processing FAILED, so Paddle's retry actually re-processes.
+ * The claim is inserted before the entitlement write; without this release a
+ * transient failure would leave the event claimed, every retry would short-circuit
+ * as a duplicate, and a paying customer would never be granted their plan. The
+ * downstream writes are idempotent (updateUserById merges, recordSubscription
+ * upserts on user_id), so re-processing on retry is safe.
+ */
+async function releaseEvent(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  eventId: string | undefined,
+): Promise<void> {
+  if (!eventId) return
+  try {
+    await supa.from("paddle_events").delete().eq("event_id", eventId)
+  } catch {
+    /* best-effort — a still-claimed event just means Paddle's next retry no-ops */
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const action = String(req.query.action || "").trim().toLowerCase()
   if (req.method !== "POST") {
@@ -324,6 +344,10 @@ async function webhook(req: VercelRequest, res: VercelResponse, rawBody: string)
     // Events we don't act on (invoices, adjustments, …) — acknowledge.
     res.status(200).json({ ok: true, ignored: type })
   } catch {
+    // Release the idempotency claim BEFORE the retry: it was inserted before the
+    // entitlement write, so leaving it in place would make every Paddle retry
+    // look like a duplicate and permanently drop this paid customer's plan.
+    await releaseEvent(supa, event.event_id)
     // 500 makes Paddle retry with backoff — correct for transient failures.
     res.status(500).json({ ok: false, reason: "entitlement_write_failed" })
   }

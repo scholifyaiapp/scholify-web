@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { commissionAmount, priceForPlan, planForPrice, resolveAffiliateMetadata } from "../../api/stripe.js"
+import { commissionAmount, priceForPlan, planForPrice, resolveAffiliateMetadata, claimEvent, releaseEvent } from "../../api/stripe.js"
 
 /*
  * Stripe plan ↔ price mapping. Every bug here either charges for the wrong plan
@@ -86,6 +86,64 @@ describe("partner commission calculation", () => {
  */
 
 /** Minimal Supabase query-builder stub: enough for the two lookups under test. */
+/*
+ * Webhook idempotency must be exactly-once WITH recovery. The event id is claimed
+ * (inserted) before the entitlement write; if that write fails the handler returns
+ * 500 so Stripe retries. Without releaseEvent, the claim would still be there on
+ * retry, claimEvent would report "duplicate", and the paid customer's plan would
+ * be dropped forever. These tests pin: claim once, dedupe the retry, and — only
+ * after a release — allow the retry to re-process.
+ */
+function eventsTableStub() {
+  const claimed = new Set<string>()
+  return {
+    claimed,
+    from(table: string) {
+      if (table !== "stripe_events") throw new Error(`unexpected table ${table}`)
+      return {
+        async insert({ event_id }: { event_id: string }) {
+          if (claimed.has(event_id)) return { error: { code: "23505" } }
+          claimed.add(event_id)
+          return { error: null }
+        },
+        delete() {
+          return {
+            async eq(_col: string, value: string) {
+              claimed.delete(value)
+              return { error: null }
+            },
+          }
+        },
+      }
+    },
+  }
+}
+
+describe("webhook idempotency (claim / dedupe / release)", () => {
+  it("claims a fresh event once and treats a redelivery as a duplicate", async () => {
+    const supa = eventsTableStub()
+    expect(await claimEvent(supa as never, "evt_1")).toBe(true) // first delivery
+    expect(await claimEvent(supa as never, "evt_1")).toBe(false) // Stripe retry → skip
+  })
+
+  it("lets the retry re-process after a failed attempt releases the claim", async () => {
+    const supa = eventsTableStub()
+    expect(await claimEvent(supa as never, "evt_2")).toBe(true) // first delivery
+    await releaseEvent(supa as never, "evt_2") // entitlement write threw → release before 500
+    expect(supa.claimed.has("evt_2")).toBe(false)
+    expect(await claimEvent(supa as never, "evt_2")).toBe(true) // retry re-processes, not dropped
+  })
+
+  it("does not release an unrelated event", async () => {
+    const supa = eventsTableStub()
+    await claimEvent(supa as never, "evt_a")
+    await claimEvent(supa as never, "evt_b")
+    await releaseEvent(supa as never, "evt_a")
+    expect(supa.claimed.has("evt_a")).toBe(false)
+    expect(supa.claimed.has("evt_b")).toBe(true) // evt_b's claim is untouched
+  })
+})
+
 function supaStub(tables: {
   affiliates?: Record<string, { id: string; code: string; status: string }>
   referrals?: Record<string, { affiliate_id: string }>

@@ -92,11 +92,29 @@ async function authedUser(
  * NEW (and claims it); false if seen before. A missing table (0018 not applied)
  * falls through rather than dropping a real payment.
  */
-async function claimEvent(supa: NonNullable<ReturnType<typeof admin>>, eventId: string): Promise<boolean> {
+export async function claimEvent(supa: NonNullable<ReturnType<typeof admin>>, eventId: string): Promise<boolean> {
   const { error } = await supa.from("stripe_events").insert({ event_id: eventId })
   if (!error) return true
   if ((error as { code?: string }).code === "23505") return false
   return true
+}
+
+/**
+ * Undo a claim when processing FAILED, so Stripe's retry actually re-processes.
+ *
+ * The claim is inserted before the entitlement write; without this release a
+ * transient failure (a Supabase blip mid-write) would leave the event id claimed,
+ * every retry would short-circuit as a duplicate, and a paying customer would
+ * never be granted their plan. Every downstream write is idempotent
+ * (recordCommission has a unique stripe_session_id; writeEntitlement merges), so
+ * re-processing on retry is safe.
+ */
+export async function releaseEvent(supa: NonNullable<ReturnType<typeof admin>>, eventId: string): Promise<void> {
+  try {
+    await supa.from("stripe_events").delete().eq("event_id", eventId)
+  } catch {
+    /* best-effort — a still-claimed event just means Stripe's next retry no-ops */
+  }
 }
 
 /** Write the entitlement to app_metadata + the subscriptions audit table. */
@@ -766,6 +784,10 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
     res.status(200).json({ received: true })
   } catch (err) {
     console.error("stripe webhook:", err)
+    // Release the idempotency claim BEFORE the retry: it was inserted before the
+    // entitlement write, so leaving it in place would make every Stripe retry
+    // look like a duplicate and permanently drop this paid customer's plan.
+    await releaseEvent(supa, event.id)
     // 500 → Stripe retries with backoff (correct for a transient failure).
     res.status(500).json({ ok: false, reason: "entitlement_write_failed" })
   }
