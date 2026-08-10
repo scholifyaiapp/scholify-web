@@ -116,19 +116,13 @@ const MarqueeItem = () => {
 }
 
 /*
- * The places worth reaching from the bottom of the page. The /study and
- * /dashboard routes are gated — a signed-out visitor is redirected to sign-in,
- * which is the correct destination for them anyway.
+ * Four links, and the socials. The footer used to carry ten — Features, How it
+ * works, Pricing, Your dashboard, Study and Analytics on top of these — but
+ * every one of those is either already in the top nav or reachable from inside
+ * the app, so the row was repeating navigation the visitor had passed twice and
+ * burying the two pills that actually do work down here: the partner programme
+ * and the legal/support set.
  */
-const FOOTER_APP_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Your dashboard", href: "/dashboard" },
-  { label: "Study", href: "/study" },
-  { label: "Analytics", href: "/study/analytics" },
-]
-
 const FOOTER_COMPANY_LINKS = [
   { label: "Support", href: "/support" },
   { label: "Privacy", href: "/privacy" },
@@ -232,40 +226,25 @@ export function CinematicFooter({
                 </span>
               </div>
 
-              {/* Where you actually go. Grouped, because one flat row of nine
-                  pills reads as noise and hides the two that earn revenue. */}
-              <nav aria-label={t("Footer")} className="flex flex-col items-center gap-3 w-full mt-2">
-                <div className="flex flex-wrap justify-center gap-2 md:gap-3">
-                  {FOOTER_APP_LINKS.map((link) => (
-                    <MagneticButton
-                      key={link.href}
-                      as="a"
-                      href={link.href}
-                      className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
-                    >
-                      {t(link.label)}
-                    </MagneticButton>
-                  ))}
-                </div>
-                <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+              {/* Where you actually go, in one row now that it fits in one. */}
+              <nav aria-label={t("Footer")} className="mt-2 flex w-full flex-wrap items-center justify-center gap-2 md:gap-3">
+                <MagneticButton
+                  as="a"
+                  href="/partners/apply"
+                  className="footer-glass-pill px-5 py-2.5 rounded-full text-foreground font-semibold text-xs md:text-sm border-border"
+                >
+                  {t("Partner programme — earn 27%")}
+                </MagneticButton>
+                {FOOTER_COMPANY_LINKS.map((link) => (
                   <MagneticButton
+                    key={link.href}
                     as="a"
-                    href="/partners/apply"
-                    className="footer-glass-pill px-5 py-2.5 rounded-full text-foreground font-semibold text-xs md:text-sm border-border"
+                    href={link.href}
+                    className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
                   >
-                    {t("Partner programme — earn 27%")}
+                    {t(link.label)}
                   </MagneticButton>
-                  {FOOTER_COMPANY_LINKS.map((link) => (
-                    <MagneticButton
-                      key={link.href}
-                      as="a"
-                      href={link.href}
-                      className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
-                    >
-                      {t(link.label)}
-                    </MagneticButton>
-                  ))}
-                </div>
+                ))}
               </nav>
 
               {/* Social. Icon-only, so each link carries its own aria-label. */}
@@ -293,33 +272,40 @@ export function CinematicFooter({
             </div>
           </div>
 
-          <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="text-muted-foreground text-[10px] md:text-xs font-semibold tracking-widest uppercase order-2 md:order-1">
-              {t(copyright)}
-            </div>
-            <div className="footer-glass-pill px-6 py-3 rounded-full flex items-center gap-2 order-1 md:order-2 cursor-default border-border/50">
-              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("Crafted for learners by")}</span>
-              <img
-                src="/logo.svg"
-                alt="Scholify"
-                width={18}
-                height={18}
-                loading="lazy"
-                decoding="async"
-                style={{
-                  borderRadius: 4,
-                  marginLeft: 6,
-                  display: "inline-block",
-                  verticalAlign: "middle",
-                  objectFit: "contain",
-                }}
-              />
-              <span className="text-foreground font-black text-xs md:text-sm tracking-normal ml-1">{brand}</span>
+          {/* Bottom rail. The signature sits in the bottom-LEFT corner on desktop
+              — where a maker's mark belongs and where it no longer competes with
+              the centred column above it — and recentres on mobile, because a
+              left-aligned pill in a stacked, otherwise-centred footer reads as a
+              layout mistake rather than a choice. */}
+          <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col items-center gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col items-center gap-3 md:items-start">
+              <div className="footer-glass-pill px-6 py-3 rounded-full flex items-center gap-2 cursor-default border-border/50">
+                <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("Crafted for learners by")}</span>
+                <img
+                  src="/logo.svg"
+                  alt="Scholify"
+                  width={18}
+                  height={18}
+                  loading="lazy"
+                  decoding="async"
+                  style={{
+                    borderRadius: 4,
+                    marginLeft: 6,
+                    display: "inline-block",
+                    verticalAlign: "middle",
+                    objectFit: "contain",
+                  }}
+                />
+                <span className="text-foreground font-black text-xs md:text-sm tracking-normal ml-1">{brand}</span>
+              </div>
+              <div className="text-muted-foreground text-[10px] md:text-xs font-semibold tracking-widest uppercase text-center md:text-left">
+                {t(copyright)}
+              </div>
             </div>
             <MagneticButton
               as="button"
               onClick={scrollToTop}
-              className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground group order-3"
+              className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground group"
               aria-label={t("Back to top")}
             >
               <svg className="w-5 h-5 transform group-hover:-translate-y-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
