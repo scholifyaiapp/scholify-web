@@ -9,7 +9,6 @@ import {
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase, isSupabaseConfigured, isDemoAuthAllowed, authUnavailable } from "./supabase"
-import { canStartTrial } from "./entitlement"
 import { identifyUser, trackEvent } from "@/lib/analytics"
 import { hydrateAccountSetup, persistAccountSetup, releaseAccountSetup } from "@/lib/account-state"
 import { clearPartnerLandingCache } from "@/lib/affiliate"
@@ -101,8 +100,6 @@ interface AuthContextValue {
   signOut: () => Promise<void>
   /** Email a password-reset link. Errors honestly when Supabase isn't configured. */
   resetPassword: (email: string) => Promise<AuthResult>
-  /** Start the one-per-account trial after the personalised plan is revealed. */
-  startTrial: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -143,22 +140,19 @@ function writeDemoUser(user: User | null) {
   }
 }
 
-async function ensureTrial(user: User): Promise<User | null> {
-  if (!isSupabaseConfigured || !canStartTrial(user)) return null
-  try {
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    if (!token) return null
-    const res = await fetch("/api/paddle?action=start-trial", { method: "POST", headers: { Authorization: `Bearer ${token}` } })
-    const body = (await res.json().catch(() => ({}))) as { ok?: boolean; alreadyStarted?: boolean }
-    if (!body.ok) return null
-    if (!body.alreadyStarted) trackEvent("trial_started", { source: "personalised_plan_paywall" })
-    const { data: refreshed } = await supabase.auth.refreshSession()
-    return refreshed.user ?? null
-  } catch {
-    return null
-  }
-}
+/*
+ * ensureTrial() and the startTrial() it backed are GONE, with the endpoint
+ * they called (api/paddle.ts).
+ *
+ * They granted a 3-day Pro trial for a signed-in JWT alone — no card, no
+ * Stripe, no payment — by writing trial_ends_at, which entitlementOf() reads
+ * as full access. Nothing in the app had called it since billing moved to
+ * Stripe, but the client helper and the endpoint both stayed reachable, and an
+ * unused door is still a door.
+ *
+ * The only trial now is the real one: `trial_period_days: 3` on a Stripe
+ * subscription, which cannot begin until a payment method has been captured.
+ */
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -339,18 +333,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? friendlyError(error.message) : { error: null }
   }, [])
 
-  const startTrial = useCallback(async (): Promise<boolean> => {
-    if (!user) return false
-    const granted = await ensureTrial(user)
-    if (!granted) return false
-    setSession((current) => (current ? { ...current, user: granted } : current))
-    setUser(granted)
-    return true
-  }, [user])
-
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword, startTrial }),
-    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword, startTrial],
+    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword }),
+    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

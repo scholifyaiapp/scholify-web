@@ -179,59 +179,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.status(400).json({ error: "Unknown action. Use ?action=webhook | cancel | start-trial." })
 }
 
-/* ── Start trial: the 3-day Pro trial, granted server-side ───────────────
+/* ── Start trial: CLOSED. This was a way into the product without paying ──
  *
- * The trial MUST be written in app_metadata (service-role-only) for the same
- * reason the paid plan is: a client that could set its own trial could grant
- * itself Pro forever. So the client asks; the server decides and writes.
+ * ── What it did ───────────────────────────────────────────────────
+ * It granted a 3-day Pro trial to anyone holding a signed-in Supabase JWT.
+ * No card, no Stripe, no payment of any kind — it wrote `trial_ends_at` three
+ * days out into service-role app_metadata, which is exactly what
+ * entitlementOf() reads to return isTrial → isPro → canAccessApp. So:
  *
- * Idempotent and one-per-account: `trial_started_at` is the permanent marker.
- * Once set, this refuses — a user cannot loop it for endless Pro, and calling it
- * twice (e.g. a retry, or the app re-checking on load) is harmless.
+ *     curl -X POST /api/paddle?action=start-trial -H "Authorization: Bearer <jwt>"
+ *
+ * bought full access to the entire workspace, free, for any account that could
+ * sign up — and accounts are free and unlimited. "One per account" was no
+ * defence when a new account costs a new email address.
+ *
+ * ── Why it existed ────────────────────────────────────────────────
+ * A leftover from the Paddle era, when the trial was granted before checkout
+ * rather than by it. Nothing in the app has called it since billing moved to
+ * Stripe: the live trial is `trial_period_days: 3` on a real subscription in
+ * api/stripe.ts, which only starts AFTER the card is captured. The endpoint
+ * simply stayed reachable, which is the whole problem — an unused door is
+ * still a door.
+ *
+ * ── The rule it violated ──────────────────────────────────────────
+ * Onboarding, the diagnosis and the plan it generates are free. Entry to the
+ * workspace is not, and there is no free path into it. This endpoint was one.
+ *
+ * It now refuses everyone, unconditionally, and says why. Kept as a refusal
+ * rather than deleted so a stale client, a cached bundle or a bookmarked call
+ * gets a clear answer instead of a 400 "unknown action" that reads like a bug.
  */
-const TRIAL_DAYS = 3
-
-async function startTrial(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const supa = admin()
-  if (!supa) {
-    res.status(200).json({ ok: false, reason: "not_configured" })
-    return
-  }
-  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
-  if (!token) {
-    res.status(401).json({ ok: false, reason: "no_token" })
-    return
-  }
-  const { data: userData, error: userErr } = await supa.auth.getUser(token)
-  const user = userData?.user
-  if (userErr || !user) {
-    res.status(401).json({ ok: false, reason: "bad_token" })
-    return
-  }
-
-  const meta = user.app_metadata ?? {}
-  const plan = String(meta.plan ?? "free")
-  // A paying customer doesn't need a trial; and a trial is once per account.
-  if (plan !== "free") {
-    res.status(200).json({ ok: false, reason: "already_paid" })
-    return
-  }
-  if (meta.trial_started_at) {
-    res.status(200).json({ ok: true, alreadyStarted: true, trial_ends_at: meta.trial_ends_at ?? null })
-    return
-  }
-
-  const now = new Date()
-  const endsAt = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
-  try {
-    // Merge, don't replace — never clobber other app_metadata (referral, etc.).
-    await supa.auth.admin.updateUserById(user.id, {
-      app_metadata: { trial_started_at: now.toISOString(), trial_ends_at: endsAt },
-    })
-    res.status(200).json({ ok: true, trial_ends_at: endsAt })
-  } catch {
-    res.status(200).json({ ok: false, reason: "write_failed" })
-  }
+async function startTrial(_req: VercelRequest, res: VercelResponse): Promise<void> {
+  res.status(410).json({
+    ok: false,
+    reason: "card_required",
+    message: "Trials start at checkout, after a payment method is added.",
+  })
 }
 
 /* ── Webhook: Paddle → entitlement ──────────────────────────────────── */
