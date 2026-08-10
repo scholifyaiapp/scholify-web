@@ -1191,18 +1191,29 @@ const FOUNDER = {
   instagram: "https://www.instagram.com/makhmudoff_nuriddin/?hl=ru",
 }
 
-/** The mission, as beats. Weight carries the last one, not size alone. */
+/*
+ * The opener is three clauses on the same frame, landing one at a time. The
+ * repetition is the point — it is an argument being made three times before
+ * the reader is allowed to disagree once.
+ */
+const MISSION_OPENER = [
+  "Your postcode is not a qualification.",
+  "Your surname is not a qualification.",
+  "Neither is what your family can pay.",
+]
+
+/** Then the turn, then the promise. Weight carries the last beat, not size alone. */
 const MISSION_LINES = [
   {
-    text: "ACCA does not care where you were born, which university admitted you, or what your family can pay. It cares whether you can do the work.",
+    text: "ACCA is one of the few institutions on earth that agrees. It asks a single question — can you do the work — and nothing else counts toward the answer.",
     lead: true,
   },
   {
-    text: "That is an extraordinary door. For most of the people it was built for, it is still too expensive to walk through.",
+    text: "Then the tuition invoice arrives, and a door built for anyone quietly becomes a door for the funded.",
     lead: false,
   },
   {
-    text: "Scholify exists to remove that gap — priced so the qualification is decided by your work, not your postcode.",
+    text: "Scholify removes that invoice. Everything the qualification demands, for less per month than a single hour with a tutor — so what decides your result is your discipline, not your circumstances.",
     lead: true,
   },
 ]
@@ -1296,12 +1307,34 @@ export function MissionSection() {
             letterSpacing: "-0.03em",
           }}
         >
-          {t("Make a professional qualification")}{" "}
+          {t("Talent is everywhere.")}{" "}
           <em className="grad-hero-text" style={{ fontStyle: "italic" }}>
-            {t("reachable")}
-          </em>{" "}
-          {t("from anywhere.")}
+            {t("Tuition is not.")}
+          </em>
         </motion.h2>
+
+        {/* The three-clause opener, each landing on its own beat. */}
+        <div style={{ marginTop: 44, display: "grid", gap: 10, maxWidth: 720, marginLeft: "auto", marginRight: "auto" }}>
+          {MISSION_OPENER.map((clause, i) => (
+            <motion.p
+              key={clause}
+              className="font-display"
+              initial={reduced ? false : { opacity: 0, y: 18, filter: "blur(6px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.7, delay: 0.16 + i * 0.19, ease: EASE }}
+              style={{
+                margin: 0,
+                fontSize: "clamp(20px,2.5vw,30px)",
+                lineHeight: 1.3,
+                letterSpacing: "-0.02em",
+                color: i === MISSION_OPENER.length - 1 ? INK_INVERSE : "rgba(250,250,247,0.82)",
+              }}
+            >
+              {t(clause)}
+            </motion.p>
+          ))}
+        </div>
 
         <div style={{ marginTop: 40, display: "grid", gap: 24, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>
           {MISSION_LINES.map((line, i) => (
@@ -1310,7 +1343,7 @@ export function MissionSection() {
               initial={reduced ? false : { opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.75, delay: 0.2 + i * 0.16, ease: EASE }}
+              transition={{ duration: 0.75, delay: 0.66 + i * 0.14, ease: EASE }}
               style={{
                 margin: 0,
                 fontSize: line.lead ? "clamp(18px,2vw,24px)" : "clamp(16px,1.6vw,19px)",
