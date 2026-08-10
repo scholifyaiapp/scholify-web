@@ -1255,28 +1255,24 @@ const FOUNDER = {
 }
 
 /*
- * The opener is three clauses on the same frame, landing one at a time. The
- * repetition is the point — it is an argument being made three times before
- * the reader is allowed to disagree once.
+ * The founder's own words, and deliberately his: the platform exists because he
+ * hit this wall himself, and a first-person account of that is both truer and
+ * more persuasive than the same claim in a brand voice. The founder block
+ * directly below is the attribution.
  */
-const MISSION_OPENER = [
-  "Your postcode is not a qualification.",
-  "Your surname is not a qualification.",
-  "Neither is what your family can pay.",
-]
+const MISSION_LEAD = "I built Scholify because I could not afford the way in."
 
-/** Then the turn, then the promise. Weight carries the last beat, not size alone. */
 const MISSION_LINES = [
   {
-    text: "ACCA is one of the few institutions on earth that agrees. It asks a single question — can you do the work — and nothing else counts toward the answer.",
-    lead: true,
-  },
-  {
-    text: "Then the tuition invoice arrives, and a door built for anyone quietly becomes a door for the funded.",
+    text: "ACCA asks one question: can you do the work. But before anyone gets to answer it there is tuition — and then registration, the annual subscription, and an exam fee for every paper. None of them wait until you can afford them.",
     lead: false,
   },
   {
-    text: "Scholify removes that invoice. Everything the qualification demands, for less per month than a single hour with a tutor — so what decides your result is your discipline, not your circumstances.",
+    text: "So Scholify teaches the whole qualification for less per month than a single hour with a tutor, and pays you 27% of every plan bought through your link — so the fees nobody can discount are covered by your own work rather than by someone else's.",
+    lead: false,
+  },
+  {
+    text: "A student with nothing behind them can still qualify, still reach a role anywhere in the world, and still send something home. That is the whole point of this platform.",
     lead: true,
   },
 ]
@@ -1370,34 +1366,32 @@ export function MissionSection() {
             letterSpacing: "-0.03em",
           }}
         >
-          {t("Talent is everywhere.")}{" "}
+          {t("Make a professional qualification")}{" "}
           <em className="grad-hero-text" style={{ fontStyle: "italic" }}>
-            {t("Tuition is not.")}
-          </em>
+            {t("reachable")}
+          </em>{" "}
+          {t("from anywhere.")}
         </motion.h2>
 
-        {/* The three-clause opener, each landing on its own beat. */}
-        <div style={{ marginTop: 44, display: "grid", gap: 10, maxWidth: 720, marginLeft: "auto", marginRight: "auto" }}>
-          {MISSION_OPENER.map((clause, i) => (
-            <motion.p
-              key={clause}
-              className="font-display"
-              initial={reduced ? false : { opacity: 0, y: 18, filter: "blur(6px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.7, delay: 0.16 + i * 0.19, ease: EASE }}
-              style={{
-                margin: 0,
-                fontSize: "clamp(20px,2.5vw,30px)",
-                lineHeight: 1.3,
-                letterSpacing: "-0.02em",
-                color: i === MISSION_OPENER.length - 1 ? INK_INVERSE : "rgba(250,250,247,0.82)",
-              }}
-            >
-              {t(clause)}
-            </motion.p>
-          ))}
-        </div>
+        {/* The line the whole section rests on, in the founder's voice. */}
+        <motion.blockquote
+          className="font-display"
+          initial={reduced ? false : { opacity: 0, y: 20, filter: "blur(7px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.85, delay: 0.18, ease: EASE }}
+          style={{
+            margin: "40px auto 0",
+            maxWidth: 720,
+            fontSize: "clamp(22px,2.9vw,34px)",
+            lineHeight: 1.25,
+            letterSpacing: "-0.02em",
+            color: INK_INVERSE,
+            fontStyle: "italic",
+          }}
+        >
+          {t(`“${MISSION_LEAD}”`)}
+        </motion.blockquote>
 
         <div style={{ marginTop: 40, display: "grid", gap: 24, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>
           {MISSION_LINES.map((line, i) => (
