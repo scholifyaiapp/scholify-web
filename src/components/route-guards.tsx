@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { canAccessApp } from "@/lib/entitlement"
+import { decideAppAccess } from "@/lib/app-access"
 import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
 import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
@@ -194,8 +195,27 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
     return () => window.clearTimeout(timer)
   }, [gate, user])
 
-  if (loading) return <AuthLoading />
-  if (!user) {
+  /*
+   * The decision itself lives in src/lib/app-access.ts as a pure function, so
+   * it can be proven by `npm test` rather than by paying for a subscription
+   * and watching what happens. This component only renders the answer.
+   */
+  const decision = decideAppAccess({
+    loading,
+    signedIn: Boolean(user),
+    launchAdmin: Boolean(user) && isLaunchAdmin(user),
+    prelaunch: PRELAUNCH_MODE,
+    gate,
+    syncingPayment,
+    // What is free, exhaustively: sign-up, onboarding (/welcome, ungated) and
+    // the diagnosis with the plan it generates.
+    freeValueRoute: location.pathname === "/study/diagnostic",
+    onboarded: isAccaOnboarded(),
+    entitled: canAccessApp(user),
+  })
+
+  if (decision === "loading") return <AuthLoading />
+  if (decision === "sign-in") {
     /*
      * signInPath(), not a bare "/sign-in": TeamSignIn redirects the auth routes
      * to "/" unless ?team=1 is present while PRELAUNCH_MODE is on. So this
@@ -205,77 +225,18 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
      */
     return <Navigate to={signInPath(location.pathname)} replace state={{ from: location.pathname }} />
   }
-  if (PRELAUNCH_MODE && !isLaunchAdmin(user)) {
+  if (decision === "prelaunch") {
     /*
-     * SAY SO, rather than redirecting in silence.
-     *
-     * This used to be <Navigate to="/" replace />. The learner's sign-in had
-     * genuinely SUCCEEDED — session created, password correct — and they were
-     * then dropped back on the waitlist with no message at all. Every attempt
-     * looked like a broken button or a rejected password, and the same thing
-     * happened after "Start for free": account created, confirmation email sent,
-     * straight back to the waitlist. There was no way to tell that from a
-     * failure, so the only rational conclusion was that sign-in was broken.
+     * SAY SO, rather than redirecting in silence. This used to be a bare
+     * <Navigate to="/" />: the sign-in had genuinely SUCCEEDED, and the learner
+     * was dropped back on the waitlist with no message — indistinguishable from
+     * a rejected password, so the rational conclusion was that sign-in was broken.
      */
-    return <PrelaunchBlock email={user.email ?? null} />
+    return <PrelaunchBlock email={user?.email ?? null} />
   }
-  /*
-   * WHAT IS FREE, EXHAUSTIVELY: sign-up, onboarding (/welcome, not gated at
-   * all) and the diagnosis with the plan it generates. Nothing else. There is
-   * no free tier of the workspace and no way into it without a payment method.
-   */
-  const isFreeValueRoute = location.pathname === "/study/diagnostic"
-  // Wall anyone NOT currently entitled to the app — but "entitled" means paid OR
-  // in an active trial, not just paid. The previous `!isPaid` ignored an active
-  // trial: a legacy/promo trial grants access via trial_ends_at without a paid
-  // plan or plan_status:"trialing" (so isPaid stays false while isTrial is true),
-  // and got walled the instant it started. Checking `!isPaid && !isTrial` still
-  // blocks free and expired-trial learners, while letting an active trial in —
-  // which is also what the trial_ends_at re-render above is for: to flip this
-  // gate the moment the trial actually expires.
-  /*
-   * ── The wall. Two conditions were removed from it, and both were holes ──
-   *
-   * isAccaOnboarded() — read from localStorage, which the visitor owns. The
-   * whole paywall was one DevTools line away from being switched off:
-   * `localStorage.removeItem("scholify-acca-onboarded")` and the app opened.
-   * Entitlement may never depend on a value the user can write.
-   *
-   * isStripeConfigured() — true only when VITE_STRIPE_PUBLISHABLE_KEY is set
-   * at BUILD time. But checkout runs server-side on STRIPE_SECRET_KEY, so that
-   * key can go missing without anything appearing to break — and when it does,
-   * this condition silently disabled the entire paywall and gave the product
-   * away. It did exactly that in production. A billing misconfiguration must
-   * fail CLOSED and loud (people see the wall, you hear about it in minutes),
-   * never open and quiet (people study free and nobody finds out).
-   *
-   * What is left is the only question that matters: is this account entitled?
-   */
-  if (syncingPayment) return <UnlockingScreen />
-
-  /*
-   * ── Not onboarded yet? Go and onboard — do not meet a paywall ──
-   *
-   * Sign-in, onboarding and the plan it generates are free, so a learner who
-   * has just created an account must never be shown a price before they have
-   * seen what they would be buying. They land on a gated route (sign-in ends
-   * at /dashboard) before onboarding exists, so without this they were sold to
-   * on their very first screen.
-   *
-   * This uses localStorage, which the visitor can edit — and that is FINE
-   * here, because of what it decides. It routes; it does not entitle. Clearing
-   * the flag sends you to onboarding, never into the app: the worst a faker
-   * achieves is doing onboarding again. That is the distinction the old code
-   * got wrong by putting the same flag inside the entitlement condition, where
-   * deleting it opened the whole product.
-   */
-  if (gate && !isLaunchAdmin(user) && !isFreeValueRoute && !isAccaOnboarded()) {
-    return <Navigate to="/welcome" replace />
-  }
-
-  if (gate && !isLaunchAdmin(user) && !isFreeValueRoute && !canAccessApp(user)) {
-    return <TrialExpiredBlock />
-  }
+  if (decision === "unlocking") return <UnlockingScreen />
+  if (decision === "onboarding") return <Navigate to="/welcome" replace />
+  if (decision === "paywall") return <TrialExpiredBlock />
   return <>{children}</>
 }
 
