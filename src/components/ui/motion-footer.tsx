@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { MagneticButton } from "@/components/ui/magnetic-button"
+import { SOCIALS } from "@/components/social"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signUpPath } from "@/lib/launch"
 
@@ -114,6 +115,26 @@ const MarqueeItem = () => {
   )
 }
 
+/*
+ * The places worth reaching from the bottom of the page. The /study and
+ * /dashboard routes are gated — a signed-out visitor is redirected to sign-in,
+ * which is the correct destination for them anyway.
+ */
+const FOOTER_APP_LINKS = [
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Your dashboard", href: "/dashboard" },
+  { label: "Study", href: "/study" },
+  { label: "Analytics", href: "/study/analytics" },
+]
+
+const FOOTER_COMPANY_LINKS = [
+  { label: "Support", href: "/support" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+]
+
 interface CinematicFooterProps {
   brand?: string
   heading?: string
@@ -211,13 +232,63 @@ export function CinematicFooter({
                 </span>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 md:gap-6 w-full mt-2">
-                <MagneticButton as="a" href="/privacy" className="footer-glass-pill px-6 py-3 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground">{t("Privacy")}</MagneticButton>
-                <MagneticButton as="a" href="/terms" className="footer-glass-pill px-6 py-3 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground">{t("Terms")}</MagneticButton>
-                <MagneticButton as="a" href="/support" className="footer-glass-pill px-6 py-3 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground">{t("Support")}</MagneticButton>
-                <MagneticButton as="a" href="#features" className="footer-glass-pill px-6 py-3 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground">{t("Features")}</MagneticButton>
-                <MagneticButton as="a" href="#pricing" className="footer-glass-pill px-6 py-3 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground">{t("Pricing")}</MagneticButton>
-                <MagneticButton as="a" href="/partners/apply" className="footer-glass-pill px-6 py-3 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground">{t("Partners")}</MagneticButton>
+              {/* Where you actually go. Grouped, because one flat row of nine
+                  pills reads as noise and hides the two that earn revenue. */}
+              <nav aria-label={t("Footer")} className="flex flex-col items-center gap-3 w-full mt-2">
+                <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+                  {FOOTER_APP_LINKS.map((link) => (
+                    <MagneticButton
+                      key={link.href}
+                      as="a"
+                      href={link.href}
+                      className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
+                    >
+                      {t(link.label)}
+                    </MagneticButton>
+                  ))}
+                </div>
+                <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+                  <MagneticButton
+                    as="a"
+                    href="/partners/apply"
+                    className="footer-glass-pill px-5 py-2.5 rounded-full text-foreground font-semibold text-xs md:text-sm border-border"
+                  >
+                    {t("Partner programme — earn 27%")}
+                  </MagneticButton>
+                  {FOOTER_COMPANY_LINKS.map((link) => (
+                    <MagneticButton
+                      key={link.href}
+                      as="a"
+                      href={link.href}
+                      className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
+                    >
+                      {t(link.label)}
+                    </MagneticButton>
+                  ))}
+                </div>
+              </nav>
+
+              {/* Social. Icon-only, so each link carries its own aria-label. */}
+              <div className="flex flex-col items-center gap-3 mt-4">
+                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-[0.22em]">
+                  {t("Follow Scholify")}
+                </span>
+                <div className="flex flex-wrap justify-center gap-2.5">
+                  {SOCIALS.map((social) => (
+                    <MagneticButton
+                      key={social.name}
+                      as="a"
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Scholify on ${social.name}`}
+                      title={social.name}
+                      className="footer-glass-pill w-11 h-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+                    >
+                      <social.Mark size={17} />
+                    </MagneticButton>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

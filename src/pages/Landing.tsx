@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom"
 import {
+  animate,
   motion,
   useInView,
+  useMotionValue,
   useReducedMotion,
+  useTransform,
   AnimatePresence,
 } from "motion/react"
 import {
@@ -1361,6 +1364,152 @@ const MILESTONE_PHOTOS: Array<{ id: string; image: string; altKey: string }> = [
   { id: "member", image: "/milestones/cert-member.svg", altKey: "Specimen ACCA Member certificate" },
 ]
 
+/* ── The full route to the letters ────────────────────────────────
+ *
+ * The certificates above are the destination; this is what it costs to reach
+ * it, and it is the part most people only discover halfway through. Exams are
+ * not the whole requirement — ACCA membership also needs the ethics module and
+ * three years of logged experience.
+ *
+ * Every figure is checked against the app's own data rather than the internet:
+ * 15 papers across 3 levels from ROADMAP_LEVELS above (13 sat, because the
+ * Strategic Professional Options are 2 chosen from 4), and PER_TARGET_MONTHS /
+ * PER_TARGET_OBJECTIVES from src/lib/acca-journey.ts.
+ */
+const ROUTE_STEPS = [
+  { value: 13, suffix: "", label: "EXAMS", note: "Chosen from 15 papers, across 3 levels", accent: BRAND_500 },
+  { value: null, display: "EPSM", label: "ETHICS MODULE", note: "Ethics & Professional Skills, completed online", accent: PLUM_500 },
+  { value: 36, suffix: "", label: "MONTHS", note: "Practical experience, with 9 performance objectives", accent: FIRE_500 },
+] as const
+
+function RouteFigure({ value, delay }: { value: number; delay: number }) {
+  const reduce = useReducedMotion()
+  const ref = useRef<HTMLSpanElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-60px" })
+  const count = useMotionValue(reduce ? value : 0)
+  const shown = useTransform(count, (v) => Math.round(v))
+
+  useEffect(() => {
+    if (!inView) return
+    if (reduce) {
+      count.set(value)
+      return
+    }
+    const controls = animate(count, value, { duration: 1.1, delay, ease: EASE_DECISIVE })
+    return () => controls.stop()
+  }, [inView, reduce, count, value, delay])
+
+  return (
+    <span ref={ref} className="font-display tabular">
+      <motion.span>{shown}</motion.span>
+    </span>
+  )
+}
+
+function AccaRouteStrip() {
+  const t = useT()
+  const reduce = useReducedMotion()
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-80px" })
+
+  return (
+    <div ref={ref} style={{ marginTop: "clamp(40px,6vw,72px)" }}>
+      <SectionLabel>{t("THE FULL ROUTE TO THOSE LETTERS")}</SectionLabel>
+      <p style={{ color: INK_MUTED, fontSize: 14.5, maxWidth: 520, margin: "12px auto 0", lineHeight: 1.6 }}>
+        {t("Passing every paper is most of it — but not all of it. Membership needs three things, and Scholify tracks all three.")}
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "stretch",
+          justifyContent: "center",
+          gap: "clamp(10px,1.6vw,18px)",
+          marginTop: 30,
+        }}
+      >
+        {ROUTE_STEPS.map((step, i) => (
+          <motion.div
+            key={step.label}
+            initial={reduce ? false : { opacity: 0, y: 26 }}
+            animate={inView ? { opacity: 1, y: 0 } : undefined}
+            transition={{ duration: 0.6, delay: i * 0.14, ease: EASE_DECISIVE }}
+            style={{
+              flex: "1 1 190px",
+              maxWidth: 250,
+              padding: "22px 20px",
+              borderRadius: 20,
+              background: BG_PRIMARY,
+              border: `1px solid ${HAIR}`,
+              borderTop: `3px solid ${step.accent}`,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "clamp(34px,4.6vw,46px)", color: step.accent, lineHeight: 1, letterSpacing: "-0.03em" }}>
+              {step.value === null ? (
+                <span className="font-display">{step.display}</span>
+              ) : (
+                <RouteFigure value={step.value} delay={0.2 + i * 0.14} />
+              )}
+            </div>
+            <div
+              className="font-mono-pro"
+              style={{ fontSize: 10.5, letterSpacing: "0.16em", fontWeight: 600, color: INK, marginTop: 12 }}
+            >
+              {t(step.label)}
+            </div>
+            <div style={{ fontSize: 12.5, color: INK_MUTED, lineHeight: 1.5, marginTop: 8 }}>{t(step.note)}</div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* The route closes into the designation. */}
+      <motion.div
+        initial={reduce ? false : { scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : undefined}
+        transition={{ duration: 0.8, delay: 0.5, ease: EASE_DECISIVE }}
+        style={{
+          height: 2,
+          maxWidth: 260,
+          margin: "26px auto 0",
+          background: `linear-gradient(90deg, ${BRAND_500}, ${PLUM_500}, ${FIRE_500})`,
+        }}
+      />
+
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 18 }}
+        animate={inView ? { opacity: 1, y: 0 } : undefined}
+        transition={{ duration: 0.7, delay: 0.66, ease: EASE_DECISIVE }}
+        style={{ marginTop: 22 }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", gap: "clamp(4px,1vw,10px)" }}>
+          {"ACCA".split("").map((letter, i) => (
+            <motion.span
+              key={letter + i}
+              className="font-display"
+              initial={reduce ? false : { opacity: 0, y: 20, filter: "blur(6px)" }}
+              animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : undefined}
+              transition={{ duration: 0.6, delay: 0.78 + i * 0.09, ease: EASE_DECISIVE }}
+              style={{
+                fontSize: "clamp(44px,7vw,84px)",
+                lineHeight: 1,
+                letterSpacing: "-0.02em",
+                color: INK,
+              }}
+            >
+              {letter}
+            </motion.span>
+          ))}
+        </div>
+        <div style={{ color: INK_MUTED, fontSize: 13.5, marginTop: 14, lineHeight: 1.6 }}>
+          {t("The letters after your name. Scholify takes you to the exams; it tracks the other two the whole way.")}
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 function MilestoneGallery() {
   const t = useT()
   const reveal = {
@@ -1426,6 +1575,8 @@ function MilestoneGallery() {
             photos={MILESTONE_PHOTOS.map((p) => ({ id: p.id, image: p.image, alt: t(p.altKey) }))}
           />
         </motion.div>
+
+        <AccaRouteStrip />
       </div>
     </section>
   )
