@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
+import { useEffect, useState } from "react"
+import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion } from "motion/react"
 import {
   BookOpen,
   CalendarClock,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { useT } from "@/i18n/LanguageProvider"
 import CharlesMascot from "@/components/CharlesMascot"
+import { ContainerScroll, ContainerSticky, useContainerScroll } from "@/components/blocks/process-timeline"
 
 /*
  * ── The landing page's SYSTEM sections ────────────────────────────
@@ -31,8 +32,10 @@ import CharlesMascot from "@/components/CharlesMascot"
  * Everything here TEACHES THE REAL SYSTEM, in the order a learner meets it:
  *
  *   SystemWalkthrough  onboarding → plan generation → the daily five → measurement
- *                      → the next paper. Five stages, each with a live visual of the
- *                      actual thing, so the page is a demo rather than a claim.
+ *                      → the next paper, drawn as the cycle it actually is: 01 runs
+ *                      once, 02–05 repeat for every paper. The diagram carries the
+ *                      structure and only the selected stage shows its detail, so
+ *                      the page is a demo rather than five essays.
  *   MissionSection     why Scholify exists, in the founder's words.
  *   ThreeReasons       the three reasons it was built: the all-in-one pain point,
  *                      the cost of qualifying, and earning while you study.
@@ -101,7 +104,7 @@ const STAGES: Stage[] = [
     label: "ONBOARDING",
     title: "Seven questions. Ninety seconds.",
     body:
-      "Where you're starting from, which paper, how many minutes you can genuinely protect, how many days a week, and the readiness you're aiming for. Nothing decorative — every answer is read by the planner, and you can change any of them later without losing progress.",
+      "Which paper, where you're starting from, how many minutes you can genuinely protect, and the score you're aiming for. Every answer is read by the planner, and you can change any of them later without losing progress.",
     accent: BRAND_500,
     Icon: Compass,
     facts: [
@@ -115,7 +118,7 @@ const STAGES: Stage[] = [
     label: "PLAN GENERATION",
     title: "Charles builds the whole paper, not a to-do list.",
     body:
-      "Every chapter of your paper is timed from its own content — how many worked examples, how many examiner traps, how many study-guide outcomes it delivers — then spread across the days you actually have. The sitting date is calculated from that, not guessed: total hours ÷ your weekly hours, mapped onto the next real ACCA session.",
+      "Every chapter is timed from its own content, then spread across the days you actually have. Your sitting date is calculated rather than guessed: total hours ÷ your weekly hours, mapped onto the next real ACCA session.",
     accent: PLUM_500,
     Icon: CalendarClock,
     facts: [
@@ -129,7 +132,7 @@ const STAGES: Stage[] = [
     label: "YOUR DAY",
     title: "One topic, five ways.",
     body:
-      "Not \"practise 30 questions\". An exact chapter, then five quizzes on that chapter, then 10–15 exam-standard questions on the same topic, then 5–10 flashcards from it, then a technical article on it written the way the examiner talks about it. Each step unlocks the one after it, because you cannot quiz a chapter you haven't read.",
+      "Not \"practise 30 questions\". An exact chapter, then five quizzes on it, 10–15 exam-standard questions, 5–10 flashcards, and a technical article in the examiner's own language. Each step unlocks the next.",
     accent: FIRE_500,
     Icon: Layers,
     facts: [
@@ -143,7 +146,7 @@ const STAGES: Stage[] = [
     label: "MEASUREMENT",
     title: "A readiness score that earns its number.",
     body:
-      "Your Exam Readiness Score is built from coverage of the paper, accuracy on what you've covered, and the difficulty of what's left. It stays unquoted until there's enough evidence to mean something — and if you started from zero, the diagnostic waits until you've genuinely covered the essential areas, so it measures you instead of guessing.",
+      "Built from coverage of the paper, accuracy on what you've covered, and the difficulty of what's left. It stays unquoted until there's enough evidence to mean something, so it measures you instead of guessing.",
     accent: GREEN_500,
     Icon: Target,
     facts: [
@@ -157,7 +160,7 @@ const STAGES: Stage[] = [
     label: "THE NEXT PAPER",
     title: "It tells you what to sit next, and why.",
     body:
-      "ACCA lets you take the Skills papers in any order, which is why students choose badly — by reputation instead of by what the material builds on. Finish MA and Charles points at PM and FM while the costing is still warm. Every recommendation comes with the knowledge reason, so you can check it against your own experience.",
+      "ACCA lets you take the Skills papers in any order, which is why students choose badly. Finish MA and Charles points at PM and FM while the costing is still warm — with the knowledge reason attached, so you can check it.",
     accent: BRAND_500,
     Icon: Sparkles,
     facts: [
@@ -168,163 +171,402 @@ const STAGES: Stage[] = [
   },
 ]
 
-export function SystemWalkthrough() {
+/* ── The loop, actually drawn ─────────────────────────────────────
+ *
+ * The heading has always promised "one loop" and the page never showed one —
+ * it showed five stacked accordions, which read as five separate things to
+ * learn. The shape that makes the product click is: 01 happens once, then
+ * 02→05 is a cycle you run again for every paper. Drawing that is worth more
+ * than any of the paragraphs it replaces.
+ */
+
+/** Node centres sit at (i + 0.5)/n across the row. */
+const nodeCentre = (i: number) => ((i + 0.5) / STAGES.length) * 100
+
+function LoopGraph({ active, onSelect }: { active: number; onSelect: (i: number) => void }) {
   const t = useT()
   const reduced = useReducedMotion()
-  const [open, setOpen] = useState(0)
+  const railStart = nodeCentre(0)
+  const railEnd = nodeCentre(STAGES.length - 1)
+  const progress = STAGES.length > 1 ? active / (STAGES.length - 1) : 0
 
   return (
-    <section id="how-it-works" style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+    <div>
+      {/* ── Desktop: the horizontal cycle ── */}
+      <div className="hidden md:block" style={{ position: "relative", paddingBottom: 74 }}>
+        {/* The rail the stages sit on, and the part of it you've reached. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 27,
+            left: `${railStart}%`,
+            width: `${railEnd - railStart}%`,
+            height: 2,
+            background: HAIR,
+          }}
+        />
+        <motion.div
+          aria-hidden
+          initial={false}
+          animate={{ transform: `scaleX(${progress})` }}
+          transition={{ duration: reduced ? 0 : 0.5, ease: EASE }}
+          style={{
+            position: "absolute",
+            top: 27,
+            left: `${railStart}%`,
+            width: `${railEnd - railStart}%`,
+            height: 2,
+            transformOrigin: "left center",
+            background: `linear-gradient(90deg, ${BRAND_500}, ${PLUM_500}, ${FIRE_500}, ${GREEN_500})`,
+          }}
+        />
+
+        <div style={{ display: "flex", position: "relative" }}>
+          {STAGES.map((stage, i) => {
+            const reached = i <= active
+            const isActive = i === active
+            return (
+              <button
+                key={stage.num}
+                type="button"
+                onClick={() => onSelect(i)}
+                aria-current={isActive ? "step" : undefined}
+                aria-label={`${stage.num} — ${t(stage.label)}`}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: "none",
+                  border: "none",
+                  padding: "0 6px",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <motion.span
+                  initial={false}
+                  animate={{ scale: isActive && !reduced ? 1.12 : 1 }}
+                  transition={{ duration: reduced ? 0 : 0.35, ease: EASE }}
+                  style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 18,
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    background: reached ? stage.accent : BG_PRIMARY,
+                    border: `1px solid ${reached ? stage.accent : HAIR}`,
+                    boxShadow: isActive ? `0 10px 26px -12px ${stage.accent}` : "none",
+                    transition: "background .35s ease, border-color .35s ease, box-shadow .35s ease",
+                  }}
+                >
+                  <stage.Icon size={22} color={reached ? "#fff" : INK_MUTED} strokeWidth={2.1} />
+                </motion.span>
+                <span style={{ textAlign: "center" }}>
+                  <span
+                    className="font-mono-pro tabular"
+                    style={{
+                      display: "block",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      color: reached ? stage.accent : INK_MUTED,
+                      transition: "color .35s ease",
+                    }}
+                  >
+                    {stage.num}
+                  </span>
+                  <span
+                    className="font-mono-pro"
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      fontWeight: 500,
+                      color: isActive ? INK : INK_MUTED,
+                      transition: "color .35s ease",
+                    }}
+                  >
+                    {t(stage.label)}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* The return path: 05 feeds back into 02 for the next paper. This is
+            the whole point of the diagram — 01 is not inside the cycle. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: `${nodeCentre(1)}%`,
+            width: `${nodeCentre(STAGES.length - 1) - nodeCentre(1)}%`,
+            top: 118,
+            height: 34,
+            borderLeft: `1.5px solid ${HAIR}`,
+            borderRight: `1.5px solid ${HAIR}`,
+            borderBottom: `1.5px solid ${HAIR}`,
+            borderRadius: "0 0 16px 16px",
+          }}
+        />
+        <div
+          aria-hidden
+          style={{ position: "absolute", left: `calc(${nodeCentre(1)}% - 5px)`, top: 114, color: INK_MUTED }}
+        >
+          <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+            <path d="M5.5 0L10.7 8.25H0.3L5.5 0Z" fill="currentColor" opacity="0.45" />
+          </svg>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            top: 138,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <span
+            className="font-mono-pro"
+            style={{
+              background: BG_PRIMARY,
+              padding: "5px 14px",
+              borderRadius: 999,
+              border: `1px solid ${HAIR}`,
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              color: INK_MUTED,
+              fontWeight: 500,
+            }}
+          >
+            {t("REPEATS FOR EVERY PAPER")}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Mobile: the same cycle, stacked ── */}
+      <div className="md:hidden" style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
+        {STAGES.map((stage, i) => {
+          const reached = i <= active
+          const isActive = i === active
+          return (
+            <button
+              key={stage.num}
+              type="button"
+              onClick={() => onSelect(i)}
+              aria-current={isActive ? "step" : undefined}
+              aria-label={`${stage.num} — ${t(stage.label)}`}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  display: "grid",
+                  placeItems: "center",
+                  background: reached ? stage.accent : BG_PRIMARY,
+                  border: `1px solid ${reached ? stage.accent : HAIR}`,
+                  transition: "background .3s ease, border-color .3s ease",
+                }}
+              >
+                <stage.Icon size={19} color={reached ? "#fff" : INK_MUTED} strokeWidth={2.1} />
+              </span>
+              <span
+                className="font-mono-pro tabular"
+                style={{ fontSize: 10, fontWeight: 600, color: isActive ? stage.accent : INK_MUTED }}
+              >
+                {stage.num}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** The one stage on show. Swapping this beats stacking five of them. */
+function StagePanel({ index }: { index: number }) {
+  const t = useT()
+  const reduced = useReducedMotion()
+  const stage = STAGES[index]
+
+  return (
+    <div style={{ marginTop: 30, minHeight: 300 }}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={stage.num}
+          initial={reduced ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? undefined : { opacity: 0, y: -10 }}
+          transition={{ duration: reduced ? 0 : 0.34, ease: EASE }}
+          className="soft-card"
+          style={{
+            padding: "clamp(22px,3vw,34px)",
+            borderRadius: 26,
+            border: `1px solid ${stage.accent}33`,
+            background: `linear-gradient(135deg, ${stage.accent}0d, ${BG_PRIMARY} 55%)`,
+          }}
+        >
+          <div className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.16em", color: stage.accent, fontWeight: 600 }}>
+            {stage.num} · {t(stage.label)}
+          </div>
+          <div
+            className="font-display"
+            style={{
+              color: INK,
+              fontSize: "clamp(23px,3vw,34px)",
+              marginTop: 8,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.15,
+            }}
+          >
+            {t(stage.title)}
+          </div>
+          <p style={{ color: INK_MUTED, fontSize: 15.5, lineHeight: 1.7, margin: "14px 0 0", maxWidth: 620 }}>
+            {t(stage.body)}
+          </p>
+          <ul style={{ margin: "20px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 10 }}>
+            {stage.facts.map((fact) => (
+              <li key={fact} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                <span
+                  style={{
+                    width: 20,
+                    height: 20,
+                    flexShrink: 0,
+                    borderRadius: "50%",
+                    background: stage.accent,
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#fff",
+                    marginTop: 2,
+                  }}
+                >
+                  <Check size={11} strokeWidth={3} />
+                </span>
+                <span style={{ color: INK, fontSize: 14.5, lineHeight: 1.55, fontWeight: 450 }}>{t(fact)}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+/** Translates the container's scroll progress into the stage on show. */
+function ScrollStageDriver({ count, onChange }: { count: number; onChange: (i: number) => void }) {
+  const { scrollYProgress } = useContainerScroll()
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    onChange(Math.min(count - 1, Math.max(0, Math.floor(p * count))))
+  })
+  return null
+}
+
+/*
+ * Pin the diagram only where it helps. The height bound is not decoration: the
+ * pinned block is header + diagram + panel, and if that is taller than the
+ * viewport the facts sit below the fold with no way to scroll to them, because
+ * scrolling is what advances the stage. Short viewports get the inline version.
+ * Phones and prefers-reduced-motion get it too — a pinned section is a trap there.
+ */
+const PIN_QUERY = "(min-width: 768px) and (min-height: 820px)"
+
+function usePinnedLayout(): boolean {
+  const reduced = useReducedMotion()
+  const [fits, setFits] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(PIN_QUERY).matches,
+  )
+  useEffect(() => {
+    const query = window.matchMedia(PIN_QUERY)
+    const onChange = (e: MediaQueryListEvent) => setFits(e.matches)
+    query.addEventListener("change", onChange)
+    return () => query.removeEventListener("change", onChange)
+  }, [])
+  return fits && !reduced
+}
+
+export function SystemWalkthrough() {
+  const t = useT()
+  const [active, setActive] = useState(0)
+  const pinned = usePinnedLayout()
+
+  const header = (
+    <div style={{ textAlign: "center" }}>
+      <SectionLabel>{t("HOW SCHOLIFY WORKS")}</SectionLabel>
+      <h2
+        className="font-display text-pro-h"
+        style={{ fontSize: "clamp(32px, 4.4vw, 60px)", color: INK, margin: "16px 0 0", lineHeight: 1.08 }}
+      >
+        {t("Five stages,")}{" "}
+        <em className="grad-hero-text" style={{ fontStyle: "italic" }}>
+          {t("one loop.")}
+        </em>
+      </h2>
+      <p style={{ color: INK_MUTED, fontSize: 16.5, maxWidth: 560, margin: "16px auto 0", lineHeight: 1.6 }}>
+        {t("Onboarding happens once. The four stages after it run again for every paper you sit.")}
+      </p>
+    </div>
+  )
+
+  const diagram = (
+    <>
+      <div style={{ marginTop: 44 }}>
+        <LoopGraph active={active} onSelect={setActive} />
+      </div>
+      <StagePanel index={active} />
+    </>
+  )
+
+  // No id here: the #how-it-works anchor lives on the LazyOnView wrapper in
+  // Landing.tsx, and repeating it made the id a duplicate.
+  return (
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", position: "relative" }}>
         <div aria-hidden className="hidden lg:block" style={{ position: "absolute", right: -70, top: -30 }}>
           <CharlesMascot pose="plan" size={112} delay={0.1} />
         </div>
 
-        <div style={{ textAlign: "center" }}>
-          <SectionLabel>{t("HOW SCHOLIFY WORKS")}</SectionLabel>
-          <h2
-            className="font-display text-pro-h"
-            style={{ fontSize: "clamp(36px, 5vw, 68px)", color: INK, margin: "18px 0 0", lineHeight: 1.08 }}
-          >
-            {t("Five stages,")}{" "}
-            <em className="grad-hero-text" style={{ fontStyle: "italic" }}>
-              {t("one loop.")}
-            </em>
-          </h2>
-          <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 640, margin: "20px auto 0", lineHeight: 1.65 }}>
-            {t(
-              "This is the whole product. Not a feature list — the actual sequence you go through, from the first ninety seconds to the paper after this one.",
-            )}
-          </p>
-        </div>
-
-        {/* The stage rail. A vertical timeline rather than three columns, because
-            this is a SEQUENCE and columns imply parallel choices. */}
-        <div style={{ marginTop: 64, display: "grid", gap: 14 }}>
-          {STAGES.map((stage, i) => {
-            const isOpen = open === i
-            return (
-              <motion.div
-                key={stage.num}
-                initial={reduced ? false : { opacity: 0, y: 26 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: Math.min(i, 3) * 0.08, ease: EASE }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpen(isOpen ? -1 : i)}
-                  aria-expanded={isOpen}
-                  className="soft-card"
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "clamp(20px,3vw,30px)",
-                    borderRadius: 24,
-                    cursor: "pointer",
-                    border: `1px solid ${isOpen ? `${stage.accent}44` : HAIR}`,
-                    background: isOpen ? `linear-gradient(135deg, ${stage.accent}0d, ${BG_PRIMARY} 55%)` : BG_PRIMARY,
-                    transition: "border-color .25s ease, background .25s ease",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: "clamp(14px,2.4vw,24px)", alignItems: "flex-start" }}>
-                    {/* Number + connector */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-                      <span
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: 16,
-                          display: "grid",
-                          placeItems: "center",
-                          background: `${stage.accent}14`,
-                          border: `1px solid ${stage.accent}33`,
-                        }}
-                      >
-                        <stage.Icon size={22} color={stage.accent} strokeWidth={2.1} />
-                      </span>
-                      <span
-                        className="font-mono-pro tabular"
-                        style={{ marginTop: 8, fontSize: 11, letterSpacing: "0.1em", color: stage.accent, fontWeight: 600 }}
-                      >
-                        {stage.num}
-                      </span>
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        className="font-mono-pro"
-                        style={{ fontSize: 10, letterSpacing: "0.16em", color: INK_MUTED, fontWeight: 500 }}
-                      >
-                        {t(stage.label)}
-                      </div>
-                      <div
-                        className="font-display"
-                        style={{
-                          color: INK,
-                          fontSize: "clamp(21px,2.6vw,29px)",
-                          marginTop: 6,
-                          letterSpacing: "-0.02em",
-                          lineHeight: 1.15,
-                        }}
-                      >
-                        {t(stage.title)}
-                      </div>
-
-                      <motion.div
-                        initial={false}
-                        animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
-                        transition={{ duration: reduced ? 0 : 0.32, ease: EASE }}
-                        style={{ overflow: "hidden" }}
-                      >
-                        <p style={{ color: INK_MUTED, fontSize: 15, lineHeight: 1.72, margin: "14px 0 0" }}>{t(stage.body)}</p>
-                        <ul style={{ margin: "18px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 10 }}>
-                          {stage.facts.map((fact) => (
-                            <li key={fact} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-                              <span
-                                style={{
-                                  width: 20,
-                                  height: 20,
-                                  flexShrink: 0,
-                                  borderRadius: "50%",
-                                  background: stage.accent,
-                                  display: "grid",
-                                  placeItems: "center",
-                                  color: "#fff",
-                                  marginTop: 2,
-                                }}
-                              >
-                                <Check size={11} strokeWidth={3} />
-                              </span>
-                              <span style={{ color: INK, fontSize: 14.5, lineHeight: 1.55, fontWeight: 450 }}>{t(fact)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </motion.div>
-
-                      {!isOpen && (
-                        <div style={{ color: INK_MUTED, fontSize: 14, marginTop: 8, fontWeight: 500 }}>
-                          {t("Tap to see what this actually does")}
-                        </div>
-                      )}
-                    </div>
-
-                    <motion.span
-                      animate={{ rotate: isOpen ? 45 : 0 }}
-                      transition={{ duration: reduced ? 0 : 0.25, ease: EASE }}
-                      style={{ flexShrink: 0, color: INK_MUTED, display: "grid", placeItems: "center", width: 24, height: 24 }}
-                      aria-hidden
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                      </svg>
-                    </motion.span>
-                  </div>
-                </button>
-              </motion.div>
-            )
-          })}
-        </div>
+        {pinned ? (
+          /* Scroll owns the sequence: the diagram stays put and walks itself
+             through the five stages as the reader scrolls past it. */
+          <ContainerScroll style={{ height: `${STAGES.length * 62}vh` }}>
+            <ScrollStageDriver count={STAGES.length} onChange={setActive} />
+            {/* Clears the page's fixed 60px header, which sticky top-0 would slide under. */}
+            <ContainerSticky style={{ top: 76, paddingBottom: 24 }}>
+              {header}
+              {diagram}
+            </ContainerSticky>
+          </ContainerScroll>
+        ) : (
+          <>
+            {header}
+            {diagram}
+            <div style={{ textAlign: "center", marginTop: 14, fontSize: 13.5, color: INK_MUTED }}>
+              {t("Tap a stage to see what it does")}
+            </div>
+          </>
+        )}
 
         {/* The day, drawn. The single most useful thing this page can show. */}
         <DayShapeVisual />
