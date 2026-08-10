@@ -136,3 +136,111 @@ export async function sendPurchaseEmail(to: string, facts: PurchaseEmailFacts): 
     return false
   }
 }
+
+/* ── The receipt Stripe is not sending ──────────────────────────────
+ *
+ * Stripe's "Successful payments" email is a dashboard toggle with no API, and
+ * it is off. So every charge — the first one and every renewal after it —
+ * completed in silence. A customer who pays and receives nothing has no proof,
+ * no amount, no date and nothing to forward to an employer who is reimbursing
+ * them; the next thing many of them open is their bank app.
+ *
+ * This does not recreate an invoice. Stripe already generates a proper hosted
+ * invoice and PDF for every subscription charge, so the email carries the
+ * numbers and LINKS to the real document. Ours is the covering note; Stripe's
+ * remains the record.
+ */
+
+export interface ReceiptFacts {
+  firstName?: string | null
+  /** e.g. "$9.99" — already formatted in the invoice's own currency. */
+  amount: string
+  /** Localised charge date. */
+  paidOn: string
+  planLabel: string
+  /** Stripe's hosted invoice page, when the webhook gave us one. */
+  invoiceUrl?: string | null
+  /** Next renewal date, when known. */
+  nextChargeOn?: string | null
+}
+
+export function buildReceiptEmail(facts: ReceiptFacts): { subject: string; html: string; text: string } {
+  const name = (facts.firstName || "").trim()
+  const hello = name ? `Thanks, ${escapeHtml(name)}.` : "Thank you."
+  const amount = escapeHtml(facts.amount)
+  const plan = escapeHtml(facts.planLabel)
+  const paidOn = escapeHtml(facts.paidOn)
+
+  const rows: string[] = [
+    `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Plan</td><td align="right" style="padding:6px 0;font-size:13px;color:#14141A;font-weight:700;">${plan}</td></tr>`,
+    `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Paid</td><td align="right" style="padding:6px 0;font-size:13px;color:#14141A;font-weight:700;">${paidOn}</td></tr>`,
+    `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Amount</td><td align="right" style="padding:6px 0;font-size:16px;color:#14141A;font-weight:800;">${amount}</td></tr>`,
+  ]
+  if (facts.nextChargeOn) {
+    rows.push(
+      `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Next charge</td><td align="right" style="padding:6px 0;font-size:13px;color:#14141A;font-weight:700;">${escapeHtml(facts.nextChargeOn)}</td></tr>`,
+    )
+  }
+
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
+        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
+        <tr><td style="padding:26px 32px 0;">
+          <img src="${SITE}/icon-192.png" width="52" height="52" alt="Scholify" style="display:block;width:52px;height:52px;border-radius:13px;">
+        </td></tr>
+        <tr><td style="padding:14px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#8F8C85;text-transform:uppercase;">Receipt</td></tr>
+        <tr><td style="padding:6px 32px 0;font-size:24px;line-height:30px;font-weight:800;letter-spacing:-0.6px;color:#14141A;">${hello}</td></tr>
+        <tr><td style="padding:10px 32px 0;font-size:15px;line-height:24px;color:#5F5753;">Your payment went through. Here are the details for your records.</td></tr>
+        <tr><td style="padding:18px 32px 0;">
+          <table role="presentation" width="100%" style="border-collapse:collapse;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;">
+            <tr><td style="padding:14px 18px;"><table role="presentation" width="100%" style="border-collapse:collapse;">${rows.join("")}</table></td></tr>
+          </table>
+        </td></tr>
+        ${
+          facts.invoiceUrl
+            ? `<tr><td style="padding:18px 32px 0;"><a href="${escapeHtml(facts.invoiceUrl)}" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">View or download the invoice &rarr;</a></td></tr>`
+            : ""
+        }
+        <tr><td style="padding:20px 32px;font-size:13px;line-height:21px;color:#5F5753;">Manage your plan or payment method any time in <a href="${SITE}/settings" style="color:#C80000;">Settings</a>.</td></tr>
+        <tr><td style="padding:18px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Scholify · You are receiving this because you have an active Scholify subscription.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+  </body></html>`
+
+  const text = [
+    hello,
+    "",
+    "Your payment went through. Here are the details for your records.",
+    "",
+    `Plan: ${facts.planLabel}`,
+    `Paid: ${facts.paidOn}`,
+    `Amount: ${facts.amount}`,
+    ...(facts.nextChargeOn ? [`Next charge: ${facts.nextChargeOn}`] : []),
+    ...(facts.invoiceUrl ? ["", `Invoice: ${facts.invoiceUrl}`] : []),
+    "",
+    `Manage your plan: ${SITE}/settings`,
+  ].join("\n")
+
+  return { subject: `Your Scholify receipt — ${facts.amount}`, html, text }
+}
+
+/** Fire-and-forget. Never throws: a failed receipt must not fail a webhook. */
+export async function sendReceiptEmail(to: string, facts: ReceiptFacts): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey || !to) return false
+  const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+  const { subject, html, text } = buildReceiptEmail(facts)
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify({ from, to, subject, html, text }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}

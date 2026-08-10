@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildPurchaseEmail } from "../../api/purchase-email"
+import { buildPurchaseEmail, buildReceiptEmail } from "../../api/purchase-email"
 
 /*
  * The welcome email a paying learner reads first. It went unsent entirely
@@ -62,5 +62,47 @@ describe("buildPurchaseEmail", () => {
     const mail = buildPurchaseEmail({ ...base, firstName: "Alex", chargeDate: "1 October 2026" })
     expect(mail.text.length).toBeGreaterThan(200)
     expect(mail.text).not.toMatch(/<[a-z/][^>]*>/i)
+  })
+})
+
+/*
+ * The RECEIPT — the email Stripe's dashboard toggle was supposed to send and
+ * doesn't. A customer with no proof, no amount and no date has nothing to
+ * forward to an employer reimbursing them, and no reassurance they were not
+ * double-charged.
+ */
+describe("buildReceiptEmail", () => {
+  const base = { amount: "9.99 USD", paidOn: "11 August 2026", planLabel: "Beginner" }
+
+  it("states the amount, the plan and the date", () => {
+    const mail = buildReceiptEmail({ ...base, firstName: "Nuriddin" })
+    expect(mail.subject).toBe("Your Scholify receipt — 9.99 USD")
+    for (const fact of ["9.99 USD", "11 August 2026", "Beginner"]) {
+      expect(mail.html).toContain(fact)
+      expect(mail.text).toContain(fact)
+    }
+  })
+
+  it("links to Stripe's own invoice rather than recreating one", () => {
+    // Stripe already generates the legal document; ours is the covering note.
+    const mail = buildReceiptEmail({ ...base, invoiceUrl: "https://invoice.stripe.com/i/abc123" })
+    expect(mail.html).toContain("https://invoice.stripe.com/i/abc123")
+    expect(mail.text).toContain("https://invoice.stripe.com/i/abc123")
+  })
+
+  it("omits the invoice button when Stripe gave us no link", () => {
+    const mail = buildReceiptEmail(base)
+    expect(mail.html).not.toContain("View or download the invoice")
+  })
+
+  it("escapes the name instead of trusting it", () => {
+    const mail = buildReceiptEmail({ ...base, firstName: "<script>alert(1)</script>" })
+    expect(mail.html).not.toContain("<script>")
+  })
+
+  it("ships a plain-text alternative with no markup left in it", () => {
+    const mail = buildReceiptEmail({ ...base, firstName: "Alex", nextChargeOn: "11 September 2026" })
+    expect(mail.text).toContain("Next charge: 11 September 2026")
+    expect(mail.text).not.toMatch(/<[a-z\/][^>]*>/i)
   })
 })

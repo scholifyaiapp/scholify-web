@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
-import { sendPurchaseEmail } from "./purchase-email.js"
+import { sendPurchaseEmail, sendReceiptEmail } from "./purchase-email.js"
 
 /*
  * Stripe Billing — single Vercel function dispatched by `?action=` (12-function
@@ -422,6 +422,9 @@ const REQUIRED_WEBHOOK_EVENTS = [
   "checkout.session.completed",
   "customer.subscription.updated",
   "customer.subscription.deleted",
+  // Money actually moved — the event the receipt email rides on, and the only
+  // one that also covers renewals.
+  "invoice.paid",
 ] as const
 
 /**
@@ -813,6 +816,42 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
       }
       // Affiliate commission — best-effort side effect, never blocks entitlement.
       await recordCommission(supa, session).catch((e) => console.error("affiliate commission:", e))
+    } else if (event.type === "invoice.paid") {
+      /*
+       * THE RECEIPT. Stripe's own "Successful payments" email is a dashboard
+       * toggle with no API, and it is off — so every charge completed in
+       * silence, the first one and every renewal after it. A customer with no
+       * proof, no amount and no date has nothing to forward to an employer who
+       * is reimbursing them, and the next thing many of them open is their bank
+       * app.
+       *
+       * Fired on invoice.paid rather than at checkout, because that is the
+       * event that means MONEY MOVED — it covers renewals too, which the
+       * checkout event never sees.
+       */
+      const invoice = event.data.object as Stripe.Invoice
+      // A £0 invoice is the start of a trial, not a payment. Sending a receipt
+      // for nothing is worse than sending none.
+      if (invoice.amount_paid > 0) {
+        const email = invoice.customer_email || (invoice.customer_name ? "" : "")
+        const to = email || ""
+        if (to) {
+          const priceId = invoice.lines?.data?.[0]?.price?.id
+          const plan = planForPrice(priceId)
+          const fmt = (seconds: number | null | undefined) =>
+            typeof seconds === "number"
+              ? new Date(seconds * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+              : null
+          await sendReceiptEmail(to, {
+            firstName: invoice.customer_name?.split(" ")[0] ?? null,
+            amount: `${(invoice.amount_paid / 100).toFixed(2)} ${invoice.currency.toUpperCase()}`,
+            paidOn: fmt(invoice.status_transitions?.paid_at ?? invoice.created) ?? "today",
+            planLabel: plan === "beginner" ? "Beginner" : plan === "annual_pro" ? "Annual Pro" : "Pro",
+            invoiceUrl: invoice.hosted_invoice_url ?? null,
+            nextChargeOn: fmt(invoice.period_end),
+          }).catch((e) => console.error("receipt email:", e))
+        }
+      }
     } else if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
       // Refund / chargeback → pull back any still-pending commission for that customer.
       const charge = event.data.object as Stripe.Charge | Stripe.Dispute
