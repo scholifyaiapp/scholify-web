@@ -45,9 +45,11 @@ import { ContainerScroll, ContainerSticky, useContainerScroll } from "@/componen
  *                      once, 02–05 repeat for every paper. The diagram carries the
  *                      structure and only the selected stage shows its detail, so
  *                      the page is a demo rather than five essays.
- *   MissionSection     why Scholify exists, in the founder's words.
+ *   MissionSection     why Scholify exists, in the founder's words — three
+ *                      beats on a lit dark frame, then the founder himself.
  *   ThreeReasons       the three reasons it was built: the all-in-one pain point,
- *                      the cost of qualifying, and earning while you study.
+ *                      the cost of qualifying, and earning while you study —
+ *                      staged as alternating frames rather than stacked cards.
  *   StudyHubComparison Scholify against the ACCA Study Hub — the honest comparison,
  *                      including what the Study Hub does better.
  *
@@ -1170,64 +1172,274 @@ function CompoundingVisual() {
  * 2 · MISSION
  * ════════════════════════════════════════════════════════════════ */
 
+/*
+ * ── OUR MISSION ───────────────────────────────────────────────────
+ *
+ * This was three ~85-word paragraphs making one point. The point survives
+ * better as short declarative lines that land one at a time, so the copy is
+ * cut to roughly a fifth and staged: each line arrives on its own beat, then
+ * the founder does. Everything animates once, on scroll, and holds still
+ * under prefers-reduced-motion.
+ */
+
+const FOUNDER = {
+  name: "Makhmudov Nuriddin",
+  role: "FOUNDER & CEO",
+  photo: "/founder.webp",
+  linkedin: "https://www.linkedin.com/in/makhmudov-nuriddin-774049227/",
+  instagram: "https://www.instagram.com/makhmudoff_nuriddin/?hl=ru",
+}
+
+/** The mission, as beats. Weight carries the last one, not size alone. */
+const MISSION_LINES = [
+  {
+    text: "ACCA does not care where you were born, which university admitted you, or what your family can pay. It cares whether you can do the work.",
+    lead: true,
+  },
+  {
+    text: "That is an extraordinary door. For most of the people it was built for, it is still too expensive to walk through.",
+    lead: false,
+  },
+  {
+    text: "Scholify exists to remove that gap — priced so the qualification is decided by your work, not your postcode.",
+    lead: true,
+  },
+]
+
+/* lucide dropped its brand glyphs at v1, so the two marks are inline. Both are
+   decorative here — the button's own text and aria-label carry the meaning. */
+function LinkedInMark({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false">
+      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13Zm1.78 13.02H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z" />
+    </svg>
+  )
+}
+
+function InstagramMark({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable="false"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5.5" />
+      <circle cx="12" cy="12" r="4.2" />
+      <circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+function SocialButton({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+  return (
+    <motion.a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "10px 16px",
+        borderRadius: 999,
+        border: "1px solid rgba(250,250,247,0.22)",
+        background: "rgba(250,250,247,0.06)",
+        color: INK_INVERSE,
+        fontSize: 13.5,
+        fontWeight: 600,
+        textDecoration: "none",
+        backdropFilter: "blur(6px)",
+        transition: "background .25s ease, border-color .25s ease",
+      }}
+    >
+      {children}
+    </motion.a>
+  )
+}
+
 export function MissionSection() {
   const t = useT()
   const reduced = useReducedMotion()
+
   return (
     <section
       style={{
-        padding: "calc(var(--section-y) * 1.1) var(--page-gutter)",
+        padding: "calc(var(--section-y) * 1.25) var(--page-gutter)",
         background: BG_DARK,
         color: INK_INVERSE,
         overflow: "hidden",
         position: "relative",
       }}
     >
-      <div style={{ maxWidth: 860, margin: "0 auto", position: "relative", zIndex: 2, textAlign: "center" }}>
-        <SectionLabel tone="inverse">{t("OUR MISSION")}</SectionLabel>
-        <h2
+      {/* Cinematic light: one warm source behind the founder, and a vignette
+          so the frame falls off at the edges instead of ending. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(58% 46% at 50% 88%, ${BRAND_500}2e 0%, transparent 70%), radial-gradient(70% 55% at 50% 0%, ${PLUM_500}1a 0%, transparent 62%)`,
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(120% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div style={{ maxWidth: 820, margin: "0 auto", position: "relative", zIndex: 2, textAlign: "center" }}>
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-70px" }}
+          transition={{ duration: 0.6, ease: EASE }}
+        >
+          <SectionLabel tone="inverse">{t("OUR MISSION")}</SectionLabel>
+        </motion.div>
+
+        <motion.h2
           className="font-display text-pro-h"
-          style={{ fontSize: "clamp(32px, 4.4vw, 60px)", color: INK_INVERSE, margin: "20px 0 0", lineHeight: 1.1 }}
+          initial={reduced ? false : { opacity: 0, y: 26, filter: "blur(8px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: true, margin: "-70px" }}
+          transition={{ duration: 0.9, delay: 0.08, ease: EASE }}
+          style={{
+            fontSize: "clamp(34px, 5.4vw, 68px)",
+            color: INK_INVERSE,
+            margin: "22px 0 0",
+            lineHeight: 1.05,
+            letterSpacing: "-0.03em",
+          }}
         >
           {t("Make a professional qualification")}{" "}
           <em className="grad-hero-text" style={{ fontStyle: "italic" }}>
             {t("reachable")}
           </em>{" "}
           {t("from anywhere.")}
-        </h2>
+        </motion.h2>
 
+        <div style={{ marginTop: 40, display: "grid", gap: 24, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>
+          {MISSION_LINES.map((line, i) => (
+            <motion.p
+              key={line.text}
+              initial={reduced ? false : { opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.75, delay: 0.2 + i * 0.16, ease: EASE }}
+              style={{
+                margin: 0,
+                fontSize: line.lead ? "clamp(18px,2vw,24px)" : "clamp(16px,1.6vw,19px)",
+                lineHeight: 1.55,
+                letterSpacing: "-0.01em",
+                color: line.lead ? INK_INVERSE : "rgba(250,250,247,0.66)",
+                fontWeight: line.lead ? 500 : 400,
+              }}
+            >
+              {t(line.text)}
+            </motion.p>
+          ))}
+        </div>
+
+        {/* The founder. */}
         <motion.div
-          initial={reduced ? false : { opacity: 0, y: 22 }}
+          initial={reduced ? false : { opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-70px" }}
-          transition={{ duration: 0.7, ease: EASE }}
-          style={{ marginTop: 30, display: "grid", gap: 22 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.8, delay: 0.1, ease: EASE }}
+          style={{
+            marginTop: 54,
+            paddingTop: 44,
+            borderTop: "1px solid rgba(250,250,247,0.12)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
         >
-          <p style={{ color: "rgba(250,250,247,0.78)", fontSize: "clamp(16px,1.5vw,19px)", lineHeight: 1.75, margin: 0 }}>
-            {t(
-              "ACCA is one of the few qualifications in the world that does not care where you were born, which university admitted you, or what your family can pay. It cares whether you can do the work. That is an extraordinary door — and for most of the people it was built for, the door is still too expensive to walk through.",
-            )}
-          </p>
-          <p style={{ color: "rgba(250,250,247,0.78)", fontSize: "clamp(16px,1.5vw,19px)", lineHeight: 1.75, margin: 0 }}>
-            {t(
-              "A tuition centre costs more per paper than most students earn in a month. The materials come from three different publishers and none of them tell you what to do on a Tuesday evening with fifty minutes. So people study hard, in the wrong order, on the wrong topics, and fail papers they knew the content of.",
-            )}
-          </p>
-          <p style={{ color: INK_INVERSE, fontSize: "clamp(17px,1.6vw,21px)", lineHeight: 1.7, margin: 0, fontWeight: 500 }}>
-            {t(
-              "Scholify exists to remove that gap: one platform that teaches, tests, measures and plans — priced so the qualification is decided by your work rather than by your postcode.",
-            )}
-          </p>
-          <div
-            style={{
-              marginTop: 8,
-              paddingTop: 22,
-              borderTop: "1px solid rgba(250,250,247,0.14)",
-              fontSize: 14,
-              color: "rgba(250,250,247,0.55)",
-            }}
+          <motion.div
+            initial={reduced ? false : { opacity: 0, scale: 0.86 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.9, delay: 0.12, ease: EASE }}
+            style={{ position: "relative", width: 168, height: 168 }}
           >
-            {t("Makhmudov Nuriddin · Founder & CEO")}
+            {/* The ring draws itself around the portrait, once. */}
+            <svg
+              viewBox="0 0 100 100"
+              aria-hidden
+              style={{ position: "absolute", inset: -7, width: "calc(100% + 14px)", height: "calc(100% + 14px)" }}
+            >
+              <defs>
+                <linearGradient id="sch-founder-ring" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor={BRAND_500} />
+                  <stop offset="55%" stopColor={PLUM_500} />
+                  <stop offset="100%" stopColor={FIRE_500} />
+                </linearGradient>
+              </defs>
+              <motion.circle
+                cx="50"
+                cy="50"
+                r="47"
+                fill="none"
+                stroke="url(#sch-founder-ring)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                transform="rotate(-90 50 50)"
+                initial={reduced ? false : { pathLength: 0, opacity: 0 }}
+                whileInView={{ pathLength: 1, opacity: 1 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 1.5, delay: 0.3, ease: EASE }}
+              />
+            </svg>
+            <img
+              src={FOUNDER.photo}
+              alt={`${FOUNDER.name}, ${t("Founder & CEO")} ${t("of Scholify")}`}
+              width={168}
+              height={168}
+              loading="lazy"
+              decoding="async"
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                objectFit: "cover",
+                display: "block",
+                boxShadow: "0 22px 60px -18px rgba(0,0,0,0.85)",
+              }}
+            />
+          </motion.div>
+
+          <div className="font-display" style={{ fontSize: 22, marginTop: 22, letterSpacing: "-0.01em" }}>
+            {FOUNDER.name}
+          </div>
+          <div
+            className="font-mono-pro"
+            style={{ fontSize: 11, letterSpacing: "0.18em", color: "rgba(250,250,247,0.55)", marginTop: 7 }}
+          >
+            {t(FOUNDER.role)}
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>
+            <SocialButton href={FOUNDER.linkedin} label={`${FOUNDER.name} on LinkedIn`}>
+              <LinkedInMark /> LinkedIn
+            </SocialButton>
+            <SocialButton href={FOUNDER.instagram} label={`${FOUNDER.name} on Instagram`}>
+              <InstagramMark /> Instagram
+            </SocialButton>
           </div>
         </motion.div>
       </div>
@@ -1255,13 +1467,11 @@ const REASONS: Reason[] = [
     label: "THE REAL PAIN POINT",
     title: "Everything you need to pass, in one place.",
     body:
-      "The average ACCA student runs a study text from one publisher, an exam kit from another, a flashcard app, a spreadsheet of mock scores, and a folder of PDFs — and still has to decide, every evening, what to actually do. The deciding is the part that breaks people. Scholify holds the study text, the question bank, the flashcards, the mocks, the constructed-response marking, the technical articles and the plan, and it hands you the next thing.",
+      "A study text from one publisher, an exam kit from another, a flashcard app, a spreadsheet of mock scores — and still, every evening, the decision of what to actually do. The deciding is the part that breaks people.",
     accent: BRAND_500,
     Icon: Package,
     proof: [
-      "Full study chapters with worked examples, diagrams and examiner traps",
-      "Exam-standard question bank indexed to those chapters",
-      "Spaced-repetition flashcards, full CBE mocks, and Charles marking written answers",
+      "Chapters, question bank, flashcards, mocks and written-answer marking under one roof",
       "One daily plan that decides for you, and re-spreads itself when you miss a day",
     ],
   },
@@ -1270,13 +1480,12 @@ const REASONS: Reason[] = [
     label: "THE COST OF QUALIFYING",
     title: "Cut the tuition bill, keep the toolkit.",
     body:
-      "Tuition centres charge €390–730 per paper, and there are thirteen papers. On top of that sit ACCA's own registration, annual subscription and exam-entry fees, which nobody can discount for you. Scholify costs less per month than one hour with a tutor and covers every paper, every mode, every day — so the money you have goes to the fees that are genuinely unavoidable.",
+      "Tuition centres charge €390–730 per paper, and there are thirteen of them. Scholify costs less per month than a single hour with a tutor, and covers every paper.",
     accent: PLUM_500,
     Icon: Coins,
     proof: [
       "One subscription instead of a per-paper tuition fee",
       "Every paper, every mode — no per-paper unlocks",
-      "The savings calculator below runs your own numbers, in your own currency",
     ],
   },
   {
@@ -1284,108 +1493,218 @@ const REASONS: Reason[] = [
     label: "EARN WHILE YOU STUDY",
     title: "Fund your own fees — and help someone else pass.",
     body:
-      "Registration, the annual subscription and exam entry are real money, due whether or not you have it. So Scholify pays students to bring other students: 27% of every plan bought through your link, tracked end to end and paid on time. It is enough to cover an exam entry from a handful of classmates, and it is work you can do from your phone between sessions. And it is not only income — helping another student pass is savab: a good deed that keeps giving as long as the benefit lasts.",
+      "Registration, subscription and exam entry are real money, due whether or not you have it. So Scholify pays students to bring students: 27% of every plan bought through your link.",
     accent: FIRE_500,
     Icon: HandHeart,
     proof: [
-      "27% commission on every Beginner or Pro plan bought through your link",
-      "Tracked clicks, sales and payouts in your own partner dashboard",
-      "Brand assets and templates provided — you publish, we count it",
-      "Built for the student who is paying their own fees",
+      "27% commission, tracked end to end and paid on time",
+      "A handful of classmates covers an exam entry",
     ],
   },
 ]
 
+/*
+ * Three reasons, staged rather than stacked. Each panel is a frame: a huge
+ * ghosted numeral, a rule that draws itself across in the reason's accent, and
+ * copy cut to a single short paragraph plus two proof lines — down from a
+ * ~470-character body and four bullets apiece. The panels alternate side so
+ * the eye travels instead of scanning the same column three times.
+ */
 export function ThreeReasons() {
   const t = useT()
   const reduced = useReducedMotion()
+
   return (
-    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+    <section style={{ padding: "calc(var(--section-y) * 1.1) var(--page-gutter)", overflow: "hidden" }}>
       <div style={{ maxWidth: "var(--page-max)", margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <SectionLabel>{t("WHY WE BUILT IT")}</SectionLabel>
-          <h2
+          <motion.h2
             className="font-display text-pro-h"
-            style={{ fontSize: "clamp(34px, 4.6vw, 62px)", color: INK, margin: "18px 0 0", lineHeight: 1.1 }}
+            initial={reduced ? false : { opacity: 0, y: 24, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-70px" }}
+            transition={{ duration: 0.85, ease: EASE }}
+            style={{
+              fontSize: "clamp(34px, 5vw, 64px)",
+              color: INK,
+              margin: "18px 0 0",
+              lineHeight: 1.06,
+              letterSpacing: "-0.03em",
+            }}
           >
-            {t("Three reasons Scholify exists")}
-          </h2>
-          <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 620, margin: "20px auto 0", lineHeight: 1.65 }}>
-            {t("Not features. The three problems the product was built to solve, and what it does about each one.")}
+            {t("Three reasons")}{" "}
+            <em className="grad-hero-text" style={{ fontStyle: "italic" }}>
+              {t("Scholify exists")}
+            </em>
+          </motion.h2>
+          <p style={{ color: INK_MUTED, fontSize: 16.5, maxWidth: 540, margin: "18px auto 0", lineHeight: 1.6 }}>
+            {t("Not features. The three problems it was built to solve.")}
           </p>
         </div>
 
-        <div style={{ marginTop: 56, display: "grid", gap: 18 }}>
-          {REASONS.map((reason, i) => (
-            <motion.div
-              key={reason.num}
-              initial={reduced ? false : { opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-70px" }}
-              transition={{ duration: 0.65, delay: i * 0.08, ease: EASE }}
-              className="soft-card"
-              style={{
-                padding: "clamp(22px,3.2vw,36px)",
-                borderRadius: 26,
-                borderTop: `3px solid ${reason.accent}`,
-                display: "grid",
-                gridTemplateColumns: "minmax(0,1fr)",
-                gap: 20,
-              }}
-            >
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-                <span
+        <div style={{ marginTop: 64, display: "grid", gap: "clamp(28px,5vw,64px)" }}>
+          {REASONS.map((reason, i) => {
+            const flip = i % 2 === 1
+            return (
+              <motion.div
+                key={reason.num}
+                initial={reduced ? false : { opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-90px" }}
+                transition={{ duration: 0.8, ease: EASE }}
+                style={{ position: "relative" }}
+              >
+                {/* The rule draws across before the copy lands. */}
+                <motion.div
+                  initial={reduced ? false : { scaleX: 0 }}
+                  whileInView={{ scaleX: 1 }}
+                  viewport={{ once: true, margin: "-90px" }}
+                  transition={{ duration: 0.9, ease: EASE }}
                   style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 16,
-                    flexShrink: 0,
-                    display: "grid",
-                    placeItems: "center",
-                    background: `${reason.accent}14`,
+                    height: 2,
+                    transformOrigin: flip ? "right center" : "left center",
+                    background: `linear-gradient(${flip ? "270deg" : "90deg"}, ${reason.accent}, transparent)`,
+                  }}
+                />
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: flip ? "row-reverse" : "row",
+                    alignItems: "flex-start",
+                    gap: "clamp(18px,4vw,52px)",
+                    flexWrap: "wrap",
+                    paddingTop: "clamp(20px,3vw,34px)",
                   }}
                 >
-                  <reason.Icon size={23} color={reason.accent} strokeWidth={2.1} />
-                </span>
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <div className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.16em", color: reason.accent, fontWeight: 600 }}>
-                    {reason.num} · {t(reason.label)}
-                  </div>
-                  <div
-                    className="font-display"
-                    style={{ fontSize: "clamp(22px,2.7vw,32px)", color: INK, marginTop: 7, letterSpacing: "-0.02em", lineHeight: 1.15 }}
+                  {/* The numeral is scenery: enormous, quiet, and hidden from
+                      assistive tech because the label already carries it. */}
+                  <motion.div
+                    aria-hidden
+                    initial={reduced ? false : { opacity: 0, x: flip ? 34 : -34 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: "-90px" }}
+                    transition={{ duration: 1, delay: 0.1, ease: EASE }}
+                    className="font-display tabular"
+                    style={{
+                      fontSize: "clamp(72px,11vw,152px)",
+                      lineHeight: 0.8,
+                      letterSpacing: "-0.05em",
+                      color: reason.accent,
+                      opacity: 0.14,
+                      flexShrink: 0,
+                    }}
                   >
-                    {t(reason.title)}
+                    {reason.num}
+                  </motion.div>
+
+                  <div style={{ flex: "1 1 340px", minWidth: 0, textAlign: flip ? "right" : "left" }}>
+                    <motion.div
+                      initial={reduced ? false : { opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-90px" }}
+                      transition={{ duration: 0.7, delay: 0.16, ease: EASE }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 9,
+                          padding: "7px 14px",
+                          borderRadius: 999,
+                          background: `${reason.accent}14`,
+                          color: reason.accent,
+                        }}
+                      >
+                        <reason.Icon size={15} strokeWidth={2.3} />
+                        <span className="font-mono-pro" style={{ fontSize: 10.5, letterSpacing: "0.16em", fontWeight: 600 }}>
+                          {t(reason.label)}
+                        </span>
+                      </span>
+
+                      <div
+                        className="font-display"
+                        style={{
+                          fontSize: "clamp(25px,3.4vw,42px)",
+                          color: INK,
+                          marginTop: 18,
+                          letterSpacing: "-0.025em",
+                          lineHeight: 1.1,
+                          maxWidth: 620,
+                          marginLeft: flip ? "auto" : undefined,
+                        }}
+                      >
+                        {t(reason.title)}
+                      </div>
+
+                      <p
+                        style={{
+                          color: INK_MUTED,
+                          fontSize: "clamp(15px,1.6vw,17px)",
+                          lineHeight: 1.72,
+                          margin: "16px 0 0",
+                          maxWidth: 580,
+                          marginLeft: flip ? "auto" : undefined,
+                        }}
+                      >
+                        {t(reason.body)}
+                      </p>
+
+                      <ul
+                        style={{
+                          margin: "22px 0 0",
+                          padding: 0,
+                          listStyle: "none",
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 10,
+                          justifyContent: flip ? "flex-end" : "flex-start",
+                        }}
+                      >
+                        {reason.proof.map((line, j) => (
+                          <motion.li
+                            key={line}
+                            initial={reduced ? false : { opacity: 0, y: 10 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-90px" }}
+                            transition={{ duration: 0.5, delay: 0.3 + j * 0.09, ease: EASE }}
+                            style={{
+                              display: "flex",
+                              gap: 9,
+                              alignItems: "center",
+                              padding: "9px 15px 9px 11px",
+                              borderRadius: 999,
+                              background: BG_PRIMARY,
+                              border: `1px solid ${HAIR}`,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 18,
+                                height: 18,
+                                flexShrink: 0,
+                                borderRadius: "50%",
+                                background: reason.accent,
+                                display: "grid",
+                                placeItems: "center",
+                                color: "#fff",
+                              }}
+                            >
+                              <Check size={10} strokeWidth={3.2} />
+                            </span>
+                            <span style={{ color: INK, fontSize: 13.5, lineHeight: 1.45, fontWeight: 450, textAlign: "left" }}>
+                              {t(line)}
+                            </span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    </motion.div>
                   </div>
                 </div>
-              </div>
-
-              <p style={{ color: INK_MUTED, fontSize: 15.5, lineHeight: 1.75, margin: 0 }}>{t(reason.body)}</p>
-
-              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 10 }}>
-                {reason.proof.map((line) => (
-                  <li key={line} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-                    <span
-                      style={{
-                        width: 20,
-                        height: 20,
-                        flexShrink: 0,
-                        borderRadius: "50%",
-                        background: reason.accent,
-                        display: "grid",
-                        placeItems: "center",
-                        color: "#fff",
-                        marginTop: 2,
-                      }}
-                    >
-                      <Check size={11} strokeWidth={3} />
-                    </span>
-                    <span style={{ color: INK, fontSize: 14.5, lineHeight: 1.55, fontWeight: 450 }}>{t(line)}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
+              </motion.div>
+            )
+          })}
         </div>
       </div>
     </section>
