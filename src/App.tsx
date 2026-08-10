@@ -2,6 +2,8 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-
 import { Suspense, lazy, useEffect, type ComponentType } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { ProtectedRoute, GuestRoute } from "@/components/route-guards"
+import NewPlatformNotice from "@/components/NewPlatformNotice"
+import TextErrorReporter from "@/components/TextErrorReporter"
 import { useAuth } from "@/lib/auth"
 import { captureAffiliateRef, resolveAuthLanding } from "@/lib/affiliate"
 import { ownsAuthHash } from "@/lib/navigation"
@@ -181,6 +183,12 @@ export default function App() {
   return (
     <>
       <OAuthReturnHandler />
+      {/* Both are app-wide on purpose: a typo is as likely in a study chapter
+          as on the pricing page, and the "we're new, tell us" invitation is
+          worth as much to a partner applicant as to a learner. Each renders
+          nothing until it applies. */}
+      <NewPlatformNotice />
+      <TextErrorReporter />
       <Routes>
         <Route path="/" element={<Page name="Home"><LaunchHome /></Page>} />
 
