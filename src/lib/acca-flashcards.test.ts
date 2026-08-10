@@ -76,12 +76,32 @@ describe("reviewFlashcard", () => {
     expect(lapse.relearn).toBe(true)
   })
 
+  /*
+   * LOCAL date, not toISOString().
+   *
+   * The scheduler builds every due date from getFullYear/getMonth/getDate —
+   * deliberately, because "due today" has to mean the learner's today, not
+   * UTC's. This test compared those local dates against a UTC one, so from
+   * 19:00 UTC onwards the two are a day apart and the assertion flipped. It
+   * failed for the first time at 00:03 in Tashkent (UTC+5), five minutes into
+   * the day after launch — and it would have failed every night from then on,
+   * for five hours, on the founder's own machine.
+   *
+   * A suite that goes red for part of every day teaches you to ignore red,
+   * which is the expensive part. The implementation is right; the assertion
+   * was measuring it with the wrong clock.
+   */
+  const localToday = () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`
+  }
+
   it("never leaves a card due forever, nor never", () => {
     const card = firstCard()
     const known = reviewFlashcard(card.id, true)
-    expect(known.due > new Date().toISOString().slice(0, 10)).toBe(true) // in the future
+    expect(known.due > localToday()).toBe(true) // in the future
     const failed = reviewFlashcard(card.id, false)
-    expect(failed.due <= new Date().toISOString().slice(0, 10)).toBe(true) // today
+    expect(failed.due <= localToday()).toBe(true) // today
   })
 })
 

@@ -268,12 +268,25 @@ function FormulaSheetPanel({ paperId, onClose }: { paperId: string; onClose: () 
 function QuickNotesPanel({ paperId, area, context, onClose }: { paperId: string | null; area: string | null; context: NoteContext; onClose: () => void }) {
   const [body, setBody] = useState("")
   const [tick, setTick] = useState(0)
+  const [saveFailed, setSaveFailed] = useState(false)
   useEffect(() => onNotesChange(() => setTick((t) => t + 1)), [])
   const recent = useMemo(() => getNotes().slice(0, 3), [tick])
 
   function save() {
     if (!body.trim()) return
-    addNote({ paper: paperId, area, context, body })
+    const note = addNote({ paper: paperId, area, context, body })
+    /*
+     * KEEP THE TEXT IF IT DID NOT SAVE. Clearing the box on a failed write is
+     * how a learner loses a note they will never get back: the note appears in
+     * the list from memory, the textarea empties as if it worked, and the whole
+     * thing is gone on the next reload. On failure the words stay put, so they
+     * can copy them somewhere safe.
+     */
+    if (note.persisted === false) {
+      setSaveFailed(true)
+      return
+    }
+    setSaveFailed(false)
     setBody("")
   }
 
@@ -303,6 +316,18 @@ function QuickNotesPanel({ paperId, area, context, onClose }: { paperId: string 
         >
           Save note
         </button>
+        {saveFailed && (
+          <div
+            role="alert"
+            style={{
+              marginTop: 8, padding: "9px 11px", borderRadius: 10, fontSize: 12, lineHeight: 1.5,
+              background: "rgba(200,0,0,0.07)", border: "1px solid rgba(200,0,0,0.28)", color: "#A60000",
+            }}
+          >
+            <b>This note didn’t save.</b> Your browser storage is full — your words are still in the box above, so
+            copy them somewhere safe. Deleting a few old notes in your notebook will free space.
+          </div>
+        )}
         {recent.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", color: C.faint, marginBottom: 6 }}>RECENT</div>

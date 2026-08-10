@@ -25,6 +25,13 @@ export interface StudyNote {
   createdAt: number
   updatedAt: number
   pinned: boolean
+  /**
+   * Set by addNote() only: false when the browser refused to persist it (a
+   * full origin quota). Never stored — it describes the write that just
+   * happened, so the UI can say "this did not save" instead of showing a note
+   * that will not survive a reload.
+   */
+  persisted?: boolean
 }
 
 const KEY = "scholify:acca:notes:v1"
@@ -45,17 +52,42 @@ function readAll(): StudyNote[] {
   }
 }
 
-function writeAll(notes: StudyNote[]): void {
+/**
+ * Persist the note list. Returns false when the browser refused the write.
+ *
+ * It used to return void and swallow the failure with the comment "the note
+ * stays in memory for this render only" — which is an accurate description of
+ * losing a learner's work. The note appears in the list, the UI says nothing,
+ * and it is gone on the next reload. In a study app, notes are the one thing a
+ * learner types themselves and cannot regenerate.
+ *
+ * Storage fills up realistically here: plans, answers, mock history, SRS state
+ * and chapter progress, across fifteen papers, inside a 5–10MB origin quota.
+ * So the failure is reported to the caller, and one recovery is attempted
+ * first — dropping the deletion tombstones, which exist only to stop deleted
+ * notes resurrecting during a sync and are worth far less than the note in
+ * front of the learner.
+ */
+function writeAll(notes: StudyNote[]): boolean {
+  let saved = false
   try {
     localStorage.setItem(KEY, JSON.stringify(notes))
+    saved = true
   } catch {
-    /* quota — the note stays in memory for this render only */
+    try {
+      localStorage.removeItem(TOMB_KEY)
+      localStorage.setItem(KEY, JSON.stringify(notes))
+      saved = true
+    } catch {
+      saved = false
+    }
   }
   try {
     window.dispatchEvent(new Event(EVENT))
   } catch {
     /* non-DOM environment */
   }
+  return saved
 }
 
 export function onNotesChange(fn: () => void): () => void {
@@ -80,12 +112,18 @@ export function addNote(input: { paper?: string | null; area?: string | null; co
     updatedAt: now,
     pinned: false,
   }
-  writeAll([note, ...readAll()])
+  // `persisted` lets the caller tell the learner the truth. It is deliberately
+  // on the note object rather than a second return value, so existing callers
+  // keep working unchanged and only the ones that care have to look.
+  note.persisted = writeAll([note, ...readAll()])
   return note
 }
 
-export function updateNote(id: string, patch: Partial<Pick<StudyNote, "body" | "pinned" | "paper" | "area">>): void {
-  writeAll(readAll().map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)))
+export function updateNote(
+  id: string,
+  patch: Partial<Pick<StudyNote, "body" | "pinned" | "paper" | "area">>,
+): boolean {
+  return writeAll(readAll().map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)))
 }
 
 export function deleteNote(id: string): void {
