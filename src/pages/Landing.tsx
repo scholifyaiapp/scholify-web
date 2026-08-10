@@ -39,7 +39,7 @@ import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { startStripeCheckout, type StripePlan } from "@/lib/stripe"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
-import { SystemWalkthrough, MissionSection, ThreeReasons, StudyHubComparison } from "@/components/landing-system"
+import { SystemWalkthrough, MissionSection, ThreeReasons } from "@/components/landing-system"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
@@ -1131,9 +1131,8 @@ const featureCardImages = [
 
 /**
  * NO LONGER MOUNTED. A second feature grid immediately after `Features` said the
- * same things twice; the slot now carries StudyHubComparison, which answers the
- * question a visitor is actually holding (the Study Hub is free with their ACCA
- * registration). Rollup drops this from the bundle since nothing references it.
+ * same things twice, so the slot was dropped entirely. Rollup drops this from the
+ * bundle since nothing references it.
  */
 function FeatureSwiper() {
   const t = useT()
@@ -2269,13 +2268,6 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><MilestoneGallery /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
-      {/*
-        The comparison a visitor is already running in their head: the Study Hub is
-        free with ACCA registration. Answering it explicitly — including the row the
-        Study Hub wins — is worth more than another feature grid, which is what the
-        FeatureSwiper and Identity showcases that sat here were.
-      */}
-      <LazyOnView style={{ minHeight: 900 }}><StudyHubComparison /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
