@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { C, R, SP, SHADOW, GRAD, Icon, IconBadge, type IconName } from "@/components/acca/ui"
+import { C, R, SP, SHADOW, GRAD, Icon, IconBadge, TabStrip, type IconName } from "@/components/acca/ui"
 import { MeterBar } from "@/components/acca/charts"
 import { getPlan, setPlan, daysUntilExam, currentPhase, METHOD_PHASES, type MethodPhaseKey } from "@/lib/acca-plan"
 import { recommendExamDate, projectTopicPlan, projectReadiness, chapterCoverage, type PlannedDay } from "@/lib/acca-topic-plan"
@@ -104,38 +104,13 @@ export function PlanBoard({
       />
 
       {/* ── Altitude switcher ── */}
-      <div style={{ display: "flex", gap: 4, padding: 4, background: C.card2, borderRadius: R.lg, marginBottom: SP.lg }}>
-        {ALTITUDES.map((a) => {
-          const on = altitude === a.key
-          return (
-            <button
-              key={a.key}
-              onClick={() => setAltitude(a.key)}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                padding: "9px 6px",
-                borderRadius: R.md,
-                border: "none",
-                cursor: "pointer",
-                background: on ? C.card : "transparent",
-                color: on ? C.brand : C.soft,
-                boxShadow: on ? SHADOW.sm : "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                fontSize: 13,
-                fontWeight: 750,
-                transition: "color .15s, background .15s",
-              }}
-            >
-              <Icon name={a.icon} size={15} color={on ? C.brand : C.faint} />
-              <span>{a.label}</span>
-            </button>
-          )
-        })}
-      </div>
+      <TabStrip
+        tabs={ALTITUDES}
+        active={altitude}
+        onChange={setAltitude}
+        ariaLabel="Plan altitude"
+        style={{ marginBottom: SP.lg }}
+      />
       <div style={{ fontSize: 12, color: C.faint, marginTop: -SP.sm, marginBottom: SP.lg, lineHeight: 1.5 }}>
         {ALTITUDES.find((a) => a.key === altitude)?.blurb}
       </div>

@@ -59,6 +59,8 @@ const BLOCK_ICONS: Record<BlockKind, IconName> = {
   practice: "practice",
   flashcards: "flashcards",
   article: "notes",
+  // The milestone day: a zero-start learner who has covered the essential areas.
+  diagnostic: "diagnostic",
 }
 
 /**
@@ -66,6 +68,8 @@ const BLOCK_ICONS: Record<BlockKind, IconName> = {
  * whichever tab was last open, because the block the learner tapped is there.
  */
 function blockHref(block: TodayBlock): string {
+  // The diagnostic is its own route, not a block inside /study.
+  if (block.kind === "diagnostic") return "/study/diagnostic"
   if (block.kind === "study" && block.chapterKey) {
     return `/study?tab=today&chapter=${encodeURIComponent(block.chapterKey)}${block.area ? `&area=${block.area}` : ""}`
   }

@@ -3,6 +3,7 @@ import {
   composeToday,
   dayProgress,
   blockComplete,
+  diagnosticDue,
   QUIZ_SIZE,
   PRACTICE_MIN,
   PRACTICE_MAX,
@@ -13,6 +14,10 @@ import { setPlan } from "@/lib/acca-plan"
 import { markChapterRead } from "@/lib/acca-topic-plan"
 import { chaptersForPaper, chapterKey } from "@/lib/acca-study-content"
 import { markArticleRead } from "@/lib/acca-tech-article"
+import { getPaper, getQuestions, recordAnswer } from "@/lib/acca"
+import { getFlashcards, reviewFlashcard } from "@/lib/acca-flashcards"
+import { setStartMode } from "@/lib/acca-profile"
+import { saveDiagnosticLocal, type DiagnosticResult } from "@/lib/acca-diagnostic"
 
 /*
  * TODAY, composed — the founder's numbers, enforced.
@@ -255,6 +260,108 @@ describe("progress and completion", () => {
     expect(full.complete).toBe(true)
     expect(full.percent).toBe(100)
     expect(full.activeIndex).toBe(-1)
+  })
+})
+
+/*
+ * ── The diagnostic has to REACH the learner ────────────────────────
+ *
+ * This is a regression guard for a real one. When the composer first replaced the
+ * action-based plan it had no diagnostic branch at all, so a zero-start learner
+ * read chapters indefinitely and was NEVER offered the measurement they had earned
+ * — the founder's rule ("give the diagnostic after the essential topics") silently
+ * stopped happening, and nothing failed or logged.
+ */
+describe("the diagnostic milestone", () => {
+  /** Satisfy the A·B·C gate: read every chapter, practise and revise each area. */
+  function clearTheGate(paperId: string) {
+    const paper = getPaper(paperId)!
+    for (const c of chaptersForPaper(paperId)) markChapterRead(paperId, chapterKey(c))
+    const questions = getQuestions(paperId)
+    for (const area of paper.areas.slice(0, 3)) {
+      for (const q of questions.filter((item) => item.area === area.code).slice(0, 8)) {
+        recordAnswer(paperId, q, true)
+      }
+      for (const card of getFlashcards(paperId).filter((item) => item.area === area.code).slice(0, 1)) {
+        reviewFlashcard(card.id, true)
+      }
+    }
+  }
+
+  it("does NOT measure a brand-new learner on day one", () => {
+    setStartMode("zero")
+    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 })
+    const day = composeToday("BT", true)
+    // A 25-question diagnostic on zero knowledge returns noise, and the number it
+    // prints is both meaningless and demoralising.
+    expect(day.isDiagnosticDay).toBe(false)
+    expect(day.blocks[0].kind).toBe("study")
+  })
+
+  it("explains the wait while the gate is still closed", () => {
+    setStartMode("zero")
+    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 })
+    const day = composeToday("BT", true)
+    expect(day.diagnosticGate).toBeTruthy()
+    expect(day.diagnosticGate!.total).toBeGreaterThan(0)
+    expect(day.diagnosticGate!.done).toBeLessThan(day.diagnosticGate!.total)
+    // Naming the next area is what turns a lock into a target.
+    expect(day.diagnosticGate!.nextArea).toBeTruthy()
+  })
+
+  it("offers the diagnostic once the essential areas are covered", () => {
+    setStartMode("zero")
+    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 })
+    clearTheGate("BT")
+    expect(diagnosticDue("BT")).toBe(true)
+
+    const day = composeToday("BT", true)
+    expect(day.isDiagnosticDay).toBe(true)
+    // It REPLACES the day: every number downstream changes, so a chapter studied
+    // beside it would be planned against a readiness about to be rewritten.
+    expect(day.blocks).toHaveLength(1)
+    expect(day.blocks[0].kind).toBe("diagnostic")
+    expect(day.blocks[0].id).toBe("diagnostic")
+    expect(day.diagnosticGate).toBeNull()
+    expect(day.totalMinutes).toBeGreaterThan(0)
+  })
+
+  it("stops offering it once a baseline exists", () => {
+    setStartMode("zero")
+    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 })
+    clearTheGate("BT")
+    expect(diagnosticDue("BT")).toBe(true)
+
+    saveDiagnosticLocal({
+      paperId: "BT",
+      answeredAt: new Date().toISOString(),
+      questionsAnswered: 25,
+      rawCorrect: 15,
+      estimatedScore: 60,
+      passProbability: 58,
+      confidence: 0.5,
+      areas: [],
+      weakest: [],
+      strongest: [],
+      target: { areas: [], questions: 0, weeks: 0 },
+    } as unknown as DiagnosticResult)
+
+    expect(diagnosticDue("BT")).toBe(false)
+    const day = composeToday("BT", true)
+    expect(day.isDiagnosticDay).toBe(false)
+    // And the gate note disappears — it has served its purpose.
+    expect(day.diagnosticGate).toBeNull()
+  })
+
+  it("never becomes a diagnostic day for a returner", () => {
+    // A returner is measured on day one by the onboarding flow itself, so this
+    // branch must not fire for them and re-offer it mid-plan.
+    setStartMode("assess")
+    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 })
+    clearTheGate("BT")
+    expect(diagnosticDue("BT")).toBe(false)
+    expect(composeToday("BT", true).isDiagnosticDay).toBe(false)
+    expect(composeToday("BT", true).diagnosticGate).toBeNull()
   })
 })
 

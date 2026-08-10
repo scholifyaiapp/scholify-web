@@ -351,6 +351,147 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
   )
 })
 
+/* ── Tab strip ─────────────────────────────────────────────────────
+ *
+ * The most-tapped control in the app (Learning's Today/Plan/Practice/Progress, and
+ * Plan's three altitudes) was hand-rolled in each place: a flex row of buttons that
+ * swapped `background` on the active one. Two copies, slightly different paddings,
+ * and no motion at all — the selection just teleported, which is the one place a
+ * transition genuinely helps because it shows WHICH tab you came from.
+ *
+ * One component now, with a shared `layoutId` pill that slides between tabs. The
+ * pill is a sibling behind the labels rather than the button's own background, so
+ * the text never re-renders mid-animation and the slide stays at 60fps.
+ *
+ * Accessibility is the other reason to centralise: this exposes the tablist/tab
+ * roles and `aria-selected`, which neither hand-rolled copy did, so the tabs were
+ * announced as a row of unrelated buttons.
+ */
+export interface TabItem<K extends string> {
+  key: K
+  label: string
+  icon?: IconName
+}
+
+export function TabStrip<K extends string>({
+  tabs,
+  active,
+  onChange,
+  ariaLabel,
+  style,
+}: {
+  tabs: readonly TabItem<K>[]
+  active: K
+  onChange: (key: K) => void
+  ariaLabel: string
+  style?: CSSProperties
+}) {
+  const reduced = useReducedMotion()
+  // Scoped so two strips on one screen cannot capture each other's pill.
+  const [layoutId] = useState(() => `tabstrip-${Math.random().toString(36).slice(2, 9)}`)
+  return (
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      style={{ display: "flex", gap: 4, padding: 4, background: C.card2, borderRadius: R.lg, ...style }}
+    >
+      {tabs.map((tab) => {
+        const on = tab.key === active
+        return (
+          <button
+            key={tab.key}
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(tab.key)}
+            style={{
+              position: "relative",
+              flex: 1,
+              minWidth: 0,
+              minHeight: 40,
+              padding: "9px 6px",
+              borderRadius: R.md,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              color: on ? C.brand : C.soft,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              fontSize: 13,
+              fontWeight: on ? 800 : 700,
+              transition: "color .18s ease",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            {on && (
+              <motion.span
+                layoutId={reduced ? undefined : layoutId}
+                transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.7 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: R.md,
+                  background: C.card,
+                  boxShadow: SHADOW.sm,
+                  zIndex: 0,
+                }}
+              />
+            )}
+            {tab.icon && (
+              <span style={{ position: "relative", zIndex: 1, display: "grid" }}>
+                <Icon name={tab.icon} size={15} color={on ? C.brand : C.faint} />
+              </span>
+            )}
+            <span style={{ position: "relative", zIndex: 1 }}>{tab.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * The back control. Was a bare `<button>` with `background: none` repeated in a
+ * dozen files at three different font sizes — and at 14px with no padding it was a
+ * ~20px tap target, well under the 44px minimum, on the control learners reach for
+ * most when they are lost.
+ */
+export function BackButton({ children = "Back", onClick, style }: { children?: ReactNode; onClick: () => void; style?: CSSProperties }) {
+  const reduced = useReducedMotion()
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={reduced ? undefined : { x: -2 }}
+      whileTap={reduced ? undefined : { scale: 0.97 }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        minHeight: 40,
+        padding: "8px 12px 8px 8px",
+        marginBottom: SP.md,
+        marginLeft: -8,
+        borderRadius: R.md,
+        border: "none",
+        background: "transparent",
+        color: C.soft,
+        fontSize: 13.5,
+        fontWeight: 700,
+        cursor: "pointer",
+        WebkitTapHighlightColor: "transparent",
+        // Merged, not replaced — a caller passing `marginBottom` must not silently
+        // drop the padding that makes this a 40px tap target.
+        ...style,
+      }}
+    >
+      <Icon name="chevron" size={15} color={C.soft} style={{ transform: "rotate(180deg)" }} />
+      {children}
+    </motion.button>
+  )
+}
+
 /** Compact metric block used across overview/progress. */
 export function Stat({ label, value, accent }: { label: string; value: ReactNode; accent?: boolean }) {
   return (

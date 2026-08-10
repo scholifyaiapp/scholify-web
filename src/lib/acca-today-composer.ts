@@ -49,6 +49,9 @@ import {
 } from "@/lib/acca-topic-plan"
 import { pickFresh } from "@/lib/acca-no-repeat"
 import { articleForChapter, isArticleRead, type TechArticle } from "@/lib/acca-tech-article"
+import { diagnosticGate } from "@/lib/acca-schedule"
+import { getStartMode } from "@/lib/acca-profile"
+import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 
 /* ── The founder's numbers, in one place ──────────────────────────
  * These are product decisions, not tuning knobs. They are exported so the plan
@@ -66,7 +69,7 @@ export const CARDS_MAX = 10
 const PER_Q = 1.1
 const PER_CARD = 0.6
 
-export type BlockKind = "study" | "quiz" | "practice" | "flashcards" | "article"
+export type BlockKind = "study" | "quiz" | "practice" | "flashcards" | "article" | "diagnostic"
 
 export interface TodayBlock {
   /** Stable per-day id — the sequential-unlock ledger keys off this. */
@@ -92,6 +95,17 @@ export interface TodayComposition {
   hardness: ChapterHardness | null
   /** True when today's chapter is a second pass on something already read. */
   isRevision: boolean
+  /**
+   * True when today IS the diagnostic — the milestone day, not a normal one.
+   * See `diagnosticDay` below for why it replaces the day rather than joining it.
+   */
+  isDiagnosticDay: boolean
+  /**
+   * How far a zero-start learner is from unlocking the diagnostic, while it is
+   * still locked. Null for anyone it does not apply to (a returner measured on day
+   * one, or anyone who already has a baseline).
+   */
+  diagnosticGate: { done: number; total: number; nextArea: string | null; nextLabel: string | null } | null
   blocks: TodayBlock[]
   quiz: AccaQuestion[]
   practice: AccaQuestion[]
@@ -141,6 +155,48 @@ function cardPool(paperId: string, area: string | undefined): Flashcard[] {
   return [...base].sort((a, b) => Number(due.has(b.id)) - Number(due.has(a.id)))
 }
 
+/* ── The diagnostic day ───────────────────────────────────────────
+ *
+ * The founder's rule, and the right one: a brand-new learner is NOT measured on
+ * day one. A 25-question diagnostic handed to someone who has never opened the
+ * syllabus returns noise, and the number it prints ("you're at 23%") is both
+ * meaningless and demoralising. Their readiness accrues from daily work instead
+ * (projectReadiness), and the diagnostic arrives once they have covered the
+ * essential ground — at which point it measures something real and lands as a
+ * reward rather than a verdict.
+ *
+ * WHY IT REPLACES THE DAY. When the gate opens, the diagnostic IS the day. It runs
+ * ~15–25 minutes and every number downstream of it changes, so a chapter studied
+ * beside it would be planned against a readiness the diagnostic is about to
+ * rewrite. Bundling it into a normal day also buries the moment the learner has
+ * been working three weeks for.
+ */
+
+function diagnosticGateState(paperId: string) {
+  const gate = diagnosticGate(paperId)
+  const next = gate.sections.find((s) => !s.done)
+  return {
+    done: gate.done,
+    total: gate.total,
+    nextArea: next?.area ?? null,
+    nextLabel: next?.label ?? null,
+    unlocked: gate.unlocked,
+  }
+}
+
+/**
+ * True when today should be the diagnostic.
+ *
+ * Only for a ZERO-start learner: a returner is measured on day one by the
+ * onboarding flow itself (AccaStudy redirects them to /study/diagnostic before the
+ * app opens), so they never reach this branch.
+ */
+export function diagnosticDue(paperId: string): boolean {
+  if (getStartMode() !== "zero") return false
+  if (getLatestDiagnostic(paperId)) return false
+  return diagnosticGateState(paperId).unlocked
+}
+
 /* ── The composer ─────────────────────────────────────────────────*/
 
 /**
@@ -154,6 +210,46 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   const paper = getPaper(paperId)
   const plan = getPlan(paperId)
   const budgetMinutes = Math.max(12, plan.dailyMinutes || 25)
+
+  /*
+   * THE MILESTONE DAY, checked first. A zero-start learner who has just covered the
+   * essential areas gets the diagnostic and nothing else today.
+   *
+   * This branch was missing when the composer first replaced the action-based plan,
+   * and its absence meant the diagnostic never reached a beginner at all: they read
+   * chapters indefinitely and were never offered the measurement they had earned.
+   */
+  if (diagnosticDue(paperId)) {
+    const gate = diagnosticGateState(paperId)
+    return {
+      paperId,
+      chapter: null,
+      hardness: null,
+      isRevision: false,
+      isDiagnosticDay: true,
+      diagnosticGate: null,
+      blocks: [
+        {
+          id: "diagnostic",
+          kind: "diagnostic",
+          step: 1,
+          title: `You've covered the essentials — see where you stand`,
+          detail: `${gate.total} areas studied, practised and revised. About 25 questions across every section of ${paperId}, and your first real Exam Readiness Score — then the whole plan re-tunes around it.`,
+          minutes: 25,
+        },
+      ],
+      quiz: [],
+      practice: [],
+      cards: [],
+      article: null,
+      totalMinutes: 25,
+      budgetMinutes,
+      recycled: false,
+    }
+  }
+
+  // Still working toward it — the board shows the progress so the wait is explained.
+  const gate = getStartMode() === "zero" && !getLatestDiagnostic(paperId) ? diagnosticGateState(paperId) : null
 
   // Today's topic: the next unread chapter, or — when the paper is fully read —
   // the weakest already-read chapter, because "nothing left to learn" is not the
@@ -300,6 +396,8 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
     chapter,
     hardness,
     isRevision,
+    isDiagnosticDay: false,
+    diagnosticGate: gate ? { done: gate.done, total: gate.total, nextArea: gate.nextArea, nextLabel: gate.nextLabel } : null,
     blocks,
     quiz: quizPick.items,
     practice: practicePick.items,

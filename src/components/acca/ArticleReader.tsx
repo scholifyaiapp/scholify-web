@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { C, R, SP, SHADOW, GRAD, Icon, type IconName } from "@/components/acca/ui"
+import { C, R, SP, SHADOW, GRAD, Icon, BackButton, type IconName } from "@/components/acca/ui"
 import { markArticleRead, type ArticleSection, type TechArticle } from "@/lib/acca-tech-article"
 
 /*
@@ -76,12 +76,7 @@ export function ArticleReader({
         <div style={{ height: "100%", width: `${progress * 100}%`, background: GRAD, transition: "width .12s linear" }} />
       </div>
 
-      <button
-        onClick={onBack}
-        style={{ background: "none", border: "none", color: C.soft, cursor: "pointer", fontSize: 14, padding: 0, marginBottom: SP.md }}
-      >
-        ← Today's plan
-      </button>
+      <BackButton onClick={onBack}>Today's plan</BackButton>
 
       <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em", color: C.brand, marginBottom: SP.sm }}>
         TECHNICAL ARTICLE · {article.paper} · AREA {article.area}

@@ -88,7 +88,7 @@ import { officialResources } from "@/lib/acca-resources"
 import { nextMockForm } from "@/lib/acca-mockforms"
 import { withShuffledOptions } from "@/lib/acca-options"
 import type { PostMortemAction } from "@/lib/acca-ai"
-import { Icon, IconBadge, Badge, Button, SectionHead, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
+import { Icon, IconBadge, Badge, Button, SectionHead, TabStrip, BackButton, C, SP, R, SHADOW, GRAD, type IconName } from "@/components/acca/ui"
 import { QuestionNavBar } from "@/components/acca/QuestionNavigator"
 import CharlesMascot from "@/components/CharlesMascot"
 import StudyCommandHero from "@/components/acca/StudyCommandHero"
@@ -350,6 +350,7 @@ export default function AccaStudy() {
     // gets the same five questions the board promised them.
     if (linkBlock) {
       clearUrl()
+      if (linkBlock === "diagnostic") { navigate("/study/diagnostic"); return }
       const composed = composeToday(paperId)
       const block = composed.blocks.find((b) => b.kind === linkBlock)
       if (!block) return
@@ -1454,6 +1455,11 @@ function Overview({
 
   function runComposedBlock(block: TodayBlock, composition: TodayComposition) {
     switch (block.kind) {
+      case "diagnostic":
+        // The milestone day. Not stamped pending: the diagnostic writes its own
+        // result, and that result is what removes this day from the plan.
+        navigate("/study/diagnostic")
+        return
       case "study":
         if (block.chapterKey && composition.chapter) onStudyChapter(block.chapterKey, composition.chapter.area)
         else onPractice()
@@ -1633,7 +1639,7 @@ function Overview({
           </div>
         </div>
       )}
-      <button onClick={onBack} style={backBtn}>← All papers</button>
+      <BackButton onClick={onBack}>All papers</BackButton>
       <StudyCommandHero
         paperId={paper.id}
         paperName={paper.name}
@@ -1693,21 +1699,13 @@ function Overview({
       )}
 
       {/* study tabs — the section split into Today / Plan / Practice / Progress */}
-      <div style={{ display: "flex", gap: 4, padding: 4, background: "var(--sch-card-2)", borderRadius: 14, marginBottom: 16 }}>
-        {STUDY_TABS.map((tb) => {
-          const on = tab === tb.key
-          return (
-            <button
-              key={tb.key}
-              onClick={() => setTab(tb.key)}
-              style={{ flex: 1, minWidth: 0, padding: "9px 4px", borderRadius: 10, border: "none", cursor: "pointer", background: on ? CARD : "transparent", color: on ? "#C80000" : MUTED, boxShadow: on ? "0 1px 2px rgba(51,43,40,0.07)" : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, transition: "color .15s, background .15s" }}
-            >
-              <Icon name={tb.icon} size={15} color={on ? "#C80000" : DIM} />
-              <span>{tb.label}</span>
-            </button>
-          )
-        })}
-      </div>
+      <TabStrip
+        tabs={STUDY_TABS}
+        active={tab}
+        onChange={setTab}
+        ariaLabel="Learning sections"
+        style={{ marginBottom: 16 }}
+      />
 
       {tab === "today" && (
       <motion.div key="today-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -2008,7 +2006,7 @@ function ChapterList({
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-      <button onClick={onBack} style={backBtn}>← Topic</button>
+      <BackButton onClick={onBack}>Topic</BackButton>
       <p style={{ color: DIM, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, margin: "0 0 4px" }}>
         {paper.id} · AREA {area} · STUDY TEXT
       </p>
@@ -2092,7 +2090,7 @@ function TopicView({
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-      <button onClick={onBack} style={backBtn}>← Study path</button>
+      <BackButton onClick={onBack}>Study path</BackButton>
       <p style={{ color: DIM, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, margin: "0 0 4px" }}>
         {paper.id} · TOPIC {area}
       </p>
@@ -2212,7 +2210,7 @@ function BriefReader({
   if (!brief) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <button onClick={onBack} style={backBtn}>← Topic</button>
+        <BackButton onClick={onBack}>Topic</BackButton>
         <p style={{ color: MUTED, fontSize: 14 }}>No brief for this topic yet — jump straight into the guided questions.</p>
         <Button onClick={onLearn} size="lg" full>Start {LEARN_SIZE} Quizzes</Button>
       </motion.div>
@@ -2220,7 +2218,7 @@ function BriefReader({
   }
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-      <button onClick={onBack} style={backBtn}>← Topic</button>
+      <BackButton onClick={onBack}>Topic</BackButton>
       <p style={{ color: DIM, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, margin: "0 0 4px" }}>
         {paper.id} · TOPIC {area} · {brief.minutes} MIN READ
       </p>
@@ -2865,5 +2863,11 @@ function Results({
   )
 }
 
+/**
+ * SUPERSEDED by BackButton (components/acca/ui). Kept only as a record of what it
+ * was: `padding: 0` at 14px made the app's most-reached-for control a ~20px tap
+ * target, well under the 44px minimum — on the button learners press when they are
+ * lost. Do not reintroduce; use BackButton.
+ */
 const backBtn: CSSProperties = { background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 14, padding: 0, marginBottom: 14 }
 const sectionH: CSSProperties = { fontSize: 13, fontWeight: 700, color: DIM, letterSpacing: 0.4, margin: "0 0 10px" }

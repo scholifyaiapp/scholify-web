@@ -48,6 +48,7 @@ const BLOCK_ICON: Record<BlockKind, IconName> = {
   practice: "practice",
   flashcards: "flashcards",
   article: "notes",
+  diagnostic: "diagnostic",
 }
 
 const BLOCK_LABEL: Record<BlockKind, string> = {
@@ -56,6 +57,7 @@ const BLOCK_LABEL: Record<BlockKind, string> = {
   practice: "Practice",
   flashcards: "Flashcards",
   article: "Technical article",
+  diagnostic: "Diagnostic",
 }
 
 const HARDNESS_TONE: Record<number, { fg: string; bg: string }> = {
@@ -77,6 +79,8 @@ export interface TodayBoardProps {
   onArticle: (article: TechArticle) => void
   /** Called once, the first time the day completes — for confetti + the email. */
   onDayComplete?: (composition: TodayComposition) => void
+  /** Pressed on tomorrow's card once its lock opens. */
+  onStartTomorrow?: () => void
 }
 
 function greetingFor(name?: string): string {
@@ -85,7 +89,7 @@ function greetingFor(name?: string): string {
   return name?.trim() ? `${part}, ${name.trim()}` : part
 }
 
-export function TodayBoard({ paperId, paperName, firstName, done, onRun, onArticle, onDayComplete }: TodayBoardProps) {
+export function TodayBoard({ paperId, paperName, firstName, done, onRun, onArticle, onDayComplete, onStartTomorrow }: TodayBoardProps) {
   const reduced = useReducedMotion()
   /*
    * Composed ONCE per (paper, completion-set). composeToday claims its question
@@ -117,6 +121,7 @@ export function TodayBoard({ paperId, paperName, firstName, done, onRun, onArtic
         streak={streak}
         minutes={composition.totalMinutes}
         questions={composition.quiz.length + composition.practice.length}
+        onStartTomorrow={onStartTomorrow ?? (() => window.location.reload())}
       />
     )
   }
@@ -172,6 +177,65 @@ export function TodayBoard({ paperId, paperName, firstName, done, onRun, onArtic
           </div>
         )}
       </div>
+
+      {/*
+        ── The diagnostic milestone ────────────────────────────────
+        A zero-start learner has just covered the essential areas. Today is the
+        measurement they earned, on its own — see the note in acca-today-composer
+        for why it replaces the day rather than joining it.
+      */}
+      {composition.isDiagnosticDay && (
+        <motion.div
+          initial={reduced ? false : { opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            borderRadius: R.xl,
+            border: `1px solid ${C.brandLine}`,
+            background: `linear-gradient(135deg, rgba(200,0,0,0.07), ${C.card} 60%)`,
+            padding: SP.lg,
+            marginBottom: SP.lg,
+            boxShadow: SHADOW.md,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: SP.sm }}>
+            <CharlesMascot pose="present" size="clamp(72px, 22vw, 92px)" />
+          </div>
+          <div style={{ textAlign: "center", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em", color: C.brand }}>
+            MILESTONE UNLOCKED
+          </div>
+          <div style={{ textAlign: "center", fontSize: 12.5, color: C.soft, marginTop: SP.sm, lineHeight: 1.6 }}>
+            You weren't measured on day one on purpose — a diagnostic before you'd read anything would have printed a
+            number that meant nothing. You've earned this one.
+          </div>
+        </motion.div>
+      )}
+
+      {/*
+        Still working toward it. Showing the gate makes the rule visible instead of
+        leaving a beginner wondering why the app never tells them where they stand.
+      */}
+      {composition.diagnosticGate && composition.diagnosticGate.total > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: SP.md,
+            padding: `${SP.md}px ${SP.lg}px`,
+            borderRadius: R.lg,
+            background: C.card2,
+            border: `1px solid ${C.hairline}`,
+            marginBottom: SP.lg,
+          }}
+        >
+          <Icon name="lock" size={16} color={C.faint} />
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: C.soft, lineHeight: 1.55 }}>
+            Your first Exam Readiness Score unlocks once you've studied, practised and revised the first{" "}
+            {composition.diagnosticGate.total} areas — <b style={{ color: C.text }}>{composition.diagnosticGate.done} of {composition.diagnosticGate.total} done</b>
+            {composition.diagnosticGate.nextLabel ? `. Next up: ${composition.diagnosticGate.nextArea} · ${composition.diagnosticGate.nextLabel}.` : "."}
+          </span>
+        </div>
+      )}
 
       {/* ── Today's chapter — the exact topic, named ── */}
       {chapter && (
@@ -389,12 +453,19 @@ export function TomorrowCard({
   streak,
   minutes,
   questions,
+  onStartTomorrow,
 }: {
   paperId: string
   paperName: string
   streak: number
   minutes: number
   questions: number
+  /**
+   * Pressed once the lock opens. Reloading the route is what re-composes the day —
+   * the gate is date-based, so "tomorrow" only becomes "today" after midnight has
+   * passed AND the study time has arrived.
+   */
+  onStartTomorrow: () => void
 }) {
   const reduced = useReducedMotion()
   const [gate, setGate] = useState<TomorrowGate>(() => tomorrowGate(paperId))
@@ -496,60 +567,82 @@ export function TomorrowCard({
         </div>
       </div>
 
-      {/* ── The lock ── */}
-      <AnimatePresence mode="wait">
-        {gate.locked ? (
+      {/*
+        ── The Start button, and its lock ──────────────────────────
+        One button in both states, so the learner sees the SAME control become
+        available rather than a message being swapped for a control. Disabled while
+        locked, with the countdown on it and the rest note underneath — the note is
+        the actual instruction, not consolation for the lock.
+      */}
+      <div
+        style={{
+          borderRadius: R.xl,
+          border: `1px ${gate.locked ? "dashed" : "solid"} ${gate.locked ? C.border : "rgba(14,159,110,0.3)"}`,
+          background: gate.locked ? C.card2 : C.greenSoft,
+          padding: SP.lg,
+          textAlign: "center",
+        }}
+      >
+        <motion.button
+          type="button"
+          disabled={gate.locked}
+          onClick={gate.locked ? undefined : onStartTomorrow}
+          whileHover={gate.locked || reduced ? undefined : { y: -2 }}
+          whileTap={gate.locked || reduced ? undefined : { scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 460, damping: 28 }}
+          style={{
+            width: "100%",
+            maxWidth: 360,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: SP.sm,
+            minHeight: 52,
+            padding: "15px 22px",
+            borderRadius: R.lg,
+            border: "none",
+            background: gate.locked ? C.card : GRAD,
+            color: gate.locked ? C.faint : "#fff",
+            fontSize: 15,
+            fontWeight: 800,
+            cursor: gate.locked ? "not-allowed" : "pointer",
+            boxShadow: gate.locked ? "none" : SHADOW.brand,
+            transition: "background .25s ease, color .25s ease, box-shadow .25s ease",
+          }}
+        >
+          {gate.locked ? (
+            <>
+              <Icon name="lock" size={17} color={C.faint} />
+              Starts at {gate.timeLabel.replace(" tomorrow", "")} · {gate.countdownLabel}
+            </>
+          ) : (
+            <>
+              <Icon name="mock" size={17} color="#fff" />
+              Start day {gate.tomorrowStreakDay}
+            </>
+          )}
+        </motion.button>
+
+        <AnimatePresence mode="wait">
           <motion.div
-            key="locked"
+            key={gate.locked ? "rest" : "open"}
             initial={reduced ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              borderRadius: R.xl,
-              border: `1px dashed ${C.border}`,
-              background: C.card2,
-              padding: SP.lg,
-              textAlign: "center",
+              fontSize: 13,
+              color: C.soft,
+              lineHeight: 1.6,
+              marginTop: SP.md,
+              maxWidth: 400,
+              marginLeft: "auto",
+              marginRight: "auto",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: SP.sm }}>
-              <span style={{ width: 46, height: 46, borderRadius: "50%", background: C.card, border: `1px solid ${C.border}`, display: "grid", placeItems: "center" }}>
-                <Icon name="lock" size={19} color={C.faint} />
-              </span>
-            </div>
-            <div style={{ fontSize: 14.5, fontWeight: 800, color: C.muted }}>
-              Start unlocks at {gate.timeLabel}
-            </div>
-            <div style={{ fontSize: 12.5, fontWeight: 750, color: C.brand, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
-              {gate.countdownLabel}
-            </div>
-            {/* The note under the lock — the actual instruction. */}
-            <div
-              style={{
-                fontSize: 13,
-                color: C.soft,
-                lineHeight: 1.6,
-                marginTop: SP.md,
-                maxWidth: 400,
-                marginLeft: "auto",
-                marginRight: "auto",
-              }}
-            >
-              {gate.restNote}
-            </div>
+            {gate.locked ? gate.restNote : gate.openNote}
           </motion.div>
-        ) : (
-          <motion.div
-            key="open"
-            initial={reduced ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{ textAlign: "center", padding: SP.lg, borderRadius: R.xl, background: C.greenSoft, border: `1px solid rgba(14,159,110,0.25)` }}
-          >
-            <div style={{ fontSize: 14.5, fontWeight: 800, color: C.text }}>{gate.openNote}</div>
-            <div style={{ fontSize: 12.5, color: C.soft, marginTop: 5 }}>Reload the page and today's plan is waiting.</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </motion.div>
   )
 }

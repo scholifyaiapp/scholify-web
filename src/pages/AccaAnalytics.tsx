@@ -724,6 +724,7 @@ function StudySection({ paperId }: { paperId: string }) {
 
   const missionIcons: Record<BlockKind, IconName> = {
     study: "learn", quiz: "mission", practice: "practice", flashcards: "flashcards", article: "notes",
+    diagnostic: "diagnostic",
   }
 
   return (
