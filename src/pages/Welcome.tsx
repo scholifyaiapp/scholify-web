@@ -765,14 +765,16 @@ export default function Welcome() {
 
   /* ═══ PLAN BUILD → REVEAL → COMMIT → PAYWALL ═══
      Takes over both shells once the new learner finishes onboarding. Its own
-     layout is fixed/inset-0 and scrolls, so it works at any viewport. */
+     layout is fixed/inset-0 and scrolls, so it works at any viewport.
+
+     It takes no completion callback on purpose. The reveal has exactly one
+     way out — the paywall — and the route out of THAT is Stripe, which
+     returns the learner to /dashboard?upgraded=true with an entitlement
+     behind them. A callback here would be a second door with no lock on it,
+     which is precisely what the removed "take me to my dashboard instead"
+     button turned out to be. */
   if (planReveal && paper) {
-    return (
-      <ZeroPlanReveal
-        paperId={paper}
-        onDone={(dest) => navigate(dest === "study" ? "/study" : "/dashboard")}
-      />
-    )
+    return <ZeroPlanReveal paperId={paper} />
   }
 
   /* ═══ THE BUILD, FOR THE OTHER TWO ROUTES ═══

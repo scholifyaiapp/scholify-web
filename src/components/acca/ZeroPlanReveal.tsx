@@ -46,7 +46,7 @@ import { TRIAL_DAYS } from "@/lib/entitlement"
  */
 type Stage = "building" | "date" | "plan" | "commit"
 
-export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; onDone: (dest: "study" | "dashboard") => void }) {
+export default function ZeroPlanReveal({ paperId }: { paperId: string }) {
   const paper = getPaper(paperId)
   const plan = getPlan(paperId)
   const days = daysUntilExam(paperId)
@@ -294,12 +294,18 @@ export default function ZeroPlanReveal({ paperId, onDone }: { paperId: string; o
               >
                 Start day 1 — {firstArea ? firstArea.label : "your first topic"} <Icon name="arrow" size={17} color="#fff" />
               </motion.button>
-              <button
-                onClick={() => onDone("dashboard")}
-                style={{ width: "100%", marginTop: 10, padding: 12, borderRadius: 12, border: "none", background: "transparent", color: C.faint, fontSize: 13, fontWeight: 650, cursor: "pointer" }}
-              >
-                Take me to my dashboard instead
-              </button>
+              {/*
+                "Take me to my dashboard instead" was removed here.
+                It called onDone("dashboard") directly, so it neither showed the
+                offer nor delivered a dashboard — it navigated to a gated route
+                and the learner met the wall a moment later, having been invited
+                there by us. An exit that promises something it cannot give is
+                worse than no exit, and it was the one people used to go looking
+                for a way round the paywall.
+
+                After the plan is revealed there is exactly one honest next
+                step, and both buttons on this screen now lead to it: the offer.
+              */}
             </Reveal>
           </motion.div>
         ) : (

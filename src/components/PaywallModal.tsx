@@ -639,6 +639,24 @@ export default function PaywallModal({
                     )}
                   </AnimatePresence>
 
+                  {/*
+                    Name the account the wall is judging.
+
+                    Without this line the wall is unfalsifiable: someone who is
+                    certain they paid, and someone signed into a second account
+                    they forgot about, see the identical screen. It is also the
+                    first thing support would have to ask for, and the fastest
+                    way to tell "the gate is broken" apart from "you are on the
+                    wrong account" — which is not a rare confusion, it is the
+                    single most common one behind "I paid and it still asks".
+                  */}
+                  {user?.email && (
+                    <div style={{ marginTop: 16, fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.5 }}>
+                      Signed in as <span style={{ color: "var(--sch-tx-2)", fontWeight: 650 }}>{user.email}</span>
+                      {" — this account has no active plan."}
+                    </div>
+                  )}
+
                   <div style={{ marginTop: 14, display: "flex", justifyContent: "center", gap: 18, fontSize: 13 }}>
                     <a href="/settings" style={{ color: "var(--sch-tx-2)", textDecoration: "none", fontWeight: 600 }}>
                       Account & billing
