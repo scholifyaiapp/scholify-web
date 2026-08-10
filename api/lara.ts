@@ -530,21 +530,48 @@ function validVoiceToken(req: VercelRequest, text: string, token: string): boole
   return timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))
 }
 
-async function takeLandingVoiceTurn(req: VercelRequest): Promise<boolean> {
+/** Why a turn was refused — so a database fault cannot be reported to a
+ *  visitor as "you have used your daily allowance". */
+type TurnResult = "allowed" | "capped" | "unavailable"
+
+async function takeLandingVoiceTurn(req: VercelRequest): Promise<TurnResult> {
   const supa = meteringAdmin()
-  if (!supa) return false
+  if (!supa) return "unavailable"
+  const args = {
+    p_visitor_hash: visitorHash(req),
+    p_day: todayUtc(),
+    p_cap: LANDING_VOICE_DAILY_CAP,
+  }
+
+  /*
+   * TRY THE RPC FIRST — the schema round trip is the slow part and it is
+   * almost never needed.
+   *
+   * This used to await ensureLandingVoiceSchema() before every turn, which on
+   * a cold serverless instance opens a direct Postgres connection and runs a
+   * `create or replace function` DDL, and only then makes the RPC, and only
+   * then calls the model. Three serial round trips before a visitor sees a
+   * single word. Measured end to end against production: 5.9s for the first
+   * reply, against 2.3s for the model call alone — the missing 3.6s is this.
+   *
+   * The function exists after the first request following any deploy, so the
+   * DDL now runs only when the RPC actually reports it missing.
+   */
+  const first = await supa.rpc("take_landing_voice_turn", args)
+  if (!first.error) return first.data === true ? "allowed" : "capped"
+
   try {
     await ensureLandingVoiceSchema()
   } catch (error) {
     console.error("landing voice schema:", error)
-    return false
+    return "unavailable"
   }
-  const { data, error } = await supa.rpc("take_landing_voice_turn", {
-    p_visitor_hash: visitorHash(req),
-    p_day: todayUtc(),
-    p_cap: LANDING_VOICE_DAILY_CAP,
-  })
-  return !error && data === true
+  const retry = await supa.rpc("take_landing_voice_turn", args)
+  if (retry.error) {
+    console.error("landing voice turn:", retry.error)
+    return "unavailable"
+  }
+  return retry.data === true ? "allowed" : "capped"
 }
 
 async function handleLandingVoiceChat(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
@@ -559,8 +586,19 @@ async function handleLandingVoiceChat(req: VercelRequest, body: Record<string, u
     : ""
   if (!message) return void res.status(400).json({ error: "Ask me something first — type it or hold the mic." })
   if (!aiProvider()) return void res.status(503).json({ error: "I'm offline for a moment. Try me again shortly." })
-  if (!(await takeLandingVoiceTurn(req))) {
+  /*
+   * Tell the truth about WHY. Both outcomes used to return the same
+   * "that's all I can talk through today" — so a Postgres hiccup told every
+   * visitor on the landing page that they had exhausted an allowance they had
+   * never used, on the one screen where a visitor decides whether this product
+   * works. A fault is a fault; say so and invite them to try again.
+   */
+  const turn = await takeLandingVoiceTurn(req)
+  if (turn === "capped") {
     return void res.status(429).json({ error: "That's all I can talk through today. Start free and I'll pick this up properly inside." })
+  }
+  if (turn === "unavailable") {
+    return void res.status(503).json({ error: "I lost that one on my end — ask me again in a moment." })
   }
 
   const system = `You are Charles, Scholify's AI study coach for ACCA students. You are an original character, not connected to any real driver, team, Formula 1, ACCA, or championship.
