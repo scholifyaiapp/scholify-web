@@ -1,5 +1,14 @@
-import { useEffect, useState } from "react"
-import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion } from "motion/react"
+import { useEffect, useRef, useState } from "react"
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useTransform,
+} from "motion/react"
 import {
   BookOpen,
   CalendarClock,
@@ -578,18 +587,54 @@ export function SystemWalkthrough() {
 /* ── The five-block day, as a diagram ─────────────────────────────*/
 
 const DAY_BLOCKS = [
-  { label: "Study", detail: "1 exact chapter", Icon: BookOpen, accent: BRAND_500, minutes: "18 min" },
-  { label: "Quiz", detail: "5 questions on it", Icon: Zap, accent: PLUM_500, minutes: "6 min" },
-  { label: "Practice", detail: "10–15 exam-standard", Icon: Target, accent: FIRE_500, minutes: "14 min" },
-  { label: "Flashcards", detail: "5–10 from the topic", Icon: Layers, accent: GREEN_500, minutes: "5 min" },
-  { label: "Article", detail: "The examiner's view", Icon: Sparkles, accent: BRAND_500, minutes: "7 min" },
+  { label: "Study", detail: "1 exact chapter", Icon: BookOpen, accent: BRAND_500, minutes: 18 },
+  { label: "Quiz", detail: "5 questions on it", Icon: Zap, accent: PLUM_500, minutes: 6 },
+  { label: "Practice", detail: "10–15 exam-standard", Icon: Target, accent: FIRE_500, minutes: 14 },
+  { label: "Flashcards", detail: "5–10 from the topic", Icon: Layers, accent: GREEN_500, minutes: 5 },
+  { label: "Article", detail: "The examiner's view", Icon: Sparkles, accent: BRAND_500, minutes: 7 },
 ]
 
+/** 18 + 6 + 14 + 5 + 7. The claim in the heading, computed rather than typed. */
+const DAY_TOTAL = DAY_BLOCKS.reduce((sum, block) => sum + block.minutes, 0)
+
+/** Minutes elapsed before a block starts — where its slice begins on the bar. */
+const minutesBefore = (index: number) =>
+  DAY_BLOCKS.slice(0, index).reduce((sum, block) => sum + block.minutes, 0)
+
+const BAR_STAGGER = 0.16
+const BAR_SEGMENT = 0.5
+
+/*
+ * The day, drawn — and drawn ADDING UP, which is the whole claim. The five
+ * blocks total exactly 50 minutes, so the animation spends them: each block
+ * claims its slice of one 50-minute bar in turn while the counter runs to 50.
+ * That is motion doing an argument's work rather than decorating it, which is
+ * the only kind this page is allowed. Under reduced motion the bar and the
+ * total render finished, because the claim must survive without the animation.
+ */
 function DayShapeVisual() {
   const t = useT()
   const reduced = useReducedMotion()
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: "-90px" })
+
+  const runFor = BAR_STAGGER * (DAY_BLOCKS.length - 1) + BAR_SEGMENT
+  const count = useMotionValue(reduced ? DAY_TOTAL : 0)
+  const shownMinutes = useTransform(count, (value) => Math.round(value))
+
+  useEffect(() => {
+    if (!inView) return
+    if (reduced) {
+      count.set(DAY_TOTAL)
+      return
+    }
+    const controls = animate(count, DAY_TOTAL, { duration: runFor, ease: EASE })
+    return () => controls.stop()
+  }, [inView, reduced, count, runFor])
+
   return (
     <motion.div
+      ref={ref}
       initial={reduced ? false : { opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
@@ -612,14 +657,80 @@ function DayShapeVisual() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gap: 10, marginTop: 32, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
+      {/* The counter and the bar it belongs to. */}
+      <div style={{ maxWidth: 560, margin: "30px auto 0" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 7 }}>
+          <motion.span
+            className="font-display tabular"
+            style={{ fontSize: "clamp(40px,6vw,60px)", color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}
+          >
+            {shownMinutes}
+          </motion.span>
+          <span className="font-mono-pro" style={{ fontSize: 13, color: INK_MUTED, letterSpacing: "0.1em" }}>
+            {t("MIN")}
+          </span>
+        </div>
+
+        <div
+          role="img"
+          aria-label={t("A 50-minute day, split into five blocks")}
+          style={{ display: "flex", gap: 3, height: 46, marginTop: 18 }}
+        >
+          {DAY_BLOCKS.map((block, i) => (
+            <div
+              key={block.label}
+              style={{
+                flex: block.minutes,
+                position: "relative",
+                overflow: "hidden",
+                background: `${block.accent}1f`,
+                borderRadius: i === 0 ? "14px 5px 5px 14px" : i === DAY_BLOCKS.length - 1 ? "5px 14px 14px 5px" : 5,
+              }}
+            >
+              <motion.div
+                initial={reduced ? false : { scaleX: 0 }}
+                animate={inView ? { scaleX: 1 } : undefined}
+                transition={{ duration: BAR_SEGMENT, delay: i * BAR_STAGGER, ease: EASE }}
+                style={{ position: "absolute", inset: 0, background: block.accent, transformOrigin: "left center" }}
+              />
+              <motion.span
+                className="font-mono-pro tabular"
+                initial={reduced ? false : { opacity: 0 }}
+                animate={inView ? { opacity: 1 } : undefined}
+                transition={{ duration: 0.3, delay: i * BAR_STAGGER + BAR_SEGMENT * 0.55, ease: EASE }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                {block.minutes}
+              </motion.span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="font-mono-pro"
+          style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: INK_MUTED, letterSpacing: "0.1em" }}
+        >
+          <span>{t("START")}</span>
+          <span>{t("DONE FOR THE DAY")}</span>
+        </div>
+      </div>
+
+      {/* The rows land in step with their own slice of the bar. */}
+      <div style={{ display: "grid", gap: 10, marginTop: 26, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
         {DAY_BLOCKS.map((block, i) => (
           <motion.div
             key={block.label}
             initial={reduced ? false : { opacity: 0, x: -18 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45, delay: 0.1 + i * 0.1, ease: EASE }}
+            animate={inView ? { opacity: 1, x: 0 } : undefined}
+            transition={{ duration: 0.45, delay: i * BAR_STAGGER, ease: EASE }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -628,6 +739,7 @@ function DayShapeVisual() {
               borderRadius: 16,
               background: BG_PRIMARY,
               border: `1px solid ${HAIR}`,
+              borderLeft: `3px solid ${block.accent}`,
             }}
           >
             <span
@@ -652,7 +764,7 @@ function DayShapeVisual() {
               </span>
             </span>
             <span className="font-mono-pro tabular" style={{ fontSize: 12, color: INK_MUTED, flexShrink: 0 }}>
-              {block.minutes}
+              {block.minutes} {t("min")}
             </span>
           </motion.div>
         ))}
