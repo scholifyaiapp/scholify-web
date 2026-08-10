@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest"
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { dueSlot, dueTrialReminder } from "../../api/reminders"
 
 /*
@@ -110,6 +112,88 @@ describe("dueSlot — which reminder is due right now", () => {
     // would put the whole day 24 hours out. Guard the arithmetic that consumes it.
     const midnightSession = { practice_time: "03:00" }
     expect(dueSlot(midnightSession, { date: "2026-08-12", minutes: 0 })).toBe("lead")
+  })
+})
+
+/*
+ * ── The sender and the Settings copy must agree ───────────────────
+ *
+ * The offsets exist twice: as `SLOTS` in api/reminders.ts (which decides when the
+ * email is actually sent) and as `shiftClock(t, N)` calls in Settings (which tells
+ * the learner when to expect it). Nothing links them.
+ *
+ * When they drifted, the symptom was silent and mortifying: the sender moved to
+ * −30/+2h while Settings still said "Ten minutes before / around 18:50", so every
+ * learner was shown a time, and then received the mail at a different one. No error,
+ * no log, and nothing in the product to reveal it.
+ *
+ * These read the two files as text, which is crude, and is the only thing that can
+ * actually catch a divergence between a server constant and a client string.
+ */
+describe("the Settings copy matches the sender's offsets", () => {
+  const read = (p: string) => readFileSync(resolve(__dirname, "../..", p), "utf8")
+
+  /** The offsets the sender really uses, parsed from its SLOTS table. */
+  function senderOffsets(): Record<string, number> {
+    const api = read("api/reminders.ts")
+    const block = /const SLOTS = \[([\s\S]*?)\] as const/.exec(api)
+    expect(block, "SLOTS table not found in api/reminders.ts").toBeTruthy()
+    const out: Record<string, number> = {}
+    for (const row of block![1].matchAll(/key:\s*"(\w+)",\s*offset:\s*(-?\d+)/g)) {
+      out[row[1]] = Number(row[2])
+    }
+    return out
+  }
+
+  /** The offsets Settings quotes to the learner, parsed from its slot rows. */
+  function settingsOffsets(): Record<string, number> {
+    const settings = read("src/pages/Settings.tsx")
+    const block = /const REMINDER_SLOT_ROWS[\s\S]*?\n\]/.exec(settings)
+    expect(block, "REMINDER_SLOT_ROWS not found in Settings").toBeTruthy()
+    const out: Record<string, number> = {}
+    // Each row is `key: "soon"` … then one or more `shiftClock(t, -30)` calls.
+    for (const row of block![0].split(/\n\s*\{/).slice(1)) {
+      const key = /key:\s*"(\w+)"/.exec(row)?.[1]
+      const shift = /shiftClock\(\w+,\s*(-?\d+)\)/.exec(row)?.[1]
+      if (key && shift) out[key] = Number(shift)
+    }
+    return out
+  }
+
+  it("quotes the same offset for every slot it shows", () => {
+    const sender = senderOffsets()
+    const ui = settingsOffsets()
+    expect(Object.keys(sender).length, "no slots parsed from the sender").toBeGreaterThan(0)
+    expect(Object.keys(ui).length, "no slot rows parsed from Settings").toBeGreaterThan(0)
+    for (const [key, offset] of Object.entries(ui)) {
+      expect(sender[key], `Settings shows a "${key}" row the sender has no slot for`).toBeDefined()
+      expect(
+        offset,
+        `"${key}": Settings tells the learner ${offset} min but the sender uses ${sender[key]} min`,
+      ).toBe(sender[key])
+    }
+  })
+
+  it("shows a row for every slot the sender can fire", () => {
+    // A slot with no row is an email the learner cannot turn off from the UI.
+    const ui = settingsOffsets()
+    for (const key of Object.keys(senderOffsets())) {
+      expect(ui[key], `the sender can fire "${key}" but Settings has no row for it`).toBeDefined()
+    }
+  })
+
+  it("keeps the client default in step with the server default", () => {
+    // The product promises TWO reminders. `lead` is the opt-in third, and both
+    // sides have to agree or a learner's row is created with a slot they never
+    // asked for (or loses one they did).
+    const client = read("src/lib/reminders.ts")
+    expect(client).toMatch(/DEFAULT_SLOTS:\s*ReminderSlots\s*=\s*\{\s*lead:\s*false/)
+    const api = read("api/reminders.ts")
+    expect(api, "the sync handler must treat lead as opt-in (=== true), not opt-out (!== false)").toMatch(
+      /lead_on:\s*slots\.lead === true/,
+    )
+    expect(api).toMatch(/soon_on:\s*slots\.soon !== false/)
+    expect(api).toMatch(/catchup_on:\s*slots\.catchup !== false/)
   })
 })
 

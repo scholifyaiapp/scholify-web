@@ -14,7 +14,8 @@ import { getPlan, daysUntilExam, currentPhase, METHOD_PHASES } from "@/lib/acca-
 import { getCurrentPaper, getStudyingPapers, paperLevels, qualificationProgress, getPassedPapers, setPassedPapers } from "@/lib/acca-qualification"
 import { getJourney, setJourney, perComplete, EPSM_LABEL, PER_TARGET_MONTHS, PER_TARGET_OBJECTIVES, type EpsmStatus } from "@/lib/acca-journey"
 import { passProbability, recoveryState, getExamOutcomes, MOCK_PASS } from "@/lib/acca-loop"
-import { buildTodayPlan, type TodayAction } from "@/lib/acca-today"
+import { getTodayDone } from "@/lib/acca-today"
+import { composeToday, dayProgress, type BlockKind } from "@/lib/acca-today-composer"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { getStudyPath, pathProgress } from "@/lib/acca-topics"
 import { usePaperContent } from "@/hooks/usePaperContent"
@@ -35,6 +36,10 @@ import {
   getMistakes,
   getCalibration,
   QUESTION_BUDGET_SEC,
+  // Per-section pace: seconds per mark against ACCA's own 1.8 min/mark. See the
+  // note in the Time management card for why the single average is not enough.
+  paceBySection,
+  SECONDS_PER_MARK,
 } from "@/lib/acca-analytics"
 
 /*
@@ -698,7 +703,17 @@ function StudySection({ paperId }: { paperId: string }) {
   const fc = flashcardStats(paperId)
   const path = getStudyPath(paperId)
   const pp = pathProgress(paperId)
-  const mission = useMemo(() => buildTodayPlan(paperId), [paperId])
+  /*
+   * The SAME composed day /study and the dashboard render (acca-today-composer).
+   * This read buildTodayPlan(), a second definition of today in a different
+   * vocabulary — so the analytics "Daily mission" listed area-based tasks while the
+   * Today board listed the exact chapter and its five blocks, for the same day.
+   *
+   * A DRY RUN: rendering an analytics card must not claim the day's questions.
+   */
+  const composition = useMemo(() => composeToday(paperId, /* dryRun */ true), [paperId])
+  const mission = composition.blocks
+  const missionProgress = useMemo(() => dayProgress(paperId, composition, getTodayDone(paperId)), [paperId, composition])
   const [goal, setGoal] = useState(getDailyGoal())
   const heatMax = Math.max(1, ...heat.map((a) => a.count))
 
@@ -707,16 +722,23 @@ function StudySection({ paperId }: { paperId: string }) {
     setDailyGoal(n)
   }
 
-  const missionIcons: Record<TodayAction, IconName> = {
-    diagnostic: "diagnostic", weak: "weak", practice: "practice", section: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+  const missionIcons: Record<BlockKind, IconName> = {
+    study: "learn", quiz: "mission", practice: "practice", flashcards: "flashcards", article: "notes",
   }
 
   return (
     <>
       {/* daily mission */}
       <Card style={{ marginBottom: SP.md }}>
-        <CardTitle icon="mission" right={<span style={{ fontSize: 11, color: C.faint, textTransform: "none", letterSpacing: 0 }}>tap a step to start it</span>}>
-          Daily mission
+        <CardTitle
+          icon="mission"
+          right={
+            <span style={{ fontSize: 11, color: C.faint, textTransform: "none", letterSpacing: 0 }}>
+              {missionProgress.done} of {missionProgress.total} done · tap a step to start it
+            </span>
+          }
+        >
+          {composition.chapter ? `Daily mission · ${composition.chapter.title}` : "Daily mission"}
         </CardTitle>
         <div style={{ display: "grid", gap: SP.sm }}>
           {mission.map((t, i) => (
@@ -727,7 +749,13 @@ function StudySection({ paperId }: { paperId: string }) {
               transition={{ delay: i * 0.07 }}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.99 }}
-              onClick={() => navigate(`/study?do=${t.action}${t.area ? `&area=${t.area}` : ""}`)}
+              onClick={() =>
+                navigate(
+                  t.kind === "study" && t.chapterKey
+                    ? `/study?tab=today&chapter=${encodeURIComponent(t.chapterKey)}${t.area ? `&area=${t.area}` : ""}`
+                    : `/study?tab=today&block=${t.kind}`,
+                )
+              }
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -742,11 +770,11 @@ function StudySection({ paperId }: { paperId: string }) {
               }}
             >
               <span style={{ width: 34, height: 34, borderRadius: 9, background: i === 0 ? "linear-gradient(135deg,#C80000,#E50068)" : C.card2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Icon name={missionIcons[t.action]} size={16} color={i === 0 ? "#fff" : C.muted} />
+                <Icon name={missionIcons[t.kind]} size={16} color={i === 0 ? "#fff" : C.muted} />
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 750, fontSize: 14, color: C.text }}>{t.title}</span>
-                <span style={{ display: "block", fontSize: 12, color: C.soft, marginTop: 1 }}>{t.detail}</span>
+                <span style={{ display: "block", fontSize: 12, color: C.soft, marginTop: 1 }}>{t.detail} · {t.minutes} min</span>
               </span>
               <Icon name="chevron" size={16} color={C.faint} style={{ flexShrink: 0 }} />
             </motion.button>
@@ -895,6 +923,7 @@ function StudySection({ paperId }: { paperId: string }) {
 function ExamSection({ paperId, paper, canUseMockHistory, onUpgrade }: { paperId: string; paper: AccaPaper; canUseMockHistory: boolean; onUpgrade: () => void }) {
   const mocks = getMockHistory(paperId)
   const pace = getPace(paperId)
+  const sectionPace = paceBySection(paperId)
   const mistakes = getMistakes(paperId)
   const days = daysUntilExam(paperId)
   const phase = currentPhase(paperId)
@@ -1010,9 +1039,69 @@ function ExamSection({ paperId, paper, canUseMockHistory, onUpgrade }: { paperId
                   </span>
                 ))}
               </div>
+
+              {/*
+                ── BY SECTION, which is the read that decides papers ──────────
+                The average above is one number across a paper whose Section A is
+                2-mark objective tests (~3.6 min each) and whose Section C can be a
+                20-mark written answer (~36 min). Averaged together it describes no
+                question that exists, and it hides the failure mode that actually
+                loses papers: spending Section A's budget at Section C's pace and
+                running out of clock. Measured per section against ACCA's own
+                allowance of 1.8 minutes per mark, so it is comparable across them.
+              */}
+              {sectionPace.length > 0 && (
+                <div style={{ marginTop: SP.lg, paddingTop: SP.md, borderTop: `1px solid ${C.hairline}` }}>
+                  <div style={{ ...TYPE.label, color: C.faint, marginBottom: SP.sm }}>
+                    Per exam section · against {SECONDS_PER_MARK}s per mark
+                  </div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {sectionPace.map((s) => {
+                      const over = s.deltaPerMark > 0
+                      return (
+                        <div key={s.section} style={{ display: "flex", alignItems: "center", gap: SP.md }}>
+                          <span
+                            style={{
+                              width: 28, height: 28, borderRadius: 9, flexShrink: 0,
+                              display: "grid", placeItems: "center",
+                              background: over ? C.redSoft : C.greenSoft,
+                              color: over ? C.red : C.green,
+                              fontSize: 12.5, fontWeight: 850,
+                            }}
+                          >
+                            {s.section}
+                          </span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: C.text }}>
+                              {s.avgSec}s per question
+                            </span>
+                            <span style={{ display: "block", fontSize: 11.5, color: C.soft, marginTop: 1 }}>
+                              {s.secPerMark}s per mark · {s.count} timed · {Math.round(s.inBudgetShare * 100)}% inside budget
+                            </span>
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: over ? C.red : C.green, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                            {over ? "+" : ""}{s.deltaPerMark}s
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {(() => {
+                    const slow = sectionPace.filter((s) => s.deltaPerMark > 12)
+                    if (!slow.length) return null
+                    return (
+                      <div style={{ ...TYPE.small, color: C.soft, marginTop: SP.md, lineHeight: 1.55 }}>
+                        Section {slow.map((s) => s.section).join(" and ")} is running{" "}
+                        {Math.max(...slow.map((s) => s.deltaPerMark))}s per mark over the exam's allowance. That is the
+                        shape of a paper you do not finish — the fix is practising to the clock, not knowing more.
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
             </>
           ) : (
-            <Measuring>Pace starts measuring from your next session — every answer is timed against the {QUESTION_BUDGET_SEC}s exam budget.</Measuring>
+            <Measuring>Pace starts measuring from your next session — every answer is timed against the {QUESTION_BUDGET_SEC}s exam budget, and broken down per exam section against ACCA's 1.8 minutes per mark.</Measuring>
           )}
         </Card>
       </div>

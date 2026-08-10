@@ -57,7 +57,7 @@ import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-
 import { syncAccaProgress, queueAccaProgressPush } from "@/lib/acca-cloud"
 import { trackEvent } from "@/lib/analytics"
 import { markFirstTaskCompleted } from "@/lib/retention"
-import { buildTodayPlan, greeting, todayHeadline, MISSION_MINUTES, allocateTaskMinutes, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, resumeFocusSession, pauseFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
+import { greeting, todayHeadline, MISSION_MINUTES, getTodayDone, markTodayTaskDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, startFocusSession, resumeFocusSession, pauseFocusSession, clearFocusSession, focusSecondsLeft, type TodayAction, type TodayTask } from "@/lib/acca-today"
 import { recordDayActive, shieldState } from "@/lib/acca-schedule"
 import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, chaptersForPaper, type StudyChapter } from "@/lib/acca-study-content"
 /* ── The rebuilt Learning section ──────────────────────────────────
@@ -282,28 +282,98 @@ export default function AccaStudy() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Deep links: /study?do=weak|practice|mock|flashcards|diagnostic — the
-  // Dashboard/Analytics "Start now" buttons land INSIDE the task, not on a
-  // picker. The loop hands the student the next best action in one tap.
+  /*
+   * ── Deep links ──────────────────────────────────────────────────
+   *
+   *   ?do=weak|practice|mock|flashcards|diagnostic|bank|essentials|study[&area=]
+   *        the legacy action links — land INSIDE the task, not on a picker.
+   *   ?tab=today|plan|practice|progress|tomorrow
+   *        which Learning tab to open. `tomorrow` is an alias for `today`: the
+   *        congratulation email links to it, and when the day is complete the Today
+   *        board IS tomorrow's card, so the two are the same destination.
+   *   ?tab=today&block=quiz|practice|flashcards|article
+   *   ?tab=today&chapter=<chapterKey>[&area=]
+   *        the Dashboard's "Continue mission" CTA, which knows the exact block the
+   *        learner is on because it reads the same composed day.
+   *
+   * The block/chapter forms are resolved here rather than by the board so the CTA
+   * lands in ONE tap — routing to the board and making the learner tap the step
+   * again would be two.
+   */
+  /*
+   * Read SYNCHRONOUSLY, in a lazy initialiser, not in the effect below. Overview
+   * seeds its own tab state from this on FIRST render; an effect runs after that
+   * render, so by the time it called setInitialTab the tab had already defaulted to
+   * "today" and the ?tab= in the link was silently ignored.
+   */
+  const [initialTab] = useState<StudyTab | null>(() => {
+    try {
+      const value = new URLSearchParams(window.location.search).get("tab")?.toLowerCase()
+      if (!value) return null
+      // `tomorrow` is an alias for `today`: the congratulation email links to it,
+      // and a completed day renders the Today board AS tomorrow's card.
+      const tabs: Record<string, StudyTab> = { today: "today", tomorrow: "today", plan: "plan", practice: "practice", progress: "progress" }
+      return tabs[value] ?? null
+    } catch {
+      return null
+    }
+  })
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const action = params.get("do") as TodayAction | null
     const linkArea = params.get("area")
-    if (!action) return
+    const linkTab = params.get("tab")
+    const linkBlock = params.get("block")
+    const linkChapter = params.get("chapter")
     const clearUrl = () => window.history.replaceState({}, "", window.location.pathname)
+
+    if (!action && !linkBlock && !linkChapter) {
+      if (linkTab) clearUrl()
+      return
+    }
+    if (!wasOnboarded()) { clearUrl(); return }
+    if (!paperId) { clearUrl(); return }
+    // Paper-scoped work needs the paper's content chunk (see the note below).
+    if (!content.ready) return
+
+    // A chapter link opens that exact chapter — the study block of today's plan.
+    if (linkChapter) {
+      clearUrl()
+      const chapter = getChapterByKey(paperId, linkChapter)
+      if (chapter) startStudyChapter(linkChapter, chapter.area)
+      else if (linkArea) startStudyChapter(linkChapter, linkArea)
+      return
+    }
+
+    // A block link launches that block from TODAY's composed set, so the learner
+    // gets the same five questions the board promised them.
+    if (linkBlock) {
+      clearUrl()
+      const composed = composeToday(paperId)
+      const block = composed.blocks.find((b) => b.kind === linkBlock)
+      if (!block) return
+      if (block.kind === "quiz") onComposedFromLink(composed.quiz, "quiz", block.area ?? null, block.id)
+      else if (block.kind === "practice") onComposedFromLink(composed.practice, "practice", block.area ?? null, block.id)
+      else if (block.kind === "flashcards") { setPendingTodayTask(paperId, block.id); setTopicArea(null); setMode("flashcards") }
+      else if (block.kind === "article" && composed.article) { setActiveArticle(composed.article); setMode("article") }
+      else if (block.kind === "study" && block.chapterKey && composed.chapter) startStudyChapter(block.chapterKey, composed.chapter.area)
+      return
+    }
+    if (!action) return
     if (!wasOnboarded()) { clearUrl(); return }
     if (action === "diagnostic") {
       clearUrl()
       navigate("/study/diagnostic")
       return
     }
-    if (!paperId) { clearUrl(); return }
-    // Paper-scoped actions read the loaded paper's content (buildSession,
-    // getFlashcards, briefs…). On a cold content chunk this effect fires before
-    // content.ready — acting now would silently drop the intent and show a
-    // spurious "No questions available yet". Wait and re-run when readiness
-    // flips so the deep-linked action always lands.
-    if (!content.ready) return
+    /*
+     * Paper-scoped actions read the loaded paper's content (buildSession,
+     * getFlashcards, briefs…). On a cold content chunk this effect fires before
+     * content.ready — acting now would silently drop the intent and show a
+     * spurious "No questions available yet". The guard above waits and re-runs when
+     * readiness flips, so the deep-linked action always lands.
+     */
     clearUrl()
     if (action === "weak") startSession(true, false)
     else if (action === "practice") startSession(false, false)
@@ -488,6 +558,16 @@ export default function AccaStudy() {
     setMode("brief")
   }
 
+  /**
+   * A deep-linked block launch: stamps the block pending (so returning to the
+   * board marks it done and unlocks the next) and starts the composed set.
+   */
+  function onComposedFromLink(qs: AccaQuestion[], pool: PoolKind, area: string | null, blockId: string) {
+    if (!paperId) return
+    setPendingTodayTask(paperId, blockId)
+    startComposedSession(qs, pool, area)
+  }
+
   /** "Test yourself" on one chapter — the ACCA Study Hub's per-chapter check. */
   function startChapterTest(key: string, area: string, count: number) {
     if (!paperId) return
@@ -526,13 +606,17 @@ export default function AccaStudy() {
     setMode("session")
   }
 
-  /** Category 2 — the five essential questions on today's studied topic. */
+  /**
+   * The five quizzes on today's studied topic, for callers that only know "the
+   * quizzes" (the ?do=essentials deep link, the brief reader's end-of-lesson CTA).
+   *
+   * The area falls back to TODAY'S CHAPTER rather than to the old plan's essentials
+   * task — that lookup was the last place buildTodayPlan still decided anything, and
+   * it could name a different area than the chapter the learner had just read.
+   */
   function startEssentials(area?: string | null) {
     if (!paperId) return
-    const target =
-      area ??
-      buildTodayPlan(paperId).find((t) => t.action === "essentials")?.area ??
-      getPaper(paperId)?.areas[0]?.code
+    const target = area ?? composeToday(paperId, /* dryRun */ true).chapter?.area ?? getPaper(paperId)?.areas[0]?.code
     if (!target) return
     startTopicSession(target, false, LEARN_SIZE)
   }
@@ -761,6 +845,7 @@ export default function AccaStudy() {
               onTestChapter={startChapterTest}
               onComposed={startComposedSession}
               onOpenArticle={(article) => { setActiveArticle(article); setMode("article") }}
+              initialTab={initialTab}
               onUpgrade={triggerFeaturePaywall}
             />
           )}
@@ -1274,6 +1359,7 @@ function Overview({
   onComposed,
   onOpenArticle,
   onUpgrade,
+  initialTab,
 }: {
   paper: AccaPaper
   isPro: boolean
@@ -1298,6 +1384,8 @@ function Overview({
   onComposed: (qs: AccaQuestion[], pool: PoolKind, area: string | null, timed?: boolean) => void
   onOpenArticle: (article: TechArticle) => void
   onUpgrade: () => void
+  /** Tab named by a ?tab= deep link (the Dashboard CTA, the congratulation email). */
+  initialTab: StudyTab | null
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -1319,7 +1407,13 @@ function Overview({
   const fcStats = flashcardStats(paper.id)
   const writtenCount = getWrittenQuestions(paper.id).length
   const [plan, setPlanState] = useState(() => getPlan(paper.id))
-  const [tab, setTab] = useState<StudyTab>("today")
+  /*
+   * `initialTab` seeds the state rather than driving it, because the learner must
+   * stay in control after they arrive: a deep link chooses where they LAND, and
+   * every tap after that is theirs. Syncing the tab to the prop would snap them
+   * back to `plan` on the next re-render.
+   */
+  const [tab, setTab] = useState<StudyTab>(initialTab ?? "today")
   const days = daysUntilExam(paper.id)
   const studyPlan = generateStudyPlan(paper.id)
   const mocks = getMockHistory(paper.id)

@@ -16,7 +16,8 @@ import { passBand } from "@/lib/acca-diagnostic"
 import { daysUntilExam, currentPhase, METHOD_PHASES, getPlan } from "@/lib/acca-plan"
 import { getCurrentPaper, getStudyingPapers, qualificationProgress } from "@/lib/acca-qualification"
 import { passProbability, recoveryState, examDayDue, mockGate, mockProgress, MOCK_GATE, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
-import { buildTodayPlan, getTodayDone, greeting, setPendingTodayTask, todayHeadline, type TodayAction, type TodayTask } from "@/lib/acca-today"
+import { getTodayDone, greeting, todayHeadline } from "@/lib/acca-today"
+import { composeToday, dayProgress, blockComplete, type BlockKind, type TodayBlock } from "@/lib/acca-today-composer"
 import CharlesMascot from "@/components/CharlesMascot"
 import { flashcardStats } from "@/lib/acca-flashcards"
 import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca-analytics"
@@ -39,23 +40,36 @@ import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
  *   exam day      — the "how did it go?" flow replaces the hero
  */
 
-const MISSION_MINUTES: Record<TodayAction, number> = {
-  diagnostic: 15, weak: 25, practice: 20, section: 15, essentials: 6, flashcards: 12, mock: 30, study: 7, bank: 40,
-}
-const MISSION_ICONS: Record<TodayAction, IconName> = {
-  diagnostic: "diagnostic", weak: "weak", practice: "practice", section: "practice", essentials: "mission", flashcards: "flashcards", mock: "mock", study: "study", bank: "practice",
+/*
+ * ── The dashboard shows the SAME day /study does ──────────────────
+ *
+ * This screen used to build its own mission: buildTodayPlan(), its own local copy
+ * of MISSION_MINUTES, and its own ordering rule for "practice"-route learners. So
+ * the dashboard said "Next · Practise 30 questions — A focus · ~20 min" while
+ * /study said "Chapter 4 · Organisational culture · 18 min", for the same
+ * afternoon, and "3 of 4 done" on one screen was "2 of 5 done" on the other.
+ *
+ * It now reads the composed day (acca-today-composer) — the same source the Today
+ * board, the Locked In overlay and tomorrow's preview render from. There is one
+ * definition of today in the product.
+ */
+const BLOCK_ICONS: Record<BlockKind, IconName> = {
+  study: "learn",
+  quiz: "mission",
+  practice: "practice",
+  flashcards: "flashcards",
+  article: "notes",
 }
 
-/** Deep-link for a mission task — carries the area so study/essentials land on today's topic. */
-function missionHref(t: { action: TodayAction; area?: string }): string {
-  return `/study?do=${t.action}${t.area ? `&area=${t.area}` : ""}`
-}
-
-function launchMissionTask(navigate: ReturnType<typeof useNavigate>, paperId: string, task: TodayTask): void {
-  // Reading is completed only by the end-of-lesson action. Other task surfaces
-  // resolve their pending marker when the learner returns to Today's plan.
-  setPendingTodayTask(paperId, task.id, task.action === "study")
-  navigate(missionHref(task))
+/**
+ * Deep-link into a block's surface. `tab=today` lands on the board rather than
+ * whichever tab was last open, because the block the learner tapped is there.
+ */
+function blockHref(block: TodayBlock): string {
+  if (block.kind === "study" && block.chapterKey) {
+    return `/study?tab=today&chapter=${encodeURIComponent(block.chapterKey)}${block.area ? `&area=${block.area}` : ""}`
+  }
+  return `/study?tab=today&block=${block.kind}`
 }
 
 export default function Dashboard() {
@@ -86,16 +100,19 @@ export default function Dashboard() {
   const weakest = palestArea(paperId)
   const momentum = probabilityMomentum(paperId)
   const learnerRoute = getLearnerBaseline()?.route
-  const baseMission = buildTodayPlan(paperId)
-  const mission = learnerRoute === "practice"
-    ? [...baseMission].sort((a, b) => {
-        const priority = (task: TodayAction) => task === "mock" ? 0 : task === "bank" || task === "practice" || task === "weak" ? 1 : task === "flashcards" ? 2 : 3
-        return priority(a.action) - priority(b.action)
-      })
-    : baseMission
-  const completedMissionIds = new Set(getTodayDone(paperId))
-  const remainingMission = mission.filter((task) => !completedMissionIds.has(task.id))
-  const missionDone = mission.length - remainingMission.length
+  /*
+   * A DRY RUN: previewing the day on the dashboard must not claim its questions,
+   * or merely opening this screen would consume them and /study would compose a
+   * different set. The order is the composer's teaching order and is NOT re-sorted
+   * here — the old "practice"-route re-ordering put a mock before the chapter,
+   * which contradicted the sequential unlock the board enforces.
+   */
+  const todayDoneIds = getTodayDone(paperId)
+  const composition = composeToday(paperId, /* dryRun */ true)
+  const mission = composition.blocks
+  const progress = dayProgress(paperId, composition, todayDoneIds)
+  const remainingMission = mission.filter((block) => !blockComplete(paperId, block, todayDoneIds))
+  const missionDone = progress.done
   const nextMission = remainingMission[0]
   const ent = entitlementOf(user)
   const { showPaywall, paywallType, triggerFeaturePaywall, maybeShowTrialReminder, closePaywall } = usePaywall()
@@ -364,25 +381,25 @@ export default function Dashboard() {
             </div>
             {nextMission ? <div style={{ display: "flex", alignItems: "center", gap: SP.lg, flexWrap: "wrap", padding: "4px 0 2px" }}>
               <span style={{ width: 46, height: 46, borderRadius: 13, background: IRIDESCENT, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                <Icon name={MISSION_ICONS[nextMission.action]} size={21} color="#fff" />
+                <Icon name={BLOCK_ICONS[nextMission.kind]} size={21} color="#fff" />
               </span>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Next · {nextMission.title}</div>
-                <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{nextMission.detail} · ~{MISSION_MINUTES[nextMission.action]} min</div>
+                <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{nextMission.detail} · {nextMission.minutes} min</div>
               </div>
-              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => launchMissionTask(navigate, paperId, nextMission)} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
+              <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={() => navigate(blockHref(nextMission))} style={{ padding: "13px 26px", borderRadius: R.lg, border: "none", background: IRIDESCENT, color: "#fff", fontWeight: 750, fontSize: 14.5, cursor: "pointer", flexShrink: 0 }}>
                 Continue mission
               </motion.button>
             </div> : (
               <div style={{ padding: "8px 0 2px", color: C.green, fontWeight: 800, fontSize: 16 }}>
-                ✓ Today's mission is complete. Your streak is secured — see you tomorrow.
+                ✓ Today's mission is complete. Your streak is secured — tomorrow unlocks at your study time.
               </div>
             )}
-            {remainingMission.slice(1).map((t) => (
-              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: SP.sm, padding: "9px 12px", borderRadius: R.md, background: C.card2, fontSize: 13, color: C.muted }}>
-                <Icon name={MISSION_ICONS[t.action]} size={14} color={C.faint} />
-                <span style={{ flex: 1 }}>{t.title}</span>
-                <span style={{ color: C.faint, fontSize: 12 }}>~{MISSION_MINUTES[t.action]} min</span>
+            {remainingMission.slice(1).map((block) => (
+              <div key={block.id} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: SP.sm, padding: "9px 12px", borderRadius: R.md, background: C.card2, fontSize: 13, color: C.muted }}>
+                <Icon name={BLOCK_ICONS[block.kind]} size={14} color={C.faint} />
+                <span style={{ flex: 1 }}>{block.title}</span>
+                <span style={{ color: C.faint, fontSize: 12 }}>{block.minutes} min</span>
               </div>
             ))}
           </Card>

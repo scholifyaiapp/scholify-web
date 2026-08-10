@@ -95,29 +95,42 @@ const DEFAULT_SETTINGS: AppSettings = {
 }
 
 /**
- * The three reminder rows. Each description states the ACTUAL time it will
- * arrive, derived from the practice clock — "3 hours before" is abstract, and a
- * learner cannot sanity-check it, whereas "16:00" they can.
+ * The reminder rows. Each description states the ACTUAL time it will arrive,
+ * derived from the practice clock — "30 minutes before" is abstract, and a learner
+ * cannot sanity-check it, whereas "18:30" they can.
+ *
+ * THE OFFSETS HERE MUST MATCH `SLOTS` IN api/reminders.ts. They are the same
+ * numbers written twice — once for the sender, once for this copy — and when they
+ * drifted (the sender moved to −30/+2h while this still said "ten minutes") the UI
+ * was quietly telling every learner the wrong time for an email they then received
+ * at a different one. There is nothing to catch that but this comment and the test
+ * in tests/api/reminders-schedule.test.ts, so change both together.
+ *
+ * `optIn` marks the row that is OFF by default: two reminders a day is the promise,
+ * and the advance notice is the third. Saying so in the row stops it reading as a
+ * setting that has mysteriously switched itself off.
  */
 const REMINDER_SLOT_ROWS: {
   key: keyof ReminderSlots
   name: string
   desc: (practiceTime: string) => string
+  optIn?: boolean
 }[] = [
   {
-    key: "lead",
-    name: "Advance notice",
-    desc: (t) => `Three hours ahead${shiftClock(t, -180) ? ` — around ${shiftClock(t, -180)}` : ""}, so you can protect the time`,
-  },
-  {
     key: "soon",
-    name: "Ten minutes before",
-    desc: (t) => `${shiftClock(t, -10) ? `Around ${shiftClock(t, -10)}` : "Ten minutes ahead"} — the one that starts the session`,
+    name: "Thirty minutes before",
+    desc: (t) => `${shiftClock(t, -30) ? `Around ${shiftClock(t, -30)}` : "Half an hour ahead"} — the one that starts the session`,
   },
   {
     key: "catchup",
-    name: "End-of-day catch-up",
-    desc: (t) => `${shiftClock(t, 150) ? `Around ${shiftClock(t, 150)}` : "Later that evening"} — only if you haven't studied yet`,
+    name: "If the day is still open",
+    desc: (t) => `${shiftClock(t, 120) ? `Around ${shiftClock(t, 120)}` : "Two hours after your start time"} — only if you haven't studied yet`,
+  },
+  {
+    key: "lead",
+    name: "Advance notice",
+    optIn: true,
+    desc: (t) => `Off by default. Three hours ahead${shiftClock(t, -180) ? ` — around ${shiftClock(t, -180)}` : ""}, so you can protect the time`,
   },
 ]
 
@@ -1456,10 +1469,10 @@ export default function Settings() {
           <SectionHead icon="mission">Notifications</SectionHead>
           <div style={{ marginTop: 8 }}>
             {/*
-              * The three reminders all derive from ONE clock — the practice time.
-              * Exposing three separate times would let a learner set them out of
-              * order (a "10 minutes before" that lands after the catch-up), and
-              * there is nothing useful they could express that way.
+              * Every reminder derives from ONE clock — the practice time. Exposing
+              * separate times would let a learner set them out of order (a "30
+              * minutes before" that lands after the catch-up), and there is nothing
+              * useful they could express that way.
               *
               * Every change re-syncs immediately, including the timezone, because
               * a stale zone is the one error that silently sends every reminder at
@@ -1476,7 +1489,7 @@ export default function Settings() {
             </SettingRow>
             {settings.notifyDaily && (
               <>
-                <SettingRow name="My session starts at" desc="The clock all three reminders are measured from">
+                <SettingRow name="My session starts at" desc="The clock every reminder is measured from — and when tomorrow's plan unlocks">
                   <TimeInput
                     value={settings.practiceTime}
                     onChange={(v) => {
