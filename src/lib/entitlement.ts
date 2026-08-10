@@ -133,8 +133,40 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   const hadTrial = Boolean(meta.trial_started_at)
 
   const trialEndMs = trialEndsAt ? Date.parse(trialEndsAt) : NaN
-  const stripeTrial = meta.plan_status === "trialing"
-  const trialActive = Number.isFinite(trialEndMs) && trialEndMs > now && (stripeTrial || !isPaid)
+  /*
+   * A TRIAL ONLY COUNTS IF A CARD IS BEHIND IT.
+   *
+   * This used to read `stripeTrial || !isPaid` — so ANY future trial_ends_at on
+   * an unpaid account granted the full workspace. That is precisely the orphan
+   * left behind by /api/paddle?action=start-trial, which handed out a 3-day Pro
+   * trial for a signed-in JWT with no card at all. Closing that endpoint stopped
+   * new ones being minted; it did nothing about the trials already written, and
+   * they keep working until they expire. Reported live: onboarding completed,
+   * paywall shown, Stripe checkout opened and abandoned — and the app opened
+   * anyway.
+   *
+   * Evidence of a card is now required, and there are exactly two forms of it:
+   * Stripe itself reporting `trialing`, or a subscription id written by the
+   * billing webhook (which only runs after checkout captures a payment method).
+   * A trial with neither was never paid for by anyone.
+   *
+   * A genuine paying customer is unaffected: their plan is in PAID_PLANS, so
+   * isPaid is true whatever this resolves to.
+   */
+  const cardBackedTrial =
+    meta.plan_status === "trialing" ||
+    typeof meta.stripe_subscription_id === "string" ||
+    /*
+     * The deliberate exception: a comp trial granted BY HAND in Supabase.
+     * Promo access is a real need — a partner, a reviewer, a support gesture —
+     * and this keeps it possible while excluding the orphans, because the
+     * retired endpoint only ever wrote trial_started_at and trial_ends_at. It
+     * never wrote this, so requiring it revokes exactly the free trials nobody
+     * authorised and nothing else. app_metadata is service-role only, so a
+     * learner cannot set it themselves.
+     */
+    meta.trial_grant === "manual"
+  const trialActive = Number.isFinite(trialEndMs) && trialEndMs > now && cardBackedTrial
   const trialDaysLeft = trialActive ? Math.max(0, Math.ceil((trialEndMs - now) / DAY_MS)) : 0
 
   // PRO = the Pro/Annual tier, OR an active-but-unmapped subscription (unknown

@@ -255,7 +255,19 @@ const GRACE_DAYS = 7
  *  `now` is injectable so the metering tier can be unit-tested. */
 export function trialActive(meta: Record<string, unknown> | undefined, now: number = Date.now()): boolean {
   const endsAt = typeof meta?.trial_ends_at === "string" ? Date.parse(meta.trial_ends_at) : NaN
-  return Number.isFinite(endsAt) && endsAt > now
+  if (!Number.isFinite(endsAt) || endsAt <= now) return false
+  /*
+   * Card-backed only — mirrors src/lib/entitlement.ts. A bare trial_ends_at is
+   * the orphan left by the retired /api/paddle?action=start-trial endpoint,
+   * which granted Pro for a JWT with no payment method. Without this the AI
+   * meter would still hand those accounts Pro caps (20 examiner calls a day) on
+   * our own model spend.
+   */
+  return (
+    meta?.plan_status === "trialing" ||
+    typeof meta?.stripe_subscription_id === "string" ||
+    meta?.trial_grant === "manual"
+  )
 }
 
 /**

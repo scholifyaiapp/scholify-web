@@ -63,7 +63,7 @@ describe("paid plans", () => {
 
 describe("trial", () => {
   it("grants Pro while the trial is in the future", () => {
-    const e = entitlementOf(user({ plan: "free", trial_started_at: inDays(-2), trial_ends_at: inDays(5) }), NOW)
+    const e = entitlementOf(user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(-2), trial_ends_at: inDays(5) }), NOW)
     expect(e.isTrial).toBe(true)
     expect(e.isPro).toBe(true)
     expect(e.isPaid).toBe(false)
@@ -71,7 +71,7 @@ describe("trial", () => {
   })
 
   it("grants the complete Pro workspace during the trial", () => {
-    const trial = user({ plan: "free", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
+    const trial = user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
     expect(canUsePlanFeature(trial, "timed_mocks", NOW)).toBe(true)
     expect(canUsePlanFeature(trial, "ai_examiner", NOW)).toBe(true)
     expect(canUsePlanFeature(trial, "custom_practice", NOW)).toBe(true)
@@ -88,7 +88,7 @@ describe("trial", () => {
   })
 
   it("revokes Pro the moment the trial has passed", () => {
-    const e = entitlementOf(user({ plan: "free", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) }), NOW)
+    const e = entitlementOf(user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) }), NOW)
     expect(e.isTrial).toBe(false)
     expect(e.isPro).toBe(false)
     expect(e.trialDaysLeft).toBe(0)
@@ -96,8 +96,35 @@ describe("trial", () => {
   })
 
   it("counts the final partial day as a day left, and reaches zero exactly at expiry", () => {
-    expect(entitlementOf(user({ trial_ends_at: new Date(NOW + 3600_000).toISOString() }), NOW).trialDaysLeft).toBe(1)
-    expect(entitlementOf(user({ trial_ends_at: new Date(NOW).toISOString() }), NOW).trialDaysLeft).toBe(0)
+    expect(entitlementOf(user({ trial_grant: "manual", trial_ends_at: new Date(NOW + 3600_000).toISOString() }), NOW).trialDaysLeft).toBe(1)
+    expect(entitlementOf(user({ trial_grant: "manual", trial_ends_at: new Date(NOW).toISOString() }), NOW).trialDaysLeft).toBe(0)
+  })
+
+  /*
+   * THE HOLE, pinned. Reported live: onboarding finished, the paywall showed,
+   * Stripe checkout opened, and the learner reached the app anyway — because a
+   * bare future trial_ends_at granted the whole workspace.
+   *
+   * That is exactly what /api/paddle?action=start-trial wrote: a 3-day Pro
+   * trial for a signed-in JWT, no card, no Stripe. Closing that endpoint
+   * stopped new ones; the trials already written kept working. A trial with no
+   * evidence of a payment method was never paid for by anyone.
+   */
+  it("refuses a trial with no card behind it — the free-trial-endpoint orphan", () => {
+    const orphan = user({ plan: "free", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
+    const e = entitlementOf(orphan, NOW)
+    expect(e.isTrial, "a trial nobody paid for must not grant access").toBe(false)
+    expect(e.isPro).toBe(false)
+    expect(canAccessApp(orphan, NOW), "and it must not open the workspace").toBe(false)
+  })
+
+  it("accepts the three forms of evidence that a trial is real", () => {
+    // Stripe says trialing …
+    expect(entitlementOf(user({ plan: "pro", plan_status: "trialing", trial_ends_at: inDays(2) }), NOW).isTrial).toBe(true)
+    // … or the billing webhook wrote a subscription id (it only runs post-checkout) …
+    expect(entitlementOf(user({ plan: "free", stripe_subscription_id: "sub_123", trial_ends_at: inDays(2) }), NOW).isTrial).toBe(true)
+    // … or the founder granted a comp trial by hand in Supabase.
+    expect(entitlementOf(user({ plan: "free", trial_grant: "manual", trial_ends_at: inDays(2) }), NOW).isTrial).toBe(true)
   })
 
   it("lets a real subscription outrank and outlive a trial", () => {
@@ -142,7 +169,7 @@ describe("expired-trial app wall", () => {
   it("blocks only an expired trial with no paid plan", () => {
     expect(shouldBlockForExpiredTrial(user({ ...expiredTrial, plan: "free" }), NOW)).toBe(true)
     expect(shouldBlockForExpiredTrial(user({ ...expiredTrial, plan: "pro" }), NOW)).toBe(false)
-    expect(shouldBlockForExpiredTrial(user({ trial_started_at: inDays(-1), trial_ends_at: inDays(2) }), NOW)).toBe(false)
+    expect(shouldBlockForExpiredTrial(user({ trial_grant: "manual", trial_started_at: inDays(-1), trial_ends_at: inDays(2) }), NOW)).toBe(false)
   })
 })
 
@@ -156,7 +183,7 @@ describe("canAccessPaper", () => {
   const TARGET = ["FA"]
 
   it("gives a Pro trial user every paper", () => {
-    const trialUser = user({ plan: "free", trial_started_at: inDays(0), trial_ends_at: inDays(3) })
+    const trialUser = user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(0), trial_ends_at: inDays(3) })
     expect(canAccessPaper(trialUser, "FA", TARGET, NOW)).toBe(true)
     expect(canAccessPaper(trialUser, "AA", TARGET, NOW)).toBe(true)
   })
@@ -169,13 +196,13 @@ describe("canAccessPaper", () => {
   })
 
   it("limits a free / expired-trial user to the target too (the app-level gate blocks the rest)", () => {
-    const expired = user({ plan: "free", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) })
+    const expired = user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) })
     expect(canAccessPaper(expired, "FA", TARGET, NOW)).toBe(true)
     expect(canAccessPaper(expired, "AA", TARGET, NOW)).toBe(false)
   })
 
   it("does not apply the studying cap during a Pro trial", () => {
-    const trialUser = user({ trial_ends_at: inDays(3) })
+    const trialUser = user({ trial_grant: "manual", trial_ends_at: inDays(3) })
     expect(canAccessPaper(trialUser, "MA", ["FA", "MA"], NOW)).toBe(true)
     expect(canAccessPaper(trialUser, "LW", ["FA", "MA"], NOW)).toBe(true)
   })
@@ -190,7 +217,7 @@ describe("canAccessPaper", () => {
  */
 describe("canAccessApp (route-level app gate)", () => {
   it("lets in an active legacy/promo trial (isPaid=false but isTrial=true) — the regression", () => {
-    const legacyTrial = user({ plan: "free", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
+    const legacyTrial = user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
     expect(entitlementOf(legacyTrial, NOW).isPaid).toBe(false) // the field the old wall read
     expect(entitlementOf(legacyTrial, NOW).isTrial).toBe(true)
     expect(canAccessApp(legacyTrial, NOW)).toBe(true) // …but the app must stay open
@@ -209,7 +236,7 @@ describe("canAccessApp (route-level app gate)", () => {
   })
 
   it("walls a learner whose trial has expired with no paid plan", () => {
-    const expired = user({ plan: "free", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) })
+    const expired = user({ plan: "free", trial_grant: "manual", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) })
     expect(canAccessApp(expired, NOW)).toBe(false)
     expect(shouldBlockForExpiredTrial(expired, NOW)).toBe(true) // and the expired-wall messaging still fires
   })

@@ -36,8 +36,18 @@ describe("aiProvider", () => {
 })
 
 describe("trialActive (metering)", () => {
-  it("is true for a trial ending in the future", () => {
-    expect(trialActive({ trial_ends_at: at(3) }, NOW)).toBe(true)
+  it("is true for a card-backed trial ending in the future", () => {
+    expect(trialActive({ plan_status: "trialing", trial_ends_at: at(3) }, NOW)).toBe(true)
+    expect(trialActive({ stripe_subscription_id: "sub_123", trial_ends_at: at(3) }, NOW)).toBe(true)
+    expect(trialActive({ trial_grant: "manual", trial_ends_at: at(3) }, NOW)).toBe(true)
+  })
+
+  it("is FALSE for a trial with no card behind it — no free Pro AI on our spend", () => {
+    // The orphan written by the retired /api/paddle?action=start-trial: a
+    // 3-day Pro trial for a signed-in JWT with no payment method. Without this
+    // the meter still hands those accounts Pro caps — 20 AI Examiner calls a
+    // day, billed to us.
+    expect(trialActive({ trial_started_at: at(-1), trial_ends_at: at(3) }, NOW)).toBe(false)
   })
 
   it("is false the instant the trial has passed — no free Pro AI after expiry", () => {
