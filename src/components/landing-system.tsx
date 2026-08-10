@@ -1723,7 +1723,7 @@ export function ThreeReasons() {
  * the Study Hub is included with ACCA registration and is genuinely good content.
  * So the table is written to be CHECKABLE and it says out loud what the Study Hub
  * does better — a comparison that claims to win on everything is one nobody
- * believes, and the honest row is the one that makes the other six credible.
+ * believes, and the honest row is the one that makes the other three credible.
  */
 
 type Verdict = "yes" | "no" | "partial"
@@ -1737,70 +1737,49 @@ interface CompareRow {
   hubNote: string
 }
 
+/*
+ * Four rows, down from eight. The cut ones — exam-date scheduling, question
+ * repetition, exam pace, partner commission — were all true, but a comparison
+ * nobody finishes persuades nobody, and three of them were arguing detail
+ * rather than deciding anything. What survives is the three things that
+ * actually separate a plan from a library, plus the row the Study Hub wins.
+ *
+ * That last row is not humility for its own sake: a comparison that claims
+ * victory on every line is one nobody believes, and it is the honest row that
+ * makes the other three credible.
+ */
 const COMPARE_ROWS: CompareRow[] = [
   {
     point: "Tells you what to do today",
     detail: "The difference between a library and a plan.",
     scholify: "yes",
-    scholifyNote: "One exact chapter, 5 quizzes, 10–15 questions, 5–10 cards, one article — sequenced and unlocked in order",
+    scholifyNote: "One exact chapter, then quizzes, questions, cards and an article — unlocked in order",
     hub: "no",
-    hubNote: "A complete content library organised by chapter; choosing the day's work is yours",
-  },
-  {
-    point: "Recommends your exam date",
-    detail: "Computed from the paper's real size against your weekly hours.",
-    scholify: "yes",
-    scholifyNote: "Total hours ÷ your hours, mapped to the next ACCA session, with the arithmetic shown",
-    hub: "no",
-    hubNote: "No scheduling layer — you pick the sitting",
+    hubNote: "A complete library by chapter; choosing the day's work is yours",
   },
   {
     point: "Adapts to your weak areas",
-    detail: "Drilling ranked by what would move your score most.",
+    detail: "Drilling ranked by what moves your score most.",
     scholify: "yes",
-    scholifyNote: "Diagnostic and live accuracy decide the daily drill; difficulty matched to your level per area",
+    scholifyNote: "Your diagnostic and live accuracy pick the daily drill, area by area",
     hub: "partial",
-    hubNote: "Chapter-level test-yourself questions, but the selection doesn't follow your results",
-  },
-  {
-    point: "Never repeats a question",
-    detail: "Repetition inflates accuracy, which inflates your readiness score.",
-    scholify: "yes",
-    scholifyNote: "Every question served is tracked until the bank is exhausted, then flagged as a revision pass",
-    hub: "no",
-    hubNote: "Question sets are fixed per chapter and re-served on each attempt",
+    hubNote: "Chapter-level questions, but the selection doesn't follow your results",
   },
   {
     point: "Marks your written answers",
-    detail: "Constructed response is where Skills and Professional papers are won.",
+    detail: "Where Skills and Professional papers are won.",
     scholify: "yes",
-    scholifyNote: "Charles marks against the examiner's guide in a real CBE studio — word processor, spreadsheet, exam clock",
+    scholifyNote: "Charles marks against the examiner's guide in a real CBE studio",
     hub: "no",
     hubNote: "Model answers to compare your own work against",
-  },
-  {
-    point: "Measures exam pace",
-    detail: "Most failed papers are finished papers that ran out of clock.",
-    scholify: "yes",
-    scholifyNote: "Seconds per mark by section against ACCA's own 1.8 min/mark, with the overrun in seconds",
-    hub: "no",
-    hubNote: "Untimed practice; the clock only appears in specimen exams",
-  },
-  {
-    point: "Pays you while you study",
-    detail: "Registration, subscription and exam fees are real money.",
-    scholify: "yes",
-    scholifyNote: "27% commission on every plan bought through your partner link, with a tracked dashboard",
-    hub: "no",
-    hubNote: "Not applicable",
   },
   {
     point: "Official examiner content",
     detail: "Where the Study Hub is genuinely stronger.",
     scholify: "partial",
-    scholifyNote: "Original, syllabus-aligned content plus deep links to ACCA's own articles and examiner reports",
+    scholifyNote: "Original syllabus-aligned content, with deep links to ACCA's own articles",
     hub: "yes",
-    hubNote: "Written and approved by ACCA, and included free with your registration — use both",
+    hubNote: "Written and approved by ACCA, free with registration — use both",
   },
 ]
 
@@ -1849,9 +1828,9 @@ export function StudyHubComparison() {
               {t("ACCA Study Hub")}
             </em>
           </h2>
-          <p style={{ color: INK_MUTED, fontSize: 16.5, maxWidth: 660, margin: "20px auto 0", lineHeight: 1.65 }}>
+          <p style={{ color: INK_MUTED, fontSize: 16.5, maxWidth: 580, margin: "20px auto 0", lineHeight: 1.6 }}>
             {t(
-              "The Study Hub comes free with your ACCA registration and its content is written by ACCA. It is a library. Scholify is the coach that decides what to take off the shelf, in what order, and tells you whether it worked. Use both — the last row says so.",
+              "The Study Hub is a library — free with your registration, written by ACCA. Scholify is the coach that decides what to take off the shelf, and tells you whether it worked.",
             )}
           </p>
         </div>
@@ -2000,7 +1979,7 @@ export function StudyHubComparison() {
           }}
         >
           {t(
-            "Compiled from the ACCA Study Hub as published to registered students. It is a genuinely good, free content library and we link to it from inside the app — including from every technical article. The comparison is about the layer on top: deciding, sequencing and measuring.",
+            "The Study Hub is a genuinely good, free content library, and we link to it from inside the app. The comparison is only about the layer on top: deciding, sequencing and measuring.",
           )}
         </div>
       </div>
