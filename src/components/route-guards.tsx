@@ -77,6 +77,28 @@ function usePostCheckoutSync(): boolean {
   return syncing
 }
 
+/* ── The watchdog: re-ask the SERVER, while they are inside ──────────
+ *
+ * The gate decides once, at render. Everything after that runs on a token the
+ * browser is already holding, so anything that changes server-side — a trial
+ * revoked, a plan cancelled, a subscription that never really existed — is
+ * invisible until the next navigation. A learner who found a way in stays in
+ * for as long as they avoid one.
+ *
+ * So every WATCHDOG_MS this asks Supabase directly who the caller is, and
+ * re-runs the same entitlement rule against the answer. getUser() hits the
+ * server and returns fresh app_metadata; the local session cannot fake it.
+ *
+ * ── The asymmetry that shapes the whole design ──
+ * Ejecting a freeloader fifteen seconds later costs nothing. Ejecting a PAYING
+ * customer mid-question costs a refund and a review. So this is deliberately
+ * one-directional: it only ever acts on a definitive server answer that says
+ * "not entitled". A network failure, a timeout, an aborted request, a missing
+ * response — every one of those is ignored entirely. Silence is never treated
+ * as guilt.
+ */
+const WATCHDOG_MS = 15_000
+
 /**
  * Has this learner already had their free diagnosis?
  *
@@ -205,6 +227,46 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   const location = useLocation()
   const syncingPayment = usePostCheckoutSync()
   const [, setEntitlementClock] = useState(0)
+  /* Set only by the watchdog below, and only on a definitive server answer. */
+  const [serverRevoked, setServerRevoked] = useState(false)
+
+  useEffect(() => {
+    if (!gate || !user || syncingPayment) return
+    // The founder's own account bypasses the paywall by design; polling it
+    // would be pure noise.
+    if (isLaunchAdmin(user)) return
+    if (!isSupabaseConfigured) return
+
+    let cancelled = false
+    const check = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser()
+        if (cancelled || error) return
+        const fresh = data.user
+        // No user at all is a signed-out session, which the gate above handles
+        // on its own — not something for this to act on.
+        if (!fresh) return
+        // Self-healing, both ways. Without the clear, a learner who was
+        // revoked and then PAID would stay walled by a stale flag until they
+        // reloaded — punished for buying.
+        setServerRevoked(!canAccessApp(fresh))
+      } catch {
+        /* offline, timeout, aborted — never evidence of anything */
+      }
+    }
+    const timer = window.setInterval(() => void check(), WATCHDOG_MS)
+    // Coming back to the tab is the moment a lapsed session is most likely,
+    // and the cheapest time to notice.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
+  }, [gate, user, syncingPayment])
   useEffect(() => {
     if (!gate || !user) return
     const end = Date.parse(String(user.app_metadata?.trial_ends_at ?? ""))
@@ -271,7 +333,10 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   }
   if (decision === "unlocking") return <UnlockingScreen />
   if (decision === "onboarding") return <Navigate to="/welcome" replace />
-  if (decision === "paywall") return <TrialExpiredBlock />
+  // The server said no while they were inside. Same wall as any other refusal,
+  // so there is one paywall in the product rather than a second "you've been
+  // ejected" screen that would need its own copy and its own way out.
+  if (decision === "paywall" || serverRevoked) return <TrialExpiredBlock />
   return <>{children}</>
 }
 
