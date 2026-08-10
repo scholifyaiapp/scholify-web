@@ -5,6 +5,99 @@ import { canAccessApp } from "@/lib/entitlement"
 import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
 import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
+import { isAccaOnboarded } from "@/lib/acca-profile"
+import { isSupabaseConfigured, supabase } from "@/lib/supabase"
+import { trackEvent } from "@/lib/analytics"
+
+/* ── After checkout: swap the stale token before judging entitlement ──
+ *
+ * THE BUG THIS FIXES, exactly as a customer hit it: they paid for Beginner,
+ * Stripe redirected them back, and the paywall appeared again.
+ *
+ * Stripe's webhook writes `plan` into app_metadata SERVER-side, but the
+ * browser is still holding the JWT it was issued before paying — so
+ * canAccessApp() below reads a stale "free" and walls a customer who has
+ * genuinely paid. The refresh that fixes it did exist... inside AccaStudy,
+ * which is behind this very gate. So the wall rendered, the page never
+ * mounted, its effect never ran, and the customer stayed locked out of the
+ * thing they had just bought, with no way through but a manual re-login.
+ *
+ * It runs HERE now — ahead of the decision, on whatever route checkout
+ * returns to — and the screen says "payment received" while it works.
+ */
+function usePostCheckoutSync(): boolean {
+  const location = useLocation()
+  const justPaid = new URLSearchParams(location.search).get("upgraded") === "true"
+  const [syncing, setSyncing] = useState(justPaid)
+
+  useEffect(() => {
+    if (!justPaid) return
+    trackEvent("subscription_activated")
+    // Drop the flag from the URL so a later reload or a shared link does not
+    // replay the celebration and the refresh loop.
+    window.history.replaceState({}, "", window.location.pathname)
+    if (!isSupabaseConfigured) {
+      setSyncing(false)
+      return
+    }
+    let cancelled = false
+    const attempt = async (retriesLeft: number) => {
+      try {
+        const { data } = await supabase.auth.refreshSession()
+        const meta = data.session?.user?.app_metadata ?? {}
+        const plan = typeof meta.plan === "string" ? meta.plan : "free"
+        const status = meta.plan_status
+        if (plan !== "free" || status === "active" || status === "trialing") {
+          if (!cancelled) setSyncing(false)
+          return
+        }
+      } catch {
+        /* transient — the retry below covers it */
+      }
+      if (cancelled) return
+      // Give up rather than spin forever: the entitlement gate then makes the
+      // normal decision, and a customer whose webhook is genuinely late sees
+      // the paywall with a working "Update card / Manage" route rather than an
+      // endless spinner.
+      if (retriesLeft <= 0) {
+        setSyncing(false)
+        return
+      }
+      window.setTimeout(() => void attempt(retriesLeft - 1), 2500)
+    }
+    void attempt(6)
+    return () => {
+      cancelled = true
+    }
+  }, [justPaid])
+
+  return syncing
+}
+
+/** Shown for the few seconds between Stripe's redirect and the new token. */
+function UnlockingScreen() {
+  return (
+    <div
+      style={{ background: "var(--sch-bg)", color: "var(--sch-text)", fontFamily: "var(--sch-font)" }}
+      className="min-h-[100dvh] w-full flex items-center justify-center px-6"
+    >
+      <div style={{ textAlign: "center", maxWidth: 380 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
+          <LogoSpinner size={52} />
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.4, color: "#1E9E5A", marginBottom: 10 }}>
+          PAYMENT RECEIVED
+        </div>
+        <h1 style={{ fontSize: "clamp(22px, 5.5vw, 28px)", fontWeight: 850, letterSpacing: "-0.6px", margin: 0, lineHeight: 1.25 }}>
+          You're in. Unlocking your plan…
+        </h1>
+        <p style={{ fontSize: 14.5, lineHeight: 1.6, color: "var(--sch-tx-1)", marginTop: 12 }}>
+          Thank you — your subscription is active. This takes a moment while we confirm it with our payment provider.
+        </p>
+      </div>
+    </div>
+  )
+}
 
 /** Full-screen loader shown while the auth session is being resolved. */
 function AuthLoading() {
@@ -91,6 +184,7 @@ function PrelaunchBlock({ email }: { email: string | null }) {
 export function ProtectedRoute({ children, gate = false }: { children: ReactNode; gate?: boolean }) {
   const { user, loading } = useAuth()
   const location = useLocation()
+  const syncingPayment = usePostCheckoutSync()
   const [, setEntitlementClock] = useState(0)
   useEffect(() => {
     if (!gate || !user) return
@@ -157,6 +251,28 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
    *
    * What is left is the only question that matters: is this account entitled?
    */
+  if (syncingPayment) return <UnlockingScreen />
+
+  /*
+   * ── Not onboarded yet? Go and onboard — do not meet a paywall ──
+   *
+   * Sign-in, onboarding and the plan it generates are free, so a learner who
+   * has just created an account must never be shown a price before they have
+   * seen what they would be buying. They land on a gated route (sign-in ends
+   * at /dashboard) before onboarding exists, so without this they were sold to
+   * on their very first screen.
+   *
+   * This uses localStorage, which the visitor can edit — and that is FINE
+   * here, because of what it decides. It routes; it does not entitle. Clearing
+   * the flag sends you to onboarding, never into the app: the worst a faker
+   * achieves is doing onboarding again. That is the distinction the old code
+   * got wrong by putting the same flag inside the entitlement condition, where
+   * deleting it opened the whole product.
+   */
+  if (gate && !isLaunchAdmin(user) && !isFreeValueRoute && !isAccaOnboarded()) {
+    return <Navigate to="/welcome" replace />
+  }
+
   if (gate && !isLaunchAdmin(user) && !isFreeValueRoute && !canAccessApp(user)) {
     return <TrialExpiredBlock />
   }

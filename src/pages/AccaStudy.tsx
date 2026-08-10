@@ -253,34 +253,18 @@ export default function AccaStudy() {
     }
   }, [])
 
-  // Stripe checkout lands back on /study?upgraded=true. The webhook writes
-  // the plan onto the user server-side, so refresh the session (with a
-  // couple of retries — the webhook can lag the redirect by a few seconds)
-  // until the entitlement shows up.
+  /*
+   * The post-checkout session refresh used to live here — behind the very gate
+   * it was meant to open, so a paying customer was walled and this never ran.
+   * It now lives in ProtectedRoute (usePostCheckoutSync), ahead of the
+   * entitlement decision and on whatever route checkout returns to.
+   */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get("upgraded") !== "true") return
     window.history.replaceState({}, "", window.location.pathname)
-    trackEvent("subscription_activated")
-    toast.success("Payment received — welcome aboard! Unlocking your plan…")
-    if (!isSupabaseConfigured) return
-    let cancelled = false
-    const attempt = async (retriesLeft: number) => {
-      try {
-        const { data } = await supabase.auth.refreshSession()
-        const plan = data.session?.user?.app_metadata?.plan
-        if (plan && plan !== "free") return
-      } catch {
-        /* transient — retry below */
-      }
-      if (!cancelled && retriesLeft > 0) setTimeout(() => void attempt(retriesLeft - 1), 4000)
-    }
-    void attempt(4)
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    toast.success("Payment received — welcome aboard!")
+  }, [toast])
 
   /*
    * ── Deep links ──────────────────────────────────────────────────

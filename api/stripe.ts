@@ -664,7 +664,10 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
       },
       payment_method_collection: "always",
       allow_promotion_codes: true,
-      success_url: `${origin}/study?upgraded=true`,
+      // Payment → congratulations → dashboard. The ?upgraded=true flag is read
+      // by the route guard (not by the page), so the fresh entitlement token is
+      // in hand BEFORE anything decides whether to show a paywall.
+      success_url: `${origin}/dashboard?upgraded=true`,
       // Cancellation returns to plan selection, never into the learning app.
       cancel_url: `${origin}/pricing?checkout=cancelled`,
     })
