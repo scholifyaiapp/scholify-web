@@ -2103,7 +2103,10 @@ export default function Settings() {
       <ConfirmDialog
         open={dialog === "cancel"}
         title="Cancel your plan?"
-        body="Your access continues to the end of the billing period. Your streak and progress remain saved if you return later."
+        /* States the no-refund rule at the moment it applies. Burying it in
+           Terms is how you get a chargeback: the customer is not disputing the
+           policy, they are disputing that they were never told it. */
+        body="This stops the next renewal — it is not a refund. Payments already made, including the period you are in, are not refunded, and your access continues to the end of that period. Your streak and progress stay saved if you come back."
         confirmLabel="Cancel anyway"
         onConfirm={() => void cancelPlan()}
         onCancel={() => setDialog(null)}

@@ -523,7 +523,7 @@ export default function PaywallModal({
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 {paymentsOpen
-                  ? "No charge today · Cancel during the trial and pay nothing"
+                  ? "No charge today · Cancel before the trial deadline and pay nothing · After that, payments are non-refundable"
                   : "Secure checkout will open here"}
               </div>
               {/* The "Ask a parent or sponsor to unlock" mailto used to sit here.

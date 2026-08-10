@@ -33,7 +33,8 @@ const en: PageContent = {
       body: [
         "Onboarding, diagnosis and your personalised plan are free. Pro may include a 3-day trial after you add a payment method at checkout. Unless you cancel before the trial deadline shown by Stripe, the selected subscription starts automatically when the trial ends.",
         "Beginner subscriptions start billing at checkout. Paid subscriptions renew automatically until cancelled. You can cancel from account settings; access continues until the end of the current paid or trial period.",
-        "Unless required by law, fees already paid are non-refundable. Prices may change, and we will give you notice before any change affects you.",
+        "Fees already paid are non-refundable, including for part-used billing periods and for periods you do not use after cancelling. Cancelling stops future renewals; it does not refund the current period. Nothing here limits rights you have under mandatory consumer law in your country, which apply regardless of this clause.",
+        "Prices may change, and we will give you notice before any change affects you.",
       ],
     },
     {

@@ -84,7 +84,11 @@ const FAQS: Array<[string, string]> = [
   ],
   [
     "Can I cancel anytime?",
-    "Yes. Cancel from Settings anytime. Your plan stays active until the period ends. No questions, no forms, no hidden steps.",
+    "Yes. Cancel from Settings anytime — no questions, no forms, no hidden steps. Cancelling stops the next renewal; it is not a refund. Your plan stays active until the end of the period you have already paid for, and that payment is not refunded.",
+  ],
+  [
+    "Do you give refunds?",
+    "No. Payments are non-refundable, including part-used periods — which is why the diagnosis and your personalised plan are free, and why Pro starts with 3 free days after checkout: you can see exactly what you are buying before any money moves. Cancel before the trial deadline shown by Stripe and you are charged nothing at all.",
   ],
 ]
 
@@ -566,7 +570,12 @@ export default function Pricing() {
             : "Accounts aren't open yet. When they are, diagnosis is free and Pro starts with a card-backed 3-day trial."}
           <br />
           Beginner unlocks all 15 papers and unlimited practice; Pro adds timed mocks, the AI Examiner
-          and custom practice. Cancel anytime.
+          and custom practice.
+          <br />
+          {/* The rule, at the point of purchase. "Cancel anytime" on its own
+              reads as "leave anytime and get your money back" — which is not
+              the policy, and the gap between the two is where disputes live. */}
+          Cancel anytime to stop the next renewal. Payments already made are non-refundable.
         </p>
 
         {/* Comparison table */}
