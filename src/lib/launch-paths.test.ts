@@ -28,10 +28,23 @@ import {
  */
 
 describe("auth path helpers", () => {
+  /*
+   * The launch instant is PINNED, deliberately. It is one constant that opens the
+   * whole product to the public — /, /pricing, sign-up, sign-in and the app — and
+   * an accidental edit to it either launches early or leaves the waitlist up
+   * through the announcement. Pinning it means such an edit has to be explicit.
+   *
+   * Updated on launch day from 15:00 to 22:00 Tashkent: the constant said 15:00
+   * while the actual launch was 22:00, so the site would have opened itself seven
+   * hours early with the countdown and the advertised label both quoting the wrong
+   * hour. This test is what makes that change deliberate rather than silent.
+   */
   it("opens automatically at the advertised Uzbekistan launch instant", () => {
     const launch = Date.parse(LAUNCH_DATE_ISO)
-    expect(LAUNCH_DATE_ISO).toBe("2026-08-10T15:00:00+05:00")
-    expect(launch).toBe(Date.parse("2026-08-10T10:00:00Z"))
+    expect(LAUNCH_DATE_ISO).toBe("2026-08-10T22:00:00+05:00")
+    // 22:00 in +05:00 is 17:00Z — asserted independently so a wrong offset in the
+    // ISO cannot pass by matching itself.
+    expect(launch).toBe(Date.parse("2026-08-10T17:00:00Z"))
     expect(isPrelaunchAt(launch - 1)).toBe(true)
     expect(isPrelaunchAt(new Date(launch))).toBe(false)
     expect(isPrelaunchAt(launch + 1)).toBe(false)
@@ -123,6 +136,13 @@ describe("launch gates open themselves on their own dates", () => {
         timeZone: "Asia/Tashkent", day: "numeric", month: "long", year: "numeric",
       }).format(d)
     expect(inTashkent(partner)).toBe(PARTNER_LAUNCH_DATE_LABEL)
-    expect(LAUNCH_DATE_LABEL).toBe(`${inTashkent(product)} at 15:00 Uzbekistan time`)
+    // The label is what visitors are TOLD, on the waitlist and the locked-out
+    // screen; the ISO is what the gate honours. If they drift, the page advertises
+    // an hour the product does not open at — so the hour is asserted too, not just
+    // the date.
+    expect(LAUNCH_DATE_LABEL).toBe(`${inTashkent(product)} at 22:00 Uzbekistan time`)
+    expect(LAUNCH_DATE_LABEL).toContain(
+      new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(product),
+    )
   })
 })

@@ -1,7 +1,20 @@
 import type { User } from "@supabase/supabase-js"
 
-export const LAUNCH_DATE_ISO = "2026-08-10T15:00:00+05:00"
-export const LAUNCH_DATE_LABEL = "10 August 2026 at 15:00 Uzbekistan time"
+/*
+ * THE launch instant. One constant, because everything public derives from it and
+ * they must not be able to disagree: the waitlist countdown, the advertised label
+ * on the waitlist and the locked-out screen, the auto-reload that opens the site,
+ * and the route guards on /, /pricing, sign-up, sign-in and the app.
+ *
+ * Corrected on the day from 15:00 to 22:00 — the founder's launch is 22:00
+ * Tashkent, and the constant said 15:00, so the site would have opened itself
+ * seven hours early with the countdown and the label both advertising the wrong
+ * hour. Change this ONE line to move the launch; never hardcode the time anywhere
+ * else, and keep the label in step with the ISO or the page advertises an hour the
+ * gate does not honour.
+ */
+export const LAUNCH_DATE_ISO = "2026-08-10T22:00:00+05:00"
+export const LAUNCH_DATE_LABEL = "10 August 2026 at 22:00 Uzbekistan time"
 
 /**
  * Keep the public waitlist gate up until the advertised launch instant, then
