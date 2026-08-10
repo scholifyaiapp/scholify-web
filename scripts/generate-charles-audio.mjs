@@ -6,7 +6,16 @@ if (!apiKey) {
   throw new Error("FISH_API_KEY is required. Add it to your shell environment and run this command again.")
 }
 
-const script = "Hello, I'm Charles, your ACCA race engineer at Scholify. Start with a quick diagnosis, and I'll find where you're losing marks, build your focused daily plan, and keep adapting it as you improve. You always know what to study next, why it matters, and how close you are to passing. Ready? Let's build your comeback plan."
+/*
+ * MUST stay identical to INTRO in src/components/CharlesVoiceIntro.tsx.
+ *
+ * It previously did not: this was a 60-word monologue while the widget showed a
+ * one-line greeting, so opening the panel played an advert over the top of
+ * different text. The widget now refuses to speak anything that is not the line
+ * on screen, so if you change one of these two strings, change both and rerun
+ * this script.
+ */
+const script = "Hey — I'm Charles. I help people get through ACCA papers. Which one are you on?"
 
 const response = await fetch("https://api.fish.audio/v1/tts", {
   method: "POST",

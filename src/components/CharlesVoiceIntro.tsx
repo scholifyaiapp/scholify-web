@@ -8,7 +8,9 @@ type Line = { role: "user" | "assistant"; text: string }
 type SpeechRecognitionEventLike = { results: ArrayLike<{ 0: { transcript: string } }> }
 type Recognition = { lang: string; interimResults: boolean; continuous: boolean; start: () => void; stop: () => void; onresult: ((event: SpeechRecognitionEventLike) => void) | null; onend: (() => void) | null; onerror: (() => void) | null }
 
-const INTRO = "Hello, I'm Charles, your ACCA race engineer. Ask me how Scholify can help you pass your next paper."
+/* An opener that invites an answer. The old one announced a job title and then
+   told the visitor what to ask, which sets the tone for a scripted exchange. */
+const INTRO = "Hey — I'm Charles. I help people get through ACCA papers. Which one are you on?"
 
 export default function CharlesVoiceIntro() {
   const t = useT()
@@ -35,16 +37,19 @@ export default function CharlesVoiceIntro() {
   }
 
   const speak = async (text: string, voiceToken?: string) => {
+    /*
+     * Only ever speak the words actually on screen. This used to fall back to
+     * /audio/charles-scholify-intro.mp3 whenever there was no token, which meant
+     * opening the widget played a 60-word pre-recorded advert while the bubble
+     * showed a different, shorter line. A recording that talks over the text is
+     * the most machine-like thing here, so the fallback is gone: no token, no
+     * audio. To restore a spoken opener, keep the script in
+     * scripts/generate-charles-audio.mjs identical to INTRO above and rerun
+     * `npm run generate:charles-audio`.
+     */
+    if (!voiceToken) return
     setState("speaking")
     try {
-      if (!voiceToken) {
-        const audio = new Audio("/audio/charles-scholify-intro.mp3")
-        audioRef.current = audio
-        audio.onended = () => setState("ready")
-        audio.onerror = () => setState("ready")
-        await audio.play()
-        return
-      }
       const response = await fetch("/api/lara?action=landing-voice-tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voiceToken }) })
       if (!response.ok) throw new Error("voice")
       const url = URL.createObjectURL(await response.blob())
@@ -62,19 +67,19 @@ export default function CharlesVoiceIntro() {
     const message = rawMessage.trim()
     if (!message || state === "thinking") return
     if (state === "speaking") stopSpeaking()
-    const history = lines.slice(-4)
+    const history = lines.slice(-8)
     setLines((current) => [...current, { role: "user", text: message }])
     setInput("")
     setState("thinking")
     try {
       const response = await fetch("/api/lara?action=landing-voice-chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history }) })
       const data = await response.json() as { answer?: string; error?: string; voiceToken?: string }
-      const answer = data.answer || data.error || "Radio interference. Try again in a moment."
+      const answer = data.answer || data.error || "Sorry — I lost you there. Say that again?"
       setLines((current) => [...current, { role: "assistant", text: answer }])
       if (response.ok) await speak(answer, data.voiceToken)
       else setState("ready")
     } catch {
-      setLines((current) => [...current, { role: "assistant", text: "Radio interference. Try again in a moment." }])
+      setLines((current) => [...current, { role: "assistant", text: "Sorry — I lost you there. Say that again?" }])
       setState("ready")
     }
   }
@@ -90,7 +95,7 @@ export default function CharlesVoiceIntro() {
     const SpeechRecognition = (window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition }).SpeechRecognition
       || (window as unknown as { webkitSpeechRecognition?: new () => Recognition }).webkitSpeechRecognition
     if (!SpeechRecognition) {
-      setLines((current) => [...current, { role: "assistant", text: "Voice conversation works in Chrome, Edge and supported mobile browsers." }])
+      setLines((current) => [...current, { role: "assistant", text: "Your browser won't let me listen — type it instead and I'll answer out loud." }])
       return
     }
     const recognition = new SpeechRecognition()
@@ -135,7 +140,7 @@ export default function CharlesVoiceIntro() {
     <>
       <motion.button
         type="button"
-        onClick={() => { setOpen(true); void speak(INTRO) }}
+        onClick={() => setOpen(true)}
         className="fixed bottom-4 right-4 z-[90] flex items-center gap-2 rounded-full border border-white/20 bg-[#0B0B0F] py-2 pl-2 pr-4 text-left text-white shadow-[0_18px_60px_rgba(0,0,0,.38)] sm:bottom-6 sm:right-6"
         initial={{ opacity: 0, x: 30, scale: .8 }} animate={{ opacity: open ? 0 : 1, x: 0, scale: open ? .8 : 1 }}
         whileHover={{ scale: 1.05 }} whileTap={{ scale: .96 }}
@@ -145,7 +150,7 @@ export default function CharlesVoiceIntro() {
           <motion.span animate={reduceMotion ? undefined : { y: [0, -3, 0], rotate: [-2, 2, -2] }} transition={{ duration: 2.4, repeat: Infinity }}><CharlesMascot pose="wave" size={52} /></motion.span>
           <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[#0B0B0F] bg-[#2DD4BF]" />
         </motion.span>
-        <span><strong className="block text-sm">{t("Talk with Charles")}</strong><span className="font-mono-pro text-[9px] tracking-[.12em] text-[#F4A405]">AI PIT WALL · ONLINE</span></span>
+        <span><strong className="block text-sm">{t("Talk with Charles")}</strong><span className="font-mono-pro text-[9px] tracking-[.12em] text-[#F4A405]">AI STUDY COACH · ONLINE</span></span>
       </motion.button>
 
       <AnimatePresence>

@@ -446,7 +446,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   })
 }
 
-const LANDING_VOICE_DAILY_CAP = 3
+/* Six, not three. "Converse like a human" is not something three turns can
+   demonstrate — the visitor was being cut off before the conversation started.
+   Each turn is one short Sonnet call, so the ceiling stays cheap. */
+const LANDING_VOICE_DAILY_CAP = 6
 let landingVoiceSchemaReady: Promise<void> | null = null
 
 function ensureLandingVoiceSchema(): Promise<void> {
@@ -524,41 +527,58 @@ async function takeLandingVoiceTurn(req: VercelRequest): Promise<boolean> {
 
 async function handleLandingVoiceChat(req: VercelRequest, body: Record<string, unknown>, res: VercelResponse): Promise<void> {
   const message = String(body.message || "").trim().slice(0, 280)
+  // Eight turns, not four. A coach who has forgotten what you told him two
+  // questions ago is the single loudest way this reads as a machine.
   const history = Array.isArray(body.history)
-    ? (body.history as unknown[]).slice(-4).map((item) => {
+    ? (body.history as unknown[]).slice(-8).map((item) => {
         const row = item as Record<string, unknown>
-        return `${row.role === "assistant" ? "Charles" : "Visitor"}: ${String(row.text || "").slice(0, 240)}`
+        return `${row.role === "assistant" ? "Charles" : "Them"}: ${String(row.text || "").slice(0, 240)}`
       }).join("\n")
     : ""
-  if (!message) return void res.status(400).json({ error: "Say or type a question first." })
-  if (!aiProvider()) return void res.status(503).json({ error: "Charles is off the radio for a moment." })
+  if (!message) return void res.status(400).json({ error: "Ask me something first — type it or hold the mic." })
+  if (!aiProvider()) return void res.status(503).json({ error: "I'm offline for a moment. Try me again shortly." })
   if (!(await takeLandingVoiceTurn(req))) {
-    return void res.status(429).json({ error: "That is the end of today's pit-wall demo. Start free to keep learning with Charles." })
+    return void res.status(429).json({ error: "That's all I can talk through today. Start free and I'll pick this up properly inside." })
   }
 
-  const system = `You are Charles, Scholify's fictional AI race engineer and voice concierge. You are original and not connected to any real driver, team, Formula 1, ACCA, or championship. Speak naturally, warmly and directly. Keep every spoken reply under 45 words.
+  const system = `You are Charles, Scholify's AI study coach for ACCA students. You are an original character, not connected to any real driver, team, Formula 1, ACCA, or championship.
 
-SCHOLIFY KNOWLEDGE BASE:
+HOW YOU TALK
+You are on a live voice call with someone thinking about studying ACCA. Your reply is read aloud, so it must sound like a person speaking, never like a page being read out.
+- Use contractions every time: "I'd", "you'll", "that's", "let's", "you're". Never write "let us", "do not", "it is", "cannot".
+- Respond to what they actually said before you answer it. If they sound worried about money, time or failing, say something human about that first, in their own words.
+- One idea per reply. Never list features, never read specifications, never use bullet points, headings, asterisks or numbers — this is speech.
+- Vary your length. A yes/no question gets a short answer. Two sentences is usually plenty; four is the absolute ceiling.
+- Ask a question back only when you genuinely need to know something — which paper they're sitting, how much time they've got. Don't tack a question onto every reply.
+- Never repeat a sentence you've already used in this conversation, and don't say your own name again after your first line.
+- No racing jargon unless they use it first. Don't call things "the pit wall" or "the next lap" — it sounds scripted.
+- If you don't know, say so plainly and point them to Scholify support. Never guess.
+
+WHAT YOU KNOW (state nothing beyond this):
 - Independent AI-native ACCA study platform covering all 15 papers, with 2,400+ expert-written questions and 1,000+ flashcards.
 - Features: diagnostics, adaptive daily plans, practice, timed mocks, question maps, readiness analytics, study briefs and an AI Examiner for written answers.
 - New learners can start from zero; experienced learners can diagnose gaps or assess readiness.
 - Onboarding, diagnosis and the personalised plan are free. Pro checkout securely collects a payment method, charges nothing for 3 days, then starts the selected monthly or annual subscription unless cancelled before the deadline. Beginner $9.99 monthly; Pro $14.99 monthly; Annual Beginner $79.99 yearly; Annual Pro $119.99 yearly. Checkout uses Stripe.
 - Partner programme: 27% of qualifying first purchases after 30-day validation; refunds and chargebacks do not qualify.
 - Launch date: 10 August 2026. Scholify is independent from ACCA and racing organisations.
-Answer Scholify, ACCA-study, pricing, feature, payment, trial, onboarding and partner questions only from this knowledge. If unknown, say so and direct the visitor to Scholify support. Never invent facts or request personal, payment or account information.`
+
+Stay on Scholify, ACCA study, pricing, features, payment, the trial, onboarding and the partner programme. Never invent a fact, and never ask for personal, payment or account details.`
   try {
     const out = await callModel({
-      tier: "haiku",
+      // Sonnet, not haiku: this is the one place a visitor judges whether
+      // Charles is worth talking to, and it is capped at a handful of turns per
+      // visitor per day, so the quality is close to free.
+      tier: "sonnet",
       system,
-      prompt: `${history ? `Recent conversation:\n${history}\n\n` : ""}Visitor: ${message}\nCharles:`,
-      maxTokens: 130,
+      prompt: `${history ? `Here is the conversation so far:\n${history}\n\n` : ""}They just said: "${message}"\n\nReply as Charles, out loud, in your own words.`,
+      maxTokens: 240,
     })
-    const answer = out.text || "Let us put that on the next lap. Start your free diagnosis and I will build the plan with you."
+    const answer = out.text || "Sorry — I didn't catch that one. Which paper are you working on?"
     const expires = Date.now() + 90_000
     return void res.status(200).json({ answer, voiceToken: voiceToken(req, answer, expires) })
   } catch (error) {
     console.error("landing voice chat:", error)
-    return void res.status(503).json({ error: "Radio interference. Please try again in a moment." })
+    return void res.status(503).json({ error: "Sorry — I lost you there. Say that again?" })
   }
 }
 
