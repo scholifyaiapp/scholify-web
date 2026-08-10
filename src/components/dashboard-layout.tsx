@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { entitlementOf } from "@/lib/entitlement"
+import { entitlementOf, canAccessApp } from "@/lib/entitlement"
 import BillingGraceBanner from "@/components/BillingGraceBanner"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
@@ -207,6 +207,25 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const ent = entitlementOf(user)
+
+  /*
+   * ── LOCKED SHELL ───────────────────────────────────────────────────
+   *
+   * /settings is deliberately ungated so someone who has not paid can still
+   * reach billing, and Stripe requires that route to exist. But Settings
+   * renders THIS layout — so an unentitled learner clicking "Account & billing"
+   * from the paywall landed on the complete app interface: sidebar, Study,
+   * Notes, Analytics, the mobile tab bar, a plan badge. Every one of those
+   * links hits the wall when clicked, so nothing could actually be USED — but
+   * the product looked wide open, and "I got in without paying" is a fair
+   * description of what you are looking at.
+   *
+   * When there is no entitlement the shell collapses to what billing needs:
+   * the brand, the account, and a way out. No navigation into the product at
+   * all — nothing to click, nothing to imply access. The paywall is the whole
+   * product until they pay.
+   */
+  const locked = Boolean(user) && !isLaunchAdmin(user) && !canAccessApp(user)
   const planPaidLook = ent.isPaid || ent.isTrial
   // Past due outranks the tier badge: a card that failed must not still read
   // "PRO" while the Pro modes are switched off — that looks like a bug.
@@ -305,8 +324,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Nav */}
-        <nav style={{ marginTop: SP["2xl"], display: "flex", flexDirection: "column", gap: 3 }}>
+        {/* Nav — hidden entirely while unentitled; see the note on `locked`. */}
+        {!locked && <nav style={{ marginTop: SP["2xl"], display: "flex", flexDirection: "column", gap: 3 }}>
           {NAV.map((item) => (
             <NavItem
               key={item.to}
@@ -316,10 +335,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               unread={unreadFor(item.notifyKinds)}
             />
           ))}
-        </nav>
+        </nav>}
 
-        {/* Qualification progress — the one persistent goal */}
-        <div style={{ marginTop: "auto", paddingTop: SP.xl }}>
+        {/* Qualification progress — the one persistent goal. Also hidden while
+            locked: it is product progress, and there is no product yet. */}
+        {!locked && <div style={{ marginTop: "auto", paddingTop: SP.xl }}>
           <div style={{ padding: SP.md, borderRadius: R.lg, background: C.card2, border: `1px solid ${C.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
               <span style={{ fontSize: 11.5, fontWeight: 700, color: C.muted }}>To membership</span>
@@ -327,7 +347,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
             <ProgressBar pct={qual.percent} />
           </div>
-        </div>
+        </div>}
       </aside>
 
       {/* ── Main content ── */}
@@ -395,8 +415,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      {/* ── Mobile tab bar ── */}
-      <nav
+      {/* ── Mobile tab bar ── hidden while unentitled, same reasoning as the
+          sidebar: on a phone this IS the navigation, so leaving it visible is
+          the whole product presented to someone who has not paid for it. */}
+      {!locked && <nav
         className="lg:hidden"
         style={{
           position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "space-around",
@@ -430,7 +452,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </Link>
           )
         })}
-      </nav>
+      </nav>}
       <FeedbackLauncher
         name={[user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ")}
         email={user?.email || ""}
