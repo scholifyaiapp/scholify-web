@@ -1,6 +1,14 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react"
+import {
+  AnimatePresence,
+  motion,
+  useInView,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  useReducedMotion,
+} from "motion/react"
 import {
   Target,
   Map as MapIcon,
@@ -24,8 +32,10 @@ import { useT } from "@/i18n/LanguageProvider"
  *                     (pass-probability ring, next-action mission) with
  *                     floating depth cards (mock trend, momentum, streak,
  *                     Mock 1→2→3) orbiting at different Z layers.
- *   TheLoopSection  — the product ideology, sold: the closed loop as eight
- *                     tilt cards + the GPS strip + the recovery promise.
+ *   TheLoopSection  — the product ideology, sold: the closed loop drawn AS a
+ *                     loop — eight stages on a ring whose arc closes as they
+ *                     advance, one stage speaking at a time, then the
+ *                     recovery promise.
  *
  * The app depicted inside the window is the English-only product, so mockup
  * strings stay EN by design; all narrative copy goes through t().
@@ -356,46 +366,40 @@ export function Hero3DShowcase() {
   )
 }
 
-/* ── the loop, sold — eight stages, one promise ─────────────────── */
+/* ── the loop, sold — eight stages on one ring, one promise ─────── */
 
-function TiltCard({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
-  const { rotateX, rotateY, onPointerMove, onPointerLeave } = useTilt(10)
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.6, delay, ease: EASE }}
-      style={{ perspective: 700 }}
-      onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
-    >
-      <motion.div
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d", height: "100%" }}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.25 }}
-      >
-        {children}
-      </motion.div>
-    </motion.div>
-  )
-}
+/*
+ * ── THE METHOD ────────────────────────────────────────────────────
+ *
+ * This section used to argue "one closed loop" with eight tilt cards, a
+ * five-pill strip cycling every 950ms, and a decorative ring spinning behind
+ * all of it — three competing motions and thirteen boxes to read. None of them
+ * was a loop; the reader had to assemble one from a grid.
+ *
+ * Now the loop IS the diagram: eight stages sit on a ring, an arc closes
+ * around it as the stages advance, and only the stage you are on says
+ * anything. The pill strip is gone because the paragraph above it already
+ * makes its point, and the decorative ring is gone because there is a real
+ * one now. Same eight stages, one thing to look at.
+ */
+/* Percent of the container, shared by the SVG track and the HTML markers so the
+   two can never drift apart. 40 rather than 42 so the active node's 1.16 scale
+   still clears the container edge at the 82vw mobile size. */
+const RING_NODE_RADIUS = 40
+
+const ringAngle = (index: number, count: number) => ((-90 + (360 / count) * index) * Math.PI) / 180
 
 export function TheLoopSection() {
   const t = useT()
   const navigate = useNavigate()
   const navigateToSignup = () => navigate("/signup")
   const reduce = useReducedMotion()
+  const ringRef = useRef<HTMLDivElement>(null)
+  const ringInView = useInView(ringRef, { margin: "-80px" })
 
-  // A highlight that travels around the loop steps, conveying "closed loop
-  // until you pass" far better than static arrows (which broke when the
-  // strip wrapped on mobile). Paused entirely under reduced-motion.
   const [activeStep, setActiveStep] = useState(0)
-  useEffect(() => {
-    if (reduce) return
-    const id = setInterval(() => setActiveStep((s) => (s + 1) % 5), 950)
-    return () => clearInterval(id)
-  }, [reduce])
+  // Once the reader takes control, the carousel stops fighting them for it.
+  const [manual, setManual] = useState(false)
 
   const STAGES: { icon: LucideIcon; tint: string; bg: string; title: string; line: string }[] = [
     { icon: Target, tint: BRAND, bg: "#FBE7E4", title: t("Diagnostic"), line: t("~15 min → your Readiness Score, area by area.") },
@@ -408,35 +412,23 @@ export function TheLoopSection() {
     { icon: Stethoscope, tint: AMBER, bg: "#FDF2DC", title: t("Recovery run"), line: t("Missed it? Import your mark — we win the lost marks back.") },
   ]
 
-  const GPS = [t("You act"), t("Scholify measures"), t("your model updates"), t("the roadmap recalculates"), t("you get the next best task")]
+  // Advance only while the ring is actually on screen and nobody has taken over.
+  useEffect(() => {
+    if (reduce || manual || !ringInView) return
+    const id = setInterval(() => setActiveStep((s) => (s + 1) % STAGES.length), 2600)
+    return () => clearInterval(id)
+  }, [reduce, manual, ringInView, STAGES.length])
+
+  const stage = STAGES[activeStep]
+  const closed = (activeStep + 1) / STAGES.length
+
+  const pick = (i: number) => {
+    setManual(true)
+    setActiveStep(i)
+  }
 
   return (
     <section style={{ padding: "90px 24px", background: "#F1EFEA", position: "relative", overflow: "hidden" }}>
-      {/* ambient "closed loop" ring — a slow-rotating conic gradient masked to a
-          thin halo. Pure decoration; paused under reduced-motion. */}
-      <style>{`@keyframes sch-loop-spin{to{transform:translate(-50%,-50%) rotate(360deg)}}@media (prefers-reduced-motion: reduce){.sch-loop-ring{animation:none!important}}`}</style>
-      {!reduce && (
-        <div
-          aria-hidden
-          className="sch-loop-ring"
-          style={{
-            position: "absolute",
-            top: "42%",
-            left: "50%",
-            width: "min(860px, 120vw)",
-            height: "min(860px, 120vw)",
-            transform: "translate(-50%,-50%)",
-            borderRadius: "50%",
-            background:
-              "conic-gradient(from 0deg, transparent 0%, rgba(200,0,0,0.16) 12%, transparent 30%, rgba(229,0,104,0.16) 50%, transparent 66%, rgba(244,164,5,0.18) 84%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(closest-side, transparent 60%, #000 62%, #000 69%, transparent 71%)",
-            maskImage: "radial-gradient(closest-side, transparent 60%, #000 62%, #000 69%, transparent 71%)",
-            animation: "sch-loop-spin 42s linear infinite",
-            zIndex: 0,
-            pointerEvents: "none",
-          }}
-        />
-      )}
       <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto 26px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", color: BRAND, marginBottom: 14 }}>
@@ -451,74 +443,164 @@ export function TheLoopSection() {
           </p>
         </div>
 
-        {/* the GPS strip — a loop of steps with a travelling highlight.
-            Centred flex-wrap with no inter-pill arrows, so it stays clean
-            whether it sits on one row (desktop) or wraps (mobile). */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 auto 46px", maxWidth: 600 }}>
-          {GPS.map((step, i) => {
-            const isLast = i === GPS.length - 1
-            const on = !reduce && i === activeStep
-            return (
-              <motion.span
-                key={step}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.45, delay: i * 0.08, ease: EASE }}
-                style={{ display: "inline-block" }}
+        {/* The loop, as a loop. One ring, one stage speaking at a time. */}
+        <div
+          ref={ringRef}
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "clamp(24px,5vw,64px)",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              width: "min(340px, 82vw)",
+              aspectRatio: "1",
+              flexShrink: 0,
+            }}
+          >
+            <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden style={{ display: "block" }}>
+              <defs>
+                <linearGradient id="sch-loop-arc" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor={BRAND} />
+                  <stop offset="50%" stopColor={PLUM} />
+                  <stop offset="100%" stopColor={FIRE} />
+                </linearGradient>
+              </defs>
+              <circle
+                cx="50"
+                cy="50"
+                r={RING_NODE_RADIUS}
+                fill="none"
+                stroke={INK}
+                strokeOpacity="0.1"
+                strokeWidth="1.1"
+              />
+              <motion.circle
+                cx="50"
+                cy="50"
+                r={RING_NODE_RADIUS}
+                fill="none"
+                stroke="url(#sch-loop-arc)"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                transform="rotate(-90 50 50)"
+                initial={false}
+                animate={{ pathLength: closed }}
+                transition={{ duration: reduce ? 0 : 0.65, ease: EASE }}
+              />
+            </svg>
+
+            {/* Stage markers, positioned on the same radius as the track. */}
+            {STAGES.map((s, i) => {
+              const angle = ringAngle(i, STAGES.length)
+              const on = i === activeStep
+              const passed = i <= activeStep
+              return (
+                <button
+                  key={s.title}
+                  type="button"
+                  onClick={() => pick(i)}
+                  aria-label={`${i + 1}. ${s.title}`}
+                  aria-current={on ? "step" : undefined}
+                  style={{
+                    position: "absolute",
+                    left: `${50 + RING_NODE_RADIUS * Math.cos(angle)}%`,
+                    top: `${50 + RING_NODE_RADIUS * Math.sin(angle)}%`,
+                    transform: `translate(-50%,-50%) scale(${on ? 1.16 : 1})`,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 13,
+                    display: "grid",
+                    placeItems: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                    background: on ? s.tint : "#fff",
+                    border: `1px solid ${passed ? s.tint : HAIR}`,
+                    boxShadow: on ? `0 10px 24px -8px ${s.tint}` : "0 2px 8px -3px rgba(20,20,26,0.16)",
+                    transition: "transform .4s cubic-bezier(.22,1,.36,1), background .3s ease, box-shadow .3s ease, border-color .3s ease",
+                  }}
+                >
+                  <s.icon size={18} color={on ? "#fff" : passed ? s.tint : INK_MUTED} strokeWidth={2.2} />
+                </button>
+              )
+            })}
+
+            {/* Centre: where you are in the loop. */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                placeItems: "center",
+                pointerEvents: "none",
+                textAlign: "center",
+              }}
+            >
+              <div>
+                <div
+                  className="font-display"
+                  style={{ fontSize: 46, lineHeight: 1, color: INK, letterSpacing: "-0.03em" }}
+                >
+                  {String(activeStep + 1).padStart(2, "0")}
+                </div>
+                <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.16em", color: INK_MUTED, marginTop: 6 }}>
+                  {t("OF")} {String(STAGES.length).padStart(2, "0")}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Only the stage you are on says anything. */}
+          <div style={{ flex: "1 1 300px", minWidth: 260, maxWidth: 460, minHeight: 168 }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={stage.title}
+                initial={reduce ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0, y: -10 }}
+                transition={{ duration: reduce ? 0 : 0.32, ease: EASE }}
               >
                 <span
                   style={{
-                    display: "inline-block",
-                    padding: "8px 15px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 12px",
                     borderRadius: 999,
-                    background: isLast ? GRAD : "#fff",
-                    color: isLast ? "#fff" : INK,
-                    border: `1px solid ${isLast ? "transparent" : on ? BRAND : HAIR}`,
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                    transform: on ? "scale(1.08)" : "scale(1)",
-                    boxShadow: on ? "0 8px 22px -6px rgba(200,0,0,0.38)" : "0 1px 2px rgba(20,20,26,0.05)",
-                    transition: "transform .35s cubic-bezier(.22,1,.36,1), border-color .3s ease, box-shadow .35s ease",
+                    background: stage.bg,
+                    color: stage.tint,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
                   }}
                 >
-                  {step}
+                  <stage.icon size={13} strokeWidth={2.6} />
+                  {t("STAGE")} {String(activeStep + 1).padStart(2, "0")}
                 </span>
-              </motion.span>
-            )
-          })}
-        </div>
-
-        {/* eight stages, 3D-tilted */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
-          {STAGES.map((s, i) => (
-            <TiltCard key={s.title} delay={i * 0.06}>
-              <div
-                style={{
-                  background: "#fff",
-                  border: `1px solid ${HAIR}`,
-                  borderRadius: 18,
-                  padding: 20,
-                  height: "100%",
-                  boxSizing: "border-box",
-                  boxShadow: "0 6px 22px -10px rgba(20,20,26,0.12)",
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, transform: "translateZ(26px)" }}>
-                  <span style={{ width: 38, height: 38, borderRadius: 11, background: s.bg, display: "grid", placeItems: "center" }}>
-                    <s.icon size={18} color={s.tint} strokeWidth={2.2} />
-                  </span>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: INK_MUTED, letterSpacing: 0.4 }}>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                <div
+                  className="font-display"
+                  style={{
+                    fontSize: "clamp(24px,3.2vw,34px)",
+                    color: INK,
+                    marginTop: 14,
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {stage.title}
                 </div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: INK, transform: "translateZ(18px)" }}>{s.title}</div>
-                <div style={{ fontSize: 13, color: INK_MUTED, lineHeight: 1.55, marginTop: 5 }}>{s.line}</div>
-              </div>
-            </TiltCard>
-          ))}
+                <p style={{ fontSize: 15.5, color: INK_MUTED, lineHeight: 1.65, margin: "10px 0 0" }}>{stage.line}</p>
+              </motion.div>
+            </AnimatePresence>
+
+            <div style={{ fontSize: 12.5, color: INK_MUTED, marginTop: 18 }}>
+              {t("Tap any stage to read it")}
+            </div>
+          </div>
         </div>
 
         {/* the recovery promise */}
