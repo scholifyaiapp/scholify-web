@@ -147,8 +147,24 @@ async function writeEntitlement(
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
   const { data: existingUser } = await supa.auth.admin.getUserById(userId)
+  const previousMeta = existingUser?.user?.app_metadata ?? {}
+
+  /*
+   * Stamp when the dunning clock STARTED, so the grace window in
+   * src/lib/entitlement.ts (GRACE_DAYS) is measured from the first failure and
+   * not restarted by every retry webhook Stripe sends afterwards. Cleared the
+   * moment a payment succeeds, so a customer who fixes their card is not still
+   * carrying a countdown.
+   */
+  if (fields.status === "past_due") {
+    meta.past_due_since =
+      typeof previousMeta.past_due_since === "string" ? previousMeta.past_due_since : new Date().toISOString()
+  } else {
+    meta.past_due_since = null
+  }
+
   await supa.auth.admin.updateUserById(userId, {
-    app_metadata: { ...(existingUser?.user?.app_metadata ?? {}), ...meta },
+    app_metadata: { ...previousMeta, ...meta },
   })
 
   // The durable billing record behind app_metadata (best-effort — never blocks).

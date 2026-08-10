@@ -245,6 +245,12 @@ function aiKilled(): boolean {
   return v === "1" || v === "true" || v === "on"
 }
 
+/** Dunning grace window. Mirrors GRACE_DAYS in src/lib/entitlement.ts — the api
+ *  bundle compiles separately (tsconfig.api.json) and does not import from src,
+ *  so the two are kept in step by the entitlement tests, not by the type system.
+ *  Change one, change the other. */
+const GRACE_DAYS = 7
+
 /** Is an app_metadata trial currently active? Mirrors src/lib/entitlement.ts.
  *  `now` is injectable so the metering tier can be unit-tested. */
 export function trialActive(meta: Record<string, unknown> | undefined, now: number = Date.now()): boolean {
@@ -276,6 +282,22 @@ async function resolveTier(
   if (claimed === "free") {
     // No paid plan — but an active (unexpired) trial grants Pro caps.
     return trialActive(user.app_metadata) ? "pro" : "free"
+  }
+
+  /*
+   * A FAILED PAYMENT NEVER BUYS PRO CAPS. This used to treat past_due as
+   * active, so an unpaid card kept 20 AI Examiner and 10 generation calls a
+   * day at our model cost for as long as Stripe kept retrying. It now mirrors
+   * src/lib/entitlement.ts exactly: inside the grace window the caller is
+   * metered as Beginner, and once the window closes as free. The stamp is
+   * written by the billing webhook; a missing stamp keeps the window open, so
+   * nobody is throttled over a field we never recorded.
+   */
+  const meta = user.app_metadata ?? {}
+  if (meta.plan_status === "past_due" && !trialActive(meta)) {
+    const since = typeof meta.past_due_since === "string" ? Date.parse(meta.past_due_since) : NaN
+    const expired = Number.isFinite(since) && Date.now() > since + GRACE_DAYS * 86_400_000
+    return expired ? "free" : "beginner"
   }
 
   const { data: row, error } = await supa

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canAccessApp, canUsePlanFeature, shouldBlockForExpiredTrial, TRIAL_DAYS } from "@/lib/entitlement"
+import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canAccessApp, canUsePlanFeature, shouldBlockForExpiredTrial, TRIAL_DAYS, GRACE_DAYS } from "@/lib/entitlement"
 
 /*
  * Entitlement decides who gets Pro. Every case here is a real gate: a wrong
@@ -250,5 +250,87 @@ describe("a subscription cancelling at period end", () => {
     const e = entitlementOf({ app_metadata: { plan: "free", plan_status: "canceled" } })
     expect(e.isPaid).toBe(false)
     expect(e.isPro).toBe(false)
+  })
+})
+
+/*
+ * ── The dunning policy ───────────────────────────────────────────
+ *
+ * The hole this closes: Stripe leaves `plan: "pro"` on a past_due subscription,
+ * and PAID_PLANS.has("pro") alone made both isPaid and isPro true. A 3-day
+ * trial started on an empty card therefore bought the FULL Pro tier — timed
+ * mocks and AI Examiner marking, at our model cost — for as long as Stripe kept
+ * retrying, which is a dashboard setting and can be "forever".
+ *
+ * The rule now: grace keeps them studying, never keeps them on Pro, and the
+ * window belongs to us rather than to Stripe's retry schedule.
+ */
+describe("a subscription whose payment failed", () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
+
+  it("drops the expensive Pro modes the moment the card fails", () => {
+    const e = entitlementOf({ app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(1) } })
+    expect(e.isPro, "an unpaid card must not buy mocks or the AI Examiner").toBe(false)
+    expect(canUsePlanFeature({ app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(1) } }, "ai_examiner")).toBe(false)
+    expect(canUsePlanFeature({ app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(1) } }, "timed_mocks")).toBe(false)
+  })
+
+  it("keeps them studying during grace — papers, chapters and banks stay open", () => {
+    const meta = { app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(2) } }
+    const e = entitlementOf(meta)
+    expect(e.isPaid).toBe(true)
+    expect(e.isPastDue).toBe(true)
+    expect(canAccessApp(meta)).toBe(true)
+    expect(canAccessPaper(meta, "FR", ["AA"])).toBe(true)
+    expect(canUsePlanFeature(meta, "question_banks")).toBe(true)
+    expect(canUsePlanFeature(meta, "study_chapters")).toBe(true)
+  })
+
+  it("counts the grace window down from the FIRST failure", () => {
+    expect(entitlementOf({ app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(0) } }).graceDaysLeft).toBe(GRACE_DAYS)
+    expect(entitlementOf({ app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(5) } }).graceDaysLeft).toBe(2)
+  })
+
+  it("cuts access when OUR window closes, whatever Stripe's retry schedule says", () => {
+    const meta = { app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(GRACE_DAYS + 1) } }
+    const e = entitlementOf(meta)
+    expect(e.isPaid, "a misconfigured dunning schedule must not mean free Pro forever").toBe(false)
+    expect(e.isPro).toBe(false)
+    expect(e.isPastDue, "the window is closed — this is no longer grace").toBe(false)
+    expect(canAccessApp(meta)).toBe(false)
+  })
+
+  it("never cuts anyone off over a stamp we never wrote", () => {
+    // Rows written before this policy existed carry no past_due_since.
+    const e = entitlementOf({ app_metadata: { plan: "pro", plan_status: "past_due" } })
+    expect(e.isPaid).toBe(true)
+    expect(e.isPastDue).toBe(true)
+    expect(e.isPro).toBe(false)
+  })
+
+  it("restores Pro in full once the card is fixed", () => {
+    const e = entitlementOf({ app_metadata: { plan: "pro", plan_status: "active", past_due_since: null } })
+    expect(e.isPro).toBe(true)
+    expect(e.isPastDue).toBe(false)
+    expect(e.graceDaysLeft).toBe(0)
+  })
+
+  it("is not escapable by a stale trial_ends_at on the same account", () => {
+    // The documented rule elsewhere in this file is that a real subscription
+    // outranks a promo trial, and grace does not weaken it: a past_due account
+    // carrying a future trial_ends_at is still held at Beginner. Otherwise the
+    // cheapest way to keep Pro on a dead card would be to have once had a trial.
+    const future = new Date(Date.now() + 2 * 86_400_000).toISOString()
+    const e = entitlementOf({ app_metadata: { plan: "pro", plan_status: "past_due", past_due_since: daysAgo(1), trial_ends_at: future } })
+    expect(e.isPro).toBe(false)
+    expect(e.isPastDue).toBe(true)
+  })
+
+  it("still honours a Stripe-reported trial, which is never past_due", () => {
+    const future = new Date(Date.now() + 2 * 86_400_000).toISOString()
+    const e = entitlementOf({ app_metadata: { plan: "pro", plan_status: "trialing", trial_ends_at: future } })
+    expect(e.isTrial).toBe(true)
+    expect(e.isPro).toBe(true)
+    expect(e.isPastDue).toBe(false)
   })
 })

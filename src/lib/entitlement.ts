@@ -26,6 +26,35 @@ const PRO_PLANS = new Set(["pro", "annual_pro"])
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
+/* ── The dunning policy ────────────────────────────────────────────
+ *
+ * A card fails. What happens next is a commercial decision, not a technical
+ * one, and it was previously left entirely to Stripe's retry settings — which
+ * meant `plan` stayed "pro" and BOTH this file and the server-side AI meter
+ * kept handing out the full Pro tier, indefinitely, to an account that had
+ * paid nothing. A 3-day trial on an empty card bought weeks of free mocks and
+ * AI Examiner marking at our model cost.
+ *
+ * The policy now, in one place:
+ *
+ *   1. A failed payment is usually an EXPIRED CARD, not a thief. So we do not
+ *      lock the door: for GRACE_DAYS they keep everything they study with —
+ *      all 15 papers, chapters, question banks, flashcards, analytics, the
+ *      daily plan. Exactly the Beginner tier.
+ *   2. What they lose immediately is the expensive half: timed mocks, the AI
+ *      Examiner and custom AI practice. Those cost us real money per call and
+ *      are the reason Pro costs more than Beginner.
+ *   3. The window is OURS, not Stripe's. After GRACE_DAYS the account is free
+ *      and hits the wall, whatever the dashboard's retry schedule says. A
+ *      misconfigured "leave subscription past due" can no longer mean free
+ *      Pro forever.
+ *
+ * `past_due_since` is stamped by the billing webhook and cleared the moment a
+ * payment succeeds. When it is missing (an older row) the grace period is
+ * treated as still running, so nobody is cut off by a field we never wrote.
+ */
+export const GRACE_DAYS = 7
+
 export interface Entitlement {
   /** The raw plan string ("free" when there is no subscription). */
   plan: string
@@ -48,6 +77,10 @@ export interface Entitlement {
   trialDaysLeft: number
   /** This account has started a trial before — so it can't get another. */
   hadTrial: boolean
+  /** A payment failed and the grace window is still open. Pro modes are off. */
+  isPastDue: boolean
+  /** Whole days of grace remaining (0 once the window has closed). */
+  graceDaysLeft: number
 }
 
 interface MetaCarrier {
@@ -75,7 +108,25 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
   // customer on an unmapped price id has no PAID_PLANS entry to fall back on, so
   // `plan_status` was the only thing keeping them entitled.
   const planStatusActive = meta.plan_status === "active" || meta.plan_status === "trialing" || meta.plan_status === "canceling"
-  const isPaid = PAID_PLANS.has(plan) || planStatusActive
+
+  /*
+   * PAST DUE. Stripe kept `plan: "pro"` here, and PAID_PLANS.has("pro") alone
+   * used to make both isPaid and isPro true — a non-payer with the whole
+   * product. The grace clock decides instead: inside the window they hold
+   * Beginner-level access, outside it they are free and meet the wall.
+   */
+  const pastDueSince = meta.plan_status === "past_due" && typeof meta.past_due_since === "string"
+    ? Date.parse(meta.past_due_since)
+    : NaN
+  const graceMsLeft = Number.isFinite(pastDueSince)
+    ? pastDueSince + GRACE_DAYS * DAY_MS - now
+    // No stamp (a row written before this policy) — never cut someone off on a
+    // field we did not record; treat the window as open.
+    : GRACE_DAYS * DAY_MS
+  const inGrace = meta.plan_status === "past_due" && graceMsLeft > 0
+  const graceExpired = meta.plan_status === "past_due" && graceMsLeft <= 0
+
+  const isPaid = (PAID_PLANS.has(plan) || planStatusActive || inGrace) && !graceExpired
   const isBeginner = plan === "beginner"
 
   const trialEndsAt = typeof meta.trial_ends_at === "string" ? meta.trial_ends_at : null
@@ -88,17 +139,23 @@ export function entitlementOf(user: MetaCarrier | null | undefined, now: number 
 
   // PRO = the Pro/Annual tier, OR an active-but-unmapped subscription (unknown
   // tier → don't under-serve a payer), OR an active trial. Beginner is excluded.
-  const isPro = PRO_PLANS.has(plan) || (planStatusActive && !PAID_PLANS.has(plan)) || trialActive
+  // A failed payment drops the expensive modes immediately — during grace the
+  // account is Beginner, not Pro. An active trial still overrides everything.
+  const isPro =
+    (!inGrace && !graceExpired && (PRO_PLANS.has(plan) || (planStatusActive && !PAID_PLANS.has(plan)))) || trialActive
 
   return {
     plan,
     isPaid,
-    isBeginner,
+    // Grace holds them at the Beginner feature set whatever tier they bought.
+    isBeginner: isBeginner || inGrace,
     isTrial: trialActive,
     isPro,
     trialEndsAt,
     trialDaysLeft,
     hadTrial,
+    isPastDue: inGrace,
+    graceDaysLeft: inGrace ? Math.max(0, Math.ceil(graceMsLeft / DAY_MS)) : 0,
   }
 }
 

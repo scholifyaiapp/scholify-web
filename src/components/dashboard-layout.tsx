@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom"
 import { motion } from "motion/react"
 import { useAuth } from "@/lib/auth"
 import { entitlementOf } from "@/lib/entitlement"
+import BillingGraceBanner from "@/components/BillingGraceBanner"
 import { loadCalendarAccount } from "@/lib/calendar"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { Icon, type IconName, C, SP, R, SHADOW, GRAD } from "@/components/acca/ui"
@@ -206,7 +207,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const firstName = (user?.user_metadata?.first_name as string) || "there"
   const ent = entitlementOf(user)
   const planPaidLook = ent.isPaid || ent.isTrial
-  const planLabel = ent.isTrial ? `TRIAL · ${ent.trialDaysLeft}d` : ent.isPro ? "PRO" : ent.isBeginner ? "BEGINNER" : "PLAN LOCKED"
+  // Past due outranks the tier badge: a card that failed must not still read
+  // "PRO" while the Pro modes are switched off — that looks like a bug.
+  const planLabel = ent.isPastDue
+    ? `PAYMENT DUE · ${ent.graceDaysLeft}d`
+    : ent.isTrial
+      ? `TRIAL · ${ent.trialDaysLeft}d`
+      : ent.isPro
+        ? "PRO"
+        : ent.isBeginner
+          ? "BEGINNER"
+          : "PLAN LOCKED"
 
   // Re-read the avatar when Settings changes it (uploads fire this event;
   // cloud saves also refresh `user` via USER_UPDATED — either path lands here).
@@ -358,6 +369,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             display, so stat cards grew to ~400px wide and the reading measure
             on Notes and Learning ran past 140 characters. */}
         <div className="dash-content sch-app-container px-4 py-5 lg:px-10 lg:py-8" style={{ position: "relative" }}>
+          {/* Above the page content on EVERY app screen — a failed card is not
+              a Settings-page detail, and it renders nothing unless it applies. */}
+          <BillingGraceBanner />
           {children}
         </div>
       </main>
