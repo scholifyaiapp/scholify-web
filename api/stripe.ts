@@ -632,7 +632,21 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
   }
 
   const affMeta = await resolveAffiliateMetadata(supa, user.id, body.affiliateCode)
-  const isProPlan = plan === "pro" || plan === "annual_pro"
+  /*
+   * THE TRIAL IS MONTHLY PRO ONLY.
+   *
+   * It used to include annual_pro, which meant the highest-value plan we sell
+   * — a $119.99 commitment — was also the one we handed over for three days on
+   * a card we had never charged. Beginner has never had a trial and still
+   * doesn't: it is payable immediately, at both billing intervals.
+   *
+   * The free part of Scholify is onboarding, the diagnosis and the plan it
+   * generates. The trial is not a fourth free thing; it is a paid Pro
+   * subscription whose first charge is deferred by three days, and it only
+   * exists after full card details have been captured
+   * (payment_method_collection: "always", below).
+   */
+  const isProPlan = plan === "pro"
   const hadTrial = Boolean(user.app_metadata?.trial_started_at)
 
   try {

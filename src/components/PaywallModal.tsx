@@ -529,15 +529,11 @@ export default function PaywallModal({
                   ? "No charge today · Cancel during the trial and pay nothing"
                   : "Secure checkout will open here"}
               </div>
-              {type !== "feature" && (
-                <a
-                  href={`mailto:?subject=${encodeURIComponent("Can you help me unlock my Scholify study plan?")}&body=${encodeURIComponent("I completed my Scholify diagnosis and it built a personalised ACCA study plan for me. Could you help me unlock Pro so I can start it? https://www.scholifyapp.com/pricing")}`}
-                  onClick={() => trackEvent("parent_unlock_clicked", { type })}
-                  style={{ display: "block", width: "100%", marginTop: 12, padding: "13px 16px", borderRadius: 12, border: "1px solid var(--sch-border)", background: "var(--sch-card)", color: "var(--sch-text)", fontSize: 13.5, fontWeight: 750, textDecoration: "none" }}
-                >
-                  Ask a parent or sponsor to unlock
-                </a>
-              )}
+              {/* The "Ask a parent or sponsor to unlock" mailto used to sit here.
+                  Removed: ACCA candidates are working adults, so it read as
+                  student-priced pocket money rather than professional software,
+                  and it offered a second exit from the one screen whose whole
+                  job is to present a single decision. */}
               {dismissible && (
                 <button
                   type="button"

@@ -2,8 +2,6 @@ import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { canAccessApp } from "@/lib/entitlement"
-import { isAccaOnboarded } from "@/lib/acca-profile"
-import { isStripeConfigured } from "@/lib/stripe"
 import PaywallModal from "@/components/PaywallModal"
 import { LogoSpinner } from "@/components/brand"
 import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/lib/launch"
@@ -127,6 +125,11 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
      */
     return <PrelaunchBlock email={user.email ?? null} />
   }
+  /*
+   * WHAT IS FREE, EXHAUSTIVELY: sign-up, onboarding (/welcome, not gated at
+   * all) and the diagnosis with the plan it generates. Nothing else. There is
+   * no free tier of the workspace and no way into it without a payment method.
+   */
   const isFreeValueRoute = location.pathname === "/study/diagnostic"
   // Wall anyone NOT currently entitled to the app — but "entitled" means paid OR
   // in an active trial, not just paid. The previous `!isPaid` ignored an active
@@ -136,7 +139,25 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   // blocks free and expired-trial learners, while letting an active trial in —
   // which is also what the trial_ends_at re-render above is for: to flip this
   // gate the moment the trial actually expires.
-  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && !isFreeValueRoute && !canAccessApp(user)) {
+  /*
+   * ── The wall. Two conditions were removed from it, and both were holes ──
+   *
+   * isAccaOnboarded() — read from localStorage, which the visitor owns. The
+   * whole paywall was one DevTools line away from being switched off:
+   * `localStorage.removeItem("scholify-acca-onboarded")` and the app opened.
+   * Entitlement may never depend on a value the user can write.
+   *
+   * isStripeConfigured() — true only when VITE_STRIPE_PUBLISHABLE_KEY is set
+   * at BUILD time. But checkout runs server-side on STRIPE_SECRET_KEY, so that
+   * key can go missing without anything appearing to break — and when it does,
+   * this condition silently disabled the entire paywall and gave the product
+   * away. It did exactly that in production. A billing misconfiguration must
+   * fail CLOSED and loud (people see the wall, you hear about it in minutes),
+   * never open and quiet (people study free and nobody finds out).
+   *
+   * What is left is the only question that matters: is this account entitled?
+   */
+  if (gate && !isLaunchAdmin(user) && !isFreeValueRoute && !canAccessApp(user)) {
     return <TrialExpiredBlock />
   }
   return <>{children}</>
