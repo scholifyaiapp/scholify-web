@@ -118,8 +118,8 @@ const REMINDER_SLOT_ROWS: {
 }[] = [
   {
     key: "soon",
-    name: "Thirty minutes before",
-    desc: (t) => `${shiftClock(t, -30) ? `Around ${shiftClock(t, -30)}` : "Half an hour ahead"} — the one that starts the session`,
+    name: "Ten minutes before",
+    desc: (t) => `${shiftClock(t, -10) ? `Around ${shiftClock(t, -10)}` : "Ten minutes ahead"} — the one that starts the session`,
   },
   {
     key: "catchup",
@@ -130,7 +130,7 @@ const REMINDER_SLOT_ROWS: {
     key: "lead",
     name: "Advance notice",
     optIn: true,
-    desc: (t) => `Off by default. Three hours ahead${shiftClock(t, -180) ? ` — around ${shiftClock(t, -180)}` : ""}, so you can protect the time`,
+    desc: (t) => `Off by default. Two hours ahead${shiftClock(t, -120) ? ` — around ${shiftClock(t, -120)}` : ""}, so you can protect the time`,
   },
 ]
 

@@ -77,9 +77,18 @@ function admin() {
  * silently drop someone's reminder. Exactly-once is guaranteed by the per-slot
  * sent_*_date columns instead, never by the window.
  */
+/*
+ * Three reminders a day, and the offsets are the founder's call:
+ *
+ *   −120  two hours ahead — far enough to move something, close enough to
+ *         still be today. Three hours was advance notice you forget.
+ *    −10  ten minutes — a "put the phone down" nudge, not a planning one.
+ *         Thirty minutes is long enough to start something else and lose it.
+ *   +120  two hours after — the honest catch-up, only if they never opened it.
+ */
 const SLOTS = [
-  { key: "lead", offset: -180, onCol: "lead_on", dateCol: "sent_lead_date" },
-  { key: "soon", offset: -30, onCol: "soon_on", dateCol: "sent_soon_date" },
+  { key: "lead", offset: -120, onCol: "lead_on", dateCol: "sent_lead_date" },
+  { key: "soon", offset: -10, onCol: "soon_on", dateCol: "sent_soon_date" },
   { key: "catchup", offset: 120, onCol: "catchup_on", dateCol: "sent_catchup_date" },
 ] as const
 
@@ -730,17 +739,17 @@ function copyFor(slot: SlotKey, at: string): { subject: string; kicker: string; 
       kicker: "Today's schedule",
       heading: time ? `Your session is at ${time}` : "Your session is scheduled for today",
       body:
-        "This is your advance notice, three hours ahead, so the time is easy to protect. Your questions are already selected and the session will be waiting when you arrive — nothing to set up.",
+        "This is your advance notice, two hours ahead, so the time is easy to protect. Your questions are already selected and the session will be waiting when you arrive — nothing to set up.",
       cta: "Review today's plan",
     }
   }
   if (slot === "soon") {
     return {
-      subject: time ? `You start at ${time} — half an hour` : "Your session starts in 30 minutes",
-      kicker: "Starting in 30 minutes",
-      heading: time ? `Half an hour until ${time}` : "Half an hour until your session",
+      subject: time ? `You start at ${time} — ten minutes` : "Your session starts in 10 minutes",
+      kicker: "Starting in 10 minutes",
+      heading: time ? `Ten minutes until ${time}` : "Ten minutes until your session",
       body:
-        "Enough time to finish what you are on and be at the desk. Today's chapter, five quizzes, your practice set, flashcards and the technical article are already selected — opening the session is the whole task, and Charles takes it from there.",
+        "Time to finish what you are on and get to the desk. Today's chapter, five quizzes, your practice set, flashcards and the technical article are already selected — opening the session is the whole task, and Charles takes it from there.",
       cta: "Open today's session",
     }
   }
