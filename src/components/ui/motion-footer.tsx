@@ -272,13 +272,16 @@ export function CinematicFooter({
             </div>
           </div>
 
-          {/* Bottom rail. The signature sits in the bottom-LEFT corner on desktop
-              — where a maker's mark belongs and where it no longer competes with
-              the centred column above it — and recentres on mobile, because a
-              left-aligned pill in a stacked, otherwise-centred footer reads as a
-              layout mistake rather than a choice. */}
-          <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col items-center gap-5 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-col items-center gap-3 md:items-start">
+          {/* Bottom rail. The signature sits on the RIGHT on desktop, grouped with
+              the back-to-top button so the corner reads as one cluster, with the
+              copyright holding the left. On mobile the whole rail stacks and
+              centres — a right-aligned pill under an otherwise-centred column
+              reads as a layout mistake rather than a choice. */}
+          <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col items-center gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="text-muted-foreground text-[10px] md:text-xs font-semibold tracking-widest uppercase text-center md:text-left order-2 md:order-1">
+              {t(copyright)}
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 order-1 md:order-2">
               <div className="footer-glass-pill px-6 py-3 rounded-full flex items-center gap-2 cursor-default border-border/50">
                 <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("Crafted for learners by")}</span>
                 <img
@@ -298,20 +301,17 @@ export function CinematicFooter({
                 />
                 <span className="text-foreground font-black text-xs md:text-sm tracking-normal ml-1">{brand}</span>
               </div>
-              <div className="text-muted-foreground text-[10px] md:text-xs font-semibold tracking-widest uppercase text-center md:text-left">
-                {t(copyright)}
-              </div>
+              <MagneticButton
+                as="button"
+                onClick={scrollToTop}
+                className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground group"
+                aria-label={t("Back to top")}
+              >
+                <svg className="w-5 h-5 transform group-hover:-translate-y-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              </MagneticButton>
             </div>
-            <MagneticButton
-              as="button"
-              onClick={scrollToTop}
-              className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground group"
-              aria-label={t("Back to top")}
-            >
-              <svg className="w-5 h-5 transform group-hover:-translate-y-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-              </svg>
-            </MagneticButton>
           </div>
         </footer>
       </div>
