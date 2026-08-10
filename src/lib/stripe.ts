@@ -12,6 +12,21 @@ import { signUpPath } from "@/lib/launch"
  */
 
 /** True once Stripe billing is configured (publishable key present). */
+/*
+ * ⚠ NOT a measure of whether Scholify can take money. Checkout is created
+ * entirely SERVER-SIDE (api/stripe.ts, on STRIPE_SECRET_KEY); the browser never
+ * touches Stripe.js, so this publishable key is decoration here. Using it as
+ * the "are payments open?" flag meant a blank client env var — which cannot
+ * break anything visible, because nothing else reads it — silently disabled
+ * both the purchase buttons AND (until the previous commit) the entire paywall.
+ * That is exactly what happened in production on launch night: the variable is
+ * present in Vercel with an EMPTY value, so every buy button read "Payments
+ * open soon" while the app itself was free to anyone signed in.
+ *
+ * The server is now the only authority on whether billing works: ask it, and
+ * report what it says. Kept exported for the one honest use — telling a
+ * developer their local .env is incomplete.
+ */
 export function isStripeConfigured(): boolean {
   return Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 }
@@ -31,7 +46,11 @@ export function rememberCheckoutPlan(plan: StripePlan): void {
  * the session couldn't be created.
  */
 export async function startStripeCheckout(plan: StripePlan): Promise<boolean> {
-  if (!isStripeConfigured()) return false
+  // No client-side pre-check: the server owns STRIPE_SECRET_KEY and the price
+  // ids, so it is the only thing that knows whether a session can be created.
+  // It answers {ok:false, reason:"not_configured"} when it cannot, and the
+  // caller shows that — instead of a blank browser env var vetoing a checkout
+  // the backend was perfectly able to complete.
   try {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token

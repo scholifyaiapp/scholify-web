@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useAuth } from "@/lib/auth"
-import { startStripeCheckout, isStripeConfigured, openStripeBillingPortal, type StripePlan } from "@/lib/stripe"
+import { startStripeCheckout, openStripeBillingPortal, type StripePlan } from "@/lib/stripe"
 import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
@@ -178,9 +178,11 @@ export default function Pricing() {
 
   const annual = billing === "annual"
 
-  // Payments are only real once Stripe billing is configured. Until then the
-  // plan buttons say so instead of pretending to fail.
-  const paymentsOpen = isStripeConfigured()
+
+
+  // Always open: only the SERVER can veto a checkout, and it says so in its
+  // response. See the note on isStripeConfigured() in src/lib/stripe.ts.
+  const paymentsOpen = true
 
   const flash = (msg: string) => {
     setNotice(msg)
@@ -188,10 +190,6 @@ export default function Pricing() {
   }
 
   const checkout = (plan: StripePlan) => {
-    if (!paymentsOpen) {
-      flash("Payments aren't open yet — hang tight, they're coming soon.")
-      return
-    }
     // Existing subscribers change plans and payment details in Stripe's hosted
     // portal. Starting a second Checkout subscription would double-bill them.
     if (entitlement.isPaid) {

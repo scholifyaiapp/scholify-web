@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react"
 import confetti from "canvas-confetti"
 import { useAuth } from "@/lib/auth"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { startStripeCheckout, isStripeConfigured, type StripePlan } from "@/lib/stripe"
+import { startStripeCheckout, type StripePlan } from "@/lib/stripe"
 import { trackEvent } from "@/lib/analytics"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
@@ -150,9 +150,11 @@ export default function PaywallModal({
       }
     : HEADERS[type]
 
-  // Payments only work when Stripe billing is configured — otherwise the buttons
-  // say so rather than inviting a retry that can never succeed.
-  const paymentsOpen = isStripeConfigured()
+
+
+  // Always open: only the SERVER can veto a checkout, and it says so in its
+  // response. See the note on isStripeConfigured() in src/lib/stripe.ts.
+  const paymentsOpen = true
 
   // Dialog behavior: Escape closes (when dismissible) + lock body scroll while open.
   useEffect(() => {
@@ -192,11 +194,6 @@ export default function PaywallModal({
   const handleCheckout = (plan: StripePlan) => {
     trackEvent("upgrade_started", { plan })
     trackEvent("paywall_checkout_clicked", { type })
-    if (!paymentsOpen) {
-      setNotice("Payments aren't open yet — nothing to pay today.")
-      setTimeout(() => setNotice(null), 3200)
-      return
-    }
     void startStripeCheckout(plan).then((ok) => {
       if (!ok) {
         setNotice("Couldn't open checkout — please try again in a moment.")
