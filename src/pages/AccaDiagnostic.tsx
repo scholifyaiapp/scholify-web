@@ -37,6 +37,7 @@ import CharlesMascot from "@/components/CharlesMascot"
 import { RingGauge, BreakdownList, MeterBar } from "@/components/acca/charts"
 import { type RevealPhase } from "@/components/acca/CinematicReveal"
 import PlanBuildLoader from "@/components/acca/PlanBuildLoader"
+import SyllabusRings from "@/components/acca/SyllabusRings"
 import RevealExperience from "@/components/acca/RevealExperience"
 import PaywallModal from "@/components/PaywallModal"
 import { PlanDashboard } from "@/components/acca/PlanDashboard"
@@ -670,6 +671,12 @@ function ResultsView({
           (3) the fastest path those pain points imply, and only THEN
           (4) Charles building the plan that targets exactly those areas. */}
       <PainPointsPanel result={result} />
+
+      {/* The whole paper as rings. The panels above name three weak areas and
+          three strong ones — on an eight-area paper that leaves two unmentioned
+          and says nothing about the ones the diagnostic never reached, which
+          are the most actionable thing here and were invisible. */}
+      <SyllabusRings areas={result.areas} />
 
       {/* The promise */}
       {lift > 0 && result.target.focusAreas.length > 0 && (
