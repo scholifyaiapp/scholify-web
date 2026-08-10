@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import postgres from "postgres"
+import { socialRowHtml } from "../src/lib/social-links.js"
+
+/** Appended inside every partner-facing email footer cell. */
+const SOCIAL_FOOTER = `<br><br><span style="display:inline-block;margin-bottom:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B7B2AC;">Follow Scholify</span><br>${socialRowHtml()}`
 
 /*
  * Scholify affiliate API (Phase 1).
@@ -527,7 +531,7 @@ function emailFrame(options: {
         ${cta}
         <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">
           ${escapeHtml(options.footerLabel || "Scholify Preferred Partner Program")}<br>
-          <a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>
+          <a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>${SOCIAL_FOOTER}
         </td></tr>
       </table>
     </td></tr>

@@ -1,6 +1,13 @@
 import { createClient } from "@supabase/supabase-js"
 import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createHmac, timingSafeEqual } from "node:crypto"
+import { socialRowHtml } from "../src/lib/social-links.js"
+
+/**
+ * Appended inside every learner-facing email footer cell. Built once at module
+ * load, since the account list is static.
+ */
+const SOCIAL_FOOTER = `<br><br><span style="display:inline-block;margin-bottom:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B7B2AC;">Follow Scholify</span><br>${socialRowHtml()}`
 
 /*
  * Practice-time reminders — three a day, in the learner's own clock.
@@ -359,7 +366,7 @@ async function sendCompletionEmail(apiKey: string, from: string, to: string, uns
         <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${tomorrow}</td></tr>
         <tr><td style="padding:0 32px 22px;font-size:14px;line-height:22px;color:#8F8C85;">Now stop. Rest is part of the plan, not a reward for finishing it.</td></tr>
         <tr><td style="padding:0 32px 30px;"><a href="${SITE}/study?tab=tomorrow" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">See tomorrow's plan &rarr;</a></td></tr>
-        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you completed a day of your ${escapeHtmlLite(paper)} plan.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change what you get in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.</td></tr>
+        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you completed a day of your ${escapeHtmlLite(paper)} plan.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change what you get in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.${SOCIAL_FOOTER}</td></tr>
       </table>
     </td></tr>
   </table>
@@ -683,7 +690,7 @@ async function sendTrialEmail(apiKey: string, from: string, to: string, slot: Tr
       <tr><td style="padding:14px 32px 8px;font-size:15px;line-height:24px;color:#5F5753;">${copy.body}</td></tr>
       <tr><td style="padding:8px 32px 18px;"><div style="padding:16px 18px;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;font-size:14px;line-height:22px;color:#5F5753;"><strong style="color:#14141A;">Your next move</strong><br>${copy.detail}</div></td></tr>
       <tr><td style="padding:4px 32px 30px;"><a href="${copy.href}" style="display:inline-block;padding:13px 22px;border-radius:12px;background:#C80000;color:#fff;text-decoration:none;font-size:14px;font-weight:800;">${copy.cta} &rarr;</a></td></tr>
-      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify study coach<br>Your learning data remains saved to your account.<br><a href="${SITE}/settings" style="color:#C80000;text-decoration:none;">Manage subscription</a> &middot; <a href="${SITE}/support" style="color:#C80000;text-decoration:none;">Get support</a></td></tr>
+      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify study coach<br>Your learning data remains saved to your account.<br><a href="${SITE}/settings" style="color:#C80000;text-decoration:none;">Manage subscription</a> &middot; <a href="${SITE}/support" style="color:#C80000;text-decoration:none;">Get support</a>${SOCIAL_FOOTER}</td></tr>
     </table>
   </td></tr></table></body></html>`
   try {
@@ -775,7 +782,7 @@ async function sendEmail(
         <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${c.heading}</td></tr>
         <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${c.body}</td></tr>
         <tr><td style="padding:8px 32px 30px;"><a href="${SITE}/study" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">${c.cta} &rarr;</a></td></tr>
-        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you set a daily practice time in Scholify.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change the times in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.</td></tr>
+        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you set a daily practice time in Scholify.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change the times in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.${SOCIAL_FOOTER}</td></tr>
       </table>
     </td></tr>
   </table>

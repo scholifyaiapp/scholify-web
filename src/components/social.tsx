@@ -1,22 +1,17 @@
 /*
- * Scholify's social presence — one source of truth.
+ * Scholify's social presence, for the web.
  *
- * Every URL the site links to lives here so a moved account is a one-line fix
- * rather than a hunt through the footer, the mission section and whatever gets
- * built next.
- *
- * NOTE on the LinkedIn URL: the company page was handed over as
- * .../company/112227580/admin/dashboard/, which is the ADMIN console — it
- * only resolves for page admins and would bounce a visitor. The public form of
- * the same page is used instead.
+ * The URLs themselves live in src/lib/social-links.ts, which is plain TS so the
+ * serverless email templates in api/ can import the same list. This file only
+ * adds the marks.
  *
  * lucide dropped its brand glyphs at v1, so the marks are inline. They are all
  * aria-hidden: the link's own aria-label carries the meaning.
  */
 
-export interface SocialLink {
-  name: string
-  href: string
+import { SOCIAL_LINKS, type SocialAccount } from "@/lib/social-links"
+
+export interface SocialLink extends SocialAccount {
   Mark: (props: { size?: number }) => React.ReactElement
 }
 
@@ -73,10 +68,16 @@ export function RedditMark({ size = 16 }: { size?: number }) {
   )
 }
 
-export const SOCIALS: SocialLink[] = [
-  { name: "LinkedIn", href: "https://www.linkedin.com/company/112227580/", Mark: LinkedInMark },
-  { name: "Instagram", href: "https://www.instagram.com/scholifyaiapp/", Mark: InstagramMark },
-  { name: "Facebook", href: "https://www.facebook.com/profile.php?id=61593102658034", Mark: FacebookMark },
-  { name: "Telegram", href: "https://t.me/scholify_app", Mark: TelegramMark },
-  { name: "Reddit", href: "https://www.reddit.com/user/scholifyapp/", Mark: RedditMark },
-]
+const MARKS: Record<string, SocialLink["Mark"]> = {
+  LinkedIn: LinkedInMark,
+  Instagram: InstagramMark,
+  Facebook: FacebookMark,
+  Telegram: TelegramMark,
+  Reddit: RedditMark,
+}
+
+/** The shared account list, decorated with its marks. */
+export const SOCIALS: SocialLink[] = SOCIAL_LINKS.filter((account) => account.name in MARKS).map((account) => ({
+  ...account,
+  Mark: MARKS[account.name],
+}))

@@ -1,6 +1,11 @@
 import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import postgres from "postgres"
 import { createClient } from "@supabase/supabase-js"
+import { socialRowHtml } from "../src/lib/social-links.js"
+
+/** Appended inside the learner-facing footer cell. The internal race-control
+ *  notification below deliberately omits it — it is addressed to us. */
+const SOCIAL_FOOTER = `<br><br><span style="display:inline-block;margin-bottom:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B7B2AC;">Follow Scholify</span><br>${socialRowHtml()}`
 
 const RESEND_API = "https://api.resend.com"
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
@@ -123,7 +128,7 @@ function confirmationEmail(firstName: string): string {
           </tr>
         </table>
       </td></tr>
-      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Scholify · From F1 to ACCA member.<br><a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a></td></tr>
+      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Scholify · From F1 to ACCA member.<br><a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a>${SOCIAL_FOOTER}</td></tr>
     </table>
   </td></tr></table></body></html>`
 }
