@@ -46,7 +46,7 @@ import {
 } from "@/lib/acca"
 import { getPlan, setPlan } from "@/lib/acca-plan"
 import { entitlementOf } from "@/lib/entitlement"
-import { cancelStripeSubscription, openStripeBillingPortal } from "@/lib/stripe"
+import { openStripeBillingPortal } from "@/lib/stripe"
 import { avatarUrlOf, onAvatarChange, saveAvatar, removeAvatar, AVATAR_MAX_SOURCE_MB, type AvatarError } from "@/lib/avatar"
 import { ALL_PAPERS, getCurrentPaper, getStudyingPapers, setCurrentPaper } from "@/lib/acca-qualification"
 import {
@@ -858,6 +858,22 @@ export default function Settings() {
         : "Billed monthly · $14.99/month"
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "2026"
 
+  /*
+   * Billing dates, written by the Stripe webhook into app_metadata. Rendered
+   * only when present: an older subscription predating those fields shows the
+   * plan without dates rather than an invented one. A trial's first charge is
+   * its trial_end; a live subscription's next charge is its period end.
+   */
+  const billingDate = (raw: unknown): string | null => {
+    if (typeof raw !== "string") return null
+    const parsed = new Date(raw)
+    return Number.isNaN(parsed.getTime()) ? null : format(parsed, "d MMMM yyyy")
+  }
+  const subscriptionStarted = billingDate(user?.app_metadata?.period_started_at)
+  const nextChargeOn = ent.isTrial
+    ? billingDate(ent.trialEndsAt)
+    : billingDate(user?.app_metadata?.period_ends_at)
+
   // Founder operations live exclusively at /admin. These legacy render guards
   // stay false so Settings remains an account-preferences surface.
   const isAdmin = false
@@ -944,32 +960,6 @@ export default function Settings() {
       toast.success("Photo removed")
     } finally {
       setAvatarBusy(false)
-    }
-  }
-
-  const cancelPlan = async () => {
-    setDialog(null)
-    if (!isSupabaseConfigured) {
-      toast.info("Billing isn't connected on this account")
-      return
-    }
-    try {
-      const { data } = await supabase.auth.getSession()
-      if (!data.session?.access_token) {
-        toast.error("Please sign in again to manage billing")
-        return
-      }
-      // Cancel through the SAME rail we sell on: Stripe. Checkout everywhere
-      // (Pricing + the paywall) uses Stripe, so a subscriber has a Stripe
-      // subscription, not a Paddle one — cancelling via Paddle always missed it.
-      const ok = await cancelStripeSubscription()
-      if (ok) {
-        toast.success("Plan will end at the period close — access stays until then")
-      } else {
-        toast.info("Couldn't find an active subscription to cancel — contact support if this looks wrong")
-      }
-    } catch {
-      toast.error("Couldn't reach billing — please try again")
     }
   }
 
@@ -1483,11 +1473,33 @@ export default function Settings() {
               </div>
               <div style={{ fontSize: 13, color: TEXT2, marginTop: 4, lineHeight: 1.6 }}>
                 {ent.isTrial
-                  ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} free. All 15 papers and every Pro mode are unlocked. Cancel before the Stripe trial deadline to avoid the first charge.`
+                  ? `${ent.trialDaysLeft} day${ent.trialDaysLeft === 1 ? "" : "s"} free. All 15 papers and every Pro mode are unlocked.`
                   : isPaid
                     ? planBilling
                     : "Choose Beginner or Pro to unlock the workspace; your diagnosis and personalised plan remain saved."}
               </div>
+
+              {/*
+                The two dates a subscriber actually wants: when this started,
+                and when the next charge lands. Not knowing the second one is
+                the single commonest reason a legitimate charge gets disputed —
+                showing it costs nothing and prevents that conversation.
+              */}
+              {isPaid && (subscriptionStarted || nextChargeOn) && (
+                <div style={{ fontSize: 12.5, color: "var(--sch-tx-4)", marginTop: 8, lineHeight: 1.7 }}>
+                  {subscriptionStarted && (
+                    <div>
+                      Subscription started <b style={{ color: TEXT2 }}>{subscriptionStarted}</b>
+                    </div>
+                  )}
+                  {nextChargeOn && (
+                    <div>
+                      {ent.isTrial ? "First charge on " : "Next charge on "}
+                      <b style={{ color: TEXT2 }}>{nextChargeOn}</b>
+                    </div>
+                  )}
+                </div>
+              )}
               {!isPaid && (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
@@ -1500,14 +1512,18 @@ export default function Settings() {
               )}
             </div>
             {isPaid ? (
-              <div style={{ display: "flex", gap: 10 }}>
-                <Button variant="secondary" onClick={() => { void openStripeBillingPortal().then((ok) => { if (!ok) toast.error("Couldn't open billing management — please try again") }) }}>
-                  Change plan & billing
-                </Button>
-                <button type="button" onClick={() => setDialog("cancel")} style={redGhost}>
-                  Cancel plan
-                </button>
-              </div>
+              /*
+               * No "Cancel plan" button here — founder's call: a red cancel
+               * control sitting next to the plan invites the thought rather
+               * than answering a need. Billing is still fully self-serve
+               * through Stripe's hosted portal below, which is what keeps us
+               * inside Stripe's requirement for a clear cancellation route:
+               * a customer who cannot find one disputes the charge instead,
+               * and disputes cost far more than the churn they prevent.
+               */
+              <Button variant="secondary" onClick={() => { void openStripeBillingPortal().then((ok) => { if (!ok) toast.error("Couldn't open billing management — please try again") }) }}>
+                Manage plan & billing
+              </Button>
             ) : (
               <Button onClick={() => navigate("/pricing")}>
                 Choose Beginner or Pro
@@ -2156,17 +2172,10 @@ export default function Settings() {
       </motion.div>
 
       {/* ── Dialogs ── */}
-      <ConfirmDialog
-        open={dialog === "cancel"}
-        title="Cancel your plan?"
-        /* States the no-refund rule at the moment it applies. Burying it in
-           Terms is how you get a chargeback: the customer is not disputing the
-           policy, they are disputing that they were never told it. */
-        body="This stops the next renewal — it is not a refund. Payments already made, including the period you are in, are not refunded, and your access continues to the end of that period. Your streak and progress stay saved if you come back."
-        confirmLabel="Cancel anyway"
-        onConfirm={() => void cancelPlan()}
-        onCancel={() => setDialog(null)}
-      />
+      {/* The in-app "Cancel your plan?" dialog was removed with the button that
+          opened it. Cancellation now happens in Stripe's hosted portal, which
+          states the no-refund terms at the point of cancelling and is the route
+          Stripe requires us to provide. */}
       <ConfirmDialog
         open={dialog === "reset"}
         title="Reset all progress?"

@@ -130,6 +130,10 @@ async function writeEntitlement(
     customerId?: string
     trialStartsAt?: string
     trialEndsAt?: string
+    /** Start of the period the customer is currently paying for. */
+    periodStartsAt?: string
+    /** When the next charge happens — the date Settings shows them. */
+    periodEndsAt?: string
     eventType: string
   },
 ): Promise<void> {
@@ -144,6 +148,11 @@ async function writeEntitlement(
         ...(fields.billingInterval ? { billing_interval: fields.billingInterval } : {}),
         ...(fields.trialStartsAt ? { trial_started_at: fields.trialStartsAt } : {}),
         ...(fields.trialEndsAt ? { trial_ends_at: fields.trialEndsAt } : {}),
+        // Shown to the customer as "started on" / "next charge on". Kept here
+        // because Settings must not need a Stripe round-trip to answer the
+        // commonest billing question a subscriber has.
+        ...(fields.periodStartsAt ? { period_started_at: fields.periodStartsAt } : {}),
+        ...(fields.periodEndsAt ? { period_ends_at: fields.periodEndsAt } : {}),
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
   const { data: existingUser } = await supa.auth.admin.getUserById(userId)
@@ -791,6 +800,8 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
             : sub.status === "past_due"
               ? "past_due"
               : "canceled"
+        const iso = (seconds: number | null | undefined) =>
+          typeof seconds === "number" ? new Date(seconds * 1000).toISOString() : undefined
         await writeEntitlement(supa, userId, {
           plan: status === "canceled" ? "free" : (plan ?? undefined),
           status,
@@ -798,6 +809,9 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
+          periodStartsAt: iso(sub.current_period_start),
+          periodEndsAt: iso(sub.current_period_end),
+          trialEndsAt: iso(sub.trial_end),
           eventType: event.type,
         })
       }
