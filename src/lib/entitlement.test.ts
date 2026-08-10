@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canUsePlanFeature, shouldBlockForExpiredTrial, TRIAL_DAYS } from "@/lib/entitlement"
+import { entitlementOf, isProUser, canStartTrial, canAccessPaper, canAccessApp, canUsePlanFeature, shouldBlockForExpiredTrial, TRIAL_DAYS } from "@/lib/entitlement"
 
 /*
  * Entitlement decides who gets Pro. Every case here is a real gate: a wrong
@@ -178,6 +178,40 @@ describe("canAccessPaper", () => {
     const trialUser = user({ trial_ends_at: inDays(3) })
     expect(canAccessPaper(trialUser, "MA", ["FA", "MA"], NOW)).toBe(true)
     expect(canAccessPaper(trialUser, "LW", ["FA", "MA"], NOW)).toBe(true)
+  })
+})
+
+/*
+ * canAccessApp is the inverse of the route-level purchase wall (route-guards.tsx
+ * walls when !canAccessApp). The bug it guards against: the wall keyed on `isPaid`
+ * alone, which is FALSE during a legacy/promo trial (plan "free", no
+ * plan_status:"trialing"), so an active trial got hard-blocked the instant it
+ * started. Access = paid OR active trial.
+ */
+describe("canAccessApp (route-level app gate)", () => {
+  it("lets in an active legacy/promo trial (isPaid=false but isTrial=true) — the regression", () => {
+    const legacyTrial = user({ plan: "free", trial_started_at: inDays(-1), trial_ends_at: inDays(2) })
+    expect(entitlementOf(legacyTrial, NOW).isPaid).toBe(false) // the field the old wall read
+    expect(entitlementOf(legacyTrial, NOW).isTrial).toBe(true)
+    expect(canAccessApp(legacyTrial, NOW)).toBe(true) // …but the app must stay open
+  })
+
+  it("lets in an active Stripe trial and every paid tier (incl. Beginner)", () => {
+    expect(canAccessApp(user({ plan: "pro", plan_status: "trialing", trial_ends_at: inDays(2) }), NOW)).toBe(true)
+    expect(canAccessApp(user({ plan: "beginner" }), NOW)).toBe(true)
+    expect(canAccessApp(user({ plan: "pro" }), NOW)).toBe(true)
+    expect(canAccessApp(user({ plan: "annual_pro" }), NOW)).toBe(true)
+  })
+
+  it("walls a free learner who never trialed", () => {
+    expect(canAccessApp(user({ plan: "free" }), NOW)).toBe(false)
+    expect(canAccessApp(null, NOW)).toBe(false)
+  })
+
+  it("walls a learner whose trial has expired with no paid plan", () => {
+    const expired = user({ plan: "free", trial_started_at: inDays(-8), trial_ends_at: inDays(-1) })
+    expect(canAccessApp(expired, NOW)).toBe(false)
+    expect(shouldBlockForExpiredTrial(expired, NOW)).toBe(true) // and the expired-wall messaging still fires
   })
 })
 

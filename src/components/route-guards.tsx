@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
-import { entitlementOf } from "@/lib/entitlement"
+import { canAccessApp } from "@/lib/entitlement"
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { isStripeConfigured } from "@/lib/stripe"
 import PaywallModal from "@/components/PaywallModal"
@@ -128,7 +128,15 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
     return <PrelaunchBlock email={user.email ?? null} />
   }
   const isFreeValueRoute = location.pathname === "/study/diagnostic"
-  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && !isFreeValueRoute && !entitlementOf(user).isPaid) {
+  // Wall anyone NOT currently entitled to the app — but "entitled" means paid OR
+  // in an active trial, not just paid. The previous `!isPaid` ignored an active
+  // trial: a legacy/promo trial grants access via trial_ends_at without a paid
+  // plan or plan_status:"trialing" (so isPaid stays false while isTrial is true),
+  // and got walled the instant it started. Checking `!isPaid && !isTrial` still
+  // blocks free and expired-trial learners, while letting an active trial in —
+  // which is also what the trial_ends_at re-render above is for: to flip this
+  // gate the moment the trial actually expires.
+  if (gate && !isLaunchAdmin(user) && isStripeConfigured() && isAccaOnboarded() && !isFreeValueRoute && !canAccessApp(user)) {
     return <TrialExpiredBlock />
   }
   return <>{children}</>

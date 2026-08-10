@@ -117,6 +117,22 @@ export function shouldBlockForExpiredTrial(
   return entitlement.hadTrial && !entitlement.isTrial && !entitlement.isPaid
 }
 
+/**
+ * May this user reach the gated app at all? Entitlement to the workspace is
+ * "paid OR in an active trial" — a trial is a full preview, so it counts. This
+ * is the inverse of the route-level purchase wall, and it is deliberately NOT
+ * the same as `isPaid`: a legacy/promo trial grants access via `trial_ends_at`
+ * without a paid plan (isPaid=false, isTrial=true), and keying the wall on
+ * `isPaid` alone shut those active trials out the instant they began.
+ */
+export function canAccessApp(
+  user: MetaCarrier | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  const entitlement = entitlementOf(user, now)
+  return entitlement.isPaid || entitlement.isTrial
+}
+
 /** Feature-level gate tied to the same contract rendered on /pricing. */
 export function canUsePlanFeature(
   user: MetaCarrier | null | undefined,
@@ -132,12 +148,13 @@ export function canUsePlanFeature(
 
 /**
  * Which papers can this user open?
- *   - A PAID subscriber: every paper.
- *   - Everyone else (trial or free): only the paper(s) they onboarded with — the
- *     "target". A trial grants the Pro *features* (mocks, examiner, generate) but
- *     still only on the target paper; the other 14 need a paid plan.
+ *   - A PAID subscriber OR an active trial: every paper. A trial is a full
+ *     preview of the paid workspace, so it unlocks all 15 papers, not just the
+ *     onboarding target (see the "trial unlocks all papers" tests).
+ *   - A FREE learner (no paid plan, no active trial): only the paper(s) they
+ *     onboarded with — the "target".
  * `now` is injectable for testing. After the trial expires the app-level gate
- * blocks the whole app, so this only needs to split paid-vs-target.
+ * blocks the whole app, so this only needs to split paid/trial-vs-target.
  */
 export function canAccessPaper(
   user: MetaCarrier | null | undefined,
