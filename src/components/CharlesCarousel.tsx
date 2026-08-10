@@ -11,6 +11,15 @@ const CHARLES = [
 const EASE = "650ms cubic-bezier(0.4,0,0.2,1)"
 const GRAIN = `url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='.08'/%3E%3C/svg%3E")`
 
+/* White copy sits on brand colours that only reach 3.2–4.9:1 on their own, and the
+   CHARLES wordmark can slide under the text block on short viewports. These scrims
+   sit above both and lift every slide past 4.5:1 while leaving the middle full-bleed. */
+const SCRIM = [
+  "linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.28) 24%, rgba(0,0,0,0) 50%)",
+  "linear-gradient(to right, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0) 46%)",
+  "linear-gradient(to bottom, rgba(0,0,0,0.34) 0%, rgba(0,0,0,0) 16%)",
+].join(", ")
+
 type Direction = "next" | "prev"
 type Role = "center" | "left" | "right" | "back"
 
@@ -90,6 +99,12 @@ export default function CharlesCarousel() {
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
+          style={{ zIndex: 40, backgroundImage: SCRIM }}
+        />
+
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
           style={{ zIndex: 50, opacity: 0.4, backgroundImage: GRAIN, backgroundSize: "200px 200px" }}
         />
 
@@ -111,7 +126,7 @@ export default function CharlesCarousel() {
           CHARLES
         </div>
 
-        <div className="absolute left-4 top-6 text-xs font-semibold uppercase text-white sm:left-8" style={{ zIndex: 60, opacity: 0.9, letterSpacing: "0.18em" }}>
+        <div className="absolute left-4 top-6 text-xs font-semibold uppercase text-white sm:left-8" style={{ zIndex: 60, letterSpacing: "0.18em" }}>
           SCHOLIFY × CHARLES
         </div>
 
@@ -131,14 +146,14 @@ export default function CharlesCarousel() {
           })}
         </div>
 
-        <div className="absolute bottom-6 left-4 sm:bottom-20 sm:left-24" style={{ zIndex: 60, maxWidth: 320 }}>
-          <p className="mb-2 text-base font-bold uppercase tracking-widest text-white sm:mb-3 sm:text-[22px]" style={{ opacity: 0.95, letterSpacing: "0.02em" }}>
+        <div className="absolute bottom-6 left-4 max-w-[300px] sm:bottom-20 sm:left-24 sm:max-w-[420px]" style={{ zIndex: 60 }}>
+          <p className="mb-2 text-base font-bold uppercase tracking-widest text-white sm:mb-3 sm:text-[22px]" style={{ letterSpacing: "0.02em" }}>
             Meet Charles
           </p>
-          <p className="mb-4 hidden text-xs text-white sm:mb-5 sm:block sm:text-sm" style={{ opacity: 0.85, lineHeight: 1.6 }}>
+          <p className="mb-4 hidden text-white sm:mb-5 sm:block sm:text-[15px]" style={{ lineHeight: 1.65 }}>
             Planner, tutor, coach and supporter. Charles learns where you lose marks, builds your next move and stays with you all the way to exam day.
           </p>
-          <p className="mb-4 text-xs font-semibold uppercase text-white sm:hidden" style={{ letterSpacing: "0.12em", opacity: 0.85 }}>
+          <p className="mb-4 text-xs font-semibold uppercase text-white sm:hidden" style={{ letterSpacing: "0.12em" }}>
             {CHARLES[activeIndex].label}
           </p>
           <div className="flex gap-3">
@@ -159,8 +174,8 @@ export default function CharlesCarousel() {
 
         <a
           href="#how-it-works"
-          className="absolute bottom-6 right-4 flex items-center gap-2 uppercase text-white no-underline transition-opacity duration-200 hover:opacity-100 sm:bottom-20 sm:right-10"
-          style={{ zIndex: 60, fontFamily: "'Anton', sans-serif", fontSize: "clamp(20px, 4vw, 56px)", fontWeight: 400, opacity: 0.95, letterSpacing: "-0.02em", lineHeight: 1 }}
+          className="absolute bottom-6 right-4 flex items-center gap-2 uppercase text-white no-underline transition-opacity duration-200 hover:opacity-80 sm:bottom-20 sm:right-10"
+          style={{ zIndex: 60, fontFamily: "'Anton', sans-serif", fontSize: "clamp(24px, 4vw, 56px)", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}
         >
           Meet him <ArrowRight className="h-5 w-5 sm:h-8 sm:w-8" strokeWidth={2.25} />
         </a>
