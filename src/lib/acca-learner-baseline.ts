@@ -1,4 +1,13 @@
 export type LearnerRoute = "new" | "course" | "practice"
+/**
+ * How a learner's baseline was established.
+ *
+ * "reported" (self-declared course progress) is no longer offerable — the
+ * option that set it promised the plan would use those claims and nothing ever
+ * read the value. It stays in the union because baselines saved before its
+ * removal still carry it, and narrowing the type would make those stored
+ * records unreadable.
+ */
 export type AssessmentPath = "embedded" | "diagnostic" | "uploaded" | "reported" | "timed-practice"
 export type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
 export type EnglishEvidence = "self" | "vocabulary" | "certificate"

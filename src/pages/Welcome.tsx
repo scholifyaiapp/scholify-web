@@ -1624,7 +1624,21 @@ function ResultUploadSlide({
       ]
     : [
         { value: "diagnostic", title: "Take a targeted gap check", detail: "Sample studied areas and find what needs reinforcement." },
-        { value: "reported", title: "Map what I have completed", detail: "Use my course progress, then verify claimed topics gradually through questions." },
+        /*
+         * "Map what I have completed" was removed here.
+         *
+         * It promised to "use my course progress, then verify claimed topics
+         * gradually through questions" — and nothing in the product ever did
+         * that. `assessmentPath: "reported"` was written into the learner
+         * baseline and then read by nothing at all: the value appears in
+         * exactly two places in the codebase, this option and the type union.
+         *
+         * So a learner could decline the gap check, be told their own account
+         * of what they had covered would drive the plan, and get a plan built
+         * on no evidence whatsoever — with a readiness score derived from
+         * claims rather than answers. The readiness number is the product's
+         * central promise; it cannot rest on self-report.
+         */
       ]
   return (
     <div style={{ maxWidth: 540 }}>
