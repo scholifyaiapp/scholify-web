@@ -8,6 +8,23 @@ import { applyToAffiliate, type AffiliateApplication } from "@/lib/affiliate"
 import PaymentMethods from "@/components/PaymentMethods"
 import { Download, FileText } from "lucide-react"
 import NumberFlow from "@number-flow/react"
+import {
+  COMMISSION_RATE,
+  EXAMPLE_EARNINGS,
+  EXAMPLE_PROGRESS,
+  EXAMPLE_SALES,
+} from "@/lib/partner-rewards"
+import {
+  EarningsRows,
+  RemainingToReward,
+  RewardRing,
+  StackedSalesBar,
+} from "@/components/partner/reward-progress"
+
+/** USD, for the one-off figures rendered outside the shared components. */
+function formatUsd(value: number): string {
+  return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
+}
 
 /* ──────────────────────────────────────────────────────────────
  *  /partners/apply — the Scholify Preferred Partner landing.
@@ -880,6 +897,73 @@ export default function PartnersApply() {
               </motion.div>
             </motion.div>
           </div>
+        </Section>
+
+        {/* ── Worked example ──────────────────────────────────────────
+            The reward card above states a target (1,000 sales) and a rate
+            (27%) and leaves the reader to do the multiplication, which almost
+            nobody does — so the offer stays abstract. This section does the
+            arithmetic out loud at a concrete volume and shows the same two
+            numbers a partner will later see on their own dashboard.
+
+            It is labelled an EXAMPLE CALCULATION, not a partner's results.
+            Attaching these earnings to an invented person would be a
+            fabricated endorsement, and the arithmetic does not need one. */}
+        <Section style={{ scrollMarginTop: 24 }}>
+          <div id="example" />
+          <motion.div {...rise()} style={secHead}>
+            Example calculation
+          </motion.div>
+          <motion.h2
+            {...rise(0.04)}
+            style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sch-text)", margin: "0 0 10px" }}
+          >
+            What {EXAMPLE_SALES} sales looks like
+          </motion.h2>
+          <motion.p
+            {...rise(0.08)}
+            style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--sch-tx-1)", maxWidth: 720, margin: "0 0 22px", fontWeight: 500 }}
+          >
+            Half Beginner, half Pro, at the published prices and the published{" "}
+            {Math.round(COMMISSION_RATE * 100)}%. Worked through so the offer is arithmetic rather than a promise —
+            these are not projected earnings and not a guarantee of any result.
+          </motion.p>
+
+          <motion.div {...rise(0.12)} style={{ ...card, padding: 24 }}>
+            <div style={{ display: "grid", gap: 26, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+                <RewardRing
+                  beginner={EXAMPLE_EARNINGS.beginnerSales}
+                  pro={EXAMPLE_EARNINGS.proSales}
+                  target={EXAMPLE_PROGRESS.target}
+                  percent={EXAMPLE_PROGRESS.percent}
+                />
+                <div style={{ minWidth: 150, flex: "1 1 150px" }}>
+                  <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.03em", color: "var(--sch-text)", lineHeight: 1.05 }}>
+                    <NumberFlow value={EXAMPLE_EARNINGS.totalCommission} format={{ style: "currency", currency: "USD" }} />
+                  </div>
+                  <div style={{ fontSize: 13.5, color: "var(--sch-tx-2)", marginTop: 6, lineHeight: 1.5 }}>
+                    commission on {EXAMPLE_SALES.toLocaleString("en-US")} sales
+                    <br />
+                    ({formatUsd(EXAMPLE_EARNINGS.totalRevenue)} of plan sales)
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gap: 20 }}>
+                <StackedSalesBar
+                  beginner={EXAMPLE_EARNINGS.beginnerSales}
+                  pro={EXAMPLE_EARNINGS.proSales}
+                  target={EXAMPLE_PROGRESS.target}
+                  label={`Progress to the ${EXAMPLE_PROGRESS.tier.prize}`}
+                />
+                <RemainingToReward progress={EXAMPLE_PROGRESS} />
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: "var(--sch-border)", margin: "24px 0" }} />
+            <EarningsRows earnings={EXAMPLE_EARNINGS} />
+          </motion.div>
         </Section>
 
         {/* ── How it works ── */}
