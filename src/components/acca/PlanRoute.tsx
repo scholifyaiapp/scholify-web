@@ -1,9 +1,10 @@
 import { useMemo } from "react"
-import { motion } from "motion/react"
+import { motion, useReducedMotion } from "motion/react"
 import { useNavigate } from "react-router-dom"
 import { Icon, Card, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { projectPlan, shieldState, type SchedAction } from "@/lib/acca-schedule"
-import { getPlan, daysUntilExam } from "@/lib/acca-plan"
+import { getPlan, daysUntilExam, daysSinceStart } from "@/lib/acca-plan"
+import { getPaperStats } from "@/lib/acca"
 
 /*
  * The learner's route to exam day: the distributed daily plan (study / practise
@@ -12,6 +13,8 @@ import { getPlan, daysUntilExam } from "@/lib/acca-plan"
  * keeps the streak alive across missed days. Read-only — it mirrors the engine
  * in acca-schedule, which re-paves the route whenever a day is missed.
  */
+
+const EASE = [0.16, 1, 0.3, 1] as const
 
 const KIND_ICON: Record<SchedAction, IconName> = {
   study: "study", essentials: "mission", practice: "practice", weak: "weak" as IconName, flashcards: "flashcards" as IconName,
@@ -30,6 +33,44 @@ export function PlanRoute({ paperId }: { paperId: string }) {
   const plan = getPlan(paperId)
   const route = useMemo(() => projectPlan(paperId, 14), [paperId])
   const shield = shieldState(paperId)
+  const reduced = useReducedMotion()
+  const stats = getPaperStats(paperId)
+  const elapsed = daysSinceStart(paperId)
+
+  const shortDate = (iso: string | null | undefined): string | null => {
+    if (!iso) return null
+    const d = new Date(`${iso}T00:00:00`)
+    return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+  }
+  const startLabel = shortDate(plan.startedAt)
+  const examLabel = shortDate(plan.examDate) ?? "exam day"
+  /* Share of the journey behind them. Clamped off both ends so the bar can
+     never read 0% on day one (demoralising and untrue — they started) or
+     overrun if a date moves. */
+  const travelled =
+    elapsed !== null && days !== null
+      ? Math.min(0.97, Math.max(0.03, elapsed / Math.max(1, elapsed + days)))
+      : 0
+
+  /*
+   * FOUR NUMBERS, chosen because each one answers a question a learner
+   * actually asks — and each is actionable. Readiness against their own target
+   * is the headline the whole product exists to move; the daily block is the
+   * promise they made; questions answered is the evidence behind the readiness
+   * figure, without which it is just a number.
+   */
+  const metrics: { icon: IconName; label: string; value: string; foot: string; tone: string }[] = [
+    {
+      icon: "stats",
+      label: "Readiness",
+      value: `${stats.readiness}%`,
+      foot: stats.readiness >= plan.targetProb ? "target reached" : `${Math.max(0, plan.targetProb - stats.readiness)} to target`,
+      tone: stats.readiness >= plan.targetProb ? C.green : C.brand,
+    },
+    { icon: "mission", label: "Daily block", value: `${plan.dailyMinutes} min`, foot: `${plan.dailyGoal} questions`, tone: C.brand },
+    { icon: "practice", label: "Answered", value: String(stats.answered), foot: "questions so far", tone: C.brand },
+    { icon: "trophy", label: "Target", value: `${plan.targetProb}%`, foot: "before exam day", tone: C.amber },
+  ]
 
   // No target date yet → nudge to set one (that's what unlocks the route).
   if (!plan.examDate || days === null) {
@@ -51,22 +92,79 @@ export function PlanRoute({ paperId }: { paperId: string }) {
 
   return (
     <Card style={{ marginBottom: SP.md }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: SP.md, marginBottom: SP.md, flexWrap: "wrap" }}>
+      {/* ── THE JOURNEY: where it began, where you are, where it ends ──
+          The old header was one line of three numbers and a streak pill. It
+          could only say how far there is left to go — the half of the story
+          that discourages. Distance travelled is the half that keeps people,
+          and it was nowhere on the screen. */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: SP.md, flexWrap: "wrap" }}>
         <div>
           <span style={{ ...TYPE.label, color: C.faint }}>Your route to exam day</span>
-          <div style={{ fontWeight: 800, fontSize: 15.5, color: C.text, marginTop: 3 }}>
-            {days} days · ~{plan.dailyMinutes} min/day · target {plan.targetProb}%
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+            <motion.span
+              initial={reduced ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: EASE }}
+              style={{ fontSize: 30, fontWeight: 850, letterSpacing: "-0.03em", color: C.text, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
+            >
+              {days}
+            </motion.span>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: C.soft }}>
+              {days === 1 ? "day to" : "days to"} {examLabel}
+            </span>
           </div>
         </div>
-        {/* Streak only — deliberately no "N shields left" claim. The number here
-            is now the same shield-protected streak the dashboard tile shows
-            (both read shieldState), so the two no longer disagree. Surfacing the
-            remaining allowance is a separate product decision: it would commit
-            us to a counter that silently resets every Monday. */}
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 13px", borderRadius: R.pill, background: C.greenSoft, border: `1px solid ${C.green}`, whiteSpace: "nowrap" }}>
           <Icon name="streak" size={14} color={C.green} />
           <span style={{ fontSize: 12.5, fontWeight: 800, color: C.green }}>{shield.streak}-day streak</span>
         </span>
+      </div>
+
+      {/* The line of the whole journey. Fills from day one to today, with the
+          two dates anchored at its ends — so the bar answers "how far have I
+          come" and "how long have I got" in one glance. */}
+      {startLabel && elapsed !== null && (
+        <div style={{ marginTop: SP.md }}>
+          <div style={{ position: "relative", height: 8, borderRadius: 99, background: C.card2, overflow: "hidden" }}>
+            <motion.div
+              initial={reduced ? false : { scaleX: 0 }}
+              animate={{ scaleX: travelled }}
+              transition={{ duration: 1.1, ease: EASE, delay: 0.15 }}
+              style={{
+                position: "absolute", inset: 0, transformOrigin: "left", borderRadius: 99,
+                background: `linear-gradient(90deg, ${C.brand}, ${C.amber})`,
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 7 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.faint }}>
+              Started {startLabel} · day {elapsed + 1}
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.faint }}>Exam day {examLabel}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── The four numbers that decide whether they pass ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))", gap: SP.sm, marginTop: SP.md, marginBottom: SP.md }}>
+        {metrics.map((m, i) => (
+          <motion.div
+            key={m.label}
+            initial={reduced ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.06 * i, duration: 0.4, ease: EASE }}
+            style={{ borderRadius: R.lg, border: `1px solid ${C.border}`, background: C.card2, padding: "11px 13px" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Icon name={m.icon} size={13} color={m.tone} />
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: C.faint }}>{m.label}</span>
+            </div>
+            <div style={{ fontSize: 19, fontWeight: 850, color: C.text, marginTop: 6, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+              {m.value}
+            </div>
+            <div style={{ fontSize: 10.5, color: C.faint, marginTop: 2 }}>{m.foot}</div>
+          </motion.div>
+        ))}
       </div>
 
       {/* horizontally-scrollable day strip */}

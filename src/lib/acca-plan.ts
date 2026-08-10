@@ -15,6 +15,19 @@ const KEY = "scholify-acca-plan"
 export interface PaperPlan {
   /** yyyy-MM-dd target sitting date, or null. */
   examDate: string | null
+  /**
+   * yyyy-MM-dd the day this plan was created — the learner's day one.
+   *
+   * Without it the dashboard could only ever say how far there is left to go,
+   * which is the half of the story that discourages people. "You started on 11
+   * August and you are 23 days in" is the half that keeps them: distance
+   * travelled is the only evidence a habit is working.
+   *
+   * Optional because plans created before this existed have no honest answer,
+   * and inventing one would put a fictional start date on a real learner's
+   * progress bar.
+   */
+  startedAt?: string
   /** Target questions to attempt per day. */
   dailyGoal: number
   /**
@@ -100,10 +113,30 @@ export function getPlan(paperId: string): PaperPlan {
 
 export function setPlan(paperId: string, plan: Partial<PaperPlan>): PaperPlan {
   const store = read()
-  const next = { ...DEFAULT_PLAN, ...(store[paperId] ?? {}), ...plan }
+  const existing = store[paperId]
+  const next = { ...DEFAULT_PLAN, ...(existing ?? {}), ...plan }
+  /*
+   * Day one is stamped once, on creation, and never moved. Re-stamping it on
+   * every edit would mean a learner who changed their study time in month two
+   * silently lost two months of progress off their own timeline.
+   */
+  if (!next.startedAt) {
+    const now = new Date()
+    next.startedAt = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, "0")}-${`${now.getDate()}`.padStart(2, "0")}`
+  }
   store[paperId] = next
   write(store)
   return next
+}
+
+/** Whole days since day one, or null when this plan predates the stamp. */
+export function daysSinceStart(paperId: string, now: Date = new Date()): number | null {
+  const started = getPlan(paperId).startedAt
+  if (!started) return null
+  const from = new Date(`${started}T00:00:00`)
+  if (Number.isNaN(from.getTime())) return null
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.max(0, Math.round((today.getTime() - from.getTime()) / 86_400_000))
 }
 
 export function daysUntilExam(paperId: string): number | null {
