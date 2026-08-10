@@ -8,6 +8,7 @@ import {
   useReducedMotion,
   useTransform,
   AnimatePresence,
+  type Variants,
 } from "motion/react"
 import {
   Target,
@@ -2201,36 +2202,57 @@ function FinalCTA() {
 
 function MobileAppsTeaser() {
   const t = useT()
+  const reduced = useReducedMotion()
+
+  /*
+   * The panel used to arrive as one 28px slab: everything in it appeared at the
+   * same instant, so the eye had no order to follow. It now leads the copy in
+   * one line at a time (kicker → headline → promise → stores), which is the
+   * order the section is meant to be read in, and the whole thing is skipped
+   * under prefers-reduced-motion rather than merely shortened.
+   */
+  const column: Variants = reduced
+    ? { hidden: {}, show: {} }
+    : { hidden: {}, show: { transition: { staggerChildren: 0.075, delayChildren: 0.08 } } }
+  const line: Variants = reduced
+    ? { hidden: {}, show: {} }
+    : {
+        hidden: { opacity: 0, y: 16 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_DECISIVE } },
+      }
+
   return (
     <section style={{ padding: "calc(var(--section-y) * 0.72) var(--page-gutter)" }}>
       <motion.div
         className="race-panel"
-        style={{ maxWidth: "var(--page-max)", margin: "0 auto", borderRadius: 32, padding: "clamp(28px, 6vw, 72px)", background: "linear-gradient(135deg, rgba(255,255,255,.96), rgba(251,231,228,.72))" }}
-        initial={{ opacity: 0, y: 28 }}
+        style={{ maxWidth: "var(--page-max)", margin: "0 auto", borderRadius: 32, padding: "clamp(24px, 5.5vw, 72px)", background: "linear-gradient(135deg, rgba(255,255,255,.96), rgba(251,231,228,.72))" }}
+        initial={reduced ? false : { opacity: 0, y: 28 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.7, ease: EASE_DECISIVE }}
       >
-        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(300px,.72fr)] lg:gap-20">
-          <div>
-            <div className="race-kicker inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-2 text-[#6b6b76] shadow-sm backdrop-blur">
-              <span className="race-live-dot size-2 rounded-full bg-[#c80000]" />
+        <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(300px,.72fr)] lg:gap-20">
+          <motion.div variants={column} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}>
+            <motion.div variants={line} className="race-kicker inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-2 text-[#6b6b76] shadow-sm backdrop-blur">
+              <span className="race-live-dot size-2 shrink-0 rounded-full bg-[#c80000]" />
               {t("MOBILE — ARRIVING 15 SEPTEMBER 2026")}
-            </div>
-            <h2 className="font-display text-pro-h mt-6 text-[clamp(42px,6vw,76px)] text-[#14141a]">
+            </motion.div>
+            {/* Was clamped from 42px, which made this the largest heading on the
+                page at 375px — bigger than the hero's own section headings. */}
+            <motion.h2 variants={line} className="font-display text-pro-h mt-6 text-[clamp(34px,5.6vw,68px)] text-[#14141a]">
               {t("Your study plan.")} <em className="font-normal">{t("Now in your pocket.")}</em>
-            </h2>
-            <p className="mt-6 max-w-xl text-base leading-7 text-[#6b6b76] sm:text-lg">
+            </motion.h2>
+            <motion.p variants={line} className="mt-5 max-w-xl text-base leading-7 text-[#6b6b76] sm:text-lg">
               {t("Practice, review and keep your exam-day momentum wherever the day takes you. Your progress stays in sync across web and mobile.")}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+            </motion.p>
+            <motion.div variants={line} className="mt-8 flex flex-wrap gap-3 sm:gap-4">
               <StoreBadge type="app-store" comingSoonLabel={t("Coming soon")} note={t("From September 15, 2026")} />
               <StoreBadge type="google-play" comingSoonLabel={t("Coming soon")} note={t("From September 15, 2026")} />
-            </div>
-            <p className="mt-5 text-sm text-[#6b6b76]">
+            </motion.div>
+            <motion.p variants={line} className="mt-5 text-sm leading-6 text-[#6b6b76]">
               {t("From 15 September, the Scholify mobile experience will be available on iOS and Android.")}
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
           <PhoneMockupBasic />
         </div>
       </motion.div>

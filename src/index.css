@@ -207,6 +207,17 @@ html[data-theme="light"] {
   50% { box-shadow: 0 0 0 6px rgba(200, 0, 0, 0); }
 }
 
+/*
+ * Dwell bar inside the phone carousel's active dot: it fills over exactly the
+ * autoplay interval, so the viewer can see when the next screen is coming and
+ * that hovering has frozen it. transform, not width — a width animation on a
+ * 5-second loop relayouts every frame.
+ */
+@keyframes phone-carousel-dwell {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
 @theme {
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);

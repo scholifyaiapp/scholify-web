@@ -1,4 +1,5 @@
 import { type MouseEvent, useEffect, useId, useRef, useState } from "react"
+import { useReducedMotion } from "motion/react"
 import { Apple, Smartphone } from "lucide-react"
 
 /*
@@ -51,6 +52,11 @@ const overlayFills = [
 
 export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
   const ref = useRef<HTMLDivElement>(null)
+  // Ten blurred, overlay-blended polygons rotating forever is exactly the kind
+  // of ambient motion prefers-reduced-motion exists to stop — and two badges
+  // render side by side. Under the setting the foil is static and the tilt is
+  // dropped with it.
+  const reduceMotion = useReducedMotion()
   const [firstOverlayPosition, setFirstOverlayPosition] = useState<number>(0)
   const [matrix, setMatrix] = useState<string>(identityMatrix)
   const [currentMatrix, setCurrentMatrix] = useState<string>(identityMatrix)
@@ -217,17 +223,19 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
     <div
       ref={ref}
       className="block w-[220px] sm:w-[260px] h-auto select-none"
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      onMouseEnter={onMouseEnter}
+      onMouseMove={reduceMotion ? undefined : onMouseMove}
+      onMouseLeave={reduceMotion ? undefined : onMouseLeave}
+      onMouseEnter={reduceMotion ? undefined : onMouseEnter}
+      // aria-label is ignored on a bare <div> — it needs a role to be exposed.
+      role="img"
       aria-label={`${label[type]} — ${comingSoonLabel}. ${note}`}
     >
-      <style>{overlayAnimations}</style>
+      {!reduceMotion && <style>{overlayAnimations}</style>}
       <div
         style={{
-          transform: `perspective(700px) matrix3d(${matrix})`,
+          transform: reduceMotion ? undefined : `perspective(700px) matrix3d(${matrix})`,
           transformOrigin: "center center",
-          transition: "transform 200ms ease-out",
+          transition: reduceMotion ? undefined : "transform 200ms ease-out",
         }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 54" className="w-[220px] sm:w-[260px] h-auto">
@@ -265,9 +273,9 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
                 style={{
                   transform: `rotate(${firstOverlayPosition + i * 10}deg)`,
                   transformOrigin: "center center",
-                  transition: !disableInOutOverlayAnimation ? "transform 200ms ease-out" : "none",
-                  animation: disableOverlayAnimation ? "none" : `storeBadgeOverlay${i + 1} 6s infinite`,
-                  willChange: "transform",
+                  transition: !reduceMotion && !disableInOutOverlayAnimation ? "transform 200ms ease-out" : "none",
+                  animation: reduceMotion || disableOverlayAnimation ? "none" : `storeBadgeOverlay${i + 1} 6s infinite`,
+                  willChange: reduceMotion ? undefined : "transform",
                 }}
               >
                 <polygon
