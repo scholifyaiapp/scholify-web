@@ -9,8 +9,10 @@ import CharlesMascot from "@/components/CharlesMascot"
 import { paperLevels, setPassedPapers, setStudyingPapers } from "@/lib/acca-qualification"
 import { METHOD_PHASES, setPlan } from "@/lib/acca-plan"
 import { paperWorkHours } from "@/lib/acca-topic-plan"
-import { setDailyGoal } from "@/lib/acca"
+import { setDailyGoal, getPaper } from "@/lib/acca"
 import { WEEK_DAYS, defaultStudyDays } from "@/lib/acca-plan"
+import PlanBuildLoader from "@/components/acca/PlanBuildLoader"
+import { type RevealPhase } from "@/components/acca/CinematicReveal"
 import { GOAL_OPTIONS, setGoal, setExperience, getExperience, setStartMode, isAccaOnboarded, markAccaOnboarded, setPaperVariant, type Goal, type PaperVariant } from "@/lib/acca-profile"
 import { trackEvent } from "@/lib/analytics"
 import { persistAccountSetup } from "@/lib/account-state"
@@ -272,6 +274,9 @@ export default function Welcome() {
   const [finishError, setFinishError] = useState("")
   /** New-learner exit: hand over to the plan build → reveal → commit sequence. */
   const [planReveal, setPlanReveal] = useState(false)
+  /* The ten-second build for the two routes that used to navigate instantly.
+     Holds the sequence to play and what to do when the ring completes. */
+  const [finishing, setFinishing] = useState<{ phases: RevealPhase[]; go: () => void } | null>(null)
   const levels = useMemo(() => paperLevels(), [])
   const sittings = useMemo(() => nextSittings(3), [])
   const sessionPaper = paper !== null && !ON_DEMAND.has(paper)
@@ -486,6 +491,44 @@ export default function Welcome() {
   const onboardingProps = () => ({ paper, minutes, learnerRoute, assessmentPath: resultChoice, scheduling: "charles_recommended" })
   // Each finish path IS the experience answer, so the loop knows the persona from
   // the learner's actual choice (career→professional is already set in persist()).
+  /*
+   * ── THREE ROUTES, THREE SEQUENCES ──
+   *
+   * A learner starting from zero, one halfway through a course, and one who has
+   * covered the syllabus and is chasing marks are not doing the same thing, and
+   * the build should not claim they are. Each sequence names what Scholify is
+   * genuinely doing for THAT route, in their own numbers — the paper, the areas,
+   * the minutes they promised, the target they set. Nothing here is filler to
+   * spend ten seconds on; if a line were not true the whole device would be a
+   * loading bar with a story over it.
+   */
+  const buildPhases = (kind: "course" | "practice" | "uploaded"): RevealPhase[] => {
+    const areaCount = getPaper(paper ?? "")?.areas.length ?? null
+    const block = `${shapeDay(minutes, (target ?? 75)).questionGoal} questions in ${minutes} min${slot ? ` at ${slot}` : ""}`
+    if (kind === "uploaded") {
+      return [
+        { icon: "stats", label: "Reading your result", sub: "Your real marks, area by area — better evidence than any quiz we could set." },
+        { icon: "roadmap", label: `Mapping it onto ${paper}`, sub: areaCount ? `Matching your marks to all ${areaCount} syllabus areas.` : "Matching your marks to the syllabus." },
+        { icon: "weak", label: "Finding where the marks leaked", sub: "The areas that cost you most get the most time." },
+        { icon: "mission", label: "Sizing your daily block", sub: block },
+      ]
+    }
+    if (kind === "practice") {
+      return [
+        { icon: "check", label: "Reading your profile", sub: "Syllabus covered — so this is about marks and timing, not material." },
+        { icon: "roadmap", label: `Weighting the ${paper} syllabus`, sub: areaCount ? `${areaCount} areas, by exam weight rather than textbook order.` : "By exam weight rather than textbook order." },
+        { icon: "diagnostic", label: "Building your readiness check", sub: "Mixed and timed to exam standard: coverage, accuracy and pace together." },
+        { icon: "mission", label: "Setting your pass line", sub: `Target ${(target ?? 75)}% before exam day · ${block}` },
+      ]
+    }
+    return [
+      { icon: "study", label: "Reading your progress", sub: "You've covered ground already — so we start by finding what actually stuck." },
+      { icon: "roadmap", label: `Weighting the ${paper} syllabus`, sub: areaCount ? `${areaCount} areas, ordered by exam weight, not by textbook order.` : "Ordered by exam weight, not by textbook order." },
+      { icon: "diagnostic", label: "Choosing your gap check", sub: "Sampling the areas you say you've studied — the hardest ones first." },
+      { icon: "mission", label: "Sizing your daily block", sub: block },
+    ]
+  }
+
   const finishToDiagnostic = () => {
     if (finishBusy) return
     setFinishError("")
@@ -495,7 +538,11 @@ export default function Welcome() {
     trackEvent("onboarding_complete", { ...onboardingProps(), exit: "diagnostic" })
     const mode = learnerRoute === "practice" ? "readiness" : "gaps"
     trackEvent("diagnostic_offered", { paper, learnerRoute, mode, assessmentPath: resultChoice })
-    navigate(`/study/diagnostic?mode=${mode}&next=paywall`)
+    // Build first, navigate after — the ten seconds belong to this route too.
+    setFinishing({
+      phases: buildPhases(learnerRoute === "practice" ? "practice" : "course"),
+      go: () => navigate(`/study/diagnostic?mode=${mode}&next=paywall`),
+    })
   }
   /*
    * The new-learner exit. This used to navigate straight to /dashboard, so the
@@ -531,7 +578,9 @@ export default function Welcome() {
       void persistAccountSetup()
       setStartMode("assess")
       trackEvent("onboarding_complete", { ...onboardingProps(), exit: "uploaded_result", resultKind: resultAnalysis.resultKind })
-      navigate("/dashboard")
+      // The upload route had the harshest jump of the three: a PDF is parsed and
+      // the learner lands on the dashboard with no sign their marks were read.
+      setFinishing({ phases: buildPhases("uploaded"), go: () => navigate("/dashboard") })
     } catch {
       setFinishError("Charles couldn't save this result. Your file is safe—please try again.")
       setFinishBusy(false)
@@ -723,6 +772,23 @@ export default function Welcome() {
         paperId={paper}
         onDone={(dest) => navigate(dest === "study" ? "/study" : "/dashboard")}
       />
+    )
+  }
+
+  /* ═══ THE BUILD, FOR THE OTHER TWO ROUTES ═══
+     The beginner route has had its ten-second build (ZeroPlanReveal) all along.
+     The mid-course and practice routes navigated INSTANTLY from the Ready
+     screen — press finish, and you are simply somewhere else. Work that takes
+     no time reads as work that did not happen, and this is the moment the
+     learner decides whether any of it was real. Same ring, same ten seconds,
+     with the sequence written for the route they actually took. */
+  if (finishing && paper) {
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "var(--sch-bg, #FAFAF7)", overflowY: "auto", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 420 }}>
+          <PlanBuildLoader phases={finishing.phases} totalMs={10_000} onComplete={finishing.go} />
+        </div>
+      </div>
     )
   }
 
