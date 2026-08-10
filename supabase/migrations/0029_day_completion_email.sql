@@ -28,11 +28,41 @@ comment on column public.study_reminders.sent_done_date is
 -- day. The product promises TWO: half an hour before the session (soon) and two
 -- hours after the start time if the day is still open (catchup). The 3-hour
 -- heads-up is now opt-in, so existing rows that never explicitly asked for it
--- are moved off it. A learner who has genuinely chosen it in Settings will have
--- it re-enabled by the next sync from that screen.
-alter table public.study_reminders
-  alter column lead_on set default false;
+-- are moved off it once.
+--
+-- ── WHY THIS IS GUARDED, AND NOT JUST AN UPDATE ──────────────────────────────
+-- scripts/apply-launch-db.mjs re-runs every listed migration on EVERY production
+-- build. That is safe for pure DDL written with `if not exists`, and it is NOT
+-- safe for a data migration: a bare
+--
+--     update public.study_reminders set lead_on = false where lead_on is true;
+--
+-- would fire again on the next deploy, and the next, silently switching the
+-- 3-hour reminder back off for every learner who had deliberately turned it ON in
+-- Settings in the meantime. The symptom surfaces weeks later as "my morning
+-- reminder keeps disappearing", with nothing in the app to explain it.
+--
+-- So the backfill runs exactly once, gated on the state it is itself installing:
+-- the column default. On the first run the default is still `true` (from 0026),
+-- so the block flips the default and rewrites existing rows. On every later run
+-- the default is already `false` and the block does nothing at all.
+do $$
+begin
+  if coalesce(
+       (select column_default
+          from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'study_reminders'
+           and column_name = 'lead_on'),
+       'true'
+     ) not like '%false%'
+  then
+    alter table public.study_reminders alter column lead_on set default false;
 
-update public.study_reminders
-   set lead_on = false
- where lead_on is true;
+    -- One-time: move everyone who was opted in BY THE 0026 DEFAULT rather than by
+    -- choice. There is no way to distinguish the two after the fact, so this
+    -- deliberately resets all of them; Settings re-enables it on the next sync for
+    -- anyone who wants it, and that write happens after this block can ever run again.
+    update public.study_reminders set lead_on = false where lead_on is true;
+  end if;
+end $$;
