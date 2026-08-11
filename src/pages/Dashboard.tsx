@@ -24,6 +24,7 @@ import { probabilityMomentum, snapshotProbability, palestArea } from "@/lib/acca
 import { isAccaOnboarded, getGoal, getStartMode, GOAL_OPTIONS, paperVariantLabel } from "@/lib/acca-profile"
 import { diagnosticGate, missedDayNote, pausedNote, shieldState } from "@/lib/acca-schedule"
 import { PlanRoute } from "@/components/acca/PlanRoute"
+import LearningDashboard from "@/components/acca/LearningDashboard"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import { format } from "date-fns"
@@ -240,18 +241,19 @@ export default function Dashboard() {
           />
         )}
 
-        {/* brand-new learner — learn the basics first; the diagnostic unlocks at 15 answers */}
+        {/*
+          THE LEARNING DASHBOARD, where "Start here — learn the basics" used to be.
+          That card said exactly the same thing on day 40 as on day 1 — a
+          permanent welcome mat. The rings underneath report where the learner
+          actually is; the section checklist that unlocks the diagnostic is kept
+          inside it, because it is the one thing on that card that ever changed.
+        */}
         {zeroStart && !examDue && (
           <Card style={{ padding: SP["3xl"], marginBottom: SP.md }}>
-            <div style={{ display: "flex", gap: SP.lg, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <span style={{ flex: "none", width: 56, height: 56, borderRadius: 16, background: C.brandSoft, display: "grid", placeItems: "center" }}>
-                <Icon name="learn" size={26} color={C.brand} />
-              </span>
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Start here — learn the basics</div>
-                <h2 style={{ ...TYPE.h2, color: C.text, margin: "0 0 8px" }}>New to {paper.id}? Perfect. We start with the first topics.</h2>
+            <LearningDashboard paperId={paperId}>
+              <div style={{ marginTop: 2 }}>
+                <div style={{ ...TYPE.label, color: C.brand, marginBottom: 6 }}>Next unlock</div>
                 <p style={{ ...TYPE.body, color: C.soft, margin: "0 0 14px", lineHeight: 1.6 }}>
-                  For each of the first three sections: read the topic brief, practise the guided questions, flip the flashcards.
                   Once <strong style={{ color: C.text }}>sections A·B·C</strong> are covered, the diagnostic unlocks and sets your
                   first Exam Readiness Score — measured fairly, after you've actually learned something.
                 </p>
@@ -278,7 +280,7 @@ export default function Dashboard() {
                   Continue your plan — today's tasks
                 </motion.button>
               </div>
-            </div>
+            </LearningDashboard>
           </Card>
         )}
 
@@ -406,6 +408,20 @@ export default function Dashboard() {
                 <span style={{ color: C.faint, fontSize: 12 }}>{block.minutes} min</span>
               </div>
             ))}
+          </Card>
+        )}
+
+        {/*
+          The rings, the 30-day lap and the strongest/weakest split.
+
+          Beginners already get this inside the "next unlock" card above, so it
+          renders here for everyone else — the four numbers belong on the
+          dashboard on day 1 and on day 200, which is exactly what the block it
+          replaced could not do.
+        */}
+        {!examDue && !zeroStart && (
+          <Card style={{ padding: SP["3xl"], marginBottom: SP.md }}>
+            <LearningDashboard paperId={paperId} />
           </Card>
         )}
 

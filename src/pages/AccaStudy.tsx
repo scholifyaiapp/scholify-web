@@ -67,6 +67,7 @@ import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, chapters
  * nothing is served twice), acca-day-gate (why tomorrow is locked) and
  * acca-strategy (which paper comes next). */
 import { TodayBoard } from "@/components/acca/TodayBoard"
+import LearningDashboard from "@/components/acca/LearningDashboard"
 import { ArticleReader } from "@/components/acca/ArticleReader"
 import { PlanBoard } from "@/components/acca/PlanBoard"
 import { PracticeHub } from "@/components/acca/PracticeHub"
@@ -1741,6 +1742,19 @@ function Overview({
 
       {tab === "today" && (
       <motion.div key="today-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+        {/*
+          The same rings, lap and strength split the dashboard shows.
+
+          The Learning section is where people spend their time, and it was the
+          one place that never told them how it was going — you had to leave it
+          and go to /dashboard to find out whether any of the work was moving
+          the number. Same component, same figures, so the two screens cannot
+          drift into disagreeing about the learner.
+        */}
+        <div style={{ borderRadius: 18, border: `1px solid ${BORDER}`, background: CARD, padding: "18px 16px", marginBottom: 16 }}>
+          <LearningDashboard paperId={paper.id} />
+        </div>
+
         {/* The day itself — one topic, five ways. See TodayBoard. */}
         <TodayBoard
           paperId={paper.id}

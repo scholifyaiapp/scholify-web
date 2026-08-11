@@ -17,6 +17,8 @@ import { passProbability, recoveryState, getExamOutcomes, MOCK_PASS } from "@/li
 import { getTodayDone } from "@/lib/acca-today"
 import { composeToday, dayProgress, type BlockKind } from "@/lib/acca-today-composer"
 import { flashcardStats } from "@/lib/acca-flashcards"
+import { shieldState } from "@/lib/acca-schedule"
+import { STREAK_CYCLE, STREAK_PRIZES, lifetimePrizeCount, streakProgress } from "@/lib/acca-streak"
 import { getStudyPath, pathProgress } from "@/lib/acca-topics"
 import { usePaperContent } from "@/hooks/usePaperContent"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
@@ -717,6 +719,11 @@ function StudySection({ paperId }: { paperId: string }) {
   const [goal, setGoal] = useState(getDailyGoal())
   const heatMax = Math.max(1, ...heat.map((a) => a.count))
 
+  // Same source as the dashboard rings, so the two can never disagree on which
+  // day of the lap the learner is on.
+  const lap = streakProgress(shieldState(paperId).streak)
+  const prizesBanked = lifetimePrizeCount(shieldState(paperId).streak)
+
   function updateGoal(n: number) {
     setGoal(n)
     setDailyGoal(n)
@@ -729,6 +736,57 @@ function StudySection({ paperId }: { paperId: string }) {
 
   return (
     <>
+      {/*
+        CONSISTENCY — the 30-day lap, counted.
+
+        The streak existed as a single number on a pill and nowhere in
+        analytics, so the one metric the product asks people to protect was the
+        one it never reported on. These come from the same streakProgress() the
+        dashboard rings use, so the lap cannot read 12/30 on one screen and
+        13/30 on another.
+      */}
+      <Card style={{ marginBottom: SP.md }}>
+        <CardTitle
+          icon="streak"
+          right={
+            <span style={{ fontSize: 11, color: C.faint, textTransform: "none", letterSpacing: 0 }}>
+              {lap.lapsDone > 0 ? `${lap.lapsDone} full ${lap.lapsDone === 1 ? "lap" : "laps"} · ` : ""}
+              {prizesBanked} {prizesBanked === 1 ? "prize" : "prizes"} banked
+            </span>
+          }
+        >
+          Consistency · day {lap.cycleDay} of {STREAK_CYCLE}
+        </CardTitle>
+        <MeterBar value={Math.round(lap.fraction * 100)} color={C.green} height={8} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: SP.md }}>
+          {STREAK_PRIZES.map((prize) => {
+            const won = lap.cycleDay >= prize.day
+            return (
+              <span
+                key={prize.day}
+                title={prize.blurb}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: R.pill,
+                  background: won ? C.greenSoft : C.card2, border: `1px solid ${won ? C.green : C.border}`,
+                }}
+              >
+                <Icon name={won ? "done" : "lock"} size={11} color={won ? C.green : C.faint} />
+                <span style={{ fontSize: 11.5, fontWeight: 750, color: won ? C.green : C.faint }}>
+                  {prize.day}d · {prize.name}
+                </span>
+              </span>
+            )
+          })}
+        </div>
+        <div style={{ ...TYPE.small, color: C.faint, marginTop: SP.sm }}>
+          {lap.cycleDay === 0
+            ? "Your first lap starts with one day of real work."
+            : lap.next
+              ? `${lap.daysToNext} ${lap.daysToNext === 1 ? "day" : "days"} to ${lap.next.name}. A missed day resets the lap, not your progress.`
+              : "Lap complete. Tomorrow starts a fresh one."}
+        </div>
+      </Card>
+
       {/* daily mission */}
       <Card style={{ marginBottom: SP.md }}>
         <CardTitle

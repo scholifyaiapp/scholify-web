@@ -75,26 +75,6 @@ export function PlanRoute({ paperId }: { paperId: string }) {
       ? Math.min(0.97, Math.max(0.03, elapsed / Math.max(1, elapsed + days)))
       : 0
 
-  /*
-   * FOUR NUMBERS, chosen because each one answers a question a learner
-   * actually asks — and each is actionable. Readiness against their own target
-   * is the headline the whole product exists to move; the daily block is the
-   * promise they made; questions answered is the evidence behind the readiness
-   * figure, without which it is just a number.
-   */
-  const metrics: { icon: IconName; label: string; value: string; foot: string; tone: string }[] = [
-    {
-      icon: "stats",
-      label: "Readiness",
-      value: `${stats.readiness}%`,
-      foot: stats.readiness >= plan.targetProb ? "target reached" : `${Math.max(0, plan.targetProb - stats.readiness)} to target`,
-      tone: stats.readiness >= plan.targetProb ? C.green : C.brand,
-    },
-    { icon: "mission", label: "Daily block", value: `${plan.dailyMinutes} min`, foot: `${plan.dailyGoal} questions`, tone: C.brand },
-    { icon: "practice", label: "Answered", value: String(stats.answered), foot: "questions so far", tone: C.brand },
-    { icon: "trophy", label: "Target", value: `${plan.targetProb}%`, foot: "before exam day", tone: C.amber },
-  ]
-
   // No target date yet → nudge to set one (that's what unlocks the route).
   if (!plan.examDate || days === null) {
     return (
@@ -168,27 +148,15 @@ export function PlanRoute({ paperId }: { paperId: string }) {
         </div>
       )}
 
-      {/* ── The four numbers that decide whether they pass ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))", gap: SP.sm, marginTop: SP.md, marginBottom: SP.md }}>
-        {metrics.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={reduced ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06 * i, duration: 0.4, ease: EASE }}
-            style={{ borderRadius: R.lg, border: `1px solid ${C.border}`, background: C.card2, padding: "11px 13px" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name={m.icon} size={13} color={m.tone} />
-              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: C.faint }}>{m.label}</span>
-            </div>
-            <div style={{ fontSize: 19, fontWeight: 850, color: C.text, marginTop: 6, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
-              {m.value}
-            </div>
-            <div style={{ fontSize: 10.5, color: C.faint, marginTop: 2 }}>{m.foot}</div>
-          </motion.div>
-        ))}
-      </div>
+      {/*
+        The four numbers moved OUT of here and into LearningDashboard, where
+        they are animated rings rather than flat tiles. Rendering both on the
+        same screen would state readiness, the daily block, answered and target
+        twice within a few hundred pixels, in two different visual languages.
+
+        This block keeps what only it has: the journey from start date to exam
+        day, and the day strip.
+      */}
 
       {/* horizontally-scrollable day strip */}
       <div style={{ display: "flex", gap: SP.sm, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
