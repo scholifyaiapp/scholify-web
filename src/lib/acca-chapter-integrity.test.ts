@@ -107,3 +107,58 @@ describe("every chapter in every paper", () => {
     }
   })
 })
+
+/*
+ * THE F1–F9 STANDARD.
+ *
+ * The nine papers a student meets before Strategic Professional are the ones
+ * Scholify sells today, so they carry a floor that the rest do not yet.
+ *
+ * A sweep on 11 Aug 2026 found exactly two chapters in those nine missing the
+ * teaching furniture every other chapter had — FM Area H and AA Area F, both
+ * legacy bodies left in place while the rest of their paper was rebuilt. They
+ * had chapters, and they had no syllabusRefs, no inline check and no knowledge
+ * diagnostic, and nothing in the codebase would have said so.
+ *
+ * This is that sweep, made permanent. It is deliberately scoped to F1–F9: the
+ * Strategic papers are mid-rebuild and flagged as such in the picker, so holding
+ * them to a standard they have not reached yet would just mean a permanently red
+ * suite. Add each one here as its rebuild lands.
+ */
+describe("the F1–F9 chapter standard", () => {
+  const PAPERS = ["BT", "MA", "FA", "LW", "PM", "TX", "FR", "AA", "FM"]
+
+  it("holds for the nine papers currently sold", () => {
+    for (const paper of PAPERS) {
+      const chapters = chaptersForPaper(paper)
+      expect(chapters.length, `${paper} has no chapters`).toBeGreaterThanOrEqual(20)
+
+      for (const c of chapters) {
+        const where = `${paper}/${c.id ?? c.area} "${c.title}"`
+        // Maps the chapter to the official study guide, so coverage is checkable.
+        expect(c.syllabusRefs?.length ?? 0, `${where} has no syllabusRefs`).toBeGreaterThan(0)
+        // A bullet is read; a question is answered. Only the second tells the
+        // learner whether the chapter landed.
+        expect(c.knowledgeDiagnostic?.length ?? 0, `${where} has no knowledgeDiagnostic`).toBeGreaterThan(0)
+        // At least one inline check, so the reader is tested mid-chapter rather
+        // than only at the end of the day.
+        expect(c.sections.some((s) => s.check), `${where} has no inline check`).toBe(true)
+        // Traps are the whole point of an exam-prep chapter.
+        expect(c.examTraps.length, `${where} has fewer than 2 exam traps`).toBeGreaterThanOrEqual(2)
+        expect(c.keyTerms.length, `${where} has no key terms`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it("gives every F1–F9 chapter a stable id and number", () => {
+    // Learner progress keys off id, and the composer orders by number. A chapter
+    // missing either sorts unpredictably — which put an area with three
+    // questions in the whole bank first in line for a new AA learner.
+    for (const paper of PAPERS) {
+      for (const c of chaptersForPaper(paper)) {
+        expect(c.id, `${paper}/${c.area} "${c.title}" has no id`).toBeTruthy()
+        expect(typeof c.number, `${paper}/${c.id} has no number`).toBe("number")
+      }
+    }
+  })
+})
