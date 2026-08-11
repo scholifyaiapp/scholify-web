@@ -71,11 +71,12 @@ function admin() {
  * Thirty minutes is the smallest window in which someone can actually finish what
  * they are on and be at the desk.
  *
- * WINDOW. The sender is called every ~5 minutes, so it fires a slot when the
- * learner's local clock is between the target and target + WINDOW. The window is
- * deliberately wider than the tick interval: a skipped or slow tick must not
- * silently drop someone's reminder. Exactly-once is guaranteed by the per-slot
- * sent_*_date columns instead, never by the window.
+ * TOLERANCE. A slot fires when the learner's local clock is between its target
+ * and target + its own window (see SLOTS). The windows are far wider than any
+ * tick interval on purpose: no scheduler we can reach is reliable to the
+ * minute, and a skipped tick must not silently drop someone's reminder.
+ * Exactly-once is guaranteed by the per-slot sent_*_date columns instead,
+ * never by the window.
  */
 /*
  * Three reminders a day, and the offsets are the founder's call:
@@ -86,10 +87,36 @@ function admin() {
  *         Thirty minutes is long enough to start something else and lose it.
  *   +120  two hours after — the honest catch-up, only if they never opened it.
  */
+/*
+ * ── EACH SLOT CARRIES ITS OWN TOLERANCE ─────────────────────────
+ *
+ * There used to be one WINDOW of 20 minutes for all three, on the assumption
+ * that the sender is called every ~5 minutes. It is not. GitHub's scheduled
+ * workflows are best-effort and heavily throttled on free runners — the first
+ * two real runs came 54 minutes apart, not 5 — and Vercel's Hobby cron is once
+ * a DAY. A 20-minute tolerance against an hourly tick misses most learners,
+ * silently, which is exactly the failure this whole feature had before.
+ *
+ * Rather than depend on a scheduler nobody controls, each slot now declares how
+ * late it can be delivered and still MEAN what it says:
+ *
+ *   lead    100 min — fires anywhere from −120 to −20. Always comfortably
+ *                     before the session, so lateness costs nothing. Stops
+ *                     short of `soon` so the two never arrive together.
+ *   soon     20 min — stays tight on purpose. "Your session starts in ten
+ *                     minutes" is false forty minutes later, and a reminder
+ *                     that lies is worse than one that is missed. If a tick
+ *                     skips it, `catchup` covers the learner anyway.
+ *   catchup 180 min — the "you haven't studied today" nudge. Its meaning does
+ *                     not decay, so it tolerates the longest delay.
+ *
+ * Exactly-once is still guaranteed by the per-slot sent_*_date columns, never
+ * by the window — so widening these cannot double-send.
+ */
 const SLOTS = [
-  { key: "lead", offset: -120, onCol: "lead_on", dateCol: "sent_lead_date" },
-  { key: "soon", offset: -10, onCol: "soon_on", dateCol: "sent_soon_date" },
-  { key: "catchup", offset: 120, onCol: "catchup_on", dateCol: "sent_catchup_date" },
+  { key: "lead", offset: -120, window: 100, onCol: "lead_on", dateCol: "sent_lead_date" },
+  { key: "soon", offset: -10, window: 20, onCol: "soon_on", dateCol: "sent_soon_date" },
+  { key: "catchup", offset: 120, window: 180, onCol: "catchup_on", dateCol: "sent_catchup_date" },
 ] as const
 
 type SlotKey = (typeof SLOTS)[number]["key"]
@@ -110,8 +137,10 @@ export function dueTrialReminder(startedAt: string, sent: Partial<Record<TrialRe
   return TRIAL_EMAILS.find((item) => hours >= item.afterHours && !sent[item.key])?.key ?? null
 }
 
-/** How late a tick may be and still deliver a slot, in minutes. */
-const WINDOW = 20
+/*
+ * The single WINDOW constant was here. Tolerance is per-slot now — see SLOTS —
+ * because how late a reminder may be depends entirely on what it says.
+ */
 
 const MINUTES_IN_DAY = 24 * 60
 
@@ -195,7 +224,7 @@ export function dueSlot(
      * the honest behaviour; the other two slots still fire.
      */
     if (target < 0 || target >= MINUTES_IN_DAY) continue
-    if (local.minutes >= target && local.minutes < target + WINDOW) return slot.key
+    if (local.minutes >= target && local.minutes < target + slot.window) return slot.key
   }
   return null
 }

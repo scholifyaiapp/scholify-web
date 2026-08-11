@@ -45,8 +45,20 @@ describe("dueSlot — which reminder is due right now", () => {
     expect(dueSlot(ROW, at("21:00"))).toBe("catchup")
   })
 
-  it("stays silent at every other time of day", () => {
-    for (const t of ["00:00", "07:00", "12:00", "15:00", "16:00", "18:30", "19:30", "20:30", "23:00"]) {
+  it("stays silent outside every slot's window", () => {
+    /*
+     * Session at 19:00, so the live windows are now:
+     *   lead     17:00 → 18:40   (−120, tolerance 100)
+     *   soon     18:50 → 19:10   (−10,  tolerance 20)
+     *   catchup  21:00 → 24:00   (+120, tolerance 180)
+     *
+     * 18:30 used to be in this list and no longer is: with lead's wider
+     * tolerance it legitimately fires there, and that is the entire point of
+     * the change — 18:30 is still half an hour before the session, so an
+     * advance notice delivered then means exactly what it says. What must stay
+     * silent is the GAPS between windows and the hours before any of them.
+     */
+    for (const t of ["00:00", "07:00", "12:00", "15:00", "16:30", "18:45", "19:30", "20:30"]) {
       expect(dueSlot(ROW, at(t)), `${t} should be silent`).toBeNull()
     }
   })
@@ -213,5 +225,74 @@ describe("trial lifecycle reminders", () => {
 
   it("does not send lifecycle nudges after the trial has expired", () => {
     expect(dueTrialReminder(start, {}, atHour(72))).toBeNull()
+  })
+})
+
+/*
+ * SURVIVING AN UNRELIABLE SCHEDULER.
+ *
+ * The tolerance used to be a flat 20 minutes for all three slots, on the
+ * assumption that the sender is called every ~5 minutes. Nothing we can reach
+ * delivers that: Vercel's Hobby cron is once a DAY, and GitHub's scheduled
+ * workflows are best-effort — the first two real runs of ours arrived 54
+ * minutes apart. A 20-minute tolerance against an hourly tick misses most
+ * learners silently, which is the exact failure this feature already had.
+ *
+ * So each slot declares how late it can be and still mean what it says, and
+ * these tests simulate a coarse, irregular scheduler rather than a perfect one.
+ */
+describe("delivery under a scheduler that ticks about hourly", () => {
+  /** Walk a day in `step` minutes and collect which slots would fire. */
+  const sweep = (step: number, startOffset = 0) => {
+    const fired: string[] = []
+    const sent = new Set<string>()
+    for (let m = startOffset; m < 24 * 60; m += step) {
+      const row = {
+        practice_time: "19:00",
+        sent_lead_date: sent.has("lead") ? "2026-08-12" : null,
+        sent_soon_date: sent.has("soon") ? "2026-08-12" : null,
+        sent_catchup_date: sent.has("catchup") ? "2026-08-12" : null,
+      }
+      const slot = dueSlot(row as Parameters<typeof dueSlot>[0], { date: "2026-08-12", minutes: m })
+      if (slot && !sent.has(slot)) { sent.add(slot); fired.push(slot) }
+    }
+    return fired
+  }
+
+  it("still delivers the advance notice and the catch-up on an hourly tick", () => {
+    // These two are the ones whose meaning does not decay, so they carry the
+    // widest tolerance and must survive any realistic scheduler.
+    for (const phase of [0, 7, 13, 22, 31, 44, 58]) {
+      const fired = sweep(60, phase)
+      expect(fired, `hourly tick starting at +${phase}min`).toContain("lead")
+      expect(fired, `hourly tick starting at +${phase}min`).toContain("catchup")
+    }
+  })
+
+  it("delivers all three on a 5-minute tick", () => {
+    const fired = sweep(5)
+    expect(fired).toEqual(["lead", "soon", "catchup"])
+  })
+
+  it("never sends the same slot twice, however often it is polled", () => {
+    // The dedupe is the sent_*_date columns, not the window — so widening the
+    // windows must not be able to double-send.
+    const fired = sweep(1)
+    expect(new Set(fired).size).toBe(fired.length)
+  })
+
+  it("keeps 'starts in ten minutes' honest by refusing to send it late", () => {
+    // A reminder that lies is worse than one that is missed. Session at 19:00:
+    // the slot is live around 18:50 and must be dead well before 19:30.
+    expect(dueSlot(ROW, at("18:50"))).toBe("soon")
+    expect(dueSlot(ROW, at("19:05"))).toBe("soon")
+    expect(dueSlot(ROW, at("19:30"))).not.toBe("soon")
+  })
+
+  it("keeps the advance notice clear of the ten-minute nudge", () => {
+    // lead runs -120 to -20, so the two can never arrive together.
+    expect(dueSlot(ROW, at("17:00"))).toBe("lead")
+    expect(dueSlot(ROW, at("18:30"))).toBe("lead")
+    expect(dueSlot(ROW, at("18:45"))).not.toBe("lead")
   })
 })
