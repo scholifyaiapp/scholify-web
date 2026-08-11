@@ -20,7 +20,25 @@ describe("FM official Areas C–G independently recomputed examples", () => {
     expect(10_000_000 * 0.05 * (6 / 12)).toBe(250_000)
   })
   it("keeps all eight official FM areas represented", () => {
-    expect(new Set(getQuestions("FM").map((item) => item.area))).toEqual(new Set(["A", "B", "C", "D", "E", "F", "G", "H"]))
-    expect(chaptersForPaper("FM").map((chapter) => chapter.area).sort()).toEqual(["A", "B", "C", "D", "E", "F", "G", "H"])
+    /*
+     * COVERAGE, not one-chapter-per-area.
+     *
+     * This asserted an exact list, which quietly encoded the thing that made FM
+     * a thin paper: eight chapters for eight areas, so A1 through A4 shared a
+     * single sitting. FM is being rebuilt as a tree — one chapter per syllabus
+     * sub-topic group, the same shape BT has — so an area legitimately holds
+     * several chapters and this must check that every area is COVERED rather
+     * than that none is covered twice.
+     */
+    const areas = ["A", "B", "C", "D", "E", "F", "G", "H"]
+    expect(new Set(getQuestions("FM").map((item) => item.area))).toEqual(new Set(areas))
+    expect(new Set(chaptersForPaper("FM").map((chapter) => chapter.area))).toEqual(new Set(areas))
+  })
+
+  it("gives every chapter a unique id once a tree area exists", () => {
+    // Learner progress keys off `id`, so two chapters sharing one would record
+    // the second against the first — silently, and only for tree papers.
+    const withIds = chaptersForPaper("FM").filter((c) => c.id)
+    expect(new Set(withIds.map((c) => c.id)).size).toBe(withIds.length)
   })
 })

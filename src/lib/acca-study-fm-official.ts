@@ -1,11 +1,22 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
-import { FM_A } from "@/lib/acca-study-fm-a"
+import { FM_TREE_AREA_A } from "@/lib/acca-study-fm-tree-a"
 import { FM_B } from "@/lib/acca-study-fm-b"
 import { FM_C } from "@/lib/acca-study-fm-c"
 import { FM_D } from "@/lib/acca-study-fm-d"
 import { FM_E } from "@/lib/acca-study-fm-e"
 
-export const FM_OFFICIAL_A = FM_A
+/*
+ * Area A is now a TREE — three chapters, one per syllabus sub-topic group,
+ * replacing the single FM_A chapter that had to cover A1 through A4 in one
+ * sitting. `collect` reads arrays as well as single objects, so the array is
+ * all that is needed here.
+ *
+ * The remaining areas are still the legacy one-chapter-per-area bodies (and B,
+ * D, E are FM_C/FM_B/FM_D relabelled). They get the same treatment area by
+ * area; see acca-study-fm-tree-a.ts for why this matters — the engine serves
+ * one chapter a day, so eight chapters is an eight-day course.
+ */
+export const FM_OFFICIAL_A = FM_TREE_AREA_A
 export const FM_OFFICIAL_C = { ...FM_C, area: "C" }
 export const FM_OFFICIAL_D = { ...FM_B, area: "D", title: "Investment appraisal" }
 export const FM_OFFICIAL_E = { ...FM_D, area: "E", title: "Business finance" }
