@@ -127,6 +127,44 @@ const AA_TREE_06: StudyChapter = {
         },
       ],
     },
+    {
+      id: "acceptance-scenario",
+      heading: "An acceptance decision, worked",
+      blocks: [
+        {
+          kind: "example",
+          title: "Four facts, four different answers",
+          scenario:
+            "Your firm is offered the audit of Trenholm Co. (1) The outgoing auditor resigned mid-year. (2) Trenholm refuses permission to contact them, saying the relationship ended badly. (3) Trenholm's finance director is your engagement partner's sister. (4) The proposed fee is 40% below your normal rate for the work.",
+          steps: [
+            { label: "1 · Mid-year resignation", detail: "A warning sign, not a bar. Obtain the resignation statement, which must set out any circumstances members or creditors should know about — or state there are none." },
+            { label: "2 · Permission refused", detail: "DECLINE. Refusal removes the firm's ability to assess why the previous auditor left, and is itself the strongest available signal. This alone ends the decision." },
+            { label: "3 · Partner's sister as FD", detail: "A close family relationship creates familiarity and self-interest threats to objectivity. Not a prohibition on the FIRM, but that partner cannot lead the engagement — a different partner and an independent review would be needed." },
+            { label: "4 · Fee 40% below rate", detail: "Not unethical in itself, but it must not compromise quality or compliance with standards. If the fee cannot fund a proper audit, the firm cannot accept: professional competence and due care come before winning the work." },
+          ],
+          result:
+            "Only ONE of the four is decisive on its own, and it is the one candidates skip past. The others are threats to be assessed and managed. Sorting decisive from manageable is the skill being examined.",
+        },
+        {
+          kind: "callout",
+          tone: "tip",
+          title: "A lowball fee is not automatically an ethical breach",
+          md: "Low-balling is permitted; what is not permitted is performing an inadequate audit because the fee is inadequate. The answer is therefore about **competence and due care**, not about the price — a distinction that separates a good answer from a moralising one.",
+        },
+      ],
+      check: {
+        q: "A prospective client refuses permission for you to contact the outgoing auditor. What should you do?",
+        options: [
+          "Contact the outgoing auditor anyway — professional duty overrides",
+          "Accept, but perform extra procedures in the first year",
+          "Decline the engagement",
+          "Accept, and ask the client to explain in writing why",
+        ],
+        correct: 2,
+        explain:
+          "Refusal prevents the firm from assessing why the previous auditor left, and is itself a serious warning. Contacting them without permission would breach confidentiality. Extra procedures cannot substitute for information deliberately withheld before you even start.",
+      },
+    },
   ],
   examTraps: [
     { trap: "Contacting the outgoing auditor before asking the client.", fix: "Client permission first; refusal is a reason to decline." },
@@ -433,6 +471,55 @@ const AA_TREE_08: StudyChapter = {
           "At planning they are a risk assessment procedure — directing the audit to where misstatement is more likely. They can provide substantive evidence later, and are mandatory again at the final review, but the planning purpose is risk identification.",
       },
     },
+    {
+      id: "understanding-to-risk",
+      heading: "From understanding to a named risk",
+      blocks: [
+        {
+          kind: "text",
+          md: "Understanding the entity is not an end in itself — it exists to produce risks. Each aspect ISA 315 lists points at a **specific balance** that may be misstated, and the bridge between the two is what a Section B answer is actually being marked on.",
+        },
+        {
+          kind: "table",
+          caption: "Each aspect, and the risk it produces",
+          head: ["What you learn", "The risk it points at"],
+          rows: [
+            ["The industry is in decline and competitors are discounting", "Inventory may be held above net realisable value; receivables may be less recoverable"],
+            ["The entity adopted a new revenue policy this year", "Revenue may be recognised incorrectly or prematurely — occurrence and cut-off"],
+            ["Directors are paid a bonus on reported profit", "Management bias towards overstating revenue and understating expenses and provisions"],
+            ["A new accounting system went live mid-year", "Transactions may be lost or duplicated in migration — completeness and accuracy"],
+            ["The entity is close to breaching a loan covenant", "Pressure to misclassify debt, or to understate liabilities and overstate assets"],
+            ["A significant part of production is outsourced", "Existence and valuation of inventory held by a third party; completeness of related liabilities"],
+          ],
+        },
+        {
+          kind: "example",
+          title: "One sentence of understanding, worked all the way to a procedure",
+          scenario:
+            "Planning notes record: \"Belvoir Co migrated to a new inventory system in month seven. The old system was switched off immediately and the migration was performed by the IT manager alone.\"",
+          steps: [
+            { label: "The understanding", detail: "A mid-year system change, with no parallel running and no segregation over the migration itself." },
+            { label: "The risk of material misstatement", detail: "Inventory quantities and values may be incomplete or inaccurate — records could have been lost, duplicated or mis-mapped in transfer, with no second person to detect it." },
+            { label: "Which assertions", detail: "Completeness and accuracy of inventory; and, because cost of sales moves with inventory, accuracy of profit." },
+            { label: "The response", detail: "Obtain the migration reconciliation and agree total quantities and values immediately before and after cut-over; test a sample of items across the cut-over from old records to new; attend a count and reconcile to the new system; consider using audit software to recompute the full inventory valuation." },
+          ],
+          result:
+            "One sentence produced a risk, two assertions and four procedures. That chain — fact, misstatement, assertion, procedure — is the same one AA-07 sets out, and this is where the raw material for it comes from.",
+        },
+      ],
+      check: {
+        q: "Planning notes state that the finance director's bonus depends on reported profit. What is the correctly expressed audit risk?",
+        options: [
+          "The finance director may be dishonest",
+          "There is a risk of fraud at the company",
+          "Management has an incentive to overstate revenue and understate provisions, so those balances may be misstated",
+          "The bonus scheme is a governance deficiency",
+        ],
+        correct: 2,
+        explain:
+          "An audit risk names the balances that may be misstated and the direction. The first two are character judgements rather than risks; the fourth is a governance point, which may be true but is a different requirement.",
+      },
+    },
   ],
   examTraps: [
     { trap: "Accepting management's explanation for an unusual movement.", fix: "Corroborate it with independent evidence." },
@@ -558,6 +645,22 @@ const AA_TREE_09: StudyChapter = {
         {
           kind: "text",
           md: "If fraud is **suspected**, the auditor discusses it with the appropriate level of management — **at least one level above** those involved — and with those charged with governance. Where senior management or governance is implicated, the auditor may need legal advice and may have to consider resignation. Suspected **money laundering** must be reported, and tipping off the client is an offence.",
+        },
+        {
+          kind: "example",
+          title: "The triangle applied, and the response that follows",
+          scenario:
+            "At Loxley Co, the warehouse manager approves goods received, updates the inventory system and authorises supplier payments under £10,000. He has worked there eleven years, was recently refused a pay rise, and eight new suppliers were added in the last quarter, all paid amounts just under £10,000.",
+          steps: [
+            { label: "Incentive / pressure", detail: "A refused pay rise, and a personal sense of grievance after long service." },
+            { label: "Opportunity", detail: "One person controls receipt, recording AND payment — segregation of duties is absent, and the £10,000 limit is a boundary he can work beneath." },
+            { label: "Rationalisation", detail: "Long service plus a perceived injustice is the classic \"I am owed this\" pattern." },
+            { label: "The risk, in financial-statement terms", detail: "Purchases and payables may be overstated by payments for goods never received; cash may be misappropriated. Assertions: occurrence of purchases, existence of the related inventory." },
+            { label: "Procedures", detail: "Obtain the new-supplier listing and verify each entity independently — company registry, address, bank details; agree a sample of those payments to goods received notes AND to physical inventory; analyse payments for clustering just below the authorisation limit; inspect system access rights to confirm the segregation failure." },
+            { label: "If suspicion firms up", detail: "Report to a level of management ABOVE the warehouse manager and to those charged with governance. Do not confront him. Consider money laundering reporting obligations — and note that tipping off is itself an offence." },
+          ],
+          result:
+            "All three legs of the triangle were visible in four sentences of scenario. Note the payment clustering just under the limit: authorisation thresholds create a pattern, and looking for that pattern is a procedure a marker can award.",
         },
       ],
     },
@@ -758,6 +861,58 @@ const AA_TREE_10: StudyChapter = {
         correct: 1,
         explain:
           "The benchmark is deliberately an outsider — someone with audit experience but no knowledge of this engagement. It is what makes the file reviewable by a regulator, a court or a successor firm.",
+      },
+    },
+    {
+      id: "direction-review",
+      heading: "Direction, supervision and review",
+      blocks: [
+        {
+          kind: "text",
+          md: "A plan is executed by a team, most of it junior. The engagement partner remains responsible for the opinion, so ISAs require the work to be **directed, supervised and reviewed** in proportion to the risk and the experience of whoever performed it.",
+        },
+        {
+          kind: "table",
+          caption: "What each one means in practice",
+          head: ["", "What it involves"],
+          rows: [
+            ["Direction", "Briefing the team on the entity, the risks, their specific responsibilities, and where to escalate"],
+            ["Supervision", "Tracking progress, being available for questions, and addressing significant matters as they arise rather than at the end"],
+            ["Review", "Considering whether the work was performed to standard, whether the evidence supports the conclusions, and whether anything needs further work"],
+          ],
+        },
+        {
+          kind: "example",
+          title: "The same working paper, before and after review",
+          scenario: "A first-year trainee documents the receivables circularisation on Renwick Co.",
+          steps: [
+            { label: "What was written", detail: "\"Circularised receivables. 12 letters sent, 9 replies received, all agreed. 3 no replies. Balance appears reasonable. Conclusion: receivables are fairly stated.\"" },
+            { label: "Review point 1 — the population", detail: "No total receivables balance, no coverage figure. Twelve letters out of how many, covering what proportion by value? Without that the sample means nothing." },
+            { label: "Review point 2 — selection", detail: "How were the twelve chosen? Were old, credit and nil balances included, as AA-17 requires? A sample of the twelve largest tests existence and says nothing about completeness." },
+            { label: "Review point 3 — the three non-replies", detail: "\"3 no replies\" is not a result, it is an open item. What alternative procedures were performed — after-date cash, agreement to despatch documents? Left as written, £X of the balance is unsupported." },
+            { label: "Review point 4 — the conclusion", detail: "\"Appears reasonable\" is not a conclusion against an objective. The objective was existence and valuation of receivables; the conclusion must address those." },
+          ],
+          result:
+            "Four review points on four lines of work. The trainee may well have done the procedures correctly — but the file as written could not be defended, and under ISA 230 work that cannot be evidenced is treated as work not done. That is what review exists to catch, before the file is closed rather than after.",
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "Review is proportionate, not uniform",
+          md: "More experienced staff and lower-risk areas need less; a first-year trainee on a significant risk needs the work re-performed in part. For a listed client an **engagement quality review** is required in addition, before the report is signed.",
+        },
+      ],
+      check: {
+        q: "A trainee's working paper concludes \"balance appears reasonable\". Why is this inadequate?",
+        options: [
+          "It is too informal in tone",
+          "It does not conclude against the stated objective, so a reviewer cannot tell whether the assertions were satisfied",
+          "It should have been signed by the partner",
+          "Conclusions must always be positive",
+        ],
+        correct: 1,
+        explain:
+          "A conclusion has to answer the objective the paper set out — here existence and valuation of receivables. \"Appears reasonable\" answers nothing, so a reviewer cannot judge whether the evidence supports it, which is exactly the ISA 230 test.",
       },
     },
   ],
