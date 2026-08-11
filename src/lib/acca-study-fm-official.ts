@@ -1,7 +1,7 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { FM_TREE_AREA_A } from "@/lib/acca-study-fm-tree-a"
+import { FM_TREE_AREA_C } from "@/lib/acca-study-fm-tree-c"
 import { FM_B } from "@/lib/acca-study-fm-b"
-import { FM_C } from "@/lib/acca-study-fm-c"
 import { FM_D } from "@/lib/acca-study-fm-d"
 import { FM_E } from "@/lib/acca-study-fm-e"
 
@@ -17,7 +17,10 @@ import { FM_E } from "@/lib/acca-study-fm-e"
  * one chapter a day, so eight chapters is an eight-day course.
  */
 export const FM_OFFICIAL_A = FM_TREE_AREA_A
-export const FM_OFFICIAL_C = { ...FM_C, area: "C" }
+/* Area C is a five-chapter tree — see acca-study-fm-tree-c.ts. It replaces the
+   single chapter that covered inventory, receivables, payables, cash AND
+   funding strategy in one sitting. */
+export const FM_OFFICIAL_C = FM_TREE_AREA_C
 export const FM_OFFICIAL_D = { ...FM_B, area: "D", title: "Investment appraisal" }
 export const FM_OFFICIAL_E = { ...FM_D, area: "E", title: "Business finance" }
 
