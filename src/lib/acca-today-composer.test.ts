@@ -374,3 +374,57 @@ describe("a paper with no content loaded", () => {
     expect(day.blocks.length).toBeGreaterThanOrEqual(4)
   })
 })
+
+/*
+ * THE HANDOVER — read the chapter, then answer on THAT chapter.
+ *
+ * The chapter reader ends on a button that says "Complete lesson — unlock 5
+ * Quizzes". For a while it recorded the read and returned to the overview,
+ * which offered the next topic: sixteen minutes of reading, a promise of five
+ * quizzes, and a different chapter instead. A day is one topic — read it, then
+ * answer on it — and these pin both halves of that.
+ */
+describe("the lesson → quizzes handover", () => {
+  const plan = { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 }
+
+  it("aims the day's quizzes at the day's chapter, not somewhere else", () => {
+    setPlan("BT", plan)
+    const day = composeToday("BT", true)
+    const study = day.blocks.find((b) => b.kind === "study")!
+    const quiz = day.blocks.find((b) => b.kind === "quiz")!
+    expect(study.chapterKey).toBe(chapterKey(day.chapter!))
+    // One topic a day: the quizzes sit on the same syllabus area that was read.
+    expect(quiz.area).toBe(day.chapter!.area)
+    expect(day.quiz.length).toBe(QUIZ_SIZE)
+  })
+
+  it("has quizzes ready to hand over the moment the chapter is finished", () => {
+    // The button promises five. If the composed day cannot supply them, the
+    // reader falls back to a topic session — but for a normal paper it must
+    // never come to that, or the promise is decoration.
+    setPlan("BT", plan)
+    const day = composeToday("BT", true)
+    expect(day.blocks.some((b) => b.kind === "quiz")).toBe(true)
+    expect(day.quiz.length).toBeGreaterThan(0)
+  })
+
+  it("composes the NEXT chapter once the read is recorded — so the handover must read the day first", () => {
+    /*
+     * This is the trap the fix had to step around, and the reason the reader
+     * captures today's composition BEFORE calling markChapterRead. Compose in
+     * the wrong order and the learner is handed questions on a chapter they
+     * have not opened yet — the same "another topic" bug, one step later.
+     */
+    setPlan("BT", plan)
+    const before = composeToday("BT", true)
+    const captured = before.quiz.map((q) => q.id)
+
+    markChapterRead("BT", chapterKey(before.chapter!))
+
+    const after = composeToday("BT", true)
+    expect(chapterKey(after.chapter!)).not.toBe(chapterKey(before.chapter!))
+    // Proof that the order matters: composing after the read yields a different
+    // question set, so a handover built on it would leave the chapter behind.
+    expect(after.quiz.map((q) => q.id)).not.toEqual(captured)
+  })
+})

@@ -606,16 +606,23 @@ export default function AccaStudy() {
     startTopicSession(target, false, LEARN_SIZE)
   }
 
-  /** Topic flow: practise one syllabus area, or sit its knowledge check. */
-  function startTopicSession(area: string, test: boolean, size = SESSION_SIZE) {
-    if (!paperId) return
+  /**
+   * Topic flow: practise one syllabus area, or sit its knowledge check.
+   *
+   * Returns whether a session actually started. Callers that have just promised
+   * the learner something ("unlock 5 Quizzes") need to know, because the empty
+   * -bank branch below leaves the screen exactly where it was — fine for a tile
+   * you tapped speculatively, a dead end for the button that ends a lesson.
+   */
+  function startTopicSession(area: string, test: boolean, size = SESSION_SIZE): boolean {
+    if (!paperId) return false
     const seed = (Date.now() % 100000) + 1
     // A knowledge CHECK is a measurement, so it must not re-ask questions the
     // learner has already answered — that would measure memory of the answer.
     const qs = buildSession(paperId, test ? TOPIC_TEST_SIZE : size, { area, excludeIds: servedIds(paperId, test ? "quiz" : "practice") }, seed)
     if (qs.length === 0) {
       toast.info("No curated questions for this topic yet — try Custom practice.")
-      return
+      return false
     }
     loadQuestions(qs)
     setSessionPool(test ? "quiz" : "practice")
@@ -629,6 +636,7 @@ export default function AccaStudy() {
     setDeadline(Date.now() + qs.length * MOCK_SECONDS_PER_Q * 1000); expiredRef.current = false
     resetQuestion()
     setMode("session")
+    return true
   }
 
   /** Bank Run — 50 whole-paper questions under the clock (75 min). Free,
@@ -880,6 +888,17 @@ export default function AccaStudy() {
                 }}
                 onPractice={() => {
                   /*
+                   * Read TODAY'S composed quizzes BEFORE recording the chapter as
+                   * read. composeToday picks the day from chapter progress, so
+                   * the moment markChapterRead lands it composes the NEXT day —
+                   * and launching from that would hand the learner questions on a
+                   * chapter they have not opened yet. Which is the same "another
+                   * topic" they were just complaining about, one step later.
+                   */
+                  const today = composeToday(paper.id, /* dryRun */ true)
+                  const quizBlock = today.blocks.find((b) => b.kind === "quiz")
+
+                  /*
                    * Reaching the end of a chapter is what "read" means. Recording
                    * it here is what lets tomorrow's plan advance to the NEXT
                    * chapter — before this, chapter-level progress did not exist at
@@ -890,7 +909,36 @@ export default function AccaStudy() {
                   markTodayTaskDone(paper.id, `study-${chapterKey(chapter)}`)
                   completePendingTodayTask(paper.id)
                   setTick((t) => t + 1)
-                  setMode("overview")
+                  /*
+                   * THEN GO STRAIGHT INTO THE QUIZZES.
+                   *
+                   * This button reads "Complete lesson — unlock 5 Quizzes", and
+                   * it used to return to the overview instead, which offered the
+                   * next topic. So the learner read for sixteen minutes, was told
+                   * five quizzes had just been unlocked, and was handed a
+                   * different chapter — the promise on the button was the one
+                   * thing that did not happen.
+                   *
+                   * A day is one topic: read it, then answer on it. The chapter
+                   * and the quizzes are two halves of one sitting, not two items
+                   * on a list, so the second half starts itself. Only if this
+                   * area has no curated questions do we fall back to the
+                   * overview — startTopicSession has already said so in a toast,
+                   * and leaving someone parked on a chapter they just finished
+                   * would be its own dead end.
+                   *
+                   * It launches the day's OWN quiz block, not a fresh topic
+                   * session: those are the questions the day already claimed, so
+                   * the count on the card stays true, and stamping the block
+                   * pending is what marks it done on the way back and unlocks
+                   * step 3. A fresh session would leave the quiz block sitting
+                   * there unfinished and then serve five more.
+                   */
+                  if (quizBlock && today.quiz.length > 0) {
+                    onComposedFromLink(today.quiz, "quiz", quizBlock.area ?? null, quizBlock.id)
+                  } else if (!startTopicSession(topicArea, false, LEARN_SIZE)) {
+                    setMode("overview")
+                  }
                 }}
               />
             )
