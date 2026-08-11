@@ -47,7 +47,10 @@ export const FULL_DEPTH_CHAPTERS = 20
  * test will tell you when that is.
  */
 export const DEVELOPING_PAPERS: readonly string[] = [
-  "FM",
+  // FM was here. Its rebuild landed on 11 Aug 2026: eight chapters — five
+  // authored bodies aliased across seven areas — became twenty-five, one per
+  // syllabus sub-topic group across all eight areas. The test below is what
+  // told us it had crossed the line, by going red until this entry was removed.
   "AA",
   "SBL",
   "SBR",
