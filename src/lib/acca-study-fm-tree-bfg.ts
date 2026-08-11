@@ -86,6 +86,49 @@ const FM_TREE_19: StudyChapter = {
       },
     },
     {
+      id: "interest-inflation-currency",
+      heading: "Interest rates, inflation and the exchange rate",
+      blocks: [
+        {
+          kind: "text",
+          md: "Three prices move together, and a scenario changing one is usually implying the others. Knowing the direction of each link is what turns a general observation into an examinable point.",
+        },
+        {
+          kind: "table",
+          caption: "How the three connect",
+          head: ["If this rises", "Then typically", "Because"],
+          rows: [
+            ["Domestic interest rates", "The currency strengthens", "Higher returns attract foreign capital, raising demand for the currency — interest rate parity"],
+            ["Domestic inflation", "The currency weakens over time", "Goods become relatively expensive so demand shifts abroad — purchasing power parity"],
+            ["Domestic inflation", "Nominal interest rates rise", "Lenders require compensation for lost purchasing power — the Fisher effect"],
+            ["The currency (it strengthens)", "Exporters suffer, importers gain", "Exports become dearer abroad and imports cheaper at home"],
+          ],
+        },
+        {
+          kind: "callout",
+          tone: "warn",
+          title: "Rates and inflation pull the currency in OPPOSITE directions",
+          md: "Higher rates strengthen a currency; the higher inflation that usually prompted those rates weakens it. Which dominates depends on the horizon — the interest effect is immediate, the purchasing-power effect is long run. A question describing rate rises to combat inflation is inviting exactly that observation.",
+        },
+        {
+          kind: "text",
+          md: "**The term structure** matters as well as the level. An upward-sloping yield curve makes short-term borrowing cheaper, which is why the aggressive working-capital policy in FM-08 is tempting. An **inverted** curve — long rates below short — signals that the market expects rates to fall, usually because it expects a slowdown. That is information about future demand as well as future finance costs.",
+        },
+      ],
+      check: {
+        q: "A country raises interest rates sharply to combat high inflation. What is the likely SHORT-TERM effect on its currency?",
+        options: [
+          "It weakens, because inflation erodes purchasing power",
+          "It strengthens, because higher returns attract foreign capital",
+          "No effect — the two cancel out exactly",
+          "It weakens, because exports become more expensive",
+        ],
+        correct: 1,
+        explain:
+          "In the short run the interest-rate effect dominates: capital flows in seeking the higher return, raising demand for the currency. The inflation effect pushes the other way and dominates in the long run, which is why the horizon has to be stated.",
+      },
+    },
+    {
       id: "competition-regulation",
       heading: "Competition and regulation",
       blocks: [
@@ -106,7 +149,34 @@ const FM_TREE_19: StudyChapter = {
           title: "Bring it back to a number",
           md: "This area is examined as short discussion, usually attached to a calculation. A sentence that names the policy AND the cash flow or rate it moves will outscore a paragraph of general economics.",
         },
+        {
+          kind: "example",
+          title: "Two policy changes, traced to one appraisal",
+          scenario:
+            "The central bank raises rates by 2%; the government cuts corporation tax by 3%. A company is appraising a five-year project funded 60% by floating-rate debt.",
+          steps: [
+            { label: "Rate rise — the discount rate", detail: "The cost of debt rises immediately on the floating portion, so the WACC rises and the same cash flows discount to a lower NPV. Marginal projects that were acceptable are now rejected." },
+            { label: "Rate rise — the cash flows", detail: "Higher rates usually weaken demand, so forecast revenue may fall too. Both channels push the same way here." },
+            { label: "Tax cut — the cash flows", detail: "After-tax operating cash flows RISE, which helps." },
+            { label: "Tax cut — the reliefs", detail: "But the tax saving on capital allowances and on debt interest both FALL, because each is worth the amount claimed times a lower rate. For a capital-intensive, geared project this can offset most of the gain." },
+            { label: "Net", detail: "The rate rise is unambiguously adverse. The tax cut is ambiguous, and its direction depends on how capital-intensive and how geared the project is." },
+          ],
+          result:
+            "The examinable point is that each change reaches the appraisal through BOTH the cash flows and the discount rate, and the two can pull against each other. \"Lower taxes are good for business\" is not an answer.",
+        },
       ],
+      check: {
+        q: "Corporation tax falls from 30% to 25%. What happens to the value of a company's capital allowance tax savings?",
+        options: [
+          "They rise, because the company keeps more profit",
+          "They fall, because each allowance is worth the amount claimed times a lower rate",
+          "They are unchanged — allowances are set by legislation",
+          "They fall only if the company is loss-making",
+        ],
+        correct: 1,
+        explain:
+          "A £100,000 allowance saved £30,000 at 30% and saves £25,000 at 25%. The same applies to the tax relief on debt interest. That is why a tax cut is not automatically favourable to a capital-intensive, geared project — a point worth stating explicitly.",
+      },
     },
   ],
   examTraps: [
@@ -216,6 +286,39 @@ const FM_TREE_20: StudyChapter = {
           tone: "tip",
           title: "The examinable judgement",
           md: "Fintech questions are not about naming technologies. They ask whether a specific finance function is better off — cheaper and faster, against new control and regulatory exposure. Answer for the company described.",
+        },
+      ],
+      check: {
+        q: "A treasurer moves from monthly bank statements to a real-time payments API. What is the principal new risk?",
+        options: [
+          "Higher transaction costs",
+          "Dependence on a third-party provider, and cyber and operational exposure concentrated in software",
+          "Loss of the ability to reconcile the bank account",
+          "Regulatory prohibition on real-time payments",
+        ],
+        correct: 1,
+        explain:
+          "The efficiency gain is real; the exposure moves rather than disappears. An outage or a breach at the provider now stops payments entirely, and controls that assumed a monthly human review no longer apply. Costs usually fall, and reconciliation becomes easier, not harder.",
+      },
+    },
+    {
+      id: "money-market-worked",
+      heading: "Using the money market",
+      blocks: [
+        {
+          kind: "example",
+          title: "A treasurer's decision, priced",
+          scenario:
+            "Ilkley Co has £2m surplus for 90 days. Options: an instant-access deposit at 3.1%, a 90-day fixed deposit at 3.9%, a tradeable certificate of deposit yielding 3.7%, or a corporate bond fund yielding 5.2%.",
+          steps: [
+            { label: "Instant access at 3.1%", detail: "£2m × 3.1% × 90/365 = £15,288. Maximum liquidity, lowest return." },
+            { label: "90-day fixed at 3.9%", detail: "£2m × 3.9% × 90/365 = £19,233. Best return of the safe options, but the cash is locked for exactly the period required — with no flexibility if the date moves." },
+            { label: "Certificate of deposit at 3.7%", detail: "£2m × 3.7% × 90/365 = £18,247. Slightly less than the fixed deposit, and TRADEABLE — it can be sold before maturity if the cash is needed early." },
+            { label: "Bond fund at 5.2%", detail: "Highest yield and the wrong instrument. Capital value can fall, and it may fall precisely when the cash is needed. Working capital must not be exposed to capital loss." },
+            { label: "The decision", detail: "The CD, at a cost of about £1,000 against the fixed deposit. That £1,000 buys the ability to exit early — worth paying if the 90 days is an estimate rather than a certainty." },
+          ],
+          result:
+            "Liquidity, safety, then return — in that order. Note that the answer is not the highest safe return: it is the one whose liquidity matches how certain the 90 days actually is. Naming that trade-off explicitly is the mark.",
         },
       ],
     },
@@ -369,7 +472,35 @@ const FM_TREE_21: StudyChapter = {
           title: "What a valuation answer should conclude",
           md: "Not a single number. Compute two or three bases, state what each captures and omits, give a range, and say where within it you would open negotiations and why. That structure is what the marks follow.",
         },
+        {
+          kind: "example",
+          title: "One company, four values, one range",
+          scenario:
+            "Thurlby Co is unquoted. Net assets at book value £4.2m; net realisable value of those assets £5.1m. Maintainable earnings £900,000. A quoted competitor trades on a P/E of 14. Free cash flows are forecast at £1.1m a year, and an appropriate discount rate is 12%.",
+          steps: [
+            { label: "Asset basis — NRV", detail: "£5.1m. This is the FLOOR: the seller would break the company up rather than accept less." },
+            { label: "P/E basis, unadjusted", detail: "£900,000 × 14 = £12.6m — but the multiple comes from a QUOTED company." },
+            { label: "P/E basis, discounted for marketability", detail: "Reduce the multiple by about a third: 14 × ⅔ ≈ 9.3. £900,000 × 9.3 = £8.4m." },
+            { label: "DCF basis, as a perpetuity", detail: "£1.1m / 0.12 = £9.2m, assuming the cash flows are level and continue indefinitely — a strong assumption worth stating." },
+            { label: "The range", detail: "£5.1m to £9.2m, with the earnings-based figures clustering around £8.4m–£9.2m." },
+            { label: "The conclusion", detail: "\"A defensible range is £8.4m to £9.2m. The £5.1m asset value is a floor rather than a valuation, since it ignores the earning power that makes the business worth more than its parts. A buyer should open near £8.4m; a seller should anchor on the DCF figure and require evidence for any discount below it.\"" },
+          ],
+          result:
+            "Four bases, one range, and a stated negotiating position. Note the two things that turn a calculation into an answer: discounting the quoted P/E for marketability, and saying explicitly that the asset figure is a floor and not a value.",
+        },
       ],
+      check: {
+        q: "Net realisable value of a target's assets is £5.1m; earnings-based valuations cluster around £8.5m. What does the £5.1m tell you?",
+        options: [
+          "The company is overvalued by the earnings methods",
+          "It is a floor — the minimum a seller should accept, since breaking the business up would realise it",
+          "It is the fair value of the business",
+          "The earnings figures must be wrong",
+        ],
+        correct: 1,
+        explain:
+          "Asset values ignore earning power, brand, workforce and customer relationships. A business earning well is worth more than its parts, so NRV sets the minimum rather than the value — and the gap between the two IS the goodwill being negotiated over.",
+      },
     },
   ],
   examTraps: [
@@ -478,7 +609,82 @@ const FM_TREE_22: StudyChapter = {
           title: "The balanced conclusion",
           md: "Markets are efficient enough that consistently beating them is very hard, and not so perfectly efficient that bubbles are impossible. An answer asserting either extreme is weaker than one holding both.",
         },
+        {
+          kind: "example",
+          title: "Four boardroom proposals, tested against efficiency",
+          scenario: "A finance director makes four suggestions at a board meeting. Which survive semi-strong efficiency?",
+          steps: [
+            { label: "\"Delay the share issue — the price is temporarily low\"", detail: "FAILS. Under semi-strong efficiency the price already reflects all public information, so it is fair now. There is no systematically cheap moment to wait for." },
+            { label: "\"Capitalise development costs to raise reported profit and the share price\"", detail: "FAILS. A change with no cash effect will be seen through. The market prices expected cash flows, not the presentation of them — and this one also risks breaching the reporting framework." },
+            { label: "\"Announce the new contract immediately — the NPV is positive\"", detail: "SURVIVES. In an efficient market a positive-NPV project raises the price as soon as it becomes known. This is the one proposal consistent with efficiency." },
+            { label: "\"Acquire Target Co — its shares look undervalued\"", detail: "FAILS as stated. The target's standalone price is already fair, so a premium must be justified by real SYNERGIES rather than by a belief the market has mispriced it." },
+          ],
+          result:
+            "Three of four fail, and each fails for the same underlying reason: the price already knows. That is what makes this short topic examinable — it changes the answer to questions in Areas E and F, not just its own.",
+        },
       ],
+      check: {
+        q: "A finance director proposes delaying a rights issue because \"the share price is temporarily depressed\". What does semi-strong efficiency imply?",
+        options: [
+          "The delay is sensible — prices do fluctuate",
+          "The current price already reflects all public information, so there is no systematically better moment to wait for",
+          "The company should issue debt instead",
+          "The price will definitely rise",
+        ],
+        correct: 1,
+        explain:
+          "Under semi-strong efficiency the price is a fair reflection of everything publicly known, so \"temporarily depressed\" is not a state the market recognises. Timing an issue on that basis has no theoretical support — which is the examinable implication.",
+      },
+    },
+    {
+      id: "anomalies-behavioural",
+      heading: "Anomalies and behavioural finance",
+      blocks: [
+        {
+          kind: "text",
+          md: "Efficiency is a model, and the evidence against it is examinable in its own right. The anomalies below are persistent enough that they should not exist in a perfectly efficient market — and behavioural finance offers the explanation.",
+        },
+        {
+          kind: "table",
+          caption: "Documented anomalies",
+          head: ["Anomaly", "What is observed"],
+          rows: [
+            ["Small-firm effect", "Smaller companies have historically produced higher risk-adjusted returns than large ones"],
+            ["Calendar effects", "Returns differ systematically by month or by day of the week"],
+            ["Over-reaction", "Prices move too far on news and then partially reverse"],
+            ["Momentum", "Recent winners continue to outperform for a period, which weak-form efficiency says is impossible"],
+          ],
+        },
+        {
+          kind: "list",
+          style: "bullet",
+          title: "The behavioural biases behind them",
+          items: [
+            "**Overconfidence** — investors overestimate their own judgement and trade too much.",
+            "**Herding** — following the crowd rather than the evidence, which amplifies moves into bubbles and crashes.",
+            "**Anchoring** — fixing on an irrelevant reference point, such as the price originally paid.",
+            "**Loss aversion** — holding losers too long to avoid realising a loss, and selling winners too early.",
+          ],
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "What this changes for the finance director",
+          md: "Very little in practice, and that is the honest answer. Even if markets are imperfectly efficient, a finance director cannot reliably identify WHEN the price is wrong or by how much. So the practical advice is unchanged — do not time issues, do not rely on cosmetic accounting — while acknowledging the price may not always be right.",
+        },
+      ],
+      check: {
+        q: "Momentum — recent winners continuing to outperform — contradicts which form of efficiency?",
+        options: [
+          "Strong form only",
+          "Weak form, because it means past price movements carry information about future ones",
+          "Semi-strong form only",
+          "None — momentum is consistent with efficiency",
+        ],
+        correct: 1,
+        explain:
+          "Weak-form efficiency says past prices contain no exploitable information. If past winners predictably keep winning, that is precisely past-price information with predictive value — so momentum challenges the weakest form of the hypothesis, and therefore all three.",
+      },
     },
   ],
   examTraps: [
@@ -613,6 +819,22 @@ const FM_TREE_23: StudyChapter = {
             "**Netting** intra-group balances before settling.",
             "**Leading and lagging** — accelerating or delaying settlement in anticipation of a move.",
           ],
+        },
+        {
+          kind: "example",
+          title: "A money market hedge, built step by step",
+          scenario:
+            "A UK company owes US$600,000 in three months. Spot is $1.28/£. US deposit rate 4% a year; UK borrowing rate 6% a year.",
+          steps: [
+            { label: "What is needed", detail: "A payment, so the company must HOLD dollars in three months. It therefore buys dollars now and deposits them, so the deposit matures to exactly $600,000." },
+            { label: "How many dollars to deposit", detail: "The deposit earns 4% a year = 1% over three months. Deposit $600,000 / 1.01 = $594,059." },
+            { label: "Cost in sterling today", detail: "$594,059 / 1.28 = £464,109 — bought at spot now." },
+            { label: "Fund it by borrowing sterling", detail: "£464,109 borrowed at 6% a year = 1.5% over three months, so £464,109 × 1.015 = £471,071 repayable in three months." },
+            { label: "The effective rate achieved", detail: "$600,000 / £471,071 = $1.2737/£ — locked in today, whatever spot does." },
+            { label: "Compare with the forward", detail: "Interest rate parity means a fairly priced forward should give almost exactly this. If the quoted forward is better, use it; the money market hedge is the alternative when no forward is available or the amount is awkward." },
+          ],
+          result:
+            "Four steps in a fixed order: how much currency is needed, discount it at the FOREIGN rate, convert at spot, then compound at the DOMESTIC rate. Reverse the direction for a receipt — borrow the foreign currency, convert, deposit at home. Getting which rate applies to which leg the wrong way round is the standard error.",
         },
       ],
       check: {
@@ -752,6 +974,41 @@ const FM_TREE_24: StudyChapter = {
         correct: 1,
         explain:
           "An FRA fixes the rate on a notional future borrowing with no up-front premium; the parties simply settle the difference in cash. Options and caps both cost a premium, which is what buys the right to walk away if rates fall.",
+      },
+    },
+    {
+      id: "swap-worked",
+      heading: "A swap, with the saving shared",
+      blocks: [
+        {
+          kind: "example",
+          title: "Where the gain comes from, and how much there is",
+          scenario:
+            "Alpha can borrow fixed at 6.0% or floating at LIBOR + 0.5%. Beta can borrow fixed at 8.0% or floating at LIBOR + 1.5%. Alpha wants floating; Beta wants fixed.",
+          steps: [
+            { label: "Who is better, and where", detail: "Alpha is better in BOTH markets — 2.0% better fixed, 1.0% better floating. Its comparative advantage is in FIXED." },
+            { label: "The total gain available", detail: "The difference between the two advantages: 2.0% − 1.0% = 1.0%. That is all there is to share, however the deal is structured." },
+            { label: "Each borrows where it is comparatively strong", detail: "Alpha borrows FIXED at 6.0% (its advantage). Beta borrows FLOATING at LIBOR + 1.5%." },
+            { label: "Then they swap", detail: "Alpha pays Beta floating and receives fixed; Beta pays fixed and receives floating. Each ends up with the type it wanted." },
+            { label: "Split the 1.0% evenly", detail: "Alpha wanted floating and would have paid LIBOR + 0.5%; it now pays LIBOR + 0.0%. Beta wanted fixed and would have paid 8.0%; it now pays 7.5%. Each saves 0.5%." },
+            { label: "Minus the bank", detail: "If an intermediary arranges it and takes 0.2%, only 0.8% is left to share — so each saves 0.4%. Questions often include a bank fee for exactly this reason." },
+          ],
+          result:
+            "Alpha being better in both markets does NOT remove the gain — that is the point candidates miss. Each party borrows where its comparative advantage is largest, and the difference between the two advantages is the total saving. If the two advantages were equal, there would be no swap worth doing.",
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "The check that catches most errors",
+          md: "The total saving can never exceed the **difference between the two comparative advantages**. If your answer shows the parties saving more than that between them, an interest leg has been double-counted somewhere.",
+        },
+      ],
+      check: {
+        q: "Alpha is 2.0% better in the fixed market and 1.0% better in the floating market. What is the maximum total saving available from a swap?",
+        options: ["3.0%", "2.0%", "1.0%", "0.5%"],
+        correct: 2,
+        explain:
+          "The gain is the DIFFERENCE between the two advantages: 2.0% − 1.0% = 1.0%, shared between the parties (less any intermediary fee). Adding the advantages together double-counts; taking the larger one assumes the whole advantage is transferable, which it is not.",
       },
     },
   ],
