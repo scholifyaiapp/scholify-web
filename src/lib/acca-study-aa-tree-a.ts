@@ -62,6 +62,14 @@ const AA_TREE_01: StudyChapter = {
           title: "The three parties are not the same three people",
           md: "Candidates write \"the auditor, the company and the public\". The responsible party is the **directors** (who prepare the statements) and the intended users are the **shareholders** (to whom the auditor reports). Naming them precisely is what earns the mark.",
         },
+        {
+          kind: "activity",
+          title: "Find the missing element",
+          prompt:
+            "A firm is asked to report to a bank on whether a borrower has complied with its loan covenants. The bank will rely on the report. Identify the three parties, the subject matter and the criteria. Then say what would happen if the loan agreement did not define the covenants numerically.",
+          answer:
+            "Practitioner: the firm. Responsible party: the borrower's directors. Intended user: the bank. Subject matter: compliance with the covenants. Criteria: the covenant definitions in the loan agreement.\n\nIf the covenants were not defined numerically there would be no SUITABLE CRITERIA — nothing objective to measure compliance against — so no assurance engagement is possible. The firm would have to agree measurable criteria with both parties first, or decline. That is the element candidates most often forget exists.",
+        },
       ],
       check: {
         q: "Which is NOT one of the five elements of an assurance engagement?",
@@ -256,7 +264,33 @@ const AA_TREE_02: StudyChapter = {
           title: "\"Report by exception\" is the phrase to know",
           md: "The auditor does not confirm that records were adequate — they report only **if they were not**. Silence on those matters is the positive statement. It is a favourite Section A distinction.",
         },
+        {
+          kind: "example",
+          title: "A removal, step by step",
+          scenario:
+            "The directors of Halden Co are unhappy that the auditor is pressing them on a revenue policy. They want the auditor gone before the year end.",
+          steps: [
+            { label: "Can the directors remove them?", detail: "No. Removal requires an ORDINARY RESOLUTION of the shareholders, with special notice — the directors cannot act alone." },
+            { label: "What must happen", detail: "Special notice of the resolution is given, and the company must send a copy to the auditor." },
+            { label: "The auditor's protection", detail: "The auditor may make written representations and require them to be circulated to members, and may speak at the meeting where the resolution is considered." },
+            { label: "If they resign instead", detail: "The resignation must be accompanied by a statement of any circumstances members or creditors should know about — or a statement that there are none." },
+          ],
+          result:
+            "The framework is built so that a dispute over an accounting treatment cannot be settled by quietly replacing the auditor. Every protection listed exists because the auditor reports on the people who would otherwise control their tenure.",
+        },
       ],
+      check: {
+        q: "Directors dismiss the auditor mid-year after a disagreement over revenue recognition, without a shareholder vote. What is the position?",
+        options: [
+          "Valid — directors manage the company and may change advisers",
+          "Invalid — removal requires an ordinary resolution of the shareholders with special notice",
+          "Valid, provided the audit committee approves",
+          "Valid, but the auditor may claim compensation",
+        ],
+        correct: 1,
+        explain:
+          "Only shareholders can remove an auditor, by ordinary resolution with special notice, and the auditor has the right to make representations and speak at the meeting. This is precisely the scenario those rules exist to prevent.",
+      },
     },
   ],
   examTraps: [
@@ -373,6 +407,48 @@ const AA_TREE_03: StudyChapter = {
         correct: 2,
         explain:
           "Two deficiencies. The committee should consist of INDEPENDENT non-executives — an executive director cannot monitor the reporting they prepare — and a close family relationship with the CEO removes independence. The fix addresses both.",
+      },
+    },
+    {
+      id: "analysing-deficiencies",
+      heading: "Analysing a governance scenario",
+      blocks: [
+        {
+          kind: "text",
+          md: "Governance questions in AA are almost always a short scenario followed by \"identify the deficiencies and recommend improvements\". The marks come in **pairs** — one for naming the deficiency and why it matters, one for a specific fix — so an answer that lists five deficiencies and no recommendations throws away half the available marks.",
+        },
+        {
+          kind: "example",
+          title: "Four deficiencies from four sentences",
+          scenario:
+            "Marbury Co is listed. Its chief executive also chairs the board. The board has six executives and two non-executives, both former employees who retired last year. Directors set their own pay. There is no internal audit function and the board last reviewed internal control three years ago.",
+          steps: [
+            { label: "Combined chair and chief executive", detail: "One individual has unfettered power over both the board's agenda and the company's operations. RECOMMEND: separate the roles and appoint an independent chair." },
+            { label: "Board balance and independence", detail: "Two NEDs against six executives is not an appropriate balance, and recent former employment means neither is independent. RECOMMEND: appoint additional genuinely independent NEDs so they form a substantial proportion of the board." },
+            { label: "Directors set their own pay", detail: "A clear self-interest conflict, and no independent scrutiny of reward. RECOMMEND: establish a remuneration committee of independent NEDs." },
+            { label: "No internal audit and no control review", detail: "The board cannot assert that controls are effective and has no independent function testing them. RECOMMEND: establish an internal audit function reporting to an audit committee, and review the effectiveness of internal control at least annually." },
+          ],
+          result:
+            "Four deficiencies, each with the consequence stated and a specific structural fix. Note that every recommendation changes a STRUCTURE rather than asking someone to behave better — \"the CEO should be less dominant\" is not a recommendation a company can implement.",
+        },
+        {
+          kind: "callout",
+          tone: "tip",
+          title: "The pattern for every governance answer",
+          md: "**Deficiency → why it matters → structural fix.** If the fix is a person changing their attitude, it is not a fix. If it is a committee, a separation of roles, a reporting line or a defined review, it is.",
+        },
+      ],
+      check: {
+        q: "A scenario says the chief executive \"dominates board discussion and rarely accepts challenge\". What is the best recommendation?",
+        options: [
+          "The chief executive should allow more challenge in meetings",
+          "Separate the chair and chief executive roles, and appoint independent NEDs able to challenge",
+          "Hold board meetings more frequently",
+          "Ask the audit committee to attend board meetings",
+        ],
+        correct: 1,
+        explain:
+          "Recommendations must change the structure, not request better behaviour. Separating the roles and strengthening independent representation gives challenge a formal basis; asking someone to be less dominant is not something a company can implement or monitor.",
       },
     },
   ],
@@ -498,6 +574,32 @@ const AA_TREE_04: StudyChapter = {
           tone: "warn",
           title: "Some threats cannot be safeguarded",
           md: "A direct financial interest in an audit client, or preparing the accounts of a listed audit client, cannot be cured by a safeguard — the interest must be disposed of, or the work not accepted. Proposing \"an independent review\" for those is the wrong answer.",
+        },
+        {
+          kind: "example",
+          title: "A four-issue scenario, worked the way the marks fall",
+          scenario:
+            "Your firm audits Ardley Co, a listed company. (1) The audit senior owns 500 Ardley shares, inherited last month. (2) Ardley's fees are 19% of your firm's total income. (3) The engagement partner has held the role for nine years. (4) Ardley has asked your firm to prepare its tax computation and file its return.",
+          steps: [
+            {
+              label: "1 · Shareholding",
+              detail: "SELF-INTEREST, threatening OBJECTIVITY. A direct financial interest in an audit client is PROHIBITED — no safeguard applies. The senior must dispose of the shares or be removed from the engagement team.",
+            },
+            {
+              label: "2 · Fee dependency",
+              detail: "SELF-INTEREST, threatening OBJECTIVITY — the firm may be reluctant to challenge a client it cannot afford to lose. For a listed client, 19% is well above the threshold. Disclose to those charged with governance, arrange an external quality review of the engagement, and take steps to reduce dependence by growing other work.",
+            },
+            {
+              label: "3 · Nine-year partner",
+              detail: "FAMILIARITY (and some self-interest), threatening OBJECTIVITY — long association makes the partner too sympathetic to management's view. Rotate the engagement partner off, with the required cooling-off period before any return.",
+            },
+            {
+              label: "4 · Tax services",
+              detail: "SELF-REVIEW where the computation feeds the tax figures in the statements, and ADVOCACY if the firm argues Ardley's position with the tax authority. Use a separate team with information barriers; for a public interest entity, check whether the service is prohibited outright before accepting it.",
+            },
+          ],
+          result:
+            "Four issues, four threats named, four principles identified, four specific actions — and note that only ONE of them (the shareholding) is a flat prohibition. Treating them all as prohibitions, or all as safeguardable, both lose marks. The discriminating skill is knowing which is which.",
         },
       ],
       check: {
@@ -687,6 +789,20 @@ const AA_TREE_05: StudyChapter = {
           tone: "warn",
           title: "The external auditor cannot simply do both",
           md: "If the **external audit firm** provides internal audit services to the same client, a **self-review threat** arises — the firm would be relying on, and evaluating, its own work. For public interest entities this is generally prohibited outright. A question offering this as a cost saving is testing that.",
+        },
+        {
+          kind: "example",
+          title: "An outsourcing decision, argued both ways",
+          scenario:
+            "Kelby Co, a mid-sized unlisted manufacturer, has a two-person internal audit team. Both have resigned. The finance director proposes outsourcing to a specialist firm — not Kelby's external auditor — and asks for your view.",
+          steps: [
+            { label: "For", detail: "Immediate access to specialists Kelby cannot recruit for two posts; flexible resourcing; no recruitment, training or retention burden; and greater independence from the operational managers being audited." },
+            { label: "Against", detail: "Cost may exceed two salaries; the provider will lack Kelby's business and cultural knowledge, which is where an internal auditor's value largely sits; dependence on a single provider; and staff may be less candid with outsiders." },
+            { label: "Governance point", detail: "Whoever performs the work, it must report to the audit committee rather than the finance director — otherwise the structural deficiency survives the change of supplier." },
+            { label: "Conclusion", detail: "Outsourcing is reasonable here given the recruitment difficulty, PROVIDED the reporting line goes to the audit committee, the scope is set independently of the FD, and knowledge transfer is contracted for." },
+          ],
+          result:
+            "Both sides, a governance condition, and a conditional recommendation. An answer that lists only advantages has answered a different question — and note that the reporting line matters more than who holds the contract.",
         },
       ],
       check: {
