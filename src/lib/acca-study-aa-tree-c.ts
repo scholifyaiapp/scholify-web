@@ -114,6 +114,44 @@ const AA_TREE_11: StudyChapter = {
           "Segregation works precisely because one person cannot complete a transaction alone. Two people agreeing to cooperate removes the assumption the control rests on — which is why collusion is listed separately from ordinary human error.",
       },
     },
+    {
+      id: "components-in-a-scenario",
+      heading: "Reading a scenario for components",
+      blocks: [
+        {
+          kind: "text",
+          md: "Exam scenarios do not label their deficiencies. They describe a business, and the skill is spotting which **component** each detail belongs to — because the component determines what kind of recommendation is appropriate.",
+        },
+        {
+          kind: "example",
+          title: "Five details, five components",
+          scenario:
+            "Ashcombe Co: (1) the chief executive dismissed a manager who queried an expense claim; (2) nobody has assessed what could go wrong since the company entered export markets; (3) the sales system cannot produce an aged receivables report; (4) purchase orders above £5,000 need two signatures, and this is followed; (5) no one has checked whether the two-signature rule is actually being applied for two years.",
+          steps: [
+            { label: "1 · Control environment", detail: "Punishing challenge sets a tone in which no control will be applied against management. RECOMMEND a whistleblowing route reporting to the audit committee, and board-level commitment to it." },
+            { label: "2 · Risk assessment process", detail: "A material change in operations with no reassessment of risk. RECOMMEND a documented, periodic risk assessment, reviewed by the board." },
+            { label: "3 · Information system", detail: "The system cannot produce information management needs to control receivables. RECOMMEND system development, or an interim manual ageing analysis." },
+            { label: "4 · Control activity", detail: "This one is a STRENGTH, not a deficiency — authorisation with segregation, and it operates. Say so; questions include working controls to see whether you can tell." },
+            { label: "5 · Monitoring", detail: "A control nobody checks may have quietly stopped working. RECOMMEND periodic internal audit testing of key controls and reporting to the audit committee." },
+          ],
+          result:
+            "Four deficiencies, one strength, and each recommendation matched to its component. Note item 4: a scenario that contains only deficiencies is unrealistic, and marks are available for identifying a control that works.",
+        },
+        {
+          kind: "callout",
+          tone: "tip",
+          title: "Match the fix to the component",
+          md: "An environment problem needs a governance change, not a procedure. A monitoring problem needs someone to test, not a new control. Recommending a stronger authorisation limit for a problem of TONE is the commonest mismatch, and it scores nothing.",
+        },
+      ],
+      check: {
+        q: "A company has strong documented control activities, but nobody has tested whether they still operate for three years. Which component is deficient?",
+        options: ["Control activities", "Monitoring of controls", "The information system", "The control environment"],
+        correct: 1,
+        explain:
+          "The activities themselves are sound; what is missing is monitoring — the ongoing evaluation that they continue to operate. The right fix is periodic testing and reporting, not more controls.",
+      },
+    },
   ],
   examTraps: [
     { trap: "Listing control activities when asked for the components of internal control.", fix: "Control activities are ONE of the five components, not the list." },
@@ -249,6 +287,45 @@ const AA_TREE_12: StudyChapter = {
         correct: 1,
         explain:
           "A walk-through confirms the documentation matches reality. Effectiveness over the period needs a test of control on a sample, and only that can justify reducing substantive work.",
+      },
+    },
+    {
+      id: "choosing-the-approach",
+      heading: "Choosing the approach, and changing it mid-audit",
+      blocks: [
+        {
+          kind: "example",
+          title: "The decision, then the reversal",
+          scenario:
+            "Fernhill Co's sales system is well documented: credit checks, matched despatch documents, sequence-checked invoices and authorised price lists. The auditor plans a controls-based approach with reduced substantive testing, and tests 40 orders.",
+          steps: [
+            { label: "The plan", detail: "Controls appear well designed, so test them: inspect 40 orders for evidence of the credit check and matching, and review sequence-check reports for the period." },
+            { label: "The result", detail: "37 of 40 show the credit check. Three do not — all in month nine, all for the same customer, and all above that customer's credit limit." },
+            { label: "Is this an anomaly?", detail: "No. Three failures clustered on one customer and one period is a PATTERN, not a random slip. It suggests the control was deliberately bypassed." },
+            { label: "The consequence for the approach", detail: "The control cannot be relied on for the whole period. Extend testing around month nine, and revert to a substantive approach on revenue and receivables: cut-off testing, circularisation weighted to that customer, and review of after-date cash." },
+            { label: "And separately", detail: "Report the deficiency to management — a control that can be overridden for a favoured customer is a significant deficiency, whatever the audit consequence." },
+          ],
+          result:
+            "The plan was reasonable and the evidence changed it. That is the examinable point: the approach is a decision made on evidence, revisited when the evidence moves — not a strategy fixed at planning and defended to the end.",
+        },
+        {
+          kind: "callout",
+          tone: "warn",
+          title: "Three failures out of forty is not \"94% effective\"",
+          md: "There is no pass mark for a control. The question is whether the auditor can rely on it, and clustered failures answer no — because the misstatement they permit is not spread evenly either. Candidates who compute a percentage and conclude the control is broadly fine have misunderstood what the test is for.",
+        },
+      ],
+      check: {
+        q: "Tests of control reveal three failures out of forty, all involving the same customer in the same month. What should the auditor conclude?",
+        options: [
+          "The control is 92.5% effective and can be relied on",
+          "The failures are anomalies and can be ignored",
+          "The control cannot be relied on; investigate the pattern and revert to substantive procedures",
+          "Increase the sample to 80 and re-test",
+        ],
+        correct: 2,
+        explain:
+          "Clustered failures indicate a pattern rather than random error — likely deliberate override. Reliance is not possible, so extend investigation around the pattern and test substantively. A larger sample of a control you already know was bypassed answers the wrong question.",
       },
     },
   ],
@@ -411,6 +488,33 @@ const AA_TREE_13: StudyChapter = {
           "Completeness asks whether anything is MISSING from the records, so start outside the ledger — with the goods actually received — and trace forward. Starting from the ledger can only tell you that what is recorded is genuine, which is occurrence.",
       },
     },
+    {
+      id: "writing-the-tests",
+      heading: "Writing a test that scores",
+      blocks: [
+        {
+          kind: "example",
+          title: "The same control, written four ways",
+          scenario: "The control: purchase orders above £5,000 require authorisation by a second manager.",
+          steps: [
+            { label: "Scores nothing", detail: "\"Ensure orders are authorised.\" — an instruction, not a procedure. Nothing is inspected and nothing could be evidenced." },
+            { label: "Scores nothing", detail: "\"Agree the order value to the supplier invoice.\" — a SUBSTANTIVE procedure. It tests whether the figure is right, not whether the control operated." },
+            { label: "Scores partly", detail: "\"Inspect purchase orders for authorisation.\" — the right verb and the right document, but no sample and no threshold, so it does not test THIS control." },
+            { label: "Scores fully", detail: "\"Select a sample of purchase orders exceeding £5,000 from the period and inspect each for the second manager's authorising signature, confirming the signatory is on the approved authority list and was acting within their limit.\"" },
+          ],
+          result:
+            "Four versions of one test. The full-mark version names the **population** (orders over £5,000, across the period), the **procedure** (inspect), the **evidence** (the second signature) and the **added judgement** (that the signatory had authority). Each of those is a separable component of the mark.",
+        },
+        {
+          kind: "activity",
+          title: "Write two yourself",
+          prompt:
+            "Control: \"A supervisor approves every timesheet before payroll is processed.\" Write (a) a test of control and (b) a substantive procedure — and say which assertion each addresses.",
+          answer:
+            "**(a) Test of control:** select a sample of timesheets from across the period and inspect each for the supervisor's approval signature, confirming the supervisor is authorised to approve for that department. Assertion tested: whether the CONTROL operated — supporting occurrence and accuracy of payroll cost.\n\n**(b) Substantive procedure:** for a sample of employees, recalculate gross pay from approved hours and the authorised rate, and agree the rate to the personnel file. Assertion: ACCURACY of the payroll expense.\n\nThe difference is the object. (a) looks for evidence a person did something; (b) checks whether the number is right. Both may use the same timesheet — which is why the verb and the stated objective, not the document, tell a marker which you have written.",
+        },
+      ],
+    },
   ],
   examTraps: [
     { trap: "Writing substantive procedures in a tests-of-control requirement.", fix: "Test whether the control operated, not whether the figure is right." },
@@ -538,6 +642,47 @@ const AA_TREE_14: StudyChapter = {
         explain:
           "An implication names the CONSEQUENCE — what could go wrong and which balances are affected. The first option is a recommendation, the second restates the deficiency, and the third is a classification rather than a consequence.",
       },
+    },
+    {
+      id: "small-company",
+      heading: "When the company is too small to segregate",
+      blocks: [
+        {
+          kind: "text",
+          md: "Most AA scenarios are owner-managed or small. Recommending textbook segregation to a firm with four office staff is a recommendation they cannot implement — so it earns nothing. The answer is a **compensating control**: something that detects after the event what segregation would have prevented before it.",
+        },
+        {
+          kind: "table",
+          caption: "Where segregation is impossible",
+          head: ["The exposure", "Compensating control"],
+          rows: [
+            ["One bookkeeper records and banks all cash receipts", "The owner reviews the bank reconciliation and compares banked amounts to the sales day book monthly"],
+            ["One person raises and pays supplier invoices", "The owner authorises all payments personally above a low threshold, and reviews a monthly list of new suppliers"],
+            ["One person runs payroll end to end", "The owner approves the payroll summary and any change to starters, leavers or rates before payment"],
+            ["No internal audit function", "The owner performs and documents periodic spot checks; the audit committee (or owner) reviews exception reports"],
+          ],
+        },
+        {
+          kind: "example",
+          title: "A four-person office, written properly",
+          scenario:
+            "Ivelet Co has an owner-manager and three staff. The bookkeeper opens the post, records receipts, banks the cash and prepares the bank reconciliation.",
+          steps: [
+            { label: "Deficiency", detail: "One individual has custody of cash receipts and also records them and prepares the reconciliation, with no independent check." },
+            { label: "Implication", detail: "Receipts could be misappropriated and concealed in the reconciliation — teeming and lading — so cash and receivables could be overstated and the theft could continue undetected indefinitely." },
+            { label: "Recommendation NOT to give", detail: "\"Segregate the duties of recording, custody and reconciliation.\" There are three staff; this cannot be done." },
+            { label: "Recommendation to give", detail: "The owner should open the post and prepare a list of receipts before passing it to the bookkeeper; review the bank reconciliation monthly, initialling and dating it; and compare total banked receipts to the sales day book each month." },
+          ],
+          result:
+            "The implication names the specific fraud mechanism, and the recommendation is something an owner-manager can do on a Friday afternoon. Both halves are proportionate to the business described, which is what the marks reward.",
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "The owner-manager IS the compensating control",
+          md: "In a small company the owner's personal involvement — opening post, authorising payments, reviewing reconciliations — is usually the only realistic control. Recommendations that use it are practical; recommendations that ignore it and demand a segregation matrix are not.",
+        },
+      ],
     },
   ],
   examTraps: [
