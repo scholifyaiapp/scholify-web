@@ -39,6 +39,7 @@ import { registerPracticeTime } from "@/lib/reminders"
 import { buildOnboardingGuide, MIN_DAILY_MINUTES, TARGET_DAILY_MINUTES, type GuideFix, type OnboardingGuide } from "@/lib/acca-onboarding-guide"
 import { onboardingSteps, SLIDE_POSES, STEP_LABELS, TIME_STEP, EXAM_DATE_STEP, PAPER_STEP, TARGET_STEP } from "@/lib/acca-onboarding-steps"
 import TargetSlide from "@/components/acca/TargetSlide"
+import { DEVELOPING_NOTE, isDeveloping } from "@/lib/acca-content-depth"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
 import { CapacityPlan, MinutesNudge } from "@/components/acca/CapacityPlan"
 import { OnboardingStepper } from "@/components/acca/OnboardingStepper"
@@ -1315,7 +1316,23 @@ function PaperSlide({
                   key={p.id}
                   value={p.id}
                   label={p.id}
-                  sub={passed.has(p.id) ? "Already passed" : p.name}
+                  /*
+                   * A paper whose reading chapters are still being written says
+                   * so HERE — before the choice, not after the payment.
+                   *
+                   * The engine serves one chapter a day, so chapter count is
+                   * course length: a learner picking a 10-chapter paper for a
+                   * three-month sitting would run out of new material in two
+                   * weeks. Saying nothing and taking the money is how a product
+                   * earns its first refund request.
+                   */
+                  sub={
+                    passed.has(p.id)
+                      ? "Already passed"
+                      : isDeveloping(p.id)
+                        ? `${p.name} · chapters in progress`
+                        : p.name
+                  }
                   disabled={passed.has(p.id)}
                   mono
                 />
@@ -1324,6 +1341,31 @@ function PaperSlide({
           </div>
         ))}
       </ChoiceGroup>
+      {/*
+        And spelled out once the choice is made, because the tile has room for
+        four words and this deserves a sentence. It names what is actually thin
+        — the reading chapters — and what is not, since the question bank,
+        flashcards and practice engine are complete for every paper. A vague
+        "coming soon" would undersell what is there and warn about nothing.
+      */}
+      {paper && isDeveloping(paper) && (
+        <div
+          style={{
+            display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, padding: "12px 14px",
+            borderRadius: 12, background: "rgba(194,116,11,0.08)", border: "1px solid rgba(194,116,11,0.28)",
+          }}
+        >
+          <Icon name="weak" size={16} color="#B45309" style={{ marginTop: 1, flex: "none" }} />
+          <div>
+            <div style={{ font: `750 12.5px/1.4 ${SANS}`, color: "#B45309" }}>{paper} is still being built</div>
+            <div style={{ font: `500 12px/1.55 ${SANS}`, color: BODY, marginTop: 3 }}>
+              {DEVELOPING_NOTE} You can still study it — your plan will be shorter than for a
+              finished paper, and every chapter we add appears in it automatically.
+            </div>
+          </div>
+        </div>
+      )}
+
       {paper && ["LW", "TX"].includes(paper) && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
