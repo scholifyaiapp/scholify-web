@@ -47,11 +47,12 @@ export const FULL_DEPTH_CHAPTERS = 20
  * test will tell you when that is.
  */
 export const DEVELOPING_PAPERS: readonly string[] = [
-  // FM was here. Its rebuild landed on 11 Aug 2026: eight chapters — five
-  // authored bodies aliased across seven areas — became twenty-five, one per
-  // syllabus sub-topic group across all eight areas. The test below is what
-  // told us it had crossed the line, by going red until this entry was removed.
-  "AA",
+  // FM and AA were both here. Their rebuilds landed on 11 Aug 2026:
+  //   FM  8 chapters  → 25, across all eight syllabus areas
+  //   AA  6 chapters  → 26, across all six
+  // In each case this file's test is what told us the paper had crossed the
+  // line, by going red until the entry was removed. That leaves the six
+  // Strategic Professional papers, which is the next block of work.
   "SBL",
   "SBR",
   "AFM",

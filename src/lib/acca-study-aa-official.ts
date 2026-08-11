@@ -2,8 +2,8 @@ import type { StudyChapter } from "@/lib/acca-study-content"
 import { AA_TREE_AREA_A } from "@/lib/acca-study-aa-tree-a"
 import { AA_TREE_AREA_B } from "@/lib/acca-study-aa-tree-b"
 import { AA_TREE_AREA_C } from "@/lib/acca-study-aa-tree-c"
-import { AA_D } from "@/lib/acca-study-aa-d"
-import { AA_E } from "@/lib/acca-study-aa-e"
+import { AA_TREE_AREA_D } from "@/lib/acca-study-aa-tree-d"
+import { AA_TREE_AREA_E } from "@/lib/acca-study-aa-tree-e"
 
 /* Area A is a five-chapter tree — see acca-study-aa-tree-a.ts. Ethics alone
    (A4) is examined in Section B almost every sitting and now has its own
@@ -13,10 +13,21 @@ export const AA_OFFICIAL_A = AA_TREE_AREA_A
 export const AA_OFFICIAL_B = AA_TREE_AREA_B
 /* Area C is a four-chapter tree — see acca-study-aa-tree-c.ts. */
 export const AA_OFFICIAL_C = AA_TREE_AREA_C
-export const AA_OFFICIAL_D = AA_D
-export const AA_OFFICIAL_E = AA_E
+/* Area D is a five-chapter tree — see acca-study-aa-tree-d.ts. */
+export const AA_OFFICIAL_D = AA_TREE_AREA_D
+/* Area E is a three-chapter tree — see acca-study-aa-tree-e.ts. It replaces the
+   single chapter that covered subsequent events, going concern, written
+   representations, finalisation AND the auditor's report together. */
+export const AA_OFFICIAL_E = AA_TREE_AREA_E
+/*
+ * F carries a number and an id like every other chapter now. Without them it
+ * sorted ahead of the whole tree, so a new AA learner's first day was
+ * "Employability and technology skills" — an area with THREE questions in the
+ * entire bank. The quiz took all three and practice got none. Exactly the same
+ * fault FM_OFFICIAL_H had, found by the same audit test.
+ */
 export const AA_OFFICIAL_F: StudyChapter = {
-  paper: "AA", area: "F", title: "Employability and technology skills", minutes: 17,
+  paper: "AA", id: "AA-23", number: 23, area: "F", title: "Employability and technology skills", minutes: 17,
   intro: "Digital audit tools can test entire populations, but professional assurance still depends on controlled data, documented logic, sceptical investigation and a clear conclusion.",
   outcomes: ["Validate and navigate digital audit information", "Use spreadsheet and analytics functions with an audit trail", "Document procedures and conclusions professionally", "Present control findings and audit results effectively"],
   sections: [
