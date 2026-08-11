@@ -1,6 +1,6 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { AA_TREE_AREA_A } from "@/lib/acca-study-aa-tree-a"
-import { AA_B } from "@/lib/acca-study-aa-b"
+import { AA_TREE_AREA_B } from "@/lib/acca-study-aa-tree-b"
 import { AA_C } from "@/lib/acca-study-aa-c"
 import { AA_D } from "@/lib/acca-study-aa-d"
 import { AA_E } from "@/lib/acca-study-aa-e"
@@ -9,7 +9,8 @@ import { AA_E } from "@/lib/acca-study-aa-e"
    (A4) is examined in Section B almost every sitting and now has its own
    chapter rather than a section inside a chapter covering A1 to A6. */
 export const AA_OFFICIAL_A = AA_TREE_AREA_A
-export const AA_OFFICIAL_B = AA_B
+/* Area B is a five-chapter tree — see acca-study-aa-tree-b.ts. */
+export const AA_OFFICIAL_B = AA_TREE_AREA_B
 export const AA_OFFICIAL_C = AA_C
 export const AA_OFFICIAL_D = AA_D
 export const AA_OFFICIAL_E = AA_E
