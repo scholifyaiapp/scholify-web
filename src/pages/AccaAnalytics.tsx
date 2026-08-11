@@ -35,9 +35,7 @@ import {
   palestArea,
   getPace,
   studyMinutesToday,
-  getMistakes,
-  getCalibration,
-  QUESTION_BUDGET_SEC,
+  getMistakes,  QUESTION_BUDGET_SEC,
   // Per-section pace: seconds per mark against ACCA's own 1.8 min/mark. See the
   // note in the Time management card for why the single average is not enough.
   paceBySection,
@@ -530,7 +528,6 @@ function LearningSection({ paperId, paper }: { paperId: string; paper: AccaPaper
   const pale = palestArea(paperId)
   const cooling = forgettingRisk(paperId)
   const velocity = learningVelocity(paperId)
-  const calibration = getCalibration(paperId)
   const fc = flashcardStats(paperId)
 
   const weakItems = stats.areas
@@ -645,39 +642,19 @@ function LearningSection({ paperId, paper }: { paperId: string; paper: AccaPaper
           )}
         </Card>
 
-        <Card>
-          <CardTitle icon="tutor">Confidence calibration</CardTitle>
-          {calibration ? (
-            <>
-              <div style={{ display: "grid", gap: SP.sm }}>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 4 }}>
-                    <span style={{ color: C.soft }}>You feel</span>
-                    <b style={{ color: C.text }}>{calibration.claimed}% confident</b>
-                  </div>
-                  <MeterBar value={calibration.claimed} color={C.brand} track={C.brandSoft} height={7} />
-                </div>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 4 }}>
-                    <span style={{ color: C.soft }}>When sure, you score</span>
-                    <b style={{ color: C.text }}>{calibration.deliveredWhenSure}%</b>
-                  </div>
-                  <MeterBar value={calibration.deliveredWhenSure} color={bandColor(calibration.deliveredWhenSure, 65)} height={7} />
-                </div>
-              </div>
-              <div style={{ ...TYPE.small, color: C.faint, marginTop: SP.md }}>
-                {calibration.gapPts > 10
-                  ? `${calibration.gapPts}-pt gap — a little overconfident; we'll test those areas harder.`
-                  : calibration.gapPts < -10
-                    ? "You're better than you think — trust the first instinct."
-                    : "Well calibrated — your gut and your marks agree."}{" "}
-                ({calibration.tagged} tagged answers)
-              </div>
-            </>
-          ) : (
-            <Measuring>Tap "Sure / Not sure" while practising — 10 tagged answers unlock your calibration read.</Measuring>
-          )}
-        </Card>
+        {/*
+          THE CONFIDENCE CALIBRATION CARD WAS REMOVED HERE.
+
+          It instructed the learner to tap "Sure / Not sure" while practising.
+          There is no such control anywhere in the app: recordConfidence() has
+          no caller, so the store it reads is empty for every learner and the
+          card could never show anything but that instruction.
+
+          Worse than empty - an instruction to use a feature that does not
+          exist, on the screen whose entire job is to be trusted with numbers.
+          Overconfidence is a real ACCA failure mode and this is worth having;
+          it returns when the per-question capture that feeds it does.
+        */}
       </div>
     </>
   )

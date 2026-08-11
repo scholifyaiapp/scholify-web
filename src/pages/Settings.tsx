@@ -21,7 +21,6 @@ import { useToast } from "@/components/Toast"
 import { useTheme } from "@/lib/theme"
 import { syncReminder, localTimeZone, DEFAULT_SLOTS, type ReminderSlots } from "@/lib/reminders"
 import CalendarSync from "@/components/CalendarSync"
-import { readOptIn as readCommunityOptIn, writeOptIn as writeCommunityOptIn } from "@/lib/community-storage"
 import { getReferralCode, referralUrl, getReferralStats } from "@/lib/referral"
 import {
   Icon,
@@ -825,7 +824,6 @@ export default function Settings() {
 
   const [answered, setAnswered] = useState(() => getOverallProgress().totalAnswered)
   const [settings, setSettings] = useState<AppSettings>(readSettings)
-  const [communityOptIn, setCommunityOptIn] = useState(readCommunityOptIn)
 
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -1601,18 +1599,21 @@ export default function Settings() {
                 </div>
               </>
             )}
-            <SettingRow name="Streak alerts" desc="Be notified when your streak is at risk">
-              <Toggle on={settings.streakAlerts} onChange={(v) => update("streakAlerts", v)} />
-            </SettingRow>
-            <SettingRow
-              name="Weekly progress report"
-              desc="Receive your weekly summary every Sunday"
-            >
-              <Toggle on={settings.weeklyReport} onChange={(v) => update("weeklyReport", v)} />
-            </SettingRow>
-            <SettingRow name="New features" desc="Updates about new Scholify features" last>
-              <Toggle on={settings.newFeatures} onChange={(v) => update("newFeatures", v)} />
-            </SettingRow>
+            {/*
+              THREE TOGGLES REMOVED HERE: "Streak alerts", "Weekly progress
+              report" and "New features".
+
+              All three wrote a flag to settings and nothing anywhere read it.
+              Two of them described emails that do not exist in api/ at all —
+              there is no weekly summary sender and no product-update sender —
+              and the third gated nothing, since the streak line rides on the
+              daily reminder the toggle above already controls.
+
+              A switch that does nothing is worse than a missing feature. It
+              teaches the learner that our settings are decorative, so when they
+              later turn OFF something that does work, they have no reason to
+              believe it. Any of these can come back the day its sender does.
+            */}
           </div>
         </Section>
 
@@ -1898,58 +1899,22 @@ export default function Settings() {
         {/* ── Calendar Sync ── */}
         <CalendarSync />
 
-        {/* ── Privacy ── */}
-        <Section>
-          <SectionHead icon="shield">Privacy</SectionHead>
-          <div style={{ marginTop: 8 }}>
-            <SettingRow
-              name="Share completions to community feed"
-              desc="Auto-post your week completions and streak milestones to other learners with the same goal. Only your first name + last initial are shown."
-            >
-              <Toggle
-                on={communityOptIn.optedIn && communityOptIn.shareCompletions}
-                onChange={(v) =>
-                  setCommunityOptIn((prev) => {
-                    const next = { ...prev, shareCompletions: v, optedIn: v ? true : prev.optedIn }
-                    writeCommunityOptIn({ shareCompletions: v, optedIn: next.optedIn }, user?.id)
-                    return next
-                  })
-                }
-              />
-            </SettingRow>
-            <SettingRow
-              name="Share streak milestones"
-              desc="Celebrate 7 / 14 / 30 / 60 / 90-day streaks in the community feed."
-            >
-              <Toggle
-                on={communityOptIn.optedIn && communityOptIn.shareMilestones}
-                onChange={(v) =>
-                  setCommunityOptIn((prev) => {
-                    const next = { ...prev, shareMilestones: v, optedIn: v ? true : prev.optedIn }
-                    writeCommunityOptIn({ shareMilestones: v, optedIn: next.optedIn }, user?.id)
-                    return next
-                  })
-                }
-              />
-            </SettingRow>
-            <SettingRow
-              name="Appear in leaderboards"
-              desc="Show your rank in the per-category weekly leaderboard. Opting out fully also removes you from the feed."
-              last
-            >
-              <Toggle
-                on={communityOptIn.optedIn}
-                onChange={(v) => {
-                  setCommunityOptIn((prev) => {
-                    const next = { ...prev, optedIn: v }
-                    writeCommunityOptIn({ optedIn: v }, user?.id)
-                    return next
-                  })
-                }}
-              />
-            </SettingRow>
-          </div>
-        </Section>
+        {/*
+          THE PRIVACY SECTION WAS REMOVED HERE.
+
+          It held three switches - share completions to the community feed,
+          share streak milestones, appear in leaderboards - governing a feature
+          that does not exist. There is no feed and no leaderboard anywhere in
+          the app: community-storage.ts, which generates the posts, is imported
+          by exactly one file, and that file was this one. A learner opting out
+          of a leaderboard they can never appear on is being asked to manage a
+          privacy risk we invented.
+
+          The storage module is left in place, dormant. When the feed is
+          actually built, these controls come back WITH it - which is the right
+          order, because a privacy control shipped ahead of the thing it
+          protects is a claim about data handling that nothing backs.
+        */}
 
         {/* ── Appearance ── */}
         <Section>
