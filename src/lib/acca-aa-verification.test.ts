@@ -20,7 +20,17 @@ describe("AA official Areas B and D independently recomputed examples", () => {
   })
 
   it("keeps all six official AA areas represented", () => {
-    expect(new Set(getQuestions("AA").map((item) => item.area))).toEqual(new Set(["A", "B", "C", "D", "E", "F"]))
-    expect(chaptersForPaper("AA").map((chapter) => chapter.area).sort()).toEqual(["A", "B", "C", "D", "E", "F"])
+    /*
+     * COVERAGE, not one-chapter-per-area — the same correction FM needed.
+     *
+     * Asserting an exact list quietly encoded the thing that made AA thin: six
+     * chapters for six areas, so Area A carried A1 through A6 including ethics,
+     * which is examined in Section B almost every sitting. AA is being rebuilt
+     * as a tree, so an area legitimately holds several chapters and this must
+     * check every area is COVERED rather than that none is covered twice.
+     */
+    const areas = ["A", "B", "C", "D", "E", "F"]
+    expect(new Set(getQuestions("AA").map((item) => item.area))).toEqual(new Set(areas))
+    expect(new Set(chaptersForPaper("AA").map((chapter) => chapter.area))).toEqual(new Set(areas))
   })
 })
