@@ -1,0 +1,88 @@
+# Sends the study reminders — every 5 minutes.
+#
+# WHY THIS IS NOT A VERCEL CRON
+#
+# vercel.json already has one: `0 8 * * *`. That is not a choice, it is the
+# Hobby plan's ceiling — one cron run per day. And the reminder sender cannot
+# work on a daily tick, because it does not send "today's reminders": it sends
+# whatever falls in a 20-minute window around each learner's own practice time
+# (api/reminders.ts, WINDOW = 20). Learners sit down at 07:00 and at 23:30, in
+# every timezone, so a slot targeting 10:25 fires only between 10:25 and 10:45.
+# One run a day hits at most one such window and misses every other learner —
+# which is why the -2h / -10min / +2h reminders had never fired correctly.
+#
+# Hourly would not fix it either: a 60-minute tick steps straight over a
+# 20-minute window. The sender is documented as being called every ~5 minutes,
+# so that is what this does.
+#
+# Actions minutes are free and unlimited on public repositories, so the 5-minute
+# cadence costs nothing. The Vercel daily cron is left in place as a backstop —
+# the endpoint dedupes on a per-slot sent-date, so a duplicate call sends
+# nothing twice.
+#
+# ── ONE-TIME SETUP ──────────────────────────────────────────────
+# Add the repository secret CRON_SECRET with the SAME value as the CRON_SECRET
+# environment variable in Vercel:
+#   Settings → Secrets and variables → Actions → New repository secret
+# Until then this workflow fails loudly on purpose, rather than looking green
+# while sending nothing.
+
+name: Send study reminders
+
+on:
+  schedule:
+    # Every 5 minutes. GitHub delays scheduled runs when the queue is busy;
+    # the sender's 20-minute window absorbs that.
+    - cron: "*/5 * * * *"
+  # Lets you run it by hand from the Actions tab to verify the wiring.
+  workflow_dispatch:
+
+# If a run is somehow still going when the next tick arrives, skip the new one
+# rather than sending twice.
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the reminder sender
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET is not set on this repository. No reminders are being sent."
+            echo "Add it under Settings > Secrets and variables > Actions, matching the value in Vercel."
+            exit 1
+          fi
+
+          # -sS keeps curl quiet but still reports transport errors.
+          # The body is written to a file rather than stdout so nothing the API
+          # returns can end up in a public build log.
+          status=$(curl -sS -o /tmp/response.json -w '%{http_code}' \
+            --max-time 120 \
+            --retry 2 --retry-delay 5 --retry-connrefused \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "https://scholifyapp.com/api/reminders?action=send")
+
+          echo "HTTP ${status}"
+
+          if [ "${status}" = "401" ]; then
+            echo "::error::Rejected. The CRON_SECRET here does not match the one in Vercel."
+            exit 1
+          fi
+
+          if [ "${status}" != "200" ]; then
+            echo "::error::Reminder sender returned HTTP ${status}."
+            exit 1
+          fi
+
+          # Counts only — safe to print, and the only thing worth seeing here.
+          # Anything string-valued (an address, a name) is dropped: this log is
+          # public. jq ships on ubuntu-latest.
+          jq -c 'with_entries(select(.value | type == "number" or type == "boolean"))' /tmp/response.json \
+            || echo "(sent; response was not JSON)"
