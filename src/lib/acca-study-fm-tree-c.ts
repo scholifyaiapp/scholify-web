@@ -492,6 +492,23 @@ const FM_TREE_06: StudyChapter = {
           md: "**With recourse**: you carry the bad debt if the customer does not pay — it is finance only. **Without recourse**: the factor bears it, and charges more for doing so. Saying \"factoring removes bad debt risk\" without that condition is wrong.",
         },
         {
+          kind: "example",
+          title: "Factoring, priced properly",
+          scenario:
+            "Ashby Co has revenue of £7.3m, all on credit, and receivables days of 65. A factor offers to advance 80% of invoices immediately, charging 1.5% of revenue as a fee plus 9% on the advance, and will reduce collection to 40 days. Ashby's overdraft costs 11%. Its own credit control costs £45,000 a year, which would be saved.",
+          steps: [
+            { label: "Current receivables", detail: "£7.3m × 65/365 = £1,300,000" },
+            { label: "New receivables", detail: "£7.3m × 40/365 = £800,000 — a reduction of £500,000" },
+            { label: "Saving on financing", detail: "£500,000 × 11% overdraft saved = £55,000" },
+            { label: "Plus administration saved", detail: "£45,000 of credit control costs" },
+            { label: "Cost — the factor's fee", detail: "£7.3m × 1.5% = £109,500" },
+            { label: "Cost — interest on the advance", detail: "80% × £800,000 = £640,000 advanced, at 9% = £57,600. But this REPLACES overdraft on the same money at 11% (£70,400), so it is a net saving of £12,800, not a cost" },
+            { label: "Net", detail: "55,000 + 45,000 + 12,800 − 109,500 = £3,300 benefit" },
+          ],
+          result:
+            "Marginally worthwhile — and the arithmetic is the point. The fee looks enormous next to the savings until you notice the advance is CHEAPER than the overdraft it displaces. Candidates who treat the 9% as a pure cost, rather than comparing it with the 11% it replaces, turn a positive answer negative.",
+        },
+        {
           kind: "text",
           md: "**Managing payables** is the mirror image. Trade credit is often described as free finance, and it is — right up to the point where it costs you a settlement discount, a supplier's goodwill, or your credit rating. Stretching payables is the cheapest short-term finance available and the easiest to overuse.",
         },
@@ -507,6 +524,18 @@ const FM_TREE_06: StudyChapter = {
           ],
         },
       ],
+      check: {
+        q: "A factor advances 80% of invoices at 9% and charges a 1.5% fee, while the company's overdraft costs 11%. How should the 9% be treated in the evaluation?",
+        options: [
+          "As a cost, added to the 1.5% fee",
+          "As a net saving, because it replaces overdraft borrowing on the same amount at 11%",
+          "Ignored, because it is charged by the factor rather than the bank",
+          "As a cost, but only on the 20% not advanced",
+        ],
+        correct: 1,
+        explain:
+          "The advance displaces overdraft on the same money, so the relevant figure is the 2% differential in the company's favour — not the 9% in isolation. Treating it as a pure cost is what turns a positive evaluation negative.",
+      },
     },
   ],
   examTraps: [
@@ -845,6 +874,37 @@ const FM_TREE_08: StudyChapter = {
         explain:
           "Receivables days are near zero and payables days are long, so payables exceed inventory plus receivables days. Supermarkets hold substantial inventory — it simply turns over faster than the credit period they take.",
       },
+    },
+    {
+      id: "identify-the-policy",
+      heading: "Identifying the policy from the numbers",
+      blocks: [
+        {
+          kind: "text",
+          md: "Questions rarely say \"this company follows an aggressive policy\". They give a balance sheet and expect you to work it out — by comparing the **permanent** part of current assets with the **long-term finance** available to fund it.",
+        },
+        {
+          kind: "example",
+          title: "Two companies, same industry, opposite policies",
+          scenario:
+            "Both companies have current assets that never fall below £4m, peaking at £6m in the autumn. Company A has long-term finance of £7m and an overdraft facility of £1m. Company B has long-term finance of £3m and an overdraft facility of £3.5m.",
+          steps: [
+            { label: "The permanent element", detail: "£4m for both — the floor that never goes away, however fast individual items turn over." },
+            { label: "The fluctuating element", detail: "Up to £2m in the autumn peak." },
+            { label: "Company A", detail: "Long-term finance of £7m covers the £4m permanent base AND part of the fluctuating need. CONSERVATIVE: safe, with idle cash in the troughs, and paying for finance it does not always use." },
+            { label: "Company B", detail: "Long-term finance of £3m does not even cover the £4m permanent base, so £1m of permanent need sits on an overdraft. AGGRESSIVE: cheapest, and exposed to a facility that is repayable on demand against assets it cannot liquidate quickly." },
+            { label: "What would matching look like?", detail: "Long-term finance of about £4m, with the £2m seasonal peak on short-term facilities." },
+          ],
+          result:
+            "Company B is the one to watch. Its position is not wrong — it may be entirely rational while credit is cheap and available — but it is the structure that turns a profitable year into an insolvency the moment a bank reduces a facility. That is the FM-04 overtrading mechanism, seen from the funding side.",
+        },
+        {
+          kind: "callout",
+          tone: "tip",
+          title: "The one comparison that answers the question",
+          md: "**Long-term finance against the permanent element of current assets.** If long-term finance is less than the permanent base, the policy is aggressive. That single comparison identifies the policy, and everything else in the answer follows from it.",
+        },
+      ],
     },
   ],
   examTraps: [

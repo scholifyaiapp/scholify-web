@@ -133,6 +133,60 @@ const FM_TREE_09: StudyChapter = {
           "Depreciation = 600,000/5 = £120,000. Profit = 200,000 − 120,000 = £80,000. ROCE = 80,000/600,000 = 13.3%. The 33.3% distractor uses the cash flow without deducting depreciation — the classic error.",
       },
     },
+    {
+      id: "using-them-together",
+      heading: "Why boards still use both",
+      blocks: [
+        {
+          kind: "text",
+          md: "NPV is theoretically superior and most companies still compute payback and ROCE alongside it. That is not ignorance — each answers a question NPV does not, and an exam answer that simply dismisses them has missed the discussion marks.",
+        },
+        {
+          kind: "table",
+          caption: "The question each method actually answers",
+          head: ["Method", "The question it answers", "Who cares"],
+          rows: [
+            ["NPV", "Does this increase shareholder wealth, and by how much?", "Shareholders, and the board acting for them"],
+            ["Payback", "How long is our cash exposed?", "A cash-constrained business, or one in a fast-changing market where year-five forecasts are fiction"],
+            ["IRR", "What return does it earn, as a rate?", "Anyone comparing against a borrowing rate or a hurdle, and non-financial managers who find a percentage intuitive"],
+            ["ROCE", "How will this look in the reported accounts?", "Managers appraised on ROCE — which is why it drives behaviour whatever the theory says"],
+          ],
+        },
+        {
+          kind: "example",
+          title: "Four methods, four different rankings",
+          scenario:
+            "Two mutually exclusive projects, cost of capital 10%. Project X: invest £500,000, returns £150,000 a year for 5 years. Project Y: invest £500,000, returns £60,000 in year 1 rising to £320,000 by year 5, total £950,000.",
+          steps: [
+            { label: "Payback", detail: "X: 500/150 = 3.3 years. Y: cash accumulates slowly, so payback is roughly 4.3 years. X WINS on payback." },
+            { label: "NPV", detail: "X: 150,000 × 3.791 − 500,000 = £68,650. Y's later, larger flows are discounted harder: NPV is around £58,000. X WINS on NPV too, but by far less than the £200,000 difference in total cash suggests." },
+            { label: "Total undiscounted cash", detail: "X £750,000, Y £950,000. Y WINS — which is exactly the illusion discounting exists to remove." },
+            { label: "ROCE", detail: "Depends on the depreciation profile, and can favour either. It is the method most easily moved by an accounting policy rather than by economics." },
+            { label: "The decision", detail: "Follow NPV: X. But note WHY the answer is close — Y earns more in total and later, so if the cost of capital were lower, Y would win. Saying that shows you understand what discounting is doing." },
+          ],
+          result:
+            "Four methods, three different winners depending on which you believe. NPV decides, and being able to explain why the others disagree is what separates a two-mark answer from a five-mark one.",
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "The honest line about payback and ROCE",
+          md: "They are **supplementary, not alternative**. Use them to describe cash exposure and reported impact, and use NPV to decide. An answer that says \"payback is wrong, use NPV\" and stops has answered half the question.",
+        },
+      ],
+      check: {
+        q: "Why do many companies still use payback despite its limitations?",
+        options: [
+          "It gives a more accurate measure of value than NPV",
+          "It is simple to explain and focuses on cash exposure and liquidity, which matter to a cash-constrained business",
+          "It accounts for the time value of money",
+          "It is required by accounting standards",
+        ],
+        correct: 1,
+        explain:
+          "Payback answers a different question — how long is our cash tied up — which matters greatly to a business with limited cash or one whose distant forecasts are unreliable. It is supplementary to NPV, not a substitute for it.",
+      },
+    },
   ],
   examTraps: [
     { trap: "Using cash flows in ROCE.", fix: "ROCE uses accounting profit, so depreciation is deducted. It is the only appraisal method here that does." },
@@ -462,6 +516,51 @@ const FM_TREE_11: StudyChapter = {
         correct: 1,
         explain:
           "(1.06)(1.05) = 1.113, so 11.3%. Simply adding 6% + 5% = 11% is close but wrong — the Fisher relationship is multiplicative, and the examiner sets 11.0% as the distractor for exactly that reason.",
+      },
+    },
+    {
+      id: "full-layout",
+      heading: "Laying out a taxed, inflated NPV",
+      blocks: [
+        {
+          kind: "text",
+          md: "Section C hands you tax and inflation together, and most lost marks are **layout** rather than technique. A disciplined table earns method marks even where an individual figure is wrong; a jumble of workings earns nothing even when the answer is right.",
+        },
+        {
+          kind: "example",
+          title: "The row order that works, every time",
+          scenario:
+            "Machine costs £800,000 at T0, four-year life, scrap £100,000. Sales 20,000 units at £30, inflating 5%. Variable cost £18 a unit, inflating 7%. Tax 30%, payable one year in arrears. Writing-down allowances 25% reducing balance. Real cost of capital 8%, general inflation 5%.",
+          steps: [
+            { label: "Row 1 — inflate the sales revenue", detail: "Year 1: 20,000 × £30 × 1.05. Year 2: × 1.05². Each line at its OWN specific rate, not the general rate." },
+            { label: "Row 2 — inflate the variable costs", detail: "Year 1: 20,000 × £18 × 1.07, then × 1.07². Different rate from sales, which is precisely why the money method is compulsory here." },
+            { label: "Row 3 — net operating cash flow", detail: "Row 1 less row 2. This is the taxable figure." },
+            { label: "Row 4 — tax at 30%, LAGGED one year", detail: "Year 1's tax appears in year 2. Getting the lag right moves every discount factor applied to it." },
+            { label: "Row 5 — capital allowance tax savings", detail: "WDA on 800,000 reducing balance × 30%, also lagged, with a balancing allowance in the final year. These are computed on HISTORIC cost and never inflate." },
+            { label: "Row 6 — capital flows", detail: "−800,000 at T0, +100,000 scrap in year 4. Working capital, if given, out at T0 and recovered at the end." },
+            { label: "Row 7 — net cash flow, then discount", detail: "Sum the rows, then apply MONEY-rate factors: (1.08)(1.05) = 13.4%, say 13%." },
+          ],
+          result:
+            "Seven rows, in that order, every time. Two things carry the most marks and are easiest to lose: the tax lag pushing flows a year later, and the capital allowances NOT inflating while everything above them does.",
+        },
+        {
+          kind: "callout",
+          tone: "warn",
+          title: "Set the layout down before computing anything",
+          md: "Write the seven row labels and the year columns first, then fill them. Candidates who compute as they read produce workings a marker cannot follow and lose the method marks that would have survived an arithmetic slip.",
+        },
+      ],
+      check: {
+        q: "In a money-method NPV with tax, which figure does NOT get inflated?",
+        options: [
+          "Sales revenue",
+          "Variable costs",
+          "Capital allowance tax savings",
+          "The tax charge on operating cash flows",
+        ],
+        correct: 2,
+        explain:
+          "Capital allowances are computed on the asset's HISTORIC cost, so they never inflate. Everything driven by operations does, and the tax charge inflates because the operating flows it is levied on have inflated.",
       },
     },
   ],

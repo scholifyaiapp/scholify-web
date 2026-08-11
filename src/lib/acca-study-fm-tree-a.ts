@@ -171,6 +171,14 @@ const FM_TREE_01: StudyChapter = {
           title: "How this is examined",
           md: "Almost always as a short scenario: \"classify the following decisions\". Sort by **horizon and who takes it**, not by how much money is involved — a large operational payment is still operational.",
         },
+        {
+          kind: "activity",
+          title: "Classify six decisions",
+          prompt:
+            "Sort each as strategic, tactical or operational, and say which of the three financial management decisions it belongs to: (a) setting a maximum gearing ratio of 40%; (b) paying a £2m supplier invoice; (c) choosing a bank loan over a bond issue for one factory; (d) deciding to retain 60% of earnings each year; (e) chasing a customer 20 days overdue; (f) approving a £15m acquisition.",
+          answer:
+            "(a) **Strategic · financing** — a board-level policy for the whole company.\n(b) **Operational · investment** (working capital) — a large sum, but a routine day-to-day payment. Size is not the test.\n(c) **Tactical · financing** — medium term, one project, taken below board level.\n(d) **Strategic · dividend** (and therefore financing) — a standing policy on distribution.\n(e) **Operational · investment** (working capital) — day-to-day receivables management.\n(f) **Strategic · investment** — long term, whole organisation, board decision.\n\nThe trap is (b). A £2m payment feels strategic and is not: classification runs on horizon and the level that takes the decision, never on magnitude.",
+        },
       ],
     },
   ],
@@ -533,6 +541,21 @@ const FM_TREE_03: StudyChapter = {
           tone: "warn",
           title: "Do not present share options as the fix",
           md: "Options align direction but not magnitude of risk: an option holder gains from volatility and loses nothing below the exercise price, which can encourage exactly the gambling shareholders do not want. Say so — it is the discriminating point.",
+        },
+        {
+          kind: "example",
+          title: "A reward scheme that produces the wrong behaviour",
+          scenario:
+            "Calderstone Co pays its directors a bonus of 20% of salary if reported EPS growth exceeds 8%. Growth came in at 8.4%. During the year the company cut the research budget by 60%, bought back 5% of its shares, and extended supplier payment terms from 30 to 75 days.",
+          steps: [
+            { label: "Was the target met?", detail: "Yes — 8.4% against 8%. On the scheme's own terms the bonus is payable." },
+            { label: "How was it met?", detail: "The buyback reduced the share count, raising EPS with no improvement in earnings at all. Cutting research raised this year's profit by removing next decade's products. Stretching payables improved cash at suppliers' expense." },
+            { label: "Was shareholder wealth increased?", detail: "Almost certainly not. Two of the three actions destroy long-term value and the third is cosmetic — EPS rose because the denominator fell." },
+            { label: "The agency point", detail: "The scheme created goal INCONGRUENCE: it rewarded a measure rather than the objective. The agent behaved rationally; the principal wrote the wrong contract." },
+            { label: "Better design", detail: "A longer performance period; a measure less easily manipulated than EPS, such as total shareholder return or economic value added; a claw-back provision; and share ownership with a holding period rather than options." },
+          ],
+          result:
+            "The directors did nothing dishonest. That is the lesson: agency problems are usually produced by badly designed incentives rather than bad people, which is why the exam answer is about the SCHEME and not the individuals.",
         },
       ],
     },
