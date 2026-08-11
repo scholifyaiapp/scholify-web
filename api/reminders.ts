@@ -113,6 +113,20 @@ function admin() {
  * Exactly-once is still guaranteed by the per-slot sent_*_date columns, never
  * by the window — so widening these cannot double-send.
  */
+/*
+ * The sender address, with no silent fallback — see the long note in
+ * api/purchase-email.ts. REMINDER_FROM was present in Vercel with an EMPTY
+ * value, so this file was sending every reminder from Resend's sandbox
+ * address, which delivers only to the Resend account owner. Real learners got
+ * nothing and Resend returned success.
+ */
+function senderAddress(): string | null {
+  const from = process.env.REMINDER_FROM?.trim()
+  if (from) return from
+  console.error('[email] REMINDER_FROM is not set. Refusing to send from Resend sandbox; set it to an address on a domain verified in Resend.')
+  return null
+}
+
 const SLOTS = [
   { key: "lead", offset: -120, window: 100, onCol: "lead_on", dateCol: "sent_lead_date" },
   { key: "soon", offset: -10, window: 20, onCol: "soon_on", dateCol: "sent_soon_date" },
@@ -332,7 +346,14 @@ async function handleComplete(req: VercelRequest, res: VercelResponse): Promise<
     const unsubUrl = secret
       ? `${SITE}/api/reminders?action=unsubscribe&u=${encodeURIComponent(user.id)}&t=${unsubToken(user.id, secret)}`
       : `${SITE}/settings`
-    const ok = await sendCompletionEmail(resendKey, process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>", to, unsubUrl, {
+    // No sandbox fallback: without a real sender this mail would be accepted by
+    // Resend and delivered to nobody, so say so rather than pretend it went.
+    const senderFrom = senderAddress()
+    if (!senderFrom) {
+      res.status(200).json({ ok: true, emailed: false, reason: "REMINDER_FROM not configured" })
+      return
+    }
+    const ok = await sendCompletionEmail(resendKey, senderFrom, to, unsubUrl, {
       paperId,
       streak,
       nextTime,
@@ -595,7 +616,11 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
     return
   }
 
-  const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+  const from = senderAddress()
+  if (!from) {
+    res.status(500).json({ error: "REMINDER_FROM is not configured." })
+    return
+  }
   const now = new Date()
 
   try {

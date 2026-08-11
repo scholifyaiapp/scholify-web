@@ -119,11 +119,40 @@ export function buildPurchaseEmail(facts: PurchaseEmailFacts): { subject: string
   }
 }
 
+/*
+ * THE SENDER ADDRESS, WITH NO SILENT FALLBACK.
+ *
+ * Every sender in this codebase used to fall back to
+ * "Charles at Scholify <onboarding@resend.dev>" when REMINDER_FROM was unset.
+ * That is Resend's SANDBOX address: it delivers only to the Resend account
+ * owner, so every customer receipt, welcome email and reminder went nowhere —
+ * and returned success, because Resend accepts the request.
+ *
+ * It happened. REMINDER_FROM existed in Vercel with an EMPTY value, which is
+ * falsy, so the fallback was live in production. The variable being present
+ * made it look configured. api/social.ts even carried a written warning about
+ * this exact failure; nothing surfaced it where anyone would look.
+ *
+ * A fallback that quietly discards mail is worse than no delivery at all,
+ * because it removes the symptom that would have led someone to the cause.
+ * Returning null makes the caller log a real reason instead.
+ */
+function senderAddress(): string | null {
+  const from = process.env.REMINDER_FROM?.trim()
+  if (from) return from
+  console.error(
+    "[email] REMINDER_FROM is not set. Refusing to send from Resend's sandbox address, " +
+      "which only delivers to the account owner. Set REMINDER_FROM to an address on a domain verified in Resend.",
+  )
+  return null
+}
+
 /** Fire-and-forget delivery. Never throws: a failed email must not fail a webhook. */
 export async function sendPurchaseEmail(to: string, facts: PurchaseEmailFacts): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey || !to) return false
-  const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+  const from = senderAddress()
+  if (!from) return false
   const { subject, html, text } = buildPurchaseEmail(facts)
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -231,7 +260,8 @@ export function buildReceiptEmail(facts: ReceiptFacts): { subject: string; html:
 export async function sendReceiptEmail(to: string, facts: ReceiptFacts): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey || !to) return false
-  const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+  const from = senderAddress()
+  if (!from) return false
   const { subject, html, text } = buildReceiptEmail(facts)
   try {
     const res = await fetch("https://api.resend.com/emails", {

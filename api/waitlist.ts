@@ -224,7 +224,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   try {
     const isNew = await saveContact(email, name)
     if (isNew) {
-      const from = process.env.REMINDER_FROM || "Charles at Scholify <onboarding@resend.dev>"
+      const from = process.env.REMINDER_FROM?.trim()
+      if (!from) {
+        // Sandbox sender delivers only to the Resend account owner — see the
+        // note in purchase-email.ts. The signup itself is already saved, so
+        // report success for the signup and honesty about the email.
+        console.error("[email] REMINDER_FROM is not set; waitlist confirmation not sent.")
+        res.status(200).json({ ok: true, emailed: false })
+        return
+      }
       const [confirmation, adminNotice] = await Promise.all([
         resend("/emails", apiKey, {
           method: "POST",
