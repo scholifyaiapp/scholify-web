@@ -37,7 +37,8 @@ import {
 import { shapeDay } from "@/lib/acca-schedule"
 import { registerPracticeTime } from "@/lib/reminders"
 import { buildOnboardingGuide, MIN_DAILY_MINUTES, TARGET_DAILY_MINUTES, type GuideFix, type OnboardingGuide } from "@/lib/acca-onboarding-guide"
-import { onboardingSteps, SLIDE_POSES, STEP_LABELS, TIME_STEP, EXAM_DATE_STEP, PAPER_STEP, GOAL_STEP } from "@/lib/acca-onboarding-steps"
+import { onboardingSteps, SLIDE_POSES, STEP_LABELS, TIME_STEP, EXAM_DATE_STEP, PAPER_STEP, TARGET_STEP } from "@/lib/acca-onboarding-steps"
+import TargetSlide from "@/components/acca/TargetSlide"
 import { AnimatedHeadline, GlassButton, RouteClimb } from "@/components/acca/onboarding-ui"
 import { CapacityPlan, MinutesNudge } from "@/components/acca/CapacityPlan"
 import { OnboardingStepper } from "@/components/acca/OnboardingStepper"
@@ -138,20 +139,17 @@ const SLOT_OPTIONS: { label: string; time: string }[] = [
   { label: "Night", time: "21:30" },
 ]
 
-const GOAL_ICON: Record<Goal, IconName> = {
-  "first-pass": "done",
-  recovery: "loop",
-  level: "roadmap",
-  career: "study",
-}
-
-/** Target pass probability before exam day — the ambition the plan aims at. */
-const TARGET_OPTIONS: { v: number; label: string; blurb: string }[] = [
-  { v: 65, label: "65%", blurb: "Pass-ready" },
-  { v: 75, label: "75%", blurb: "Confident · recommended" },
-  { v: 85, label: "85%", blurb: "Bulletproof" },
-  { v: 90, label: "90%", blurb: "Ambitious" },
-]
+/*
+ * GOAL_ICON and TARGET_OPTIONS were here, both dead once GoalSlide went.
+ *
+ * TARGET_OPTIONS offered a fourth choice, 90% "Ambitious", which built exactly
+ * the same day as 85% — ambitionFactor has three bands, so the fourth option
+ * changed the wording and nothing else. The presets now live in acca-target.ts,
+ * derived from those bands rather than typed out beside them.
+ *
+ * tsconfig.app has noUnusedLocals off, so neither of these would have been
+ * reported; they are removed by hand.
+ */
 
 
 /*
@@ -323,7 +321,9 @@ export default function Welcome() {
       : step === 6
         ? examDate !== ""
       : step === 7
-        ? goal !== null && target !== null
+        // The goal question no longer lives on this slide, so requiring it here
+        // would make the step permanently unadvanceable.
+        ? target !== null
         : step === 8
           ? resultChoice !== null
         : true
@@ -684,7 +684,7 @@ export default function Welcome() {
         setExamDate={setExamDate}
       />
     ),
-    7: <GoalSlide goal={goal} setGoal={setGoalState} target={target} setTarget={setTarget} />,
+    7: <TargetSlide target={target} setTarget={setTarget} minutesPerDay={minutes} />,
     8: (
       <ResultUploadSlide
         paper={paper ?? ""}
@@ -727,7 +727,7 @@ export default function Welcome() {
     ),
   }
 
-  const KICKERS = ["A GPS for ACCA", "Your starting point", "English support", "Your target", "Your study stack", "Protect your time", "Lock your date", "Your why", "Optional shortcut", ""]
+  const KICKERS = ["A GPS for ACCA", "Your starting point", "English support", "Your target", "Your study stack", "Protect your time", "Lock your date", "Your pass line", "Optional shortcut", ""]
   // Step 3's question depends on the paper: session exams pick a sitting,
   // on-demand CBEs (BT·MA·FA·LW) pick any date.
   const TITLES = [
@@ -742,7 +742,7 @@ export default function Welcome() {
     "What are you studying with?",
     "How much time can you protect, daily?",
     sessionPaper ? "Which sitting are you taking?" : "When's your exam?",
-    "What are you here for?",
+    "How high are you aiming?",
     learnerRoute === "practice" ? "How should we assess your readiness?" : "How should we map your current progress?",
     "Your loop is set.",
   ]
@@ -756,7 +756,7 @@ export default function Welcome() {
     sessionPaper
       ? "Your plan counts back from exam week."
       : `${paper ?? "Your paper"} is an on-demand computer exam — book any date at your local centre.`,
-    "This shapes the tone I'll coach you in.",
+    "The pass mark is 50%. Your target is the line your plan pushes you to before exam day — and it sets how much practice each day holds.",
     learnerRoute === "practice"
       ? "Use a recent result or choose a short exam-focused readiness route. Uploading is optional."
       : "Use course progress, a targeted gap check, or an optional detailed result PDF.",
@@ -1614,71 +1614,15 @@ function SittingSlide({
   )
 }
 
-function GoalSlide({
-  goal, setGoal: set, target, setTarget,
-}: {
-  goal: Goal | null
-  setGoal: (g: Goal) => void
-  target: number | null
-  setTarget: (n: number) => void
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 11, maxWidth: 500 }}>
-      <ChoiceGroup
-        label="What is your goal for this paper?"
-        values={GOAL_OPTIONS.map((o) => o.value)}
-        value={goal}
-        onChange={(next) => set(next as Goal)}
-        gap={11}
-      >
-        {GOAL_OPTIONS.map((o) => (
-          <ChoiceCard
-            key={o.value}
-            value={o.value}
-            title={o.label}
-            detail={o.blurb}
-            icon={<Icon name={GOAL_ICON[o.value]} size={18} color={goal === o.value ? "#fff" : RED} />}
-          />
-        ))}
-      </ChoiceGroup>
-
-      {/* target pass probability — the number the whole plan will chase */}
-      <div style={{ marginTop: 10 }}>
-        <FieldLabel style={{ color: FAINT }}>Your target before exam day</FieldLabel>
-        <ChoiceGroup
-          label="Target Exam Readiness Score"
-          values={TARGET_OPTIONS.map((t) => String(t.v))}
-          value={target === null ? null : String(target)}
-          onChange={(next) => setTarget(Number(next))}
-          layout="grid"
-          columns={TARGET_OPTIONS.length}
-          gap={8}
-        >
-          {TARGET_OPTIONS.map((t, index) => {
-            const selected = target === t.v
-            return (
-              <motion.div
-                key={t.v}
-                layout
-                animate={{
-                  y: selected ? -4 : 0,
-                  scale: selected ? 1.035 : 1,
-                  filter: selected ? "drop-shadow(0 10px 14px rgba(200,0,0,.16))" : "drop-shadow(0 0 0 rgba(0,0,0,0))",
-                }}
-                transition={{ type: "spring", stiffness: 360, damping: 24, delay: selected ? index * 0.025 : 0 }}
-              >
-                <ChoiceTile value={String(t.v)} label={t.label} sub={t.blurb} />
-              </motion.div>
-            )
-          })}
-        </ChoiceGroup>
-        <p style={{ margin: "8px 0 0", font: `500 12px/1.4 ${SANS}`, color: MUTE }}>
-          Exam Readiness Score — the number your diagnostic sets and your plan pushes to this line.
-        </p>
-      </div>
-    </div>
-  )
-}
+/*
+ * GoalSlide was here.
+ *
+ * It carried two questions - "what is your goal for this paper?" and the target
+ * percentage - on a slide that onboardingSteps filtered out of the flow. The
+ * target has its own step now (TargetSlide), where the number is actually asked
+ * for rather than defaulted. The goal question is not reinstated: it was never
+ * shown to a single learner, so getGoal() already reads null for everyone.
+ */
 
 function ResultUploadSlide({
   paper, file, analysis, busy, error, choice, route, onFile, onChoice,

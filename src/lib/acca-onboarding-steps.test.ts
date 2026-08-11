@@ -6,7 +6,7 @@ import {
   RESOURCE_STEP,
   ASSESSMENT_STEP,
   EXAM_DATE_STEP,
-  GOAL_STEP,
+  TARGET_STEP,
   SLIDE_POSES,
 } from "@/lib/acca-onboarding-steps"
 
@@ -35,10 +35,27 @@ describe("onboarding flow", () => {
     }
   })
 
-  it("lets Charles choose the target and exam window instead of asking the learner", () => {
+  it("lets Charles choose the exam window instead of asking the learner", () => {
     for (const route of [null, "new", "course", "practice"] as const) {
       expect(onboardingSteps(route)).not.toContain(EXAM_DATE_STEP)
-      expect(onboardingSteps(route)).not.toContain(GOAL_STEP)
+    }
+  })
+
+  it("ASKS for the target, on every route", () => {
+    /*
+     * This used to assert the opposite, on the reasoning that Charles could
+     * pick the target too. He could not: the target control lived on the same
+     * hidden slide as the goal question, so nobody was asked and every plan
+     * used the `?? 75` fallback while the app displayed "THE ROAD TO 75%" as
+     * though the learner had chosen it.
+     *
+     * targetProb scales daily practice volume (ambitionFactor), moves the
+     * recommended exam date, and is the line every readiness meter is measured
+     * against. It is the one number in the plan that is purely the learner's
+     * call, so it has its own step now.
+     */
+    for (const route of [null, "new", "course", "practice"] as const) {
+      expect(onboardingSteps(route), `route=${route}`).toContain(TARGET_STEP)
     }
   })
 

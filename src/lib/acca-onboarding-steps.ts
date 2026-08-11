@@ -67,7 +67,7 @@ export const SLIDE_POSES = [
   "plan",      // 4 · resource step (out of the flow)
   "calm",      // 5 · daily time
   "chart",     // 6 · sitting / exam date
-  "run",       // 7 · goal
+  "run",       // 7 · target readiness score — aiming high, hence "run"
   "thinking",  // 8 · how to baseline
   "success",   // 9 · ready
 ] as const satisfies readonly CharlesPose[]
@@ -87,7 +87,7 @@ export const STEP_LABELS: readonly string[] = [
   "Materials", // out of the flow — see RESOURCE_STEP
   "Time",
   "Exam date",
-  "Goal",
+  "Target",
   "Baseline",
   "Ready",
 ] as const
@@ -95,11 +95,26 @@ export const STEP_LABELS: readonly string[] = [
 /** The steps shown, in order, for a learner on this route (null = not yet chosen). */
 export function onboardingSteps(learnerRoute: LearnerRoute | null): number[] {
   return Array.from({ length: ONBOARDING_TOTAL }, (_, index) => index).filter(
-    (step) => ![RESOURCE_STEP, EXAM_DATE_STEP, GOAL_STEP].includes(step) && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
+    (step) => ![RESOURCE_STEP, EXAM_DATE_STEP].includes(step) && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
   )
 }
 
 /** "Which paper are we passing?" — referenced by the editable summary rows. */
 export const PAPER_STEP = 3
-/** "What are you here for?" — the goal question. */
-export const GOAL_STEP = 7
+
+/**
+ * "How high are you aiming?" — the target readiness score.
+ *
+ * BACK IN THE FLOW. This slot held the goal question and was filtered out with
+ * RESOURCE_STEP and EXAM_DATE_STEP, which had a consequence nobody had spotted:
+ * the target control lived on that same hidden slide, so no learner was ever
+ * asked for it and every plan in production silently used the `?? 75` fallback.
+ * targetProb is not cosmetic — it scales daily practice volume through
+ * ambitionFactor, moves the recommended exam date, and is the line every
+ * readiness meter is measured against. The app displayed "THE ROAD TO 75%" as
+ * though the learner had chosen it.
+ *
+ * The slot keeps its number so nothing after it shifts, and sits where it
+ * belongs: after the time they can protect, before the plan is built.
+ */
+export const TARGET_STEP = 7

@@ -306,8 +306,15 @@ export function shieldState(paperId: string): ShieldState {
  *  "after studying, 5 questions on the most essential things". */
 export const ESSENTIALS_SIZE = 5
 
-/** Scale practice volume by the learner's ambition (65 / 75 / 85). */
-function ambitionFactor(targetProb: number): number {
+/**
+ * Scale practice volume by the learner's ambition (65 / 75 / 85).
+ *
+ * Exported because the onboarding target picker states the consequence of the
+ * choice out loud ("about a third more practice a day"), and a second copy of
+ * these thresholds written for the UI would drift from the ones that actually
+ * size the day. The picker's bands are derived from this function, not retyped.
+ */
+export function ambitionFactor(targetProb: number): number {
   if (targetProb >= 85) return 1.35
   if (targetProb >= 75) return 1.1
   return 1.0
@@ -406,8 +413,34 @@ export interface DayShape {
  * due we clear those rather than inventing a bigger session than exists.
  */
 export function shapeDay(budget: number, targetProb: number, due = 0): DayShape {
-  const B = Math.max(12, Math.round(budget))
   const amb = ambitionFactor(targetProb)
+  const shaped = shapeDayAt(budget, amb, due)
+  if (amb <= 1) return shaped
+
+  /*
+   * AIMING HIGHER MUST NEVER BUY YOU LESS WORK.
+   *
+   * Ambition raises the per-block practice CEILING, so a bigger cap makes the
+   * first topic cycle eat minutes the second cycle needed. Past a certain
+   * budget that starved the day instead of filling it: at 120 minutes an 85%
+   * target produced 45 questions where 65% produced 53. The learner asking for
+   * more got 15% less, and nothing anywhere said so.
+   *
+   * This surfaced the moment the target became a question we actually ask —
+   * before that every learner silently sat on the 75% fallback, so the
+   * inversion existed but was unreachable for most budgets.
+   *
+   * Reshaping the allocator to spend the extra ceiling without starving later
+   * cycles is a bigger change than this needs; the contract the learner cares
+   * about is simply that a higher target is never a smaller day. So when
+   * ambition would cost them questions, we keep the baseline shape.
+   */
+  const baseline = shapeDayAt(budget, 1, due)
+  return shaped.questionGoal >= baseline.questionGoal ? shaped : baseline
+}
+
+function shapeDayAt(budget: number, amb: number, due: number): DayShape {
+  const B = Math.max(12, Math.round(budget))
   const essentialsMin = Math.round(ESSENTIALS_SIZE * COST.perQ)
 
   // 1 · Flashcards, reserved first.
