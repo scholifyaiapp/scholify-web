@@ -63,11 +63,18 @@ jobs:
           # -sS keeps curl quiet but still reports transport errors.
           # The body is written to a file rather than stdout so nothing the API
           # returns can end up in a public build log.
+          #
+          # WWW, NOT THE APEX. scholifyapp.com 307-redirects to www, and there
+          # is deliberately no -L here: following a redirect would forward the
+          # Authorization header to whatever host it points at. So the URL has
+          # to be the final one. Pointing at the apex cost a run that failed
+          # with "HTTP 307" and looked, briefly, like a secret problem.
+          # api/reminders.ts uses the same www origin in its SITE constant.
           status=$(curl -sS -o /tmp/response.json -w '%{http_code}' \
             --max-time 120 \
             --retry 2 --retry-delay 5 --retry-connrefused \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "https://scholifyapp.com/api/reminders?action=send")
+            "https://www.scholifyapp.com/api/reminders?action=send")
 
           echo "HTTP ${status}"
 

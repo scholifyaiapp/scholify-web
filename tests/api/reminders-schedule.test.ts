@@ -296,3 +296,38 @@ describe("delivery under a scheduler that ticks about hourly", () => {
     expect(dueSlot(ROW, at("18:45"))).not.toBe("lead")
   })
 })
+
+/*
+ * THE WORKFLOW MUST CALL THE SAME ORIGIN THE CODE DOES.
+ *
+ * scholifyapp.com 307-redirects to www. The GitHub Actions workflow curls the
+ * send endpoint with the CRON_SECRET in an Authorization header and
+ * deliberately does NOT pass -L, because following a redirect would forward
+ * that header to whatever host it points at.
+ *
+ * So the workflow has to name the FINAL origin. It named the apex, every call
+ * came back 307, and the run failed in a way that looked like a secret problem
+ * — after a long afternoon spent chasing an actual secret problem.
+ */
+describe("the reminder cron workflow", () => {
+  const workflow = readFileSync(resolve(__dirname, "../../.github/workflows/reminders.yml"), "utf8")
+  const source = readFileSync(resolve(__dirname, "../../api/reminders.ts"), "utf8")
+
+  it("calls the same origin api/reminders.ts uses for its own links", () => {
+    const site = source.match(/const SITE = "([^"]+)"/)?.[1]
+    expect(site, "SITE constant not found in api/reminders.ts").toBeTruthy()
+    expect(workflow, `workflow must call ${site}`).toContain(`${site}/api/reminders?action=send`)
+  })
+
+  it("does not follow redirects, which is why the origin must be exact", () => {
+    // If -L is ever added, the Authorization header could be forwarded to
+    // another host. The correct fix for a redirect is the right URL, not -L.
+    expect(workflow).not.toMatch(/curl[^\n]*\s-L\b/)
+    expect(workflow).not.toContain("--location")
+  })
+
+  it("still fails loudly rather than going green while sending nothing", () => {
+    expect(workflow).toContain("CRON_SECRET is not set")
+    expect(workflow).toMatch(/exit 1/)
+  })
+})
