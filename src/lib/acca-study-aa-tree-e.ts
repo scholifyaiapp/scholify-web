@@ -161,6 +161,37 @@ const AA_TREE_20: StudyChapter = {
           "Adequate disclosure means the statements are not misstated — they correctly report a real uncertainty. The opinion is unmodified, and a separate section draws the reader's attention to the disclosure. Modification arises only if disclosure is inadequate or the basis itself is wrong.",
       },
     },
+    {
+      id: "forecast-worked",
+      heading: "Auditing the cash flow forecast",
+      blocks: [
+        {
+          kind: "text",
+          md: "Going concern questions almost always hand you a forecast. The marks are not for reading it — they are for **challenging the assumptions inside it**, which is the one thing management cannot do for you.",
+        },
+        {
+          kind: "example",
+          title: "A forecast that does not survive contact",
+          scenario:
+            "Ravensworth Co's twelve-month forecast shows a closing cash balance of £180,000. It assumes: revenue growth of 25%; receivables days falling from 70 to 45; a £500,000 overdraft renewed in month four; and no capital expenditure.",
+          steps: [
+            { label: "Revenue growth of 25%", detail: "Compare with actual growth in the last two years and with post year-end management accounts. Growth well above recent history needs support — signed contracts, an order book, a new customer. Without it, the top line of the forecast is an assertion." },
+            { label: "Receivables days 70 → 45", detail: "A 25-day improvement while revenue grows 25% is the assumption doing the heaviest lifting, because it releases cash twice over. Ask what specifically changes: new credit control staff, tighter terms, a factoring arrangement? An unexplained improvement is the single most common way a forecast is made to work." },
+            { label: "Overdraft renewal in month four", detail: "Inspect the facility letter for the expiry date, the amount and any covenants — and test whether the forecast breaches them. Obtain correspondence with the bank. \"We expect renewal\" is not evidence; the bank's own letter is." },
+            { label: "No capital expenditure", detail: "Review board minutes and the asset register. A manufacturer with ageing plant and zero forecast capex has probably deferred spending into the following year, which flatters the forecast without changing the business." },
+            { label: "Management's track record", detail: "Compare LAST year's forecast with what actually happened. A management team that has missed every forecast for three years has told you how much weight this one carries." },
+          ],
+          result:
+            "The closing £180,000 depends on four assumptions, two of which (receivables days and the overdraft) each individually exceed it. That is the finding: the forecast does not show headroom, it shows that headroom depends on two things not yet secured — and if the disclosure does not say so, the disclosure is inadequate.",
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "Compare prior forecasts with actual outcomes",
+          md: "It is the cheapest procedure in the chapter and the one candidates omit. Management's forecasting record is direct evidence about the reliability of the forecast in front of you, and it requires nothing but last year's file.",
+        },
+      ],
+    },
   ],
   examTraps: [
     { trap: "Classifying an event by when it happened rather than when the condition arose.", fix: "Adjusting events evidence conditions that existed at the year end." },
@@ -304,6 +335,34 @@ const AA_TREE_21: StudyChapter = {
         explain:
           "They aggregate to £90,000, above materiality. Misstatements are evaluated individually AND in aggregate, so the auditor requests correction and, if refused, modifies the opinion.",
       },
+    },
+    {
+      id: "misstatement-schedule",
+      heading: "The schedule of uncorrected misstatements",
+      blocks: [
+        {
+          kind: "example",
+          title: "Five items, and the argument with management",
+          scenario:
+            "Materiality for Winskill Co is £100,000; performance materiality £70,000. Profit before tax is reported as £310,000. The schedule shows: inventory overstated £38,000; a missing accrual £22,000; receivables allowance understated £19,000; a capital item expensed £15,000 (understating profit); and directors' expenses of £4,000 wrongly classified.",
+          steps: [
+            { label: "Net the same-direction items", detail: "Overstatements of profit: 38 + 22 + 19 = £79,000. The £15,000 capital item runs the OTHER way, so the net overstatement is £64,000." },
+            { label: "Against materiality", detail: "£64,000 net against £100,000 — below materiality. Individually all five are below it too." },
+            { label: "But consider the aggregate gross", detail: "£94,000 gross. Management may not correct the item that helps them and leave the ones that do not; the auditor evaluates both net and gross before concluding." },
+            { label: "Now the qualitative test", detail: "The £4,000 directors' expenses is material BY NATURE regardless of size — it is a specifically disclosable related-party matter. Size does not save it." },
+            { label: "The conclusion", detail: "Request correction of all five. Communicate the schedule to those charged with governance and obtain a written representation about the effect of any left uncorrected. The £4,000 must be corrected or disclosed whatever happens to the others." },
+            { label: "If profit mattered differently", detail: "Had reported profit been £70,000 rather than £310,000, a £64,000 overstatement would turn a profit into near-breakeven — a qualitative effect that would make it material at a fraction of the same figure." },
+          ],
+          result:
+            "One schedule, four separate judgements: net, gross, by nature, and by effect on a key figure. Answers that compare each item to materiality and stop have performed one of the four.",
+        },
+        {
+          kind: "callout",
+          tone: "warn",
+          title: "Do not let management net off selectively",
+          md: "An error that increases profit and one that reduces it do offset in the accounts — but management correcting only the favourable one leaves the statements more wrong, not less. Evaluate the schedule as a whole, and say so when recommending.",
+        },
+      ],
     },
   ],
   examTraps: [
@@ -463,6 +522,53 @@ const AA_TREE_22: StudyChapter = {
         explain:
           "The disclosure is correct, so the statements are not misstated and the opinion is unmodified. An Emphasis of Matter paragraph may draw attention to it because it is fundamental to users' understanding. (If it threatened going concern, the Material Uncertainty section would be used instead.)",
       },
+    },
+    {
+      id: "five-scenarios",
+      heading: "Five scenarios, five reports",
+      blocks: [
+        {
+          kind: "text",
+          md: "The requirement is almost always \"describe the effect on the auditor's report\", and the answer has three parts every time: **the nature of the matter**, **whether it is material and whether it is pervasive**, and **the resulting opinion and report wording**. Missing the middle part is what turns a correct instinct into a wrong answer.",
+        },
+        {
+          kind: "example",
+          title: "The same three questions, five times",
+          scenario: "Materiality for each company below is £200,000.",
+          steps: [
+            {
+              label: "1 · Inventory overstated by £250,000; total assets £8m",
+              detail: "MISSTATEMENT, material, confined to one balance so NOT pervasive → **qualified opinion**, \"except for\" the effects of the inventory overstatement, with a Basis for Qualified Opinion section quantifying it.",
+            },
+            {
+              label: "2 · No records exist for a division representing 60% of revenue",
+              detail: "INABILITY TO OBTAIN EVIDENCE, material and PERVASIVE → **disclaimer of opinion**. Nothing is known to be wrong; the auditor simply cannot tell, which is why adverse would be the wrong choice.",
+            },
+            {
+              label: "3 · Going concern uncertainty, fully disclosed in the notes",
+              detail: "Not a misstatement at all → **unmodified opinion** plus a **Material Uncertainty Related to Going Concern** section. The statements tell the truth about a real risk.",
+            },
+            {
+              label: "4 · Going concern uncertainty, NOT disclosed",
+              detail: "MISSTATEMENT by omission of a required disclosure, and going concern is fundamental → material and arguably pervasive → **qualified or adverse opinion**, with the Basis section explaining what is missing.",
+            },
+            {
+              label: "5 · Company will cease trading in three months but accounts prepared as a going concern",
+              detail: "The wrong BASIS entirely, affecting every figure → material and pervasive → **adverse opinion**: the statements do not give a true and fair view.",
+            },
+          ],
+          result:
+            "Note how 3, 4 and 5 are the same underlying fact — going concern doubt — producing three completely different reports depending on disclosure and basis. That progression is the single most examined idea in Area E.",
+        },
+        {
+          kind: "activity",
+          title: "One more, unaided",
+          prompt:
+            "A client refuses to allow the auditor to circularise receivables, which total £900,000 against materiality of £150,000. No alternative procedures give sufficient evidence. What is the effect on the report?",
+          answer:
+            "Nature: **inability to obtain sufficient appropriate evidence** — not a misstatement, since nothing is known to be wrong.\n\nMaterial? Yes, £900,000 far exceeds £150,000. Pervasive? Receivables are one balance, so arguably confined — but at £900,000 they may represent a substantial proportion of assets, and management's refusal itself raises doubt about the reliability of other representations.\n\nOpinion: **qualified** if confined, **disclaimer** if the auditor judges it pervasive — and either way the Basis section must explain that management refused access. The refusal is also reportable to those charged with governance and casts doubt on the written representations obtained under AA-21.",
+        },
+      ],
     },
   ],
   examTraps: [
