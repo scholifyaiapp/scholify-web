@@ -165,6 +165,55 @@ const FM_TREE_14: StudyChapter = {
           "Signalling: shareholders cannot see management's information and read a cut as a warning, whatever the stated reason. Note the company IS applying residual theory correctly — the point is that being right does not protect you from the signal, which is why cuts are usually communicated very carefully.",
       },
     },
+    {
+      id: "choosing-a-source",
+      heading: "Choosing a source, in a scenario",
+      blocks: [
+        {
+          kind: "example",
+          title: "Four companies, four different answers",
+          scenario: "Each needs £3m. What should each raise, and why?",
+          steps: [
+            {
+              label: "A · Listed retailer, gearing 15%, needs funds for a 25-year distribution centre",
+              detail: "Long-term DEBT. Gearing is low so there is capacity; the asset is long-lived and matchable; debt is cheaper than equity and tax-deductible; and it avoids diluting existing shareholders. A bond issue or a long-term bank loan.",
+            },
+            {
+              label: "B · Family company, gearing 65%, needs funds for seasonal working capital",
+              detail: "SHORT-TERM facilities — an overdraft or invoice finance. The need is fluctuating, not permanent, and gearing is already high so more long-term debt may breach covenants and would be expensive. Equity is unattractive to a family unwilling to dilute control.",
+            },
+            {
+              label: "C · Loss-making manufacturer, gearing 80%, needs funds to survive restructuring",
+              detail: "EQUITY, most likely a rights issue. Debt is effectively unavailable at this gearing and would add compulsory interest to a company that cannot service it. Interest is contractual; dividends are not, which is exactly what a distressed company needs.",
+            },
+            {
+              label: "D · Fast-growing unlisted software firm, no assets, needs funds to scale",
+              detail: "VENTURE CAPITAL or business angels. No security means lenders will not advance; the growth profile suits equity investors seeking an exit. Expect to give up a large stake and board seats — the cost is control, not interest.",
+            },
+          ],
+          result:
+            "Note that C and D both point to equity for opposite reasons: C because it cannot afford interest, D because it has nothing to secure debt against. Naming the source is one mark; the reason is the rest, and the reason is always drawn from gearing, security, term and control.",
+        },
+        {
+          kind: "callout",
+          tone: "tip",
+          title: "Four things decide every answer",
+          md: "**Gearing** (is there capacity?), **security** (is there anything to lend against?), **term** (how long is the need?), **control** (can they accept dilution?). Run those four over any scenario and the source chooses itself.",
+        },
+      ],
+      check: {
+        q: "A loss-making company with 80% gearing needs finance to fund a restructuring. Why is equity preferable to debt?",
+        options: [
+          "Debt is always more expensive than equity",
+          "Interest is contractual and must be paid whatever happens, while dividends are discretionary",
+          "Equity has no issue costs",
+          "Lenders are not permitted to lend above 75% gearing",
+        ],
+        correct: 1,
+        explain:
+          "A company that cannot reliably generate cash cannot commit to contractual interest — default risk rises sharply. Dividends can be passed in a bad year. Debt is normally cheaper, not dearer; equity has substantial issue costs; and there is no legal gearing limit, only lender appetite.",
+      },
+    },
   ],
   examTraps: [
     { trap: "Funding a long-lived asset with short-term finance.", fix: "Match the term of the finance to the life of the asset." },
@@ -304,6 +353,18 @@ const FM_TREE_15: StudyChapter = {
           md: "A founder-controlled firm that values independence weighs \"vulnerability to takeover\" far more heavily than a firm needing capital for rapid expansion. Say which pressure dominates HERE rather than listing both columns.",
         },
       ],
+      check: {
+        q: "A family company holding 70% of its own shares is considering a listing to fund expansion. Which drawback should weigh heaviest in the answer?",
+        options: [
+          "Ongoing compliance costs",
+          "Dilution of control and vulnerability to takeover",
+          "The need to publish financial statements",
+          "The cost of the prospectus",
+        ],
+        correct: 1,
+        explain:
+          "For a family that values independence, losing control is the decisive consideration — every other drawback is a cost they could absorb. The skill being tested is weighing the drawbacks for THIS company rather than listing all of them equally.",
+      },
     },
   ],
   examTraps: [
@@ -448,6 +509,36 @@ const FM_TREE_16: StudyChapter = {
         explain:
           "Murabaha — a cost-plus sale where ownership passes to the client and the profit is a trading margin, not interest. Ijara would keep ownership with the bank and charge for use; musharaka would be a shared-capital partnership.",
       },
+    },
+    {
+      id: "matching-the-instrument",
+      heading: "Matching the instrument to the need",
+      blocks: [
+        {
+          kind: "text",
+          md: "Islamic finance questions are almost always \"which instrument would be appropriate, and why\". The answer follows from two things: what the company needs the money **for**, and whether it is willing to share **profit and control**.",
+        },
+        {
+          kind: "example",
+          title: "Four needs, four instruments",
+          scenario: "A company operating under Sharia principles needs finance in four different situations.",
+          steps: [
+            { label: "It needs a specific machine and wants to own it", detail: "MURABAHA. The bank buys the machine and resells it at cost plus an agreed mark-up, payable over time. Ownership passes to the company; the bank's return is a trading margin, not interest." },
+            { label: "It needs use of a machine but not ownership", detail: "IJARA. The bank buys and leases it, retaining ownership and the associated risks. Conventional equivalent: a lease." },
+            { label: "It has expertise but no capital for a new venture", detail: "MUDARABA. The bank provides all the capital, the company the management. Profits are shared as agreed; financial losses fall on the BANK, while the company loses its effort." },
+            { label: "It wants a partner sharing both capital and control", detail: "MUSHARAKA. Both contribute capital and share profits and losses in proportion — closest to a joint-venture partnership." },
+            { label: "And if it needs to raise from many investors at once", detail: "SUKUK. Certificates giving investors ownership of an underlying asset and a share of its income — NOT a debt owed to them, which is why the return falls if the asset underperforms." },
+          ],
+          result:
+            "Two questions decide it: is this about an ASSET (murabaha, ijara, sukuk) or a VENTURE (mudaraba, musharaka)? And if a venture, who is putting up the capital? Answer those and the instrument follows.",
+        },
+        {
+          kind: "callout",
+          tone: "key",
+          title: "Say what replaces interest",
+          md: "Every answer should name the mechanism that produces the financier's return without riba — a **trading margin** (murabaha), a **rental** (ijara), a **share of profit** (mudaraba, musharaka), or a **share of asset income** (sukuk). Naming the instrument alone is half the mark.",
+        },
+      ],
     },
   ],
   examTraps: [
@@ -595,6 +686,55 @@ const FM_TREE_17: StudyChapter = {
         correct: 1,
         explain:
           "Kd = 6(1 − 0.25)/90 = 4.5/90 = 5.0%. The 6.7% distractor omits the tax relief; 4.5% divides by 100 instead of the market price of 90.",
+      },
+    },
+    {
+      id: "choosing-the-model",
+      heading: "Which model, and what to do when they disagree",
+      blocks: [
+        {
+          kind: "text",
+          md: "A question that gives you dividend history AND a beta is not being generous — it is asking which model the scenario supports, and why the two answers differ.",
+        },
+        {
+          kind: "table",
+          caption: "When each model breaks",
+          head: ["Situation", "Which to use", "Why"],
+          rows: [
+            ["Stable, growing dividends; listed", "Either — and reconcile them", "Both have the inputs they need"],
+            ["No dividend paid, or erratic", "CAPM", "The dividend model has nothing to work with"],
+            ["Growth rate exceeds the cost of equity", "CAPM", "The DVM gives a negative or absurd price — the formula breaks down"],
+            ["Unquoted company", "DVM, or a proxy beta regeared", "No market price and no observable beta of its own"],
+            ["Company about to change gearing", "CAPM with a regeared beta", "The DVM's historic dividends reflect the OLD risk"],
+          ],
+        },
+        {
+          kind: "example",
+          title: "Two models, 6.5 points apart",
+          scenario:
+            "Kirkby Co: dividends have grown from £0.20 to £0.28 over four years, dividend just paid £0.28, ex-div price £3.22. Risk-free rate 4%, equity risk premium 6%, equity beta 1.3.",
+          steps: [
+            { label: "DVM", detail: "g = (0.28/0.20)^(1/4) − 1 = 8.8%. Ke = 0.28(1.088)/3.22 + 0.088 = 18.3%" },
+            { label: "CAPM", detail: "Ke = 4% + 1.3 × 6% = 11.8%" },
+            { label: "Why they differ", detail: "The DVM extrapolates THIS company's own dividend history and assumes 8.8% growth continues for ever. CAPM prices only systematic risk and says nothing about company-specific growth expectations." },
+            { label: "Which to trust", detail: "If 8.8% growth is genuinely sustainable, the DVM figure reflects information CAPM misses. If the growth came from a few unusually good years, 18.3% is an extrapolation of luck and CAPM is the safer input to a WACC." },
+            { label: "What to write", detail: "Both figures, the reason for the gap, and a stated choice with its justification — not one number presented as the answer." },
+          ],
+          result:
+            "A 6.5-point difference in Ke moves a WACC by several points and can flip an NPV. That is why the examiner asks for the assumptions: the number matters less than knowing what it depends on.",
+        },
+      ],
+      check: {
+        q: "A company pays no dividend and has never paid one. Which model can be used for its cost of equity?",
+        options: [
+          "The dividend growth model, using an assumed dividend",
+          "CAPM",
+          "Neither — the cost of equity cannot be estimated",
+          "The dividend growth model, using industry average dividends",
+        ],
+        correct: 1,
+        explain:
+          "With no dividend history the DVM has no inputs. CAPM needs only the risk-free rate, the market premium and a beta — none of which depends on the company paying a dividend. Inventing a dividend to force the DVM produces a number with no evidential basis.",
       },
     },
   ],
