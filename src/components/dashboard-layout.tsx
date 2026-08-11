@@ -64,7 +64,7 @@ type NavItemDef = {
 export const NAV: NavItemDef[] = [
   { icon: "roadmap", label: "Dashboard", to: "/dashboard" },
   { icon: "study", label: "Learning", to: "/study" },
-  { icon: "notes", label: "Notes", to: "/notes" },
+  { icon: "notes", label: "ACCA Kit", to: "/notes" },
   { icon: "stats", label: "Analytics", to: "/study/analytics" },
   { icon: "settings", label: "Settings", to: "/settings" },
 ]

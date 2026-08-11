@@ -5,6 +5,10 @@ import { Icon, Card, Button, C, R } from "@/components/acca/ui"
 import { getNotes, updateNote, deleteNote, onNotesChange, CONTEXT_LABEL, type StudyNote } from "@/lib/acca-notes"
 import { syncNotes } from "@/lib/acca-notes-cloud"
 import { useAuth } from "@/lib/auth"
+import { getCurrentPaper, getStudyingPapers } from "@/lib/acca-qualification"
+import KitCalculator from "@/components/acca/kit/KitCalculator"
+import KitFormulas from "@/components/acca/kit/KitFormulas"
+import KitTables from "@/components/acca/kit/KitTables"
 
 /*
  * The notebook — every note taken anywhere in Scholify (study chapters,
@@ -113,7 +117,91 @@ function NoteCard({ note, index }: { note: StudyNote; index: number }) {
   )
 }
 
+/* ── The Kit shell ────────────────────────────────────────────────
+ *
+ * WHAT THIS PAGE BECAME. It was "My notes" — one useful thing behind a nav item
+ * a learner had little reason to open. The things an ACCA candidate actually
+ * keeps beside them are a calculator, the formulae, and the discount tables the
+ * exam itself hands out; every one of those was previously a reason to leave
+ * Scholify mid-question, which in practice means leaving for the day.
+ *
+ * So the notebook becomes one tab of four, and the nav item becomes what the
+ * thing is: the ACCA Kit.
+ */
+
+const KIT_TABS = [
+  { id: "notes", label: "Notes", icon: "notes" as const },
+  { id: "calculator", label: "Calculator", icon: "stats" as const },
+  { id: "formulas", label: "Formulae", icon: "generate" as const },
+  { id: "tables", label: "Tables", icon: "topics" as const },
+]
+type KitTab = (typeof KIT_TABS)[number]["id"]
+
 export default function NotesHub() {
+  const [tab, setTab] = useState<KitTab>("notes")
+  const paperId = getCurrentPaper() ?? getStudyingPapers()[0] ?? null
+
+  return (
+    <DashboardLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        // Wider than the old notebook: the tables need the room, and they
+        // scroll inside their own box rather than pushing the page sideways.
+        style={{ maxWidth: 980, margin: "0 auto" }}
+      >
+        <h1 style={{ fontSize: 27, fontWeight: 800, color: "var(--sch-text)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: 10, margin: 0 }}>
+          <Icon name="notes" size={22} color={C.brand} /> ACCA Kit
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--sch-tx-3)", marginTop: 4 }}>
+          Everything you'd otherwise open another tab for — your notes, a calculator, the formulae and the exam's own discount tables.
+        </p>
+
+        <div role="tablist" aria-label="ACCA Kit" style={{ display: "flex", gap: 8, margin: "20px 0 18px", flexWrap: "wrap" }}>
+          {KIT_TABS.map((t) => {
+            const active = tab === t.id
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t.id)}
+                style={{
+                  position: "relative", minHeight: 44, padding: "0 16px", borderRadius: 999, cursor: "pointer",
+                  border: `1px solid ${active ? C.brand : C.border}`,
+                  background: active ? C.brandSoft : "var(--sch-card, #fff)",
+                  color: active ? C.brand : C.soft,
+                  fontSize: 13, fontWeight: 750, display: "inline-flex", alignItems: "center", gap: 7,
+                }}
+              >
+                <Icon name={t.icon} size={14} color={active ? C.brand : C.faint} />
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {tab === "notes" && <NotesTab />}
+            {tab === "calculator" && <KitCalculator />}
+            {tab === "formulas" && <KitFormulas paperId={paperId} />}
+            {tab === "tables" && <KitTables />}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+    </DashboardLayout>
+  )
+}
+
+function NotesTab() {
   const { user } = useAuth()
   const [tick, setTick] = useState(0)
   const [query, setQuery] = useState("")
@@ -142,21 +230,8 @@ export default function NotesHub() {
   }, [all, query, paperFilter])
 
   return (
-    <DashboardLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        style={{ maxWidth: 760, margin: "0 auto" }}
-      >
-        <h1 style={{ fontSize: 27, fontWeight: 800, color: "var(--sch-text)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: 10 }}>
-          <Icon name="notes" size={22} color={C.brand} /> My notes
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--sch-tx-3)", marginTop: 4 }}>
-          Everything you jotted down — while studying, practising, or mid-mock — in one place.
-        </p>
-
-        <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap", alignItems: "center" }}>
+    <div style={{ maxWidth: 760 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -225,7 +300,6 @@ export default function NotesHub() {
               : "Notes are stored on this device — sign in and they sync to your account."}
           </p>
         )}
-      </motion.div>
-    </DashboardLayout>
+    </div>
   )
 }
