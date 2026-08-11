@@ -68,6 +68,8 @@ import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, chapters
  * acca-strategy (which paper comes next). */
 import { TodayBoard } from "@/components/acca/TodayBoard"
 import LearningDashboard from "@/components/acca/LearningDashboard"
+import { blockLock, lockReason, studyGate } from "@/lib/acca-block-gate"
+import { useBlockTimer } from "@/hooks/useBlockTimer"
 import { ArticleReader } from "@/components/acca/ArticleReader"
 import { PlanBoard } from "@/components/acca/PlanBoard"
 import { PracticeHub } from "@/components/acca/PracticeHub"
@@ -227,6 +229,7 @@ export default function AccaStudy() {
   const chapterReadMinutes = (): number =>
     chapterOpenedAt.current ? Math.max(1, Math.round((Date.now() - chapterOpenedAt.current) / 60000)) : 0
 
+
   // topic path (Kaplan-style chapter flow)
   const [topicArea, setTopicArea] = useState<string | null>(null)
   /**
@@ -238,6 +241,30 @@ export default function AccaStudy() {
    * single-chapter area the list is skipped and that chapter opens directly.
    */
   const [studyChapterKey, setStudyChapterKey] = useState<string | null>(null)
+
+  /*
+   * ── THE READING CLOCK ─────────────────────────────────────────
+   *
+   * chapterOpenedAt above measures PACE — how long this learner takes, so future
+   * estimates match them. It is wall-clock from the moment the chapter opened,
+   * which makes it useless as a gate: it keeps counting in a background tab and
+   * resets the moment they navigate away and back.
+   *
+   * The gate needs time genuinely served, banked across visits and only while
+   * the tab is in front of them. Two different questions, two different clocks.
+   */
+  const todayComposed = useMemo(
+    () => (paperId ? composeToday(paperId, /* dryRun */ true) : null),
+    [paperId, tick],
+  )
+  const todayStudyBlock = todayComposed?.blocks.find((b) => b.kind === "study") ?? null
+  const readingThisBlock =
+    mode === "brief" && todayStudyBlock?.chapterKey && studyChapterKey === todayStudyBlock.chapterKey
+      ? todayStudyBlock.id
+      : null
+  // Ticks every 5s while the chapter is open and visible; the returned value is
+  // what re-renders the button's countdown.
+  useBlockTimer(paperId, readingThisBlock)
   const [isTopicTest, setIsTopicTest] = useState(false)
 
   const paper = paperId ? getPaper(paperId) : undefined
@@ -339,6 +366,25 @@ export default function AccaStudy() {
       const composed = composeToday(paperId)
       const block = composed.blocks.find((b) => b.kind === linkBlock)
       if (!block) return
+
+      /*
+       * THE SEQUENCE IS ENFORCED HERE TOO.
+       *
+       * TodayBoard greys out the steps ahead, but this handler launched
+       * whatever the URL named with no check at all — and the dashboard's
+       * mission list links to exactly these URLs. So the day ran in order on
+       * one screen and in any order from the other, which is not a lock, it is
+       * a suggestion with a bypass next to it.
+       *
+       * The learner is sent to the board rather than silently ignored: a tap
+       * that does nothing reads as a broken app.
+       */
+      const lock = blockLock(paperId, composed, block.id, getTodayDone(paperId))
+      if (lock.state === "locked") {
+        toast.info(lockReason(lock) ?? "Finish the earlier steps first.")
+        setMode("overview")
+        return
+      }
       if (block.kind === "quiz") onComposedFromLink(composed.quiz, "quiz", block.area ?? null, block.id)
       else if (block.kind === "practice") onComposedFromLink(composed.practice, "practice", block.area ?? null, block.id)
       else if (block.kind === "flashcards") { setPendingTodayTask(paperId, block.id); setTopicArea(null); setMode("flashcards") }
@@ -881,6 +927,17 @@ export default function AccaStudy() {
               <StudyChapterReader
                 key={`chapter-${chapterKey(chapter)}`}
                 chapter={chapter}
+                /*
+                 * The clock applies to TODAY'S chapter only. Re-reading an old
+                 * chapter, or browsing ahead out of interest, is not the day's
+                 * study block and must not be held behind a timer — the gate
+                 * exists to stop the day being skipped, not to ration reading.
+                 */
+                gate={
+                  todayStudyBlock && todayStudyBlock.chapterKey === chapterKey(chapter)
+                    ? studyGate(paper.id, todayStudyBlock)
+                    : undefined
+                }
                 // Back returns to the chapter list where there is one, and to the
                 // topic hub where the area holds a single chapter.
                 onBack={() => {

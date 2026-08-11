@@ -280,6 +280,25 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   const practiceMinutes = Math.round(practiceCount * PER_Q)
 
   /*
+   * THE DAY MUST FIT THE TIME THEY PROMISED.
+   *
+   * PRACTICE_MIN is a floor on purpose — a short day still owes ten questions —
+   * but nothing above enforced the ceiling, so on a tight budget the day simply
+   * overshot. A learner who committed 40 minutes was handed 45: an 18-minute
+   * chapter, 5 quizzes, 10 practice questions, 6 cards AND a 5-minute technical
+   * article. Being over budget on day one is how a plan starts being ignored,
+   * and it is the opposite of the promise the onboarding made.
+   *
+   * The article is what gives way. Everything else is the method — read it,
+   * check it landed, apply it, fix it in memory — while the article is the
+   * examiner's commentary on top. It is genuinely valuable and it is the only
+   * block here that is supplementary, so on a day with no room it waits rather
+   * than pushing the day past the minutes the learner actually has.
+   */
+  const coreMinutes = studyMinutes + quizMinutes + practiceMinutes + cardMinutes
+  const articleFits = articleMinutes > 0 && coreMinutes + articleMinutes <= budgetMinutes
+
+  /*
    * SELECTION. Quizzes are drawn first and claim their ids, so practice is
    * physically unable to re-serve them (see acca-no-repeat). Quizzes come from
    * the AUTHORED bank only — they are the "did the reading land" check and a
@@ -378,7 +397,7 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
     area: chapter?.area,
   })
 
-  if (article) {
+  if (article && articleFits) {
     blocks.push({
       id: article.id,
       kind: "article",
@@ -402,7 +421,9 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
     quiz: quizPick.items,
     practice: practicePick.items,
     cards: cardPick.items,
-    article,
+    // Null when it did not fit the budget, so `composition.article` and the
+    // block list can never disagree about whether today has one.
+    article: articleFits ? article : null,
     totalMinutes: blocks.reduce((n, b) => n + b.minutes, 0),
     budgetMinutes,
     recycled: quizPick.recycled || practicePick.recycled,

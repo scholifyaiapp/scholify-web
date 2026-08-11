@@ -11,6 +11,7 @@ import {
   type TodayBlock,
   type TodayComposition,
 } from "@/lib/acca-today-composer"
+import { blockLock, lockReason } from "@/lib/acca-block-gate"
 import { tomorrowGate, todayCompletion, type TomorrowGate } from "@/lib/acca-day-gate"
 import { projectReadiness } from "@/lib/acca-topic-plan"
 import { shieldState } from "@/lib/acca-schedule"
@@ -295,6 +296,14 @@ export function TodayBoard({ paperId, paperName, firstName, done, onRun, onArtic
           const isDone = blockComplete(paperId, block, done)
           const isActive = i === progress.activeIndex
           const locked = !isDone && !isActive
+          /*
+           * The locked steps now say WHY, and the active study step says how
+           * much reading is still owed. A greyed-out card with no explanation
+           * reads as a broken feature; the same card saying "7 more minutes on
+           * this chapter" reads as a plan.
+           */
+          const lock = blockLock(paperId, composition, block.id, done)
+          const note = lockReason(lock)
           return (
             <StepRow
               key={block.id}
@@ -302,6 +311,7 @@ export function TodayBoard({ paperId, paperName, firstName, done, onRun, onArtic
               index={i}
               total={composition.blocks.length}
               state={isDone ? "done" : isActive ? "active" : "locked"}
+              note={isDone ? null : note}
               reduced={Boolean(reduced)}
               onRun={() => {
                 if (locked) return
@@ -335,6 +345,7 @@ function StepRow({
   index,
   total,
   state,
+  note,
   reduced,
   onRun,
 }: {
@@ -342,6 +353,8 @@ function StepRow({
   index: number
   total: number
   state: "done" | "active" | "locked"
+  /** Why this step will not start, or how much reading time it still wants. */
+  note?: string | null
   reduced: boolean
   onRun: () => void
 }) {
@@ -421,6 +434,14 @@ function StepRow({
           {block.title}
         </span>
         <span style={{ display: "block", fontSize: 12.5, color: C.soft, marginTop: 3, lineHeight: 1.5 }}>{block.detail}</span>
+        {note && (
+          <span style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6 }}>
+            <Icon name={state === "locked" ? "lock" : "mock"} size={11} color={state === "locked" ? C.faint : C.brand} />
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: state === "locked" ? C.faint : C.brand, lineHeight: 1.4 }}>
+              {note}
+            </span>
+          </span>
+        )}
       </span>
 
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>

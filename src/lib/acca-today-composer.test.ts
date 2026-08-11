@@ -428,3 +428,73 @@ describe("the lesson → quizzes handover", () => {
     expect(after.quiz.map((q) => q.id)).not.toEqual(captured)
   })
 })
+
+/*
+ * THE DAY MUST FIT THE MINUTES THEY PROMISED.
+ *
+ * A learner who committed 40 minutes was handed a 45-minute day: an 18-minute
+ * chapter, five quizzes, ten practice questions, six cards AND a five-minute
+ * technical article. Being over budget on day one is how a plan starts being
+ * ignored — and it contradicts the number onboarding asked them to protect.
+ */
+describe("the day against the budget", () => {
+  it("never overshoots the committed minutes, at every budget onboarding offers", () => {
+    // MINUTE_OPTIONS in the onboarding deck: 40 / 60 / 90 / 120.
+    for (const dailyMinutes of [40, 45, 60, 90, 120]) {
+      window.localStorage.clear()
+      setPlan("BT", { dailyMinutes, daysPerWeek: 6, targetProb: 75 })
+      const day = composeToday("BT", true)
+      expect(day.totalMinutes, `${dailyMinutes} min/day → ${day.totalMinutes}`).toBeLessThanOrEqual(day.budgetMinutes)
+    }
+  })
+
+  it("is honest, not magical, below the length of a single chapter", () => {
+    /*
+     * A REAL FLOOR, recorded rather than papered over. A BT chapter is ~18
+     * minutes and cannot be subdivided, so a 15-minute budget physically cannot
+     * hold one topic cycle — no amount of trimming practice or dropping the
+     * article changes that. Such a budget is not reachable from onboarding
+     * (the shortest option is 40) but is reachable by editing the plan.
+     *
+     * What matters is that totalMinutes reports the truth, so the board says
+     * "38 minutes" rather than pretending the day fits. If this is ever to be
+     * solved properly it needs chapters split across days, which is a content
+     * change, not an allocator one.
+     */
+    window.localStorage.clear()
+    setPlan("BT", { dailyMinutes: 15, daysPerWeek: 6, targetProb: 75 })
+    const day = composeToday("BT", true)
+    expect(day.totalMinutes).toBeGreaterThan(day.budgetMinutes)
+    // It still trims what it can: the article is the first thing to go.
+    expect(day.article).toBeNull()
+    // And the total is the sum of the blocks — no quiet under-reporting.
+    expect(day.totalMinutes).toBe(day.blocks.reduce((n, b) => n + b.minutes, 0))
+  })
+
+  it("drops the technical article rather than the method when room runs out", () => {
+    // Read it, check it landed, apply it, fix it in memory — that is the method
+    // and none of it is optional. The examiner's commentary on top is.
+    window.localStorage.clear()
+    setPlan("BT", { dailyMinutes: 40, daysPerWeek: 6, targetProb: 75 })
+    const tight = composeToday("BT", true)
+    expect(tight.blocks.map((b) => b.kind)).toEqual(["study", "quiz", "practice", "flashcards"])
+    expect(tight.article).toBeNull()
+
+    window.localStorage.clear()
+    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 75 })
+    const roomy = composeToday("BT", true)
+    expect(roomy.blocks.some((b) => b.kind === "article")).toBe(true)
+    expect(roomy.article).not.toBeNull()
+  })
+
+  it("keeps composition.article and the block list agreeing", () => {
+    // Callers read both; if they disagree the board offers a step the day does
+    // not contain, or hides one it does.
+    for (const dailyMinutes of [25, 40, 60, 120]) {
+      window.localStorage.clear()
+      setPlan("BT", { dailyMinutes, daysPerWeek: 6, targetProb: 75 })
+      const day = composeToday("BT", true)
+      expect(Boolean(day.article), `${dailyMinutes} min`).toBe(day.blocks.some((b) => b.kind === "article"))
+    }
+  })
+})

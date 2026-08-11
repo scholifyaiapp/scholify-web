@@ -4,6 +4,7 @@ import { Icon, C, R } from "@/components/acca/ui"
 import { StudyDiagram } from "@/components/acca/StudyDiagram"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import type { StudyChapter, StudyBlock, StudySection, MiniCheck } from "@/lib/acca-study-content"
+import type { StudyGate } from "@/lib/acca-block-gate"
 
 /*
  * StudyChapterReader — the rich, Kaplan/BPP-depth study experience. Renders a
@@ -29,7 +30,13 @@ function rich(text: string): ReactNode {
   )
 }
 
-export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: StudyChapter; onBack: () => void; onPractice: () => void }) {
+export function StudyChapterReader({ chapter, onBack, onPractice, gate }: {
+  chapter: StudyChapter
+  onBack: () => void
+  onPractice: () => void
+  /** Reading clock for today's study block; omitted when this chapter is not it. */
+  gate?: StudyGate
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] })
 
@@ -146,11 +153,45 @@ export function StudyChapterReader({ chapter, onBack, onPractice }: { chapter: S
         </section>
       )}
 
-      {/* CTA into practice */}
-      <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={onPractice}
-        style={{ width: "100%", marginTop: 26, padding: "15px 24px", borderRadius: 14, border: "none", background: C.brand, color: "#fff", fontWeight: 800, fontSize: 15.5, cursor: "pointer", boxShadow: `0 14px 28px -12px ${C.brand}88` }}>
-        Complete lesson — unlock 5 Quizzes →
-      </motion.button>
+      {/*
+        CTA into practice — held until the reading time has actually been served.
+
+        This button used to complete the lesson on contact, so scrolling to the
+        bottom and pressing it took about eight seconds and recorded the chapter
+        as studied. The gate is a MINIMUM that catches skipping, not a stopwatch:
+        two-thirds of the minutes the plan set aside, and the ring shows exactly
+        how much of it is left, because a button that refuses without saying why
+        reads as broken.
+      */}
+      {gate && !gate.met ? (
+        <div
+          style={{ width: "100%", marginTop: 26, padding: "14px 18px", borderRadius: 14, border: `1px solid ${C.border}`, background: C.card2, display: "flex", alignItems: "center", gap: 13 }}
+          aria-live="polite"
+        >
+          <svg viewBox="0 0 44 44" width="40" height="40" style={{ flex: "none", transform: "rotate(-90deg)" }} aria-hidden>
+            <circle cx="22" cy="22" r="18" fill="none" stroke={C.border} strokeWidth="4" />
+            <circle
+              cx="22" cy="22" r="18" fill="none" stroke={C.brand} strokeWidth="4" strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 18}
+              strokeDashoffset={2 * Math.PI * 18 * (1 - gate.fraction)}
+              style={{ transition: "stroke-dashoffset 500ms linear" }}
+            />
+          </svg>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text }}>
+              {Math.ceil(gate.remaining / 60)} more {Math.ceil(gate.remaining / 60) === 1 ? "minute" : "minutes"} on this chapter
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 2, lineHeight: 1.45 }}>
+              Then the quizzes open. Read it properly — five questions on this chapter are next, and they are marked.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <motion.button whileTap={{ scale: 0.98 }} whileHover={{ y: -1 }} onClick={onPractice}
+          style={{ width: "100%", marginTop: 26, padding: "15px 24px", borderRadius: 14, border: "none", background: C.brand, color: "#fff", fontWeight: 800, fontSize: 15.5, cursor: "pointer", boxShadow: `0 14px 28px -12px ${C.brand}88` }}>
+          Complete lesson — unlock 5 Quizzes →
+        </motion.button>
+      )}
     </div>
   )
 }
