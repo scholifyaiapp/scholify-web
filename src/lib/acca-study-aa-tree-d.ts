@@ -124,6 +124,37 @@ const AA_TREE_15: StudyChapter = {
           "External, independent and received directly by the auditor — the strongest combination. The invoice and the listing are internally generated; management's assurance is oral and unsupported.",
       },
     },
+    {
+      id: "assertion-first",
+      heading: "Working assertion-first",
+      blocks: [
+        {
+          kind: "text",
+          md: "The order matters. Decide the **assertion** at risk, then choose the procedure that speaks to it. Reversing that — listing procedures and hoping one lands — is what produces answers full of true statements that earn nothing.",
+        },
+        {
+          kind: "example",
+          title: "One balance, four assertions, four different procedures",
+          scenario: "Closing inventory of £1.2m at Danby Co, a furniture manufacturer.",
+          steps: [
+            { label: "Existence", detail: "Attend the count and perform test counts from the count sheets to the floor. Physical inspection is the only procedure that speaks directly to this." },
+            { label: "Completeness", detail: "Test count from the floor BACK to the sheets, and agree the last goods received note number at the count to the purchase records." },
+            { label: "Rights and obligations", detail: "Enquire about goods held on consignment or sale-or-return, and inspect the contracts. Inventory on the premises is not necessarily owned." },
+            { label: "Valuation", detail: "Agree cost to purchase invoices, or for manufactured items to costing records including overhead absorption; compare with post year-end selling prices for a sample to test NRV." },
+          ],
+          result:
+            "Four procedures, none interchangeable. Attending the count — the procedure candidates reach for first — answers existence and, in the other direction, completeness. It says nothing whatever about ownership or value, which is where a furniture maker's real risk sits.",
+        },
+        {
+          kind: "activity",
+          title: "Name the assertion each procedure serves",
+          prompt:
+            "For each, state which assertion is being tested: (a) reviewing after-date cash receipts from a customer; (b) inspecting title deeds for a property; (c) tracing goods despatch notes to sales invoices; (d) recalculating the depreciation charge.",
+          answer:
+            "(a) **Existence and valuation** of the receivable — cash received proves the debt was real and recoverable.\n(b) **Rights and obligations** — ownership, not existence; you can see a building without owning it.\n(c) **Completeness** of revenue — starting outside the ledger and tracing in.\n(d) **Accuracy / valuation** of non-current assets and the depreciation expense.\n\nNote (b) and (c) especially: candidates commonly claim title deeds prove existence and that tracing invoices proves completeness. Both are the wrong way round.",
+        },
+      ],
+    },
   ],
   examTraps: [
     { trap: "Testing existence for liabilities.", fix: "Liabilities risk understatement — test completeness." },
@@ -280,6 +311,21 @@ const AA_TREE_16: StudyChapter = {
           title: "Test data on a live system",
           md: "If test transactions are run through the client's live system, they must be **reversed or removed**, or the client's records now contain the auditor's fictitious entries. Naming that risk and its control is a reliable mark.",
         },
+        {
+          kind: "example",
+          title: "Projecting an error, and what it means",
+          scenario:
+            "Materiality for Foxton Co is £150,000. The auditor tests 60 items from a receivables population of 4,000 balances totalling £3m, and finds overstatements of £900 in the sample. The sample covered £300,000 of the balance.",
+          steps: [
+            { label: "The sample error", detail: "£900 — trivially small, and the instinct is to conclude receivables are fine." },
+            { label: "Coverage", detail: "£300,000 tested out of £3m, so the sample represents 10% of the balance by value." },
+            { label: "Projected misstatement", detail: "£900 ÷ 10% = £9,000 across the population." },
+            { label: "Against materiality", detail: "£9,000 against £150,000 — still immaterial, so no adjustment is required on this evidence alone." },
+            { label: "But", detail: "It joins the schedule of uncorrected misstatements. If four other balances each project to a similar figure, the aggregate approaches materiality — which is the point performance materiality exists to protect." },
+          ],
+          result:
+            "The projection changed £900 into £9,000, and the conclusion is still \"immaterial\" — but immaterial AND recorded, not immaterial and forgotten. Candidates who report the sample error as the misstatement understate by the reciprocal of their coverage, which on a 10% sample is a factor of ten.",
+        },
       ],
     },
   ],
@@ -430,6 +476,54 @@ const AA_TREE_17: StudyChapter = {
         correct: 1,
         explain:
           "Floor to sheets tests completeness — whether everything physically present has been recorded. Tracing the other way, from sheets to floor, tests existence. The exam awards these separately, so the direction must be stated.",
+      },
+    },
+    {
+      id: "count-problems",
+      heading: "When the count goes wrong",
+      blocks: [
+        {
+          kind: "text",
+          md: "Exam scenarios rarely describe a clean count. They describe one with a specific defect, and ask what the auditor should do — so the defect matters more than the procedure list.",
+        },
+        {
+          kind: "table",
+          caption: "Common count defects",
+          head: ["What the scenario says", "Why it matters", "What the auditor does"],
+          rows: [
+            ["Counting is done by the warehouse staff who are responsible for the inventory", "Those with custody are counting their own responsibility — errors and theft are unlikely to be reported", "Test count more extensively; recommend independent count teams, or at least pairing a warehouse employee with someone from outside"],
+            ["Goods continued to be received and despatched during the count", "Items may be counted twice or missed entirely, and cut-off is compromised", "Confirm whether movements were segregated and documented; agree the last GRN and GDN numbers; test items received during the count separately"],
+            ["Count sheets were pre-printed with expected quantities", "Counters are anchored to the expected figure and may not count at all", "Increase test counts; recommend blank count sheets so quantities are recorded independently"],
+            ["Inventory is held at a third party's warehouse", "The auditor cannot inspect it in the ordinary way; ownership is also in question", "Obtain direct confirmation from the third party; consider attending their count, or inspecting it"],
+            ["Work in progress at various stages of completion", "Valuation depends on an assessment of stage of completion, which is judgemental", "Use the client's costing records; consider whether an expert is needed; test the basis of overhead absorption"],
+          ],
+        },
+        {
+          kind: "example",
+          title: "The auditor could not attend at all",
+          scenario:
+            "The auditor was appointed after Girton Co's year end and did not attend the count. Inventory is £900,000, materiality £120,000.",
+          steps: [
+            { label: "First option", detail: "Attend a LATER count and roll back: count now, then adjust for purchases and sales between the count date and the year end using the perpetual records." },
+            { label: "What that requires", detail: "Reliable perpetual inventory records, and testing of the movements used in the roll-back — otherwise the adjustment is unsupported." },
+            { label: "Second option", detail: "Test the client's own count records: review count instructions and sheets, test the arithmetic and the compilation, and perform substantive analytical review of margins and inventory days." },
+            { label: "If neither is sufficient", detail: "This is an INABILITY TO OBTAIN sufficient appropriate evidence. Inventory is £900,000 against materiality of £120,000, so the effect is material — and because inventory affects both the statement of financial position and cost of sales, arguably pervasive. Qualified opinion at least; a disclaimer if the auditor concludes it is pervasive." },
+          ],
+          result:
+            "The chain runs procedures → alternative procedures → reporting consequence. Answers that stop at \"the auditor should attend the count\" have not engaged with a scenario in which that is impossible.",
+        },
+      ],
+      check: {
+        q: "Inventory count sheets are pre-printed with the expected quantity beside each item. Why is this a deficiency?",
+        options: [
+          "It slows the count down",
+          "Counters may simply confirm the printed figure rather than counting independently",
+          "It breaches confidentiality",
+          "Pre-printed sheets cannot be reconciled to the ledger",
+        ],
+        correct: 1,
+        explain:
+          "Anchoring: shown an expected number, a counter tends to agree with it. Blank sheets force an independent count, which is the whole point of counting. This is a standard scenario detail and the recommendation is blank sheets.",
       },
     },
   ],
@@ -586,6 +680,44 @@ const AA_TREE_18: StudyChapter = {
           "Register to asset tests EXISTENCE — that what is recorded is really there. Going the other way, from assets on the floor to the register, tests completeness. Same pairing as the inventory count.",
       },
     },
+    {
+      id: "understatement-worked",
+      heading: "Finding what is not there",
+      blocks: [
+        {
+          kind: "example",
+          title: "A completeness test that actually finds something",
+          scenario:
+            "Padstow Co's year end is 31 December. In the first week of January the purchase ledger shows: an invoice dated 18 December for £42,000 of raw materials, posted 4 January; a payment on 6 January of £31,000 to a haulier; and three goods received notes from late December with no matching invoice.",
+          steps: [
+            { label: "The December invoice posted in January", detail: "Goods were received before the year end, so the liability existed at 31 December. It must be accrued: payables and either inventory or cost of sales are UNDERSTATED by £42,000." },
+            { label: "The January payment", detail: "Establish what period the haulage relates to. If the services were delivered in December, an accrual of £31,000 is missing." },
+            { label: "The unmatched GRNs", detail: "Goods received with no invoice are still liabilities. Value them from the purchase order or price list and accrue. This is the single most productive completeness procedure in a purchases audit." },
+            { label: "Aggregate", detail: "Potentially £73,000 plus the GRN values — evaluate against materiality individually and in aggregate, and add to the schedule of uncorrected misstatements if management declines to adjust." },
+          ],
+          result:
+            "Every item came from OUTSIDE the ledger — after-date invoices, after-date payments, unmatched GRNs. No amount of testing the recorded payables balance would have found any of them, which is what \"completeness\" means in practice.",
+        },
+        {
+          kind: "callout",
+          tone: "tip",
+          title: "The three-line answer that scores on payables",
+          md: "Review after-date payments; review after-date invoices; inspect unmatched goods received notes. If you write nothing else on completeness of payables, write those three — each is a distinct procedure looking outside the ledger, and together they catch most real understatements.",
+        },
+      ],
+      check: {
+        q: "Which procedure is LEAST useful for testing completeness of payables?",
+        options: [
+          "Reviewing payments made after the year end",
+          "Inspecting goods received notes with no matching invoice",
+          "Agreeing recorded payables balances to supplier invoices",
+          "Reconciling supplier statements to ledger balances",
+        ],
+        correct: 2,
+        explain:
+          "Agreeing what IS recorded to invoices tests the recorded population — it cannot find a liability that was never entered. The other three all start outside the ledger, which is the only way completeness can be tested.",
+      },
+    },
   ],
   examTraps: [
     { trap: "Testing existence for payables.", fix: "Liabilities risk understatement — hunt for what is missing." },
@@ -738,6 +870,27 @@ const AA_TREE_19: StudyChapter = {
         explain:
           "There is no invoice, order or customer to confirm against, so the auditor cannot trace what was never recorded. That is why the evidence depends on controls over cash collection, and why absent controls can become a limitation on scope.",
       },
+    },
+    {
+      id: "charity-worked",
+      heading: "A charity collection, audited",
+      blocks: [
+        {
+          kind: "example",
+          title: "What evidence is even available",
+          scenario:
+            "Brackenhill Trust raises £400,000 a year, of which £120,000 is street and event collections in cash. Volunteers collect in tins, bring them to the office, and a single administrator counts and banks the money.",
+          steps: [
+            { label: "Why the usual approach fails", detail: "There is no invoice, order, customer or third party to confirm with. Income that was never recorded leaves no trace anywhere — so no substantive procedure can find it directly." },
+            { label: "So test the controls instead", detail: "Are tins sealed and pre-numbered? Are they issued and returned against a register? Are counts performed by TWO people and documented? Is cash banked intact and promptly, rather than netted against expenses?" },
+            { label: "Then corroborate analytically", detail: "Compare collection income per event with prior years and with similar events; compare against attendance figures, tin numbers issued, or the number of volunteers deployed — non-financial data the charity keeps for other reasons." },
+            { label: "The single-administrator problem", detail: "One person counting and banking is the exposure. Deficiency, implication (misappropriation concealed by under-recording, undetectable), recommendation (two-person counts, sealed numbered tins, trustee review of banking against the collection register)." },
+            { label: "If controls are absent", detail: "The auditor may be unable to obtain sufficient appropriate evidence over £120,000 against whatever materiality is. That is a REPORTING problem — a qualified opinion or, if pervasive, a disclaimer — and not merely a risk to note." },
+          ],
+          result:
+            "The chapter's key line, worked: where controls over cash collection are absent, there is no substantive fallback. That is why this becomes a scope limitation rather than an audit difficulty, and why the recommendation is always about the collection process rather than the accounting.",
+        },
+      ],
     },
   ],
   examTraps: [
