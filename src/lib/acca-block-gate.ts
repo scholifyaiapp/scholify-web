@@ -182,6 +182,39 @@ export function canStartBlock(
   return lock.state !== "locked"
 }
 
+/* ── Finishing a question block ───────────────────────────────── */
+
+/**
+ * Share of a set that must actually be ATTEMPTED for the step to count.
+ *
+ * ── THE HOLE THIS CLOSES ────────────────────────────────────────
+ * Quiz, practice and flashcard blocks were stamped "pending" when launched and
+ * marked done by resolvePendingTodayTask the moment the learner came back —
+ * with no requiresExplicitCompletion flag, which is the strict mode that
+ * function already supported and nothing used. So tapping a step and pressing
+ * back completed it. The whole sequential day could be walked in about fifteen
+ * seconds without answering a single question, which also meant streaks,
+ * readiness and analytics were all earnable by tapping.
+ *
+ * ── WHY 60% AND NOT ALL ─────────────────────────────────────────
+ * Right or wrong is not the test — getting a question wrong is still doing the
+ * work, and an exam-prep product that only credited correct answers would be
+ * teaching people to avoid hard questions. Attempting is the test.
+ *
+ * Requiring every question would trap someone who genuinely cannot make a
+ * start on one, and clicking past a question is a real thing learners do.
+ * Requiring a clear majority defeats click-through — five taps through five
+ * quizzes leaves you at 0%, not 60% — without punishing an honest skip.
+ */
+export const ATTEMPT_SHARE = 0.6
+
+/** Whether a finished session did enough work to close its block. */
+export function sessionCountsAsDone(attempted: number, total: number): boolean {
+  if (!Number.isFinite(total) || total <= 0) return true
+  const safe = Number.isFinite(attempted) ? Math.max(0, attempted) : 0
+  return safe >= Math.ceil(total * ATTEMPT_SHARE)
+}
+
 /** Human sentence for why a step will not start, or null when it will. */
 export function lockReason(lock: BlockLock): string | null {
   if (lock.state === "locked") return `Finish “${lock.blockedBy.title}” first — the day runs in order.`

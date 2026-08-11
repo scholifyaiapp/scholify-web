@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { Icon, IconBadge, Button, C } from "@/components/acca/ui"
 import { ScholifyMark } from "@/components/brand"
@@ -18,7 +18,18 @@ const INK = "#14141A"
 const SANS = "'Plus Jakarta Sans', sans-serif"
 const MONO = "'JetBrains Mono', ui-monospace, monospace"
 
-export default function FlashcardsView({ paperId, area, onBack }: { paperId: string; area?: string; onBack: () => void }) {
+export default function FlashcardsView({ paperId, area, onBack, onComplete }: {
+  paperId: string
+  area?: string
+  onBack: () => void
+  /**
+   * Fired once when the deck is genuinely finished — every dealt card graded,
+   * or none were due. Today's flashcard block used to close simply because the
+   * learner came back to the board, so opening the deck and pressing Exit
+   * completed the step. This is the real signal.
+   */
+  onComplete?: (reviewed: number) => void
+}) {
   const reduced = useReducedMotion()
   const [queue, setQueue] = useState<Flashcard[]>(() =>
     area ? getFlashcards(paperId).filter((c) => c.area === area) : getDueFlashcards(paperId),
@@ -34,6 +45,20 @@ export default function FlashcardsView({ paperId, area, onBack }: { paperId: str
   const [total] = useState(() => queue.length)
   const cardItem = queue[idx]
   const done = !cardItem
+
+  /*
+   * Announce completion once, from the render that first sees an empty queue.
+   * `total === 0` counts too: a learner with nothing due has genuinely finished
+   * today's revision, and holding the day open for cards that do not exist
+   * would be punishing them for having kept up.
+   */
+  const announced = useRef(false)
+  useEffect(() => {
+    if (!done || announced.current) return
+    announced.current = true
+    onComplete?.(reviewed)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done])
 
   function grade(known: boolean) {
     if (!cardItem) return

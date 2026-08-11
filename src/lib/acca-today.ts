@@ -163,6 +163,49 @@ function localDay(): string {
 const doneKey = (paperId: string) => `scholify-today-done-${paperId}-${localDay()}`
 const PENDING_KEY = "scholify-today-pending"
 
+/*
+ * ── DAY-SCOPED KEYS ARE GARBAGE AFTER THE DAY ────────────────────
+ *
+ * Both ledgers below are keyed by calendar day, and nothing ever read a past
+ * day — getTodayDone only looks at today, and the streak lives in its own
+ * shield store. So they accumulated forever: one key per paper per day, for as
+ * long as someone studies.
+ *
+ * On its own that is slow growth, but the failure mode at the end of it is
+ * nasty and silent. Every write in this file is wrapped in a catch that
+ * ignores the error, so once localStorage hits quota the app does not warn —
+ * it just quietly stops recording that anything was completed, and the
+ * learner's day stops saving with no message.
+ *
+ * A fortnight of retention is far more than anything reads, and small enough
+ * that the store cannot grow without bound.
+ */
+const DAY_KEY_PREFIXES = ["scholify-today-done-", "scholify-block-time-"]
+const RETAIN_DAYS = 14
+
+/** Drop day-scoped ledgers older than the retention window. Safe to call often. */
+export function pruneOldDayKeys(now = new Date()): number {
+  try {
+    const cutoff = new Date(now)
+    cutoff.setDate(cutoff.getDate() - RETAIN_DAYS)
+    const cutoffStamp = `${cutoff.getFullYear()}-${`${cutoff.getMonth() + 1}`.padStart(2, "0")}-${`${cutoff.getDate()}`.padStart(2, "0")}`
+
+    const doomed: string[] = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key || !DAY_KEY_PREFIXES.some((p) => key.startsWith(p))) continue
+      // The date is the last 10 characters — YYYY-MM-DD sorts lexically, which
+      // is the whole reason the key is built that way round.
+      const stamp = key.slice(-10)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(stamp) && stamp < cutoffStamp) doomed.push(key)
+    }
+    for (const key of doomed) window.localStorage.removeItem(key)
+    return doomed.length
+  } catch {
+    return 0
+  }
+}
+
 export function getTodayDone(paperId: string): string[] {
   try {
     const raw = window.localStorage.getItem(doneKey(paperId))

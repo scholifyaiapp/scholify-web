@@ -68,7 +68,7 @@ import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, chapters
  * acca-strategy (which paper comes next). */
 import { TodayBoard } from "@/components/acca/TodayBoard"
 import LearningDashboard from "@/components/acca/LearningDashboard"
-import { blockLock, lockReason, studyGate } from "@/lib/acca-block-gate"
+import { blockLock, lockReason, sessionCountsAsDone, studyGate } from "@/lib/acca-block-gate"
 import { useBlockTimer } from "@/hooks/useBlockTimer"
 import { ArticleReader } from "@/components/acca/ArticleReader"
 import { PlanBoard } from "@/components/acca/PlanBoard"
@@ -387,7 +387,7 @@ export default function AccaStudy() {
       }
       if (block.kind === "quiz") onComposedFromLink(composed.quiz, "quiz", block.area ?? null, block.id)
       else if (block.kind === "practice") onComposedFromLink(composed.practice, "practice", block.area ?? null, block.id)
-      else if (block.kind === "flashcards") { setPendingTodayTask(paperId, block.id); setTopicArea(null); setMode("flashcards") }
+      else if (block.kind === "flashcards") { setPendingTodayTask(paperId, block.id, /* requiresExplicitCompletion */ true); setTopicArea(null); setMode("flashcards") }
       else if (block.kind === "article" && composed.article) { setActiveArticle(composed.article); setMode("article") }
       else if (block.kind === "study" && block.chapterKey && composed.chapter) startStudyChapter(block.chapterKey, composed.chapter.area)
       return
@@ -596,7 +596,7 @@ export default function AccaStudy() {
    */
   function onComposedFromLink(qs: AccaQuestion[], pool: PoolKind, area: string | null, blockId: string) {
     if (!paperId) return
-    setPendingTodayTask(paperId, blockId)
+    setPendingTodayTask(paperId, blockId, /* requiresExplicitCompletion */ true)
     startComposedSession(qs, pool, area)
   }
 
@@ -810,6 +810,24 @@ export default function AccaStudy() {
      * whether or not each individual question was answered.
      */
     if (paperId && sessionPool) markServed(paperId, sessionPool, questions.map((q) => q.id))
+
+    /*
+     * CLOSE TODAY'S BLOCK — here, on real work, and nowhere else.
+     *
+     * These blocks used to be closed by resolvePendingTodayTask the moment the
+     * learner returned to the board, whether or not they had answered anything.
+     * Tapping a step and pressing back completed it, so the entire sequential
+     * day could be walked in about fifteen seconds — and the streak, readiness
+     * and analytics that follow from a "completed" day came with it.
+     *
+     * The stamp is strict now, so nothing closes these except this line, and
+     * this line only when the set was genuinely attempted. Right or wrong is
+     * not the test; a wrong answer is still doing the work.
+     */
+    if (paperId && sessionCountsAsDone(newLog.length, questions.length)) {
+      completePendingTodayTask(paperId)
+    }
+
     queueAccaProgressPush()
     setCorrectCount(correct)
     setLog(newLog)
@@ -1067,6 +1085,7 @@ export default function AccaStudy() {
               paperId={paperId}
               area={topicArea ?? undefined}
               onBack={() => { setTick((t) => t + 1); setMode(topicArea ? "topic" : "overview") }}
+              onComplete={() => completePendingTodayTask(paperId)}
             />
           )}
 
@@ -1555,15 +1574,15 @@ function Overview({
         else onPractice()
         return
       case "quiz":
-        setPendingTodayTask(paper.id, block.id)
+        setPendingTodayTask(paper.id, block.id, /* requiresExplicitCompletion */ true)
         onComposed(composition.quiz, "quiz", block.area ?? null)
         return
       case "practice":
-        setPendingTodayTask(paper.id, block.id)
+        setPendingTodayTask(paper.id, block.id, /* requiresExplicitCompletion */ true)
         onComposed(composition.practice, "practice", block.area ?? null)
         return
       case "flashcards":
-        setPendingTodayTask(paper.id, block.id)
+        setPendingTodayTask(paper.id, block.id, /* requiresExplicitCompletion */ true)
         onFlashcards()
         return
       case "article":

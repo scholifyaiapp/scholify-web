@@ -8,6 +8,7 @@ import {
   lockReason,
   recordBlockSeconds,
   requiredStudySeconds,
+  sessionCountsAsDone,
   studyGate,
 } from "@/lib/acca-block-gate"
 import { composeToday } from "@/lib/acca-today-composer"
@@ -178,5 +179,48 @@ describe("the sequence", () => {
     const practice = day.blocks.find((b) => b.kind === "practice")!
     // /study?tab=today&block=practice, straight from the dashboard.
     expect(canStartBlock("BT", day, practice.id, [])).toBe(false)
+  })
+})
+
+/*
+ * THE TAP-THROUGH HOLE.
+ *
+ * Quiz, practice and flashcard blocks were stamped "pending" on launch and
+ * closed by resolvePendingTodayTask the instant the learner returned — with no
+ * requiresExplicitCompletion flag, the strict mode that function already
+ * supported and nothing used. Tapping a step and pressing back completed it,
+ * so the whole sequential day could be walked in about fifteen seconds with no
+ * questions answered — and the streak, readiness and analytics that follow a
+ * "completed" day came free with it.
+ */
+describe("closing a question block", () => {
+  it("needs most of the set attempted, not merely opened", () => {
+    // Five taps through five quizzes leaves you at 0 attempted, not 60%.
+    expect(sessionCountsAsDone(0, 5)).toBe(false)
+    expect(sessionCountsAsDone(1, 5)).toBe(false)
+    expect(sessionCountsAsDone(2, 5)).toBe(false)
+    expect(sessionCountsAsDone(3, 5)).toBe(true)
+  })
+
+  it("does not require every question — an honest skip is not a bypass", () => {
+    // Right or wrong is not the test: a wrong answer is still doing the work,
+    // and a product that only credited correct answers would teach people to
+    // avoid the hard ones.
+    expect(sessionCountsAsDone(9, 12)).toBe(true)
+    expect(sessionCountsAsDone(12, 12)).toBe(true)
+  })
+
+  it("scales with the set rather than using a fixed count", () => {
+    expect(sessionCountsAsDone(6, 10)).toBe(true)
+    expect(sessionCountsAsDone(5, 10)).toBe(false)
+    expect(sessionCountsAsDone(18, 30)).toBe(true)
+    expect(sessionCountsAsDone(17, 30)).toBe(false)
+  })
+
+  it("never traps a learner on an empty or nonsense set", () => {
+    // A block with nothing in it must not hold the day open forever.
+    expect(sessionCountsAsDone(0, 0)).toBe(true)
+    expect(sessionCountsAsDone(Number.NaN, 5)).toBe(false)
+    expect(sessionCountsAsDone(3, Number.NaN)).toBe(true)
   })
 })

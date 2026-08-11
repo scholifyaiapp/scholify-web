@@ -6,6 +6,7 @@ import NewPlatformNotice from "@/components/NewPlatformNotice"
 import TextErrorReporter from "@/components/TextErrorReporter"
 import { useAuth } from "@/lib/auth"
 import { captureAffiliateRef, resolveAuthLanding } from "@/lib/affiliate"
+import { pruneOldDayKeys } from "@/lib/acca-today"
 import { ownsAuthHash } from "@/lib/navigation"
 import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
 
@@ -178,6 +179,15 @@ export default function App() {
   // Capture a partner link (?aff=CODE) once on load, wherever it lands.
   useEffect(() => {
     captureAffiliateRef()
+    /*
+     * Day-scoped ledgers (today's completed blocks, today's reading time) are
+     * keyed by date and nothing ever reads a past day, so they accumulated one
+     * key per paper per day forever. Every write to them is inside a catch that
+     * swallows the error, so the end of that road is localStorage hitting quota
+     * and the app silently ceasing to record that anything was completed.
+     * Once per session, on the way in, is enough.
+     */
+    pruneOldDayKeys()
   }, [])
 
   return (
