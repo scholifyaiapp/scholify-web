@@ -75,6 +75,14 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-ma-e"),
     () => import("@/lib/acca-plans-ma-f"),
   ],
+  FA: [
+    () => import("@/lib/acca-plans-fa-abc"),
+    () => import("@/lib/acca-plans-fa-d1"),
+    () => import("@/lib/acca-plans-fa-d2"),
+    () => import("@/lib/acca-plans-fa-ef"),
+    () => import("@/lib/acca-plans-fa-g"),
+    () => import("@/lib/acca-plans-fa-hi"),
+  ],
 }
 
 /** Papers whose exam-plan layer has been authored. Read by the census and tests. */
