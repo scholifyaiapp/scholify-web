@@ -67,7 +67,6 @@ import { getStudyChapter, chaptersForArea, getChapterByKey, chapterKey, chapters
  * nothing is served twice), acca-day-gate (why tomorrow is locked) and
  * acca-strategy (which paper comes next). */
 import { TodayBoard } from "@/components/acca/TodayBoard"
-import LearningDashboard from "@/components/acca/LearningDashboard"
 import { blockLock, lockReason, sessionCountsAsDone, studyGate } from "@/lib/acca-block-gate"
 import { useBlockTimer } from "@/hooks/useBlockTimer"
 import { ArticleReader } from "@/components/acca/ArticleReader"
@@ -1819,17 +1818,22 @@ function Overview({
       {tab === "today" && (
       <motion.div key="today-tab" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
         {/*
-          The same rings, lap and strength split the dashboard shows.
+          NO progress block here, deliberately.
 
-          The Learning section is where people spend their time, and it was the
-          one place that never told them how it was going — you had to leave it
-          and go to /dashboard to find out whether any of the work was moving
-          the number. Same component, same figures, so the two screens cannot
-          drift into disagreeing about the learner.
+          The readiness arc, the lap and the strength split used to open this tab
+          as well as the Dashboard. The reasoning was that Learning is where
+          people spend their time, so it should tell them how it was going.
+
+          In practice it made the Learning tab a second dashboard: the learner
+          arrived to DO the day's work and met the same four figures they had
+          just walked past, pushing TodayBoard — the thing they actually came
+          for — below the fold on a phone. Progress reporting belongs where
+          someone goes to ask "how am I doing"; this tab answers "what do I do
+          now", and mixing the two weakened both.
+
+          It lives on the Dashboard and in Analytics. Same component, so those
+          two cannot drift into disagreeing about the learner.
         */}
-        <div style={{ borderRadius: 18, border: `1px solid ${BORDER}`, background: CARD, padding: "18px 16px", marginBottom: 16 }}>
-          <LearningDashboard paperId={paper.id} />
-        </div>
 
         {/* The day itself — one topic, five ways. See TodayBoard. */}
         <TodayBoard
