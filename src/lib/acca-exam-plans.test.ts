@@ -42,6 +42,7 @@ const COVERAGE_FLOOR: Record<string, number> = {
   BT: 119, // complete — equals the paper's section count, so this is now the gate
   MA: 106, // complete
   FA: 92, // complete
+  LW: 80, // LW-Global complete; LW-ENG's 87 sections are separate and still to author
 }
 
 describe.each(PLANNED_PAPERS)("%s exam plans", (paperId) => {

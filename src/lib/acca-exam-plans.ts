@@ -83,6 +83,17 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-fa-g"),
     () => import("@/lib/acca-plans-fa-hi"),
   ],
+  /*
+   * LW carries BOTH variants' plans. Only one tree is ever loaded, so the other
+   * variant's keys are legitimately unmatched — see the note in applyExamPlans.
+   * LWG-nn keys belong to LW-Global, LWE-nn to LW-ENG.
+   */
+  LW: [
+    () => import("@/lib/acca-plans-lwg-a"),
+    () => import("@/lib/acca-plans-lwg-b"),
+    () => import("@/lib/acca-plans-lwg-cd"),
+    () => import("@/lib/acca-plans-lwg-efgh"),
+  ],
 }
 
 /** Papers whose exam-plan layer has been authored. Read by the census and tests. */
