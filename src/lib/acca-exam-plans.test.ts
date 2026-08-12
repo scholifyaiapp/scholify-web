@@ -39,7 +39,7 @@ const isPlan = (b: StudyBlock): b is Extract<StudyBlock, { kind: "examQuestion" 
  * Equal to the paper's section count = that paper is finished and gated.
  */
 const COVERAGE_FLOOR: Record<string, number> = {
-  BT: 0,
+  BT: 31, // Area A — chapters BT-01 to BT-07
 }
 
 describe.each(PLANNED_PAPERS)("%s exam plans", (paperId) => {

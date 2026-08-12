@@ -270,14 +270,34 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
    */
   const quizMinutes = Math.round(QUIZ_SIZE * PER_Q)
   const articleMinutes = article ? article.minutes : 0
-  const cardTarget = Math.max(
+  const wantedCards = Math.max(
     CARDS_MIN,
     Math.min(CARDS_MAX, Math.round((budgetMinutes * 0.12) / PER_CARD)),
   )
-  const cardMinutes = Math.round(cardTarget * PER_CARD)
-  const spare = budgetMinutes - studyMinutes - quizMinutes - cardMinutes - articleMinutes
+  const spare = budgetMinutes - studyMinutes - quizMinutes - Math.round(wantedCards * PER_CARD) - articleMinutes
   const practiceCount = Math.max(PRACTICE_MIN, Math.min(PRACTICE_MAX, Math.round(spare / PER_Q)))
   const practiceMinutes = Math.round(practiceCount * PER_Q)
+
+  /*
+   * THE CARD DECK IS THE SECOND THING TO GIVE.
+   *
+   * Cards were sized purely as a share of the budget and then never revisited, so
+   * a day that came out over budget kept a deck two or three cards larger than
+   * its own floor. That surfaced when the exam-plan layer landed: chapters gained
+   * a worked question per section and grew by about a minute, which turned a
+   * 40-minute day — the SHORTEST budget onboarding offers — into a 41-minute one.
+   *
+   * CARDS_MIN is the promise; anything above it is the budget being generous, so
+   * it is the right thing to hand back. Practice does not give (PRACTICE_MIN is
+   * its own promise) and the chapter cannot be subdivided, so after the article
+   * and the surplus cards there is genuinely nothing left — which is the honest
+   * overshoot the test below records at budgets shorter than one chapter.
+   */
+  const overshoot = studyMinutes + quizMinutes + practiceMinutes + Math.round(wantedCards * PER_CARD) - budgetMinutes
+  const cardTarget = overshoot > 0
+    ? Math.max(CARDS_MIN, wantedCards - Math.ceil(overshoot / PER_CARD))
+    : wantedCards
+  const cardMinutes = Math.round(cardTarget * PER_CARD)
 
   /*
    * THE DAY MUST FIT THE TIME THEY PROMISED.
