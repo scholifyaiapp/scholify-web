@@ -44,6 +44,7 @@ const COVERAGE_FLOOR: Record<string, number> = {
   FA: 92, // complete
   LW: 80, // LW-Global, the variant the registry loads by default
   PM: 70, // complete
+  TX: 56, // TX-UK complete; TX-Global is a generated foundation track and is deliberately unplanned
 }
 
 /**

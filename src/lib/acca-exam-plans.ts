@@ -106,6 +106,22 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-pm-d"),
     () => import("@/lib/acca-plans-pm-ef"),
   ],
+  /*
+   * TX carries plans for the UK variant only, and deliberately.
+   *
+   * TX-Global is a GENERATED foundation track — seven chapters of one section each,
+   * built by AREAS.map in acca-study-tx-global.ts — and its own content states that
+   * it "is not an official ACCA jurisdiction exam variant", telling the learner to
+   * select the jurisdiction on their exam entry. Attaching exam-question plans to it
+   * would contradict that disclaimer and imply it prepares someone for an exam it
+   * does not. Its chapters key as TX-A..TX-G against TX-UK's TX-01..TX-29, so
+   * nothing here collides with it either way.
+   */
+  TX: [
+    () => import("@/lib/acca-plans-tx-ab"),
+    () => import("@/lib/acca-plans-tx-cd"),
+    () => import("@/lib/acca-plans-tx-efg"),
+  ],
 }
 
 /** Papers whose exam-plan layer has been authored. Read by the census and tests. */
