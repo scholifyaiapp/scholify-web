@@ -1,4 +1,5 @@
 import { registerPaperContent, isPaperContentLoaded, forgetPaperContent, type PaperContent } from "@/lib/acca-content-registry"
+import { loadExamPlans, applyExamPlans } from "@/lib/acca-exam-plans"
 import type { AccaQuestion, OtCase } from "@/lib/acca-content"
 import type { Flashcard } from "@/lib/acca-flashcards"
 import type { WrittenQuestion } from "@/lib/acca-written"
@@ -508,7 +509,21 @@ export function loadPaperContent(paperId: string): Promise<void> {
      * Every variant that ships now selects its own authored chapters above: LW-Global,
      * LW-ENG, TX-UK, and TX-Global's own foundation track.
      */
-    const chapters = baseChapters
+    /*
+     * The exam-plan layer: every section gains the question it is examined by,
+     * taught as a plan. Authored separately from the trees and merged here, so a
+     * plan can never be lost inside a 160 KB chapter file — see acca-exam-plans.ts
+     * for why that separation matters and how the keys are formed. A paper with no
+     * plans yet merges an empty map and comes through untouched.
+     */
+    const examPlans = await loadExamPlans(paperId)
+    const planned = applyExamPlans(baseChapters, examPlans)
+    if (planned.unused.length && import.meta.env?.DEV) {
+      // A key matching no section means a renamed section or a typo, and the plan
+      // silently never renders. Loud in dev; the contract test fails on it in CI.
+      console.warn(`[${paperId}] ${planned.unused.length} exam plan(s) matched no section:`, planned.unused)
+    }
+    const chapters = planned.chapters
     const mappedFlashcards = usesGlobalBank ? [] : paperId === "BT"
       ? mapBtFlashcardsToOfficialSyllabus(collect<Flashcard>(flashcardMods, paperId))
       : paperId === "MA"

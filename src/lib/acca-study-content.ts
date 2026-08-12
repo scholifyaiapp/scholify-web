@@ -34,6 +34,9 @@
  *                     answer. Unlike `check` (one MCQ, auto-marked, gates the
  *                     progress bar) an activity can be discursive, which is how
  *                     the books build the reasoning objective tests then test.
+ *  · `examQuestion` — the important question this section is examined by, taught
+ *                     as a PLAN. See `ExamQuestionBlock` below for why a plan is
+ *                     a different thing from a model answer.
  */
 export type StudyBlock =
   | { kind: "text"; md: string }
@@ -46,6 +49,66 @@ export type StudyBlock =
   | { kind: "definition"; term: string; md: string }
   | { kind: "illustration"; title: string; md: string }
   | { kind: "activity"; title: string; prompt: string; answer: string }
+  | ({ kind: "examQuestion" } & ExamQuestionBlock)
+
+/**
+ * THE question this section is examined by, and the plan for answering it.
+ *
+ * ── Why this is not just another `activity` ──────────────────────
+ * An activity asks something and reveals a model answer. A learner who reads the
+ * model answer learns what a good answer LOOKS like, and still cannot produce one
+ * under exam conditions, because the part that was never taught is the bit
+ * between reading the requirement and writing the first line: what the verb is
+ * asking for, which facts in the scenario are load-bearing, what order the points
+ * go in, and how many of them the marks will pay for. That is the `plan`, and it
+ * is the whole reason this block exists — it teaches the ROUTE to the answer, not
+ * just the destination.
+ *
+ * So the reader renders it in that order and gates it: requirement → the plan the
+ * learner builds → only then the model answer. Revealing all three at once turns
+ * the hardest-won skill in the paper back into prose the eye slides over.
+ *
+ * `earns` and `loses` are the marker's side of the same question, and they are
+ * deliberately separate from `examTraps` on the chapter: a trap is a
+ * misunderstanding of the topic, whereas these are marks won and thrown away on
+ * THIS requirement — the candidate who knows the topic and still scores four out
+ * of eight because they wrote a list where the verb said "explain".
+ */
+export interface ExamQuestionBlock {
+  /** What this question type is called, e.g. "Explain the purpose of an engagement letter". */
+  title: string
+  /**
+   * How this topic is actually examined on THIS paper.
+   *
+   * It is not decoration. BT, MA, FA and LW are 100% objective test: writing
+   * "Explain X. (8 marks)" for BT teaches a question that paper has never asked,
+   * and the plan for it — structure, point-then-justify, mark spreading — is the
+   * wrong skill entirely. On an OT the skill is reading the stem precisely and
+   * eliminating the three distractors; on a constructed response it is building
+   * an answer that pays. So the reader changes its "how much to write" guidance
+   * on this field, and the papers gate which values are legitimate.
+   *
+   *  · `ot`      — a single objective test, 1–2 marks
+   *  · `mtq`     — a multi-task / OT case task, 4–15 marks depending on paper
+   *  · `written` — a constructed response typed into the CBE word processor
+   */
+  format: "ot" | "mtq" | "written"
+  /** Mark allocation in the real exam. Must be legitimate for `format` on this paper. */
+  marks: number
+  /** How the examiner words it. Keep the real requirement verb — it is what the plan reads. */
+  requirement: string
+  /**
+   * The route to the answer: what to do, in order, before and while writing.
+   * Three to six steps — fewer is not a plan, more is not memorable.
+   */
+  plan: { step: string; detail: string }[]
+  /** The model answer, paragraphs separated by a blank line. */
+  answer: string
+  /** What the marker actually pays for. */
+  earns?: string[]
+  /** Where candidates who know the topic still lose the marks. */
+  loses?: string[]
+}
 
 /* ── Diagrams (rendered by StudyDiagram) ──────────────────────── */
 

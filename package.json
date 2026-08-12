@@ -12,6 +12,8 @@
     "validate:chapters": "tsx --tsconfig tsconfig.app.json scripts/validate-chapters.ts",
     "audit:content": "tsx --tsconfig tsconfig.app.json scripts/audit-content.ts",
     "census:content": "tsx --tsconfig tsconfig.app.json scripts/census-content.ts",
+    "census:plans": "tsx --tsconfig tsconfig.app.json scripts/census-exam-plans.ts",
+    "dump:sections": "tsx --tsconfig tsconfig.app.json scripts/dump-sections.ts",
     "audit:verification": "tsx --tsconfig tsconfig.app.json scripts/audit-verification.ts",
     "audit:tx-fa2025": "tsx --tsconfig tsconfig.app.json scripts/audit-tx-fa2025.ts",
     "verify:loading": "tsx --tsconfig tsconfig.app.json scripts/verify-dynamic-load.ts",

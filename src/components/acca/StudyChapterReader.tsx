@@ -305,9 +305,138 @@ function Block({ block }: { block: StudyBlock }) {
       )
     case "activity":
       return <ActivityBlock title={block.title} prompt={block.prompt} answer={block.answer} />
+    case "examQuestion":
+      return <ExamQuestionCard block={block} />
     default:
       return null
   }
+}
+
+/**
+ * The important question on this topic, taught as a plan.
+ *
+ * Staged in three, because the block's whole point is the middle stage. The
+ * requirement is always visible; the PLAN opens first and the model answer only
+ * after it, so a learner cannot skip from "what is being asked" straight to
+ * "what a good answer looks like" — which is the one move that guarantees they
+ * will not be able to reproduce it in the hall. `earns`/`loses` land with the
+ * answer, since they are only meaningful once there is an answer to compare.
+ */
+const FORMAT_LABEL: Record<"ot" | "mtq" | "written", string> = {
+  ot: "How this is examined · objective test",
+  mtq: "How this is examined · multi-task question",
+  written: "How this is examined · constructed response",
+}
+
+/**
+ * "How much is this worth" told in the currency of the actual format.
+ *
+ * A constructed response is bought in points; an objective test is not bought at
+ * all — it is one decision, and the work is in reading the stem rather than in
+ * producing volume. Telling an OT learner that two marks is "one to two distinct
+ * points, each justified" would teach them to write an essay into a radio button.
+ */
+function sizeGuidance(format: "ot" | "mtq" | "written", marks: number): string {
+  if (format === "ot") {
+    return `Answer it before you read on. ${marks} ${marks === 1 ? "mark" : "marks"}, one decision, no partial credit — the work is in reading the stem exactly, not in knowing more.`
+  }
+  if (format === "mtq") {
+    return `Work it before you read on. ${marks} marks across linked tasks, each marked independently — a wrong figure early does not have to cost the later tasks.`
+  }
+  const low = Math.max(1, Math.round(marks / 2))
+  return `Plan it before you read on. ${marks} marks is roughly ${low}–${marks} distinct points, each one made and then justified.`
+}
+
+function ExamQuestionCard({ block }: { block: Extract<StudyBlock, { kind: "examQuestion" }> }) {
+  const [stage, setStage] = useState<0 | 1 | 2>(0)
+  const reduce = useReducedMotion()
+  const reveal = reduce ? {} : { initial: { opacity: 0, y: 6 }, animate: { opacity: 1, y: 0 } }
+
+  return (
+    <div style={{ margin: "18px 0", background: C.card, border: `1px solid ${C.border}`, borderRadius: 15, overflow: "hidden" }}>
+      <div style={{ padding: "13px 16px", background: C.card2, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 5 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.brand }}>
+            {FORMAT_LABEL[block.format]}
+          </div>
+          <span style={{ flex: "none", padding: "3px 9px", borderRadius: 99, background: C.brand, color: "#fff", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.02em" }}>
+            {block.marks} {block.marks === 1 ? "mark" : "marks"}
+          </span>
+        </div>
+        <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text, marginBottom: 7 }}>{block.title}</div>
+        <div style={{ fontSize: 13.5, color: C.text, lineHeight: 1.62, padding: "10px 13px", background: C.card, borderRadius: 11, border: `1px solid ${C.border}` }}>
+          {rich(block.requirement)}
+        </div>
+      </div>
+
+      <div style={{ padding: "13px 16px" }}>
+        {stage === 0 ? (
+          <>
+            <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
+              {sizeGuidance(block.format, block.marks)}
+            </div>
+            <button onClick={() => setStage(1)}
+              style={{ marginTop: 11, padding: "9px 16px", borderRadius: 10, border: `1px solid ${C.brand}`, background: C.brandSoft, color: C.brand, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
+              Show the plan
+            </button>
+          </>
+        ) : (
+          <motion.div {...reveal}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.brand, marginBottom: 9 }}>The plan</div>
+            {block.plan.map((s, i) => (
+              <div key={i} style={{ display: "flex", gap: 11, padding: "8px 0", borderBottom: i < block.plan.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                <span style={{ flex: "none", width: 22, height: 22, borderRadius: 99, background: C.brand, color: "#fff", fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center" }}>{i + 1}</span>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: C.text }}>{s.step}</div>
+                  <div style={{ fontSize: 12.5, color: C.muted, marginTop: 2, lineHeight: 1.55 }}>{rich(s.detail)}</div>
+                </div>
+              </div>
+            ))}
+
+            {stage === 1 ? (
+              <button onClick={() => setStage(2)}
+                style={{ marginTop: 12, padding: "9px 16px", borderRadius: 10, border: `1px solid ${C.brand}`, background: C.brandSoft, color: C.brand, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
+                {block.format === "ot" ? "Now show the answer" : "Now show the model answer"}
+              </button>
+            ) : (
+              <motion.div {...reveal} style={{ marginTop: 13 }}>
+                <div style={{ padding: "12px 14px", borderRadius: 11, background: C.greenSoft, border: `1px solid ${C.green}` }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: C.green, marginBottom: 6 }}>
+                    {block.format === "ot" ? "The answer" : "Model answer"}
+                  </div>
+                  <div style={{ display: "grid", gap: 9 }}>
+                    {block.answer.split("\n\n").map((p, i) => <div key={i} style={{ fontSize: 13.5, color: C.text, lineHeight: 1.62 }}>{rich(p)}</div>)}
+                  </div>
+                </div>
+                {(block.earns?.length || block.loses?.length) && (
+                  <div style={{ display: "grid", gap: 10, marginTop: 11 }}>
+                    {block.earns?.length ? <MarkList tone={C.green} label="Where the marks are" items={block.earns} /> : null}
+                    {block.loses?.length ? <MarkList tone={C.amber} label="Where they are thrown away" items={block.loses} /> : null}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MarkList({ tone, label, items }: { tone: string; label: string; items: string[] }) {
+  return (
+    <div style={{ padding: "11px 13px", borderRadius: 11, background: `${tone}0e`, border: `1px solid ${tone}44` }}>
+      <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", color: tone, marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "grid", gap: 6 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ display: "flex", gap: 9, fontSize: 12.5, color: C.muted, lineHeight: 1.55 }}>
+            <span style={{ flex: "none", color: tone, fontWeight: 800 }}>{tone === C.green ? "✓" : "✕"}</span>
+            <span>{rich(it)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 /**
