@@ -56,7 +56,15 @@ describe.each(PLANNED_PAPERS)("%s exam plans", (paperId) => {
     }))
     const result = applyExamPlans(chapters, plans)
     expect(result.unused, `plan keys matching no section in ${paperId}`).toEqual([])
-    expect(result.applied).toBe(Object.keys(plans).length)
+    /*
+     * Applied may be FEWER than the plans authored, on a paper that ships as two
+     * variants under one id: LW loads either the LWG or the LWE tree, never both,
+     * so the inactive variant's plans are legitimately not applied. What must hold
+     * is that every plan whose chapter IS loaded was applied — which `unused`
+     * above already asserts.
+     */
+    expect(result.applied).toBeGreaterThan(0)
+    expect(result.applied).toBeLessThanOrEqual(Object.keys(plans).length)
   })
 
   /*

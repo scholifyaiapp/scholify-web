@@ -156,6 +156,21 @@ export function applyExamPlans(
     return touched ? { ...chapter, sections } : chapter
   })
 
-  const unused = Object.keys(plans).filter((k) => !seen.has(k))
+  /*
+   * A key is UNUSED only if its chapter was loaded and the section was not.
+   *
+   * LW and TX ship as two whole papers under one paper id — LW-Global's chapters
+   * are LWG-nn and LW-ENG's are LWE-nn — and only the selected variant's tree is
+   * ever loaded. So the other variant's keys are absent by design, not by mistake,
+   * and reporting them would make the check cry wolf on every render and force it
+   * to be switched off. Filtering on the chapter prefix keeps the check sharp for
+   * the failure it exists to catch: a section id that was renamed or mistyped
+   * WITHIN a chapter that is loaded, which is the case that silently renders
+   * nothing.
+   */
+  const loadedChapters = new Set(chapters.map(keyOf))
+  const unused = Object.keys(plans).filter(
+    (k) => !seen.has(k) && loadedChapters.has(k.split("::")[0]),
+  )
   return { chapters: next, applied, unused }
 }
