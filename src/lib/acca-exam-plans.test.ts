@@ -43,6 +43,7 @@ const COVERAGE_FLOOR: Record<string, number> = {
   MA: 106, // complete
   FA: 92, // complete
   LW: 80, // LW-Global, the variant the registry loads by default
+  PM: 70, // complete
 }
 
 /**
