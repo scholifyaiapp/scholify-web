@@ -100,6 +100,12 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-lwe-d"),
     () => import("@/lib/acca-plans-lwe-efgh"),
   ],
+  PM: [
+    () => import("@/lib/acca-plans-pm-ab"),
+    () => import("@/lib/acca-plans-pm-c"),
+    () => import("@/lib/acca-plans-pm-d"),
+    () => import("@/lib/acca-plans-pm-ef"),
+  ],
 }
 
 /** Papers whose exam-plan layer has been authored. Read by the census and tests. */
