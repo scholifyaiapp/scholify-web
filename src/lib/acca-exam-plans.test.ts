@@ -3,7 +3,7 @@ import { loadPaperContent } from "@/lib/acca-paper-content"
 import { paperContent } from "@/lib/acca-content-registry"
 import { loadExamPlans, applyExamPlans, PLANNED_PAPERS } from "@/lib/acca-exam-plans"
 import { chapterKey } from "@/lib/acca-study-content"
-import type { StudyBlock } from "@/lib/acca-study-content"
+import type { StudyBlock, StudyChapter } from "@/lib/acca-study-content"
 
 /*
  * The exam-plan layer's contract.
@@ -42,8 +42,52 @@ const COVERAGE_FLOOR: Record<string, number> = {
   BT: 119, // complete — equals the paper's section count, so this is now the gate
   MA: 106, // complete
   FA: 92, // complete
-  LW: 80, // LW-Global complete; LW-ENG's 87 sections are separate and still to author
+  LW: 80, // LW-Global, the variant the registry loads by default
 }
+
+/**
+ * Variant trees the registry never loads at its default setting, with their own
+ * floors. Without this, LW-ENG's 87 sections would have no regression protection
+ * at all: `paperContent("LW")` returns LW-Global, so the suite above cannot see
+ * them, and a rename inside an LWE chapter would silently drop a plan.
+ */
+const VARIANT_FLOOR: { label: string; paper: string; floor: number; load: () => Promise<StudyChapter[]> }[] = [
+  {
+    label: "LW-ENG",
+    paper: "LW",
+    floor: 87, // complete
+    load: async () => (await import("@/lib/acca-study-lw-eng")).LW_ENG_CHAPTERS,
+  },
+]
+
+describe.each(VARIANT_FLOOR)("$label exam plans", ({ label, paper, floor, load }) => {
+  it("never loses coverage it has already gained", async () => {
+    const plans = await loadExamPlans(paper)
+    const result = applyExamPlans(await load(), plans)
+    const sections = result.chapters.reduce((n, c) => n + c.sections.length, 0)
+    const covered = result.chapters.reduce(
+      (n, c) => n + c.sections.filter((s) => s.blocks.some(isPlan)).length,
+      0,
+    )
+    expect(result.unused, `plan keys matching no section in ${label}`).toEqual([])
+    expect(floor, `${label} floor exceeds its own section count`).toBeLessThanOrEqual(sections)
+    expect(covered, `${label} sections carrying an exam plan`).toBeGreaterThanOrEqual(floor)
+  })
+
+  it("only sets questions this paper actually asks", async () => {
+    const plans = await loadExamPlans(paper)
+    const result = applyExamPlans(await load(), plans)
+    for (const ch of result.chapters) {
+      for (const s of ch.sections) {
+        for (const p of s.blocks.filter(isPlan)) {
+          const allowed = LEGAL[paper]?.[p.format]
+          expect(allowed, `${label} ${chapterKey(ch)}::${s.id} uses ${p.format}`).toBeTruthy()
+          expect(allowed, `${label} ${chapterKey(ch)}::${s.id} is ${p.marks} marks`).toContain(p.marks)
+        }
+      }
+    }
+  })
+})
 
 describe.each(PLANNED_PAPERS)("%s exam plans", (paperId) => {
   it("every plan key matches a real section", async () => {
