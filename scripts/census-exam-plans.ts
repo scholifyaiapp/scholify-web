@@ -17,7 +17,23 @@
 import { loadPaperContent } from "@/lib/acca-paper-content"
 import { paperContent } from "@/lib/acca-content-registry"
 import { chapterKey } from "@/lib/acca-study-content"
-import type { StudyBlock } from "@/lib/acca-study-content"
+import type { StudyBlock, StudyChapter } from "@/lib/acca-study-content"
+import { loadExamPlans, applyExamPlans } from "@/lib/acca-exam-plans"
+
+/*
+ * Variant trees the registry will not load at its default setting.
+ *
+ * LW and TX each ship as two whole papers under one paper id, and the Node
+ * bootstrap only loads the DEFAULT one. So `--paper=LW` measures LW-Global and
+ * reports 100% while LW-ENG's 87 sections are invisible — which would make the
+ * second variant's coverage unmeasurable, and an unmeasurable paper is one nobody
+ * can tell is unfinished. `--variant=LW-ENG` applies the plan layer to the other
+ * tree directly and counts that.
+ */
+const VARIANTS: Record<string, { paper: string; load: () => Promise<StudyChapter[]> }> = {
+  "LW-ENG": { paper: "LW", load: async () => (await import("@/lib/acca-study-lw-eng")).LW_ENG_CHAPTERS },
+  "LW-GLOBAL": { paper: "LW", load: async () => (await import("@/lib/acca-study-lw-global")).LW_GLOBAL_CHAPTERS },
+}
 
 /** F1–F9: the Applied tier, which is what the plan layer covers first. */
 const APPLIED = ["BT", "MA", "FA", "LW", "PM", "TX", "FR", "AA", "FM"]
@@ -59,10 +75,34 @@ async function main() {
   const gaps: string[] = []
   const problems: string[] = []
 
-  for (const id of papers) {
-    await loadPaperContent(id)
-    const chapters = paperContent(id).chapters
+  /*
+   * A variant run measures ONE tree the registry would not otherwise load, so it
+   * applies the plan layer itself. `id` stays the paper id, because the legal
+   * format table and the plan modules are both keyed by paper rather than variant.
+   */
+  const variant = flag("variant")?.toUpperCase()
+  const targets: { id: string; label: string; chapters: StudyChapter[] }[] = []
+  if (variant) {
+    const spec = VARIANTS[variant]
+    if (!spec) {
+      console.error(`Unknown variant "${variant}". Known: ${Object.keys(VARIANTS).join(", ")}`)
+      process.exit(1)
+    }
+    const plans = await loadExamPlans(spec.paper)
+    const applied = applyExamPlans(await spec.load(), plans)
+    if (applied.unused.length) {
+      console.error(`\n${variant}: ${applied.unused.length} plan key(s) match a loaded chapter but no section:`)
+      for (const k of applied.unused) console.error("  " + k)
+    }
+    targets.push({ id: spec.paper, label: variant, chapters: applied.chapters })
+  } else {
+    for (const id of papers) {
+      await loadPaperContent(id)
+      targets.push({ id, label: id, chapters: paperContent(id).chapters })
+    }
+  }
 
+  for (const { id, label, chapters } of targets) {
     let sections = 0
     let covered = 0
     let plans = 0
@@ -76,7 +116,7 @@ async function main() {
         sections++
         const found = s.blocks.filter(isPlan)
         if (found.length === 0) {
-          gaps.push(`${id}  ${chapterKey(ch)}  ${s.id}  ${s.heading}`)
+          gaps.push(`${label}  ${chapterKey(ch)}  ${s.id}  ${s.heading}`)
           continue
         }
         covered++
@@ -89,7 +129,7 @@ async function main() {
           const allowed = LEGAL[id]?.[p.format]
           if (!allowed || !allowed.includes(p.marks)) {
             illegal++
-            problems.push(`${id}  ${chapterKey(ch)}::${s.id}  ${p.format} @ ${p.marks} marks is not a ${id} question`)
+            problems.push(`${label}  ${chapterKey(ch)}::${s.id}  ${p.format} @ ${p.marks} marks is not a ${id} question`)
           }
         }
       }
@@ -101,7 +141,7 @@ async function main() {
 
     console.log(
       [
-        id.padEnd(4),
+        label.padEnd(10),
         `sec=${String(sections).padStart(3)}`,
         `withPlan=${String(covered).padStart(3)}`,
         `cover=${pct.toFixed(0).padStart(3)}%`,
@@ -117,7 +157,7 @@ async function main() {
 
   const overall = totalSections === 0 ? 0 : (totalCovered / totalSections) * 100
   console.log(
-    `\n${papers.length} paper(s): ${totalCovered}/${totalSections} sections carry an exam plan — ${overall.toFixed(1)}%`,
+    `\n${targets.length} paper(s): ${totalCovered}/${totalSections} sections carry an exam plan — ${overall.toFixed(1)}%`,
   )
 
   if (has("gaps")) {

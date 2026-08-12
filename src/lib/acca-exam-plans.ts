@@ -93,6 +93,12 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-lwg-b"),
     () => import("@/lib/acca-plans-lwg-cd"),
     () => import("@/lib/acca-plans-lwg-efgh"),
+    () => import("@/lib/acca-plans-lwe-a"),
+    () => import("@/lib/acca-plans-lwe-b1"),
+    () => import("@/lib/acca-plans-lwe-b2"),
+    () => import("@/lib/acca-plans-lwe-c"),
+    () => import("@/lib/acca-plans-lwe-d"),
+    () => import("@/lib/acca-plans-lwe-efgh"),
   ],
 }
 
