@@ -145,6 +145,17 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-aa-d"),
     () => import("@/lib/acca-plans-aa-ef"),
   ],
+  /*
+   * FM supplies its formulae sheet plus present value and annuity tables on
+   * screen. Its plans therefore teach candidates to select and apply the
+   * provided factor, while preserving the unprovided judgement: which cash
+   * flow, timing, tax lag, price base or risk belongs in the calculation.
+   * Section C is two 20-mark responses, so the appraisal, working-capital and
+   * finance plans use labelled spreadsheet workings that retain method marks.
+   */
+  FM: [
+    () => import("@/lib/acca-plans-fm-ab"),
+  ],
 }
 
 /** Papers whose exam-plan layer has been authored. Read by the census and tests. */
