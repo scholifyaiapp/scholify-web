@@ -158,6 +158,7 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-fm-c"),
     () => import("@/lib/acca-plans-fm-d"),
     () => import("@/lib/acca-plans-fm-e"),
+    () => import("@/lib/acca-plans-fm-fgh"),
   ],
 }
 
