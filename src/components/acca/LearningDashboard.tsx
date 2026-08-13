@@ -96,6 +96,22 @@ const CSS = `
 function ReadinessArc({
   readiness, target, answered,
 }: { readiness: number; target: number; answered: number }) {
+  /* A three-quarter arc rather than a full ring: the gap gives the
+     figure somewhere to sit and makes the target gate legible near
+     the end of the track instead of colliding with the start.
+
+     These are declared ABOVE the hooks, and must stay there. useTransform
+     runs its transformer synchronously during render to seed the returned
+     value, so a transformer closing over a `const` declared further down the
+     function body reads it inside the temporal dead zone and throws
+     "Cannot access 'SWEEP' before initialization" on EVERY render — which
+     took the whole Dashboard to the error boundary, whose only offer is a
+     reload that crashes again. TypeScript cannot see it (the read is inside a
+     closure) so `npm run typecheck` passed. */
+  const R = 54
+  const SWEEP = 0.75
+  const CIRC = 2 * Math.PI * R
+
   const reduced = useReducedMotion()
   const pct = useMotionValue(0)
   const shown = useTransform(pct, (v) => Math.round(v))
@@ -119,12 +135,6 @@ function ReadinessArc({
     return () => { a.stop(); b.stop() }
   }, [readiness, fraction, reduced, pct, arc])
 
-  /* A three-quarter arc rather than a full ring: the gap gives the
-     figure somewhere to sit and makes the target gate legible near
-     the end of the track instead of colliding with the start. */
-  const R = 54
-  const SWEEP = 0.75
-  const CIRC = 2 * Math.PI * R
   const gate = Math.min(1, target / 100) // the target's own place on a 0–100 track
 
   return (
