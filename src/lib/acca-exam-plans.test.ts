@@ -46,6 +46,7 @@ const COVERAGE_FLOOR: Record<string, number> = {
   PM: 70, // complete
   TX: 56, // TX-UK complete; TX-Global is a generated foundation track and is deliberately unplanned
   FR: 99, // complete
+  AA: 15, // Area A of 72 — in progress
 }
 
 /**

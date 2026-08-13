@@ -130,6 +130,17 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-fr-d"),
     () => import("@/lib/acca-plans-fr-ce"),
   ],
+  /*
+   * AA is the one Applied paper with NO objective-test section of single
+   * questions and no Section C: Section A is three OT cases and Section B is
+   * seventy marks of constructed response. So its plans are almost entirely
+   * `written`, at AA's own allocations of 4, 5, 6, 8, 10 and 20 marks, and
+   * the legal-format tables in census-exam-plans.ts and acca-exam-plans.test.ts
+   * permit no plain `ot` for this paper at all.
+   */
+  AA: [
+    () => import("@/lib/acca-plans-aa-a"),
+  ],
 }
 
 /** Papers whose exam-plan layer has been authored. Read by the census and tests. */
