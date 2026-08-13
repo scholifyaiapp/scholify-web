@@ -142,6 +142,7 @@ const PLAN_MODULES: Record<string, Loader[]> = {
     () => import("@/lib/acca-plans-aa-a"),
     () => import("@/lib/acca-plans-aa-b"),
     () => import("@/lib/acca-plans-aa-c"),
+    () => import("@/lib/acca-plans-aa-d"),
   ],
 }
 
