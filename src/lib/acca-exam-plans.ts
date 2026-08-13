@@ -140,6 +140,7 @@ const PLAN_MODULES: Record<string, Loader[]> = {
    */
   AA: [
     () => import("@/lib/acca-plans-aa-a"),
+    () => import("@/lib/acca-plans-aa-b"),
   ],
 }
 
