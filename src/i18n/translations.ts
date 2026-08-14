@@ -204,6 +204,10 @@ export const ru: Record<string, string> = {
   "WHAT'S INCLUDED": "ЧТО ВХОДИТ",
   "No charge today on Pro. Cancel during the 3-day trial and pay nothing.":
     "Сегодня плата за Pro не взимается. Отмените в течение 3-дневного пробного периода и ничего не платите.",
+  "ACCOUNT & SESSION PRIVACY": "КОНФИДЕНЦИАЛЬНОСТЬ АККАУНТА И СЕССИЙ",
+  "One learner. One private account.": "Один учащийся. Один личный аккаунт.",
+  "Every Scholify plan — including Beginner and Pro, monthly or annual — is licensed to one learner. You can switch devices, but only one login stays active. A new sign-in ends older sessions to protect your answers, mock results, study history and billing access.":
+    "Каждый тариф Scholify — включая Beginner и Pro с ежемесячной или годовой оплатой — предназначен для одного учащегося. Вы можете менять устройства, но активным остаётся только один вход. Новый вход завершает предыдущие сеансы, защищая ваши ответы, результаты пробных экзаменов, историю обучения и доступ к оплате.",
   "Google Calendar sync": "Синхронизация с Google Календарём",
 
   /* ── Footer ── */

@@ -2160,6 +2160,50 @@ function Pricing() {
           </div>
         </div>
 
+        <div
+          role="note"
+          style={{
+            maxWidth: 920,
+            margin: "32px auto 0",
+            padding: "22px 24px",
+            border: `1px solid ${HAIR}`,
+            borderRadius: 20,
+            background: SHIELD_100,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 16,
+            textAlign: "left",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: 42,
+              height: 42,
+              flexShrink: 0,
+              borderRadius: 14,
+              background: SHIELD_500,
+              color: "white",
+              display: "grid",
+              placeItems: "center",
+              boxShadow: "0 8px 18px -8px rgba(45,212,191,0.8)",
+            }}
+          >
+            <Shield size={21} strokeWidth={2.4} />
+          </div>
+          <div>
+            <div className="font-mono-pro" style={{ fontSize: 10, letterSpacing: "0.14em", color: INK_MUTED, fontWeight: 700 }}>
+              {t("ACCOUNT & SESSION PRIVACY")}
+            </div>
+            <h3 className="font-display" style={{ color: INK, fontSize: 22, margin: "5px 0 6px", letterSpacing: "-0.02em" }}>
+              {t("One learner. One private account.")}
+            </h3>
+            <p style={{ color: INK_MUTED, fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+              {t("Every Scholify plan — including Beginner and Pro, monthly or annual — is licensed to one learner. You can switch devices, but only one login stays active. A new sign-in ends older sessions to protect your answers, mock results, study history and billing access.")}
+            </p>
+          </div>
+        </div>
+
         <p style={{ color: INK_MUTED, fontSize: 13, marginTop: 28 }}>
           {t("No charge today on Pro. Cancel during the 3-day trial and pay nothing.")}
         </p>
