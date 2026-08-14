@@ -48,6 +48,8 @@ import CharlesVoiceIntro from "@/components/CharlesVoiceIntro"
 import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
+import { CommissionTierLadder } from "@/components/partner/reward-progress"
+import { COMMISSION_TIERS } from "@/lib/partner-rewards"
 
 const SIGN_IN_PATH = signInPath(PRELAUNCH_MODE ? "/admin" : undefined)
 const SIGN_UP_PATH = signUpPath()
@@ -244,7 +246,7 @@ function Nav() {
             { label: t("Features"), href: "#features", onClick: () => scrollToSection("features") },
             { label: t("How it works"), href: "#how-it-works", onClick: () => scrollToSection("how-it-works") },
             { label: t("Pricing"), href: "/pricing", onClick: () => navigate("/pricing") },
-            { label: t("Partners"), href: "/partners/apply", onClick: () => navigate("/partners/apply") },
+            { label: t("Partners"), href: "#partners", onClick: () => scrollToSection("partners") },
           ]}
         />
       </div>
@@ -2212,6 +2214,175 @@ function Pricing() {
   )
 }
 
+/* ─────────────────────── PARTNER PROGRAMME ─────────────────────── */
+
+function PartnerProgramme() {
+  const navigate = useNavigate()
+  const t = useT()
+  const reduced = useReducedMotion()
+  const [demoPaid, setDemoPaid] = useState(300)
+
+  const trustRules = [
+    {
+      label: "90-DAY ATTRIBUTION",
+      title: "A return visit still belongs to you.",
+      body: "The first valid partner link is remembered in that browser for 90 days. After registration, the attribution is stored with the learner account.",
+      Icon: Target,
+      color: BRAND_500,
+      tint: BRAND_100,
+    },
+    {
+      label: "VERIFIED PAYMENTS",
+      title: "Trials and clicks are not fake sales.",
+      body: "Commission begins only when Stripe confirms a successful payment. Monthly renewals count inside the earned window; annual plans pay 27% once on the full annual charge.",
+      Icon: Check,
+      color: SHIELD_500,
+      tint: SHIELD_100,
+    },
+    {
+      label: "CLEAR VALIDATION",
+      title: "Every payable amount is traceable.",
+      body: "Each commission has a 30-day validation period. Refunds and chargebacks cancel it, while the dashboard shows the payment cycle and current status.",
+      Icon: Shield,
+      color: PLUM_500,
+      tint: PLUM_100,
+    },
+    {
+      label: "PROMOTION STUDIO",
+      title: "Campaign copy is ready to use.",
+      body: "Partners get disclosure-ready messages for study groups and LinkedIn, plus live clicks, registrations, unique paid learners and earnings progress.",
+      Icon: Share2,
+      color: FIRE_500,
+      tint: FIRE_100,
+    },
+  ] as const
+
+  return (
+    <section
+      aria-labelledby="partner-programme-heading"
+      style={{ padding: "calc(var(--section-y) * 1.05) var(--page-gutter)", overflow: "hidden" }}
+    >
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 34 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.12 }}
+        transition={{ duration: 0.75, ease: EASE_DECISIVE }}
+        style={{
+          position: "relative",
+          maxWidth: "var(--page-max)",
+          margin: "0 auto",
+          padding: "clamp(26px, 5vw, 68px)",
+          borderRadius: 34,
+          border: `1px solid ${HAIR}`,
+          background: "linear-gradient(145deg, rgba(255,255,255,.97), rgba(253,242,220,.55) 54%, rgba(251,231,228,.72))",
+          boxShadow: "0 34px 90px -58px rgba(20,20,26,.48)",
+        }}
+      >
+        <motion.div
+          aria-hidden
+          animate={reduced ? undefined : { x: [0, 28, 0], y: [0, -18, 0], scale: [1, 1.08, 1] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: "absolute", right: "-8%", top: "-14%", width: 300, height: 300, borderRadius: "50%", background: "rgba(244,164,5,.13)", filter: "blur(3px)", pointerEvents: "none" }}
+        />
+
+        <div className="relative grid items-start gap-10 lg:grid-cols-[minmax(0,.82fr)_minmax(420px,1.18fr)] lg:gap-16">
+          <div>
+            <SectionLabel>{t("PARTNER PROGRAMME")}</SectionLabel>
+            <h2
+              id="partner-programme-heading"
+              className="font-display text-pro-h"
+              style={{ margin: "18px 0 0", maxWidth: 650, color: INK, fontSize: "clamp(36px,5.3vw,68px)", lineHeight: 1.02, letterSpacing: "-.035em" }}
+            >
+              {t("Share the plan.")} <em style={{ fontWeight: 400 }}>{t("Grow the earning window.")}</em>
+            </h2>
+            <p style={{ margin: "22px 0 0", maxWidth: 590, color: INK_MUTED, fontSize: "clamp(16px,1.6vw,19px)", lineHeight: 1.65 }}>
+              {t("The rate stays simple at 27%. Performance unlocks more monthly payments for every new learner you bring: one at launch, three from learner 300, and five from learner 600.")}
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-2" aria-label={t("Preview commission tiers")}>
+              {COMMISSION_TIERS.map((tier) => {
+                const active = demoPaid === tier.paidCustomers
+                return (
+                  <motion.button
+                    key={tier.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setDemoPaid(tier.paidCustomers)}
+                    whileHover={reduced ? undefined : { y: -2 }}
+                    whileTap={reduced ? undefined : { scale: 0.97 }}
+                    style={{
+                      border: active ? `1px solid ${INK}` : `1px solid ${HAIR}`,
+                      background: active ? INK : "rgba(255,255,255,.76)",
+                      color: active ? "#fff" : INK,
+                      borderRadius: 999,
+                      padding: "10px 14px",
+                      cursor: "pointer",
+                      fontSize: 12.5,
+                      fontWeight: 800,
+                      boxShadow: active ? "0 10px 24px -15px rgba(20,20,26,.7)" : "none",
+                    }}
+                  >
+                    {t(tier.name)} · {tier.paidCustomers === 0 ? t("Start") : `${tier.paidCustomers}+`} · {tier.monthlyPayments}×
+                  </motion.button>
+                )
+              })}
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <PrimaryCTA onClick={() => navigate("/partners/apply")}>
+                {t("Explore the partner programme")} <ArrowRight size={18} strokeWidth={2.4} />
+              </PrimaryCTA>
+              <span style={{ color: INK_MUTED, fontSize: 12.5, lineHeight: 1.5 }}>
+                {t("Free to apply · First valid partner wins · Self-referrals excluded")}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: "relative",
+              borderRadius: 26,
+              border: `1px solid ${HAIR}`,
+              background: "rgba(255,255,255,.84)",
+              padding: "clamp(20px,3vw,30px)",
+              boxShadow: "0 22px 60px -42px rgba(20,20,26,.6)",
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <CommissionTierLadder paidCustomers={demoPaid} />
+            <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${HAIR}`, display: "grid", gap: 9 }}>
+              <div className="font-mono-pro" style={{ color: BRAND_500, fontSize: 10, letterSpacing: ".14em", fontWeight: 800 }}>{t("HOW THE MILESTONE WORKS")}</div>
+              <p style={{ margin: 0, color: INK_MUTED, fontSize: 13.5, lineHeight: 1.62 }}>
+                {t("The 300th learner starts a three-payment window; the 600th starts a five-payment window. The upgrade applies prospectively, so earlier referrals keep the window recorded when they first paid.")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {trustRules.map(({ label, title, body, Icon, color, tint }, index) => (
+            <motion.article
+              key={label}
+              initial={reduced ? false : { opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.45 }}
+              transition={{ duration: 0.52, delay: index * 0.07, ease: EASE_DECISIVE }}
+              style={{ borderRadius: 20, border: `1px solid ${HAIR}`, background: "rgba(255,255,255,.72)", padding: 20 }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 13, display: "grid", placeItems: "center", color, background: tint }}>
+                <Icon size={19} strokeWidth={2.3} />
+              </div>
+              <div className="font-mono-pro" style={{ marginTop: 16, color, fontSize: 9.5, letterSpacing: ".13em", fontWeight: 800 }}>{t(label)}</div>
+              <h3 style={{ margin: "7px 0 0", color: INK, fontSize: 16, lineHeight: 1.3, letterSpacing: "-.015em" }}>{t(title)}</h3>
+              <p style={{ margin: "9px 0 0", color: INK_MUTED, fontSize: 12.5, lineHeight: 1.62 }}>{t(body)}</p>
+            </motion.article>
+          ))}
+        </div>
+      </motion.div>
+    </section>
+  )
+}
+
 /* ─────────────────────── FINAL CTA ─────────────────────── */
 
 function FinalCTA() {
@@ -2337,6 +2508,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
+      <LazyOnView id="partners" style={{ minHeight: 940 }}><PartnerProgramme /></LazyOnView>
       <LazyOnView style={{ minHeight: 760 }}><MobileAppsTeaser /></LazyOnView>
       <PaymentMethods style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter) 8px", maxWidth: "var(--page-max)", margin: "0 auto" }} />
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>

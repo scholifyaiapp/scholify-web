@@ -233,7 +233,7 @@ export function CinematicFooter({
                   href="/partners/apply"
                   className="footer-glass-pill px-5 py-2.5 rounded-full text-foreground font-semibold text-xs md:text-sm border-border"
                 >
-                  {t("Partner programme — earn 27%")}
+                  {t("Partner programme — earn 27% for up to 5 payments")}
                 </MagneticButton>
                 {FOOTER_COMPANY_LINKS.map((link) => (
                   <MagneticButton

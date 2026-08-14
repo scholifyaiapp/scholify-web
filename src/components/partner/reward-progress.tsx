@@ -10,8 +10,8 @@ import {
 
 /* ──────────────────────────────────────────────────────────────
  *  Partner reward-progress visuals. Used twice, deliberately:
- *  the worked example on /partners/apply and a real partner's own
- *  numbers on /partners. Same components, same maths — a partner
+ *  the landing-page preview, the worked example on /partners/apply and a real
+ *  partner's own numbers on /partners. Same components, same maths — a partner
  *  should recognise the dashboard from the offer page.
  * ────────────────────────────────────────────────────────────── */
 
@@ -47,7 +47,7 @@ function money(value: number): string {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
 }
 
-/** The public promise and the private dashboard use the same animated ladder.
+/** Every public promise and the private dashboard use the same animated ladder.
  * That makes the threshold, current status and next benefit visually identical
  * before and after a promoter applies. */
 export function CommissionTierLadder({ paidCustomers }: { paidCustomers: number }) {

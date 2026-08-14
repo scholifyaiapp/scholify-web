@@ -1265,7 +1265,7 @@ const MISSION_LINES = [
     lead: false,
   },
   {
-    text: "So Scholify teaches the whole qualification for less per month than a single hour with a tutor, and pays you 27% of every plan bought through your link — so the fees nobody can discount are covered by your own work rather than by someone else's.",
+    text: "So Scholify teaches the whole qualification for less per month than a single hour with a tutor, and pays partners 27% across up to five verified monthly payments as their results grow — so the fees nobody can discount can be covered by their own work.",
     lead: false,
   },
   {
@@ -1550,12 +1550,12 @@ const REASONS: Reason[] = [
     label: "EARN WHILE YOU STUDY",
     title: "Fund your own fees — and help someone else pass.",
     body:
-      "Registration, subscription and exam entry are real money, due whether or not you have it. So Scholify pays students to bring students: 27% of every plan bought through your link.",
+      "Registration, subscription and exam entry are real money. Scholify pays students to bring students: 27% of verified payments, with longer earning windows unlocked by performance.",
     accent: FIRE_500,
     Icon: HandHeart,
     proof: [
-      "27% commission, tracked end to end and paid on time",
-      "A handful of classmates covers an exam entry",
+      "27% commission across 1, 3 or 5 monthly payments",
+      "90-day attribution and a live partner dashboard",
     ],
   },
 ]
