@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
 import { sendPurchaseEmail, sendReceiptEmail } from "./purchase-email.js"
+import { commissionTierForPaidCustomers } from "../src/lib/partner-rewards.js"
 
 /*
  * Stripe Billing — single Vercel function dispatched by `?action=` (12-function
@@ -107,7 +108,7 @@ export async function claimEvent(supa: NonNullable<ReturnType<typeof admin>>, ev
  * transient failure (a Supabase blip mid-write) would leave the event id claimed,
  * every retry would short-circuit as a duplicate, and a paying customer would
  * never be granted their plan. Every downstream write is idempotent
- * (recordCommission has a unique stripe_session_id; writeEntitlement merges), so
+ * (paid-invoice commissions have a unique stripe_invoice_id; writeEntitlement merges), so
  * re-processing on retry is safe.
  */
 export async function releaseEvent(supa: NonNullable<ReturnType<typeof admin>>, eventId: string): Promise<void> {
@@ -220,8 +221,7 @@ export function commissionAmount(saleAmount: number, rate = 0.27): number {
  *
  * ── Why this reads the DATABASE and not only the request ─────────
  * The client sends the code it captured from `?aff=CODE` in localStorage. That
- * used to be the ONLY source, and it silently lost every commission the
- * programme was supposed to pay:
+ * used to be the ONLY source, and it silently lost commissions after signup:
  *
  *   1. a visitor arrives on `?aff=CODE` — the code goes into localStorage;
  *   2. they sign up — `claimCapturedAffiliate()` records the attribution in
@@ -230,95 +230,205 @@ export function commissionAmount(saleAmount: number, rate = 0.27): number {
  *      the checkout session carries no `affiliate_id`, and `recordCommission`
  *      returns immediately.
  *
- * Because checkout requires a signed-in user, step 2 ALWAYS happens before step
- * 3, so there was no path in which a commission was ever recorded. Partners saw
- * their invited-user count rise and their earnings stay at zero.
- *
- * `affiliate_referrals` already holds the durable attribution written at signup,
- * so it is the right source of truth here: it survives a cleared localStorage, a
- * different browser, a different device, and the months between a free signup and
- * a paid upgrade. The request code is still honoured first — it covers the case
- * of a visitor who arrives on a partner link and buys in the same session before
- * any referral row exists — and the database is the fallback.
+ * `affiliate_referrals` is now first-touch authority: it survives cleared local
+ * storage, another device and a long delay before purchase. If no row exists,
+ * checkout claims the valid request code for existing accounts too. A later
+ * partner link cannot overwrite an attribution the database already accepted.
  */
 export async function resolveAffiliateMetadata(
   supa: NonNullable<ReturnType<typeof admin>>,
   userId: string,
   rawCode: unknown,
 ): Promise<Record<string, string>> {
-  const code = String(rawCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20)
-  if (code) {
-    const { data: aff } = await supa
-      .from("affiliates")
-      .select("id, code")
-      .eq("code", code)
-      .eq("status", "active")
-      .maybeSingle()
-    if (aff) return { affiliate_id: aff.id, affiliate_code: aff.code }
-  }
-
-  // Fall back to the attribution recorded when this user signed up.
-  const { data: referral } = await supa
+  // First valid partner wins. A later link must not replace attribution already
+  // attached to the learner's account.
+  const { data: existingReferral } = await supa
     .from("affiliate_referrals")
     .select("affiliate_id")
     .eq("referred_user_id", userId)
     .maybeSingle()
-  if (!referral?.affiliate_id) return {}
+  if (existingReferral?.affiliate_id) {
+    const { data: existingAffiliate } = await supa
+      .from("affiliates")
+      .select("id, code, status")
+      .eq("id", existingReferral.affiliate_id)
+      .maybeSingle()
+    return existingAffiliate?.status === "active"
+      ? { affiliate_id: existingAffiliate.id, affiliate_code: existingAffiliate.code }
+      : {}
+  }
 
-  // Only an ACTIVE partner earns — a revoked one keeps the referral row but not
-  // the commission, which is the same rule recordCommission applies.
-  const { data: aff } = await supa
-    .from("affiliates")
-    .select("id, code, status")
-    .eq("id", referral.affiliate_id)
-    .maybeSingle()
-  if (!aff || aff.status !== "active") return {}
-  return { affiliate_id: aff.id, affiliate_code: aff.code }
+  const code = String(rawCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20)
+  if (code) {
+    const { data: aff } = await supa
+      .from("affiliates")
+      .select("id, code, user_id")
+      .eq("code", code)
+      .eq("status", "active")
+      .maybeSingle()
+    if (!aff || aff.user_id === userId) return {}
+    const { error } = await supa.from("affiliate_referrals").insert({
+      affiliate_id: aff.id,
+      referred_user_id: userId,
+    })
+    if (!error) return { affiliate_id: aff.id, affiliate_code: aff.code }
+    if (error.code !== "23505") return {}
+
+    // Signup and checkout can race. Re-read the unique row and honour whichever
+    // first-touch attribution the database accepted.
+    const { data: winner } = await supa
+      .from("affiliate_referrals")
+      .select("affiliate_id")
+      .eq("referred_user_id", userId)
+      .maybeSingle()
+    if (!winner?.affiliate_id) return {}
+    const { data: winnerAffiliate } = await supa
+      .from("affiliates")
+      .select("id, code, status")
+      .eq("id", winner.affiliate_id)
+      .maybeSingle()
+    return winnerAffiliate?.status === "active"
+      ? { affiliate_id: winnerAffiliate.id, affiliate_code: winnerAffiliate.code }
+      : {}
+  }
+
+  return {}
 }
 
 /**
- * Record a 27% (or the affiliate's own rate) commission for a completed
- * checkout, if the session was attributed to an affiliate. Idempotent via the
- * unique `stripe_session_id`. Best-effort — the caller swallows any error so a
- * commission failure can never block the buyer's entitlement.
+ * Only subscription creation and regular billing-cycle invoices can consume a
+ * partner earning-window payment. Upgrades and manual invoices are excluded so
+ * one calendar month cannot masquerade as several commission cycles.
  */
-async function recordCommission(
-  supa: NonNullable<ReturnType<typeof admin>>,
-  session: Stripe.Checkout.Session,
-): Promise<void> {
-  const affiliateId = session.metadata?.affiliate_id
-  const saleAmount = session.amount_total ?? 0
-  if (!affiliateId || saleAmount <= 0) return
+export function isCommissionableInvoice(amountPaid: number, billingReason: string | null | undefined): boolean {
+  return Number.isSafeInteger(amountPaid) && amountPaid > 0 &&
+    (billingReason === "subscription_create" || billingReason === "subscription_cycle")
+}
 
-  // Use the affiliate's own rate (defaults to 27%); confirm they're still active.
-  const { data: aff } = await supa
+function stripeObjectId(value: unknown): string | null {
+  if (typeof value === "string") return value
+  if (value && typeof value === "object" && "id" in value && typeof (value as { id?: unknown }).id === "string") {
+    return (value as { id: string }).id
+  }
+  return null
+}
+
+/** Stripe moved the subscription reference under parent.subscription_details
+ * in newer Invoice shapes. Supporting both keeps webhook handling stable across
+ * the account API version and the SDK's compile-time version. */
+export function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const shape = invoice as unknown as {
+    subscription?: unknown
+    parent?: { subscription_details?: { subscription?: unknown } } | null
+  }
+  return stripeObjectId(shape.subscription) ?? stripeObjectId(shape.parent?.subscription_details?.subscription)
+}
+
+/** Record commission only when money actually moves. This is the critical
+ * difference for monthly Pro: Checkout creates a zero-value trial invoice, then
+ * invoice.paid arrives after the three-day trial with the first real charge. */
+export async function recordPaidInvoiceCommission(
+  supa: NonNullable<ReturnType<typeof admin>>,
+  stripe: Stripe,
+  invoice: Stripe.Invoice,
+): Promise<void> {
+  if (!isCommissionableInvoice(invoice.amount_paid, invoice.billing_reason)) return
+  const subscriptionId = invoiceSubscriptionId(invoice)
+  if (!subscriptionId) return
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const affiliateId = subscription.metadata?.affiliate_id
+  const userId = subscription.metadata?.userId
+  if (!affiliateId || !userId) return
+
+  const customerId = stripeObjectId(invoice.customer) ?? stripeObjectId(subscription.customer)
+  if (!customerId) return
+  const price = subscription.items.data[0]?.price
+  const interval = price?.recurring?.interval
+  const plan = planForPrice(price?.id)
+
+  const { data: affiliate } = await supa
     .from("affiliates")
     .select("commission_rate, status")
     .eq("id", affiliateId)
     .maybeSingle()
-  if (!aff || aff.status !== "active") return
+  if (!affiliate || affiliate.status !== "active") return
 
-  const rate = typeof aff.commission_rate === "number" ? aff.commission_rate : 0.27
-  const commission = commissionAmount(saleAmount, rate)
-  const availableAfter = new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5).toISOString()
+  let { data: referral } = await supa
+    .from("affiliate_referrals")
+    .select("id, first_paid_at, commission_cycles, stripe_customer_id")
+    .eq("affiliate_id", affiliateId)
+    .eq("referred_user_id", userId)
+    .maybeSingle()
+  if (!referral) {
+    const { error } = await supa.from("affiliate_referrals").insert({
+      affiliate_id: affiliateId,
+      referred_user_id: userId,
+    })
+    if (error && error.code !== "23505") return
+    const reread = await supa
+      .from("affiliate_referrals")
+      .select("id, first_paid_at, commission_cycles, stripe_customer_id")
+      .eq("affiliate_id", affiliateId)
+      .eq("referred_user_id", userId)
+      .maybeSingle()
+    referral = reread.data
+  }
+  if (!referral) return
 
-  const paymentIntent =
-    typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null
-  const customerId =
-    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null
+  let commissionCycles = Number(referral.commission_cycles || 1) as 1 | 3 | 5
+  if (!referral.first_paid_at) {
+    const { count: alreadyPaid } = await supa
+      .from("affiliate_referrals")
+      .select("id", { count: "exact", head: true })
+      .eq("affiliate_id", affiliateId)
+      .not("first_paid_at", "is", null)
+    commissionCycles = interval === "year"
+      ? 1
+      : commissionTierForPaidCustomers((alreadyPaid ?? 0) + 1).monthlyPayments
+    const { error: referralUpdateError } = await supa
+      .from("affiliate_referrals")
+      .update({
+        first_paid_at: new Date(invoice.status_transitions?.paid_at ? invoice.status_transitions.paid_at * 1000 : Date.now()).toISOString(),
+        stripe_customer_id: customerId,
+        commission_cycles: commissionCycles,
+      })
+      .eq("id", referral.id)
+    if (referralUpdateError) throw new Error(`affiliate referral tier lock failed: ${referralUpdateError.message}`)
+  } else if (!referral.stripe_customer_id) {
+    const { error: customerLinkError } = await supa.from("affiliate_referrals").update({ stripe_customer_id: customerId }).eq("id", referral.id)
+    if (customerLinkError) throw new Error(`affiliate customer link failed: ${customerLinkError.message}`)
+  }
 
-  // Unique stripe_session_id makes this a no-op if the webhook is redelivered.
-  await supa.from("affiliate_commissions").insert({
+  const { count: previousCycles } = await supa
+    .from("affiliate_commissions")
+    .select("id", { count: "exact", head: true })
+    .eq("affiliate_id", affiliateId)
+    .eq("stripe_customer_id", customerId)
+  const billingCycle = (previousCycles ?? 0) + 1
+  if (interval === "year" ? billingCycle > 1 : billingCycle > commissionCycles) return
+
+  const numericRate = Number(affiliate.commission_rate)
+  const rate = Number.isFinite(numericRate) ? numericRate : 0.27
+  const commission = commissionAmount(invoice.amount_paid, rate)
+  if (commission <= 0) return
+  const paymentIntent = stripeObjectId((invoice as unknown as { payment_intent?: unknown }).payment_intent)
+  const { error: commissionError } = await supa.from("affiliate_commissions").insert({
     affiliate_id: affiliateId,
-    stripe_session_id: session.id,
+    stripe_invoice_id: invoice.id,
     stripe_payment_intent: paymentIntent,
     stripe_customer_id: customerId,
-    currency: session.currency ?? "usd",
-    sale_amount: saleAmount,
+    currency: invoice.currency ?? "usd",
+    sale_amount: invoice.amount_paid,
     commission_amount: commission,
     status: "pending",
-    available_after: availableAfter,
+    available_after: new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5).toISOString(),
+    billing_cycle: billingCycle,
+    commission_cycles: commissionCycles,
+    plan,
   })
+  if (commissionError && commissionError.code !== "23505") {
+    throw new Error(`affiliate commission insert failed: ${commissionError.message}`)
+  }
 }
 
 /**
@@ -814,8 +924,6 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           }).catch((e) => console.error("purchase email:", e))
         }
       }
-      // Affiliate commission — best-effort side effect, never blocks entitlement.
-      await recordCommission(supa, session).catch((e) => console.error("affiliate commission:", e))
     } else if (event.type === "invoice.paid") {
       /*
        * THE RECEIPT. Stripe's own "Successful payments" email is a dashboard
@@ -830,6 +938,9 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
        * checkout event never sees.
        */
       const invoice = event.data.object as Stripe.Invoice
+      // Commissions follow actual paid invoices. This covers immediate plans
+      // and the first real monthly Pro charge after its zero-value trial.
+      await recordPaidInvoiceCommission(supa, stripe, invoice)
       // A £0 invoice is the start of a trial, not a payment. Sending a receipt
       // for nothing is worse than sending none.
       if (invoice.amount_paid > 0) {

@@ -6,13 +6,20 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
  * A partner shares `scholifyapp.com/?aff=CODE`. We capture the code, ping the
  * public resolve endpoint for click tracking, and stash it so the next Stripe
  * checkout carries it (see src/lib/stripe.ts → api/stripe.ts metadata). The
- * server records a fixed 27% commission on the completed purchase.
+ * server records 27% across the partner's earned 1/3/5-payment window.
  *
  * Applications go through /api/affiliate?action=apply (creates a PENDING row
  * you approve in Supabase). The dashboard reads the partner's own rows via RLS.
  */
 
 const AFF_KEY = "scholify-affiliate-code"
+export const AFFILIATE_ATTRIBUTION_DAYS = 90
+const AFFILIATE_ATTRIBUTION_MS = AFFILIATE_ATTRIBUTION_DAYS * 86_400_000
+
+interface CapturedAffiliate {
+  code: string
+  capturedAt: number
+}
 
 function cleanCode(input: string): string {
   return String(input || "")
@@ -21,14 +28,17 @@ function cleanCode(input: string): string {
     .slice(0, 20)
 }
 
-/** Read ?aff= (or a partner ?ref=) from the URL, remember it, count the click. */
+/** Read ?aff= from the URL, count the visit, and preserve the first valid touch
+ * for 90 days. A later link must not silently steal an earlier partner's lead. */
 export function captureAffiliateRef(): void {
   try {
     const params = new URLSearchParams(window.location.search)
     const raw = params.get("aff") || ""
     const code = cleanCode(raw)
     if (!code) return
-    window.localStorage.setItem(AFF_KEY, code)
+    if (!getCapturedAffiliate()) {
+      window.localStorage.setItem(AFF_KEY, JSON.stringify({ code, capturedAt: Date.now() } satisfies CapturedAffiliate))
+    }
     // Best-effort click tracking — only counts if it's an ACTIVE affiliate.
     void fetch("/api/affiliate?action=resolve", {
       method: "POST",
@@ -42,7 +52,24 @@ export function captureAffiliateRef(): void {
 
 export function getCapturedAffiliate(): string | null {
   try {
-    return window.localStorage.getItem(AFF_KEY)
+    const raw = window.localStorage.getItem(AFF_KEY)
+    if (!raw) return null
+    // Referrals captured before the timestamped policy shipped are migrated in
+    // place instead of being erased and costing the partner a valid lead.
+    if (!raw.trim().startsWith("{")) {
+      const legacyCode = cleanCode(raw)
+      if (!legacyCode) return null
+      window.localStorage.setItem(AFF_KEY, JSON.stringify({ code: legacyCode, capturedAt: Date.now() } satisfies CapturedAffiliate))
+      return legacyCode
+    }
+    const parsed = JSON.parse(raw) as Partial<CapturedAffiliate>
+    const code = cleanCode(parsed.code ?? "")
+    const capturedAt = Number(parsed.capturedAt)
+    if (!code || !Number.isFinite(capturedAt) || Date.now() - capturedAt > AFFILIATE_ATTRIBUTION_MS) {
+      window.localStorage.removeItem(AFF_KEY)
+      return null
+    }
+    return code
   } catch {
     return null
   }
@@ -119,6 +146,9 @@ export interface CommissionRow {
   available_after: string
   created_at: string
   payout_reference?: string | null
+  billing_cycle?: number | null
+  commission_cycles?: number | null
+  plan?: string | null
 }
 
 export interface AffiliateDashboard {
@@ -350,12 +380,16 @@ export async function markAffiliateDuePaid(id: string, reference: string): Promi
 }
 
 /** Cents → "$12.34" for display. */
+export function dollarsFromCents(cents: number): number {
+  return Number.isFinite(cents) ? cents / 100 : 0
+}
+
 export function formatMoney(cents: number, currency = "usd"): string {
   try {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(
-      cents / 100,
+      dollarsFromCents(cents),
     )
   } catch {
-    return `$${(cents / 100).toFixed(2)}`
+    return `$${dollarsFromCents(cents).toFixed(2)}`
   }
 }

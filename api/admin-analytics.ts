@@ -111,7 +111,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           invitedUsers,
           paidInvitedUsers,
           conversionRate: invitedUsers ? Math.round((paidInvitedUsers / invitedUsers) * 1000) / 10 : 0,
-          sales: validRows.length,
+          // A renewal is commissionable revenue, not another acquired customer.
+          // Keep "Sales" aligned with the performance tiers: unique paid people.
+          sales: paidInvitedUsers,
           revenue: validRows.reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
           commission: validRows.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0),
           dueCommission: rows
@@ -177,7 +179,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         partnerClicks: partnerRows.reduce((sum, partner) => sum + Number(partner.clicks || 0), 0),
         partnerInvitedUsers: partnerReferrals.length,
         partnerPaidInvitedUsers: partnerRows.reduce((sum, partner) => sum + partner.paidInvitedUsers, 0),
-        partnerSales: commissions.filter((row) => row.status !== "canceled").length,
+        partnerSales: partnerRows.reduce((sum, partner) => sum + partner.paidInvitedUsers, 0),
         revenue: commissions.filter((row) => row.status !== "canceled").reduce((sum, row) => sum + Number(row.sale_amount || 0), 0),
         feedback: feedback.length,
         newFeedback: feedback.filter((row) => row.status === "new").length,

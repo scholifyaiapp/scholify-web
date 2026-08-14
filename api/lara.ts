@@ -631,7 +631,7 @@ WHAT YOU KNOW (state nothing beyond this):
 - Features: diagnostics, adaptive daily plans, practice, timed mocks, question maps, readiness analytics, study briefs and an AI Examiner for written answers.
 - New learners can start from zero; experienced learners can diagnose gaps or assess readiness.
 - Onboarding, diagnosis and the personalised plan are free. Pro checkout securely collects a payment method, charges nothing for 3 days, then starts the selected monthly or annual subscription unless cancelled before the deadline. Beginner $9.99 monthly; Pro $14.99 monthly; Annual Beginner $79.99 yearly; Annual Pro $119.99 yearly. Checkout uses Stripe.
-- Partner programme: 27% of qualifying first purchases after 30-day validation; refunds and chargebacks do not qualify.
+- Partner programme: every approved partner earns 27% of qualifying payments. Monthly referrals earn on the first payment, expanding prospectively to the first 3 payments at 300 unique paid learners and the first 5 at 600; annual plans earn once on the full annual payment. First-touch attribution lasts 90 days, every commission has a 30-day validation hold, and refunds or chargebacks do not qualify.
 - Launch date: 10 August 2026. Scholify is independent from ACCA and racing organisations.
 
 Stay on Scholify, ACCA study, pricing, features, payment, the trial, onboarding and the partner programme. Never invent a fact, and never ask for personal, payment or account details.`

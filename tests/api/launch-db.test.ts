@@ -96,7 +96,10 @@ describe("every listed migration is safe to re-run", () => {
       // Strip line comments so prose about an `update` is not mistaken for one.
       const code = sql.replace(/--[^\n]*/g, "")
       const guardedRegions = [...code.matchAll(/do\s*\$\$[\s\S]*?end\s*\$\$/gi)].map((m) => m[0])
-      const unguarded = guardedRegions.reduce((acc, region) => acc.replace(region, ""), code)
+      // DML inside a stored function is its runtime body, not a data migration
+      // executed while this SQL file is applied. Remove those definitions too.
+      const functionRegions = [...code.matchAll(/create\s+or\s+replace\s+function[\s\S]*?\bas\s*\$\$[\s\S]*?\$\$\s*;/gi)].map((m) => m[0])
+      const unguarded = [...guardedRegions, ...functionRegions].reduce((acc, region) => acc.replace(region, ""), code)
       const dataStatements = [...unguarded.matchAll(/\b(update|delete\s+from|insert\s+into)\s+public\./gi)]
 
       for (const statement of dataStatements) {
@@ -198,6 +201,22 @@ describe("0030 — individual-account session enforcement", () => {
 
   it("is applied and verified by the production migration runner", () => {
     expect(listed).toContain("0030_individual_account_sessions.sql")
-    expect(RUNNER).toMatch(/REQUIRED_FUNCTIONS = \["is_current_auth_session_valid"\]/)
+    expect(RUNNER).toMatch(/REQUIRED_FUNCTIONS = \[[^\]]*"is_current_auth_session_valid"[^\]]*\]/)
+  })
+})
+
+describe("0031 — performance partner commissions", () => {
+  const sql = sqlOf("0031_partner_commission_tiers.sql")
+
+  it("persists the referral window and one idempotency key per Stripe invoice", () => {
+    expect(sql).toMatch(/affiliate_referrals[\s\S]*commission_cycles/i)
+    expect(sql).toMatch(/affiliate_commissions[\s\S]*stripe_invoice_id/i)
+    expect(sql).toMatch(/unique index[\s\S]*stripe_invoice_id/i)
+  })
+
+  it("installs and verifies atomic click tracking", () => {
+    expect(sql).toMatch(/create or replace function public\.increment_affiliate_click/i)
+    expect(listed).toContain("0031_partner_commission_tiers.sql")
+    expect(RUNNER).toMatch(/REQUIRED_FUNCTIONS = \[[^\]]*"increment_affiliate_click"[^\]]*\]/)
   })
 })

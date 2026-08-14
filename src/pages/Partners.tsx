@@ -6,15 +6,17 @@ import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
-import { fetchAffiliateDashboard, formatMoney, type AffiliateDashboard } from "@/lib/affiliate"
+import { dollarsFromCents, fetchAffiliateDashboard, formatMoney, type AffiliateDashboard } from "@/lib/affiliate"
 import {
   classifySaleAmount,
+  commissionTierForPaidCustomers,
   REWARD_TIERS,
   rewardProgress,
   round2,
   type EarningsBreakdown,
 } from "@/lib/partner-rewards"
 import {
+  CommissionTierLadder,
   EarningsRows,
   RemainingToReward,
   RewardRing,
@@ -121,13 +123,24 @@ function SectionTitle({ children, note }: { children: ReactNode; note?: string }
 export default function Partners() {
   const reduced = useReducedMotion()
   const [data, setData] = useState<AffiliateDashboard | null>(null)
-  const [copied, setCopied] = useState<"link" | "code" | null>(null)
+  const [copied, setCopied] = useState<"link" | "code" | "community" | "linkedin" | null>(null)
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
 
   useEffect(() => {
     let alive = true
-    void fetchAffiliateDashboard().then((d) => alive && setData(d))
+    const load = () => void fetchAffiliateDashboard().then((d) => {
+      if (!alive) return
+      setData(d)
+      setUpdatedAt(new Date())
+    })
+    load()
+    const timer = window.setInterval(load, 30_000)
+    const onVisible = () => document.visibilityState === "visible" && load()
+    document.addEventListener("visibilitychange", onVisible)
     return () => {
       alive = false
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", onVisible)
     }
   }, [])
 
@@ -149,14 +162,26 @@ export default function Partners() {
       other: { count: 0, revenue: 0, commission: 0 },
     }
     let lifetime = 0
+    const acquired = { beginner: 0, pro: 0, other: 0 }
     for (const row of rows) {
-      lifetime += row.commission_amount
-      const slot = bucket[classifySaleAmount(row.sale_amount)]
+      // The API and database use integer cents; the shared earnings visuals use
+      // dollar values. Convert exactly once at this boundary so $4.05 never
+      // appears as $405 in summaries while history shows the correct amount.
+      lifetime += dollarsFromCents(row.commission_amount)
+      const classified = row.plan === "pro" || row.plan === "annual_pro"
+        ? "pro"
+        : row.plan === "beginner"
+          ? "beginner"
+          : classifySaleAmount(row.sale_amount)
+      const slot = bucket[classified]
       slot.count += 1
-      slot.revenue += row.sale_amount
-      slot.commission += row.commission_amount
+      slot.revenue += dollarsFromCents(row.sale_amount)
+      slot.commission += dollarsFromCents(row.commission_amount)
+      // Legacy rows predate billing_cycle and were all first purchases. Renewal
+      // payments earn money but must not inflate unique-customer race rewards.
+      if (row.billing_cycle == null || row.billing_cycle === 1) acquired[classified] += 1
     }
-    const counted = rows.length
+    const counted = acquired.beginner + acquired.pro + acquired.other
     /*
      * Per-sale figures here are the partner's OWN average, not the published
      * $2.70/$4.05 — an annual plan pays a different amount on the same tier, so
@@ -179,10 +204,11 @@ export default function Partners() {
       perProSale: bucket.pro.count ? round2(bucket.pro.commission / bucket.pro.count) : 0,
     }
     return {
-      beginner: bucket.beginner.count,
-      pro: bucket.pro.count,
-      other: bucket.other.count,
+      beginner: acquired.beginner,
+      pro: acquired.pro,
+      other: acquired.other,
       counted,
+      payments: rows.length,
       lifetime: round2(lifetime),
       earnings,
       capped: counted >= COMMISSION_PAGE_LIMIT,
@@ -195,8 +221,21 @@ export default function Partners() {
   const clicks = aff?.clicks ?? 0
   const invited = data?.totals.invitedUsers ?? 0
   const paidInvited = data?.totals.paidInvitedUsers ?? 0
+  const performanceTier = commissionTierForPaidCustomers(paidInvited)
+  const promoPosts = useMemo(() => [
+    {
+      id: "community" as const,
+      label: "Study group / community",
+      text: `I use Scholify to diagnose ACCA gaps, build a daily plan and practise with exam-style questions. You can explore it here: ${link}\n\nPartner link — I may earn commission if you subscribe.`,
+    },
+    {
+      id: "linkedin" as const,
+      label: "LinkedIn",
+      text: `ACCA preparation works better when the plan adapts to the learner, not the other way around. Scholify combines diagnostics, daily planning, timed mocks and AI marking across all 15 papers. Explore it here: ${link}\n\nDisclosure: this is my Scholify partner link and I may earn commission from qualifying subscriptions.`,
+    },
+  ], [link])
 
-  const copy = (text: string, which: "link" | "code") => {
+  const copy = (text: string, which: "link" | "code" | "community" | "linkedin") => {
     void navigator.clipboard?.writeText(text).then(() => {
       setCopied(which)
       setTimeout(() => setCopied(null), 1600)
@@ -217,9 +256,12 @@ export default function Partners() {
       </div>
 
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 24px 96px" }}>
-        <h1 style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sch-text)", margin: "24px 0 20px" }}>
-          Partner dashboard
-        </h1>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "24px 0 20px" }}>
+          <h1 style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sch-text)", margin: 0 }}>
+            Partner dashboard
+          </h1>
+          {updatedAt && <span style={{ fontSize: 11.5, color: "var(--sch-tx-2)" }}>Live · refreshed {updatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
+        </div>
 
         {/* Loading — shaped like the real thing, so the page does not reflow. */}
         {!data && (
@@ -292,7 +334,53 @@ export default function Partners() {
                   {aff.code}
                 </button>
                 {copied === "code" && <span style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>Copied ✓</span>}
-                <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--sch-tx-2)" }}>{(aff.commission_rate * 100).toFixed(0)}% commission</span>
+                <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--sch-tx-2)" }}>
+                  {(aff.commission_rate * 100).toFixed(0)}% · {performanceTier.monthlyPayments} paid {performanceTier.monthlyPayments === 1 ? "month" : "months"}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ ...card, position: "relative", overflow: "hidden" }}>
+              <motion.div
+                aria-hidden
+                animate={reduced ? undefined : { x: ["-140%", "220%"] }}
+                transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 4.5, ease: "easeInOut" }}
+                style={{ position: "absolute", inset: 0, width: "35%", background: "linear-gradient(105deg,transparent,rgba(244,164,5,.12),transparent)", pointerEvents: "none" }}
+              />
+              <div style={{ position: "relative" }}>
+                <SectionTitle note="Unique paid learners, not clicks">Performance commission</SectionTitle>
+                <CommissionTierLadder paidCustomers={paidInvited} />
+              </div>
+            </div>
+
+            <div style={card}>
+              <SectionTitle note="Disclosure included">Promotion studio</SectionTitle>
+              <p style={{ margin: "0 0 14px", color: "var(--sch-tx-2)", fontSize: 13, lineHeight: 1.55 }}>
+                Start with accurate, ready-to-post copy. Personalise it with your real experience, keep the partner disclosure, and never promise an exam pass.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 12 }}>
+                {promoPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={reduced ? false : { opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.4, delay: index * 0.08, ease: EASE }}
+                    style={{ padding: 15, borderRadius: 14, background: "var(--sch-bg)", border: "1px solid var(--sch-border)", display: "grid", gap: 11 }}
+                  >
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--sch-text)" }}>{post.label}</div>
+                    <div style={{ fontSize: 12, lineHeight: 1.55, color: "var(--sch-tx-2)", whiteSpace: "pre-line" }}>{post.text}</div>
+                    <motion.button
+                      type="button"
+                      whileHover={reduced ? undefined : { y: -2 }}
+                      whileTap={reduced ? undefined : { scale: .98 }}
+                      onClick={() => copy(post.text, post.id)}
+                      style={{ justifySelf: "start", border: 0, borderRadius: 10, padding: "9px 13px", background: copied === post.id ? "rgba(30,125,80,.12)" : IRIDESCENT, color: copied === post.id ? "#1E7D50" : "#fff", fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}
+                    >
+                      {copied === post.id ? "Copied ✓" : "Copy ready-to-post text"}
+                    </motion.button>
+                  </motion.div>
+                ))}
               </div>
             </div>
 
@@ -342,7 +430,7 @@ export default function Partners() {
                   suffix="%"
                   hint="Paid ÷ invited"
                 />
-                <Stat reduced={reduced} label="Qualifying sales" value={derived.counted} hint={derived.other ? `${derived.other} on other plans` : undefined} />
+                <Stat reduced={reduced} label="Unique paid learners" value={paidInvited} hint="The number that unlocks commission tiers" />
                 <Stat
                   reduced={reduced}
                   label="Earnings per click"
@@ -352,12 +440,12 @@ export default function Partners() {
                 />
                 <Stat
                   reduced={reduced}
-                  label="Average per sale"
-                  value={derived.counted ? derived.lifetime / derived.counted : 0}
+                  label="Average per payment"
+                  value={derived.payments ? derived.lifetime / derived.payments : 0}
                   format={{ style: "currency", currency: "USD" }}
                 />
-                <Stat reduced={reduced} label="Pending" value={data.totals.pending} format={{ style: "currency", currency: "USD" }} hint="Clears 30 days after purchase" />
-                <Stat reduced={reduced} label="Approved" value={data.totals.approved + data.totals.paid} format={{ style: "currency", currency: "USD" }} hint="Cleared and payable" />
+                <Stat reduced={reduced} label="Pending" value={dollarsFromCents(data.totals.pending)} format={{ style: "currency", currency: "USD" }} hint="Clears 30 days after purchase" />
+                <Stat reduced={reduced} label="Approved" value={dollarsFromCents(data.totals.approved + data.totals.paid)} format={{ style: "currency", currency: "USD" }} hint="Cleared and payable" />
                 <Stat reduced={reduced} label="Lifetime commission" value={derived.lifetime} format={{ style: "currency", currency: "USD" }} />
               </motion.div>
             </div>
@@ -365,8 +453,8 @@ export default function Partners() {
             {/* ── Where the money came from ───────────────────────── */}
             {derived.counted > 0 && (
               <div style={card}>
-                <SectionTitle>Commission by plan</SectionTitle>
-                <EarningsRows earnings={derived.earnings} unitNote="avg" />
+                <SectionTitle>Commission by paid invoice</SectionTitle>
+                <EarningsRows earnings={derived.earnings} unitNote="avg payment" />
               </div>
             )}
 
@@ -375,8 +463,8 @@ export default function Partners() {
               <SectionTitle note={derived.capped ? `Most recent ${COMMISSION_PAGE_LIMIT}` : undefined}>Commissions</SectionTitle>
               {data.commissions.length === 0 ? (
                 <p style={{ fontSize: 14, color: "var(--sch-tx-2)", margin: 0, lineHeight: 1.6 }}>
-                  No commissions yet — share your link to get started. Every plan bought through it earns you{" "}
-                  {(aff.commission_rate * 100).toFixed(0)}%.
+                  No commissions yet — share your link to get started. You earn {(aff.commission_rate * 100).toFixed(0)}%
+                  on the first successful payment, then unlock three- and five-payment windows through performance.
                 </p>
               ) : (
                 <div style={{ display: "grid", gap: 8 }}>
@@ -390,7 +478,10 @@ export default function Partners() {
                     >
                       <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: "var(--sch-text)" }}>{formatMoney(c.commission_amount, c.currency)}</div>
-                        <div style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>on {formatMoney(c.sale_amount, c.currency)} sale</div>
+                        <div style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>
+                          on {formatMoney(c.sale_amount, c.currency)} payment
+                          {c.billing_cycle ? ` · cycle ${c.billing_cycle} of ${c.commission_cycles ?? 1}` : " · first payment"}
+                        </div>
                       </div>
                       <StatusPill status={c.status} availableAfter={c.available_after} />
                     </motion.div>
@@ -400,7 +491,7 @@ export default function Partners() {
             </div>
 
             <p style={{ fontSize: 12.5, color: "var(--sch-tx-2)", lineHeight: 1.6, textAlign: "center", margin: 0 }}>
-              Payouts are sent once your approved balance clears. Commissions become payable 30 days after purchase and are void on refunds or chargebacks. Reward eligibility, sales counts and dates are verified by Scholify.
+              First-touch attribution lasts 90 days and becomes permanent when the learner registers. Tier windows apply prospectively, annual plans earn once on the full annual payment, and every commission clears after 30 days. Refunds and chargebacks void the related commission.
             </p>
           </motion.div>
         )}

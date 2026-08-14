@@ -1,5 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { commissionAmount, priceForPlan, planForPrice, resolveAffiliateMetadata, claimEvent, releaseEvent } from "../../api/stripe.js"
+import {
+  claimEvent,
+  commissionAmount,
+  invoiceSubscriptionId,
+  isCommissionableInvoice,
+  planForPrice,
+  priceForPlan,
+  recordPaidInvoiceCommission,
+  releaseEvent,
+  resolveAffiliateMetadata,
+} from "../../api/stripe.js"
 
 /*
  * Stripe plan ↔ price mapping. Every bug here either charges for the wrong plan
@@ -66,6 +76,133 @@ describe("partner commission calculation", () => {
     expect(commissionAmount(-100)).toBe(0)
     expect(commissionAmount(10.5)).toBe(0)
     expect(commissionAmount(Number.NaN)).toBe(0)
+  })
+})
+
+describe("paid-invoice commission trigger", () => {
+  it("ignores the zero-value trial invoice and records successful subscription cycles", () => {
+    expect(isCommissionableInvoice(0, "subscription_create")).toBe(false)
+    expect(isCommissionableInvoice(1499, "subscription_cycle")).toBe(true)
+    expect(isCommissionableInvoice(1499, "subscription_create")).toBe(true)
+  })
+
+  it("does not treat upgrades, manual invoices or malformed amounts as monthly cycles", () => {
+    expect(isCommissionableInvoice(500, "subscription_update")).toBe(false)
+    expect(isCommissionableInvoice(500, "manual")).toBe(false)
+    expect(isCommissionableInvoice(10.5, "subscription_cycle")).toBe(false)
+  })
+
+  it("finds a subscription in both legacy and current Stripe invoice shapes", () => {
+    expect(invoiceSubscriptionId({ subscription: "sub_legacy" } as never)).toBe("sub_legacy")
+    expect(invoiceSubscriptionId({ parent: { subscription_details: { subscription: "sub_current" } } } as never)).toBe("sub_current")
+  })
+})
+
+function paidInvoiceDb(paidBefore: number) {
+  const referrals = [
+    ...Array.from({ length: paidBefore }, (_, index) => ({
+      id: `old-${index}`,
+      affiliate_id: "aff-1",
+      referred_user_id: `old-user-${index}`,
+      first_paid_at: "2026-01-01T00:00:00.000Z",
+      commission_cycles: 1,
+      stripe_customer_id: `cus-old-${index}`,
+    })),
+    {
+      id: "ref-current",
+      affiliate_id: "aff-1",
+      referred_user_id: "user-1",
+      first_paid_at: null as string | null,
+      commission_cycles: 1,
+      stripe_customer_id: null as string | null,
+    },
+  ]
+  const commissions: Array<Record<string, unknown>> = []
+  const affiliate = { id: "aff-1", code: "PARTNER27", user_id: "partner-user", status: "active", commission_rate: 0.27 }
+
+  return {
+    state: { referrals, commissions },
+    from(table: string) {
+      const filters: Record<string, unknown> = {}
+      const notNull = new Set<string>()
+      let updatePayload: Record<string, unknown> | null = null
+      const rows = () => {
+        const source: Array<Record<string, unknown>> = table === "affiliates" ? [affiliate] : table === "affiliate_referrals" ? referrals : commissions
+        return source.filter((row) => Object.entries(filters).every(([key, value]) => row[key] === value) && [...notNull].every((key) => row[key] != null))
+      }
+      const execute = () => {
+        if (updatePayload) Object.assign(rows()[0] ?? {}, updatePayload)
+        return { data: null, count: rows().length, error: null }
+      }
+      const builder: Record<string, unknown> & {
+        select: (columns: string, options?: unknown) => typeof builder
+        eq: (column: string, value: unknown) => typeof builder
+        not: (column: string, operator: string, value: unknown) => typeof builder
+        update: (payload: Record<string, unknown>) => typeof builder
+        maybeSingle: () => Promise<{ data: Record<string, unknown> | null }>
+        insert: (row: Record<string, unknown>) => Promise<{ error: null }>
+        then: (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) => Promise<unknown>
+      } = {
+        select: () => builder,
+        eq(column, value) { filters[column] = value; return builder },
+        not(column, operator, value) { if (operator === "is" && value === null) notNull.add(column); return builder },
+        update(payload) { updatePayload = payload; return builder },
+        async maybeSingle() { return { data: rows()[0] ?? null } },
+        async insert(row) {
+          if (table === "affiliate_referrals") referrals.push(row as typeof referrals[number])
+          else if (table === "affiliate_commissions") commissions.push(row)
+          return { error: null }
+        },
+        then(resolve, reject) { return Promise.resolve(execute()).then(resolve, reject) },
+      }
+      return builder
+    },
+  }
+}
+
+describe("recordPaidInvoiceCommission", () => {
+  it("locks the 300th unique paid learner to three payments and records cycle one", async () => {
+    const database = paidInvoiceDb(299)
+    const stripe = {
+      subscriptions: {
+        retrieve: async () => ({
+          metadata: { affiliate_id: "aff-1", userId: "user-1" },
+          customer: "cus-current",
+          items: { data: [{ price: { id: ENV.STRIPE_PRICE_PRO, recurring: { interval: "month" } } }] },
+        }),
+      },
+    }
+    const invoice = {
+      id: "in_paid_1",
+      amount_paid: 1499,
+      billing_reason: "subscription_cycle",
+      currency: "usd",
+      customer: "cus-current",
+      parent: { subscription_details: { subscription: "sub-1" } },
+      status_transitions: { paid_at: 1_787_000_000 },
+    }
+
+    await recordPaidInvoiceCommission(database as never, stripe as never, invoice as never)
+
+    const current = database.state.referrals.find((row) => row.id === "ref-current")
+    expect(current).toMatchObject({ commission_cycles: 3, stripe_customer_id: "cus-current" })
+    expect(database.state.commissions).toHaveLength(1)
+    expect(database.state.commissions[0]).toMatchObject({
+      stripe_invoice_id: "in_paid_1",
+      billing_cycle: 1,
+      commission_cycles: 3,
+      commission_amount: 405,
+      plan: "pro",
+    })
+
+    for (const cycle of [2, 3, 4]) {
+      await recordPaidInvoiceCommission(
+        database as never,
+        stripe as never,
+        { ...invoice, id: `in_paid_${cycle}`, status_transitions: { paid_at: 1_787_000_000 + cycle * 2_592_000 } } as never,
+      )
+    }
+    expect(database.state.commissions.map((row) => row.billing_cycle)).toEqual([1, 2, 3])
   })
 })
 
@@ -145,14 +282,21 @@ describe("webhook idempotency (claim / dedupe / release)", () => {
 })
 
 function supaStub(tables: {
-  affiliates?: Record<string, { id: string; code: string; status: string }>
+  affiliates?: Record<string, { id: string; code: string; status: string; user_id?: string }>
   referrals?: Record<string, { affiliate_id: string }>
 }) {
+  const referrals = { ...(tables.referrals ?? {}) }
   return {
     from(table: string) {
       const filters: Record<string, string> = {}
       const builder = {
         select: () => builder,
+        async insert(row: { affiliate_id: string; referred_user_id: string }) {
+          if (table !== "affiliate_referrals") return { error: null }
+          if (referrals[row.referred_user_id]) return { error: { code: "23505" } }
+          referrals[row.referred_user_id] = { affiliate_id: row.affiliate_id }
+          return { error: null }
+        },
         eq(column: string, value: string) {
           filters[column] = value
           return builder
@@ -169,7 +313,7 @@ function supaStub(tables: {
             return { data: row ?? null }
           }
           if (table === "affiliate_referrals") {
-            return { data: tables.referrals?.[filters.referred_user_id] ?? null }
+            return { data: referrals[filters.referred_user_id] ?? null }
           }
           return { data: null }
         },
@@ -189,6 +333,24 @@ describe("resolveAffiliateMetadata (which partner earns the commission)", () => 
       "partner27",
     )
     expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
+  })
+
+  it("keeps the account's first partner when a later checkout sends another valid code", async () => {
+    const other = { id: "aff-2", code: "OTHER27", status: "active" }
+    const meta = await resolveAffiliateMetadata(
+      supaStub({
+        affiliates: { a: ACTIVE, b: other },
+        referrals: { "user-1": { affiliate_id: "aff-1" } },
+      }),
+      "user-1",
+      "OTHER27",
+    )
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
+  })
+
+  it("blocks a partner from earning on their own account", async () => {
+    const self = { ...ACTIVE, user_id: "user-1" }
+    expect(await resolveAffiliateMetadata(supaStub({ affiliates: { a: self } }), "user-1", "PARTNER27")).toEqual({})
   })
 
   it("falls back to the signup attribution when the client sends NO code", async () => {

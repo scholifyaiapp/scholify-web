@@ -22,6 +22,7 @@ const MIGRATIONS = [
   "0028_affiliate_payout_reference.sql",
   "0029_day_completion_email.sql",
   "0030_individual_account_sessions.sql",
+  "0031_partner_commission_tiers.sql",
 ]
 
 /*
@@ -42,10 +43,11 @@ const REQUIRED_COLUMNS = {
     // 0029 — the exactly-once guard for the day-completion congratulation email.
     "sent_done_date",
   ],
-  affiliate_commissions: ["payout_reference"],
+  affiliate_referrals: ["stripe_customer_id", "first_paid_at", "commission_cycles"],
+  affiliate_commissions: ["payout_reference", "stripe_invoice_id", "billing_cycle", "commission_cycles", "plan"],
 }
 
-const REQUIRED_FUNCTIONS = ["is_current_auth_session_valid"]
+const REQUIRED_FUNCTIONS = ["is_current_auth_session_valid", "increment_affiliate_click"]
 
 const sql = postgres(databaseUrl, { max: 1, ssl: "require", connect_timeout: 20 })
 try {

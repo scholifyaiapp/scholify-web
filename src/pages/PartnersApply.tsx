@@ -6,15 +6,19 @@ import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { iriText } from "@/components/dashboard-layout"
 import { applyToAffiliate, type AffiliateApplication } from "@/lib/affiliate"
 import PaymentMethods from "@/components/PaymentMethods"
-import { Download, FileText } from "lucide-react"
 import NumberFlow from "@number-flow/react"
 import {
   COMMISSION_RATE,
+  commissionPaymentsFor,
   EXAMPLE_EARNINGS,
   EXAMPLE_PROGRESS,
   EXAMPLE_SALES,
+  projectedPartnerCommission,
+  round2,
+  type PartnerPlanPrice,
 } from "@/lib/partner-rewards"
 import {
+  CommissionTierLadder,
   EarningsRows,
   RemainingToReward,
   RewardRing,
@@ -379,8 +383,8 @@ const WHY: Array<[string, string]> = [
 ]
 
 const GET: Array<[string, string]> = [
-  ["Your link & promo code", "A unique tracked link and code — every click and sale is attributed to you automatically."],
-  ["Brand asset kit", "Logos, ready-made post & reel templates and copy, so you can publish in minutes."],
+  ["Your tracked link & partner code", "A 90-day first-touch link and code that becomes durable when the learner registers."],
+  ["Promotion studio", "Disclosure-ready community and LinkedIn copy inside your dashboard, ready to personalise and publish."],
   ["Live earnings dashboard", "See clicks, sales, and your pending and cleared balance in real time."],
   ["A direct line to the founder", "Priority support and a say in what we build — you're early, and it counts."],
 ]
@@ -391,19 +395,17 @@ const PLANS: Array<[string, string, string]> = [
   ["Annual Pro", "$119.99/yr", "$32.40"],
 ]
 
-const LADDER: Array<[string, string, boolean]> = [
-  ["100", "$405", false],
-  ["300", "$1,215", false],
-  ["500", "$2,025", false],
-  ["1,000", "$4,050", true],
-]
+const LADDER: Array<[string, string, boolean]> = [100, 300, 500, 1000].map((sales) => [
+  sales.toLocaleString("en-US"),
+  formatUsd(projectedPartnerCommission("pro", sales)),
+  sales === 1000,
+])
 
 const CALCULATOR_PLANS = [
-  { id: "beginner", name: "Beginner", price: 9.99, cadence: "/mo" },
-  { id: "pro", name: "Pro", price: 14.99, cadence: "/mo" },
-  { id: "annual", name: "Annual Pro", price: 119.99, cadence: "/yr" },
+  { id: "beginner", name: "Beginner", price: 9.99, cadence: "/mo", rewardPlan: "beginner" },
+  { id: "pro", name: "Pro", price: 14.99, cadence: "/mo", rewardPlan: "pro" },
+  { id: "annual", name: "Annual Pro", price: 119.99, cadence: "/yr", rewardPlan: "proAnnual" },
 ] as const
-const PARTNER_RATE = 0.27
 
 const STEPS = [
   {
@@ -434,7 +436,7 @@ const STEPS = [
   {
     title: "Your 27% commission clears",
     label: "Earn",
-    detail: "The sale and commission appear in your dashboard as pending. After the 30-day validation period, eligible commission can move toward payout.",
+    detail: "Each eligible paid invoice appears in your dashboard as pending. Monthly referrals earn across the 1, 3 or 5 payments your performance tier locked when they first paid.",
   },
 ]
 
@@ -458,8 +460,9 @@ export default function PartnersApply() {
   const [calcCustomers, setCalcCustomers] = useState(25)
   const [calcPlan, setCalcPlan] = useState<(typeof CALCULATOR_PLANS)[number]["id"]>("pro")
   const selectedCalcPlan = CALCULATOR_PLANS.find((plan) => plan.id === calcPlan) ?? CALCULATOR_PLANS[1]
-  const perCustomer = selectedCalcPlan.price * PARTNER_RATE
-  const projectedEarnings = perCustomer * calcCustomers
+  const commissionPayments = commissionPaymentsFor(selectedCalcPlan.rewardPlan as PartnerPlanPrice, calcCustomers)
+  const perCustomer = round2(round2(selectedCalcPlan.price * COMMISSION_RATE) * commissionPayments)
+  const projectedEarnings = projectedPartnerCommission(selectedCalcPlan.rewardPlan as PartnerPlanPrice, calcCustomers)
 
   const set = (k: keyof AffiliateApplication) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -532,7 +535,7 @@ export default function PartnersApply() {
               maxWidth: 780,
             }}
           >
-            Earn <span style={iriText}>27%</span> on every student you bring to Scholify.
+            Earn <span style={iriText}>27%</span> for up to five payments from every student you bring.
           </h1>
           <p
             style={{
@@ -567,9 +570,9 @@ export default function PartnersApply() {
             >
               Apply to become a partner
             </motion.button>
-            <motion.a
-              href="/partners/Scholify-Partnership-Offer.pdf"
-              download="Scholify-Partnership-Offer.pdf"
+            <motion.button
+              type="button"
+              onClick={scrollTo("commission-tiers")}
               whileHover={reduced ? undefined : { scale: 1.03 }}
               whileTap={reduced ? undefined : { scale: 0.97 }}
               style={{
@@ -580,30 +583,14 @@ export default function PartnersApply() {
                 color: "var(--sch-text)",
                 fontSize: 16,
                 fontWeight: 600,
-                textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 9,
+                cursor: "pointer",
               }}
-              aria-label="Download the Scholify Partnership Offer as a PDF"
             >
-              <Download size={18} aria-hidden /> Download partnership offer
-            </motion.a>
-          </div>
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 7,
-              color: "var(--sch-tx-2)",
-              fontSize: 12,
-              lineHeight: 1.5,
-            }}
-          >
-            <FileText size={14} aria-hidden />
-            <span>PDF · 716 KB · Program overview and commercial terms</span>
+              See the commission tiers
+            </motion.button>
           </div>
           <button
             type="button"
@@ -621,7 +608,7 @@ export default function PartnersApply() {
               textUnderlineOffset: 4,
             }}
           >
-            Or read how the programme works online
+            Read exactly how the programme works
           </button>
         </motion.div>
 
@@ -674,12 +661,16 @@ export default function PartnersApply() {
 
         {/* ── Commission + F1 bonus ── */}
         <Section>
+          <div id="commission-tiers" style={{ scrollMarginTop: 24 }} />
           <motion.div {...rise()} style={{ ...card, position: "relative", overflow: "hidden", padding: "clamp(22px,4vw,38px)", borderRadius: 24 }}>
             <motion.div aria-hidden animate={reduced ? undefined : { rotate: 360 }} transition={{ duration: 28, repeat: Infinity, ease: "linear" }} style={{ position: "absolute", width: 360, height: 360, borderRadius: "50%", right: -170, top: -190, background: "conic-gradient(from 90deg,rgba(200,0,0,.18),rgba(229,0,104,.08),rgba(244,164,5,.2),rgba(200,0,0,.18))" }} />
             <div style={{ position: "relative" }}>
               <div style={{ ...eyebrow, color: "#C80000", marginBottom: 10 }}>The maths</div>
               <h2 style={{ margin: 0, color: "var(--sch-text)", fontSize: "clamp(25px,4vw,38px)", letterSpacing: "-.025em" }}>Do the maths on your audience.</h2>
               <p style={{ margin: "9px 0 26px", color: "var(--sch-tx-2)", lineHeight: 1.55 }}>Move the audience slider and choose the plan your students are most likely to buy.</p>
+              <div style={{ padding: 20, borderRadius: 18, background: "var(--sch-bg)", border: "1px solid var(--sch-border)", marginBottom: 18 }}>
+                <CommissionTierLadder paidCustomers={calcCustomers} />
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14 }}>
                 <div style={{ padding: 18, borderRadius: 18, background: "var(--sch-bg)", border: "1px solid var(--sch-border)" }}>
                   <label htmlFor="partner-customers" style={{ ...labelStyle, display: "flex", justifyContent: "space-between", gap: 12 }}><span>Customers you refer</span><motion.strong key={calcCustomers} initial={reduced ? false : { scale: 1.25, color: "#C80000" }} animate={{ scale: 1, color: "var(--sch-text)" }} style={{ fontFamily: MONO, fontSize: 21 }}>{calcCustomers}</motion.strong></label>
@@ -693,7 +684,7 @@ export default function PartnersApply() {
                   </div>
                 </div>
                 <motion.div layout style={{ padding: 18, borderRadius: 18, color: "#fff", background: "linear-gradient(135deg,#0B0B0F,#251015)", border: "1px solid rgba(244,164,5,.3)", boxShadow: "0 22px 55px -35px rgba(200,0,0,.8)" }}>
-                  <div style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>Per customer · 27%</div>
+                  <div style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>New customer at this tier · 27% × {commissionPayments}</div>
                   <div style={{ fontFamily: MONO, fontSize: 30, fontWeight: 800, marginTop: 5 }}><NumberFlow value={perCustomer} format={{ style: "currency", currency: "USD" }} /></div>
                   <div style={{ height: 1, background: "rgba(255,255,255,.12)", margin: "16px 0" }} />
                   <div style={{ color: GOLD, font: `700 10px ${MONO}`, letterSpacing: ".15em", textTransform: "uppercase" }}>You could earn</div>
@@ -701,7 +692,7 @@ export default function PartnersApply() {
                 </motion.div>
               </div>
               <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(244,164,5,.08)", border: "1px solid rgba(244,164,5,.22)", color: "var(--sch-tx-1)", fontSize: 12.5, lineHeight: 1.55 }}>
-                <b>{calcCustomers} customers</b> × <b>${selectedCalcPlan.price.toFixed(2)}</b> first purchase × <b>27%</b> = <b style={{ color: "var(--sch-text)" }}>${projectedEarnings.toFixed(2)}</b>. Illustrative earnings before refunds or chargebacks; commissions clear after the 30-day validation period.
+                <b>{calcCustomers} paid customers</b> progressing through the published 1/3/5-payment tiers = <b style={{ color: "var(--sch-text)" }}>${projectedEarnings.toFixed(2)}</b>. Monthly projections assume each learner remains paid through the eligible window; annual plans earn 27% once on the full annual payment. Every commission clears after the 30-day validation period.
               </div>
             </div>
           </motion.div>
@@ -715,13 +706,13 @@ export default function PartnersApply() {
                 Your commission
               </motion.div>
               <motion.p {...rise(0.05)} style={{ fontSize: 16, lineHeight: 1.6, color: "var(--sch-tx-1)", fontWeight: 500 }}>
-                You earn a <b style={{ color: "var(--sch-text)" }}>flat 27% of every Beginner or Pro plan</b> you sell
-                through your link and code — the same rate for every partner. The program opens on{" "}
-                <b style={{ color: "var(--sch-text)" }}>10 August 2026</b>.
+                Every partner earns <b style={{ color: "var(--sch-text)" }}>27%</b>. Performance extends the earning
+                window: the first successful monthly payment at Launch, three payments from 300 unique paid learners,
+                and five from 600. Annual plans pay 27% once on the full annual charge.
               </motion.p>
 
               <motion.div {...rise(0.1)} style={{ ...card, marginTop: 18, padding: 0, overflow: "hidden" }}>
-                <RowHead a="Plan" b="You earn per sale (27%)" />
+                <RowHead a="Plan" b="Per successful payment (27%)" />
                 {PLANS.map(([name, price, earn]) => (
                   <Row
                     key={name}
@@ -740,7 +731,7 @@ export default function PartnersApply() {
                 What volume looks like
               </motion.div>
               <motion.div {...rise(0.18)} style={{ ...card, padding: 0, overflow: "hidden" }}>
-                <RowHead a="Verified sales" b="Illustrative earnings*" />
+                <RowHead a="Unique paid learners" b="Illustrative Pro earnings*" />
                 {LADDER.map(([sales, earn, hi]) => (
                   <Row
                     key={sales}
@@ -751,9 +742,9 @@ export default function PartnersApply() {
                 ))}
               </motion.div>
               <p style={{ fontSize: 11.5, color: "var(--sch-tx-2)", marginTop: 10, lineHeight: 1.5 }}>
-                *At Pro pricing ($14.99) × 27%. Annual plans pay considerably more per sale. Plans, prices and discounts
-                are set by Scholify and may change — your 27% partner rate stays the same. Commissions clear 30 days
-                after purchase and are void on refunds or chargebacks.
+                *Pro at $14.99, assuming each monthly learner stays paid through the tier window earned when they first
+                pay. Earlier referrals are not upgraded retroactively. Prices may change; the 27% rate does not.
+                Commissions clear after 30 days and are void on refunds or chargebacks.
               </p>
             </div>
 
@@ -924,9 +915,9 @@ export default function PartnersApply() {
             {...rise(0.08)}
             style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--sch-tx-1)", maxWidth: 720, margin: "0 0 22px", fontWeight: 500 }}
           >
-            Half Beginner, half Pro, at the published prices and the published{" "}
-            {Math.round(COMMISSION_RATE * 100)}%. Worked through so the offer is arithmetic rather than a promise —
-            these are not projected earnings and not a guarantee of any result.
+            Half Beginner, half Pro, showing only the first successful payment at the published{" "}
+            {Math.round(COMMISSION_RATE * 100)}%. This is the conservative baseline before the extra Growth and Premier
+            monthly payments; it is arithmetic, not a guarantee of results.
           </motion.p>
 
           <motion.div {...rise(0.12)} style={{ ...card, padding: 24 }}>
@@ -943,7 +934,7 @@ export default function PartnersApply() {
                     <NumberFlow value={EXAMPLE_EARNINGS.totalCommission} format={{ style: "currency", currency: "USD" }} />
                   </div>
                   <div style={{ fontSize: 13.5, color: "var(--sch-tx-2)", marginTop: 6, lineHeight: 1.5 }}>
-                    commission on {EXAMPLE_SALES.toLocaleString("en-US")} sales
+                    first-payment commission on {EXAMPLE_SALES.toLocaleString("en-US")} paid learners
                     <br />
                     ({formatUsd(EXAMPLE_EARNINGS.totalRevenue)} of plan sales)
                   </div>
@@ -1021,9 +1012,11 @@ export default function PartnersApply() {
           >
             <span aria-hidden style={{ color: GOLD, fontSize: 18, lineHeight: 1 }}>◆</span>
             <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--sch-tx-1)" }}>
-              <b style={{ color: "var(--sch-text)" }}>A qualifying sale</b> is a completed Scholify plan purchase
-              attributed to your active link or code. Refunded or charged-back purchases do not earn commission.
-              Final payout timing and payment details are confirmed when your partner account is activated.
+              <b style={{ color: "var(--sch-text)" }}>A qualifying payment</b> is a successfully collected subscription
+              payment inside the referral's locked 1/3/5-payment window. First valid partner touch is remembered for
+              90 days and becomes permanent at registration; the 300th and 600th unique paid learners unlock the next
+              tier for themselves and future referrals, not earlier ones. Annual plans earn once. Refunds and
+              chargebacks void the related commission, and every payment completes the 30-day validation hold.
             </div>
           </motion.div>
         </Section>
@@ -1123,9 +1116,9 @@ export default function PartnersApply() {
                       style={{ marginTop: 3, width: 18, height: 18, accentColor: "#C80000", flexShrink: 0 }}
                     />
                     <span>
-                      I agree to the Scholify partner terms: I'll promote honestly, won't bid on Scholify's brand terms
-                      or spam, and understand the 27% commission clears 30 days after purchase and is void on
-                      refunds/chargebacks.
+                      I agree to the Scholify partner terms: I'll promote honestly and won't bid on Scholify's brand
+                      terms or spam. I understand the 90-day first-touch rule, prospective 1/3/5-payment tiers,
+                      30-day validation period, and that refunds or chargebacks void the related commission.
                     </span>
                   </label>
 

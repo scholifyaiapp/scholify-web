@@ -1,16 +1,50 @@
 import { describe, expect, it } from "vitest"
 import {
   classifySaleAmount,
+  commissionPaymentsFor,
   commissionOn,
   COMMISSION_RATE,
+  COMMISSION_TIERS,
+  commissionTierForPaidCustomers,
+  commissionTierProgress,
   earningsFor,
   EXAMPLE_EARNINGS,
   EXAMPLE_PROGRESS,
   EXAMPLE_SALES,
   PLAN_PRICE,
+  projectedPartnerCommission,
   REWARD_TIERS,
   rewardProgress,
 } from "@/lib/partner-rewards"
+
+describe("performance commission tiers", () => {
+  it("unlocks 1, 3 and 5 monthly payments at the published paid-customer thresholds", () => {
+    expect(commissionTierForPaidCustomers(0).monthlyPayments).toBe(1)
+    expect(commissionTierForPaidCustomers(299).monthlyPayments).toBe(1)
+    expect(commissionTierForPaidCustomers(300).monthlyPayments).toBe(3)
+    expect(commissionTierForPaidCustomers(599).monthlyPayments).toBe(3)
+    expect(commissionTierForPaidCustomers(600).monthlyPayments).toBe(5)
+    expect(COMMISSION_TIERS.map((tier) => tier.paidCustomers)).toEqual([0, 300, 600])
+  })
+
+  it("keeps annual plans to one commission because the year is paid up front", () => {
+    expect(commissionPaymentsFor("pro", 600)).toBe(5)
+    expect(commissionPaymentsFor("proAnnual", 600)).toBe(1)
+  })
+
+  it("reports progress inside the current tier rather than against an ambiguous lifetime scale", () => {
+    expect(commissionTierProgress(150)).toMatchObject({ remaining: 150, percent: 50 })
+    expect(commissionTierProgress(450)).toMatchObject({ remaining: 150, percent: 50 })
+    expect(commissionTierProgress(700)).toMatchObject({ remaining: 0, percent: 100, next: null })
+  })
+
+  it("projects thresholds prospectively instead of upgrading earlier customers retroactively", () => {
+    const onePayment = commissionOn("pro", 1)
+    expect(projectedPartnerCommission("pro", 299)).toBeCloseTo(299 * onePayment, 2)
+    expect(projectedPartnerCommission("pro", 300)).toBeCloseTo((299 + 3) * onePayment, 2)
+    expect(projectedPartnerCommission("proAnnual", 600)).toBe(600 * 32.4)
+  })
+})
 
 /*
  * These numbers are printed on a public offer page and on a partner's own

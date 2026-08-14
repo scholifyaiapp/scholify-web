@@ -2,6 +2,8 @@ import { type CSSProperties } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import NumberFlow from "@number-flow/react"
 import {
+  COMMISSION_TIERS,
+  commissionTierProgress,
   type EarningsBreakdown,
   type RewardProgress,
 } from "@/lib/partner-rewards"
@@ -43,6 +45,94 @@ const microLabel: CSSProperties = {
 
 function money(value: number): string {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
+}
+
+/** The public promise and the private dashboard use the same animated ladder.
+ * That makes the threshold, current status and next benefit visually identical
+ * before and after a promoter applies. */
+export function CommissionTierLadder({ paidCustomers }: { paidCustomers: number }) {
+  const reduced = useReducedMotion()
+  const progress = commissionTierProgress(paidCustomers)
+
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={microLabel}>Your earning window</div>
+          <div style={{ fontSize: 25, fontWeight: 850, letterSpacing: "-.025em", color: "var(--sch-text)", marginTop: 5 }}>
+            {progress.current.name} · 27% × {progress.current.monthlyPayments} paid {progress.current.monthlyPayments === 1 ? "month" : "months"}
+          </div>
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--sch-tx-2)" }}>
+          <NumberFlow value={progress.paidCustomers} /> unique paid learners
+        </div>
+      </div>
+
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
+        <div aria-hidden style={{ position: "absolute", left: "8%", right: "8%", top: 20, height: 3, borderRadius: 999, background: TRACK }} />
+        <motion.div
+          aria-hidden
+          initial={reduced ? false : { scaleX: 0 }}
+          whileInView={{ scaleX: Math.min(1, progress.paidCustomers / 600) }}
+          viewport={{ once: true, amount: 0.6 }}
+          transition={{ duration: 1, ease: EASE }}
+          style={{ position: "absolute", zIndex: 1, left: "8%", right: "8%", top: 20, height: 3, borderRadius: 999, background: "linear-gradient(90deg,#C80000,#F4A405)", transformOrigin: "left" }}
+        />
+        {COMMISSION_TIERS.map((tier, index) => {
+          const reached = progress.paidCustomers >= tier.paidCustomers
+          const active = progress.current.id === tier.id
+          return (
+            <motion.div
+              key={tier.id}
+              initial={reduced ? false : { opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.6 }}
+              transition={{ duration: 0.45, delay: index * 0.1, ease: EASE }}
+              animate={active && !reduced ? { y: [0, -3, 0] } : undefined}
+              style={{ position: "relative", zIndex: 2, minWidth: 0, textAlign: "center" }}
+            >
+              <div
+                style={{
+                  width: 43,
+                  height: 43,
+                  margin: "0 auto",
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  background: reached ? "linear-gradient(135deg,#C80000,#F4A405)" : "var(--sch-card)",
+                  border: active ? "3px solid color-mix(in srgb, #F4A405 70%, white)" : "2px solid var(--sch-border)",
+                  boxShadow: active ? "0 0 0 5px rgba(244,164,5,.12)" : "none",
+                  color: reached ? "#fff" : "var(--sch-tx-2)",
+                  font: `800 13px ${MONO}`,
+                }}
+              >
+                {tier.monthlyPayments}×
+              </div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--sch-text)", marginTop: 9 }}>{tier.name}</div>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--sch-tx-2)", marginTop: 3 }}>
+                {tier.paidCustomers === 0 ? "Start" : `${tier.paidCustomers}+ paid`}
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      <div style={{ height: 10, borderRadius: 999, overflow: "hidden", background: TRACK }}>
+        <motion.div
+          initial={reduced ? false : { width: 0 }}
+          whileInView={{ width: `${progress.percent}%` }}
+          viewport={{ once: true, amount: 0.7 }}
+          transition={{ duration: 0.9, ease: EASE }}
+          style={{ height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#C80000,#F4A405)", width: reduced ? `${progress.percent}%` : undefined }}
+        />
+      </div>
+      <div style={{ fontSize: 12.5, lineHeight: 1.55, color: "var(--sch-tx-2)" }}>
+        {progress.next
+          ? <><b style={{ color: "var(--sch-text)" }}>{progress.remaining.toLocaleString("en-US")} more paid learners</b> unlock {progress.next.monthlyPayments} monthly commissions for each new referral.</>
+          : <><b style={{ color: "var(--sch-text)" }}>Premier unlocked.</b> New monthly referrals can earn commission across five successful payments.</>}
+      </div>
+    </div>
+  )
 }
 
 /* ── The ring ──────────────────────────────────────────────────────

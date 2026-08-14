@@ -62,6 +62,23 @@ function ensureAffiliateSchema(): Promise<void> {
       `
       await sql`create unique index if not exists affiliates_email_unique_idx on public.affiliates (lower(email))`
       await sql`alter table public.affiliate_commissions add column if not exists paid_at timestamptz`
+      await sql`alter table public.affiliate_referrals add column if not exists stripe_customer_id text`
+      await sql`alter table public.affiliate_referrals add column if not exists first_paid_at timestamptz`
+      await sql`alter table public.affiliate_referrals add column if not exists commission_cycles smallint not null default 1`
+      await sql`alter table public.affiliate_commissions add column if not exists stripe_invoice_id text`
+      await sql`alter table public.affiliate_commissions add column if not exists billing_cycle smallint`
+      await sql`alter table public.affiliate_commissions add column if not exists commission_cycles smallint`
+      await sql`alter table public.affiliate_commissions add column if not exists plan text`
+      await sql`create unique index if not exists affiliate_commissions_invoice_unique_idx on public.affiliate_commissions (stripe_invoice_id) where stripe_invoice_id is not null`
+      await sql.unsafe(`
+        create or replace function public.increment_affiliate_click(target_affiliate_id uuid)
+        returns void language sql security definer set search_path = public as $$
+          update public.affiliates set clicks = clicks + 1
+          where id = target_affiliate_id and status = 'active';
+        $$
+      `)
+      await sql`revoke all on function public.increment_affiliate_click(uuid) from public`
+      await sql`grant execute on function public.increment_affiliate_click(uuid) to service_role`
       await sql`
         create table if not exists public.product_feedback (
           id uuid primary key default gen_random_uuid(),
@@ -610,7 +627,7 @@ async function notifyApplication(app: {
       <div style="font-size:18px;font-weight:800;color:#14141A;margin-top:6px;">Pending review</div>
       <div style="font-size:13px;line-height:20px;color:#5F5753;margin-top:7px;">Requested partner code: <strong style="color:#C80000;">${escapeHtml(app.code)}</strong></div>
     </div>
-    <p style="font-size:14px;line-height:22px;color:#5F5753;margin:18px 0 0;">We’ll email you again as soon as a decision is made. Once approved, you’ll receive your referral link and can earn a flat <strong>27%</strong> on qualifying Scholify plan sales.</p>
+    <p style="font-size:14px;line-height:22px;color:#5F5753;margin:18px 0 0;">We’ll email you again as soon as a decision is made. Once approved, you’ll receive your referral link and can earn <strong>27%</strong> for one, three or five successful monthly payments as your paid audience grows.</p>
     <p style="font-size:13px;line-height:20px;color:#8F8C85;margin:18px 0 0;">Good luck, ${first}.<br>— Makhmudov Nuriddin, Founder, Scholify</p>`,
     charles: true,
   })
@@ -702,19 +719,23 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
     return
   }
 
-  const [{ data: commissions }, { count: invitedUsers }] = await Promise.all([
+  const [{ data: commissions }, { count: invitedUsers }, { count: paidInvitedUsers }] = await Promise.all([
     supa
       .from("affiliate_commissions")
-      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at, stripe_customer_id")
+      .select("id, currency, sale_amount, commission_amount, status, available_after, created_at, stripe_customer_id, billing_cycle, commission_cycles, plan")
       .eq("affiliate_id", affiliate.id)
       .order("created_at", { ascending: false }),
     supa
       .from("affiliate_referrals")
       .select("id", { count: "exact", head: true })
       .eq("affiliate_id", affiliate.id),
+    supa
+      .from("affiliate_referrals")
+      .select("id", { count: "exact", head: true })
+      .eq("affiliate_id", affiliate.id)
+      .not("first_paid_at", "is", null),
   ])
-  const paidCustomers = new Set((commissions ?? []).filter((row) => row.status !== "canceled" && row.stripe_customer_id).map((row) => row.stripe_customer_id))
-  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0, paidInvitedUsers: paidCustomers.size }
+  const totals = { pending: 0, approved: 0, paid: 0, sales: 0, invitedUsers: invitedUsers ?? 0, paidInvitedUsers: paidInvitedUsers ?? 0 }
   for (const commission of commissions ?? []) {
     if (commission.status !== "canceled") totals.sales += Number(commission.sale_amount || 0)
     if (commission.status === "pending") totals.pending += Number(commission.commission_amount || 0)
@@ -740,7 +761,7 @@ async function notifyApplicationDecision(app: {
     ? emailFrame({
         eyebrow: "Application approved · Welcome aboard",
         title: `You’re officially a Scholify Partner, ${app.name.split(/\s+/)[0] || "there"}`,
-        intro: `Congratulations — your application has been approved. You’re now part of the Scholify Preferred Partner Program and can earn <strong>27%</strong> on qualifying plan sales.`,
+        intro: `Congratulations — your application has been approved. You’re now part of the Scholify Preferred Partner Program and can earn <strong>27%</strong> across a performance-based one, three or five-payment window.`,
         content: `<div style="background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;padding:16px 18px;">
           <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#1E7D50;text-transform:uppercase;">Your partner link</div>
           <div style="font-size:15px;font-weight:800;margin-top:7px;"><a href="${SITE_URL}/?aff=${escapeHtml(app.code)}" style="color:#C80000;text-decoration:none;">scholifyapp.com/?aff=${escapeHtml(app.code)}</a></div>
@@ -800,7 +821,9 @@ async function resolve(req: VercelRequest, res: VercelResponse, supa: SupabaseCl
     res.status(200).json({ ok: true, exists: false })
     return
   }
-  // Best-effort click increment (never blocks the response).
-  void supa.from("affiliates").update({ clicks: (aff.clicks ?? 0) + 1 }).eq("id", aff.id)
+  // Await one atomic database increment. A detached promise can be terminated
+  // when a serverless response closes, and read/modify/write loses concurrent
+  // visits; the database function avoids both.
+  await supa.rpc("increment_affiliate_click", { target_affiliate_id: aff.id })
   res.status(200).json({ ok: true, exists: true })
 }

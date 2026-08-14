@@ -14,6 +14,74 @@
  *  the footer pill all read it from here. */
 export const COMMISSION_RATE = 0.27
 
+/**
+ * Performance changes the LENGTH of the earning window, never the headline
+ * rate. Paid-customer thresholds are deliberately based on unique people, not
+ * clicks or renewal rows, so a partner cannot unlock a tier by refreshing a
+ * link or by keeping one customer for several months.
+ */
+export interface CommissionTier {
+  id: "launch" | "growth" | "premier"
+  name: string
+  paidCustomers: number
+  monthlyPayments: 1 | 3 | 5
+  description: string
+}
+
+export const COMMISSION_TIERS: readonly CommissionTier[] = [
+  {
+    id: "launch",
+    name: "Launch",
+    paidCustomers: 0,
+    monthlyPayments: 1,
+    description: "27% of the first successful monthly payment",
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    paidCustomers: 300,
+    monthlyPayments: 3,
+    description: "27% of the first 3 successful monthly payments",
+  },
+  {
+    id: "premier",
+    name: "Premier",
+    paidCustomers: 600,
+    monthlyPayments: 5,
+    description: "27% of the first 5 successful monthly payments",
+  },
+] as const
+
+export function commissionTierForPaidCustomers(paidCustomers: number): CommissionTier {
+  const safe = Math.max(0, Math.floor(Number.isFinite(paidCustomers) ? paidCustomers : 0))
+  return [...COMMISSION_TIERS].reverse().find((tier) => safe >= tier.paidCustomers) ?? COMMISSION_TIERS[0]
+}
+
+export interface CommissionTierProgress {
+  current: CommissionTier
+  next: CommissionTier | null
+  paidCustomers: number
+  remaining: number
+  percent: number
+}
+
+export function commissionTierProgress(paidCustomers: number): CommissionTierProgress {
+  const safe = Math.max(0, Math.floor(Number.isFinite(paidCustomers) ? paidCustomers : 0))
+  const current = commissionTierForPaidCustomers(safe)
+  const currentIndex = COMMISSION_TIERS.findIndex((tier) => tier.id === current.id)
+  const next = COMMISSION_TIERS[currentIndex + 1] ?? null
+  if (!next) return { current, next: null, paidCustomers: safe, remaining: 0, percent: 100 }
+  const span = next.paidCustomers - current.paidCustomers
+  const achievedInTier = safe - current.paidCustomers
+  return {
+    current,
+    next,
+    paidCustomers: safe,
+    remaining: Math.max(0, next.paidCustomers - safe),
+    percent: span > 0 ? Math.min(100, (achievedInTier / span) * 100) : 100,
+  }
+}
+
 /** Advertised plan prices, in USD. Mirrors src/pages/Pricing.tsx. */
 export const PLAN_PRICE = {
   beginner: 9.99,
@@ -21,6 +89,27 @@ export const PLAN_PRICE = {
   beginnerAnnual: 79.99,
   proAnnual: 119.99,
 } as const
+
+export type PartnerPlanPrice = keyof typeof PLAN_PRICE
+
+/** Annual customers pay for twelve months in one transaction, so that one
+ * transaction earns 27% once. Monthly customers can earn across the tier's
+ * 1/3/5 successful-payment window. */
+export function commissionPaymentsFor(plan: PartnerPlanPrice, paidCustomers: number): 1 | 3 | 5 {
+  if (plan === "beginnerAnnual" || plan === "proAnnual") return 1
+  return commissionTierForPaidCustomers(paidCustomers).monthlyPayments
+}
+
+/** Honest cumulative illustration: customer 300 unlocks three payments and
+ * customer 600 unlocks five; earlier customers are not retroactively upgraded. */
+export function projectedPartnerCommission(plan: PartnerPlanPrice, paidCustomers: number): number {
+  const count = Math.max(0, Math.floor(Number.isFinite(paidCustomers) ? paidCustomers : 0))
+  let total = 0
+  for (let customer = 1; customer <= count; customer += 1) {
+    total += round2(PLAN_PRICE[plan] * COMMISSION_RATE) * commissionPaymentsFor(plan, customer)
+  }
+  return round2(total)
+}
 
 export type PlanTier = "beginner" | "pro" | "other"
 
