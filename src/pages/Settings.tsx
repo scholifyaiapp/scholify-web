@@ -817,7 +817,7 @@ const THEMES = [
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
+  const { user, signOut, signOutOtherSessions } = useAuth()
   const { lang, setLang } = useLanguage()
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
@@ -828,6 +828,7 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [savingPassword, setSavingPassword] = useState(false)
+  const [revokingSessions, setRevokingSessions] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
   const [firstName, setFirstName] = useState((user?.user_metadata?.first_name as string) || "")
   const [lastName, setLastName] = useState((user?.user_metadata?.last_name as string) || "")
@@ -991,11 +992,31 @@ export default function Settings() {
       }
       setNewPassword("")
       setConfirmPassword("")
-      toast.success("Password updated — use it next time you sign in")
+      const secured = await signOutOtherSessions()
+      toast.success(
+        secured.error
+          ? "Password updated. Use 'End other logins' below to finish securing the account."
+          : "Password updated and other logins ended",
+      )
     } catch {
       toast.error("Couldn't reach the account service — check your connection and try again")
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const revokeOtherLogins = async () => {
+    if (revokingSessions) return
+    setRevokingSessions(true)
+    try {
+      const result = await signOutOtherSessions()
+      if (result.error) {
+        toast.error("Couldn't end the other logins — check your connection and try again")
+        return
+      }
+      toast.success("Other logins ended. This browser stays signed in.")
+    } finally {
+      setRevokingSessions(false)
     }
   }
 
@@ -1528,6 +1549,44 @@ export default function Settings() {
                 <Icon name="arrow" size={16} />
               </Button>
             )}
+          </div>
+        </Section>
+
+        {/* ── Login security ── */}
+        <Section>
+          <SectionHead icon="lock">Login Security</SectionHead>
+          <div
+            style={{
+              marginTop: 12,
+              padding: "12px 14px",
+              borderRadius: R.md,
+              border: "1px solid rgba(244,164,5,0.24)",
+              background: "rgba(244,164,5,0.07)",
+              color: TEXT2,
+              fontSize: 12.5,
+              lineHeight: 1.6,
+            }}
+          >
+            Your account contains your answers, mock scores, notes, Charles conversations and billing access. Never share its password — another person would see and change the same private learner record.
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <SettingRow
+              name="Active-login policy"
+              desc="One learner, one active login. Signing in on another browser replaces the older login."
+            >
+              <Badge tone="green">
+                <Icon name="done" size={12} /> Protected
+              </Badge>
+            </SettingRow>
+            <SettingRow
+              name="End other logins"
+              desc="Use this after a shared computer, a lost device, or any login you do not recognise."
+              last
+            >
+              <Button variant="secondary" onClick={() => void revokeOtherLogins()} disabled={revokingSessions}>
+                {revokingSessions ? "Securing…" : "End other logins"}
+              </Button>
+            </SettingRow>
           </div>
         </Section>
 

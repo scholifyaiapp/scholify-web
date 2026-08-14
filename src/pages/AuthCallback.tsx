@@ -7,6 +7,7 @@ import { Icon } from "@/components/acca/ui"
 import { claimCapturedAffiliate, resolveAuthLanding } from "@/lib/affiliate"
 import { identifyUser, trackEvent } from "@/lib/analytics"
 import { signInPath } from "@/lib/launch"
+import { secureLatestLogin } from "@/lib/account-session"
 
 /*
  * OAuth return handler. Google (and any future provider) redirects here
@@ -40,6 +41,16 @@ export default function AuthCallback() {
       const { data } = await supabase.auth.getSession()
       if (data.session) {
         const user = data.session.user
+        // Google is an explicit login too. Keep this new session and retire any
+        // older browser before routing into a private learner record.
+        const securityError = await secureLatestLogin()
+        if (securityError) {
+          trackEvent("session_security_failed", { method: "google" })
+          await supabase.auth.signOut({ scope: "local" })
+          setError("Google sign-in succeeded, but Scholify couldn't end the older login. Please try again so your account opens privately.")
+          return
+        }
+        trackEvent("session_secured", { method: "google" })
         identifyUser(user.id, { email: user.email, provider: user.app_metadata?.provider })
         if (Date.now() - Date.parse(user.created_at) < 10 * 60_000) {
           trackEvent("signup_completed", { method: "google" })

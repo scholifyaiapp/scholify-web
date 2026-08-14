@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { ScholifyLockup } from "@/components/brand"
 import { signInPath } from "@/lib/launch"
+import { secureLatestLogin } from "@/lib/account-session"
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -36,8 +37,16 @@ export default function ResetPassword() {
     if (password !== confirm) return setError("The passwords do not match.")
     setBusy(true)
     const { error: updateError } = await supabase.auth.updateUser({ password })
+    if (updateError) {
+      setBusy(false)
+      return setError(updateError.message)
+    }
+    // Password recovery is the path a learner uses after an unfamiliar login.
+    // It must retire the sessions that knew the old password, not merely change
+    // what future sign-ins accept.
+    const securityError = await secureLatestLogin()
     setBusy(false)
-    if (updateError) return setError(updateError.message)
+    if (securityError) return setError("Password changed, but older logins could not be ended. Please try again from Settings.")
     navigate("/dashboard", { replace: true })
   }
 

@@ -180,3 +180,24 @@ describe("0029 — the day-completion email column", () => {
     expect(guarded).toMatch(/update public\.study_reminders set lead_on = false/i)
   })
 })
+
+describe("0030 — individual-account session enforcement", () => {
+  const sql = sqlOf("0030_individual_account_sessions.sql")
+
+  it("checks the authenticated caller's session_id against auth.sessions", () => {
+    expect(sql).toMatch(/create or replace function public\.is_current_auth_session_valid\(\)/i)
+    expect(sql).toMatch(/from auth\.sessions/i)
+    expect(sql).toMatch(/session\.user_id = auth\.uid\(\)/i)
+    expect(sql).toMatch(/auth\.jwt\(\)\s*->>\s*'session_id'/i)
+  })
+
+  it("exposes only the boolean check to authenticated users", () => {
+    expect(sql).toMatch(/revoke all on function public\.is_current_auth_session_valid\(\) from public/i)
+    expect(sql).toMatch(/grant execute on function public\.is_current_auth_session_valid\(\) to authenticated/i)
+  })
+
+  it("is applied and verified by the production migration runner", () => {
+    expect(listed).toContain("0030_individual_account_sessions.sql")
+    expect(RUNNER).toMatch(/REQUIRED_FUNCTIONS = \["is_current_auth_session_valid"\]/)
+  })
+})

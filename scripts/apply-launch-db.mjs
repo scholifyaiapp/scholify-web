@@ -21,6 +21,7 @@ const MIGRATIONS = [
   "0026_practice_reminders.sql",
   "0028_affiliate_payout_reference.sql",
   "0029_day_completion_email.sql",
+  "0030_individual_account_sessions.sql",
 ]
 
 /*
@@ -43,6 +44,8 @@ const REQUIRED_COLUMNS = {
   ],
   affiliate_commissions: ["payout_reference"],
 }
+
+const REQUIRED_FUNCTIONS = ["is_current_auth_session_valid"]
 
 const sql = postgres(databaseUrl, { max: 1, ssl: "require", connect_timeout: 20 })
 try {
@@ -70,7 +73,19 @@ try {
   if (missing.length > 0) {
     throw new Error(`Launch schema verification failed — missing: ${missing.join(", ")}`)
   }
-  console.log(`Launch database schema verified: ${found.size} columns present (reminders, day-completion, payout references)`)
+
+  const functionRows = await sql`
+    select routine_name
+      from information_schema.routines
+     where routine_schema = 'public'
+       and routine_name = any(${REQUIRED_FUNCTIONS})
+  `
+  const foundFunctions = new Set(functionRows.map((row) => row.routine_name))
+  const missingFunctions = REQUIRED_FUNCTIONS.filter((name) => !foundFunctions.has(name))
+  if (missingFunctions.length > 0) {
+    throw new Error(`Launch schema verification failed — missing functions: ${missingFunctions.join(", ")}`)
+  }
+  console.log(`Launch database schema verified: ${found.size} columns and ${foundFunctions.size} security function present`)
 } finally {
   await sql.end({ timeout: 5 })
 }

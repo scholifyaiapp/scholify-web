@@ -11,6 +11,7 @@ import { getCurrentPaper } from "@/lib/acca-qualification"
 import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
 import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
+import { currentAuthSessionIsActive, markSessionReplaced } from "@/lib/account-session"
 
 /* ── After checkout: swap the stale token before judging entitlement ──
  *
@@ -85,9 +86,10 @@ function usePostCheckoutSync(): boolean {
  * invisible until the next navigation. A learner who found a way in stays in
  * for as long as they avoid one.
  *
- * So every WATCHDOG_MS this asks Supabase directly who the caller is, and
- * re-runs the same entitlement rule against the answer. getUser() hits the
- * server and returns fresh app_metadata; the local session cannot fake it.
+ * So every WATCHDOG_MS this checks TWO server facts: that this exact session_id
+ * still exists (a newer login may have replaced it), and, on paid routes, who
+ * the caller is now. getUser() returns fresh app_metadata; the local session
+ * cannot fake it.
  *
  * ── The asymmetry that shapes the whole design ──
  * Ejecting a freeloader fifteen seconds later costs nothing. Ejecting a PAYING
@@ -231,15 +233,27 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   const [serverRevoked, setServerRevoked] = useState(false)
 
   useEffect(() => {
-    if (!gate || !user || syncingPayment) return
-    // The founder's own account bypasses the paywall by design; polling it
-    // would be pure noise.
-    if (isLaunchAdmin(user)) return
+    if (!user) return
     if (!isSupabaseConfigured) return
 
     let cancelled = false
     const check = async () => {
       try {
+        // Supabase access JWTs remain valid until expiry even after their refresh
+        // session is revoked. The database function checks auth.sessions itself,
+        // closing that window promptly for an old/shared browser.
+        const active = await currentAuthSessionIsActive()
+        if (cancelled) return
+        if (active === false) {
+          markSessionReplaced()
+          trackEvent("session_replaced")
+          await supabase.auth.signOut({ scope: "local" })
+          return
+        }
+
+        // Session privacy applies to EVERY protected page. Entitlement polling
+        // below is needed only for paid gates, and never during payment sync.
+        if (!gate || syncingPayment || isLaunchAdmin(user)) return
         const { data, error } = await supabase.auth.getUser()
         if (cancelled || error) return
         const fresh = data.user
@@ -254,6 +268,7 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
         /* offline, timeout, aborted — never evidence of anything */
       }
     }
+    void check()
     const timer = window.setInterval(() => void check(), WATCHDOG_MS)
     // Coming back to the tab is the moment a lapsed session is most likely,
     // and the cheapest time to notice.

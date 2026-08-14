@@ -10,7 +10,7 @@ interface PageContent {
 
 const en: PageContent = {
   title: "Terms of Service",
-  updated: "August 7, 2026",
+  updated: "August 14, 2026",
   intro:
     "These terms are the agreement between you and Scholify. By creating an account or using the app, you agree to them. We have kept them as plain and short as we can.",
   sections: [
@@ -33,6 +33,7 @@ const en: PageContent = {
       body: [
         "Onboarding, diagnosis and your personalised plan are free. Pro may include a 3-day trial after you add a payment method at checkout. Unless you cancel before the trial deadline shown by Stripe, the selected subscription starts automatically when the trial ends.",
         "Beginner subscriptions start billing at checkout. Paid subscriptions renew automatically until cancelled. You can cancel from account settings; access continues until the end of the current paid or trial period.",
+        "Every Scholify account and subscription is an individual learner licence. You may use your account on different devices, but you must not share credentials, sell access, or let another person study through your account. A new sign-in may end an older login to protect the privacy and integrity of the learner record.",
         "Fees already paid are non-refundable, including for part-used billing periods and for periods you do not use after cancelling. Cancelling stops future renewals; it does not refund the current period. Nothing here limits rights you have under mandatory consumer law in your country, which apply regardless of this clause.",
         "Prices may change, and we will give you notice before any change affects you.",
       ],
@@ -77,7 +78,7 @@ const en: PageContent = {
 
 const ru: PageContent = {
   title: "Условия использования",
-  updated: "7 августа 2026",
+  updated: "14 августа 2026",
   intro:
     "Эти условия — соглашение между вами и Scholify. Создавая аккаунт или пользуясь приложением, вы соглашаетесь с ними. Мы постарались сделать их максимально простыми и короткими.",
   sections: [
@@ -100,6 +101,7 @@ const ru: PageContent = {
       body: [
         "Регистрация, диагностика и персональный план бесплатны. Pro может включать 3-дневный пробный период после добавления способа оплаты в Stripe. Если вы не отмените подписку до указанного срока, выбранный тариф начнёт действовать автоматически после окончания пробного периода.",
         "Тариф Beginner оплачивается сразу при оформлении. Платные подписки продлеваются автоматически до отмены. Отменить подписку можно в настройках аккаунта; доступ сохранится до конца оплаченного или пробного периода.",
+        "Каждый аккаунт и тариф Scholify предназначен для одного учащегося. Вы можете пользоваться аккаунтом на разных устройствах, но не должны передавать данные для входа, продавать доступ или позволять другому человеку учиться через ваш аккаунт. Новый вход может завершить предыдущую сессию, чтобы защитить конфиденциальность и целостность учебной истории.",
         "Если иное не требуется законом, уже уплаченные суммы возврату не подлежат. Цены могут меняться, и мы уведомим вас до того, как изменение вас коснётся.",
       ],
     },

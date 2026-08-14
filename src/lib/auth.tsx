@@ -13,6 +13,7 @@ import { identifyUser, trackEvent } from "@/lib/analytics"
 import { hydrateAccountSetup, persistAccountSetup, releaseAccountSetup } from "@/lib/account-state"
 import { clearPartnerLandingCache } from "@/lib/affiliate"
 import { markAppRetention } from "@/lib/retention"
+import { secureLatestLogin } from "@/lib/account-session"
 
 /*
  * A production build with no Supabase must NOT mint fake accounts (see the note
@@ -98,6 +99,8 @@ interface AuthContextValue {
   signUp: (input: SignUpInput) => Promise<AuthResult>
   signInWithGoogle: () => Promise<AuthResult>
   signOut: () => Promise<void>
+  /** Keep this browser signed in and revoke every other login for the account. */
+  signOutOtherSessions: () => Promise<AuthResult>
   /** Email a password-reset link. Errors honestly when Supabase isn't configured. */
   resetPassword: (email: string) => Promise<AuthResult>
 }
@@ -244,6 +247,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.session) {
       setSession(data.session)
       setUser(data.user)
+      // An account is one private learner record, not a household/team seat.
+      // End every older login only after an EXPLICIT successful sign-in. Doing
+      // this while merely restoring a tab would let an abandoned old browser
+      // evict the person who most recently entered the password.
+      const securityError = await secureLatestLogin()
+      if (securityError) {
+        trackEvent("session_security_failed", { method: "password" })
+        // Do not leave a half-secured login alive. Reporting a sign-in failure
+        // while silently retaining the session would be worse than either state.
+        await supabase.auth.signOut({ scope: "local" })
+        setSession(null)
+        setUser(null)
+        return {
+          error: "Your password was correct, but Scholify couldn't end the older login. Please try again so your account opens privately.",
+          code: "unknown",
+          isNewUser: false,
+        }
+      }
+      trackEvent("session_secured", { method: "password" })
     }
     return { error: null, isNewUser: false }
   }, [])
@@ -313,7 +335,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     await releaseAccountSetup()
-    await supabase.auth.signOut()
+    // Explicit global scope: "Sign out" is a security boundary in Settings.
+    // If credentials were shared, leaving another browser alive would make the
+    // button dishonest. Supabase may leave an issued access JWT usable until it
+    // expires; the protected-route session check closes that window in-app.
+    await supabase.auth.signOut({ scope: "global" })
+  }, [])
+
+  const signOutOtherSessions = useCallback(async (): Promise<AuthResult> => {
+    if (!isSupabaseConfigured) return { error: null }
+    const error = await secureLatestLogin()
+    if (error) return { error, code: "unknown" }
+    trackEvent("other_sessions_revoked")
+    return { error: null }
   }, [])
 
   const resetPassword = useCallback(async (email: string): Promise<AuthResult> => {
@@ -334,8 +368,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword }),
-    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword],
+    () => ({ user, session, loading, signIn, signUp, signInWithGoogle, signOut, signOutOtherSessions, resetPassword }),
+    [user, session, loading, signIn, signUp, signInWithGoogle, signOut, signOutOtherSessions, resetPassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -9,6 +9,8 @@ import { captureAffiliateRef, resolveAuthLanding } from "@/lib/affiliate"
 import { pruneOldDayKeys } from "@/lib/acca-today"
 import { ownsAuthHash } from "@/lib/navigation"
 import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
+import { secureLatestLogin } from "@/lib/account-session"
+import { supabase } from "@/lib/supabase"
 
 /*
  * Lazy import that self-heals after a deploy. A route chunk can fail to load
@@ -144,7 +146,16 @@ function OAuthReturnHandler() {
       // Approved partners land on their own dashboard (see resolveAuthLanding).
       // Optimistic /dashboard first would flash the student app, so we wait for
       // the one cached check rather than navigating twice.
-      void resolveAuthLanding(null).then((to) => navigate(to, { replace: true }))
+      void (async () => {
+        const securityError = await secureLatestLogin()
+        if (securityError) {
+          await supabase.auth.signOut({ scope: "local" })
+          const message = encodeURIComponent("Google sign-in succeeded, but Scholify couldn't end the older login. Please try again so your account opens privately.")
+          navigate(`/auth/callback?error_description=${message}`, { replace: true })
+          return
+        }
+        navigate(await resolveAuthLanding(null), { replace: true })
+      })()
     } else if (looksLikeAuthHash) {
       navigate("/auth/callback", { replace: true })
     }

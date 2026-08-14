@@ -10,7 +10,7 @@ interface PageContent {
 
 const en: PageContent = {
   title: "Privacy Policy",
-  updated: "August 7, 2026",
+  updated: "August 14, 2026",
   intro:
     "Scholify helps you prepare for the ACCA exams. To do that well, we collect a small amount of information about you and how you use the app. This page explains exactly what we collect, why, and the control you have over it.",
   sections: [
@@ -31,6 +31,7 @@ const en: PageContent = {
         "To build your study plans, track progress, and personalize Charles's coaching.",
         "To keep your account secure and to provide customer support when you need it.",
         "To understand which features help people learn, so we can make Scholify better.",
+        "To protect one learner's record from account sharing, a new sign-in can replace older login sessions. Anyone holding your credentials could otherwise see and change your answers, notes, mock results, AI conversations and account settings, so you should never share your password.",
         "We do not sell your personal data. Ever.",
       ],
     },
@@ -71,7 +72,7 @@ const en: PageContent = {
 
 const ru: PageContent = {
   title: "Политика конфиденциальности",
-  updated: "7 августа 2026",
+  updated: "14 августа 2026",
   intro:
     "Scholify помогает готовиться к экзаменам ACCA. Чтобы делать это хорошо, мы собираем небольшой объём информации о вас и о том, как вы пользуетесь приложением. На этой странице подробно описано, что именно мы собираем, зачем и как вы можете этим управлять.",
   sections: [
@@ -90,9 +91,10 @@ const ru: PageContent = {
       heading: "Как мы используем вашу информацию",
       body: [
         "Чтобы составлять ваши планы занятий, отслеживать серии и персонализировать наставничество Чарльза.",
-        "Чтобы защищать ваш аккаунт и оказывать поддержку, когда она вам нужна.",
-        "Чтобы понимать, какие функции помогают людям учиться, и делать Scholify лучше.",
-        "Мы не продаём ваши персональные данные. Никогда.",
+          "Чтобы защищать ваш аккаунт и оказывать поддержку, когда она вам нужна.",
+          "Чтобы понимать, какие функции помогают людям учиться, и делать Scholify лучше.",
+          "Чтобы защитить учебную историю одного человека от совместного использования аккаунта, новый вход может завершить предыдущие сессии. Любой, у кого есть ваши данные для входа, сможет увидеть и изменить ответы, заметки, результаты пробных экзаменов, разговоры с ИИ и настройки аккаунта, поэтому никому не сообщайте пароль.",
+          "Мы не продаём ваши персональные данные. Никогда.",
       ],
     },
     {

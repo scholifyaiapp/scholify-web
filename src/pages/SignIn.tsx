@@ -20,6 +20,7 @@ import {
 import { CharacterLeftPanel } from "@/components/auth/auth-characters"
 import { ScholifyLockup } from "@/components/brand"
 import { signUpPath } from "@/lib/launch"
+import { consumeSessionReplacedNotice } from "@/lib/account-session"
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
@@ -215,6 +216,7 @@ export default function SignIn() {
   const location = useLocation()
   const { signIn, signInWithGoogle } = useAuth()
   const [forgotOpen, setForgotOpen] = useState(false)
+  const [sessionReplaced] = useState(() => consumeSessionReplacedNotice())
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -374,6 +376,27 @@ export default function SignIn() {
           </p>
         </motion.div>
 
+        {sessionReplaced && (
+          <motion.div
+            variants={itemVariants}
+            custom={2}
+            role="status"
+            style={{
+              marginTop: 20,
+              padding: "12px 14px",
+              borderRadius: 12,
+              border: "1px solid rgba(244,164,5,0.28)",
+              background: "rgba(244,164,5,0.08)",
+              color: "var(--sch-tx-1)",
+              fontSize: 13,
+              lineHeight: 1.55,
+            }}
+          >
+            <strong style={{ color: "var(--sch-text)" }}>This login was replaced.</strong>{" "}
+            Scholify was signed in somewhere else. If that was not you, reset your password before continuing.
+          </motion.div>
+        )}
+
         {/*
           GOOGLE FIRST, above the form.
           It used to sit under the password field behind an "or" divider, which
@@ -498,6 +521,9 @@ export default function SignIn() {
               disabled={!canSubmit}
             />
           </motion.div>
+          <p style={{ margin: "12px 0 0", color: "var(--sch-tx-3)", fontSize: 11.5, lineHeight: 1.5, textAlign: "center" }}>
+            One learner per account. A successful sign-in protects your private study record by ending older logins.
+          </p>
         </form>
 
         {/* Google and its divider now sit ABOVE the form — see the note there. */}

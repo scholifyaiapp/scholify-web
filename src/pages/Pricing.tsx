@@ -75,6 +75,10 @@ const FAQS: Array<[string, string]> = [
     "All 15 papers of the ACCA qualification, BT to AAA. Seven papers have fully authored question banks with no generated drills; the other eight combine authored questions with generated drills. Every paper has study chapters, and Pro includes the AI Examiner for written practice.",
   ],
   [
+    "Can I share one account with another student?",
+    "No. Each plan is an individual learner licence because answers, weak areas, notes, AI conversations, mocks and readiness all belong to one person. You can move between devices, but signing in again protects that private learner record by ending the older login.",
+  ],
+  [
     "What is the AI Examiner?",
     "Strategic Professional and parts of Applied Skills are written exams — and traditionally you wait days for a tutor to mark your answers. The AI Examiner marks your written answer against a marking scheme point by point, in seconds, and shows you exactly which marks you earned and which you missed.",
   ],
