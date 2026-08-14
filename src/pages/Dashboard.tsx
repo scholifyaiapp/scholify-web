@@ -545,7 +545,7 @@ function SetupStrip() {
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === goal)?.label
   const items: { icon: IconName; k: string; v: string }[] = [
     { icon: "roadmap", k: "Paper", v: pid },
-    { icon: "time", k: "Daily", v: `${plan.dailyMinutes} min${plan.studyTime ? ` at ${plan.studyTime}` : ""}` },
+    { icon: "time", k: "Daily", v: `${plan.dailyMinutes} min · ${plan.dailyGoal} questions${plan.studyTime ? ` at ${plan.studyTime}` : ""}` },
     {
       icon: "calendar",
       k: "Exam",
@@ -553,6 +553,7 @@ function SetupStrip() {
         ? format(new Date(`${plan.examDate}T00:00:00`), "d MMM yyyy")
         : "Paced by mastery",
     },
+    { icon: "progress", k: "Target", v: `${plan.targetProb}% readiness` },
     ...(goalLabel ? [{ icon: "diagnostic" as IconName, k: "Goal", v: goalLabel }] : []),
   ]
   return (
@@ -566,8 +567,8 @@ function SetupStrip() {
           <span style={{ fontWeight: 750, color: C.text }}>{it.v}</span>
         </span>
       ))}
-      <Link to="/settings" style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 750, color: C.brand, textDecoration: "none", whiteSpace: "nowrap" }}>
-        Edit →
+      <Link to="/settings#study-plan" style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 750, color: C.brand, textDecoration: "none", whiteSpace: "nowrap" }}>
+        Adjust plan →
       </Link>
     </div>
   )

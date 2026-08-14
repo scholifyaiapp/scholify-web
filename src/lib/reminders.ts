@@ -154,6 +154,23 @@ export async function notifyDayComplete(facts: DayCompleteFacts): Promise<boolea
  */
 export function registerPracticeTime(practiceTime: string): void {
   const s = readSaved()
+  /*
+   * Onboarding already stores this clock in the paper plan; persist the same
+   * value in reminder settings too. Previously the server received (say) 07:30
+   * while Settings continued to display its untouched 19:00 default, so the
+   * learner could not tell which schedule was real.
+   */
+  try {
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ...s,
+      practiceTime,
+      reminderTime: practiceTime,
+      reminderSlots: { ...DEFAULT_SLOTS, ...(s?.reminderSlots || {}) },
+      notifyDaily: s?.notifyDaily !== false,
+    }))
+  } catch {
+    /* local persistence is best-effort */
+  }
   // Respect an explicit opt-out; default on for a learner who has never chosen.
   if (s && s.notifyDaily === false) return
   void syncReminder(true, practiceTime, { ...DEFAULT_SLOTS, ...(s?.reminderSlots || {}) })

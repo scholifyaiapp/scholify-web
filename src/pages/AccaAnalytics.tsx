@@ -7,7 +7,7 @@ import { getExamIntel, avgPassRate } from "@/lib/acca-examiner"
 import { getBankRuns, bankRunProgress } from "@/lib/acca-bankruns"
 import { Icon, IconBadge, Card, Badge, SectionLabel, C, SP, R, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, MeterBar, BreakdownList, TrendBars, DeltaChip, Sparkbars, bandColor } from "@/components/acca/charts"
-import { getPaper, getPaperStats, getTodayStats, getDailyActivity, getDailyGoal, setDailyGoal, type AccaPaper } from "@/lib/acca"
+import { getPaper, getPaperStats, getTodayStats, getDailyActivity, type AccaPaper } from "@/lib/acca"
 import { getMockHistory } from "@/lib/acca"
 import { getLatestDiagnostic, estimateFromPractice, passBand } from "@/lib/acca-diagnostic"
 import { getPlan, daysUntilExam, currentPhase, METHOD_PHASES } from "@/lib/acca-plan"
@@ -693,18 +693,13 @@ function StudySection({ paperId }: { paperId: string }) {
   const composition = useMemo(() => composeToday(paperId, /* dryRun */ true), [paperId])
   const mission = composition.blocks
   const missionProgress = useMemo(() => dayProgress(paperId, composition, getTodayDone(paperId)), [paperId, composition])
-  const [goal, setGoal] = useState(getDailyGoal())
+  const goal = Math.max(1, plan.dailyGoal)
   const heatMax = Math.max(1, ...heat.map((a) => a.count))
 
   // Same source as the dashboard rings, so the two can never disagree on which
   // day of the lap the learner is on.
   const lap = streakProgress(shieldState(paperId).streak)
   const prizesBanked = lifetimePrizeCount(shieldState(paperId).streak)
-
-  function updateGoal(n: number) {
-    setGoal(n)
-    setDailyGoal(n)
-  }
 
   const missionIcons: Record<BlockKind, IconName> = {
     study: "learn", quiz: "mission", practice: "practice", flashcards: "flashcards", article: "notes",
@@ -818,40 +813,43 @@ function StudySection({ paperId }: { paperId: string }) {
         </div>
       </Card>
 
-      {/* daily goal — questions per day, with presets */}
+      {/*
+        The question target is derived from the learner's time budget and
+        readiness ambition. Offering four unrelated presets here let Analytics
+        promise 10 while the real mission scheduled 27; configuration now has
+        one source of truth in Settings.
+      */}
       <Card style={{ marginBottom: SP.md }}>
         <CardTitle
           icon="practice"
           right={
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: today.goalMet ? C.green : C.soft, fontWeight: 650, textTransform: "none", letterSpacing: 0 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: today.answered >= goal ? C.green : C.soft, fontWeight: 650, textTransform: "none", letterSpacing: 0 }}>
               {today.answered} / {goal} today
-              {today.goalMet && <Icon name="done" size={15} color={C.green} />}
+              {today.answered >= goal && <Icon name="done" size={15} color={C.green} />}
             </span>
           }
         >
-          Daily goal
+          Today's question target
         </CardTitle>
         <MeterBar
           value={today.answered}
           max={goal}
-          color={today.goalMet ? C.green : C.brand}
-          track={today.goalMet ? C.greenSoft : C.brandSoft}
+          color={today.answered >= goal ? C.green : C.brand}
+          track={today.answered >= goal ? C.greenSoft : C.brandSoft}
           style={{ marginBottom: SP.md }}
         />
-        <div style={{ display: "flex", gap: SP.sm }}>
-          {[10, 15, 20, 30].map((n) => {
-            const on = goal === n
-            return (
-              <motion.button
-                key={n}
-                onClick={() => updateGoal(n)}
-                whileTap={{ scale: 0.98 }}
-                style={{ flex: 1, minHeight: 42, borderRadius: R.sm, border: `1.5px solid ${on ? C.brand : C.border}`, background: on ? C.brandSoft : C.card, color: on ? C.brand : C.text, fontWeight: 700, fontSize: 14, cursor: "pointer", transition: "background .18s ease, border-color .18s ease, color .18s ease" }}
-              >
-                {n}
-              </motion.button>
-            )
-          })}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ ...TYPE.small, color: C.soft, lineHeight: 1.55 }}>
+            Automatic from {plan.dailyMinutes} minutes/day and your {plan.targetProb}% readiness target.
+          </span>
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/settings#study-plan")}
+            style={{ minHeight: 38, padding: "0 13px", borderRadius: R.sm, border: `1px solid ${C.border}`, background: C.card2, color: C.text, fontSize: 12, fontWeight: 750, cursor: "pointer" }}
+          >
+            Adjust study plan
+          </motion.button>
         </div>
       </Card>
 

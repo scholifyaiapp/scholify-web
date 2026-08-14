@@ -37,13 +37,18 @@ import {
 } from "@/components/acca/ui"
 import {
   getPaper,
-  getDailyGoal,
+  getPaperStats,
   setDailyGoal,
   getOverallProgress,
   snapshotProgress,
   clearAccaProgress,
 } from "@/lib/acca"
-import { getPlan, setPlan } from "@/lib/acca-plan"
+import { getPlan, setPlan, WEEK_DAYS } from "@/lib/acca-plan"
+import { configuredStudyDays, derivePlanUpdate, weeklyStudyHours } from "@/lib/acca-plan-config"
+import { shapeDay, ambitionFactor } from "@/lib/acca-schedule"
+import { buildOnboardingGuide } from "@/lib/acca-onboarding-guide"
+import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
+import { paperWorkHours } from "@/lib/acca-topic-plan"
 import { entitlementOf } from "@/lib/entitlement"
 import { openStripeBillingPortal } from "@/lib/stripe"
 import { avatarUrlOf, onAvatarChange, saveAvatar, removeAvatar, AVATAR_MAX_SOURCE_MB, type AvatarError } from "@/lib/avatar"
@@ -56,7 +61,7 @@ import {
   type PlanChangeReason,
 } from "@/lib/acca-plan-adjustment"
 import { getPaperVariant, setPaperVariant, type PaperVariant } from "@/lib/acca-profile"
-import { SETUP_KEYS } from "@/lib/account-state"
+import { persistAccountSetup, SETUP_KEYS } from "@/lib/account-state"
 
 /* ──────────────────────────────────────────────────────────────
  *  Scholify — Settings & Profile screen.
@@ -149,6 +154,8 @@ function shiftClock(time: string, deltaMinutes: number): string {
 
 function readSettings(): AppSettings {
   try {
+    const currentPaper = getCurrentPaper()
+    const plannedTime = currentPaper ? getPlan(currentPaper).studyTime : null
     const raw = window.localStorage.getItem("scholify-settings")
     if (raw) {
       const saved = JSON.parse(raw) as Partial<AppSettings>
@@ -159,10 +166,12 @@ function readSettings(): AppSettings {
        * they picked to 19:00. Carry it across instead.
        */
       if (!saved.practiceTime && saved.reminderTime) merged.practiceTime = saved.reminderTime
+      else if (!saved.practiceTime && plannedTime) merged.practiceTime = plannedTime
       // A partially-saved slots object must not leave a slot undefined.
       merged.reminderSlots = { ...DEFAULT_SLOTS, ...(saved.reminderSlots || {}) }
       return merged
     }
+    if (plannedTime) return { ...DEFAULT_SETTINGS, practiceTime: plannedTime, reminderTime: plannedTime }
   } catch {
     /* ignore */
   }
@@ -208,221 +217,383 @@ function collectAccaData(): Record<string, unknown> {
 
 /* ── Reusable bits ───────────────────────────────────────────── */
 
-/* ── Exam setup — current paper, exam date, daily goal & minutes ── */
+/* ── Study-plan control centre ── */
 
-function ExamSetupSection() {
+function ExamSetupSection({
+  sessionTime,
+  onSessionTimeChange,
+}: {
+  sessionTime: string
+  onSessionTimeChange: (time: string) => void
+}) {
   const { toast } = useToast()
   const [paperId, setPaperId] = useState(() => getCurrentPaper() ?? getStudyingPapers()[0] ?? "FA")
   const paper = getPaper(paperId)
   const [plan, setPlanState] = useState(() => getPlan(paperId))
-  const [goal, setGoal] = useState(() => getDailyGoal())
-  const [reason, setReason] = useState<PlanChangeReason>("difficulty")
+  const [reason, setReason] = useState<PlanChangeReason>("work")
   const [returnDate, setReturnDate] = useState("")
   const [paused, setPaused] = useState(() => getPaperPause(paperId))
   const [variant, setVariantState] = useState<PaperVariant | null>(() => getPaperVariant(paperId))
+  const [savedLabel, setSavedLabel] = useState("Saved automatically")
 
-  function updatePlan(patch: Parameters<typeof setPlan>[1]) {
-    setPlanState(setPlan(paperId, patch))
+  /*
+   * Upgrade plans saved before explicit study days and automatic question goals
+   * existed. This is a repair, not a cosmetic default: without it the screen
+   * could display Monday–Saturday while the scheduler still treated Sunday as
+   * active, and Analytics could retain an old manual question target.
+   */
+  useEffect(() => {
+    const stored = getPlan(paperId)
+    const resolved = derivePlanUpdate(stored, {
+      dailyMinutes: stored.dailyMinutes,
+      studyDays: configuredStudyDays(stored),
+      studyTime: sessionTime,
+    })
+    const next = setPlan(paperId, resolved)
+    setDailyGoal(next.dailyGoal)
+    setPlanState(next)
+    void persistAccountSetup()
+  }, [paperId])
+
+  const studyDays = configuredStudyDays(plan)
+  const dayShape = shapeDay(plan.dailyMinutes, plan.targetProb)
+  const stats = getPaperStats(paperId)
+  const baseline = getLearnerBaseline()
+  const guide = buildOnboardingGuide({
+    paperId,
+    route: baseline?.route ?? null,
+    englishLevel: baseline?.englishLevel ?? null,
+    minutesPerDay: plan.dailyMinutes,
+    daysPerWeek: studyDays.length,
+    examDate: plan.examDate,
+    targetPercentage: plan.targetProb,
+    contentHours: paperWorkHours(paperId),
+  })
+  const status = paused ? "paused" : guide.status
+  const statusView = status === "comfortable"
+    ? { label: "Healthy buffer", color: C.green, background: C.greenSoft }
+    : status === "focused"
+      ? { label: "Focused plan", color: C.amber, background: "rgba(244,164,5,0.10)" }
+      : status === "risky"
+        ? { label: "Time shortfall", color: C.red, background: C.redSoft }
+        : { label: "Plan paused", color: C.amber, background: "rgba(244,164,5,0.10)" }
+
+  function updatePlan(patch: Parameters<typeof setPlan>[1], success?: string) {
+    const resolved = derivePlanUpdate(plan, patch)
+    const next = setPlan(paperId, resolved)
+    setPlanState(next)
+    setDailyGoal(next.dailyGoal)
+    setSavedLabel("Saved just now")
+    void persistAccountSetup()
+    if (success) toast.success(success)
   }
-  function updateGoal(n: number) {
-    setGoal(n)
-    setDailyGoal(n)
-  }
+
   function switchPaper(nextPaper: string) {
     if (nextPaper === paperId) return
-    recordPaperSwitch(paperId, nextPaper, reason)
+    recordPaperSwitch(paperId, nextPaper, "personal")
     setCurrentPaper(nextPaper)
+    const stored = getPlan(nextPaper)
+    const next = setPlan(nextPaper, derivePlanUpdate(stored, { dailyMinutes: stored.dailyMinutes }))
     setPaperId(nextPaper)
-    setPlanState(getPlan(nextPaper))
+    setPlanState(next)
+    setDailyGoal(next.dailyGoal)
     setPaused(getPaperPause(nextPaper))
     setVariantState(getPaperVariant(nextPaper))
+    setSavedLabel("Saved just now")
+    void persistAccountSetup()
     toast.success(`Switched to ${nextPaper} — your ${paperId} progress is safely preserved`)
   }
+
+  function toggleStudyDay(day: number) {
+    const next = studyDays.includes(day) ? studyDays.filter((value) => value !== day) : [...studyDays, day]
+    if (next.length === 0) {
+      toast.info("Keep at least one study day — choose another day before removing this one")
+      return
+    }
+    updatePlan({ studyDays: next })
+  }
+
   function togglePause() {
     if (paused) {
       resumePaper(paperId)
       setPaused(null)
+      void persistAccountSetup()
       toast.success(`Welcome back — your ${paperId} plan is ready`)
     } else {
       const next = pausePaper(paperId, reason, returnDate || null)
       setPaused(next)
+      void persistAccountSetup()
       toast.success("Plan paused — progress is safe and there is no catch-up penalty")
     }
   }
 
+  const selectStyle: CSSProperties = {
+    width: "min(100%, 330px)",
+    padding: "11px 13px",
+    borderRadius: R.md,
+    border: `1px solid ${C.border}`,
+    background: "var(--sch-bg)",
+    color: C.text,
+    fontSize: 13,
+    fontWeight: 700,
+  }
+
   return (
-    <Section>
-      <SectionHead icon="exam">Exam setup</SectionHead>
-      <SettingRow name="Current paper" desc="The paper your loop is built around">
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-          <span style={{ width: 34, height: 34, borderRadius: 9, background: IRIDESCENT, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 12 }}>
-            {paperId}
-          </span>
-          <span style={{ fontSize: 13, color: "var(--sch-text)", fontWeight: 650 }}>{paper?.name ?? paperId}</span>
-        </span>
-      </SettingRow>
-      {["LW", "TX"].includes(paperId) && (
-        <SettingRow name={`${paperId} variant`} desc="Switch the legal or tax system used by your study content">
-          <select
-            aria-label={`${paperId} study variant`}
-            value={variant ?? (paperId === "LW" ? "GLOBAL" : "UK")}
-            onChange={(event) => {
-              const next = event.target.value as PaperVariant
-              setPaperVariant(paperId, next)
-              setVariantState(next)
-              toast.success(`${paperId} changed to ${next === "UK" ? "United Kingdom" : paperId === "TX" ? "International foundation" : "Global"} — reloading study content`)
-              window.setTimeout(() => window.location.reload(), 350)
-            }}
-            style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text, fontWeight: 700 }}
-          >
-            <option value="UK">United Kingdom</option>
-            <option value="GLOBAL">{paperId === "TX" ? "International foundation (not an ACCA exam variant)" : "Global"}</option>
-          </select>
-        </SettingRow>
-      )}
-      <SettingRow name="Change my plan" desc="Pause, reduce pressure, or safely switch papers">
-        <div style={{ display: "grid", gap: 8, minWidth: 260 }}>
-          <select
-            aria-label="Change active paper"
-            value={paperId}
-            onChange={(e) => switchPaper(e.target.value)}
-            style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text, fontWeight: 700 }}
-          >
-            {ALL_PAPERS.map((p) => <option key={p.id} value={p.id}>{p.id} — {p.name}</option>)}
-          </select>
-          <select
-            aria-label="Reason for changing plan"
-            value={reason}
-            onChange={(e) => setReason(e.target.value as PlanChangeReason)}
-            style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text }}
-          >
-            <option value="difficulty">This paper feels too difficult</option>
-            <option value="illness">Illness or recovery</option>
-            <option value="work">Work, travel or family</option>
-            <option value="course">My course or tutor changed</option>
-            <option value="exam-date">My exam date changed</option>
-            <option value="personal">Personal choice</option>
-            <option value="other">Another reason</option>
-          </select>
-          {!paused && (
+    <Section style={{ marginTop: 32, borderRadius: 24, padding: 28 }}>
+      <div id="study-plan" style={{ scrollMarginTop: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div>
+            <SectionHead icon="mission">Study Plan</SectionHead>
+            <p style={{ margin: "6px 0 0", color: TEXT2, fontSize: 13, lineHeight: 1.6 }}>
+              One control centre for what you study, when you study, and how hard the plan should push.
+            </p>
+          </div>
+          <Badge tone="green"><Icon name="done" size={12} /> {savedLabel}</Badge>
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            padding: 18,
+            borderRadius: R.lg,
+            border: `1px solid ${C.border}`,
+            background: "linear-gradient(135deg, rgba(200,0,0,0.055), var(--sch-card-2))",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              <span style={{ width: 42, height: 42, borderRadius: 12, background: IRIDESCENT, display: "grid", placeItems: "center", color: "#fff", fontWeight: 850, fontSize: 13, flexShrink: 0 }}>
+                {paperId}
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <strong style={{ display: "block", color: C.text, fontSize: 15 }}>{paper?.name ?? paperId}</strong>
+                <span style={{ display: "block", color: TEXT2, fontSize: 12, marginTop: 2 }}>
+                  {plan.examDate ? `Exam ${format(new Date(`${plan.examDate}T00:00:00`), "d MMMM yyyy")}` : "No exam date set"}
+                </span>
+              </span>
+            </div>
+            <span style={{ padding: "7px 11px", borderRadius: 999, color: statusView.color, background: statusView.background, fontSize: 11.5, fontWeight: 800 }}>
+              {statusView.label}
+            </span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(125px, 1fr))", gap: 10, marginTop: 16 }}>
+            {[
+              ["Daily block", `${plan.dailyMinutes} min`],
+              ["Study week", `${studyDays.length} days · ${weeklyStudyHours(plan)}h`],
+              ["Question target", `${dayShape.questionGoal} automatic`],
+              ["Readiness", stats.answered > 0 ? `${Math.round(stats.readiness)}% → ${plan.targetProb}%` : `Measure → ${plan.targetProb}%`],
+            ].map(([label, value]) => (
+              <div key={label} style={{ padding: "11px 12px", borderRadius: R.md, background: "var(--sch-card)", border: `1px solid ${C.border}` }}>
+                <div style={{ color: "var(--sch-tx-4)", fontSize: 10.5, fontWeight: 750, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</div>
+                <div style={{ color: C.text, fontSize: 13.5, fontWeight: 800, marginTop: 4 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SettingRow name="Active paper" desc="Switch the workspace; progress on every paper remains separate and safe">
+            <select aria-label="Active ACCA paper" value={paperId} onChange={(event) => switchPaper(event.target.value)} style={selectStyle}>
+              {ALL_PAPERS.map((item) => <option key={item.id} value={item.id}>{item.id} — {item.name}</option>)}
+            </select>
+          </SettingRow>
+
+          {["LW", "TX"].includes(paperId) && (
+            <SettingRow name={`${paperId} variant`} desc="This changes the syllabus, question bank and study content—not your saved progress">
+              <select
+                aria-label={`${paperId} study variant`}
+                value={variant ?? (paperId === "LW" ? "GLOBAL" : "UK")}
+                onChange={(event) => {
+                  const next = event.target.value as PaperVariant
+                  setPaperVariant(paperId, next)
+                  setVariantState(next)
+                  void persistAccountSetup()
+                  toast.success(`${paperId} changed to ${next === "UK" ? "United Kingdom" : paperId === "TX" ? "International foundation" : "Global"} — reloading study content`)
+                  window.setTimeout(() => window.location.reload(), 350)
+                }}
+                style={selectStyle}
+              >
+                <option value="UK">United Kingdom</option>
+                <option value="GLOBAL">{paperId === "TX" ? "International foundation (not an ACCA exam variant)" : "Global"}</option>
+              </select>
+            </SettingRow>
+          )}
+
+          <SettingRow name="Exam date" desc="The roadmap works backwards from this date and prioritises rehearsal as it approaches">
             <input
               type="date"
-              aria-label="Optional return date"
-              value={returnDate}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setReturnDate(e.target.value)}
-              title="Optional return date"
-              style={{ padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "var(--sch-bg)", color: C.text }}
+              aria-label="ACCA exam date"
+              value={plan.examDate ?? ""}
+              onChange={(event) => updatePlan({ examDate: event.target.value || null }, "Exam date updated — your roadmap has been recalculated")}
+              style={{ ...selectStyle, colorScheme: "light dark" }}
             />
+          </SettingRow>
+
+          <SettingRow name="Study days" desc="Rest days stay clear; Scholify does not create a catch-up penalty for them">
+            <div role="group" aria-label="Days of the week to study" style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 6 }}>
+              {WEEK_DAYS.map(({ day, short, long }) => {
+                const on = studyDays.includes(day)
+                return (
+                  <motion.button
+                    key={day}
+                    type="button"
+                    aria-label={`${long}: ${on ? "study day" : "rest day"}`}
+                    aria-pressed={on}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleStudyDay(day)}
+                    style={{
+                      width: 42,
+                      height: 38,
+                      borderRadius: R.sm,
+                      border: `1.5px solid ${on ? C.brand : C.border}`,
+                      background: on ? C.brandSoft : "var(--sch-card)",
+                      color: on ? C.brand : C.muted,
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {short}
+                  </motion.button>
+                )
+              })}
+            </div>
+          </SettingRow>
+
+          <SettingRow name="Session start time" desc="Your protected study appointment; reminder emails are scheduled around the same clock">
+            <TimeInput
+              value={sessionTime}
+              onChange={(value) => {
+                updatePlan({ studyTime: value })
+                onSessionTimeChange(value)
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow name="Daily study time" desc="A real time budget: Scholify fills it with learning, practice, recall and flashcards">
+            <div style={{ display: "grid", justifyItems: "end", gap: 8 }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {[40, 60, 90, 120].map((minutes) => {
+                  const on = plan.dailyMinutes === minutes
+                  return (
+                    <motion.button
+                      key={minutes}
+                      type="button"
+                      aria-pressed={on}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => updatePlan({ dailyMinutes: minutes })}
+                      style={{ padding: "0 11px", minWidth: 54, height: 38, borderRadius: R.sm, border: `1.5px solid ${on ? C.brand : C.border}`, background: on ? C.brandSoft : "var(--sch-card)", color: on ? C.brand : C.text, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}
+                    >
+                      {minutes}m
+                    </motion.button>
+                  )
+                })}
+              </div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+                <motion.button type="button" whileTap={{ scale: 0.94 }} onClick={() => updatePlan({ dailyMinutes: Math.max(20, plan.dailyMinutes - 5) })} aria-label="Decrease daily study time by 5 minutes" style={{ width: 34, height: 34, borderRadius: R.sm, border: `1px solid ${C.border}`, background: "var(--sch-card)", color: C.text, fontWeight: 800, fontSize: 17, cursor: "pointer" }}>−</motion.button>
+                <strong style={{ minWidth: 68, textAlign: "center", color: C.text, fontSize: 13.5, fontVariantNumeric: "tabular-nums" }}>{plan.dailyMinutes} min</strong>
+                <motion.button type="button" whileTap={{ scale: 0.94 }} onClick={() => updatePlan({ dailyMinutes: Math.min(180, plan.dailyMinutes + 5) })} aria-label="Increase daily study time by 5 minutes" style={{ width: 34, height: 34, borderRadius: R.sm, border: `1px solid ${C.border}`, background: "var(--sch-card)", color: C.text, fontWeight: 800, fontSize: 17, cursor: "pointer" }}>+</motion.button>
+              </div>
+            </div>
+          </SettingRow>
+
+          <SettingRow name="Target readiness" desc="Your safety margin before exam day—not the ACCA pass mark and not a guarantee">
+            <div role="radiogroup" aria-label="Target Exam Readiness Score" style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {[
+                { value: 65, label: "Pass-ready" },
+                { value: 75, label: "Confident" },
+                { value: 85, label: "Stretch" },
+              ].map(({ value, label }) => {
+                const on = plan.targetProb === value
+                const extra = Math.round((ambitionFactor(value) - 1) * 100)
+                return (
+                  <motion.button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => updatePlan({ targetProb: value })}
+                    style={{ minWidth: 110, padding: "9px 10px", borderRadius: R.md, border: `1.5px solid ${on ? C.brand : C.border}`, background: on ? C.brandSoft : "var(--sch-card)", color: on ? C.brand : C.text, cursor: "pointer", textAlign: "left" }}
+                  >
+                    <span style={{ display: "block", fontSize: 14, fontWeight: 850 }}>{value}%</span>
+                    <span style={{ display: "block", fontSize: 10.5, fontWeight: 700, marginTop: 2 }}>{label}</span>
+                    <span style={{ display: "block", fontSize: 9.5, opacity: 0.78, marginTop: 2 }}>{extra > 0 ? `Up to +${extra}% practice` : "Standard practice"}</span>
+                  </motion.button>
+                )
+              })}
+            </div>
+          </SettingRow>
+
+          <SettingRow name="Daily question target" desc="Calculated automatically so the dashboard and today's mission cannot disagree" last>
+            <div style={{ textAlign: "right" }}>
+              <strong style={{ display: "block", color: C.text, fontSize: 17 }}>{dayShape.questionGoal} questions</strong>
+              <span style={{ display: "block", color: TEXT2, fontSize: 11.5, marginTop: 2 }}>
+                {dayShape.cycles.length} topic {dayShape.cycles.length === 1 ? "cycle" : "cycles"} · {dayShape.cards} flashcards
+              </span>
+            </div>
+          </SettingRow>
+        </div>
+
+        <div style={{ marginTop: 18, padding: 18, borderRadius: R.lg, border: `1px solid ${C.border}`, background: "var(--sch-card-2)" }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: C.text }}>Three percentages that mean different things</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10, marginTop: 12 }}>
+            {[
+              ["50% · ACCA pass mark", "Fixed by ACCA. You cannot change it in Scholify."],
+              [`${stats.answered > 0 ? `${Math.round(stats.readiness)}%` : "—"} · Current readiness`, "Measured from your diagnostic, practice coverage, accuracy and exam evidence."],
+              [`${plan.targetProb}% · Your target`, "The safety level your plan aims for. A higher target increases practice pressure."],
+            ].map(([title, detail]) => (
+              <div key={title} style={{ padding: 13, borderRadius: R.md, background: "var(--sch-card)", border: `1px solid ${C.border}` }}>
+                <strong style={{ display: "block", color: C.text, fontSize: 12.5 }}>{title}</strong>
+                <span style={{ display: "block", color: TEXT2, fontSize: 11.5, lineHeight: 1.5, marginTop: 5 }}>{detail}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: "11px 0 0", color: "var(--sch-tx-4)", fontSize: 11.5, lineHeight: 1.55 }}>
+            Published ACCA pass rates describe past candidate cohorts. They provide context only and never change your personal plan or score.
+          </p>
+          <a
+            href="https://www.accaglobal.com/uk/en/help/exams-faqs.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", marginTop: 7, color: C.brand, fontSize: 11.5, fontWeight: 750, textDecoration: "none" }}
+          >
+            Verify the 50% pass mark on ACCA Global ↗
+          </a>
+        </div>
+
+        <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: R.md, color: statusView.color, background: statusView.background, fontSize: 12.5, lineHeight: 1.6 }}>
+          <strong>{paused ? "Your plan is paused." : guide.headline}</strong>{" "}
+          {paused
+            ? `Your answers, notes, diagnostics and history remain safe${paused.returnDate ? ` until you return on ${paused.returnDate}` : ""}.`
+            : `${studyDays.length} study days at ${plan.dailyMinutes} minutes gives ${guide.weeklyHours} protected hours per week${guide.availableWeeks !== null ? ` across ${guide.availableWeeks} weeks before the exam` : ""}. ${guide.status === "risky" ? `The current route is short by about ${guide.deficitHours} hours; add sustainable time or choose a later sitting.` : "Changes take effect from the next unstarted daily mission."}`}
+        </div>
+
+        <details style={{ marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+          <summary style={{ color: C.text, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pause this paper safely</summary>
+          <p style={{ color: TEXT2, fontSize: 12, lineHeight: 1.55, margin: "8px 0 12px" }}>
+            Use a pause for illness, work, travel or another real break. Nothing is deleted and no artificial catch-up debt is created.
+          </p>
+          {!paused && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              <select aria-label="Reason for pausing study plan" value={reason} onChange={(event) => setReason(event.target.value as PlanChangeReason)} style={{ ...selectStyle, flex: "1 1 230px" }}>
+                <option value="difficulty">This paper feels too difficult</option>
+                <option value="illness">Illness or recovery</option>
+                <option value="work">Work, travel or family</option>
+                <option value="course">My course or tutor changed</option>
+                <option value="exam-date">My exam date changed</option>
+                <option value="personal">Personal choice</option>
+                <option value="other">Another reason</option>
+              </select>
+              <input type="date" aria-label="Optional return date" value={returnDate} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setReturnDate(event.target.value)} style={{ ...selectStyle, width: "auto", flex: "1 1 170px", colorScheme: "light dark" }} />
+            </div>
           )}
           <Button onClick={togglePause} variant={paused ? "primary" : "secondary"}>
             {paused ? "Resume my plan" : "Pause without losing progress"}
           </Button>
-          <span style={{ color: paused ? C.amber : C.muted, fontSize: 12, lineHeight: 1.4 }}>
-            {paused
-              ? `Paused${paused.returnDate ? ` until ${paused.returnDate}` : ""}. Your answers, notes, diagnostics and streak history remain safe.`
-              : "Switching or pausing never deletes answers, notes, results, diagnostics or paper history."}
-          </span>
-        </div>
-      </SettingRow>
-      <SettingRow name="Exam date" desc="Your roadmap dates itself back from this">
-        <input
-          type="date"
-          value={plan.examDate ?? ""}
-          onChange={(e) => updatePlan({ examDate: e.target.value || null })}
-          style={{
-            padding: "10px 13px",
-            borderRadius: R.md,
-            border: `1px solid ${C.border}`,
-            background: "var(--sch-bg)",
-            color: C.text,
-            fontSize: 13.5,
-            fontWeight: 600,
-            colorScheme: "light dark",
-          }}
-        />
-      </SettingRow>
-      <SettingRow name="Daily goal" desc="Questions to answer each day">
-        <span style={{ display: "inline-flex", gap: 6 }}>
-          {[10, 15, 20, 30].map((n) => {
-            const on = goal === n
-            return (
-              <motion.button
-                key={n}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => updateGoal(n)}
-                style={{
-                  minWidth: 44,
-                  height: 38,
-                  padding: "0 10px",
-                  borderRadius: R.sm,
-                  border: `1.5px solid ${on ? C.brand : C.border}`,
-                  background: on ? C.brandSoft : "var(--sch-card)",
-                  color: on ? C.brand : C.text,
-                  fontWeight: 750,
-                  fontSize: 13.5,
-                  cursor: "pointer",
-                  transition: "background .15s ease, border-color .15s ease, color .15s ease",
-                }}
-              >
-                {n}
-              </motion.button>
-            )
-          })}
-        </span>
-      </SettingRow>
-      <SettingRow name="Target before exam day" desc="The Exam Readiness Score your plan pushes toward">
-        <span style={{ display: "inline-flex", gap: 6 }}>
-          {[65, 75, 85].map((v) => {
-            const on = plan.targetProb === v
-            return (
-              <motion.button
-                key={v}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => updatePlan({ targetProb: v })}
-                style={{
-                  minWidth: 52,
-                  height: 38,
-                  padding: "0 10px",
-                  borderRadius: R.sm,
-                  border: `1.5px solid ${on ? C.brand : C.border}`,
-                  background: on ? C.brandSoft : "var(--sch-card)",
-                  color: on ? C.brand : C.text,
-                  fontWeight: 750,
-                  fontSize: 13.5,
-                  cursor: "pointer",
-                  transition: "background .15s ease, border-color .15s ease, color .15s ease",
-                }}
-              >
-                {v}%
-              </motion.button>
-            )
-          })}
-        </span>
-      </SettingRow>
-      <SettingRow name="Daily study minutes" desc="Target study time per day" last>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-          <motion.button
-            whileTap={{ scale: 0.94 }}
-            onClick={() => updatePlan({ dailyMinutes: Math.max(10, plan.dailyMinutes - 5) })}
-            aria-label="decrease minutes"
-            style={{ width: 36, height: 36, borderRadius: R.sm, border: `1px solid ${C.border}`, background: "var(--sch-card)", color: C.text, fontWeight: 800, fontSize: 17, cursor: "pointer", lineHeight: 1 }}
-          >
-            −
-          </motion.button>
-          <span style={{ fontSize: 14.5, fontWeight: 800, color: C.text, minWidth: 62, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-            {plan.dailyMinutes} min
-          </span>
-          <motion.button
-            whileTap={{ scale: 0.94 }}
-            onClick={() => updatePlan({ dailyMinutes: Math.min(240, plan.dailyMinutes + 5) })}
-            aria-label="increase minutes"
-            style={{ width: 36, height: 36, borderRadius: R.sm, border: `1px solid ${C.border}`, background: "var(--sch-card)", color: C.text, fontWeight: 800, fontSize: 17, cursor: "pointer", lineHeight: 1 }}
-          >
-            +
-          </motion.button>
-        </span>
-      </SettingRow>
+        </details>
+      </div>
     </Section>
   )
 }
@@ -505,6 +676,7 @@ function SettingRow({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        flexWrap: "wrap",
         gap: 16,
         padding: "14px 0",
         borderBottom: last ? "none" : "1px solid var(--sch-card-2)",
@@ -514,7 +686,7 @@ function SettingRow({
         <div style={{ fontSize: 14, color: "var(--sch-text)" }}>{name}</div>
         <div style={{ fontSize: 12, color: TEXT2, marginTop: 2 }}>{desc}</div>
       </div>
-      <div style={{ flexShrink: 0 }}>{children}</div>
+      <div style={{ flexShrink: 0, maxWidth: "100%", marginLeft: "auto" }}>{children}</div>
     </div>
   )
 }
@@ -910,6 +1082,20 @@ export default function Settings() {
     [toast],
   )
 
+  const updatePracticeTime = useCallback((practiceTime: string) => {
+    setSettings((previous) => {
+      const next = { ...previous, practiceTime, reminderTime: practiceTime }
+      try {
+        window.localStorage.setItem("scholify-settings", JSON.stringify(next))
+      } catch {
+        /* local persistence is best-effort */
+      }
+      void syncReminder(next.notifyDaily, practiceTime, next.reminderSlots)
+      return next
+    })
+    toast.success("Study time and reminders updated")
+  }, [toast])
+
   const saveProfile = async () => {
     setSavingProfile(true)
     try {
@@ -1150,8 +1336,13 @@ export default function Settings() {
           Settings
         </h1>
         <p style={{ fontSize: 14, color: "var(--sch-tx-3)", marginTop: 4 }}>
-          Manage your account and preferences.
+          Tune your study plan, account and preferences. Changes save automatically.
         </p>
+
+        {/* The learner came here to change the plan. Put that job first—not
+            below profile, billing and security where it looked like an account
+            administration detail. */}
+        <ExamSetupSection sessionTime={settings.practiceTime} onSessionTimeChange={updatePracticeTime} />
 
         {/* ── Profile ── */}
         <Section style={{ marginTop: 32, borderRadius: 24, padding: 28 }}>
@@ -1590,9 +1781,6 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* ── Exam setup — the loop's parameters ── */}
-        <ExamSetupSection />
-
         {/* ── Notifications ── */}
         <Section>
           <SectionHead icon="mission">Notifications</SectionHead>
@@ -1618,7 +1806,7 @@ export default function Settings() {
                 Show me again
               </Button>
             </SettingRow>
-            <SettingRow name="Practice reminders" desc="Email reminders around your daily session">
+            <SettingRow name="Practice reminders" desc={`Email reminders around your ${settings.practiceTime} Study Plan appointment`}>
               <Toggle
                 on={settings.notifyDaily}
                 onChange={(v) => {
@@ -1629,17 +1817,6 @@ export default function Settings() {
             </SettingRow>
             {settings.notifyDaily && (
               <>
-                <SettingRow name="My session starts at" desc="The clock every reminder is measured from — and when tomorrow's plan unlocks">
-                  <TimeInput
-                    value={settings.practiceTime}
-                    onChange={(v) => {
-                      update("practiceTime", v)
-                      // Keep the legacy key in step so nothing reading it drifts.
-                      update("reminderTime", v)
-                      void syncReminder(true, v, settings.reminderSlots)
-                    }}
-                  />
-                </SettingRow>
                 {REMINDER_SLOT_ROWS.map((row) => (
                   <SettingRow key={row.key} name={row.name} desc={row.desc(settings.practiceTime)}>
                     <Toggle
