@@ -185,18 +185,24 @@ function PrimaryCTA({ children, onClick, large = false }: { children: React.Reac
 
 /* ─────────────────────── NAV ─────────────────────── */
 
+function scrollLandingSection(id: string, updateHash = true) {
+  const section = document.getElementById(id)
+  if (!section) return false
+
+  if (updateHash && window.location.hash !== `#${id}`) {
+    window.history.pushState(null, "", `${window.location.pathname}${window.location.search}#${id}`)
+  }
+
+  section.scrollIntoView({
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    block: "start",
+  })
+  return true
+}
+
 function Nav() {
   const navigate = useNavigate()
   const t = useT()
-  const scrollToSection = (id: string) => {
-    const section = document.getElementById(id)
-    if (!section) return
-    section.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-      block: "start",
-    })
-    window.history.replaceState(null, "", `#${id}`)
-  }
   return (
     <motion.header
       initial={{ y: -20, opacity: 0, x: "-50%" }}
@@ -243,10 +249,10 @@ function Nav() {
       >
         <NavHeader
           items={[
-            { label: t("Features"), href: "#features", onClick: () => scrollToSection("features") },
-            { label: t("How it works"), href: "#how-it-works", onClick: () => scrollToSection("how-it-works") },
+            { label: t("Features"), href: "#features", onClick: () => scrollLandingSection("features") },
+            { label: t("How it works"), href: "#how-it-works", onClick: () => scrollLandingSection("how-it-works") },
             { label: t("Pricing"), href: "/pricing", onClick: () => navigate("/pricing") },
-            { label: t("Partners"), href: "#partners", onClick: () => scrollToSection("partners") },
+            { label: t("Partners"), href: "/#partners", onClick: () => scrollLandingSection("partners") },
           ]}
         />
       </div>
@@ -2259,8 +2265,9 @@ function PartnerProgramme() {
 
   return (
     <section
+      id="partners"
       aria-labelledby="partner-programme-heading"
-      style={{ padding: "calc(var(--section-y) * 1.05) var(--page-gutter)", overflow: "hidden" }}
+      style={{ padding: "calc(var(--section-y) * 1.05) var(--page-gutter)", overflow: "hidden", scrollMarginTop: 96 }}
     >
       <motion.div
         initial={reduced ? false : { opacity: 0, y: 34 }}
@@ -2478,6 +2485,39 @@ function MobileAppsTeaser() {
 /* ─────────────────────── PAGE ─────────────────────── */
 
 export default function Landing() {
+  useEffect(() => {
+    let firstFrame = 0
+    let secondFrame = 0
+
+    const scrollFromHash = () => {
+      window.cancelAnimationFrame(firstFrame)
+      window.cancelAnimationFrame(secondFrame)
+      let id = ""
+      try {
+        id = decodeURIComponent(window.location.hash.slice(1))
+      } catch {
+        return
+      }
+      if (!id) return
+
+      // The second frame matters on a direct /#partners load: React must first
+      // commit the target element before the browser can position it reliably.
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => scrollLandingSection(id, false))
+      })
+    }
+
+    scrollFromHash()
+    window.addEventListener("hashchange", scrollFromHash)
+    window.addEventListener("popstate", scrollFromHash)
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      window.cancelAnimationFrame(secondFrame)
+      window.removeEventListener("hashchange", scrollFromHash)
+      window.removeEventListener("popstate", scrollFromHash)
+    }
+  }, [])
+
   return (
     <div className="scholify-race-shell race-grid-surface" style={{ backgroundColor: BG_PRIMARY, color: INK, minHeight: "100dvh", overflowX: "clip" }}>
       <LiquidGlassFilterDefs />
@@ -2508,7 +2548,7 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
-      <LazyOnView id="partners" style={{ minHeight: 940 }}><PartnerProgramme /></LazyOnView>
+      <PartnerProgramme />
       <LazyOnView style={{ minHeight: 760 }}><MobileAppsTeaser /></LazyOnView>
       <PaymentMethods style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter) 8px", maxWidth: "var(--page-max)", margin: "0 auto" }} />
       <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>

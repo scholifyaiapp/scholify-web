@@ -230,7 +230,7 @@ export function CinematicFooter({
               <nav aria-label={t("Footer")} className="mt-2 flex w-full flex-wrap items-center justify-center gap-2 md:gap-3">
                 <MagneticButton
                   as="a"
-                  href="/partners/apply"
+                  href="/#partners"
                   className="footer-glass-pill px-5 py-2.5 rounded-full text-foreground font-semibold text-xs md:text-sm border-border"
                 >
                   {t("Partner programme — earn 27% for up to 5 payments")}
