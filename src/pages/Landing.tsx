@@ -185,6 +185,8 @@ function PrimaryCTA({ children, onClick, large = false }: { children: React.Reac
 
 /* ─────────────────────── NAV ─────────────────────── */
 
+let cancelLandingScroll: (() => void) | null = null
+
 function scrollLandingSection(id: string, updateHash = true) {
   const section = document.getElementById(id)
   if (!section) return false
@@ -193,10 +195,55 @@ function scrollLandingSection(id: string, updateHash = true) {
     window.history.pushState(null, "", `${window.location.pathname}${window.location.search}#${id}`)
   }
 
-  section.scrollIntoView({
-    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    block: "start",
-  })
+  // Smooth scrolling walks through every LazyOnView placeholder between the
+  // header and the destination. Those sections mount as they enter view and
+  // change the document height mid-animation, leaving distant targets such as
+  // Features and Partners several screens below where the browser stops. Force
+  // instant root scrolling during this short alignment pass, then restore the
+  // site's normal smooth behavior. Manual interaction cancels the pass at once.
+  cancelLandingScroll?.()
+
+  let intervalId = 0
+  let checks = 0
+  let stableChecks = 0
+  let lastScrollHeight = 0
+  const root = document.documentElement
+  const previousScrollBehavior = root.style.scrollBehavior
+  root.style.scrollBehavior = "auto"
+  const interruptEvents = ["wheel", "touchstart", "pointerdown", "keydown"] as const
+  const stopAligning = () => {
+    window.clearInterval(intervalId)
+    root.style.scrollBehavior = previousScrollBehavior
+    interruptEvents.forEach((eventName) => window.removeEventListener(eventName, stopAligning))
+    if (cancelLandingScroll === stopAligning) cancelLandingScroll = null
+  }
+  const keepAligned = () => {
+    const currentSection = document.getElementById(id)
+    if (!currentSection) {
+      stopAligning()
+      return
+    }
+    const scrollMarginTop = Number.parseFloat(window.getComputedStyle(currentSection).scrollMarginTop) || 0
+    const sectionTop = currentSection.getBoundingClientRect().top
+    const scrollHeight = document.documentElement.scrollHeight
+    const layoutChanged = Math.abs(scrollHeight - lastScrollHeight) > 1
+    if (Math.abs(sectionTop - scrollMarginTop) > 1) {
+      currentSection.scrollIntoView({ behavior: "auto", block: "start" })
+      stableChecks = 0
+    } else if (layoutChanged) {
+      stableChecks = 0
+    } else {
+      stableChecks += 1
+    }
+    lastScrollHeight = scrollHeight
+    checks += 1
+    if (stableChecks >= 5 || checks >= 20) stopAligning()
+  }
+
+  cancelLandingScroll = stopAligning
+  interruptEvents.forEach((eventName) => window.addEventListener(eventName, stopAligning, { passive: true }))
+  keepAligned()
+  intervalId = window.setInterval(keepAligned, 100)
   return true
 }
 
@@ -249,8 +296,8 @@ function Nav() {
       >
         <NavHeader
           items={[
-            { label: t("Features"), href: "#features", onClick: () => scrollLandingSection("features") },
-            { label: t("How it works"), href: "#how-it-works", onClick: () => scrollLandingSection("how-it-works") },
+            { label: t("Features"), href: "/#features", onClick: () => scrollLandingSection("features") },
+            { label: t("How it works"), href: "/#how-it-works", onClick: () => scrollLandingSection("how-it-works") },
             { label: t("Pricing"), href: "/pricing", onClick: () => navigate("/pricing") },
             { label: t("Partners"), href: "/#partners", onClick: () => scrollLandingSection("partners") },
           ]}
