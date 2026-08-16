@@ -14,7 +14,6 @@ import { motion, AnimatePresence } from "motion/react"
 import { format } from "date-fns"
 import { useAuth } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { useLanguage } from "@/i18n/LanguageProvider"
 import { DashboardLayout, iriText } from "@/components/dashboard-layout"
 import { IRIDESCENT } from "@/components/auth/auth-ui"
 import { useToast } from "@/components/Toast"
@@ -976,12 +975,6 @@ function ConfirmDialog({
 
 /* ── Page ────────────────────────────────────────────────────── */
 
-// Site language only — the study screens are English by design (ACCA's exam language).
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "ru", label: "Russian" },
-] as const
-
 const THEMES = [
   { id: "light", name: "Light", bg: "#f3f3f7", accent: "#6d5bf5" },
   { id: "dark", name: "Dark", bg: "#0b0b12", accent: "#E50068" },
@@ -990,7 +983,6 @@ const THEMES = [
 export default function Settings() {
   const navigate = useNavigate()
   const { user, signOut, signOutOtherSessions } = useAuth()
-  const { lang, setLang } = useLanguage()
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
 
@@ -1279,13 +1271,6 @@ export default function Settings() {
     // Never wipe study data on sign-out — in demo mode it's the only copy.
     await signOut()
     navigate("/", { replace: true })
-  }
-
-  const handleLanguage = (code: string) => {
-    if (code === "en" || code === "ru") {
-      setLang(code)
-      toast.success("Site language updated — app screens stay in English")
-    }
   }
 
   const ghostBtn: CSSProperties = {
@@ -2218,19 +2203,6 @@ export default function Settings() {
                 </motion.button>
               )
             })}
-          </div>
-          <div style={{ marginTop: 20 }}>
-            <SettingRow
-              name="Site language"
-              desc="Applies to the landing, pricing and legal pages. Study screens stay in English — that's ACCA's exam language."
-              last
-            >
-              <Dropdown
-                value={lang === "ru" ? "ru" : "en"}
-                options={LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
-                onChange={handleLanguage}
-              />
-            </SettingRow>
           </div>
         </Section>
 

@@ -45,7 +45,6 @@ import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
 import CharlesVoiceIntro from "@/components/CharlesVoiceIntro"
-import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
 import { CommissionTierLadder } from "@/components/partner/reward-progress"
@@ -305,7 +304,6 @@ function Nav() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <LanguageToggle />
         <a
           href={SIGN_IN_PATH}
           onClick={(e) => {

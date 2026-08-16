@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { useEffect } from "react"
-import LanguageToggle from "@/components/language-toggle"
 import { useT } from "@/i18n/LanguageProvider"
 
 /* ── Brand tokens (kept in sync with Landing.tsx / tutor-chat.tsx) ── */
@@ -50,9 +49,6 @@ export default function InfoPageLayout({ title, intro, updated, sections }: Info
         >
           <ArrowLeft className="size-4" /> {t("Back to Scholify")}
         </Link>
-        <div className="ml-auto">
-          <LanguageToggle />
-        </div>
       </header>
 
       <main className="mx-auto w-full max-w-2xl px-5 py-12 sm:py-16">
