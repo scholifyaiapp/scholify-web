@@ -6,7 +6,6 @@ import {
   useInView,
   useMotionValue,
   useMotionValueEvent,
-  useReducedMotion,
   useTransform,
 } from "motion/react"
 import {
@@ -24,6 +23,7 @@ import {
 } from "lucide-react"
 import { useT } from "@/i18n/LanguageProvider"
 import CharlesMascot from "@/components/CharlesMascot"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 import { InstagramMark, LinkedInMark } from "@/components/social"
 import { ContainerScroll, ContainerSticky, useContainerScroll } from "@/components/blocks/process-timeline"
 
@@ -194,7 +194,7 @@ const nodeCentre = (i: number) => ((i + 0.5) / STAGES.length) * 100
 
 function LoopGraph({ active, onSelect }: { active: number; onSelect: (i: number) => void }) {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   const railStart = nodeCentre(0)
   const railEnd = nodeCentre(STAGES.length - 1)
   const progress = STAGES.length > 1 ? active / (STAGES.length - 1) : 0
@@ -417,7 +417,7 @@ function LoopGraph({ active, onSelect }: { active: number; onSelect: (i: number)
 /** The one stage on show. Swapping this beats stacking five of them. */
 function StagePanel({ index }: { index: number }) {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   const stage = STAGES[index]
 
   return (
@@ -502,7 +502,7 @@ function ScrollStageDriver({ count, onChange }: { count: number; onChange: (i: n
 const PIN_QUERY = "(min-width: 768px) and (min-height: 820px)"
 
 function usePinnedLayout(): boolean {
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   const [fits, setFits] = useState(
     () => typeof window !== "undefined" && window.matchMedia(PIN_QUERY).matches,
   )
@@ -732,7 +732,7 @@ function useCompactLayout(): boolean {
  */
 function DayShapeVisual() {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: "-90px" })
 
@@ -909,7 +909,7 @@ function DayShapeVisual() {
  */
 function CompoundingVisual() {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   const compact = useCompactLayout()
   const chart = compact ? CHART_COMPACT : CHART_WIDE
   const paths = compact ? CHART_PATHS.compact : CHART_PATHS.wide
@@ -1306,7 +1306,7 @@ function SocialButton({ href, label, children }: { href: string; label: string; 
 
 export function MissionSection() {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
 
   return (
     <section
@@ -1569,7 +1569,7 @@ const REASONS: Reason[] = [
  */
 export function ThreeReasons() {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   // The alternating sides are a desktop rhythm. On a phone every frame is a
   // full-width column, so flipping only produces right-aligned body copy —
   // harder to read at a narrow measure, and it buys nothing.

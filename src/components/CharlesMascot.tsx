@@ -1,5 +1,6 @@
-import { motion, useReducedMotion } from "motion/react"
-import type { CSSProperties } from "react"
+import { motion, useInView } from "motion/react"
+import { useRef, type CSSProperties } from "react"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 /*
  * Charles — the little big-helmet mascot. Renders a pose with a spring pop-in
@@ -61,7 +62,9 @@ export default function CharlesMascot({
   delay?: number
   style?: CSSProperties
 }) {
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
+  const rootRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(rootRef, { margin: "160px 0px", amount: 0.05 })
   const framed = frame ?? false
   // Real animated file wins; when present, let the frames animate (no CSS float).
   const animSrc = ANIM[pose]
@@ -104,6 +107,7 @@ export default function CharlesMascot({
 
   return (
     <motion.div
+      ref={rootRef}
       initial={{ opacity: 0, scale: 0.85, y: 10 }}
       whileInView={{ opacity: 1, scale: 1, y: 0 }}
       viewport={{ once: true, amount: 0.35 }}
@@ -112,12 +116,12 @@ export default function CharlesMascot({
     >
       <motion.div
         animate={
-          doFloat
+          doFloat && inView
             ? { y: [0, -9, 0], scale: [1, 1.025, 1], rotate: [-1.6, 1.6, -1.6] }
             : { y: 0 }
         }
         transition={
-          doFloat
+          doFloat && inView
             ? {
                 // Different periods → organic, never-repeating "alive" idle.
                 y: { duration: 3.1, repeat: Infinity, ease: "easeInOut" },

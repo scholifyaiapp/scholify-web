@@ -5,7 +5,6 @@ import {
   motion,
   useInView,
   useMotionValue,
-  useReducedMotion,
   useTransform,
   AnimatePresence,
   type Variants,
@@ -49,6 +48,7 @@ import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
 import { CommissionTierLadder } from "@/components/partner/reward-progress"
 import { COMMISSION_TIERS } from "@/lib/partner-rewards"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 const SIGN_IN_PATH = signInPath(PRELAUNCH_MODE ? "/admin" : undefined)
 const SIGN_UP_PATH = signUpPath()
@@ -83,7 +83,7 @@ const EASE_HOVER = [0.4, 0, 0.2, 1] as const
 
 function useCountUp(target: number, durationMs = 1200, start = true) {
   const [val, setVal] = useState(0)
-  const prefersReduced = useReducedMotion()
+  const prefersReduced = useCalmMotion()
   useEffect(() => {
     if (!start) {
       setVal(0)
@@ -361,7 +361,7 @@ function HeroHeadline() {
 
 function Hero() {
   const navigate = useNavigate()
-  const reduce = useReducedMotion()
+  const reduce = useCalmMotion()
   const t = useT()
   return (
     <section
@@ -868,7 +868,7 @@ function VisualExaminer() {
 /* ── C — Meet Charles ── */
 
 function VisualAIPartnerWidget() {
-  const prefersReduced = useReducedMotion()
+  const prefersReduced = useCalmMotion()
   const t = useT()
   const avatarSize = "clamp(150px, 32vw, 200px)"
   return (
@@ -1149,7 +1149,7 @@ function Features() {
             "Explains any concept — IFRS, audit, tax, costing",
             "Knows your weak areas and today's plan",
             "Built into every practice session",
-            "English and Russian",
+            "Clear English explanations",
           ]}
           visual={<VisualAIPartnerWidget />}
         />
@@ -1438,7 +1438,7 @@ const ROUTE_STEPS = [
 ] as const
 
 function RouteFigure({ value, delay }: { value: number; delay: number }) {
-  const reduce = useReducedMotion()
+  const reduce = useCalmMotion()
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true, margin: "-60px" })
   const count = useMotionValue(reduce ? value : 0)
@@ -1463,7 +1463,7 @@ function RouteFigure({ value, delay }: { value: number; delay: number }) {
 
 function AccaRouteStrip() {
   const t = useT()
-  const reduce = useReducedMotion()
+  const reduce = useCalmMotion()
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: "-80px" })
 
@@ -2272,7 +2272,7 @@ function Pricing() {
 function PartnerProgramme() {
   const navigate = useNavigate()
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   const [demoPaid, setDemoPaid] = useState(300)
 
   const trustRules = [
@@ -2471,7 +2471,7 @@ function FinalCTA() {
 
 function MobileAppsTeaser() {
   const t = useT()
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
 
   /*
    * The panel used to arrive as one 28px slab: everything in it appeared at the

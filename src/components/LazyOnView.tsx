@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
+import { startTransition, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 
 type Props = {
   children: ReactNode
@@ -10,7 +10,7 @@ type Props = {
 
 export default function LazyOnView({
   children,
-  rootMargin = "200px",
+  rootMargin = "1200px 0px",
   style,
   className,
   id,
@@ -24,7 +24,7 @@ export default function LazyOnView({
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setVisible(true)
+          startTransition(() => setVisible(true))
           io.disconnect()
         }
       },

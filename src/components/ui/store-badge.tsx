@@ -1,6 +1,7 @@
 import { type MouseEvent, useEffect, useId, useRef, useState } from "react"
-import { useReducedMotion } from "motion/react"
+import { useInView } from "motion/react"
 import { Apple, Smartphone } from "lucide-react"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 /*
  * Adapted from a Product-Hunt-award-badge component: same 3D tilt/parallax
@@ -56,7 +57,8 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
   // of ambient motion prefers-reduced-motion exists to stop — and two badges
   // render side by side. Under the setting the foil is static and the tilt is
   // dropped with it.
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = useCalmMotion()
+  const inView = useInView(ref, { margin: "160px 0px", amount: 0.05 })
   const [firstOverlayPosition, setFirstOverlayPosition] = useState<number>(0)
   const [matrix, setMatrix] = useState<string>(identityMatrix)
   const [currentMatrix, setCurrentMatrix] = useState<string>(identityMatrix)
@@ -70,6 +72,7 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
   const moveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const finishTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const resetTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const animateOverlay = !reduceMotion && inView && !disableOverlayAnimation
   // SVG def ids must be unique per instance — keying them by `type` alone
   // would collide if two badges of the same type ever rendered, silently
   // pointing the second badge's mask/filter/gradient at the first's defs.
@@ -230,7 +233,7 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
       role="img"
       aria-label={`${label[type]} — ${comingSoonLabel}. ${note}`}
     >
-      {!reduceMotion && <style>{overlayAnimations}</style>}
+      {animateOverlay && <style>{overlayAnimations}</style>}
       <div
         style={{
           transform: reduceMotion ? undefined : `perspective(700px) matrix3d(${matrix})`,
@@ -274,8 +277,8 @@ export function StoreBadge({ type, comingSoonLabel, note }: StoreBadgeProps) {
                   transform: `rotate(${firstOverlayPosition + i * 10}deg)`,
                   transformOrigin: "center center",
                   transition: !reduceMotion && !disableInOutOverlayAnimation ? "transform 200ms ease-out" : "none",
-                  animation: reduceMotion || disableOverlayAnimation ? "none" : `storeBadgeOverlay${i + 1} 6s infinite`,
-                  willChange: reduceMotion ? undefined : "transform",
+                  animation: animateOverlay ? `storeBadgeOverlay${i + 1} 6s infinite` : "none",
+                  willChange: animateOverlay ? "transform" : undefined,
                 }}
               >
                 <polygon

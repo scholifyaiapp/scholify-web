@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useRef, useState } from "react"
 import { Flag, Mic, MicOff, Send, Volume2, VolumeX, X } from "lucide-react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import CharlesMascot from "@/components/CharlesMascot"
 import { useT } from "@/i18n/LanguageProvider"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 type Line = { role: "user" | "assistant"; text: string }
 type SpeechRecognitionEventLike = { results: ArrayLike<{ 0: { transcript: string } }> }
@@ -14,7 +15,7 @@ const INTRO = "Hey — I'm Charles. I help people get through ACCA papers. Which
 
 export default function CharlesVoiceIntro() {
   const t = useT()
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = useCalmMotion()
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const [lines, setLines] = useState<Line[]>([{ role: "assistant", text: INTRO }])
@@ -142,8 +143,8 @@ export default function CharlesVoiceIntro() {
         type="button"
         onClick={() => setOpen(true)}
         className="charles-voice-trigger fixed bottom-4 right-4 z-[90] flex items-center gap-2 rounded-full border border-white/20 bg-[#0B0B0F] py-2 pl-2 pr-4 text-left text-white shadow-[0_18px_60px_rgba(0,0,0,.38)] sm:bottom-6 sm:right-6"
-        initial={{ opacity: 0, x: 30, scale: .8 }} animate={{ opacity: open ? 0 : 1, x: 0, scale: open ? .8 : 1 }}
-        whileHover={{ scale: 1.05 }} whileTap={{ scale: .96 }}
+        initial={reduceMotion ? false : { opacity: 0, x: 30, scale: .8 }} animate={{ opacity: open ? 0 : 1, x: 0, scale: open ? .8 : 1 }}
+        whileHover={reduceMotion ? undefined : { scale: 1.05 }} whileTap={reduceMotion ? undefined : { scale: .96 }}
         aria-label={t("Talk with Charles")}
       >
         <motion.span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#C80000] to-[#E50068]" animate={reduceMotion ? undefined : { boxShadow: ["0 0 0 0 rgba(200,0,0,.4)", "0 0 0 12px rgba(200,0,0,0)"] }} transition={{ duration: 1.8, repeat: Infinity }}>

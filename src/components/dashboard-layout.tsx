@@ -357,7 +357,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           style={{
             position: "sticky", top: 0, zIndex: 25, display: "flex", alignItems: "center",
             justifyContent: "space-between", padding: "10px clamp(16px, 4vw, 40px)",
-            background: "var(--sch-bg-blur)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+            background: "var(--sch-bg)",
             borderBottom: "1px solid var(--sch-hairline)",
           }}
         >
@@ -423,7 +423,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         style={{
           position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", justifyContent: "space-around",
           padding: "8px 4px", paddingBottom: "max(8px, env(safe-area-inset-bottom))",
-          background: "var(--sch-bg-blur)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          background: "var(--sch-bg)",
           borderTop: "1px solid var(--sch-hairline)", zIndex: 30,
         }}
       >

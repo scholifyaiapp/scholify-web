@@ -6,6 +6,7 @@ import { MagneticButton } from "@/components/ui/magnetic-button"
 import { SOCIALS } from "@/components/social"
 import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signUpPath } from "@/lib/launch"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
@@ -98,7 +99,13 @@ const STYLES = `
   .cinematic-footer-shell { height: auto !important; clip-path: none !important; }
   .cinematic-footer-wrapper { position: relative !important; height: auto !important; padding-top: 64px; padding-bottom: 24px; }
   .cinematic-footer-wrapper .footer-giant-bg-text { display: none; }
+  .cinematic-footer-wrapper .footer-aurora { display: none; }
+  .cinematic-footer-wrapper .backdrop-blur-md { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--background); }
+  .cinematic-footer-wrapper .footer-glass-pill { backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
+.footer-calm .animate-footer-breathe,
+.footer-calm .animate-footer-scroll-marquee,
+.footer-calm .animate-footer-heartbeat { animation: none !important; }
 `
 
 
@@ -147,8 +154,10 @@ export function CinematicFooter({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const linksRef = useRef<HTMLDivElement>(null)
   const t = useT()
+  const reduced = useCalmMotion()
 
   useEffect(() => {
+    if (reduced) return
     if (typeof window === "undefined") return
     if (!wrapperRef.current) return
     const ctx = gsap.context(() => {
@@ -176,7 +185,7 @@ export function CinematicFooter({
       )
     }, wrapperRef)
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -186,7 +195,7 @@ export function CinematicFooter({
     <>
       <style dangerouslySetInnerHTML={{ __html: STYLES }} />
       <div ref={wrapperRef} className="cinematic-footer-shell relative h-dvh w-full" style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}>
-        <footer className="fixed bottom-0 left-0 flex h-dvh w-full flex-col justify-between overflow-hidden bg-background text-foreground cinematic-footer-wrapper">
+        <footer className={`fixed bottom-0 left-0 flex h-dvh w-full flex-col justify-between overflow-hidden bg-background text-foreground cinematic-footer-wrapper${reduced ? " footer-calm" : ""}`}>
           <div className="footer-aurora absolute left-1/2 top-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px] pointer-events-none z-0" />
           <div className="footer-bg-grid absolute inset-0 z-0 pointer-events-none" />
           <div

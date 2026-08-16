@@ -7,7 +7,6 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-  useReducedMotion,
 } from "motion/react"
 import {
   Target,
@@ -24,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { useT } from "@/i18n/LanguageProvider"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 /*
  * Landing 3D layer — CSS-perspective scenes, no WebGL payload.
@@ -73,7 +73,7 @@ function useCoarsePointer(): boolean {
 }
 
 function useTilt(maxDeg = 9) {
-  const reduce = useReducedMotion()
+  const reduce = useCalmMotion()
   const coarse = useCoarsePointer()
   const mx = useMotionValue(0.5)
   const my = useMotionValue(0.5)
@@ -175,7 +175,7 @@ function FloatCard({
   children: ReactNode
   style?: CSSProperties
 }) {
-  const reduce = useReducedMotion()
+  const reduce = useCalmMotion()
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
@@ -393,7 +393,7 @@ export function TheLoopSection() {
   const t = useT()
   const navigate = useNavigate()
   const navigateToSignup = () => navigate("/signup")
-  const reduce = useReducedMotion()
+  const reduce = useCalmMotion()
   const ringRef = useRef<HTMLDivElement>(null)
   const ringInView = useInView(ringRef, { margin: "-80px" })
 

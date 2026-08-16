@@ -25,9 +25,7 @@ export default function NavHeader({ items, className = "" }: NavHeaderProps) {
     <ul
       className={`relative mx-auto flex w-fit items-center gap-1 rounded-full p-1 ${className}`}
       style={{
-        background: "rgba(255, 255, 255, 0.55)",
-        backdropFilter: "blur(20px) saturate(160%)",
-        WebkitBackdropFilter: "blur(20px) saturate(160%)",
+        background: "rgba(255, 255, 255, 0.96)",
         border: "1px solid rgba(20, 20, 26, 0.06)",
         boxShadow:
           "0 1px 0 0 rgba(255,255,255,0.8) inset, 0 8px 24px -6px rgba(20,20,26,0.06), 0 1px 3px rgba(20,20,26,0.04)",

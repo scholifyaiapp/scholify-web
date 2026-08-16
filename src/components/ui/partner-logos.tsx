@@ -1,4 +1,4 @@
-import { useReducedMotion } from "motion/react"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 /*
  * Continuously-scrolling logo wall of the ACCA ecosystem Scholify prepares
@@ -31,9 +31,10 @@ export default function PartnerLogos({
   heading?: string
   caption?: string
 }) {
-  const reduced = useReducedMotion()
+  const reduced = useCalmMotion()
   // Two copies → seamless -50% loop.
   const row = [...LOGOS, ...LOGOS]
+  const visibleLogos = reduced ? LOGOS : row
 
   return (
     <section
@@ -43,6 +44,7 @@ export default function PartnerLogos({
       <style>{`
         @keyframes sch-logo-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         .sch-marquee-track { animation: sch-logo-marquee 34s linear infinite; }
+        .sch-marquee-track.sch-marquee-static { animation: none; transform: none; flex-wrap: wrap; justify-content: center; }
         .sch-marquee-viewport:hover .sch-marquee-track { animation-play-state: paused; }
         @media (prefers-reduced-motion: reduce) {
           .sch-marquee-track { animation: none; transform: none; flex-wrap: wrap; justify-content: center; }
@@ -81,8 +83,8 @@ export default function PartnerLogos({
           maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
         }}
       >
-        <div className="sch-marquee-track" style={{ display: "flex", gap: 20, width: "max-content", padding: "0 10px" }}>
-          {row.map((logo, i) => (
+        <div className={`sch-marquee-track${reduced ? " sch-marquee-static" : ""}`} style={{ display: "flex", gap: 20, width: reduced ? "100%" : "max-content", padding: "0 10px" }}>
+          {visibleLogos.map((logo, i) => (
             <div
               key={`${logo.alt}-${i}`}
               style={{
