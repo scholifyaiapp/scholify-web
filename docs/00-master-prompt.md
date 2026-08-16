@@ -17,7 +17,7 @@ The one-sentence pitch: *instead of handing a student 2,000 questions and a vide
 - **Brand:** Scholify (scholifyapp.com). The AI persona is **Charles** — tutor, examiner, coach.
 - **Market:** ACCA candidates, beachhead in Uzbekistan/CIS (first-timers and retakers), modelled on what Makon AI did for local exam prep and ielts.gg did for IELTS.
 - **Scope:** the **full ACCA qualification** — all 15 papers across Applied Knowledge (BT, MA, FA), Applied Skills (LW, PM, TX, FR, AA, FM), and Strategic Professional (SBL, SBR + Options AFM, APM, ATX, AAA).
-- **90-day success definition (Doc 1):** ops live (keys, metering, Paddle); 1,000 free learners in UZ/CIS; ≥2% free→paid; activation = diagnostic completed on day one.
+- **90-day success definition (Doc 1):** ops live (keys, metering, Stripe); 1,000 free learners in UZ/CIS; ≥2% free→paid; activation = diagnostic completed on day one.
 - **Independence:** Scholify is not affiliated with ACCA. All content is original, syllabus-aligned, and never reproduces ACCA/Kaplan/BPP material. ACCA's official exam language is English, so **the app is English-only by design**; only the marketing landing is bilingual (EN/RU).
 
 ## 2. The product loop (what a student experiences)
@@ -51,7 +51,7 @@ Two honesty rules encoded in the product:
 ## 4. Business model
 
 - **Pricing (live copy since 2026-07-08):** Beginner **$9.99/mo**, Pro **$14.99/mo**, Annual Pro **$119.99/yr** (~33% off). Positioning: a fraction of the $300–800+ per-paper cost of CIS tuition centres.
-- **Billing:** Paddle (merchant of record — handles global tax/compliance). Checkout carries the Supabase `userId` in `custom_data`; a signed webhook grants the plan.
+- **Billing:** Stripe Billing exclusively. Checkout carries the Supabase `userId` in metadata; a signed webhook grants the plan.
 - **AI unit economics:** model mix is **Haiku 4.5** for volume, **Sonnet 5** for marking/generation/tutoring. Per-plan daily caps (free: 5 tutor + 10 post-mortem; beginner: 25 tutor; pro: 100 tutor + 10 generate + 20 examiner), an org-wide daily token budget, and a per-minute throttle — see §7.
 - **Growth surface (built):** referrals, streaks + streak trees, study partners/rooms/teams, community challenges, leaderboards, daily email reminders — all shipped, all optional.
 
@@ -63,12 +63,12 @@ Two honesty rules encoded in the product:
 | Backend | Vercel serverless (**Hobby plan → hard 12-function cap**; we use 5 files with `?action=` dispatchers) |
 | Data/Auth | Supabase (Postgres + Auth + Storage + Realtime), RLS on every user-data table, migrations `0001`–`0015` |
 | AI | Anthropic API, server-side only (`claude-haiku-4-5`, `claude-sonnet-5`) |
-| Payments | Paddle Billing (HMAC-verified webhook) |
+| Payments | Stripe Billing (signature-verified webhook) |
 | Analytics | PostHog |
 | Email | Resend (daily reminder cron) |
 | Hosting | Vercel, deploy on push to `main` |
 
-**The five serverless functions** (`api/`): `lara.ts` (all AI: acca-tutor / acca-generate / acca-examiner / acca-postmortem — every action authenticated + metered), `paddle.ts` (webhook + cancel), `social.ts` (invites, leaderboard, health, security), `reminders.ts` (preference sync + cron send), `calendar-callback.ts`. `/api/health` and `/api/security-check` are vercel.json rewrites into `social.ts`.
+**The serverless billing function is `api/stripe.ts`**, which owns checkout, portal, cancellation, refunds, trials, and signed webhook fulfilment. The other dispatchers cover AI, social features, reminders, calendar, analytics, affiliates, and waitlist operations.
 
 **Storage philosophy: localStorage-first, cloud-synced.** The learning engine works fully offline; Supabase sync layers on top (`acca-cloud.ts`) and is the durable learning-data moat.
 
@@ -78,7 +78,7 @@ Not a black box. Per area: difficulty-weighted accuracy (hard correct counts 1.3
 
 ## 7. Security & cost posture (all shipped, all verified)
 
-These are the guardrails that make it safe to attach a live Anthropic key and live Paddle keys:
+These are the guardrails that make it safe to attach live AI and Stripe keys:
 
 1. **Entitlement lives in `app_metadata`** (service-role-only) — a user cannot self-grant Pro. It is cross-checked against a `subscriptions` audit table and the meter takes the **lower** of the two.
 2. **Every AI action is authenticated and metered**, and metering **fails closed**: missing table, missing config, or any error → deterministic fallback, never unmetered spend, never a hard error the app must special-case.
@@ -86,9 +86,9 @@ These are the guardrails that make it safe to attach a live Anthropic key and li
 4. **Per-minute throttle** (`AI_PER_MINUTE_LIMIT`, default 8), atomic via RPC.
 5. **Kill switch:** `AI_KILL_SWITCH=1` forces all AI to fallback instantly, no redeploy.
 6. **Ten legacy vocab-era endpoints return HTTP 410**; their handler code is deleted. The four `acca-*` actions are the only path to Claude.
-7. **Paddle webhook verifies the HMAC signature** over the raw body; `past_due` dunning is honoured; terminal cancellation revokes.
+7. **Stripe webhook verifies Stripe's signature** over the raw body; `past_due` dunning is honoured; terminal cancellation revokes.
 8. **The reminder cron refuses without `CRON_SECRET`** (fails closed).
-9. **Billing config is all-or-nothing:** `/api/health` returns 503 on a half-configured Paddle stack — the state where checkout opens but fulfilment silently can't.
+9. **Billing config is all-or-nothing:** `/api/health` returns 503 on a half-configured Stripe stack — the state where checkout opens but fulfilment silently cannot.
 10. **`npm run typecheck` covers `api/` too** (`tsconfig.api.json`) — a type error in the money paths fails the build instead of breaking a webhook in production.
 
 ## 8. Current status & what remains (see **Doc 11**, the current plan)

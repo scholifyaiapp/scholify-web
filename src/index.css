@@ -603,6 +603,22 @@ html[data-theme="light"] {
  */
 body { overflow-x: clip; }
 
+/* The hero contains several intrinsically-sized animated children. Flex items
+ * default to min-width:auto, so at 320px their min-content width expanded the
+ * hero canvas and centered the visible content around an off-screen midpoint. */
+.landing-hero-content,
+.landing-hero-headline,
+.landing-hero-headline h1 { width: 100%; min-width: 0; max-width: 100%; }
+.landing-hero-headline h1 { white-space: normal; overflow-wrap: normal; }
+@media (max-width: 359px) {
+  .landing-hero { justify-content: flex-start !important; padding-top: 116px !important; }
+  .landing-hero-headline h1 { display: block; font-size: 1.8rem; line-height: 1.12; }
+  .landing-charles-banner,
+  .landing-charles-banner > div { max-width: 100%; }
+  .charles-voice-trigger { padding-right: 0.5rem; }
+  .charles-voice-trigger > span:last-child { display: none; }
+}
+
 /* Launch-day mobile hardening shared by every public and signed-in screen. */
 #root,
 main,

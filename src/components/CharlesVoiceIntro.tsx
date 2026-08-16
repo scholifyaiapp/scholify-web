@@ -141,7 +141,7 @@ export default function CharlesVoiceIntro() {
       <motion.button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-[90] flex items-center gap-2 rounded-full border border-white/20 bg-[#0B0B0F] py-2 pl-2 pr-4 text-left text-white shadow-[0_18px_60px_rgba(0,0,0,.38)] sm:bottom-6 sm:right-6"
+        className="charles-voice-trigger fixed bottom-4 right-4 z-[90] flex items-center gap-2 rounded-full border border-white/20 bg-[#0B0B0F] py-2 pl-2 pr-4 text-left text-white shadow-[0_18px_60px_rgba(0,0,0,.38)] sm:bottom-6 sm:right-6"
         initial={{ opacity: 0, x: 30, scale: .8 }} animate={{ opacity: open ? 0 : 1, x: 0, scale: open ? .8 : 1 }}
         whileHover={{ scale: 1.05 }} whileTap={{ scale: .96 }}
         aria-label={t("Talk with Charles")}

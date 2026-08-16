@@ -6,6 +6,9 @@ Disallow: /dashboard
 Disallow: /study
 Disallow: /settings
 Disallow: /welcome
+Disallow: /admin
+Disallow: /notes
+Disallow: /partners
 Disallow: /auth/
 Disallow: /api/
 

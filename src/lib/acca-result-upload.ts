@@ -74,7 +74,7 @@ export async function analyseEnglishCertificate(file: File, certificateType: str
   return { level: data.level, certificateType: data.certificateType || certificateType }
 }
 
-export async function useUploadedResult(analysis: ResultUploadAnalysis, filename: string): Promise<DiagnosticResult> {
+export async function applyUploadedResult(analysis: ResultUploadAnalysis, filename: string): Promise<DiagnosticResult> {
   // Bands and the readiness curve come from acca-diagnostic, not a local copy —
   // an uploaded baseline has to report the same numbers a sat diagnostic would
   // for the same estimated score, and duplicating the model made that a

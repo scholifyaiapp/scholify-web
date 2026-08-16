@@ -92,17 +92,6 @@ function health(req: VercelRequest, res: VercelResponse): void {
     google_client: !!process.env.VITE_GOOGLE_CLIENT_ID,
     google_secret: !!process.env.GOOGLE_CLIENT_SECRET,
     google_redirect: !!process.env.VITE_GOOGLE_REDIRECT_URI,
-    paddle: !!process.env.VITE_PADDLE_TOKEN,
-    paddle_webhook: !!process.env.PADDLE_WEBHOOK_SECRET,
-    paddle_api: !!process.env.PADDLE_API_KEY,
-    // The three price ids are VITE_-named because the checkout needs them in the
-    // client — but api/paddle.ts `planForPrice` also reads them SERVER-side to
-    // turn a webhook into an entitlement. Ship them client-only and every
-    // payment succeeds while no one is ever granted their plan. So they are
-    // health-checked as first-class billing config.
-    paddle_price_beginner_monthly: !!process.env.VITE_PADDLE_BEGINNER_MONTHLY,
-    paddle_price_pro_monthly: !!process.env.VITE_PADDLE_PRO_MONTHLY,
-    paddle_price_annual_pro: !!process.env.VITE_PADDLE_ANNUAL_PRO,
     // Stripe — the international/card rail (Flowlify LLC). The publishable key is
     // the client's "billing live?" flag; the rest are server-side.
     stripe_secret: !!process.env.STRIPE_SECRET_KEY,
@@ -114,9 +103,7 @@ function health(req: VercelRequest, res: VercelResponse): void {
     stripe_price_annual: !!process.env.STRIPE_PRICE_ANNUAL,
   }
 
-  // Stripe is the only checkout rail exposed by the current app. Health must
-  // therefore require its WHOLE stack; dormant legacy Paddle variables cannot
-  // make production look billable when every visible checkout would fail.
+  // Stripe is the only checkout rail. Health requires its whole stack.
   const stripeStack = [
     keys.stripe_secret,
     keys.stripe_webhook,

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url"
  *   acca-loop.test.ts       the mock gate
  *   acca-options.test.ts    option shuffling (answer-position bias)
  *   acca-flashcards.test.ts spaced repetition + the relearning loop
- *   billing.test.ts         Paddle plan mapping + signature freshness
+ *   stripe.test.ts          Stripe billing, entitlement, and webhook safety
  *
  * Node has no localStorage; setup.ts provides one, since the whole engine is
  * localStorage-first by design.

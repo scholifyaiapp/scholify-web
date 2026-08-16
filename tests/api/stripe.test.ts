@@ -9,6 +9,7 @@ import {
   recordPaidInvoiceCommission,
   releaseEvent,
   resolveAffiliateMetadata,
+  safeReturnOrigin,
 } from "../../api/stripe.js"
 
 /*
@@ -28,6 +29,20 @@ beforeEach(() => {
   for (const [k, v] of Object.entries(ENV)) vi.stubEnv(k, v)
 })
 afterEach(() => vi.unstubAllEnvs())
+
+describe("Stripe return URL allowlist", () => {
+  it("accepts the canonical production origin", () => {
+    expect(safeReturnOrigin("https://www.scholifyapp.com", "https://www.scholifyapp.com")).toBe("https://www.scholifyapp.com")
+  })
+
+  it("rejects caller-controlled origins", () => {
+    expect(safeReturnOrigin("https://evil.example/phish", "https://www.scholifyapp.com")).toBe("https://www.scholifyapp.com")
+  })
+
+  it("normalizes a configured URL to its origin", () => {
+    expect(safeReturnOrigin(undefined, "https://preview.example/app")).toBe("https://preview.example")
+  })
+})
 
 describe("priceForPlan (checkout: plan → price)", () => {
   it("maps each plan to its configured price", () => {
@@ -203,6 +218,42 @@ describe("recordPaidInvoiceCommission", () => {
       )
     }
     expect(database.state.commissions.map((row) => row.billing_cycle)).toEqual([1, 2, 3])
+  })
+})
+
+describe("Stripe webhook event claims", () => {
+  function claimStub(insertError: null | { code?: string }, deleteError: null | { code?: string } = null) {
+    const eq = vi.fn().mockResolvedValue({ error: deleteError })
+    return {
+      from: vi.fn(() => ({
+        insert: vi.fn().mockResolvedValue({ error: insertError }),
+        delete: vi.fn(() => ({ eq })),
+      })),
+      eq,
+    }
+  }
+
+  it("claims a new event and identifies a duplicate", async () => {
+    await expect(claimEvent(claimStub(null) as never, "evt_new")).resolves.toBe(true)
+    await expect(claimEvent(claimStub({ code: "23505" }) as never, "evt_seen")).resolves.toBe(false)
+  })
+
+  it("fails closed when the durable event store is unavailable", async () => {
+    await expect(claimEvent(claimStub({ code: "08006" }) as never, "evt_db_down")).rejects.toThrow(
+      "stripe_event_claim_failed",
+    )
+  })
+
+  it("releases a failed processing claim so Stripe can retry", async () => {
+    const stub = claimStub(null)
+    await expect(releaseEvent(stub as never, "evt_retry")).resolves.toBeUndefined()
+    expect(stub.eq).toHaveBeenCalledWith("event_id", "evt_retry")
+  })
+
+  it("surfaces a failed release instead of pretending the event is retryable", async () => {
+    await expect(releaseEvent(claimStub(null, { code: "08006" }) as never, "evt_stuck")).rejects.toThrow(
+      "stripe_event_release_failed",
+    )
   })
 })
 

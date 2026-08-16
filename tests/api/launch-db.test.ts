@@ -22,7 +22,7 @@ import { resolve } from "node:path"
  *    `update`/`insert`/`delete` fires again on each deploy. That corrupts data
  *    slowly and invisibly — the symptom (a preference silently reverting) appears
  *    weeks later with nothing in the app to explain it.
- * 4. A `*​/` inside a block comment, which terminates the comment early and
+ * 4. A `* /` (with a space) inside a block comment, which would terminate the comment early if joined and
  *    truncates the file. This actually happened (commit ea3a700: a cron
  *    expression in a comment in 0026).
  */

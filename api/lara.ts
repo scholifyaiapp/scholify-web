@@ -273,7 +273,7 @@ export function trialActive(meta: Record<string, unknown> | undefined, now: numb
 /**
  * Resolve the caller's tier. app_metadata is the hot path (it rides in the JWT,
  * and only the service role can write it). The `subscriptions` table is the
- * durable record the Paddle webhook also writes — when the two disagree we take
+ * durable record the Stripe webhook also writes — when the two disagree we take
  * the LOWER of the two, so neither a stale JWT nor a half-applied webhook can
  * hand out a plan nobody paid for. A missing table (migration 0015 not run)
  * simply leaves app_metadata in charge — it is defence in depth, not a gate.

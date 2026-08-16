@@ -24,7 +24,7 @@ import {
   analyseResultPdf,
   analyseEnglishCertificate,
   RESULT_PDF_MAX_BYTES,
-  useUploadedResult,
+  applyUploadedResult,
   type ResultUploadAnalysis,
 } from "@/lib/acca-result-upload"
 import {
@@ -574,7 +574,7 @@ export default function Welcome() {
     setFinishError("")
     if (!persist(false)) { setFinishBusy(false); return }
     try {
-      await useUploadedResult(resultAnalysis, resultFile.name)
+      await applyUploadedResult(resultAnalysis, resultFile.name)
       markAccaOnboarded()
       void persistAccountSetup()
       setStartMode("assess")

@@ -1,5 +1,5 @@
 -- 0015: Phase 1 launch guardrails (Doc 10 §3) — three things that must be true
--- before a live Anthropic key and live Paddle keys are attached:
+-- before live AI and Stripe keys are attached:
 --
 --   1. subscriptions       — entitlement source of truth + billing audit trail.
 --   2. ai_usage_global     — an ORG-WIDE daily token budget. Per-user caps bound
@@ -14,8 +14,8 @@
 
 /* ── 1. Subscriptions: the billing audit trail ───────────────────────────
  * app_metadata.plan stays the hot path (it rides in the JWT, so no read costs
- * a round-trip). This table is the durable record BEHIND it: every Paddle event
- * that changed an entitlement, with the price id and Paddle ids that caused it.
+ * a round-trip). This table is the durable record BEHIND it: every Stripe event
+ * that changed an entitlement, with the price id and Stripe ids that caused it.
  * It answers "why does this user have Pro?" — which app_metadata alone cannot.
  */
 create table if not exists public.subscriptions (
@@ -23,9 +23,9 @@ create table if not exists public.subscriptions (
   plan                   text        not null default 'free',
   status                 text        not null default 'active',
   price_id               text,
-  paddle_subscription_id text,
-  paddle_customer_id     text,
-  -- The Paddle event that last wrote this row: lets us detect replays and
+  stripe_subscription_id text,
+  stripe_customer_id     text,
+  -- The Stripe event that last wrote this row: lets us detect replays and
   -- reconstruct the billing history from our own database.
   last_event_type        text,
   last_event_at          timestamptz,
@@ -33,8 +33,8 @@ create table if not exists public.subscriptions (
   updated_at             timestamptz not null default now()
 );
 
-create index if not exists subscriptions_paddle_sub_idx
-  on public.subscriptions (paddle_subscription_id);
+create index if not exists subscriptions_stripe_sub_idx
+  on public.subscriptions (stripe_subscription_id);
 
 alter table public.subscriptions enable row level security;
 

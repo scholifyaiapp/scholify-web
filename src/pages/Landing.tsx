@@ -308,7 +308,7 @@ function HeroHeadline() {
         textClassName="font-display font-normal tracking-[-0.03em]"
         gradientColors="linear-gradient(90deg, #14141A 0%, #C80000 40%, #E50068 50%, #C80000 60%, #14141A 100%)"
         gradientAnimationDuration={3.5}
-        className="!py-0"
+        className="landing-hero-headline !py-0"
       />
     </motion.div>
   )
@@ -320,6 +320,7 @@ function Hero() {
   const t = useT()
   return (
     <section
+      className="landing-hero"
       style={{
         position: "relative",
         /* dvh so the hero is exactly the visible viewport on mobile. With
@@ -345,8 +346,9 @@ function Hero() {
       >
         <CharlesMascot pose="thumbsup" size="clamp(118px,12vw,176px)" delay={0.45} />
       </div>
-      <div style={{ width: "100%", maxWidth: "var(--page-max)", margin: "0 auto" }}>
+      <div className="landing-hero-content" style={{ width: "100%", maxWidth: "var(--page-max)", minWidth: 0, margin: "0 auto" }}>
         <UpgradeBanner
+          className="landing-charles-banner"
           buttonText={t("Meet Charles")}
           description={t("— your AI race engineer for ACCA")}
           onClick={() => navigate(SIGN_UP_PATH)}

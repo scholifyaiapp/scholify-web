@@ -98,7 +98,29 @@ export async function claimEvent(supa: NonNullable<ReturnType<typeof admin>>, ev
   const { error } = await supa.from("stripe_events").insert({ event_id: eventId })
   if (!error) return true
   if ((error as { code?: string }).code === "23505") return false
-  return true
+  // Never process without a durable dedupe claim. Failing open here can apply
+  // the same payment twice when Postgres is transiently unavailable.
+  throw new Error("stripe_event_claim_failed")
+}
+
+const CANONICAL_SITE_ORIGIN = "https://www.scholifyapp.com"
+
+function safeUrlOrigin(value: string): string {
+  try { return new URL(value).origin } catch { return "" }
+}
+
+/** Never let a caller-controlled Origin choose Stripe's post-payment redirect. */
+export function safeReturnOrigin(requestOrigin: unknown, configuredOrigin = process.env.VITE_PUBLIC_SITE_URL): string {
+  const allowed = new Set([CANONICAL_SITE_ORIGIN])
+  const configured = configuredOrigin ? safeUrlOrigin(configuredOrigin) : ""
+  if (configured) allowed.add(configured)
+  const candidate = safeUrlOrigin(String(requestOrigin || ""))
+  if (candidate && allowed.has(candidate)) return candidate
+  if (candidate && process.env.NODE_ENV !== "production") {
+    const hostname = new URL(candidate).hostname
+    if (hostname === "localhost" || hostname === "127.0.0.1") return candidate
+  }
+  return configured || CANONICAL_SITE_ORIGIN
 }
 
 /**
@@ -112,15 +134,12 @@ export async function claimEvent(supa: NonNullable<ReturnType<typeof admin>>, ev
  * re-processing on retry is safe.
  */
 export async function releaseEvent(supa: NonNullable<ReturnType<typeof admin>>, eventId: string): Promise<void> {
-  try {
-    await supa.from("stripe_events").delete().eq("event_id", eventId)
-  } catch {
-    /* best-effort — a still-claimed event just means Stripe's next retry no-ops */
-  }
+  const { error } = await supa.from("stripe_events").delete().eq("event_id", eventId)
+  if (error) throw new Error("stripe_event_release_failed")
 }
 
 /** Write the entitlement to app_metadata + the subscriptions audit table. */
-async function writeEntitlement(
+export async function writeEntitlement(
   supa: NonNullable<ReturnType<typeof admin>>,
   userId: string,
   fields: {
@@ -157,7 +176,8 @@ async function writeEntitlement(
         ...(fields.periodEndsAt ? { period_ends_at: fields.periodEndsAt } : {}),
       }
   // Entitlement is service-role-only app_metadata — a user cannot self-grant it.
-  const { data: existingUser } = await supa.auth.admin.getUserById(userId)
+  const { data: existingUser, error: readUserError } = await supa.auth.admin.getUserById(userId)
+  if (readUserError || !existingUser?.user) throw new Error("stripe_entitlement_user_read_failed")
   const previousMeta = existingUser?.user?.app_metadata ?? {}
 
   /*
@@ -174,34 +194,33 @@ async function writeEntitlement(
     meta.past_due_since = null
   }
 
-  await supa.auth.admin.updateUserById(userId, {
+  const { error: updateUserError } = await supa.auth.admin.updateUserById(userId, {
     app_metadata: { ...previousMeta, ...meta },
   })
+  if (updateUserError) throw new Error("stripe_entitlement_user_write_failed")
 
-  // The durable billing record behind app_metadata (best-effort — never blocks).
-  try {
-    await supa.from("subscriptions").upsert(
+  // Keep the durable billing record synchronized with app_metadata.
+  const { error: subscriptionError } = await supa.from("subscriptions").upsert(
       {
         user_id: userId,
         ...(canceled ? { plan: "free" } : fields.plan ? { plan: fields.plan } : {}),
         status: fields.status,
         ...(fields.priceId ? { price_id: fields.priceId } : {}),
-        ...(fields.subscriptionId ? { paddle_subscription_id: fields.subscriptionId } : {}),
-        ...(fields.customerId ? { paddle_customer_id: fields.customerId } : {}),
+        ...(fields.subscriptionId ? { stripe_subscription_id: fields.subscriptionId } : {}),
+        ...(fields.customerId ? { stripe_customer_id: fields.customerId } : {}),
         last_event_type: `stripe.${fields.eventType}`,
         last_event_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },
     )
-    if (!canceled && fields.status === "active") {
-      await supa.from("profiles").upsert(
-        { id: userId, converted_to_paid: true },
-        { onConflict: "id" },
-      )
-    }
-  } catch {
-    /* audit trail is best-effort */
+  if (subscriptionError) throw new Error("stripe_subscription_audit_write_failed")
+  if (!canceled && fields.status === "active") {
+    const { error: profileError } = await supa.from("profiles").upsert(
+      { id: userId, converted_to_paid: true },
+      { onConflict: "id" },
+    )
+    if (profileError) throw new Error("stripe_profile_conversion_write_failed")
   }
 }
 
@@ -441,11 +460,12 @@ async function cancelCommissionForCustomer(
   customerId: string,
   fully: boolean,
 ): Promise<void> {
-  await supa
+  const { error } = await supa
     .from("affiliate_commissions")
     .update({ status: "canceled" })
     .eq("stripe_customer_id", customerId)
     .in("status", ["pending", "approved"])
+  if (error) throw new Error("affiliate_commission_cancel_failed")
   // (Partial refunds still cancel in Phase 1 — a rare edge; revisit if needed.)
   void fully
 }
@@ -727,10 +747,7 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
     return
   }
 
-  const origin =
-    (req.headers.origin as string | undefined) ||
-    process.env.VITE_PUBLIC_SITE_URL ||
-    "https://www.scholifyapp.com"
+  const origin = safeReturnOrigin(req.headers.origin)
 
   // A paying customer must manage their existing subscription rather than
   // accidentally creating a second one. This server-side guard protects every
@@ -820,10 +837,7 @@ async function portal(req: VercelRequest, res: VercelResponse): Promise<void> {
     res.status(200).json({ ok: false, reason: "no_customer" })
     return
   }
-  const origin =
-    (req.headers.origin as string | undefined) ||
-    process.env.VITE_PUBLIC_SITE_URL ||
-    "https://www.scholifyapp.com"
+  const origin = safeReturnOrigin(req.headers.origin)
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
@@ -861,8 +875,15 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
     res.status(200).json({ ok: false, reason: "missing_supabase_admin" })
     return
   }
-  if (!(await claimEvent(supa, event.id))) {
-    res.status(200).json({ ok: true, duplicate: true })
+  try {
+    if (!(await claimEvent(supa, event.id))) {
+      res.status(200).json({ ok: true, duplicate: true })
+      return
+    }
+  } catch {
+    // A 503 makes Stripe retry. Processing without a durable claim would make
+    // duplicate entitlement and commission writes possible.
+    res.status(503).json({ ok: false, reason: "event_store_unavailable" })
     return
   }
 
@@ -971,7 +992,7 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
       const fullyRefunded =
         event.type === "charge.dispute.created" ||
         ("amount_refunded" in charge && "amount" in charge && charge.amount_refunded >= charge.amount)
-      if (customerId) await cancelCommissionForCustomer(supa, customerId, fullyRefunded).catch(() => {})
+      if (customerId) await cancelCommissionForCustomer(supa, customerId, fullyRefunded)
     } else if (event.type === "customer.subscription.updated") {
       const sub = event.data.object as Stripe.Subscription
       const userId = sub.metadata?.userId
@@ -1019,10 +1040,13 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
     res.status(200).json({ received: true })
   } catch (err) {
     console.error("stripe webhook:", err)
-    // Release the idempotency claim BEFORE the retry: it was inserted before the
-    // entitlement write, so leaving it in place would make every Stripe retry
-    // look like a duplicate and permanently drop this paid customer's plan.
-    await releaseEvent(supa, event.id)
+    try {
+      // The insert above is a processing lease, not proof of completion. Remove
+      // it so Stripe's retry can apply the event after the transient failure.
+      await releaseEvent(supa, event.id)
+    } catch (releaseError) {
+      console.error("stripe webhook claim release:", releaseError)
+    }
     // 500 → Stripe retries with backoff (correct for a transient failure).
     res.status(500).json({ ok: false, reason: "entitlement_write_failed" })
   }

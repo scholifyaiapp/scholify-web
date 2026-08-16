@@ -103,6 +103,6 @@ describe("buildReceiptEmail", () => {
   it("ships a plain-text alternative with no markup left in it", () => {
     const mail = buildReceiptEmail({ ...base, firstName: "Alex", nextChargeOn: "11 September 2026" })
     expect(mail.text).toContain("Next charge: 11 September 2026")
-    expect(mail.text).not.toMatch(/<[a-z\/][^>]*>/i)
+    expect(mail.text).not.toMatch(/<[a-z/][^>]*>/i)
   })
 })
