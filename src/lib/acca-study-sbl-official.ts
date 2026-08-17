@@ -6,6 +6,7 @@ import { SBL_TREE_AREA_C } from "@/lib/acca-study-sbl-tree-c"
 import { SBL_TREE_AREA_D } from "@/lib/acca-study-sbl-tree-d"
 import { SBL_TREE_AREA_E } from "@/lib/acca-study-sbl-tree-e"
 import { SBL_TREE_AREA_F } from "@/lib/acca-study-sbl-tree-f"
+import { SBL_TREE_AREA_G } from "@/lib/acca-study-sbl-tree-g"
 
 /*
  * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
@@ -55,25 +56,13 @@ export const SBL_OFFICIAL_E = SBL_TREE_AREA_E
 export const SBL_OFFICIAL_F = SBL_TREE_AREA_F
 export const SBL_OFFICIAL_I = subset(SBL_E, "I", "Professional skills", ["why-skills", "five-skills", "scepticism-suspicion", "board-advice"], "Professional skills are how a senior adviser converts evidence into communication, analysis, scepticism, commercial judgement and balanced evaluation that another leader can act on.", SBL_E.outcomes.slice(0, 4))
 
-export const SBL_OFFICIAL_G: StudyChapter = {
-  paper: "SBL", area: "G", title: "Finance in planning and decision-making", minutes: 18,
-  intro: "At board level, finance is not a collection of formulas. It tests whether a strategy creates value, can be funded, survives uncertainty and produces information leaders can govern.",
-  outcomes: ["Evaluate finance transformation", "Apply financial and non-financial analysis to strategic choices", "Use investment, valuation and performance techniques at advisory level", "Integrate reporting, tax and funding consequences into recommendations"],
-  sections: [
-    { id: "finance-transformation", heading: "Finance as insight, control and transformation", blocks: [
-      { kind: "text", md: "A transformed finance function combines capable people, standard processes, governed data and appropriate technology to move effort from transaction processing towards **insight, challenge and decision support**. Automation without redesigned controls or skills simply accelerates weak work." },
-      { kind: "table", caption: "Board-level financial lens", head: ["Question", "Evidence"], rows: [["Does it create value?", "NPV, economic return, strategic benefits"], ["Can it be funded?", "Liquidity, leverage, covenants, timing"], ["How fragile is it?", "Sensitivity, scenarios, concentration and options"], ["What else changes?", "Tax, reporting, control, stakeholders and sustainability"]] },
-      { kind: "callout", tone: "rule", title: "Positive NPV is a start, not a conclusion", md: "Validate assumptions, financing capacity, implementation capability and stakeholder consequences before recommending commitment." },
-    ] },
-    { id: "decision", heading: "Evidence-led strategic financial advice", blocks: [
-      { kind: "example", title: "Transformation business case", scenario: "A platform costs $2.0m and has present-value financial benefits of $2.6m, but the forecast assumes rapid customer migration and the debt facility has little covenant headroom.", steps: [{ label: "Value", detail: "Base-case NPV is $0.6m." }, { label: "Challenge", detail: "Test migration rate, cost overruns and benefit timing; quantify switching values." }, { label: "Fund", detail: "Model liquidity and covenant headroom under downside scenarios." }, { label: "Advise", detail: "Recommend staged approval with adoption gates, benefit ownership and financing safeguards." }], result: "The advice preserves the value opportunity without ignoring execution and funding risk." },
-      { kind: "text", md: "Performance information should combine lagging financial outcomes with leading operational and stakeholder drivers. Avoid a dashboard of disconnected measures: each KPI needs a definition, owner, target, data source, frequency and decision response." },
-    ] },
-  ],
-  examTraps: [{ trap: "Recommending solely because NPV is positive.", fix: "Challenge assumptions and integrate funding, implementation and stakeholder effects." }, { trap: "Calling automation finance transformation.", fix: "Evaluate people, process, data, controls and decision quality together." }],
-  keyTerms: [{ term: "Finance transformation", def: "Coordinated redesign of finance people, processes, data and technology to improve control and decision support." }, { term: "Benefit owner", def: "The executive accountable for realising and measuring a business-case benefit." }],
-  summary: ["Use finance to test value, capacity and resilience.", "Challenge the business case rather than repeating it.", "Integrate financial, strategic and stakeholder evidence.", "Make benefits owned and measurable."],
-}
+/* Area G is a four-chapter tree — see acca-study-sbl-tree-g.ts. Unlike most of
+   this file, the chapter it replaces was genuinely authored rather than shim-built
+   — and it was 2 sections and 183 words for what is the biggest chapter in
+   Kaplan's text at 76 pages. Its two best ideas are kept and developed: that a
+   positive NPV is where advice starts rather than ends, and that a KPI needs a
+   definition, owner, target, source and decision response. */
+export const SBL_OFFICIAL_G = SBL_TREE_AREA_G
 
 export const SBL_OFFICIAL_H: StudyChapter = {
   paper: "SBL", area: "H", title: "Enabling success, managing change and project management", minutes: 19,
