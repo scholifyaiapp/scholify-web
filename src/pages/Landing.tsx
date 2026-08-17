@@ -2509,7 +2509,7 @@ function MobileAppsTeaser() {
           <motion.div variants={column} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}>
             <motion.div variants={line} className="race-kicker inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-2 text-[#6b6b76] shadow-sm backdrop-blur">
               <span className="race-live-dot size-2 shrink-0 rounded-full bg-[#c80000]" />
-              {t("MOBILE — ARRIVING 15 SEPTEMBER 2026")}
+              {t("MOBILE — COMING SOON")}
             </motion.div>
             {/* Was clamped from 42px, which made this the largest heading on the
                 page at 375px — bigger than the hero's own section headings. */}
@@ -2520,11 +2520,11 @@ function MobileAppsTeaser() {
               {t("Practice, review and keep your exam-day momentum wherever the day takes you. Your progress stays in sync across web and mobile.")}
             </motion.p>
             <motion.div variants={line} className="mt-8 flex flex-wrap gap-3 sm:gap-4">
-              <StoreBadge type="app-store" comingSoonLabel={t("Coming soon")} note={t("From September 15, 2026")} />
-              <StoreBadge type="google-play" comingSoonLabel={t("Coming soon")} note={t("From September 15, 2026")} />
+              <StoreBadge type="app-store" comingSoonLabel={t("Coming soon")} note={t("iOS & Android")} />
+              <StoreBadge type="google-play" comingSoonLabel={t("Coming soon")} note={t("iOS & Android")} />
             </motion.div>
             <motion.p variants={line} className="mt-5 text-sm leading-6 text-[#6b6b76]">
-              {t("From 15 September, the Scholify mobile experience will be available on iOS and Android.")}
+              {t("The Scholify mobile experience is coming to iOS and Android, with your progress in sync across web and mobile.")}
             </motion.p>
           </motion.div>
           <PhoneMockupBasic />
