@@ -724,6 +724,8 @@ export interface MockResult {
   correct: number
   total: number
   percent: number
+  /** Which of the 3 mock forms this attempt used. Optional — older attempts predate it. */
+  form?: number
 }
 
 type MockStore = Record<string, MockResult[]>
@@ -745,6 +747,7 @@ function readMocks(): MockStore {
           correct: num(m.correct),
           total: num(m.total),
           percent: num(m.percent),
+          ...(typeof m.form === "number" ? { form: m.form } : {}),
         }))
     }
     return out
@@ -755,11 +758,11 @@ function readMocks(): MockStore {
 }
 
 /** Record a completed mock for a paper (keeps the last 20). */
-export function recordMock(paperId: string, correct: number, total: number): void {
+export function recordMock(paperId: string, correct: number, total: number, form?: number): void {
   if (total <= 0) return
   const store = readMocks()
   const list = store[paperId] ?? []
-  list.push({ date: todayStr(), correct, total, percent: Math.round((correct / total) * 100) })
+  list.push({ date: todayStr(), correct, total, percent: Math.round((correct / total) * 100), ...(form ? { form } : {}) })
   store[paperId] = list.slice(-20)
   try {
     window.localStorage.setItem(KEY_MOCKS, JSON.stringify(store))

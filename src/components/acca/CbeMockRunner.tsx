@@ -88,14 +88,15 @@ function itemKey(it: CbeItem): string {
   return it.kind === "task" ? it.task.id : it.q.id
 }
 
-export default function CbeMockRunner({ paperId, onBack }: { paperId: string; onBack: () => void }) {
+export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { paperId: string; onBack: () => void; form?: number }) {
   const paper = getPaper(paperId)
   const bp = examBlueprint(paperId)
 
-  // Compose once per sitting: the learner's next form, options de-biased the
-  // same way every other session is (shuffled options, remapped answer).
+  // Compose once per sitting: the form the learner chose in the Mock Centre, or
+  // their next form in sequence. Options de-biased the same way every other
+  // session is (shuffled options, remapped answer).
   const [mock] = useState<CbeMock>(() => {
-    const form = nextMockForm(mockProgress(paperId).attempts)
+    const form = chosenForm ?? nextMockForm(mockProgress(paperId).attempts)
     const raw = buildCbeMock(paperId, form)
     return {
       ...raw,
@@ -270,7 +271,7 @@ export default function CbeMockRunner({ paperId, onBack }: { paperId: string; on
 
     // The learner record: this WAS a mock — it feeds the gate, the trend and
     // the pass-probability model exactly as before.
-    recordMock(paperId, Math.round(earned), total)
+    recordMock(paperId, Math.round(earned), total, mock.form)
     if (expired && unanswered > 0) recordMistake(paperId, "time", unanswered)
     recordDayActive(paperId)
     snapshotProbability(paperId)

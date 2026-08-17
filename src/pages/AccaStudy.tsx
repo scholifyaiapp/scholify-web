@@ -15,6 +15,7 @@ import { ProCountdown } from "@/components/acca/ProCountdown"
 import PaywallModal from "@/components/PaywallModal"
 import ExaminerView from "@/components/acca/ExaminerView"
 import CbeMockRunner from "@/components/acca/CbeMockRunner"
+import MockCentre from "@/components/acca/MockCentre"
 import CbeToolsDock, { CbeBlueprintCard } from "@/components/acca/CbeTools"
 import { constructedSectionLabel, examBlueprint } from "@/lib/acca-exam-structure"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
@@ -111,7 +112,7 @@ const DIM = "var(--sch-tx-3)"
 const CARD = "var(--sch-card)"
 const BORDER = "var(--sch-border)"
 
-type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "cbemock" | "examiner" | "flashcards" | "generate" | "results" | "journey" | "article"
+type Mode = "onboarding" | "picker" | "overview" | "topic" | "brief" | "session" | "mockcentre" | "cbemock" | "examiner" | "flashcards" | "generate" | "results" | "journey" | "article"
 
 const SESSION_SIZE = 8
 const LEARN_SIZE = 5 // the guided first questions after a Topic Brief
@@ -142,6 +143,9 @@ export default function AccaStudy() {
   const [mode, setMode] = useState<Mode>(() =>
     wasOnboarded() ? (getCurrentPaper() ? "overview" : "picker") : "onboarding",
   )
+  // The mock form the learner chose in the Mock Centre; undefined lets the runner
+  // pick the next form in sequence.
+  const [mockForm, setMockForm] = useState<number | undefined>(undefined)
 
   /*
    * The ACTIVE paper's content (questions, chapters, cards, written, briefs) is
@@ -518,9 +522,9 @@ export default function AccaStudy() {
         triggerFeaturePaywall()
         return
       }
-      // The mock IS the sectioned CBE now — the full exam shape (A → B → C),
-      // one clock, navigator, Charles marking constructed answers into the score.
-      setMode("cbemock")
+      // Open the Mock Exam Centre — the hub for the three forms, your scores and
+      // trend — which launches the sectioned CBE runner for the chosen form.
+      setMode("mockcentre")
       return
     }
     const seed = (Date.now() % 100000) + 1
@@ -1070,8 +1074,22 @@ export default function AccaStudy() {
             />
           )}
 
+          {mode === "mockcentre" && paperId && (
+            <MockCentre
+              key="mockcentre"
+              paperId={paperId}
+              onBack={() => { setTick((t) => t + 1); setMode("overview") }}
+              onStart={(form) => { setMockForm(form); setMode("cbemock") }}
+            />
+          )}
+
           {mode === "cbemock" && paperId && (
-            <CbeMockRunner key="cbemock" paperId={paperId} onBack={() => { setTick((t) => t + 1); setMode("overview") }} />
+            <CbeMockRunner
+              key={`cbemock-${mockForm ?? "next"}`}
+              paperId={paperId}
+              form={mockForm}
+              onBack={() => { setTick((t) => t + 1); setMockForm(undefined); setMode("mockcentre") }}
+            />
           )}
 
           {mode === "examiner" && paperId && (
