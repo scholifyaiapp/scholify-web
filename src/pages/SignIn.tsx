@@ -41,15 +41,26 @@ function ForgotPasswordModal({
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Reset the form ONCE, when the modal opens — not on every render while open.
+  // The parent recreates onClose each render and re-renders once a second during
+  // the sign-in lockout countdown; depending on those here wiped the user's
+  // typed email and flipped the "check your inbox" panel back to a blank form
+  // every second, making recovery unusable for exactly the locked-out cohort.
   useEffect(() => {
     if (!open) return
     setEmail(initialEmail)
     setSent(false)
     setError(null)
+    // Intentionally keyed off `open` only; initialEmail is seeded at open time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [open, initialEmail, onClose])
+  }, [open, onClose])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()

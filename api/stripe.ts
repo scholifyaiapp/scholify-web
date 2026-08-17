@@ -941,9 +941,22 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
         const sub = await stripe.subscriptions.retrieve(subId)
         const priceId = sub.items.data[0]?.price?.id
         const plan = planForPrice(priceId)
+        // Do NOT write "active" for every non-trialing status. A delayed-payment
+        // method (SEPA, iDEAL, Bancontact) can complete the session with
+        // payment_status "unpaid" and a subscription still "incomplete" — writing
+        // "active" would grant full Pro before any money arrived. Grant only for a
+        // genuine trial, or a paid+active subscription; otherwise pass the real
+        // status through, and a later customer.subscription.updated flips it to
+        // active once the payment actually clears.
+        const grantedStatus =
+          sub.status === "trialing"
+            ? "trialing"
+            : session.payment_status === "paid" && sub.status === "active"
+              ? "active"
+              : sub.status
         await writeEntitlement(supa, userId, {
           plan: plan ?? undefined,
-          status: sub.status === "trialing" ? "trialing" : "active",
+          status: grantedStatus,
           priceId,
           billingInterval: sub.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month",
           subscriptionId: sub.id,
