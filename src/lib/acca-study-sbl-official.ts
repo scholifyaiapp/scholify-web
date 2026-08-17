@@ -7,6 +7,7 @@ import { SBL_TREE_AREA_D } from "@/lib/acca-study-sbl-tree-d"
 import { SBL_TREE_AREA_E } from "@/lib/acca-study-sbl-tree-e"
 import { SBL_TREE_AREA_F } from "@/lib/acca-study-sbl-tree-f"
 import { SBL_TREE_AREA_G } from "@/lib/acca-study-sbl-tree-g"
+import { SBL_TREE_AREA_H } from "@/lib/acca-study-sbl-tree-h"
 
 /*
  * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
@@ -64,26 +65,11 @@ export const SBL_OFFICIAL_I = subset(SBL_E, "I", "Professional skills", ["why-sk
    definition, owner, target, source and decision response. */
 export const SBL_OFFICIAL_G = SBL_TREE_AREA_G
 
-export const SBL_OFFICIAL_H: StudyChapter = {
-  paper: "SBL", area: "H", title: "Enabling success, managing change and project management", minutes: 19,
-  intro: "Strategy becomes real through structure, people, change and disciplined projects. Success means realised benefits—not merely a system delivered on its original date.",
-  outcomes: ["Advise on organisation, collaboration and disruptive innovation", "Evaluate talent and performance excellence", "Plan and lead strategic change", "Govern projects from business case through benefits realisation"],
-  sections: [
-    { id: "enable", heading: "Organisation, talent and performance excellence", blocks: [
-      { kind: "text", md: "Structure should follow strategic work: clarify decision rights, accountability, coordination and information flow. Partnerships and shared services can add capability but require governance over objectives, data, performance and exit." },
-      { kind: "text", md: "Talent management connects workforce planning, recruitment, development, succession, reward and retention to future capabilities. Performance excellence combines customer value, process learning, evidence and continuous improvement—not target pressure alone." },
-      { kind: "diagram", diagram: { type: "flow", title: "From strategy to capability", data: { steps: [{ label: "Strategic outcomes" }, { label: "Required capabilities" }, { label: "Structure and roles" }, { label: "Talent and resources" }, { label: "Measures and learning" }, { label: "Benefits" }] } } },
-    ] },
-    { id: "change-project", heading: "Change and project governance", blocks: [
-      { kind: "text", md: "A credible change case explains **why now, what changes, who is affected and how success will be measured**. Leaders build readiness through two-way engagement, capability, visible sponsorship and reinforcement while addressing legitimate resistance rather than labelling every challenge obstruction." },
-      { kind: "table", caption: "Core project governance", head: ["Artefact/role", "Purpose"], rows: [["Business case", "Justifies value, options, cost, risk and benefits"], ["Project initiation document", "Baselines scope, governance, plan, resources and controls"], ["Sponsor", "Owns strategic case and removes executive barriers"], ["Project manager", "Coordinates delivery within approved constraints"], ["Benefit owner", "Realises outcomes after outputs are delivered"]] },
-      { kind: "callout", tone: "warn", title: "On time is not the same as successful", md: "Review adoption, operating outcomes and benefits after implementation. A delivered output that nobody uses can be a controlled project and a strategic failure." },
-    ] },
-  ],
-  examTraps: [{ trap: "Treating resistance as irrational.", fix: "Analyse interests, uncertainty, workload, capability and trust, then design engagement and support." }, { trap: "Closing a project when the system goes live.", fix: "Transfer ownership and track adoption and benefits through post-implementation review." }],
-  keyTerms: [{ term: "Change readiness", def: "The willingness, capability and capacity of affected stakeholders to adopt a change." }, { term: "Project initiation document", def: "The approved baseline for project scope, governance, responsibilities, plan, resources and risks." }],
-  summary: ["Align structure and talent to strategic capabilities.", "Create a credible, participative change path.", "Govern scope, value, risk and accountability.", "Measure adoption and realised benefits."],
-}
+/* Area H is a six-chapter tree — see acca-study-sbl-tree-h.ts. Like Area G the
+   chapter it replaces was genuinely authored, and it was 2 sections and 169 words
+   for six sub-topics carrying twenty-one learning outcomes. It also held the flow
+   diagram whose steps were plain strings, so it rendered as empty boxes. */
+export const SBL_OFFICIAL_H = SBL_TREE_AREA_H
 
 export const SBL_OFFICIAL_J: StudyChapter = {
   paper: "SBL", area: "J", title: "Other employability and digital skills", minutes: 15,
