@@ -1,11 +1,11 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
-import { SBL_C } from "@/lib/acca-study-sbl-c"
 import { SBL_E } from "@/lib/acca-study-sbl-e"
 import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
 import { SBL_TREE_AREA_B } from "@/lib/acca-study-sbl-tree-b"
 import { SBL_TREE_AREA_C } from "@/lib/acca-study-sbl-tree-c"
 import { SBL_TREE_AREA_D } from "@/lib/acca-study-sbl-tree-d"
 import { SBL_TREE_AREA_E } from "@/lib/acca-study-sbl-tree-e"
+import { SBL_TREE_AREA_F } from "@/lib/acca-study-sbl-tree-f"
 
 /*
  * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
@@ -48,7 +48,11 @@ export const SBL_OFFICIAL_D = SBL_TREE_AREA_D
    relabelled legacy chapter SBL_D as the whole area. Kaplan spends 116 pages on
    this material and predates E3 (machine learning, AI and robotics) entirely. */
 export const SBL_OFFICIAL_E = SBL_TREE_AREA_E
-export const SBL_OFFICIAL_F = subset(SBL_C, "F", "Organisational control and audit", ["control", "governance", "fraud"], "Control and assurance turn objectives, risk appetite and legal duties into reliable behaviour, information, escalation and independent challenge.", SBL_C.outcomes.slice(3))
+/* Area F is a three-chapter tree — see acca-study-sbl-tree-f.ts. It was the OTHER
+   half of legacy chapter SBL_C: three section ids and `outcomes.slice(3)`, while
+   Area D took `.slice(0, 3)` of the same chapter. Both are now authored, so SBL_C
+   is retired. */
+export const SBL_OFFICIAL_F = SBL_TREE_AREA_F
 export const SBL_OFFICIAL_I = subset(SBL_E, "I", "Professional skills", ["why-skills", "five-skills", "scepticism-suspicion", "board-advice"], "Professional skills are how a senior adviser converts evidence into communication, analysis, scepticism, commercial judgement and balanced evaluation that another leader can act on.", SBL_E.outcomes.slice(0, 4))
 
 export const SBL_OFFICIAL_G: StudyChapter = {
