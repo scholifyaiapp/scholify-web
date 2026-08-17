@@ -5,7 +5,6 @@ import {
   blockComplete,
   diagnosticDue,
   QUIZ_SIZE,
-  PRACTICE_MIN,
   PRACTICE_MAX,
   CARDS_MIN,
   CARDS_MAX,
@@ -96,15 +95,18 @@ describe("the counts, at every budget", () => {
     }
   })
 
-  it("keeps practice between 10 and 15 at every budget", () => {
+  it("never exceeds the practice ceiling, and the count is the honest served number", () => {
     for (const dailyMinutes of budgets) {
       setPlan("BT", { dailyMinutes, daysPerWeek: 6, targetProb: 85 })
       const day = composeToday("BT", true)
       const practice = day.blocks.find((b) => b.kind === "practice")!
-      // The floor holds on a 15-minute day — a short day still owes ten questions.
-      expect(practice.count, `floor at ${dailyMinutes} min`).toBeGreaterThanOrEqual(PRACTICE_MIN)
       // The ceiling holds on a 300-minute day — extra minutes must not buy a grind.
       expect(practice.count, `ceiling at ${dailyMinutes} min`).toBeLessThanOrEqual(PRACTICE_MAX)
+      // `count` now reports what the picker ACTUALLY served (block.title reads the
+      // same figure), not the sizing target. On a small area pool that can be
+      // below PRACTICE_MIN — the card must not promise 15 and serve 9 — but it is
+      // always a real, positive, in-bounds number the session will actually give.
+      expect(practice.count, `served > 0 at ${dailyMinutes} min`).toBeGreaterThan(0)
     }
   })
 

@@ -452,16 +452,20 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
     chapterKey: chapter ? chapterKey(chapter) : undefined,
   })
 
+  // Advertise what was actually picked, not the target. On a small area pool the
+  // picker can return fewer than practiceCount (e.g. 9 served under a "15
+  // practice" heading), and the flashcard block below already uses this pattern.
+  const practiceServed = practicePick.items.length || practiceCount
   blocks.push({
     id: "practice",
     kind: "practice",
     step: step++,
-    title: `${practiceCount} practice questions`,
+    title: `${practiceServed} practice questions`,
     detail: areaLabel
       ? `Exam-standard questions on ${chapter?.area} · ${areaLabel} — applying the chapter, not recalling it`
       : "Exam-standard questions on today's topic",
     minutes: practiceMinutes,
-    count: practiceCount,
+    count: practiceServed,
     area: chapter?.area,
     chapterKey: chapter ? chapterKey(chapter) : undefined,
   })

@@ -21,6 +21,11 @@ import {
 } from "lucide-react"
 import NavHeader from "@/components/ui/nav-header"
 import { GlowCard } from "@/components/ui/spotlight-card"
+import { QUESTION_COUNTS } from "@/lib/acca-content-counts"
+
+// Computed from the source of truth so the hero number can't drift stale again.
+// The old hardcoded "2,494" understated the real authored bank by ~2,000.
+const AUTHORED_QUESTION_TOTAL = Object.values(QUESTION_COUNTS).reduce((a, b) => a + b, 0)
 import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
@@ -467,7 +472,7 @@ function Hero() {
           style={{ marginTop: 36, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, flexWrap: "wrap" }}
         >
           {[
-            { n: "2,494", label: t("expert-written questions") },
+            { n: AUTHORED_QUESTION_TOTAL.toLocaleString("en-GB"), label: t("expert-written questions") },
             { n: "2,130", label: t("flashcards") },
             { n: "15", label: t("ACCA papers") },
           ].map((s, i) => (
