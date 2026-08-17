@@ -16,7 +16,7 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
     A: 3, // acca-study-sbr-tree-a.ts — A1(a) ethics duty, A1(a) pressure, A1(b) consequences
     B: 5, // acca-study-sbr-tree-b.ts — B1(a) standard-setting, B1(b-c) useful information, B1(e) elements, B1(d) measurement, B1(e) P&L vs OCI
     C: 16, // trees c1+c2+c3 — SBR-09..24, all eleven study-guide subsections authored; the legacy splice is retired
-    D: 1,
+    D: 7, // acca-study-sbr-tree-d.ts — D1 ×5 (control/method, goodwill/NCI, steps/disposals, procedures/exemptions, group cash flows), D2, D3
     E: 1,
     F: 1,
     G: 1,

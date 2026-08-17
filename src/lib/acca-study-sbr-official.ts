@@ -4,8 +4,8 @@ import { SBR_TREE_AREA_B } from "@/lib/acca-study-sbr-tree-b"
 import { SBR_TREE_AREA_C1 } from "@/lib/acca-study-sbr-tree-c1"
 import { SBR_TREE_AREA_C2 } from "@/lib/acca-study-sbr-tree-c2"
 import { SBR_TREE_AREA_C3 } from "@/lib/acca-study-sbr-tree-c3"
+import { SBR_TREE_AREA_D } from "@/lib/acca-study-sbr-tree-d"
 import { SBR_A } from "@/lib/acca-study-sbr-a"
-import { SBR_C } from "@/lib/acca-study-sbr-c"
 import { SBR_E } from "@/lib/acca-study-sbr-e"
 
 const select = (base: StudyChapter, area: string, title: string, ids: string[], intro: string): StudyChapter => ({ ...base, area, title, intro, sections: base.sections.filter((section) => ids.includes(section.id)) })
@@ -27,7 +27,11 @@ export const SBR_OFFICIAL_B = SBR_TREE_AREA_B
    instruments chapters relabelled wholesale — is retired, and the legacy
    files acca-study-sbr-b.ts and acca-study-sbr-d.ts are deleted. */
 export const SBR_OFFICIAL_C: StudyChapter[] = [...SBR_TREE_AREA_C1, ...SBR_TREE_AREA_C2, ...SBR_TREE_AREA_C3]
-export const SBR_OFFICIAL_D: StudyChapter = { ...SBR_C, area: "D", title: "Financial statements of groups of entities" }
+/* Area D is a seven-chapter authored tree (SBR-25..31) — see
+   acca-study-sbr-tree-d.ts. Question one's thirty marks examine this area
+   every sitting; the shim served it with one relabelled legacy chapter.
+   The legacy file acca-study-sbr-c.ts is deleted. */
+export const SBR_OFFICIAL_D = SBR_TREE_AREA_D
 export const SBR_OFFICIAL_E: StudyChapter = { ...SBR_E, area: "E", title: "Interpret financial and non-financial information for different stakeholders", intro: "Interpret performance from the specified stakeholder's perspective, challenge the quality and comparability of information, and connect financial and non-financial evidence.", sections: [...SBR_E.sections.filter((section) => section.id !== "current-issues"), { ...SBR_A.sections.find((section) => section.id === "commentary")!, id: "management-commentary" }] }
 export const SBR_OFFICIAL_F = select(SBR_E, "F", "The impact of changes and potential changes in accounting regulation", ["current-issues"], "Evaluate new standards and contemporary reporting issues, including digital assets, climate-related matters, global events, IFRS Sustainability Disclosure Standards and their relationship with ESRS.")
 
