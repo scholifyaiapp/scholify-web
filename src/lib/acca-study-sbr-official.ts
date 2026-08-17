@@ -1,4 +1,5 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
+import { SBR_TREE_AREA_A } from "@/lib/acca-study-sbr-tree-a"
 import { SBR_A } from "@/lib/acca-study-sbr-a"
 import { SBR_B } from "@/lib/acca-study-sbr-b"
 import { SBR_C } from "@/lib/acca-study-sbr-c"
@@ -7,7 +8,11 @@ import { SBR_E } from "@/lib/acca-study-sbr-e"
 
 const select = (base: StudyChapter, area: string, title: string, ids: string[], intro: string): StudyChapter => ({ ...base, area, title, intro, sections: base.sections.filter((section) => ids.includes(section.id)) })
 
-export const SBR_OFFICIAL_A = select(SBR_A, "A", "Fundamental ethical and professional principles", ["ethics"], "Corporate reporting is a public-interest responsibility. Apply ethical principles to management pressure, bias and difficult judgements, then explain the consequences of misleading stakeholders.")
+/* Area A is a three-chapter authored tree — see acca-study-sbr-tree-a.ts. The
+   shim served this area (twenty guaranteed marks: question two always pairs
+   reporting implications with ethical implications) from ONE section of the
+   legacy conceptual-framework chapter. */
+export const SBR_OFFICIAL_A = SBR_TREE_AREA_A
 export const SBR_OFFICIAL_B = select(SBR_A, "B", "The financial reporting framework", ["objective", "qualitative", "elements", "measurement", "regulatory"], "The Conceptual Framework supplies the objectives, qualitative characteristics, definitions and measurement logic used to evaluate reporting choices and regulatory change.")
 export const SBR_OFFICIAL_C: StudyChapter = { ...SBR_B, area: "C", title: "Reporting the financial performance of a range of entities", intro: "Apply professional judgement across recognition, measurement, presentation and disclosure. Financial instruments and employee benefits are transaction topics in this official area, not a separate capability.", sections: [...SBR_B.sections, ...SBR_D.sections], outcomes: [...SBR_B.outcomes, ...SBR_D.outcomes], examTraps: [...SBR_B.examTraps, ...SBR_D.examTraps], keyTerms: [...SBR_B.keyTerms, ...SBR_D.keyTerms], summary: [...SBR_B.summary, ...SBR_D.summary] }
 export const SBR_OFFICIAL_D: StudyChapter = { ...SBR_C, area: "D", title: "Financial statements of groups of entities" }

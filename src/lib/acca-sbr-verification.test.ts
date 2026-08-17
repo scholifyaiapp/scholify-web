@@ -6,9 +6,39 @@ import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
 describe("SBR-INT September 2026–June 2027 official structure", () => {
   const areas = ["A", "B", "C", "D", "E", "F", "G"]
+  /*
+   * Per-area chapter floors for the tree rebuild, mirroring SBL's. This is a
+   * RATCHET, not a target: raise a floor as each area is authored and it can
+   * never silently regress. `1` marks an area still served by the legacy
+   * `select` shim in acca-study-sbr-official.ts.
+   */
+  const CHAPTER_FLOOR: Record<string, number> = {
+    A: 3, // acca-study-sbr-tree-a.ts — A1(a) ethics duty, A1(a) pressure, A1(b) consequences
+    B: 1,
+    C: 1,
+    D: 1,
+    E: 1,
+    F: 1,
+    G: 1,
+  }
   it("covers all seven official capabilities in questions and chapters", () => {
     expect(new Set(getQuestions("SBR").map((item) => item.area))).toEqual(new Set(areas))
-    expect(chaptersForPaper("SBR").map((item) => item.area).sort()).toEqual(areas)
+    expect([...new Set(chaptersForPaper("SBR").map((item) => item.area))].sort()).toEqual(areas)
+  })
+  it("keeps the authored chapter tree from regressing", () => {
+    for (const area of areas) {
+      const count = chaptersForPaper("SBR").filter((item) => item.area === area).length
+      expect(count, `SBR area ${area} chapter count`).toBeGreaterThanOrEqual(CHAPTER_FLOOR[area])
+    }
+  })
+  it("gives every authored tree chapter a stable id, number and syllabus references", () => {
+    // The shim-built chapters carry none of these, which is how you tell them apart.
+    const authored = chaptersForPaper("SBR").filter((item) => item.id?.startsWith("SBR-"))
+    expect(authored.length).toBeGreaterThanOrEqual(3)
+    for (const chapter of authored) {
+      expect(typeof chapter.number, `${chapter.id} number`).toBe("number")
+      expect(chapter.syllabusRefs?.length ?? 0, `${chapter.id} syllabusRefs`).toBeGreaterThan(0)
+    }
   })
   it("includes written practice for ethics, sustainability regulation and digital skills", () => {
     const represented = new Set(getWrittenQuestions("SBR").map((item) => item.area))
