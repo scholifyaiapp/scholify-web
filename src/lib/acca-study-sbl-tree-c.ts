@@ -169,7 +169,7 @@ const SBL_TREE_12: StudyChapter = {
     "SBL-13 and SBL-14 cover external position",
     "SBL-15 covers internal position",
     "SBL-16 and SBL-17 cover strategic choices",
-    "SBL-31 to SBL-36 cover strategy into action",
+    "SBL-34 to SBL-39 cover strategy into action",
   ],
 }
 
@@ -431,7 +431,7 @@ const SBL_TREE_13: StudyChapter = {
     "SBL-14 narrows from macro-environment to industry competition",
     "SBL-02 covers the culture that sustains drift",
     "SBL-17 covers responses once drift is identified",
-    "SBL-35 covers the transformational change drift eventually forces",
+    "SBL-38 covers the transformational change drift eventually forces",
   ],
 }
 
@@ -688,8 +688,8 @@ const SBL_TREE_14: StudyChapter = {
   furtherStudy: [
     "SBL-13 covers the macro-environment surrounding these industry forces",
     "SBL-15 covers the internal capability side of strategic position",
-    "SBL-23 develops e-business and the value chain (E4)",
-    "SBL-31 covers collaborative working and partnering arrangements",
+    "SBL-25 develops e-business and the value chain (E4)",
+    "SBL-34 covers collaborative working and partnering arrangements",
   ],
 }
 
@@ -916,8 +916,8 @@ const SBL_TREE_15: StudyChapter = {
   furtherStudy: [
     "SBL-14 covers the value chain, which locates competences in activities",
     "SBL-16 uses capability to evaluate strategic options",
-    "SBL-33 covers talent management and the POPIT view of capability",
-    "SBL-34 covers performance excellence and critical success factors",
+    "SBL-36 covers talent management and the POPIT view of capability",
+    "SBL-37 covers performance excellence and critical success factors",
   ],
 }
 
@@ -1142,7 +1142,7 @@ const SBL_TREE_16: StudyChapter = {
   furtherStudy: [
     "SBL-17 covers the directions and methods of pursuing a chosen strategy",
     "SBL-15 supplies the capability evidence feasibility depends on",
-    "SBL-29 covers investment appraisal supporting acceptability",
+    "SBL-32 covers investment appraisal supporting acceptability",
     "SBL-11 covers the public sector context for portfolio decisions",
   ],
 }
@@ -1319,8 +1319,8 @@ const SBL_TREE_17: StudyChapter = {
   furtherStudy: [
     "SBL-16 covers how to compete once a direction is chosen",
     "SBL-13 covers Porter's Diamond and whether advantage travels internationally",
-    "SBL-29 covers appraising an acquisition or investment",
-    "SBL-31 covers collaborative working, partnering and outsourcing in delivery",
+    "SBL-32 covers appraising an acquisition or investment",
+    "SBL-34 covers collaborative working, partnering and outsourcing in delivery",
   ],
 }
 

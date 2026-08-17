@@ -1,4 +1,3 @@
-import type { StudyChapter } from "@/lib/acca-study-content"
 import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
 import { SBL_TREE_AREA_B } from "@/lib/acca-study-sbl-tree-b"
 import { SBL_TREE_AREA_C } from "@/lib/acca-study-sbl-tree-c"
@@ -8,6 +7,7 @@ import { SBL_TREE_AREA_F } from "@/lib/acca-study-sbl-tree-f"
 import { SBL_TREE_AREA_G } from "@/lib/acca-study-sbl-tree-g"
 import { SBL_TREE_AREA_H } from "@/lib/acca-study-sbl-tree-h"
 import { SBL_TREE_AREA_I } from "@/lib/acca-study-sbl-tree-i"
+import { SBL_TREE_AREA_J } from "@/lib/acca-study-sbl-tree-j"
 
 /*
  * SBL's chapter trees, one module per syllabus area.
@@ -75,16 +75,9 @@ export const SBL_OFFICIAL_G = SBL_TREE_AREA_G
    diagram whose steps were plain strings, so it rendered as empty boxes. */
 export const SBL_OFFICIAL_H = SBL_TREE_AREA_H
 
-export const SBL_OFFICIAL_J: StudyChapter = {
-  paper: "SBL", area: "J", title: "Other employability and digital skills", minutes: 15,
-  intro: "The SBL workspace rewards disciplined navigation and professional production: understand the requirement, control the evidence and create the deliverable a real recipient needs.",
-  outcomes: ["Navigate pre-seen and live exhibits efficiently", "Use digital response tools professionally", "Reconcile and manipulate evidence transparently", "Present decision-ready outputs"],
-  sections: [{ id: "workspace", heading: "Requirement-led digital execution", blocks: [
-    { kind: "text", md: "Map every requirement to the **role, recipient, task verb, output and relevant exhibits**. The pre-seen supplies context; live exhibits supply task evidence. Do not force a rehearsed model onto facts that point elsewhere." },
-    { kind: "table", caption: "Digital response controls", head: ["Action", "Professional result"], rows: [["Exhibit map", "Focused evidence without omission"], ["Purposeful headings", "Readable structure matched to the deliverable"], ["Traceable calculations", "Reviewable assumptions and conclusions"], ["Conflict log", "Visible reconciliation of inconsistent sources"], ["Final requirement check", "Every requested action answered"]] },
-    { kind: "example", title: "Conflicting evidence", scenario: "A director says service improved, while the dashboard shows complaints rising; the periods and definitions differ.", steps: [{ label: "Validate", detail: "Reconcile periods, populations and definitions." }, { label: "Quantify", detail: "Restate comparable trends where the data permits." }, { label: "Challenge", detail: "Explain what the evidence supports and what remains uncertain." }, { label: "Communicate", detail: "Recommend a consistent measure and action, not an arbitrary average." }], result: "Digital judgement converts inconsistency into a transparent decision issue." },
-  ] }],
-  examTraps: [{ trap: "Copying exhibits into a generic essay.", fix: "Synthesise evidence for the recipient, decision and required output." }, { trap: "Ignoring conflicting definitions or periods.", fix: "Reconcile the bases and state unresolved limitations." }],
-  keyTerms: [{ term: "Exhibit map", def: "A requirement-led index connecting evidence sources to tasks and outputs." }],
-  summary: ["Start from role, verb, recipient and output.", "Use pre-seen as context, not a rehearsed answer.", "Control calculations and conflicting evidence.", "Finish with prioritised action."],
-}
+/* Area J is a two-chapter tree — see acca-study-sbl-tree-j.ts. It was the
+   thinnest chapter in the paper at 1 section and 111 words, and it caused a live
+   engine bug: carrying no `id` and no `number`, it sorted ahead of all 45
+   authored chapters and became every SBL learner's day one, on an area holding
+   three questions. See chooseScope in acca-today-composer. */
+export const SBL_OFFICIAL_J = SBL_TREE_AREA_J

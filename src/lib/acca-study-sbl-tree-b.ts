@@ -867,8 +867,8 @@ const SBL_TREE_08: StudyChapter = {
   furtherStudy: [
     "SBL-09 covers the board's committees and directors' remuneration",
     "SBL-07 covers the ownership models that shape board composition",
-    "SBL-26 covers the audit committee's relationship with internal audit",
-    "SBL-19 covers risk culture, which the board sets through tone",
+    "SBL-28 covers internal audit and the reporting line that makes it independent",
+    "SBL-21 covers risk culture, which the board sets through tone",
   ],
 }
 
@@ -1077,7 +1077,7 @@ const SBL_TREE_09: StudyChapter = {
   furtherStudy: [
     "SBL-08 covers the board and NED independence these committees depend on",
     "SBL-04 covers the self-interest threats reward design creates",
-    "SBL-26 covers internal audit's reporting line to the audit committee",
+    "SBL-28 covers internal audit's reporting line to the audit committee",
     "SBL-10 covers the remuneration disclosure shareholders judge",
   ],
 }
@@ -1335,8 +1335,8 @@ const SBL_TREE_10: StudyChapter = {
   ],
   furtherStudy: [
     "SBL-06 covers the stakeholder power that drives reporting policy",
-    "SBL-27 covers internal control over reporting, including sustainability data",
-    "SBL-26 covers the internal audit function that should test non-financial data",
+    "SBL-29 covers internal control over reporting, including sustainability data",
+    "SBL-28 covers the internal audit function that should test non-financial data",
     "SBR develops the financial reporting side of this material",
   ],
 }
@@ -1588,7 +1588,7 @@ const SBL_TREE_11: StudyChapter = {
   furtherStudy: [
     "SBL-06 covers the stakeholder and social responsibility ideas this applies",
     "SBL-03 covers public value and acting in the public interest",
-    "SBL-30 covers performance measures and KPIs",
+    "SBL-33 covers performance measures and KPIs",
     "SBL-16 covers the public sector portfolio matrix within strategic choice",
   ],
 }

@@ -317,7 +317,7 @@ const SBL_TREE_01: StudyChapter = {
     "SBL-02 develops leadership into culture and the cultural web",
     "SBL-03 and SBL-04 cover professional codes, conflicts, threats and economic crime (A3)",
     "SBL-08 and SBL-09 examine the board, NEDs, committees and remuneration in depth",
-    "SBL-35 applies leadership to managing strategic change",
+    "SBL-38 applies leadership to managing strategic change",
   ],
 }
 
@@ -555,8 +555,8 @@ const SBL_TREE_02: StudyChapter = {
   furtherStudy: [
     "SBL-01 covers the leadership qualities and approaches this chapter applies",
     "SBL-13 examines strategic drift within the macro-environment (C2)",
-    "SBL-35 covers managing strategic change, Lewin, Harmon and contextual features",
-    "SBL-19 develops risk culture, which is culture applied to risk appetite",
+    "SBL-38 covers managing strategic change, Harmon, Lewin and the contextual features",
+    "SBL-21 develops risk culture, which is culture applied to risk appetite",
   ],
 }
 
@@ -1034,9 +1034,9 @@ const SBL_TREE_04: StudyChapter = {
   ],
   furtherStudy: [
     "SBL-03 covers the fundamental principles this chapter applies",
-    "SBL-25 to SBL-27 develop internal control, internal audit and compliance (Area F)",
+    "SBL-27 to SBL-29 develop internal control, internal audit and compliance (Area F)",
     "SBL-09 covers remuneration design, a frequent source of self-interest threats",
-    "SBL-40 develops scepticism, the professional skill this material is examined through",
+    "SBL-43 develops scepticism, the professional skill this material is examined through",
   ],
 }
 

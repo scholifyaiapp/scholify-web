@@ -464,7 +464,7 @@ const SBL_TREE_19: StudyChapter = {
   furtherStudy: [
     "SBL-18 covers appetite and capacity, against which these assessments are judged",
     "SBL-20 covers the response strategies including TARA and ALARP",
-    "SBL-24 covers cyber risk in detail",
+    "SBL-26 covers cyber risk in detail",
     "SBL-10 covers reporting climate and sustainability exposure to stakeholders",
   ],
 }
@@ -716,8 +716,8 @@ const SBL_TREE_20: StudyChapter = {
   furtherStudy: [
     "SBL-19 covers the assessment these responses answer",
     "SBL-21 covers embedding risk in culture and mapping assurance over it",
-    "SBL-25 covers the internal control systems that deliver risk reduction",
-    "SBL-36 covers monitoring and controlling project risk specifically",
+    "SBL-27 covers the internal control systems that deliver risk reduction",
+    "SBL-39 covers monitoring and controlling project risk specifically",
   ],
 }
 
@@ -912,7 +912,7 @@ const SBL_TREE_21: StudyChapter = {
   furtherStudy: [
     "SBL-02 covers culture and the cultural web this chapter applies to risk",
     "SBL-20 covers the responses whose operation these lines assure",
-    "SBL-25 to SBL-27 cover internal control, internal audit and reporting (Area F)",
+    "SBL-27 to SBL-29 cover internal control, internal audit and reporting (Area F)",
     "SBL-09 covers the audit committee that receives third-line assurance",
   ],
 }

@@ -204,7 +204,7 @@ const SBL_TREE_22: StudyChapter = {
     "SBL-23 covers the analytics that make device and system data useful",
     "SBL-26 covers IT security and control in depth",
     "SBL-14 covers the supplier power that exit difficulty creates",
-    "SBL-31 covers investment appraisal of a technology business case",
+    "SBL-32 covers investment appraisal of a technology business case",
   ],
 }
 
