@@ -18,8 +18,8 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
     C: 16, // trees c1+c2+c3 — SBR-09..24, all eleven study-guide subsections authored; the legacy splice is retired
     D: 7, // acca-study-sbr-tree-d.ts — D1 ×5 (control/method, goodwill/NCI, steps/disposals, procedures/exemptions, group cash flows), D2, D3
     E: 3, // acca-study-sbr-tree-e.ts — E1(a) stakeholder analysis, E1(b) segments, E1(c) information quality incl. IFRS S1/S2 connectivity
-    F: 1,
-    G: 1,
+    F: 3, // acca-study-sbr-tree-f.ts — F1(a) adoption impact, F1(b) contemporary issues, F1(c) IFRS S1/S2 and ESRS
+    G: 1, // SBR-38 in the aggregator — authored, kept
   }
   it("covers all seven official capabilities in questions and chapters", () => {
     expect(new Set(getQuestions("SBR").map((item) => item.area))).toEqual(new Set(areas))
@@ -45,7 +45,7 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
     for (const area of ["A", "F", "G"]) expect(represented.has(area)).toBe(true)
   })
   it("includes the current sustainability disclosure architecture", () => {
-    const currentIssues = JSON.stringify(chaptersForPaper("SBR").find((item) => item.area === "F")).toLowerCase()
+    const currentIssues = JSON.stringify(chaptersForPaper("SBR").filter((item) => item.area === "F")).toLowerCase()
     for (const term of ["ifrs s1", "ifrs s2", "governance", "strategy", "risk management", "metrics", "esrs"]) expect(currentIssues).toContain(term)
   })
   it("keeps financial instruments and employee benefits in official Area C", () => {

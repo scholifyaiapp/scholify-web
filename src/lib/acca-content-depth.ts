@@ -55,9 +55,10 @@ export const DEVELOPING_PAPERS: readonly string[] = [
   // its ten areas were not thin content but a relabelling shim deriving one
   // area's chapters from another's.
   // In each case this file's test is what told us the paper had crossed the
-  // line, by going red until the entry was removed. That leaves the five
-  // remaining Strategic Professional papers.
-  "SBR",
+  // line, by going red until the entry was removed.
+  // SBR followed on 17 Aug 2026: 7 shim-served areas → 38 authored chapters
+  // (SBR-01..38) across all seven official areas, and the five legacy files
+  // deleted. That leaves the four remaining Strategic Professional papers.
   "AFM",
   "APM",
   "AAA",

@@ -6,9 +6,18 @@ import { SBR_TREE_AREA_C2 } from "@/lib/acca-study-sbr-tree-c2"
 import { SBR_TREE_AREA_C3 } from "@/lib/acca-study-sbr-tree-c3"
 import { SBR_TREE_AREA_D } from "@/lib/acca-study-sbr-tree-d"
 import { SBR_TREE_AREA_E } from "@/lib/acca-study-sbr-tree-e"
-import { SBR_E } from "@/lib/acca-study-sbr-e"
+import { SBR_TREE_AREA_F } from "@/lib/acca-study-sbr-tree-f"
 
-const select = (base: StudyChapter, area: string, title: string, ids: string[], intro: string): StudyChapter => ({ ...base, area, title, intro, sections: base.sections.filter((section) => ids.includes(section.id)) })
+/*
+ * THE SHIM IS GONE. Until August 2026 this file was a relabelling layer: a
+ * local `select()` helper re-cut five legacy chapters (SBR_A–SBR_E) into the
+ * seven official syllabus areas — Area C was two legacy chapters spliced
+ * together, Areas A and B were both carved from the same legacy framework
+ * chapter, and the whole paper carried ~22,000 words. Every area is now an
+ * authored tree (SBR-01..38) and the five legacy files are deleted. If you
+ * are adding to an area, add a chapter to that area's tree module — do not
+ * reintroduce a helper that derives one area's content from another's.
+ */
 
 /* Area A is a three-chapter authored tree — see acca-study-sbr-tree-a.ts. The
    shim served this area (twenty guaranteed marks: question two always pairs
@@ -38,10 +47,18 @@ export const SBR_OFFICIAL_D = SBR_TREE_AREA_D
    commentary section lifted from the legacy framework chapter — whose file,
    acca-study-sbr-a.ts, is now unreferenced and deleted. */
 export const SBR_OFFICIAL_E = SBR_TREE_AREA_E
-export const SBR_OFFICIAL_F = select(SBR_E, "F", "The impact of changes and potential changes in accounting regulation", ["current-issues"], "Evaluate new standards and contemporary reporting issues, including digital assets, climate-related matters, global events, IFRS Sustainability Disclosure Standards and their relationship with ESRS.")
+/* Area F is a three-chapter authored tree (SBR-35..37) — see
+   acca-study-sbr-tree-f.ts. The shim served the area with ONE section cut
+   from the legacy interpretation chapter, whose file acca-study-sbr-e.ts is
+   now unreferenced and deleted. */
+export const SBR_OFFICIAL_F = SBR_TREE_AREA_F
 
+/* Area G was genuinely authored rather than shim-built and is kept — now with
+   the stable id and number every chapter must carry (a legacy SBL chapter
+   without them once sorted ahead of the whole paper; see chooseScope in
+   acca-today-composer). */
 export const SBR_OFFICIAL_G: StudyChapter = {
-  paper: "SBR", area: "G", title: "Employability and technology skills", minutes: 15,
+  paper: "SBR", id: "SBR-38", number: 38, area: "G", syllabusRefs: ["G1", "G2", "G3", "G4"], title: "Employability and technology skills", minutes: 15,
   intro: "SBR digital competence means controlling evidence and calculations in the computer-based workspace, then presenting technically sound advice that a stakeholder can use.",
   outcomes: ["Navigate requirements and exhibits efficiently", "Prepare traceable spreadsheet adjustments", "Reconcile conflicting financial and non-financial information", "Present professional stakeholder-focused responses"],
   sections: [{ id: "digital-workspace", heading: "Requirement-led digital reporting", blocks: [
