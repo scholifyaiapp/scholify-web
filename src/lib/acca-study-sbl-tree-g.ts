@@ -456,7 +456,7 @@ const SBL_TREE_32: StudyChapter = {
       blocks: [
         {
           kind: "text",
-          md: "G2(e) asks for the broad financial reporting and tax implications of a strategic or investment decision. \"Broad\" is the operative word: SBL wants the consequences a board should be told about, not a technical computation.",
+          md: "G2(e) asks what a strategic or investment decision does to the reported figures and to the tax position — in outline. That word is the operative one: SBL wants the consequences a board should be told about, not a technical computation.",
         },
         {
           kind: "table",

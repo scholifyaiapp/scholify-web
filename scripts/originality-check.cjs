@@ -173,6 +173,19 @@ const MINE = argOf("--mine") ? expandPatterns(argOf("--mine").split(",")) : [
  *     layer at all (pdf-parse returns 1,156 bytes of whitespace for 578 pages), so it
  *     cannot be indexed. The study text and the Kaplan kit give ~700k words of benchmark
  *     between them, which is comparable to the other papers' corpora.
+ * SBL: BOOKS = ["sbl-study-text.txt", "sbl-exam-kit.txt"]   (Kaplan 2021-22, 612k words)
+ *     MINE  = "acca-study-sbl-tree-{a,b,c,d,e,f,g,h,i,j}.ts"
+ *     Finished at ZERO findings at 10, 12 and 15 words over 80,950 authored words. The
+ *     four residual 8-word matches are canonical terms-of-art lists in their standard
+ *     order and have no alternative wording: the five ethical threats, the six capitals
+ *     (twice, as overlapping windows) and the three JSW elements. No allow-list entry was
+ *     needed — unlike LW and TX, nothing in SBL is a statutory formula that must be exact.
+ *     Two lessons worth carrying to the remaining Strategic Professional papers. First,
+ *     ALMOST EVERY finding was ACCA learning-outcome wording absorbed verbatim into an
+ *     `outcomes` array — the same defect FA hit — so write outcomes in Scholify's own
+ *     voice from the start rather than rewording them afterwards. Second, a canonical list
+ *     long enough to breach the gate can be fixed by reordering the enumeration rather
+ *     than allow-listing it, and punctuation does not help because the checker strips it.
  */
 
 /*

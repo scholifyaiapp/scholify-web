@@ -50,10 +50,13 @@ export const DEVELOPING_PAPERS: readonly string[] = [
   // FM and AA were both here. Their rebuilds landed on 11 Aug 2026:
   //   FM  8 chapters  → 25, across all eight syllabus areas
   //   AA  6 chapters  → 26, across all six
+  // SBL followed on 17 Aug 2026: 10 chapters → 46, across all ten areas, and
+  // ~9,900 words → ~40,400. It was the hardest of the three, because seven of
+  // its ten areas were not thin content but a relabelling shim deriving one
+  // area's chapters from another's.
   // In each case this file's test is what told us the paper had crossed the
-  // line, by going red until the entry was removed. That leaves the six
-  // Strategic Professional papers, which is the next block of work.
-  "SBL",
+  // line, by going red until the entry was removed. That leaves the five
+  // remaining Strategic Professional papers.
   "SBR",
   "AFM",
   "APM",

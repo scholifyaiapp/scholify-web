@@ -27,20 +27,20 @@ const ALL_PAPERS = paperLevels().flatMap((level) => level.papers.map((p) => p.id
  * FULL_DEPTH_CHAPTERS but the course is still knowingly incomplete.
  *
  * The count is a proxy for depth and it is a good one at the start and the end of
- * a rebuild. It is unreliable in the middle: SBL is authored area by area, and
+ * a rebuild. It is unreliable in the middle: SBL was authored area by area, and
  * once Areas A to C landed it held 24 chapters while seven of its ten syllabus
- * areas were still served by the relabelling shim in acca-study-sbl-official.ts.
- * The proxy therefore says "finished" some weeks before the paper is, and
- * removing the flag on its word would tell learners a part-shim course was
- * complete — the exact misrepresentation the flag exists to prevent, arrived at
- * from the other direction.
+ * areas were still served by a relabelling shim. The proxy therefore said
+ * "finished" some days before the paper was, and removing the flag on its word
+ * would have told learners a part-shim course was complete — the exact
+ * misrepresentation the flag exists to prevent, arrived at from the other side.
  *
- * So a paper listed here stays flagged as developing despite its chapter count,
- * and the equality check below excludes it. Empty this list as each rebuild
- * finishes and delete the constant when it is no longer needed — an entry that
- * outlives its rebuild is the same rot this file was written to stop.
+ * A paper listed here stays flagged as developing despite its chapter count. SBL
+ * was the only entry and came off it on 17 Aug 2026 when its last area landed.
+ * The list is kept, empty, because the next Strategic Professional rebuild will
+ * pass through the same window — but the test below fails if an entry outlives
+ * its rebuild, which is the rot this file exists to stop.
  */
-const MID_REBUILD: readonly string[] = ["SBL"]
+const MID_REBUILD: readonly string[] = []
 
 describe("the developing-paper flag tracks reality", () => {
   it("covers every paper in the qualification, once", () => {
