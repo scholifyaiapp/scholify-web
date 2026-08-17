@@ -5,7 +5,7 @@ import { SBR_TREE_AREA_C1 } from "@/lib/acca-study-sbr-tree-c1"
 import { SBR_TREE_AREA_C2 } from "@/lib/acca-study-sbr-tree-c2"
 import { SBR_TREE_AREA_C3 } from "@/lib/acca-study-sbr-tree-c3"
 import { SBR_TREE_AREA_D } from "@/lib/acca-study-sbr-tree-d"
-import { SBR_A } from "@/lib/acca-study-sbr-a"
+import { SBR_TREE_AREA_E } from "@/lib/acca-study-sbr-tree-e"
 import { SBR_E } from "@/lib/acca-study-sbr-e"
 
 const select = (base: StudyChapter, area: string, title: string, ids: string[], intro: string): StudyChapter => ({ ...base, area, title, intro, sections: base.sections.filter((section) => ids.includes(section.id)) })
@@ -32,7 +32,12 @@ export const SBR_OFFICIAL_C: StudyChapter[] = [...SBR_TREE_AREA_C1, ...SBR_TREE_
    every sitting; the shim served it with one relabelled legacy chapter.
    The legacy file acca-study-sbr-c.ts is deleted. */
 export const SBR_OFFICIAL_D = SBR_TREE_AREA_D
-export const SBR_OFFICIAL_E: StudyChapter = { ...SBR_E, area: "E", title: "Interpret financial and non-financial information for different stakeholders", intro: "Interpret performance from the specified stakeholder's perspective, challenge the quality and comparability of information, and connect financial and non-financial evidence.", sections: [...SBR_E.sections.filter((section) => section.id !== "current-issues"), { ...SBR_A.sections.find((section) => section.id === "commentary")!, id: "management-commentary" }] }
+/* Area E is a three-chapter authored tree (SBR-32..34) — see
+   acca-study-sbr-tree-e.ts. The shim built this area from the legacy
+   interpretation chapter minus its current-issues section, plus the
+   commentary section lifted from the legacy framework chapter — whose file,
+   acca-study-sbr-a.ts, is now unreferenced and deleted. */
+export const SBR_OFFICIAL_E = SBR_TREE_AREA_E
 export const SBR_OFFICIAL_F = select(SBR_E, "F", "The impact of changes and potential changes in accounting regulation", ["current-issues"], "Evaluate new standards and contemporary reporting issues, including digital assets, climate-related matters, global events, IFRS Sustainability Disclosure Standards and their relationship with ESRS.")
 
 export const SBR_OFFICIAL_G: StudyChapter = {
