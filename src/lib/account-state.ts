@@ -57,6 +57,33 @@ function clearSetup(): void {
   for (const key of SETUP_KEYS) window.localStorage.removeItem(key)
 }
 
+/**
+ * Wipe ALL of this browser's Scholify data — setup AND the content stores
+ * (diagnostics, progress, notes, mistakes, stats, flashcards, mocks, journey,
+ * the composed day) — but keep the owner marker and the per-user setup backups.
+ *
+ * Used when a DIFFERENT account signs in on the same browser. clearSetup alone
+ * left every content key behind, so user B saw user A's private diagnostics and
+ * notes, and B was denied their own free diagnosis because A's still resolved
+ * locally. B's own data re-hydrates from their cloud (progress/diagnostics sync
+ * to Supabase, notes have their own sync), so clearing local is safe.
+ */
+function clearAllUserData(): void {
+  // Iterate via the Storage API, not Object.keys(localStorage) — the latter does
+  // not enumerate keys in every environment. Collect first, then remove, so the
+  // live index isn't mutated mid-scan.
+  const keys: string[] = []
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i)
+    if (key) keys.push(key)
+  }
+  for (const key of keys) {
+    if (!key.startsWith("scholify")) continue
+    if (key === OWNER_KEY || key.startsWith(BACKUP_PREFIX)) continue
+    window.localStorage.removeItem(key)
+  }
+}
+
 function saveLocalBackup(userId: string): void {
   window.localStorage.setItem(`${BACKUP_PREFIX}${userId}`, JSON.stringify(snapshot()))
 }
@@ -77,8 +104,11 @@ export function hydrateAccountSetup(user: User | null): void {
     }
 
     if (owner && owner !== user.id) {
+      // A different account is signing in on this browser. Back up the previous
+      // owner's setup, then wipe EVERYTHING local (setup + content) so the new
+      // user never sees the previous user's diagnostics, notes or progress.
       saveLocalBackup(owner)
-      clearSetup()
+      clearAllUserData()
     }
 
     const cloud = user.user_metadata?.[META_KEY]

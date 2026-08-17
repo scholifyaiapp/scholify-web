@@ -27,6 +27,16 @@ describe("account setup isolation", () => {
     expect(localStorage.getItem("scholify-account-state-owner")).toBe("two")
   })
 
+  it("wipes the previous account's CONTENT (not just setup) when a new account signs in", () => {
+    localStorage.setItem("scholify-acca-onboarded", "1")
+    localStorage.setItem("scholify-acca-progress", "user-one-progress")
+    localStorage.setItem("scholify:acca:notes:v1", "user-one-notes")
+    hydrateAccountSetup(user("one"))
+    hydrateAccountSetup(user("two"))
+    expect(localStorage.getItem("scholify-acca-progress")).toBeNull()
+    expect(localStorage.getItem("scholify:acca:notes:v1")).toBeNull()
+  })
+
   it("restores setup from durable user metadata on a new browser", () => {
     hydrateAccountSetup(user("one", {
       "scholify-acca-onboarded": "1",

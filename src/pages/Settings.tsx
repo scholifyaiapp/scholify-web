@@ -1256,8 +1256,17 @@ export default function Settings() {
     }
 
     try {
-      for (const key of Object.keys(window.localStorage)) {
-        if (key.startsWith("scholify-")) window.localStorage.removeItem(key)
+      // Match "scholify" (no separator), so BOTH the hyphen keys (scholify-…)
+      // and the colon-namespaced stores (scholify:acca:notes:v1 and its
+      // tombstones) are erased. The old "scholify-" filter left every written
+      // note and its tombstones in the browser after "permanently deleted".
+      const keys: string[] = []
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (key) keys.push(key)
+      }
+      for (const key of keys) {
+        if (key.startsWith("scholify")) window.localStorage.removeItem(key)
       }
     } catch {
       /* ignore */
