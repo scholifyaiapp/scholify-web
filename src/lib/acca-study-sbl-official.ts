@@ -4,13 +4,30 @@ import { SBL_B } from "@/lib/acca-study-sbl-b"
 import { SBL_C } from "@/lib/acca-study-sbl-c"
 import { SBL_D } from "@/lib/acca-study-sbl-d"
 import { SBL_E } from "@/lib/acca-study-sbl-e"
+import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
 
+/*
+ * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
+ * (see acca-study-sbl-tree-a.ts for the standard and the reasoning).
+ *
+ * Areas still on the legacy bodies below are served by `subset`, which re-cuts
+ * five old chapters into ten official areas. That is a shim, not authored
+ * content, and it is why the pre-rebuild paper carried ~9,900 words across the
+ * whole syllabus: Areas D and F are two slices of ONE legacy chapter, Areas C
+ * and E are legacy chapters relabelled wholesale, and Area A used to be carved
+ * out of the legacy PROFESSIONAL SKILLS chapter. Each area is replaced by a real
+ * tree in turn; delete `subset`, the SBL_A–SBL_E imports and the legacy files
+ * once the last area is off it.
+ */
 function subset(source: StudyChapter, area: string, title: string, ids: string[], intro: string, outcomes: string[]): StudyChapter {
   return { ...source, area, title, intro, outcomes, sections: source.sections.filter((section) => ids.includes(section.id)) }
 }
 
-export const SBL_OFFICIAL_A = subset(SBL_E, "A", "Leadership", ["principles", "models"], "Leadership is visible in choices: the tone leaders set, the culture and incentives they shape, and whether they protect the public interest when pressure makes ethics expensive.", ["Evaluate leadership qualities and styles in context", "Analyse leadership's effect on culture and strategic change", "Apply professional values and ethical safeguards", "Recommend action that creates sustainable organisational and public value"])
-SBL_OFFICIAL_A.sections.unshift(...SBL_A.sections.filter((section) => section.id === "leadership-stakeholders").map((section) => ({ ...section, id: `leadership-${section.id}` })))
+/* Area A is a four-chapter tree — see acca-study-sbl-tree-a.ts. It replaces two
+   sections lifted from the legacy professional-skills chapter, and now teaches
+   A3's ethical codes, conflicts, threats, safeguards and economic crime, none of
+   which the paper covered at all. */
+export const SBL_OFFICIAL_A = SBL_TREE_AREA_A
 export const SBL_OFFICIAL_B = subset(SBL_A, "B", "Governance and sustainability", ["agency", "codes", "boards", "committees", "reporting-culture"], "Governance makes power accountable to stakeholders. Effective boards combine direction, challenge, control and transparent reporting with responsibility for sustainability and long-term value.", SBL_A.outcomes)
 export const SBL_OFFICIAL_C = { ...SBL_B, area: "C", title: "Strategy" }
 export const SBL_OFFICIAL_D = subset(SBL_C, "D", "Risk", ["assess", "tara", "erm"], "Strategic leadership must understand both the exposure created by a choice and the organisation's capacity and appetite to bear it.", SBL_C.outcomes.slice(0, 3))
@@ -46,7 +63,7 @@ export const SBL_OFFICIAL_H: StudyChapter = {
     { id: "enable", heading: "Organisation, talent and performance excellence", blocks: [
       { kind: "text", md: "Structure should follow strategic work: clarify decision rights, accountability, coordination and information flow. Partnerships and shared services can add capability but require governance over objectives, data, performance and exit." },
       { kind: "text", md: "Talent management connects workforce planning, recruitment, development, succession, reward and retention to future capabilities. Performance excellence combines customer value, process learning, evidence and continuous improvement—not target pressure alone." },
-      { kind: "diagram", diagram: { type: "flow", title: "From strategy to capability", data: { steps: ["Strategic outcomes", "Required capabilities", "Structure and roles", "Talent and resources", "Measures and learning", "Benefits"] } } },
+      { kind: "diagram", diagram: { type: "flow", title: "From strategy to capability", data: { steps: [{ label: "Strategic outcomes" }, { label: "Required capabilities" }, { label: "Structure and roles" }, { label: "Talent and resources" }, { label: "Measures and learning" }, { label: "Benefits" }] } } },
     ] },
     { id: "change-project", heading: "Change and project governance", blocks: [
       { kind: "text", md: "A credible change case explains **why now, what changes, who is affected and how success will be measured**. Leaders build readiness through two-way engagement, capability, visible sponsorship and reinforcement while addressing legitimate resistance rather than labelling every challenge obstruction." },
