@@ -5,6 +5,7 @@ import { SBL_C } from "@/lib/acca-study-sbl-c"
 import { SBL_D } from "@/lib/acca-study-sbl-d"
 import { SBL_E } from "@/lib/acca-study-sbl-e"
 import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
+import { SBL_TREE_AREA_B } from "@/lib/acca-study-sbl-tree-b"
 
 /*
  * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
@@ -28,7 +29,11 @@ function subset(source: StudyChapter, area: string, title: string, ids: string[]
    A3's ethical codes, conflicts, threats, safeguards and economic crime, none of
    which the paper covered at all. */
 export const SBL_OFFICIAL_A = SBL_TREE_AREA_A
-export const SBL_OFFICIAL_B = subset(SBL_A, "B", "Governance and sustainability", ["agency", "codes", "boards", "committees", "reporting-culture"], "Governance makes power accountable to stakeholders. Effective boards combine direction, challenge, control and transparent reporting with responsibility for sustainability and long-term value.", SBL_A.outcomes)
+/* Area B is a seven-chapter tree — see acca-study-sbl-tree-b.ts. The largest area
+   in the paper, and the one the shim compressed hardest: five sections of one
+   legacy chapter served all of B1–B6, so public sector governance (B6) and
+   integrated reporting and sustainability (B4) were barely taught. */
+export const SBL_OFFICIAL_B = SBL_TREE_AREA_B
 export const SBL_OFFICIAL_C = { ...SBL_B, area: "C", title: "Strategy" }
 export const SBL_OFFICIAL_D = subset(SBL_C, "D", "Risk", ["assess", "tara", "erm"], "Strategic leadership must understand both the exposure created by a choice and the organisation's capacity and appetite to bear it.", SBL_C.outcomes.slice(0, 3))
 export const SBL_OFFICIAL_E = { ...SBL_D, area: "E", title: "Technology and data analytics" }

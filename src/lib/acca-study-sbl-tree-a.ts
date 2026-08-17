@@ -571,7 +571,7 @@ const SBL_TREE_03: StudyChapter = {
   intro:
     "SBL asks you to be a professional accountant advising a board, not an employee doing as instructed. That means holding a duty that runs past the organisation — and knowing the code well enough to assess someone else's behaviour against it.",
   outcomes: [
-    "Critically evaluate responsible leadership and the creation of public value through acting in the public interest",
+    "Weigh what responsible leadership demands of a board, and how serving the wider interest builds lasting public value",
     "Explain the fundamental principles in the professional codes of ethics for accountants",
     "Assess described management behaviour against those principles and reach a supportable conclusion",
     "Distinguish what is legal, what is compliant and what is ethical, and advise where they diverge",
