@@ -15,7 +15,7 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
   const CHAPTER_FLOOR: Record<string, number> = {
     A: 3, // acca-study-sbr-tree-a.ts — A1(a) ethics duty, A1(a) pressure, A1(b) consequences
     B: 5, // acca-study-sbr-tree-b.ts — B1(a) standard-setting, B1(b-c) useful information, B1(e) elements, B1(d) measurement, B1(e) P&L vs OCI
-    C: 1,
+    C: 6, // acca-study-sbr-tree-c1.ts — C1 revenue ×2, C2 PPE/impairment/HFS-IP-intangibles ×3, plus the legacy splice until c2/c3 land
     D: 1,
     E: 1,
     F: 1,
@@ -49,7 +49,7 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
     for (const term of ["ifrs s1", "ifrs s2", "governance", "strategy", "risk management", "metrics", "esrs"]) expect(currentIssues).toContain(term)
   })
   it("keeps financial instruments and employee benefits in official Area C", () => {
-    const performance = JSON.stringify(chaptersForPaper("SBR").find((item) => item.area === "C")).toLowerCase()
+    const performance = JSON.stringify(chaptersForPaper("SBR").filter((item) => item.area === "C")).toLowerCase()
     expect(performance).toContain("financial instrument")
     expect(performance).toContain("employee benefit")
   })

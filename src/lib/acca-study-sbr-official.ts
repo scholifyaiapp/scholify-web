@@ -1,6 +1,7 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { SBR_TREE_AREA_A } from "@/lib/acca-study-sbr-tree-a"
 import { SBR_TREE_AREA_B } from "@/lib/acca-study-sbr-tree-b"
+import { SBR_TREE_AREA_C1 } from "@/lib/acca-study-sbr-tree-c1"
 import { SBR_A } from "@/lib/acca-study-sbr-a"
 import { SBR_B } from "@/lib/acca-study-sbr-b"
 import { SBR_C } from "@/lib/acca-study-sbr-c"
@@ -19,7 +20,14 @@ export const SBR_OFFICIAL_A = SBR_TREE_AREA_A
    and recognition, measurement, and P&L-versus-OCI — previously five sections
    of the legacy framework chapter relabelled wholesale. */
 export const SBR_OFFICIAL_B = SBR_TREE_AREA_B
-export const SBR_OFFICIAL_C: StudyChapter = { ...SBR_B, area: "C", title: "Reporting the financial performance of a range of entities", intro: "Apply professional judgement across recognition, measurement, presentation and disclosure. Financial instruments and employee benefits are transaction topics in this official area, not a separate capability.", sections: [...SBR_B.sections, ...SBR_D.sections], outcomes: [...SBR_B.outcomes, ...SBR_D.outcomes], examTraps: [...SBR_B.examTraps, ...SBR_D.examTraps], keyTerms: [...SBR_B.keyTerms, ...SBR_D.keyTerms], summary: [...SBR_B.summary, ...SBR_D.summary] }
+/* Area C is a sixteen-chapter authored tree landing in three modules —
+   acca-study-sbr-tree-c1.ts (revenue, PPE, impairment, HFS/IP/intangibles) is
+   in; instruments/leases/benefits and tax-through-other-issues follow. The
+   spliced legacy chapter below stays LAST in the area until the remaining
+   topics (instruments, benefits, leases, tax, provisions, SBP, fair value,
+   presentation, other issues) are authored, then retires with the legacy files. */
+const SBR_OFFICIAL_C_LEGACY: StudyChapter = { ...SBR_B, area: "C", title: "Reporting the financial performance of a range of entities", intro: "Apply professional judgement across recognition, measurement, presentation and disclosure. Financial instruments and employee benefits are transaction topics in this official area, not a separate capability.", sections: [...SBR_B.sections, ...SBR_D.sections], outcomes: [...SBR_B.outcomes, ...SBR_D.outcomes], examTraps: [...SBR_B.examTraps, ...SBR_D.examTraps], keyTerms: [...SBR_B.keyTerms, ...SBR_D.keyTerms], summary: [...SBR_B.summary, ...SBR_D.summary] }
+export const SBR_OFFICIAL_C: StudyChapter[] = [...SBR_TREE_AREA_C1, SBR_OFFICIAL_C_LEGACY]
 export const SBR_OFFICIAL_D: StudyChapter = { ...SBR_C, area: "D", title: "Financial statements of groups of entities" }
 export const SBR_OFFICIAL_E: StudyChapter = { ...SBR_E, area: "E", title: "Interpret financial and non-financial information for different stakeholders", intro: "Interpret performance from the specified stakeholder's perspective, challenge the quality and comparability of information, and connect financial and non-financial evidence.", sections: [...SBR_E.sections.filter((section) => section.id !== "current-issues"), { ...SBR_A.sections.find((section) => section.id === "commentary")!, id: "management-commentary" }] }
 export const SBR_OFFICIAL_F = select(SBR_E, "F", "The impact of changes and potential changes in accounting regulation", ["current-issues"], "Evaluate new standards and contemporary reporting issues, including digital assets, climate-related matters, global events, IFRS Sustainability Disclosure Standards and their relationship with ESRS.")
