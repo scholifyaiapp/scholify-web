@@ -122,21 +122,52 @@ export interface TodayComposition {
 /* ── Selection helpers ────────────────────────────────────────────*/
 
 /**
- * Questions for one chapter, widening only as far as it has to:
- *   1. tagged with this chapter id — the exam-kit index, always preferred;
- *   2. the chapter's syllabus area — correct, just less precise;
- *   3. the whole paper — only when an area has no bank at all.
- * Each step is a fallback, not a mixture, so a chapter with its own questions
- * never gets area filler alongside them.
+ * How far the day's question pool has to widen:
+ *   1. `chapter` — tagged with this chapter id, the exam-kit index, always preferred;
+ *   2. `area`    — the chapter's syllabus area: correct, just less precise;
+ *   3. `paper`   — only when an area has no usable bank at all.
+ *
+ * TWO invariants have to hold together, and they pull against each other.
+ *
+ * First, the quiz and the practice step must be at the SAME level. They are one
+ * step widening, never a blend: a chapter-scoped quiz beside area-scoped practice
+ * is how "practise today's topic" quietly becomes "practise anything".
+ *
+ * Second, the quiz must not be able to consume the ENTIRE pool. Practice draws
+ * from the same scope and excludes whatever the quiz claimed, so a level holding
+ * exactly QUIZ_SIZE items leaves practice with nothing — and an empty step cannot
+ * be completed, so the learner is stuck behind it with nothing on screen. That is
+ * not hypothetical: the old threshold of 3 let SBL compose a day on an area with
+ * three questions, the quiz took all three, and practice came out empty.
+ *
+ * So the level is chosen ONCE, against both pools, and then applied to both. The
+ * quiz is tested against the AUTHORED bank and practice against the full
+ * inventory, because a level that can fill practice from derived drills but
+ * cannot field five authored questions is no use either.
+ *
+ * The margin is deliberately ONE question rather than the full practice count.
+ * Widening as soon as a chapter cannot supply quiz + practice outright would push
+ * every paper to area scope — BT indexes 10 questions per chapter and FR 5 to 12,
+ * against a practice step of 10 to 15 — discarding the exam-kit chapter index
+ * that is the whole point of preferring it. Short pools are topped up by
+ * pickFresh; empty ones are the bug.
  */
-function chapterPool(paperId: string, chapter: StudyChapter | null, pool: AccaQuestion[]): AccaQuestion[] {
-  if (!chapter) return pool
+type PoolScope = "chapter" | "area" | "paper"
+
+function chooseScope(chapter: StudyChapter | null, authored: AccaQuestion[], inventory: AccaQuestion[], quizNeed: number): PoolScope {
+  if (!chapter) return "paper"
   const key = chapterKey(chapter)
-  const byChapter = pool.filter((q) => q.chapter === key)
-  if (byChapter.length >= 3) return byChapter
-  const byArea = pool.filter((q) => q.area === chapter.area)
-  if (byArea.length >= 3) return byArea
-  return pool
+  const fits = (match: (q: AccaQuestion) => boolean) =>
+    authored.filter(match).length >= quizNeed && inventory.filter(match).length > quizNeed
+  if (fits((q) => q.chapter === key)) return "chapter"
+  if (fits((q) => q.area === chapter.area)) return "area"
+  return "paper"
+}
+
+function scopedPool(scope: PoolScope, chapter: StudyChapter | null, pool: AccaQuestion[]): AccaQuestion[] {
+  if (!chapter || scope === "paper") return pool
+  if (scope === "chapter") return pool.filter((q) => q.chapter === chapterKey(chapter))
+  return pool.filter((q) => q.area === chapter.area)
 }
 
 /** Authored before derived, easy→hard within that — the exam-kit ordering. */
@@ -328,10 +359,13 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   const authored = getQuestions(paperId)
   const inventory = getPracticeInventory(paperId)
 
+  // One level for both steps — see chooseScope.
+  const scope = chooseScope(chapter, authored, inventory, QUIZ_SIZE)
+
   const quizPick = pickFresh({
     paperId,
     kind: "quiz",
-    pool: chapterPool(paperId, chapter, authored),
+    pool: scopedPool(scope, chapter, authored),
     count: QUIZ_SIZE,
     rank: questionRank,
     claimForToday: !dryRun,
@@ -340,7 +374,7 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   const practicePick = pickFresh({
     paperId,
     kind: "practice",
-    pool: chapterPool(paperId, chapter, inventory),
+    pool: scopedPool(scope, chapter, inventory),
     count: practiceCount,
     exclude: quizPick.items.map((q) => q.id),
     rank: questionRank,

@@ -1,5 +1,4 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
-import { SBL_E } from "@/lib/acca-study-sbl-e"
 import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
 import { SBL_TREE_AREA_B } from "@/lib/acca-study-sbl-tree-b"
 import { SBL_TREE_AREA_C } from "@/lib/acca-study-sbl-tree-c"
@@ -8,23 +7,24 @@ import { SBL_TREE_AREA_E } from "@/lib/acca-study-sbl-tree-e"
 import { SBL_TREE_AREA_F } from "@/lib/acca-study-sbl-tree-f"
 import { SBL_TREE_AREA_G } from "@/lib/acca-study-sbl-tree-g"
 import { SBL_TREE_AREA_H } from "@/lib/acca-study-sbl-tree-h"
+import { SBL_TREE_AREA_I } from "@/lib/acca-study-sbl-tree-i"
 
 /*
- * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
- * (see acca-study-sbl-tree-a.ts for the standard and the reasoning).
+ * SBL's chapter trees, one module per syllabus area.
  *
- * Areas still on the legacy bodies below are served by `subset`, which re-cuts
- * five old chapters into ten official areas. That is a shim, not authored
- * content, and it is why the pre-rebuild paper carried ~9,900 words across the
- * whole syllabus: Areas D and F are two slices of ONE legacy chapter, Areas C
- * and E are legacy chapters relabelled wholesale, and Area A used to be carved
- * out of the legacy PROFESSIONAL SKILLS chapter. Each area is replaced by a real
- * tree in turn; delete `subset`, the SBL_A–SBL_E imports and the legacy files
- * once the last area is off it.
+ * THE SHIM IS GONE. Until August 2026 this file was a relabelling layer: a local
+ * `subset()` helper re-cut five legacy chapters (SBL_A–SBL_E) into the ten
+ * official syllabus areas, so the syllabus was simulated rather than taught.
+ * Areas D and F were two slices of ONE legacy chapter, C and E were legacy
+ * chapters relabelled wholesale, and Area A was carved out of the legacy
+ * PROFESSIONAL SKILLS chapter — its first section id was the give-away
+ * `leadership-leadership-stakeholders`. The whole paper carried ~9,900 words.
+ *
+ * Every area is now an authored tree. `subset`, the SBL_A–SBL_E imports and the
+ * five legacy files are deleted. If you are adding to an area, add a chapter to
+ * that area's tree module — do not reintroduce a helper that derives one area's
+ * content from another's.
  */
-function subset(source: StudyChapter, area: string, title: string, ids: string[], intro: string, outcomes: string[]): StudyChapter {
-  return { ...source, area, title, intro, outcomes, sections: source.sections.filter((section) => ids.includes(section.id)) }
-}
 
 /* Area A is a four-chapter tree — see acca-study-sbl-tree-a.ts. It replaces two
    sections lifted from the legacy professional-skills chapter, and now teaches
@@ -55,7 +55,11 @@ export const SBL_OFFICIAL_E = SBL_TREE_AREA_E
    Area D took `.slice(0, 3)` of the same chapter. Both are now authored, so SBL_C
    is retired. */
 export const SBL_OFFICIAL_F = SBL_TREE_AREA_F
-export const SBL_OFFICIAL_I = subset(SBL_E, "I", "Professional skills", ["why-skills", "five-skills", "scepticism-suspicion", "board-advice"], "Professional skills are how a senior adviser converts evidence into communication, analysis, scepticism, commercial judgement and balanced evaluation that another leader can act on.", SBL_E.outcomes.slice(0, 4))
+/* Area I is a five-chapter tree — one per professional skill; see
+   acca-study-sbl-tree-i.ts. These are 20 of the paper's 100 marks, and the shim
+   served all five from four sections of the legacy professional-skills chapter —
+   the same chapter Area A used to be carved out of. */
+export const SBL_OFFICIAL_I = SBL_TREE_AREA_I
 
 /* Area G is a four-chapter tree — see acca-study-sbl-tree-g.ts. Unlike most of
    this file, the chapter it replaces was genuinely authored rather than shim-built
