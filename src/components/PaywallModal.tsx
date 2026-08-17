@@ -513,7 +513,7 @@ export default function PaywallModal({
                     Annual Pro
                   </span>
                   <span style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>
-                    3 days free · then billed annually
+                    Billed today · save 33% vs monthly
                   </span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -550,7 +550,7 @@ export default function PaywallModal({
               </AnimatePresence>
               <div style={{ fontSize: 12, color: "var(--sch-tx-4)", lineHeight: 1.6 }}>
                 {paymentsOpen
-                  ? "No charge today · Cancel before the trial deadline and pay nothing · After that, payments are non-refundable"
+                  ? "Pro monthly starts with 3 days free — cancel before it ends and pay nothing. Beginner and Annual are billed today. Payments are non-refundable."
                   : "Secure checkout will open here"}
               </div>
               {/* The "Ask a parent or sponsor to unlock" mailto used to sit here.

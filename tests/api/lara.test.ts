@@ -22,16 +22,16 @@ describe("aiProvider", () => {
     else process.env.ANTHROPIC_API_KEY = originalAnthropic
   })
 
-  it("keeps OpenAI primary even if an Anthropic fallback key also exists", () => {
+  it("prefers Anthropic when both keys exist — Charles is a Claude persona", () => {
     process.env.OPENAI_API_KEY = "openai-test-key"
     process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
-    expect(aiProvider()).toBe("openai")
+    expect(aiProvider()).toBe("anthropic")
   })
 
-  it("uses Anthropic only when OpenAI is unavailable", () => {
-    delete process.env.OPENAI_API_KEY
-    process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
-    expect(aiProvider()).toBe("anthropic")
+  it("falls back to OpenAI only when Anthropic is unavailable", () => {
+    process.env.OPENAI_API_KEY = "openai-test-key"
+    delete process.env.ANTHROPIC_API_KEY
+    expect(aiProvider()).toBe("openai")
   })
 })
 

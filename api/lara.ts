@@ -42,8 +42,11 @@ type ModelTier = "haiku" | "sonnet"
 
 /** Which provider serves AI right now, or null when none is configured. */
 export function aiProvider(): "anthropic" | "openai" | null {
-  if (process.env.OPENAI_API_KEY) return "openai"
+  // Prefer Claude when its key is present — Charles is a Claude persona and the
+  // OpenAI path was only ever the temporary bridge while the Anthropic key was
+  // being provisioned. Falls back to OpenAI only if Anthropic is unset.
   if (process.env.ANTHROPIC_API_KEY) return "anthropic"
+  if (process.env.OPENAI_API_KEY) return "openai"
   return null
 }
 
@@ -521,24 +524,35 @@ function ensureLandingVoiceSchema(): Promise<void> {
   return landingVoiceSchemaReady
 }
 
+// No fallback constant: the old default ("scholify-voice-demo") is public in
+// this repo, so an unset LANDING_VOICE_SALT let anyone forge a voice token and
+// drain the Fish TTS quota. With the salt unset we now fail CLOSED — tokens are
+// unmintable and unverifiable, so the landing voice degrades to text-only.
+function voiceSalt(): string {
+  return process.env.LANDING_VOICE_SALT || ""
+}
+
 function visitorHash(req: VercelRequest): string {
   const forwarded = String(req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim()
   return createHash("sha256")
-    .update(`${process.env.LANDING_VOICE_SALT || "scholify-voice-demo"}:${forwarded}`)
+    .update(`${voiceSalt()}:${forwarded}`)
     .digest("hex")
 }
 
 function voiceToken(req: VercelRequest, text: string, expires: number): string {
-  const secret = process.env.LANDING_VOICE_SALT || "scholify-voice-demo"
+  const secret = voiceSalt()
+  if (!secret) return ""
   const signature = createHmac("sha256", secret).update(`${visitorHash(req)}:${expires}:${text}`).digest("hex")
   return `${expires}.${signature}`
 }
 
 function validVoiceToken(req: VercelRequest, text: string, token: string): boolean {
+  if (!voiceSalt()) return false
   const [expiresText, supplied] = token.split(".")
   const expires = Number(expiresText)
   if (!Number.isFinite(expires) || expires < Date.now() || expires > Date.now() + 180_000 || !/^[a-f0-9]{64}$/.test(supplied || "")) return false
   const expected = voiceToken(req, text, expires).split(".")[1]
+  if (!expected) return false
   return timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))
 }
 
@@ -632,7 +646,7 @@ WHAT YOU KNOW (state nothing beyond this):
 - New learners can start from zero; experienced learners can diagnose gaps or assess readiness.
 - Onboarding, diagnosis and the personalised plan are free. Pro checkout securely collects a payment method, charges nothing for 3 days, then starts the selected monthly or annual subscription unless cancelled before the deadline. Beginner $9.99 monthly; Pro $14.99 monthly; Annual Beginner $79.99 yearly; Annual Pro $119.99 yearly. Checkout uses Stripe.
 - Partner programme: every approved partner earns 27% of qualifying payments. Monthly referrals earn on the first payment, expanding prospectively to the first 3 payments at 300 unique paid learners and the first 5 at 600; annual plans earn once on the full annual payment. First-touch attribution lasts 90 days, every commission has a 30-day validation hold, and refunds or chargebacks do not qualify.
-- Launch date: 10 August 2026. Scholify is independent from ACCA and racing organisations.
+- Scholify is live now — anyone can sign up and start today. Scholify is independent from ACCA and racing organisations.
 
 Stay on Scholify, ACCA study, pricing, features, payment, the trial, onboarding and the partner programme. Never invent a fact, and never ask for personal, payment or account details.`
   try {

@@ -158,9 +158,26 @@ export async function writeEntitlement(
     eventType: string
   },
 ): Promise<void> {
-  const canceled = fields.status === "canceled"
+  // Both a portal/Stripe cancellation and an admin refund must fully revoke —
+  // the refund path writes status "refunded", so keying only on "canceled"
+  // (as before) left a refunded trial holding Pro until trial_ends_at passed.
+  const canceled = fields.status === "canceled" || fields.status === "refunded"
   const meta: Record<string, unknown> = canceled
-    ? { plan: "free", plan_status: "canceled" }
+    ? {
+        plan: "free",
+        plan_status: fields.status,
+        // Explicitly NULL the entitlement-granting fields. This object is merged
+        // OVER previousMeta, so anything omitted here survives — and a surviving
+        // trial_ends_at (> now) plus a surviving stripe_subscription_id is read
+        // by entitlement.ts as a live card-backed trial, handing a cancelled or
+        // refunded user full Pro (and Pro AI caps) for the rest of the window.
+        trial_ends_at: null,
+        trial_started_at: null,
+        stripe_subscription_id: null,
+        billing_interval: null,
+        period_started_at: null,
+        period_ends_at: null,
+      }
     : {
         ...(fields.plan ? { plan: fields.plan } : {}),
         plan_status: fields.status,
@@ -856,7 +873,12 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
   const stripe = stripeClient()
   const secret = process.env.STRIPE_WEBHOOK_SECRET
   if (!stripe || !secret) {
-    res.status(200).json({ ok: false, reason: "not_configured" })
+    // 503, NOT 200. A present-but-empty STRIPE_SECRET_KEY/WEBHOOK_SECRET on
+    // Vercel would otherwise make us ACK a paid event, so Stripe marks it
+    // delivered and never retries — the charge is taken and the plan never
+    // flips, unrecoverably. Failing loud keeps the event in Stripe's retry
+    // queue until the config is fixed.
+    res.status(503).json({ ok: false, reason: "not_configured" })
     return
   }
   const raw = await readRawBody(req)
@@ -872,7 +894,9 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
 
   const supa = admin()
   if (!supa) {
-    res.status(200).json({ ok: false, reason: "missing_supabase_admin" })
+    // 503 so Stripe retries — an empty SUPABASE_SERVICE_ROLE_KEY must not make
+    // a paid event look delivered while the entitlement never gets written.
+    res.status(503).json({ ok: false, reason: "missing_supabase_admin" })
     return
   }
   try {
