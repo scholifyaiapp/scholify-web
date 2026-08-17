@@ -35,9 +35,9 @@ describe("onboarding flow", () => {
     }
   })
 
-  it("lets Charles choose the exam window instead of asking the learner", () => {
+  it("ALWAYS asks for the exam date — the plan and every reveal present it as the learner's own", () => {
     for (const route of [null, "new", "course", "practice"] as const) {
-      expect(onboardingSteps(route)).not.toContain(EXAM_DATE_STEP)
+      expect(onboardingSteps(route), `route=${route}`).toContain(EXAM_DATE_STEP)
     }
   })
 

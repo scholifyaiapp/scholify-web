@@ -47,7 +47,7 @@ import {
   reviseChapter,
   type ChapterHardness,
 } from "@/lib/acca-topic-plan"
-import { pickFresh } from "@/lib/acca-no-repeat"
+import { pickFresh, readTodayPlan, writeTodayPlan } from "@/lib/acca-no-repeat"
 import { articleForChapter, isArticleRead, type TechArticle } from "@/lib/acca-tech-article"
 import { diagnosticGate } from "@/lib/acca-schedule"
 import { getStartMode } from "@/lib/acca-profile"
@@ -362,32 +362,60 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   // One level for both steps — see chooseScope.
   const scope = chooseScope(chapter, authored, inventory, QUIZ_SIZE)
 
-  const quizPick = pickFresh({
-    paperId,
-    kind: "quiz",
-    pool: scopedPool(scope, chapter, authored),
-    count: QUIZ_SIZE,
-    rank: questionRank,
-    claimForToday: !dryRun,
-  })
+  /*
+   * IDEMPOTENCE. Compose the day once and replay it. The first live compose
+   * picks (and claims) its ids and records them; every later compose — the
+   * "Locked In" second board, a reload, or a dry-run preview — rebuilds the
+   * identical set from the stored ids rather than re-picking against an
+   * already-claimed pool (which returned nothing and bricked the day). A dry
+   * run with no stored plan yet computes a non-claiming preview and does not
+   * persist, so it still matches the live compose that follows.
+   */
+  const chapterId = chapter?.id ?? "none"
+  const storedPlan = readTodayPlan(paperId, chapterId)
+  const replay = <T extends { id: string }>(kind: string, pool: T[]): { items: T[]; recycled: boolean; freshLeft: number } | null => {
+    const ids = storedPlan?.[kind]
+    if (!ids) return null
+    const byId = new Map(pool.map((i) => [i.id, i]))
+    const items = ids.map((id) => byId.get(id)).filter((x): x is T => Boolean(x))
+    // If the bank changed and the stored ids no longer resolve, fall through to
+    // a fresh pick rather than serving an empty step.
+    return items.length ? { items, recycled: false, freshLeft: 0 } : null
+  }
 
-  const practicePick = pickFresh({
-    paperId,
-    kind: "practice",
-    pool: scopedPool(scope, chapter, inventory),
-    count: practiceCount,
-    exclude: quizPick.items.map((q) => q.id),
-    rank: questionRank,
-    claimForToday: !dryRun,
-  })
+  const quizPool = scopedPool(scope, chapter, authored)
+  const quizPick =
+    replay("quiz", quizPool) ??
+    pickFresh({ paperId, kind: "quiz", pool: quizPool, count: QUIZ_SIZE, rank: questionRank, claimForToday: !dryRun })
 
-  const cardPick = pickFresh({
-    paperId,
-    kind: "card",
-    pool: cardPool(paperId, chapter?.area),
-    count: cardTarget,
-    claimForToday: !dryRun,
-  })
+  const practicePool = scopedPool(scope, chapter, inventory)
+  const practicePick =
+    replay("practice", practicePool) ??
+    pickFresh({
+      paperId,
+      kind: "practice",
+      pool: practicePool,
+      count: practiceCount,
+      exclude: quizPick.items.map((q) => q.id),
+      rank: questionRank,
+      claimForToday: !dryRun,
+    })
+
+  const cardsPool = cardPool(paperId, chapter?.area)
+  const cardPick =
+    replay("card", cardsPool) ??
+    pickFresh({ paperId, kind: "card", pool: cardsPool, count: cardTarget, claimForToday: !dryRun })
+
+  // Persist the freshly composed day so the next composition replays it. Only on
+  // a live compose (a dry run must neither claim nor persist), and only when we
+  // actually picked fresh (no stored plan yet) — replaying must not overwrite.
+  if (!dryRun && !storedPlan) {
+    writeTodayPlan(paperId, chapterId, {
+      quiz: quizPick.items.map((q) => q.id),
+      practice: practicePick.items.map((q) => q.id),
+      card: cardPick.items.map((c) => c.id),
+    })
+  }
 
   /* ── The five blocks ───────────────────────────────────────────*/
 

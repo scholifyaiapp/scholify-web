@@ -92,6 +92,11 @@ export function readOnboardingDraft(): OnboardingDraft | null {
       paper: typeof parsed.paper === "string" ? parsed.paper : null,
       paperVariant: parsed.paperVariant ?? null,
       minutes: typeof parsed.minutes === "number" ? parsed.minutes : 60,
+      // Was omitted here, so a resumed draft always fell back to the weekday
+      // default and silently discarded the learner's chosen days.
+      studyDays: Array.isArray(parsed.studyDays)
+        ? parsed.studyDays.filter((d): d is number => typeof d === "number")
+        : undefined,
       daysPerWeek: typeof parsed.daysPerWeek === "number" ? parsed.daysPerWeek : 6,
       slot: typeof parsed.slot === "string" ? parsed.slot : "19:00",
       examDate: typeof parsed.examDate === "string" ? parsed.examDate : "",

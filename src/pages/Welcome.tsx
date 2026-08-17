@@ -319,6 +319,12 @@ export default function Welcome() {
       ? englishLevel !== null && englishEvidence !== null
     : step === 3
     ? paper !== null && (!["LW", "TX"].includes(paper) || paperVariant !== null)
+    : step === 5
+      // Require at least one study day. An empty studyDays array is read
+      // downstream as "predates the picker" and silently expands to all seven
+      // days (acca-plan studyDaysOf), so a learner who deselected everything
+      // got a 7-day plan and reminders on days they said they couldn't study.
+      ? studyDays.length >= 1
       : step === 6
         ? examDate !== ""
       : step === 7

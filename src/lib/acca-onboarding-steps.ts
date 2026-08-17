@@ -94,8 +94,15 @@ export const STEP_LABELS: readonly string[] = [
 
 /** The steps shown, in order, for a learner on this route (null = not yet chosen). */
 export function onboardingSteps(learnerRoute: LearnerRoute | null): number[] {
+  // EXAM_DATE_STEP is BACK IN THE FLOW. It was filtered out here alongside
+  // RESOURCE_STEP, with the same consequence the TARGET_STEP note describes: the
+  // sitting control lives on that slide, so no learner was ever asked their exam
+  // date and persist() wrote charlesPlan.recommendedExamDate as if it were the
+  // learner's own — while the plan, the ExamDateReveal ("Your date is set") and
+  // the dashboard all presented that fabricated date as theirs, and the whole
+  // capacity-warning / one-tap-fix subsystem keyed off it was dead code.
   return Array.from({ length: ONBOARDING_TOTAL }, (_, index) => index).filter(
-    (step) => ![RESOURCE_STEP, EXAM_DATE_STEP].includes(step) && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
+    (step) => step !== RESOURCE_STEP && (learnerRoute !== "new" || step !== ASSESSMENT_STEP),
   )
 }
 

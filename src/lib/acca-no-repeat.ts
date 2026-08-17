@@ -190,6 +190,48 @@ export function releaseClaims(ids: string[]): void {
   }
 }
 
+/* ── Today's composed plan (idempotence) ──────────────────────────
+ *
+ * The picker CLAIMS its ids and then hard-excludes today's claims, so a second
+ * composition of the same day drew from an already-emptied pool and returned
+ * nothing — bricking the day. (The claims persist to localStorage, so a reload
+ * or the "Locked In" second board both triggered it.) The fix is to compose a
+ * day ONCE and replay it: the first live compose records the picked ids here,
+ * and every later compose — any board, any reload, and dry-run previews —
+ * rebuilds the identical set from these ids instead of re-picking.
+ */
+const PLAN_KEY = "scholify-acca-today-plan"
+
+interface DayPlan {
+  day: string
+  paper: string
+  chapter: string
+  picks: Record<string, string[]>
+}
+
+/** The ids composed for today for this paper+chapter, or null if none yet. */
+export function readTodayPlan(paperId: string, chapterId: string): Record<string, string[]> | null {
+  try {
+    const raw = window.localStorage.getItem(PLAN_KEY)
+    const parsed = raw ? (JSON.parse(raw) as DayPlan) : null
+    if (parsed && parsed.day === ymd() && parsed.paper === paperId && parsed.chapter === chapterId && parsed.picks) {
+      return parsed.picks
+    }
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+/** Record today's composed ids so subsequent compositions replay them. */
+export function writeTodayPlan(paperId: string, chapterId: string, picks: Record<string, string[]>): void {
+  try {
+    window.localStorage.setItem(PLAN_KEY, JSON.stringify({ day: ymd(), paper: paperId, chapter: chapterId, picks }))
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ── The picker ───────────────────────────────────────────────────*/
 
 export interface PickOptions<T> {
