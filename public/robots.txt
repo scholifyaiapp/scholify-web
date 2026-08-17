@@ -8,6 +8,10 @@ Disallow: /settings
 Disallow: /welcome
 Disallow: /admin
 Disallow: /notes
+# Block only the signed-in partner DASHBOARD, not the public application page.
+# The bare prefix rule used to hide /partners/apply — the one partner page we
+# want crawled — from every search engine. Allow wins by longest-match.
+Allow: /partners/apply
 Disallow: /partners
 Disallow: /auth/
 Disallow: /api/

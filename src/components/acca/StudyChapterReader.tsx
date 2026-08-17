@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from "react"
 import { motion, AnimatePresence, useScroll, useReducedMotion } from "motion/react"
 import { Icon, C, R } from "@/components/acca/ui"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { StudyDiagram } from "@/components/acca/StudyDiagram"
 import { TaxBasisNote } from "@/components/acca/TaxBasisNote"
 import type { StudyChapter, StudyBlock, StudySection, MiniCheck } from "@/lib/acca-study-content"
@@ -221,8 +222,27 @@ function Section({ section, index }: { section: StudySection; index: number }) {
         <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12, fontWeight: 800, color: C.brand }}>{String(index + 1).padStart(2, "0")}</span>
         <h2 style={{ fontSize: 19, fontWeight: 800, color: C.text, margin: 0, letterSpacing: "-0.015em", lineHeight: 1.25 }}>{section.heading}</h2>
       </div>
-      {section.blocks.map((b, i) => <Block key={i} block={b} />)}
-      {section.check && <CheckBlock check={section.check} />}
+      {/*
+        Per-block boundary. The renderer casts block/diagram data and a single
+        malformed block (a future paper's diagram whose data shape doesn't match
+        its type, a ragged table) would otherwise throw during render and take
+        the WHOLE chapter down to the page-level boundary. Isolated here, one bad
+        block degrades to a small notice and the rest of the chapter still reads.
+      */}
+      {section.blocks.map((b, i) => (
+        <ErrorBoundary
+          key={i}
+          pageName="study-block"
+          fallback={<div style={{ fontSize: 12.5, color: C.faint, padding: "6px 0", fontStyle: "italic" }}>This part of the chapter couldn't be shown.</div>}
+        >
+          <Block block={b} />
+        </ErrorBoundary>
+      ))}
+      {section.check && (
+        <ErrorBoundary pageName="study-check" fallback={null}>
+          <CheckBlock check={section.check} />
+        </ErrorBoundary>
+      )}
     </motion.section>
   )
 }
