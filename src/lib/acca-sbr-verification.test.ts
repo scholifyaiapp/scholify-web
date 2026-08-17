@@ -15,7 +15,7 @@ describe("SBR-INT September 2026–June 2027 official structure", () => {
   const CHAPTER_FLOOR: Record<string, number> = {
     A: 3, // acca-study-sbr-tree-a.ts — A1(a) ethics duty, A1(a) pressure, A1(b) consequences
     B: 5, // acca-study-sbr-tree-b.ts — B1(a) standard-setting, B1(b-c) useful information, B1(e) elements, B1(d) measurement, B1(e) P&L vs OCI
-    C: 6, // acca-study-sbr-tree-c1.ts — C1 revenue ×2, C2 PPE/impairment/HFS-IP-intangibles ×3, plus the legacy splice until c2/c3 land
+    C: 11, // trees c1+c2 — revenue ×2, non-current assets ×3, instruments ×3, leases, employee benefits; the legacy splice stays until c3 lands
     D: 1,
     E: 1,
     F: 1,

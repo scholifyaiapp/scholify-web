@@ -40,7 +40,10 @@ const ALL_PAPERS = paperLevels().flatMap((level) => level.papers.map((p) => p.id
  * pass through the same window — but the test below fails if an entry outlives
  * its rebuild, which is the rot this file exists to stop.
  */
-const MID_REBUILD: readonly string[] = []
+// SBR entered the window on 17 Aug 2026: areas A, B and most of C are authored
+// (20+ chapters), while the rest of C, plus D, E and F, are still shim-served.
+// Remove the entry when SBR's last area lands.
+const MID_REBUILD: readonly string[] = ["SBR"]
 
 describe("the developing-paper flag tracks reality", () => {
   it("covers every paper in the qualification, once", () => {
