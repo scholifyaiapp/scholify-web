@@ -21,7 +21,8 @@ describe("SBL September 2026–June 2027 official structure", () => {
     B: 7, // acca-study-sbl-tree-b.ts — B1, B2, B3, B5a-e, B5f-h, B4, B6
     C: 6, // acca-study-sbl-tree-c.ts — C1, C2, C3, C4, C5 split over two
     D: 4, // acca-study-sbl-tree-d.ts — D1 over two, D2 over two
-    E: 1, F: 1, G: 1, H: 1, I: 1, J: 1,
+    E: 5, // acca-study-sbl-tree-e.ts — E1, E2, E3, E4, E5
+    F: 1, G: 1, H: 1, I: 1, J: 1,
   }
 
   it("covers all ten official capabilities in questions and chapters", () => {
