@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { motion } from "motion/react"
-import { Icon, Card, Button, Badge, C, SP, R, SHADOW, TYPE } from "@/components/acca/ui"
+import { Icon, Card, Button, Badge, BackButton, C, SP, R, SHADOW, TYPE } from "@/components/acca/ui"
 import { RingGauge, TrendBars, StatCard, bandColor } from "@/components/acca/charts"
 import { buildCbeMock, type CbeMock } from "@/lib/acca-cbe-mock"
 import { MOCK_FORMS, nextMockForm } from "@/lib/acca-mockforms"
@@ -77,8 +77,8 @@ export default function MockCentre({
       style={{ display: "flex", flexDirection: "column", gap: SP.xl, paddingBottom: SP["3xl"] }}
     >
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: SP.md, flexWrap: "wrap" }}>
-        <Button variant="subtle" size="sm" icon="arrow" onClick={onBack} style={{ transform: "scaleX(-1)" }} aria-label="Back" />
+      <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
+        <BackButton onClick={onBack}>Study overview</BackButton>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="exam" size={17} color={C.brand} strokeWidth={2.4} />
