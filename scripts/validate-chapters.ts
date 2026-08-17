@@ -67,6 +67,22 @@ for (const p of [...PAPERS, ...EXTRA_TREES.map(([name]) => name)]) {
             const arrField: Record<string, string> = { tAccount: "debits", radial: "nodes", compare: "rows", cards: "items", flow: "steps", cycle: "steps", waterfall: "items", bars: "items", donut: "items", pyramid: "levels", timeline: "points" }
             const f = arrField[t]
             if (f && !isArr(d?.[f]) && !(t === "tAccount" && isArr(d?.credits))) problems.push(`${id}/${sec.id}: ${t} missing/empty data.${f}`)
+            // The renderers read `.label` off each entry unguarded, so an array of
+            // plain STRINGS satisfies the check above and then renders a row of
+            // empty boxes — visibly broken, but silent. SBL's "From strategy to
+            // capability" flow shipped that way.
+            // `cards` is the odd one out — its renderer reads `title`, every other
+            // labelled shape reads `label`.
+            const labelled: Record<string, [string, string]> = {
+              flow: ["steps", "label"], cycle: ["steps", "label"], pyramid: ["levels", "label"],
+              timeline: ["points", "label"], radial: ["nodes", "label"], cards: ["items", "title"],
+            }
+            if (labelled[t]) {
+              const [field, key] = labelled[t]
+              for (const entry of (d?.[field] ?? [])) {
+                if (typeof entry?.[key] !== "string") problems.push(`${id}/${sec.id}: ${t} ${field} entry has no string ${key} (${JSON.stringify(entry)})`)
+              }
+            }
             // numeric values for value-based charts
             if ((t === "waterfall" || t === "bars" || t === "donut") && isArr(d?.items)) {
               for (const it of d.items) if (typeof it?.value !== "number") problems.push(`${id}/${sec.id}: ${t} item.value not a number (${JSON.stringify(it?.value)})`)
@@ -88,6 +104,25 @@ for (const p of [...PAPERS, ...EXTRA_TREES.map(([name]) => name)]) {
             if (typeof b.title !== "string" || typeof b.prompt !== "string" || typeof b.answer !== "string") {
               problems.push(`${id}/${sec.id}: activity missing title/prompt/answer`)
             }
+            break
+          // The exam-plan layer (acca-plans-*.ts, merged in by applyExamPlans)
+          // introduced this kind. It is merged into sections at LOAD time rather
+          // than written into the tree files, so every one of the 772 planned
+          // sections reached this switch and fell through to `default` — the
+          // validator reported the whole library as broken and could no longer
+          // catch a real defect in any paper.
+          case "examQuestion":
+            if (typeof b.title !== "string" || typeof b.requirement !== "string" || typeof b.answer !== "string") {
+              problems.push(`${id}/${sec.id}: examQuestion missing title/requirement/answer`)
+            }
+            if (b.format !== "ot" && b.format !== "mtq" && b.format !== "written") {
+              problems.push(`${id}/${sec.id}: examQuestion format not ot/mtq/written (${JSON.stringify(b.format)})`)
+            }
+            if (typeof b.marks !== "number") problems.push(`${id}/${sec.id}: examQuestion marks not a number`)
+            // The reader renders requirement → plan → answer and gates in that
+            // order, so an empty plan collapses the block to a model answer.
+            if (!isArr(b.plan)) problems.push(`${id}/${sec.id}: examQuestion missing/empty plan`)
+            else for (const s of b.plan) if (s?.step == null || s?.detail == null) problems.push(`${id}/${sec.id}: examQuestion plan step missing step/detail`)
             break
           default:
             problems.push(`${id}/${sec.id}: unknown block kind "${b.kind}"`)
