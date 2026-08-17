@@ -1,11 +1,10 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
-import { SBL_A } from "@/lib/acca-study-sbl-a"
-import { SBL_B } from "@/lib/acca-study-sbl-b"
 import { SBL_C } from "@/lib/acca-study-sbl-c"
 import { SBL_D } from "@/lib/acca-study-sbl-d"
 import { SBL_E } from "@/lib/acca-study-sbl-e"
 import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
 import { SBL_TREE_AREA_B } from "@/lib/acca-study-sbl-tree-b"
+import { SBL_TREE_AREA_C } from "@/lib/acca-study-sbl-tree-c"
 
 /*
  * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
@@ -34,7 +33,11 @@ export const SBL_OFFICIAL_A = SBL_TREE_AREA_A
    legacy chapter served all of B1–B6, so public sector governance (B6) and
    integrated reporting and sustainability (B4) were barely taught. */
 export const SBL_OFFICIAL_B = SBL_TREE_AREA_B
-export const SBL_OFFICIAL_C = { ...SBL_B, area: "C", title: "Strategy" }
+/* Area C is a six-chapter tree — see acca-study-sbl-tree-c.ts. The shim relabelled
+   one legacy chapter as the whole of Area C; Kaplan spends four chapters and 128
+   pages on the same material, and splits strategic choice from the methods of
+   development, which is the split adopted here. */
+export const SBL_OFFICIAL_C = SBL_TREE_AREA_C
 export const SBL_OFFICIAL_D = subset(SBL_C, "D", "Risk", ["assess", "tara", "erm"], "Strategic leadership must understand both the exposure created by a choice and the organisation's capacity and appetite to bear it.", SBL_C.outcomes.slice(0, 3))
 export const SBL_OFFICIAL_E = { ...SBL_D, area: "E", title: "Technology and data analytics" }
 export const SBL_OFFICIAL_F = subset(SBL_C, "F", "Organisational control and audit", ["control", "governance", "fraud"], "Control and assurance turn objectives, risk appetite and legal duties into reliable behaviour, information, escalation and independent challenge.", SBL_C.outcomes.slice(3))
