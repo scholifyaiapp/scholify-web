@@ -5,6 +5,7 @@ import { SBL_E } from "@/lib/acca-study-sbl-e"
 import { SBL_TREE_AREA_A } from "@/lib/acca-study-sbl-tree-a"
 import { SBL_TREE_AREA_B } from "@/lib/acca-study-sbl-tree-b"
 import { SBL_TREE_AREA_C } from "@/lib/acca-study-sbl-tree-c"
+import { SBL_TREE_AREA_D } from "@/lib/acca-study-sbl-tree-d"
 
 /*
  * SBL is mid-rebuild, from a single chapter per syllabus area to a chapter TREE
@@ -38,7 +39,11 @@ export const SBL_OFFICIAL_B = SBL_TREE_AREA_B
    pages on the same material, and splits strategic choice from the methods of
    development, which is the split adopted here. */
 export const SBL_OFFICIAL_C = SBL_TREE_AREA_C
-export const SBL_OFFICIAL_D = subset(SBL_C, "D", "Risk", ["assess", "tara", "erm"], "Strategic leadership must understand both the exposure created by a choice and the organisation's capacity and appetite to bear it.", SBL_C.outcomes.slice(0, 3))
+/* Area D is a four-chapter tree — see acca-study-sbl-tree-d.ts. It was three
+   sections of legacy chapter SBL_C taking `outcomes.slice(0, 3)`, with the OTHER
+   half of the same chapter serving Area F — two syllabus areas cut from one body
+   of text. Area D has fifteen learning outcomes. */
+export const SBL_OFFICIAL_D = SBL_TREE_AREA_D
 export const SBL_OFFICIAL_E = { ...SBL_D, area: "E", title: "Technology and data analytics" }
 export const SBL_OFFICIAL_F = subset(SBL_C, "F", "Organisational control and audit", ["control", "governance", "fraud"], "Control and assurance turn objectives, risk appetite and legal duties into reliable behaviour, information, escalation and independent challenge.", SBL_C.outcomes.slice(3))
 export const SBL_OFFICIAL_I = subset(SBL_E, "I", "Professional skills", ["why-skills", "five-skills", "scepticism-suspicion", "board-advice"], "Professional skills are how a senior adviser converts evidence into communication, analysis, scepticism, commercial judgement and balanced evaluation that another leader can act on.", SBL_E.outcomes.slice(0, 4))
