@@ -442,6 +442,14 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
   }
 
   const b = await body(req)
+  // Honeypot — same defence submitFeedback uses. /apply is unauthenticated and
+  // emails an applicant-chosen address from our verified domain, so a scripted
+  // loop could spam arbitrary inboxes and squat codes. A filled hidden field is
+  // a bot: acknowledge success without inserting or emailing anyone.
+  if (String(b.website || "")) {
+    res.status(200).json({ ok: true, status: "pending" })
+    return
+  }
   const name = String(b.name || "").trim().slice(0, 120)
   const email = String(b.email || "").trim().slice(0, 200)
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) {
@@ -650,7 +658,7 @@ async function claim(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
   const code = cleanCode(b.code as string)
   const { data: affiliate } = await supa
     .from("affiliates")
-    .select("id, user_id")
+    .select("id, user_id, email")
     .eq("code", code)
     .eq("status", "active")
     .maybeSingle()
@@ -658,7 +666,13 @@ async function claim(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     res.status(200).json({ ok: false, reason: "invalid_partner" })
     return
   }
-  if (affiliate.user_id === user.id) {
+  // Self-referral. The user_id check alone was bypassable: an application
+  // submitted while signed out is stored with user_id = null (adopted onto the
+  // account only when the partner later opens their dashboard), so a partner who
+  // never opened it kept null — and null !== user.id always passed, letting them
+  // collect 27% of their own subscription. Matching the verified email closes it
+  // regardless of whether the application was ever adopted.
+  if (affiliate.user_id === user.id || (user.email && emailsMatch(affiliate.email, user.email))) {
     res.status(200).json({ ok: false, reason: "self_referral" })
     return
   }

@@ -332,12 +332,20 @@ describe("webhook idempotency (claim / dedupe / release)", () => {
   })
 })
 
-function supaStub(tables: {
-  affiliates?: Record<string, { id: string; code: string; status: string; user_id?: string }>
-  referrals?: Record<string, { affiliate_id: string }>
-}) {
+function supaStub(
+  tables: {
+    affiliates?: Record<string, { id: string; code: string; status: string; user_id?: string; email?: string }>
+    referrals?: Record<string, { affiliate_id: string }>
+  },
+  buyerEmail?: string,
+) {
   const referrals = { ...(tables.referrals ?? {}) }
   return {
+    auth: {
+      admin: {
+        getUserById: async () => ({ data: { user: buyerEmail ? { email: buyerEmail } : null } }),
+      },
+    },
     from(table: string) {
       const filters: Record<string, string> = {}
       const builder = {
@@ -402,6 +410,22 @@ describe("resolveAffiliateMetadata (which partner earns the commission)", () => 
   it("blocks a partner from earning on their own account", async () => {
     const self = { ...ACTIVE, user_id: "user-1" }
     expect(await resolveAffiliateMetadata(supaStub({ affiliates: { a: self } }), "user-1", "PARTNER27")).toEqual({})
+  })
+
+  it("blocks self-referral by EMAIL even when the application was never adopted (user_id null)", async () => {
+    // The bypass: a signed-out application has user_id null, so the id check
+    // never matches. The buyer's verified email matching the partner's email
+    // must still block it.
+    const anon = { ...ACTIVE, email: "partner@example.com" }
+    expect(
+      await resolveAffiliateMetadata(supaStub({ affiliates: { a: anon } }, "Partner@Example.com"), "user-1", "PARTNER27"),
+    ).toEqual({})
+  })
+
+  it("still credits a genuine referral whose email differs from the partner's", async () => {
+    const partner = { ...ACTIVE, email: "partner@example.com" }
+    const meta = await resolveAffiliateMetadata(supaStub({ affiliates: { a: partner } }, "learner@example.com"), "user-2", "PARTNER27")
+    expect(meta).toEqual({ affiliate_id: "aff-1", affiliate_code: "PARTNER27" })
   })
 
   it("falls back to the signup attribution when the client sends NO code", async () => {

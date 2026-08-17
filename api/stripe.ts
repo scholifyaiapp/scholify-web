@@ -249,7 +249,12 @@ const COMMISSION_HOLD_DAYS = 30
  * floating-point drift in the money path. */
 export function commissionAmount(saleAmount: number, rate = 0.27): number {
   if (!Number.isSafeInteger(saleAmount) || saleAmount <= 0 || !Number.isFinite(rate) || rate < 0) return 0
-  return Math.round(saleAmount * rate)
+  // Clamp the rate to [0,1]. commission_rate is an unconstrained numeric column,
+  // so a table edit of 27 (meaning 27%) instead of 0.27 would otherwise book a
+  // commission 27x the sale — $404.73 on a $14.99 payment. A fraction can never
+  // legitimately exceed 1; capping here bounds the damage of a config slip.
+  const safeRate = Math.min(1, rate)
+  return Math.round(saleAmount * safeRate)
 }
 
 /**
@@ -298,11 +303,27 @@ export async function resolveAffiliateMetadata(
   if (code) {
     const { data: aff } = await supa
       .from("affiliates")
-      .select("id, code, user_id")
+      .select("id, code, user_id, email")
       .eq("code", code)
       .eq("status", "active")
       .maybeSingle()
     if (!aff || aff.user_id === userId) return {}
+    // Self-referral by EMAIL. An application submitted signed-out carries
+    // user_id = null, so the id check above is bypassable — a partner referring
+    // themselves would otherwise collect 27% of their own payment. Compare the
+    // buyer's verified email to the partner's application email. Guarded: a
+    // transient auth-read failure falls back to the user_id check rather than
+    // breaking checkout attribution.
+    const affEmail = String(aff.email || "").trim().toLowerCase()
+    if (affEmail) {
+      try {
+        const { data: buyer } = await supa.auth.admin.getUserById(userId)
+        const buyerEmail = buyer?.user?.email?.trim().toLowerCase()
+        if (buyerEmail && buyerEmail === affEmail) return {}
+      } catch {
+        /* auth read unavailable — rely on the user_id check above */
+      }
+    }
     const { error } = await supa.from("affiliate_referrals").insert({
       affiliate_id: aff.id,
       referred_user_id: userId,
