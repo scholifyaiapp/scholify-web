@@ -5,12 +5,13 @@ import { AFM_TREE_AREA_B_PART1 } from "@/lib/acca-study-afm-tree-b1"
 import { AFM_TREE_AREA_B_PART2 } from "@/lib/acca-study-afm-tree-b2"
 import { AFM_TREE_AREA_B_PART3 } from "@/lib/acca-study-afm-tree-b3"
 import { AFM_TREE_AREA_B_PART4 } from "@/lib/acca-study-afm-tree-b4"
-import { AFM_C } from "@/lib/acca-study-afm-c"
+import { AFM_TREE_AREA_C_PART1 } from "@/lib/acca-study-afm-tree-c"
+import { AFM_TREE_AREA_C_PART2 } from "@/lib/acca-study-afm-tree-c2"
 import { AFM_D } from "@/lib/acca-study-afm-d"
 import { AFM_E } from "@/lib/acca-study-afm-e"
 
 /*
- * AFM's rebuild is IN PROGRESS. Areas C, D and E below are still the legacy
+ * AFM's rebuild is IN PROGRESS. Areas D and E below are still the legacy
  * one-chapter-per-area content, relabelled onto the official structure: this
  * file used to do that for all five technical areas, and the five legacy
  * chapters carried the whole paper at ~12,000 words against 40,000+ for the
@@ -22,7 +23,7 @@ import { AFM_E } from "@/lib/acca-study-afm-e"
  *
  *   Area A  DONE — AFM-01..09, acca-study-afm-tree-a.ts + -a2.ts
  *   Area B  DONE — AFM-10..24, acca-study-afm-tree-b1..b4.ts
- *   Area C  legacy (acquisitions and mergers)
+ *   Area C  DONE — AFM-25..30, acca-study-afm-tree-c.ts + -c2.ts
  *   Area D  legacy (corporate reconstruction and reorganisation)
  *   Area E  legacy (treasury and advanced risk management)
  *   Area F  authored — professional skills (below)
@@ -56,7 +57,13 @@ export const AFM_OFFICIAL_B: StudyChapter[] = [
   ...AFM_TREE_AREA_B_PART3,
   ...AFM_TREE_AREA_B_PART4,
 ]
-export const AFM_OFFICIAL_C = AFM_C
+/* Area C is a six-chapter authored tree, AFM-25..30, in two modules split for
+   file size only. C1(f) — SPACs, direct listings, Dutch auctions and reverse
+   takeovers — is a current-issues outcome that post-dates the 2020-21 provider
+   texts, so AFM-26 is written from the syllabus alone. The boundary with Area
+   B: B4 owns the valuation MODELS, this area owns the BID — synergy, the
+   control premium, and how the financing choice divides the gain. */
+export const AFM_OFFICIAL_C: StudyChapter[] = [...AFM_TREE_AREA_C_PART1, ...AFM_TREE_AREA_C_PART2]
 export const AFM_OFFICIAL_D = AFM_D
 export const AFM_OFFICIAL_E = AFM_E
 
