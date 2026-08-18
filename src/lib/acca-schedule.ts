@@ -300,6 +300,18 @@ export function shieldState(paperId: string): ShieldState {
   return shieldStateFrom(rec, ymd(now), activePaperPause(paperId) !== null)
 }
 
+/**
+ * Is a streak worth protecting on the line right now? True when the learner has
+ * a live streak of 2+ days that they have NOT yet secured today — the moment an
+ * in-app nudge (the streak-saver tab title) should pull them back before the day
+ * rolls over. A paused paper is never "at risk": the absence was declared, so
+ * shieldState holds the streak and activeToday stays honest.
+ */
+export function streakAtRisk(paperId: string): { atRisk: boolean; streak: number } {
+  const s = shieldState(paperId)
+  return { atRisk: s.streak >= 2 && !s.activeToday, streak: s.streak }
+}
+
 /* ── Daily task distribution ──────────────────────────────────── */
 
 /** The guided questions that follow every studied topic — the founder's

@@ -18,6 +18,7 @@ import { isLaunchAdmin } from "@/lib/launch"
 import { initNotesSync } from "@/lib/acca-notes-cloud"
 import FeedbackLauncher from "@/components/FeedbackLauncher"
 import CharlesCompanion from "@/components/acca/CharlesCompanion"
+import StreakSaver from "@/components/acca/StreakSaver"
 import AppTour, { hasSeenAppTour } from "@/components/AppTour"
 
 /* ──────────────────────────────────────────────────────────────
@@ -461,6 +462,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Charles — the AI Study Companion, on every app screen for entitled
           learners. Self-gates to null when there's no active paper. */}
       {!locked && <CharlesCompanion />}
+      {/* Streak-saver tab nudge — pulls a learner back from a backgrounded tab
+          when their streak is on the line. Renders nothing. */}
+      {!locked && <StreakSaver />}
       {/* The seven-step introduction, once per browser on first entry to the
           workspace. It opens from the shell rather than from a page so it
           cannot be missed by landing on Notes or Analytics first. */}
