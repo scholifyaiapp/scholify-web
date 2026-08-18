@@ -9,6 +9,7 @@ import { recordDayActive } from "@/lib/acca-schedule"
 import { passProbability, mockProgress } from "@/lib/acca-loop"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
 import { scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
+import { saveLearnerBaseline } from "@/lib/acca-learner-baseline"
 
 /*
  * THE 15-DAY STUDENT JOURNEY — an "ACCA student" driven through the real engine.
@@ -92,6 +93,28 @@ describe("the 15-day ACCA student journey", () => {
 
     const chaptersSeen = liveFifteenDays("SBR", 10)
     expect(chaptersSeen.size, "SBR advanced through chapters").toBeGreaterThan(2)
+  })
+
+  it("the PRACTICE route keeps its promise — no chapter to read, quiz-led, topics rotate", () => {
+    vi.useFakeTimers()
+    setPlan("SBR", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 80 })
+    saveLearnerBaseline({ route: "practice", englishLevel: "C1", englishEvidence: "self", updatedAt: new Date().toISOString() })
+
+    const topics = new Set<string>()
+    for (let d = 0; d < 12; d++) {
+      vi.setSystemTime(new Date(2026, 8, 1 + d, 9, 0, 0))
+      const comp = composeToday("SBR")
+      // The promise: NO study block. The day leads with the quiz.
+      expect(comp.blocks.some((b) => b.kind === "study"), `day ${d + 1} has no study block`).toBe(false)
+      expect(comp.blocks[0].kind, `day ${d + 1} leads with the quiz`).toBe("quiz")
+      // Still quizzes + practice + flashcards.
+      const kinds = new Set(comp.blocks.map((b) => b.kind))
+      expect(kinds.has("quiz") && kinds.has("practice") && kinds.has("flashcards")).toBe(true)
+      if (comp.chapter) topics.add(chapterKey(comp.chapter))
+      recordDayActive("SBR")
+    }
+    // The topic varies across the fortnight rather than being stuck on one.
+    expect(topics.size, "practice topics rotate over the days").toBeGreaterThan(2)
   })
 
   it("mocks build for all three forms and record into the learner's history", () => {

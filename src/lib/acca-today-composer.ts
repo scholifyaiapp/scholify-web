@@ -38,7 +38,8 @@
 import { getPaper, getPracticeInventory, getQuestions, type AccaQuestion } from "@/lib/acca"
 import { getPlan } from "@/lib/acca-plan"
 import { getFlashcards, getDueFlashcards, type Flashcard } from "@/lib/acca-flashcards"
-import { chapterKey, type StudyChapter } from "@/lib/acca-study-content"
+import { chapterKey, chaptersForPaper, type StudyChapter } from "@/lib/acca-study-content"
+import { getLearnerBaseline } from "@/lib/acca-learner-baseline"
 import {
   chapterHardness,
   chapterMinutes,
@@ -282,15 +283,30 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   // Still working toward it — the board shows the progress so the wait is explained.
   const gate = getStartMode() === "zero" && !getLatestDiagnostic(paperId) ? diagnosticGateState(paperId) : null
 
+  // The PRACTICE route promised "quizzes, practice and flashcards only — no
+  // chapters to read". So a practice-route learner does NOT read-and-advance:
+  // the day's topic rotates through the syllabus by calendar day, and the study
+  // block below is omitted, which makes the sequential board lead with the quiz
+  // (the exact thing the route said they'd get). Everyone else keeps the
+  // read-then-practise progression.
+  const isPracticeRoute = getLearnerBaseline()?.route === "practice"
+  const practiceChapters = isPracticeRoute ? chaptersForPaper(paperId) : []
+
   // Today's topic: the next unread chapter, or — when the paper is fully read —
   // the weakest already-read chapter, because "nothing left to learn" is not the
   // same as "ready", and a revision pass is the honest next thing.
-  const fresh = nextChapter(paperId)
-  const chapter = fresh ?? reviseChapter(paperId)
-  const isRevision = !fresh && Boolean(chapter)
+  const fresh = isPracticeRoute ? null : nextChapter(paperId)
+  const chapter = isPracticeRoute
+    ? practiceChapters.length
+      ? practiceChapters[Math.floor(Date.now() / 86_400_000) % practiceChapters.length]
+      : null
+    : fresh ?? reviseChapter(paperId)
+  const isRevision = !isPracticeRoute && !fresh && Boolean(chapter)
   const hardness = chapter ? chapterHardness(chapter) : null
 
-  const studyMinutes = chapter ? chapterMinutes(paperId, chapter) : Math.round(budgetMinutes * 0.25)
+  // No study block for the practice route → no study minutes; the freed time
+  // reallocates to more practice and cards below.
+  const studyMinutes = isPracticeRoute ? 0 : chapter ? chapterMinutes(paperId, chapter) : Math.round(budgetMinutes * 0.25)
   const article = chapter ? articleForChapter(paperId, chapter) : null
 
   /*
@@ -427,25 +443,32 @@ export function composeToday(paperId: string, dryRun = false): TodayComposition 
   const blocks: TodayBlock[] = []
   let step = 1
 
-  blocks.push({
-    id: chapter ? `study-${chapterKey(chapter)}` : "study",
-    kind: "study",
-    step: step++,
-    title: chapterLabel,
-    detail: chapter
-      ? `${isRevision ? "Second pass" : "Study"} · ${chapter.sections.length} sections · ${hardness?.label} · ${hardness?.why}`
-      : "Charles opens the next chapter from your live progress",
-    minutes: studyMinutes,
-    area: chapter?.area,
-    chapterKey: chapter ? chapterKey(chapter) : undefined,
-  })
+  // The study (read-the-chapter) block is skipped for the practice route — its
+  // whole promise is not having to read chapters. The board then leads with the
+  // quiz, which unlocks immediately since it is first in the sequence.
+  if (!isPracticeRoute) {
+    blocks.push({
+      id: chapter ? `study-${chapterKey(chapter)}` : "study",
+      kind: "study",
+      step: step++,
+      title: chapterLabel,
+      detail: chapter
+        ? `${isRevision ? "Second pass" : "Study"} · ${chapter.sections.length} sections · ${hardness?.label} · ${hardness?.why}`
+        : "Charles opens the next chapter from your live progress",
+      minutes: studyMinutes,
+      area: chapter?.area,
+      chapterKey: chapter ? chapterKey(chapter) : undefined,
+    })
+  }
 
   blocks.push({
     id: "quiz",
     kind: "quiz",
     step: step++,
     title: `${QUIZ_SIZE} quizzes on ${chapter ? chapterLabel.replace(/^Chapter \d+ · /, "") : "today's topic"}`,
-    detail: `Five checks on what you just read — instant marking, and Charles explains every miss`,
+    detail: isPracticeRoute
+      ? "Five exam-standard checks on today's topic — instant marking, and Charles explains every miss"
+      : "Five checks on what you just read — instant marking, and Charles explains every miss",
     minutes: quizMinutes,
     count: QUIZ_SIZE,
     area: chapter?.area,
