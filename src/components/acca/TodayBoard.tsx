@@ -663,6 +663,30 @@ export function TomorrowCard({
             {gate.locked ? gate.restNote : gate.openNote}
           </motion.div>
         </AnimatePresence>
+
+        {/* Not a dead end. A learner who finished today and still has momentum
+            can channel it into Charles instead of just being told to rest. */}
+        {gate.locked && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("scholify:open-charles"))}
+            style={{
+              marginTop: SP.md,
+              background: "none",
+              border: "none",
+              color: C.brand,
+              fontSize: 12.5,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Icon name="tutor" size={14} color={C.brand} strokeWidth={2.4} />
+            Still fresh? Ask Charles about today's topic
+          </button>
+        )}
       </div>
     </motion.div>
   )

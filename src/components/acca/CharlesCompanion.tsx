@@ -58,6 +58,7 @@ export default function CharlesCompanion() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
+  const [confirmingClear, setConfirmingClear] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -65,6 +66,14 @@ export default function CharlesCompanion() {
   useEffect(() => {
     if (paper) setMsgs(loadMsgs(paper))
   }, [paper])
+
+  // Any surface can invite the learner to Charles — e.g. the completed-day card
+  // offering "ask about today" instead of a dead end.
+  useEffect(() => {
+    const openHandler = () => setOpen(true)
+    window.addEventListener("scholify:open-charles", openHandler)
+    return () => window.removeEventListener("scholify:open-charles", openHandler)
+  }, [])
 
   useEffect(() => {
     if (open && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -88,12 +97,19 @@ export default function CharlesCompanion() {
     [msgs, sending, paper],
   )
 
+  // Two-step clear so a single mis-tap on mobile can't erase the whole thread.
   const clear = useCallback(() => {
     if (!paper) return
+    if (!confirmingClear) {
+      setConfirmingClear(true)
+      window.setTimeout(() => setConfirmingClear(false), 3500)
+      return
+    }
+    setConfirmingClear(false)
     setMsgs([])
     saveMsgs(paper, [])
     inputRef.current?.focus()
-  }, [paper])
+  }, [paper, confirmingClear])
 
   // Only for onboarded learners on a paper.
   if (!paper) return null
@@ -101,19 +117,18 @@ export default function CharlesCompanion() {
 
   return (
     <>
-      {/* ── Launcher ── stacked ABOVE the feedback button (which is fixed at
-          right:20 / bottom:24, 50px tall) and clear of the mobile tab bar. */}
+      {/* ── Launcher ── stacked ABOVE the feedback button, which is fixed at
+          bottom:24 on desktop and pushed to bottom:78 on mobile (≤1023px, see
+          dashboard-layout LAYOUT_CSS). So Charles clears it at both sizes:
+          bottom-[140px] on mobile, lg:bottom-[86px] on desktop. */}
       <motion.button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Close Charles" : "Ask Charles"}
         whileTap={{ scale: 0.95 }}
         whileHover={{ y: -2 }}
+        className="fixed right-[18px] z-[39] bottom-[140px] lg:bottom-[86px]"
         style={{
-          position: "fixed",
-          right: 18,
-          bottom: 86,
-          zIndex: 39,
           display: open ? "none" : "inline-flex",
           alignItems: "center",
           gap: 8,
@@ -178,9 +193,15 @@ export default function CharlesCompanion() {
                   <div style={{ fontSize: 11.5, color: C.faint }}>Your {paper} study companion</div>
                 </div>
                 {msgs.length > 0 && (
-                  <button type="button" onClick={clear} aria-label="Clear conversation" style={{ background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 6, display: "grid", placeItems: "center" }}>
-                    <Icon name="trash" size={15} color={C.faint} strokeWidth={2.2} />
-                  </button>
+                  confirmingClear ? (
+                    <button type="button" onClick={clear} aria-label="Confirm clear conversation" style={{ background: C.brandSoft, border: `1px solid ${C.brandLine}`, borderRadius: R.pill, cursor: "pointer", color: C.brand, padding: "4px 10px", fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap" }}>
+                      Clear all?
+                    </button>
+                  ) : (
+                    <button type="button" onClick={clear} aria-label="Clear conversation" style={{ background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 6, display: "grid", placeItems: "center" }}>
+                      <Icon name="trash" size={15} color={C.faint} strokeWidth={2.2} />
+                    </button>
+                  )
                 )}
                 <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: C.soft, padding: 6, display: "grid", placeItems: "center" }}>
                   <Icon name="close" size={18} color={C.soft} strokeWidth={2.2} />
