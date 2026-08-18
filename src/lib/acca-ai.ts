@@ -67,6 +67,45 @@ export async function askTutor(
   return { answer: q.explanation, isFallback: true }
 }
 
+/**
+ * Ask Charles a FREE-FORM study question (the AI Study Companion). Reuses the
+ * metered, authenticated acca-tutor endpoint with just the paper for context —
+ * the server prompt answers a general ACCA question in Charles's voice, and
+ * degrades to a friendly fallback with no key or over the daily cap.
+ */
+export async function askCharles(
+  paper: string,
+  message: string,
+  learnerContext?: string,
+): Promise<{ answer: string; isFallback: boolean }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/lara?action=acca-tutor`, {
+      method: "POST",
+      headers: await aiHeaders(),
+      body: JSON.stringify({
+        paper,
+        area: "",
+        stem: "",
+        options: [],
+        correctText: "",
+        explanation: "",
+        question: message.slice(0, 500),
+        learnerContext: learnerContext ?? "",
+      }),
+    })
+    if (res.ok) {
+      const data = (await res.json()) as { answer?: string; isFallback?: boolean }
+      if (data.answer) return { answer: String(data.answer), isFallback: Boolean(data.isFallback) }
+    }
+  } catch {
+    /* fall through */
+  }
+  return {
+    answer: "Charles is catching his breath — try again in a moment, or open the study chapters for this topic.",
+    isFallback: true,
+  }
+}
+
 export interface ExaminerResult {
   marks: number
   maxMarks: number
