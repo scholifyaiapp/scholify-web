@@ -1080,6 +1080,7 @@ export default function AccaStudy() {
               paperId={paperId}
               onBack={() => { setTick((t) => t + 1); setMode("overview") }}
               onStart={(form) => { setMockForm(form); setMode("cbemock") }}
+              onStudyArea={(area) => { setTopicArea(area); setIsTopicTest(false); setMode("topic") }}
             />
           )}
 

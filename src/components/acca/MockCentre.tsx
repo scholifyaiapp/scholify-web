@@ -1,11 +1,11 @@
 import { useMemo } from "react"
 import { motion } from "motion/react"
 import { Icon, Card, Button, Badge, BackButton, C, SP, R, SHADOW, TYPE } from "@/components/acca/ui"
-import { RingGauge, TrendBars, StatCard, bandColor } from "@/components/acca/charts"
+import { RingGauge, TrendBars, StatCard, MeterBar, bandColor } from "@/components/acca/charts"
 import { buildCbeMock, type CbeMock } from "@/lib/acca-cbe-mock"
 import { MOCK_FORMS, nextMockForm } from "@/lib/acca-mockforms"
 import { mockProgress, passProbability, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
-import { getMockHistory, getPaper, type MockResult } from "@/lib/acca"
+import { getMockHistory, getPaper, getPaperStats, type MockResult, type AreaStat } from "@/lib/acca"
 import { examBlueprint } from "@/lib/acca-exam-structure"
 
 /*
@@ -28,16 +28,27 @@ export default function MockCentre({
   paperId,
   onBack,
   onStart,
+  onStudyArea,
 }: {
   paperId: string
   onBack: () => void
   onStart: (form: number) => void
+  onStudyArea: (area: string) => void
 }) {
   const paper = getPaper(paperId)
   const bp = examBlueprint(paperId)
   const history = useMemo(() => getMockHistory(paperId), [paperId]) // most recent first
   const progress = useMemo(() => mockProgress(paperId), [paperId])
   const prob = passProbability(paperId)
+  // The seen areas dragging the score, weakest first — where a mock's marks leak.
+  const focusAreas = useMemo<AreaStat[]>(
+    () =>
+      getPaperStats(paperId)
+        .areas.filter((a) => a.seen >= 3)
+        .sort((a, b) => a.accuracy - b.accuracy)
+        .slice(0, 4),
+    [paperId],
+  )
   const forms = useMemo(
     () =>
       Array.from({ length: MOCK_FORMS }, (_, i) => {
@@ -147,6 +158,34 @@ export default function MockCentre({
           </div>
           <TrendBars points={chronological} passLine={MOCK_PASS} unit="score" />
         </Card>
+      )}
+
+      {/* ── Focus areas ── */}
+      {focusAreas.length > 0 && (
+        <div>
+          <div style={{ ...TYPE.label, color: C.faint, marginBottom: SP.md, display: "flex", alignItems: "center", gap: 7 }}>
+            <Icon name="weak" size={13} color={C.brand} strokeWidth={2.4} /> Where your marks leak — study these first
+          </div>
+          <Card style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
+            {focusAreas.map((a) => {
+              const pct = Math.round(a.accuracy * 100)
+              return (
+                <div key={a.code} style={{ display: "flex", alignItems: "center", gap: SP.md }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 5 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <b style={{ color: C.brand }}>{a.code}</b> · {a.label}
+                      </span>
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: bandColor(pct, MOCK_PASS), fontVariantNumeric: "tabular-nums" }}>{pct}%</span>
+                    </div>
+                    <MeterBar value={pct} target={MOCK_PASS / 100} color={bandColor(pct, MOCK_PASS)} />
+                  </div>
+                  <Button variant="secondary" size="sm" trailingIcon="chevron" onClick={() => onStudyArea(a.code)}>Study</Button>
+                </div>
+              )
+            })}
+          </Card>
+        </div>
       )}
 
       {/* ── Forms ── */}
