@@ -40,26 +40,34 @@ const SONNET = "claude-sonnet-5"
  */
 type ModelTier = "haiku" | "sonnet"
 
-/** Which provider serves AI right now, or null when none is configured. */
+/**
+ * Which provider serves AI right now, or null when none is configured.
+ *
+ * Set AI_PROVIDER=openai or AI_PROVIDER=anthropic in the environment to FORCE a
+ * provider (honoured only when that provider's key is actually present — a
+ * forced choice with an empty key falls back rather than failing every call).
+ * Unset = AUTO: prefer Anthropic when its key exists (Charles is a Claude
+ * persona), else OpenAI. An OpenAI-only deployment therefore works with no flag.
+ */
 export function aiProvider(): "anthropic" | "openai" | null {
-  // Prefer Claude when its key is present — Charles is a Claude persona and the
-  // OpenAI path was only ever the temporary bridge while the Anthropic key was
-  // being provisioned. Falls back to OpenAI only if Anthropic is unset.
-  if (process.env.ANTHROPIC_API_KEY) return "anthropic"
-  if (process.env.OPENAI_API_KEY) return "openai"
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY)
+  const hasOpenAi = Boolean(process.env.OPENAI_API_KEY)
+  const forced = (process.env.AI_PROVIDER || "").trim().toLowerCase()
+  if (forced === "openai" && hasOpenAi) return "openai"
+  if (forced === "anthropic" && hasAnthropic) return "anthropic"
+  if (hasAnthropic) return "anthropic"
+  if (hasOpenAi) return "openai"
   return null
 }
 
-// The OpenAI model mix uses a strong model
-// for marking/generation (the quality-critical tier), a fast/cheap one for the
-// high-volume tutor.
-//
-// Why terra, not gpt-5.5: gpt-5.5 defaults to MEDIUM reasoning effort — tens of
-// seconds of hidden thinking per call at $5/$30 per MTok. In production that
-// read as "Charles is thinking forever", and calls that outran the function cap or
-// spent the whole token budget on reasoning fell back to demo marking.
-// gpt-5.6-terra at LOW effort (set below) answers in seconds at $2.50/$15.
-const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-5.6-terra" }
+// The OpenAI model mix: a fast/cheap model for the high-volume tutor, and a
+// strong one for the quality-critical tier (marking / generation / voice).
+// The quality tier is gpt-4o — widely available on any standard OpenAI key and
+// non-reasoning, so it answers in seconds via the plain Chat Completions path
+// (max_tokens + response_format) rather than needing gpt-5-era reasoning params
+// or an account with access to a preview model. Change it here if your account
+// has a preferred stronger model.
+const OPENAI_MODELS: Record<ModelTier, string> = { haiku: "gpt-4o-mini", sonnet: "gpt-4o" }
 const ANTHROPIC_MODELS: Record<ModelTier, string> = { haiku: HAIKU, sonnet: SONNET }
 
 /** OpenAI's reasoning models (gpt-5+) reject `max_tokens` and spend part of the

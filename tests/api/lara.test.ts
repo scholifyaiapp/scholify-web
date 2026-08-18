@@ -14,24 +14,57 @@ const at = (deltaDays: number) => new Date(NOW + deltaDays * 86400000).toISOStri
 describe("aiProvider", () => {
   const originalOpenAi = process.env.OPENAI_API_KEY
   const originalAnthropic = process.env.ANTHROPIC_API_KEY
+  const originalForced = process.env.AI_PROVIDER
 
   afterEach(() => {
     if (originalOpenAi === undefined) delete process.env.OPENAI_API_KEY
     else process.env.OPENAI_API_KEY = originalOpenAi
     if (originalAnthropic === undefined) delete process.env.ANTHROPIC_API_KEY
     else process.env.ANTHROPIC_API_KEY = originalAnthropic
+    if (originalForced === undefined) delete process.env.AI_PROVIDER
+    else process.env.AI_PROVIDER = originalForced
   })
 
-  it("prefers Anthropic when both keys exist — Charles is a Claude persona", () => {
+  it("AUTO (no AI_PROVIDER): prefers Anthropic when both keys exist", () => {
+    delete process.env.AI_PROVIDER
     process.env.OPENAI_API_KEY = "openai-test-key"
     process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
     expect(aiProvider()).toBe("anthropic")
   })
 
-  it("falls back to OpenAI only when Anthropic is unavailable", () => {
+  it("AUTO: falls back to OpenAI when Anthropic is unavailable — an OpenAI-only deployment just works", () => {
+    delete process.env.AI_PROVIDER
     process.env.OPENAI_API_KEY = "openai-test-key"
     delete process.env.ANTHROPIC_API_KEY
     expect(aiProvider()).toBe("openai")
+  })
+
+  it("AI_PROVIDER=openai forces OpenAI even when an Anthropic key exists", () => {
+    process.env.AI_PROVIDER = "openai"
+    process.env.OPENAI_API_KEY = "openai-test-key"
+    process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
+    expect(aiProvider()).toBe("openai")
+  })
+
+  it("AI_PROVIDER=anthropic forces Anthropic even when an OpenAI key exists", () => {
+    process.env.AI_PROVIDER = "anthropic"
+    process.env.OPENAI_API_KEY = "openai-test-key"
+    process.env.ANTHROPIC_API_KEY = "anthropic-test-key"
+    expect(aiProvider()).toBe("anthropic")
+  })
+
+  it("a forced provider with NO key falls back rather than serving nothing", () => {
+    process.env.AI_PROVIDER = "anthropic"
+    delete process.env.ANTHROPIC_API_KEY
+    process.env.OPENAI_API_KEY = "openai-test-key"
+    expect(aiProvider()).toBe("openai")
+  })
+
+  it("returns null when no provider is configured", () => {
+    delete process.env.AI_PROVIDER
+    delete process.env.OPENAI_API_KEY
+    delete process.env.ANTHROPIC_API_KEY
+    expect(aiProvider()).toBeNull()
   })
 })
 
