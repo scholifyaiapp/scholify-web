@@ -43,9 +43,13 @@ describe("StudyChapterReader renders authored chapters without crashing", () => 
     renderEveryChapter("SBL")
   }, RENDER_BUDGET_MS)
 
-  // AFM's rebuild is in progress: this covers the authored Area A tree today and
-  // grows with each area that lands.
   it("renders every AFM chapter", () => {
     renderEveryChapter("AFM")
+  }, RENDER_BUDGET_MS)
+
+  // APM's rebuild is in progress: this covers the authored Area A tree today
+  // and grows with each area that lands.
+  it("renders every APM chapter", () => {
+    renderEveryChapter("APM")
   }, RENDER_BUDGET_MS)
 })
