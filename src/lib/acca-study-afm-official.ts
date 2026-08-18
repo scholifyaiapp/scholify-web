@@ -4,13 +4,13 @@ import { AFM_TREE_AREA_A_PART2 } from "@/lib/acca-study-afm-tree-a2"
 import { AFM_TREE_AREA_B_PART1 } from "@/lib/acca-study-afm-tree-b1"
 import { AFM_TREE_AREA_B_PART2 } from "@/lib/acca-study-afm-tree-b2"
 import { AFM_TREE_AREA_B_PART3 } from "@/lib/acca-study-afm-tree-b3"
-import { AFM_B } from "@/lib/acca-study-afm-b"
+import { AFM_TREE_AREA_B_PART4 } from "@/lib/acca-study-afm-tree-b4"
 import { AFM_C } from "@/lib/acca-study-afm-c"
 import { AFM_D } from "@/lib/acca-study-afm-d"
 import { AFM_E } from "@/lib/acca-study-afm-e"
 
 /*
- * AFM's rebuild is IN PROGRESS. Areas B–E below are still the legacy
+ * AFM's rebuild is IN PROGRESS. Areas C, D and E below are still the legacy
  * one-chapter-per-area content, relabelled onto the official structure: this
  * file used to do that for all five technical areas, and the five legacy
  * chapters carried the whole paper at ~12,000 words against 40,000+ for the
@@ -21,7 +21,7 @@ import { AFM_E } from "@/lib/acca-study-afm-e"
  * area is being replaced by an authored tree, one area at a time.
  *
  *   Area A  DONE — AFM-01..09, acca-study-afm-tree-a.ts + -a2.ts
- *   Area B  IN PROGRESS — B1/B2/B3 authored (AFM-10..20); legacy spliced last
+ *   Area B  DONE — AFM-10..24, acca-study-afm-tree-b1..b4.ts
  *   Area C  legacy (acquisitions and mergers)
  *   Area D  legacy (corporate reconstruction and reorganisation)
  *   Area E  legacy (treasury and advanced risk management)
@@ -38,20 +38,23 @@ import { AFM_E } from "@/lib/acca-study-afm-e"
    mainly about the adviser's role and ethics. */
 export const AFM_OFFICIAL_A: StudyChapter[] = [...AFM_TREE_AREA_A_PART1, ...AFM_TREE_AREA_A_PART2]
 
-/* Area B is being authored subsection by subsection — the syllabus states that
-   EVERY exam carries question(s) focused on B and E, so it is the area a
-   candidate can least afford to meet as a shim. B1 (discounted cash flow) is
-   AFM-10..13, B2 (option pricing) AFM-14..15, and B3 — the impact of
-   financing, eleven learning outcomes and the largest subsection in the paper
-   — AFM-16..20. The legacy chapter stays SPLICED IN LAST until the final
-   subsection module retires it, so what it still uniquely covers (valuation,
-   international appraisal) does not disappear mid-rebuild. Delete it, and this
-   import, when B5 lands. */
+/* Area B is a fifteen-chapter authored tree, AFM-10..24, and the legacy splice
+   is GONE — acca-study-afm-b.ts is deleted. The syllabus states that EVERY exam
+   carries question(s) focused on B and E, so this was the area a candidate
+   could least afford to meet as a shim, and it was one chapter of six sections
+   covering NPV, APV, Modigliani-Miller, beta, real options and international
+   appraisal between them.
+
+     B1  discounted cash flow techniques      AFM-10..13
+     B2  option pricing in investment         AFM-14..15
+     B3  impact of financing (11 outcomes)    AFM-16..20
+     B4  valuation and free cash flows        AFM-21..22
+     B5  international investment and finance AFM-23..24 */
 export const AFM_OFFICIAL_B: StudyChapter[] = [
   ...AFM_TREE_AREA_B_PART1,
   ...AFM_TREE_AREA_B_PART2,
   ...AFM_TREE_AREA_B_PART3,
-  AFM_B,
+  ...AFM_TREE_AREA_B_PART4,
 ]
 export const AFM_OFFICIAL_C = AFM_C
 export const AFM_OFFICIAL_D = AFM_D
