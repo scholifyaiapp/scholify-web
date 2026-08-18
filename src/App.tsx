@@ -11,6 +11,7 @@ import { ownsAuthHash } from "@/lib/navigation"
 import { isLaunchAdmin, PRELAUNCH_MODE } from "@/lib/launch"
 import { secureLatestLogin } from "@/lib/account-session"
 import { supabase } from "@/lib/supabase"
+import { applyPageMeta } from "@/lib/page-meta"
 
 /*
  * Lazy import that self-heals after a deploy. A route chunk can fail to load
@@ -76,6 +77,7 @@ const Support = lazyWithReload(() => import("@/pages/Support"))
 const PartnersApply = lazyWithReload(() => import("@/pages/PartnersApply"))
 const Partners = lazyWithReload(() => import("@/pages/Partners"))
 const AdminDashboard = lazyWithReload(() => import("@/pages/AdminDashboard"))
+const NotFound = lazyWithReload(() => import("@/pages/NotFound"))
 
 function Page({
   name,
@@ -86,6 +88,12 @@ function Page({
   children: React.ReactNode
   fallback?: React.ReactNode
 }) {
+  // Per-route SEO: title, description, canonical and robots applied on every
+  // navigation. Before this, every route shipped index.html's static head —
+  // one canonical (the homepage) for the whole site. See src/lib/page-meta.ts.
+  useEffect(() => {
+    applyPageMeta(name)
+  }, [name])
   return (
     <ErrorBoundary pageName={name}>
       <Suspense fallback={fallback}>{children}</Suspense>
@@ -247,12 +255,13 @@ export default function App() {
         <Route path="/partners/apply" element={<Page name="PartnersApply"><PartnersApply /></Page>} />
         <Route path="/partners" element={<ProtectedRoute><Page name="Partners"><Partners /></Page></ProtectedRoute>} />
 
-        {/* Everything else (legacy plan routes, unknown/mistyped paths) → home.
-            NEVER /dashboard: it's a ProtectedRoute, so post-launch a logged-out
-            visitor following a stale or mistyped link would be bounced to a
-            sign-in wall instead of the public landing page. "/" is always safe —
-            Waitlist pre-launch, Landing after. */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Everything else (legacy plan routes, unknown/mistyped paths) → a real
+            404. The old silent Navigate-to-home made every dead link a soft 404
+            (Google penalises those) and dumped people on the landing page with
+            no explanation. The page is noindexed, explains what happened, and
+            offers home + dashboard — the dashboard link routes through auth,
+            which is fine as an explicit CHOICE rather than a forced bounce. */}
+        <Route path="*" element={<Page name="NotFound"><NotFound /></Page>} />
       </Routes>
     </>
   )
