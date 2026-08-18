@@ -7,11 +7,11 @@ import { AFM_TREE_AREA_B_PART3 } from "@/lib/acca-study-afm-tree-b3"
 import { AFM_TREE_AREA_B_PART4 } from "@/lib/acca-study-afm-tree-b4"
 import { AFM_TREE_AREA_C_PART1 } from "@/lib/acca-study-afm-tree-c"
 import { AFM_TREE_AREA_C_PART2 } from "@/lib/acca-study-afm-tree-c2"
-import { AFM_D } from "@/lib/acca-study-afm-d"
+import { AFM_TREE_AREA_D_PART1 } from "@/lib/acca-study-afm-tree-d"
 import { AFM_E } from "@/lib/acca-study-afm-e"
 
 /*
- * AFM's rebuild is IN PROGRESS. Areas D and E below are still the legacy
+ * AFM's rebuild is IN PROGRESS. Area E below is still the legacy
  * one-chapter-per-area content, relabelled onto the official structure: this
  * file used to do that for all five technical areas, and the five legacy
  * chapters carried the whole paper at ~12,000 words against 40,000+ for the
@@ -24,7 +24,7 @@ import { AFM_E } from "@/lib/acca-study-afm-e"
  *   Area A  DONE — AFM-01..09, acca-study-afm-tree-a.ts + -a2.ts
  *   Area B  DONE — AFM-10..24, acca-study-afm-tree-b1..b4.ts
  *   Area C  DONE — AFM-25..30, acca-study-afm-tree-c.ts + -c2.ts
- *   Area D  legacy (corporate reconstruction and reorganisation)
+ *   Area D  DONE — AFM-31..34, acca-study-afm-tree-d.ts
  *   Area E  legacy (treasury and advanced risk management)
  *   Area F  authored — professional skills (below)
  *   Area G  authored — employability and technology skills (below)
@@ -64,7 +64,13 @@ export const AFM_OFFICIAL_B: StudyChapter[] = [
    B: B4 owns the valuation MODELS, this area owns the BID — synergy, the
    control premium, and how the financing choice divides the gain. */
 export const AFM_OFFICIAL_C: StudyChapter[] = [...AFM_TREE_AREA_C_PART1, ...AFM_TREE_AREA_C_PART2]
-export const AFM_OFFICIAL_D = AFM_D
+/* Area D is a four-chapter authored tree, AFM-31..34. It is the smallest
+   technical area — two subsections, five outcomes — but it carries the paper's
+   only genuinely adversarial arithmetic, because every party to a
+   reconstruction measures the scheme against its own alternative. AFM-32
+   therefore teaches the better-off test as a comparison of columns, built from
+   the liquidation waterfall, rather than as a definition. */
+export const AFM_OFFICIAL_D: StudyChapter[] = AFM_TREE_AREA_D_PART1
 export const AFM_OFFICIAL_E = AFM_E
 
 export const AFM_OFFICIAL_F: StudyChapter = {
