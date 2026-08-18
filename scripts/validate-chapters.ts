@@ -1,6 +1,7 @@
 import { chaptersForPaper, chapterKey } from "@/lib/acca-study-content"
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { LW_ENG_CHAPTERS } from "@/lib/acca-study-lw-eng"
+import { TX_GLOBAL_CHAPTERS } from "@/lib/acca-study-tx-global"
 
 const PAPERS = ["FA", "FR", "MA", "BT", "TX", "LW", "PM", "FM", "AA", "SBR", "SBL", "AFM", "APM", "ATX", "AAA"]
 const problems: string[] = []
@@ -14,7 +15,17 @@ const isArr = (x: unknown): x is unknown[] => Array.isArray(x) && x.length > 0
  * DEFAULT variant — GLOBAL for LW. So the ENG tree would never be validated without
  * being added explicitly. Both LW variants ship, so both must be structurally sound.
  */
-const EXTRA_TREES: Array<[string, StudyChapter[]]> = [["LW-ENG", LW_ENG_CHAPTERS]]
+const EXTRA_TREES: Array<[string, StudyChapter[]]> = [
+  ["LW-ENG", LW_ENG_CHAPTERS],
+  /*
+   * TX-GLOBAL was in NEITHER structural gate until 19 Aug 2026 — not here, because
+   * chaptersForPaper("TX") returns the UK tree, and not in StudyChapterReader.test.tsx,
+   * which renders by paper id. Its seven generated chapters were simple enough that nothing
+   * broke; the authored 24-chapter tree that replaced them is not, so it is validated and
+   * render-tested like everything else.
+   */
+  ["TX-GLOBAL", TX_GLOBAL_CHAPTERS],
+]
 
 for (const p of [...PAPERS, ...EXTRA_TREES.map(([name]) => name)]) {
   const extra = EXTRA_TREES.find(([name]) => name === p)

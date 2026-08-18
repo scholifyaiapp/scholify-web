@@ -29,7 +29,7 @@ export const TX_TREE_15: StudyChapter = {
   area: "C",
   title: "Chargeable gains: the computation and the tax payable",
   minutes: 19,
-  syllabusRefs: ["C1(a)", "C1(b)", "C2(a)", "C2(b)", "C5(a)", "C5(b)"],
+  syllabusRefs: ["C1(a)", "C1(b)", "C2(a)", "C2(b)", "C2(c)", "C5(a)"],
   intro:
     "One proforma per disposal, then one computation for the year. The marks turn on the order in which losses and the annual exempt amount are used.",
   outcomes: [
@@ -161,7 +161,7 @@ export const TX_TREE_15: StudyChapter = {
     },
     {
       trap: "Setting a clogged loss against general gains.",
-      fix: "A loss on a disposal to a connected person can only go against gains on disposals to that same person.",
+      fix: "A loss arising on a disposal to a connected person is usable only against gains on disposals to that same person.",
     },
   ],
   keyTerms: [
@@ -196,7 +196,7 @@ export const TX_TREE_16: StudyChapter = {
   area: "C",
   title: "Chargeable gains: part disposals, chattels and wasting assets",
   minutes: 16,
-  syllabusRefs: ["C3(a)", "C3(b)"],
+  syllabusRefs: ["C2(d)", "C2(e)", "C3(a)", "C3(b)"],
   intro:
     "Three special computations, each with its own formula and each producing an answer that looks wrong until you check it against the rule.",
   outcomes: [

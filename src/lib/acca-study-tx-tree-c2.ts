@@ -151,7 +151,7 @@ export const TX_TREE_18: StudyChapter = {
   area: "C",
   title: "Chargeable gains: the reliefs",
   minutes: 20,
-  syllabusRefs: ["C3(c)", "C6(a)", "C6(b)", "C6(c)", "C6(d)"],
+  syllabusRefs: ["C3(c)", "C5(b)", "C5(c)", "C6(a)", "C6(b)"],
   intro:
     "Five reliefs, and they do different things: two exempt a gain, two defer it and one changes the rate. Knowing which is which decides whether an answer makes sense.",
   outcomes: [

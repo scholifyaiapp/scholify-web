@@ -186,7 +186,7 @@ export const TX_TREE_24: StudyChapter = {
   area: "E",
   title: "Losses for companies",
   minutes: 18,
-  syllabusRefs: ["E6(a)", "E6(b)", "E6(c)"],
+  syllabusRefs: ["E2(e)", "E2(f)", "E2(g)"],
   intro:
     "Everything runs against total profits rather than trading profits, and the carry back is twelve months rather than a tax year. Neither matches the individual's rules.",
   outcomes: [
@@ -414,7 +414,7 @@ export const TX_TREE_25: StudyChapter = {
         {
           kind: "formula",
           name: "Defining a gains group",
-          expr: "A 75% CHARGEABLE GAINS GROUP comprises:\n\n   ·  the PARENT company, and\n   ·  its 75% subsidiaries, and\n   ·  the 75% subsidiaries of those subsidiaries, and so on\n\nBUT the parent must have an EFFECTIVE interest of MORE THAN 50% in\nEVERY company in the group.\n\nA company that is itself a 75% subsidiary CANNOT be the parent of a\nseparate gains group — so each company belongs to only ONE gains group.\n\nNote the difference from a group relief group: there the effective\ninterest must be at least 75% throughout; here it need only exceed 50%,\nprovided each link in the chain is at least 75%.",
+          expr: "A 75% CHARGEABLE GAINS GROUP comprises:\n\n   ·  the PARENT company, and\n   ·  its 75% subsidiaries, and\n   ·  the 75% subsidiaries of those subsidiaries, and so on\n\nBUT the parent's EFFECTIVE interest must EXCEED 50% in every\ncompany that the group contains.\n\nA company that is itself a 75% subsidiary CANNOT be the parent of a\nseparate gains group — so each company belongs to only ONE gains group.\n\nNote the difference from a group relief group: there the effective\ninterest must be at least 75% throughout; here it need only exceed 50%,\nprovided each link in the chain is at least 75%.",
           note: "The two tests differ, so the two groups can have different members. A 75%–75% chain gives an effective interest of 56.25%: enough for a GAINS group, because each link is 75% and the effective interest exceeds 50%, but NOT enough for a group relief group, which needs 75% effective. That distinction is regularly examined.",
         },
         {

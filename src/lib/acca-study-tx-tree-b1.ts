@@ -24,7 +24,7 @@ export const TX_TREE_04: StudyChapter = {
   area: "B",
   title: "The income tax computation",
   minutes: 20,
-  syllabusRefs: ["B1(a)", "B1(b)", "B2(a)", "B2(b)", "B5(a)", "B5(b)"],
+  syllabusRefs: ["B1(a)", "B4(f)", "B4(g)", "B4(h)", "B5(a)", "B5(b)", "B5(d)"],
   intro:
     "One proforma, three columns and a fixed order. Get the layout right and the arithmetic follows; get it wrong and every figure below is wrong too.",
   outcomes: [
@@ -209,7 +209,7 @@ export const TX_TREE_05: StudyChapter = {
   area: "B",
   title: "Income tax: the adjustments that change the computation",
   minutes: 19,
-  syllabusRefs: ["B1(c)", "B1(d)", "B5(c)", "B5(d)", "B5(e)"],
+  syllabusRefs: ["B5(c)", "B5(e)", "B5(f)", "B5(g)", "B5(h)", "B7(b)", "B7(c)"],
   intro:
     "Gift aid, pension contributions, the marriage allowance and the child benefit charge. Each changes the computation in its own way, and none of them is a simple deduction from income.",
   outcomes: [

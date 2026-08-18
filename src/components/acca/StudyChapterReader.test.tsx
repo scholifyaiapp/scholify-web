@@ -3,6 +3,8 @@ import { describe, it, expect, afterEach } from "vitest"
 import { render, cleanup } from "@testing-library/react"
 import { StudyChapterReader } from "./StudyChapterReader"
 import { chaptersForPaper } from "@/lib/acca-study-content"
+import type { StudyChapter } from "@/lib/acca-study-content"
+import { TX_GLOBAL_CHAPTERS } from "@/lib/acca-study-tx-global"
 
 /*
  * Renders REAL authored chapters — the SBR and SBL trees carry flow / compare /
@@ -14,8 +16,8 @@ import { chaptersForPaper } from "@/lib/acca-study-content"
 afterEach(cleanup)
 const noop = () => {}
 
-function renderEveryChapter(paperId: string) {
-  const chapters = chaptersForPaper(paperId)
+function renderEveryChapter(paperId: string, explicit?: StudyChapter[]) {
+  const chapters = explicit ?? chaptersForPaper(paperId)
   expect(chapters.length, `${paperId} has authored chapters`).toBeGreaterThan(0)
   for (const chapter of chapters) {
     const { unmount } = render(<StudyChapterReader chapter={chapter} onBack={noop} onPractice={noop} />)
@@ -57,5 +59,14 @@ describe("StudyChapterReader renders authored chapters without crashing", () => 
 
   it("renders every AAA chapter", () => {
     renderEveryChapter("AAA")
+  }, RENDER_BUDGET_MS)
+
+  /*
+   * TX-Global is passed explicitly because chaptersForPaper("TX") returns the UK tree —
+   * the Global tree is only reached through the variant loader. That is exactly why it
+   * went unrendered and unvalidated while it was a seven-chapter generated stub.
+   */
+  it("renders every TX-Global chapter", () => {
+    renderEveryChapter("TX-GLOBAL", TX_GLOBAL_CHAPTERS)
   }, RENDER_BUDGET_MS)
 })

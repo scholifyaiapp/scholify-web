@@ -208,7 +208,7 @@ export const TX_TREE_07: StudyChapter = {
   area: "B",
   title: "Employment income: earnings and allowable deductions",
   minutes: 17,
-  syllabusRefs: ["B3(a)", "B3(b)", "B3(c)", "B3(g)", "B3(h)"],
+  syllabusRefs: ["B2(a)", "B2(b)", "B2(c)", "B2(d)", "B2(e)", "B2(f)", "B2(h)"],
   intro:
     "Whether someone is employed or self-employed decides which tax rules apply to everything else, and the deduction test for an employee is far stricter than for a trader.",
   outcomes: [
@@ -270,7 +270,7 @@ export const TX_TREE_07: StudyChapter = {
         {
           kind: "callout",
           tone: "rule",
-          title: "The test: wholly, exclusively AND necessarily in the performance of the duties",
+          title: "The test: wholly, exclusively AND necessarily incurred in performing the duties",
           md: "All four words bite, and it is a **much stricter** test than the trader's \"wholly and exclusively for the purposes of the trade\". **Necessarily** means the duties could not be performed without the expense — not merely that it was helpful or that the employer asked for it. **In the performance of** the duties excludes anything incurred to put the employee in a position to do the job: so training to acquire a qualification, and travel from home to a permanent workplace, both fail. This is why so few employee expenses are deductible, and why a question listing five expenses usually allows only one or two.",
         },
         {
@@ -367,7 +367,7 @@ export const TX_TREE_07: StudyChapter = {
   summary: [
     "Status turns on control, substitution, equipment, financial risk, integration and mutuality, weighed as a whole.",
     "Employment income is taxed on the earlier of receipt and entitlement, with extra rules for directors.",
-    "The employee deduction test is wholly, exclusively AND necessarily in the performance of the duties.",
+    "The employee deduction test is wholly, exclusively AND necessarily incurred in performing the duties.",
     "Mileage relief compares the approved amount with what was paid, and works in both directions.",
     "PAYE collects tax and NIC at source under real time information, with P60 by 31 May and P11D by 6 July.",
   ],
@@ -389,7 +389,7 @@ export const TX_TREE_08: StudyChapter = {
   area: "B",
   title: "Employment income: taxable and exempt benefits",
   minutes: 20,
-  syllabusRefs: ["B3(d)", "B3(e)", "B3(f)"],
+  syllabusRefs: ["B2(g)"],
   intro:
     "Four computations appear over and over: the car, the fuel, expensive accommodation and a beneficial loan. Learn those four and most benefit questions answer themselves.",
   outcomes: [

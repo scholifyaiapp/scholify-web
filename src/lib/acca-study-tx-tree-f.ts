@@ -24,7 +24,7 @@ export const TX_TREE_26: StudyChapter = {
   area: "F",
   title: "VAT: scope, registration and deregistration",
   minutes: 17,
-  syllabusRefs: ["F1(a)", "F1(b)", "F1(c)", "F1(d)", "F1(e)"],
+  syllabusRefs: ["F1(a)", "F1(b)", "F1(c)", "F2(f)"],
   intro:
     "Two registration tests, running on different clocks and producing different registration dates. Getting the date right is most of the marks in this chapter.",
   outcomes: [
@@ -189,7 +189,7 @@ export const TX_TREE_27: StudyChapter = {
   area: "F",
   title: "VAT: computing the liability, tax points and administration",
   minutes: 18,
-  syllabusRefs: ["F2(a)", "F2(b)", "F2(c)", "F2(d)", "F2(e)", "F2(h)", "F2(i)", "F2(j)"],
+  syllabusRefs: ["F2(a)", "F2(b)", "F2(c)", "F2(d)", "F2(e)", "F2(g)", "F2(h)", "F2(i)", "F2(j)", "F3(a)"],
   intro:
     "Output tax less input tax, and a set of dates. The tax point decides which return a supply falls into, and the penalty regime for late payment is unusual enough to be worth learning properly.",
   outcomes: [
@@ -363,7 +363,7 @@ export const TX_TREE_28: StudyChapter = {
   area: "F",
   title: "VAT: overseas aspects",
   minutes: 14,
-  syllabusRefs: ["F2(f)", "F2(g)"],
+  syllabusRefs: ["F2(k)", "F2(l)"],
   intro:
     "Goods and services leaving or entering the UK, and a mechanism designed so that neither the exporter nor the importer is left funding VAT.",
   outcomes: [

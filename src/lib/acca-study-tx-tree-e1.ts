@@ -27,7 +27,7 @@ export const TX_TREE_21: StudyChapter = {
   area: "E",
   title: "Corporation tax: computing taxable total profits",
   minutes: 19,
-  syllabusRefs: ["E1(a)", "E1(b)", "E1(c)", "E2(a)", "E2(b)", "E2(c)"],
+  syllabusRefs: ["E1(a)", "E1(b)", "E1(c)", "E2(a)", "E2(b)", "E2(c)", "E2(d)", "E2(h)", "E2(i)", "E2(j)"],
   intro:
     "One computation gathers a company's income and its gains together. Most of the components are already familiar — the differences from an individual are what the marks are for.",
   outcomes: [
@@ -45,7 +45,7 @@ export const TX_TREE_21: StudyChapter = {
         {
           kind: "formula",
           name: "Taxable total profits",
-          expr: "                                                              £\nTax adjusted TRADING PROFIT                                   X\nPROPERTY business income                                      X\nNON-TRADING LOAN RELATIONSHIP income (interest receivable)     X\nNet CHARGEABLE GAINS                                          X\n                                                          ─────\nTOTAL PROFITS                                                 X\nLess QUALIFYING CHARITABLE DONATIONS                        (X)\n                                                          ─────\nTAXABLE TOTAL PROFITS (TTP)                                   X\n                                                          ─────\n\nDIVIDENDS RECEIVED are NOT included — they are exempt. But they are\nadded to TTP to give AUGMENTED PROFITS, which decides the RATE\n(chapter 22).",
+          expr: "                                                              £\nTax adjusted TRADING PROFIT                                   X\nPROPERTY business income                                      X\nNON-TRADING LOAN RELATIONSHIP income (interest receivable)     X\nNet CHARGEABLE GAINS of the period                             X\n                                                          ─────\nTOTAL PROFITS                                                 X\nLess QUALIFYING CHARITABLE DONATIONS                        (X)\n                                                          ─────\nTAXABLE TOTAL PROFITS (TTP)                                   X\n                                                          ─────\n\nDIVIDENDS RECEIVED are NOT included — they are exempt. But they are\nadded to TTP to give AUGMENTED PROFITS, which decides the RATE\n(chapter 22).",
           note: "There is no personal allowance, no separate savings or dividend column and no nil rate bands: a company has one pot of profits taxed at one rate. That is why a company computation is shorter than an individual's despite covering more sources.",
         },
         {
@@ -190,7 +190,7 @@ export const TX_TREE_22: StudyChapter = {
   area: "E",
   title: "Corporation tax: the liability and marginal relief",
   minutes: 18,
-  syllabusRefs: ["E4(a)", "E1(d)"],
+  syllabusRefs: ["E4(a)"],
   intro:
     "Three rates, one formula and one thing to count: how many companies are associated. That count moves the thresholds and can cost real tax.",
   outcomes: [

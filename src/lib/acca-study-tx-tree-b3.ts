@@ -29,7 +29,7 @@ export const TX_TREE_09: StudyChapter = {
   area: "B",
   title: "Pensions",
   minutes: 18,
-  syllabusRefs: ["B6(a)", "B6(b)", "B6(c)", "B6(d)"],
+  syllabusRefs: ["B7(a)"],
   intro:
     "Two limits do all the work: how much contribution attracts relief, and how much can be paid before a charge arises. They are different limits and they are tested separately.",
   outcomes: [
@@ -187,7 +187,7 @@ export const TX_TREE_10: StudyChapter = {
   area: "B",
   title: "Trading profits: adjustment of profit and the tax year basis",
   minutes: 19,
-  syllabusRefs: ["B2(c)", "B2(d)", "B2(e)", "B2(f)"],
+  syllabusRefs: ["B3(a)", "B3(b)", "B3(c)", "B3(d)"],
   intro:
     "Adjusting the accounts profit is a list to work through. The basis period is not: from 2024/25 profits are taxed on a tax year basis, and the old overlap rules have gone.",
   outcomes: [
@@ -360,7 +360,7 @@ export const TX_TREE_11: StudyChapter = {
   area: "B",
   title: "Capital allowances",
   minutes: 20,
-  syllabusRefs: ["B2(g)", "B2(h)", "B2(i)", "B2(j)"],
+  syllabusRefs: ["B3(e)"],
   intro:
     "The most mechanical chapter in the paper, and the most reliably examined. Nearly every error is a step done in the wrong order rather than a rate misremembered.",
   outcomes: [

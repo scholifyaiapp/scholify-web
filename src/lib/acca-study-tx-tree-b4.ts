@@ -25,7 +25,7 @@ export const TX_TREE_12: StudyChapter = {
   area: "B",
   title: "Partnerships",
   minutes: 16,
-  syllabusRefs: ["B2(g)(i)", "B2(g)(ii)", "B2(g)(iii)", "B2(g)(iv)"],
+  syllabusRefs: ["B3(g)"],
   intro:
     "A partnership is not taxed. Its profit is computed as one figure, allocated to the partners, and each partner is then taxed as though the allocation were their own trading income.",
   outcomes: [
@@ -174,7 +174,7 @@ export const TX_TREE_13: StudyChapter = {
   area: "B",
   title: "Trading losses for individuals",
   minutes: 20,
-  syllabusRefs: ["B2(f)(i)", "B2(f)(ii)", "B2(f)(iii)", "B2(f)(iv)", "B2(f)(v)"],
+  syllabusRefs: ["B3(f)"],
   intro:
     "Four reliefs, each with different years, a different order and a different target. The computation is easy; choosing between them is where the marks are.",
   outcomes: [
@@ -195,7 +195,7 @@ export const TX_TREE_13: StudyChapter = {
           head: ["Relief", "Set against", "Which years", "Order", "Conditions"],
           rows: [
             ["**Carry forward**", "Future **trading profits of the same trade**", "As soon as possible, indefinitely", "Earliest available year, **automatic**", "None. Cannot be restricted to preserve allowances"],
-            ["**Against total income**", "**Total income**", "The **year of the loss** and/or the **previous** year", "Either, neither or both, **in any order**", "**All or nothing** in each year. Cap: higher of £50,000 or 25% of income"],
+            ["**Against total income**", "**Total income**", "The **loss-making** year and/or the one **before** it", "Either, neither or both, **in any order**", "**All or nothing** in each year. Cap: higher of £50,000 or 25% of income"],
             ["**Against chargeable gains**", "**Chargeable gains**", "Same years as the total income claim", "Either or both, in any order", "Only **after** a total income claim for the **same** year, and only the unrelieved balance"],
             ["**Opening year relief**", "**Total income**", "The **three preceding** tax years", "**FIFO** — earliest first", "Only in the **first four** tax years of trade. All or nothing. Cap may apply"],
             ["**Terminal loss relief**", "**Trading profits of the same trade**", "The **three preceding** tax years", "**LIFO** — latest first", "Only on **cessation**. All or nothing"],
@@ -250,7 +250,7 @@ export const TX_TREE_13: StudyChapter = {
         {
           kind: "formula",
           name: "The order for a claim against chargeable gains",
-          expr: "STEP 1  Make a claim against TOTAL INCOME for the year — this is\n        compulsory before any claim against gains for that year.\n\nSTEP 2  Any loss still unrelieved may then be set against the\n        CHARGEABLE GAINS of that same year.\n\n        Amount set against gains  =  the LOWER of:\n           ·  the unrelieved trading loss, and\n           ·  gains for the year LESS capital losses brought forward\n\n        Note: the ANNUAL EXEMPT AMOUNT cannot be preserved — the loss\n        is set against gains BEFORE it, so the £3,000 exemption may be\n        wasted just as the personal allowance may be.\n\nAvailable for the year of the loss and/or the previous year, in either order.",
+          expr: "STEP 1  Make a claim against TOTAL INCOME for the year — this is\n        compulsory before any claim against gains for that year.\n\nSTEP 2  Any loss still unrelieved may then be set against the\n        CHARGEABLE GAINS of that same year.\n\n        Amount set against gains  =  the LOWER of:\n           ·  the unrelieved trading loss, and\n           ·  gains for the year LESS capital losses brought forward\n\n        Note: the ANNUAL EXEMPT AMOUNT cannot be preserved — the loss\n        is set against gains BEFORE it, so the £3,000 exemption may be\n        wasted just as the personal allowance may be.\n\nAvailable for the loss-making year, the preceding year, or both, in either order.",
           note: "The claim against gains is OPTIONAL but the claim against total income for that year is not — you cannot skip straight to gains. And both wastes can happen in the same claim: the personal allowance on the income side and the annual exempt amount on the gains side.",
         },
         {
@@ -268,7 +268,7 @@ export const TX_TREE_13: StudyChapter = {
             "**Cash flow.** A carry-back generates a repayment of tax already paid; a carry forward relieves nothing until profits return.",
             "**Certainty.** Carry forward depends on the same trade making profits in future. If that is doubtful, taking relief now is worth more than a larger relief that may never arrive.",
             "**The cap** may prevent a full claim against total income in one year, forcing a spread whether or not the taxpayer wants one.",
-            "**Time limits.** A claim against total income must be made within **12 months of 31 January following the tax year of the loss** — so by 31 January 2028 for a 2025/26 loss.",
+            "**Time limits.** A claim against total income must be made within **12 months from the 31 January that follows the tax year of the loss** — so by 31 January 2028 for a 2025/26 loss.",
           ],
         },
       ],
@@ -310,7 +310,7 @@ export const TX_TREE_13: StudyChapter = {
   ],
   keyTerms: [
     { term: "Carry forward relief", def: "Automatic relief against future trading profits of the same trade, indefinitely and without restriction." },
-    { term: "Relief against total income", def: "An all-or-nothing claim for the year of the loss and/or the previous year, subject to the reliefs cap." },
+    { term: "Relief against total income", def: "An all-or-nothing claim for the loss-making year, the preceding year, or both, subject to the reliefs cap." },
     { term: "Opening year relief", def: "Carry back three years against total income on a FIFO basis, in the first four tax years of trade." },
     { term: "Terminal loss relief", def: "Carry back three years against trading profits of the same trade on a LIFO basis, on cessation." },
     { term: "Cap on income tax reliefs", def: "The higher of £50,000 and 25% of income, limiting claims against total income." },
@@ -327,7 +327,7 @@ export const TX_TREE_13: StudyChapter = {
     { q: "Why can a claim against total income waste allowances?", a: "Because it is all or nothing: the loss is set against the whole of that year's income, so the personal allowance and nil rate bands for that year go unused." },
     { q: "What is the condition for setting a loss against chargeable gains?", a: "A claim against total income for the same year must have been made first; only the unrelieved balance may go against gains." },
     { q: "Which reliefs are NOT subject to the cap on income tax reliefs?", a: "Carry forward relief and relief against profits of the same trade, including terminal loss relief." },
-    { q: "By when must a claim against total income for a 2025/26 loss be made?", a: "Within 12 months of 31 January following the tax year — so by 31 January 2028." },
+    { q: "By when must a claim against total income for a 2025/26 loss be made?", a: "Within 12 months from the 31 January that follows that tax year — so by 31 January 2028." },
   ],
 }
 
@@ -340,7 +340,7 @@ export const TX_TREE_14: StudyChapter = {
   area: "B",
   title: "National insurance contributions",
   minutes: 16,
-  syllabusRefs: ["B7(a)", "B7(b)", "B7(c)", "B7(d)"],
+  syllabusRefs: ["B6(a)", "B6(b)"],
   intro:
     "Three classes to compute, all on the rate sheet, and all straightforward. The marks are lost by using the wrong class or the wrong income figure, not by mis-multiplying.",
   outcomes: [

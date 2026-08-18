@@ -31,7 +31,7 @@ export const TX_TREE_19: StudyChapter = {
   area: "D",
   title: "Inheritance tax: lifetime transfers",
   minutes: 20,
-  syllabusRefs: ["D1(a)", "D1(b)", "D2(a)", "D2(b)", "D3(a)", "D3(b)"],
+  syllabusRefs: ["D1(a)", "D1(b)", "D1(c)", "D1(d)", "D2(a)", "D3(a)"],
   intro:
     "A lifetime gift can be taxed twice — once when made and again if the donor dies within seven years. Working out which, and at what rate, is most of Area D.",
   outcomes: [
@@ -196,7 +196,7 @@ export const TX_TREE_20: StudyChapter = {
   area: "D",
   title: "Inheritance tax: the death estate and planning",
   minutes: 18,
-  syllabusRefs: ["D2(a)", "D2(b)", "D2(c)", "D2(d)", "D3(b)"],
+  syllabusRefs: ["D2(b)", "D2(c)", "D2(d)", "D3(b)", "D4(a)"],
   intro:
     "Two nil rate bands, both transferable between spouses, and a computation that is straightforward once you know which order they come off in.",
   outcomes: [

@@ -34,7 +34,7 @@ export const TX_TREE_01: StudyChapter = {
   area: "A",
   title: "The UK tax system: purpose, sources and ethics",
   minutes: 16,
-  syllabusRefs: ["A1(a)", "A1(b)", "A2(a)", "A2(b)", "A3(a)", "A4(a)", "A5(a)"],
+  syllabusRefs: ["A1(a)", "A1(b)", "A1(c)", "A2(a)", "A2(b)", "A2(c)", "A2(d)", "A2(e)", "A2(f)", "A2(g)"],
   intro:
     "Ten or so marks of every TX paper come from this area, and almost none of it is computational. It is also where the ethics question lives, which candidates reliably answer badly.",
   outcomes: [
@@ -228,7 +228,7 @@ export const TX_TREE_02: StudyChapter = {
   area: "A",
   title: "Tax administration for individuals: returns, payments and penalties",
   minutes: 18,
-  syllabusRefs: ["A2(c)", "A3(b)", "A3(c)", "A4(b)", "A4(c)", "A4(d)"],
+  syllabusRefs: ["A3(a)", "A4(a)", "A4(b)", "A4(d)", "A5(a)", "A5(b)", "A6(a)"],
   intro:
     "Dates and penalties are pure marks — they are stated facts, they appear in almost every sitting, and they are the cheapest marks in the paper to secure.",
   outcomes: [
@@ -439,7 +439,7 @@ export const TX_TREE_03: StudyChapter = {
   area: "A",
   title: "Tax administration for companies",
   minutes: 16,
-  syllabusRefs: ["A2(d)", "A3(d)", "A4(e)", "A4(f)"],
+  syllabusRefs: ["A3(b)", "A4(c)", "A4(d)"],
   intro:
     "A company's obligations run on its accounting period rather than the tax year, and its large companies pay by instalments that begin before the period has even ended.",
   outcomes: [
@@ -454,6 +454,12 @@ export const TX_TREE_03: StudyChapter = {
       id: "dates-and-instalments",
       heading: "Filing, payment and quarterly instalments",
       blocks: [
+        {
+          kind: "callout",
+          tone: "key",
+          title: "Corporation tax self assessment, and the filing format the syllabus names",
+          md: "A company self assesses in the same sense an individual does — it computes its own liability and HMRC may then check it — but almost every detail differs, and the differences are what earn marks.\n\nThe return is the **CT600**, filed for an **accounting period** rather than a tax year, and it must be delivered **online**. The accounts and the tax computation go with it, and both must be **tagged in iXBRL** — inline eXtensible Business Reporting Language, a format that carries a human-readable document and machine-readable tags in the same file.\n\nThe reason is worth a sentence, because it explains why the requirement exists: tagging lets HMRC read every company's figures automatically and run risk assessments across the whole population, instead of opening returns one at a time to find the ones worth checking. So iXBRL is a **risk-profiling tool**, not merely a filing format — and a company that files unreadable or untagged accounts has not filed properly.\n\nNote what is NOT tagged: the CT600 form itself is a structured return already, so the tagging requirement attaches to the **accounts and the computation** that accompany it.",
+        },
         {
           kind: "table",
           caption: "A company's key dates",
