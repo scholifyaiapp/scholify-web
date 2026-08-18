@@ -85,7 +85,10 @@ export const EXAM_BLUEPRINTS: Record<string, ExamBlueprint> = {
     ],
     providedInExam: null,
     cbeTools: [],
-    tutorNote: "Section B is always consolidation + interpretation — rehearse those two MTQ styles until they're routine.",
+    // The makeup above was corrected to consolidation + accounts preparation during the FA
+    // rebuild, but this note was left saying interpretation — so the card contradicted
+    // itself. Interpretation is examined in Section A.
+    tutorNote: "Section B is always consolidation + accounts preparation — rehearse those two MTQ styles until they're routine. Interpretation is tested in Section A.",
   },
   LW: {
     paper: "LW",
@@ -118,7 +121,11 @@ export const EXAM_BLUEPRINTS: Record<string, ExamBlueprint> = {
       otB("3 OT cases × 5 questions × 2 marks", 30),
       con("C", "3 constructed-response questions (10 + 15 + 15 marks)", 40),
     ],
-    providedInExam: "Tax rates and allowances — provided on screen (Scholify content states rates in the question, FA2024 basis)",
+    // FA2025 is the examinable Finance Act for sittings from 1 June 2026 to 31 March 2027
+    // and for June 2027, confirmed from the TX-UK J26–J27 syllabus itself. This said FA2024
+    // while the TX content had already moved to FA2025 — and ATX's line beside it said
+    // FA2025 — so the two papers contradicted each other on screen.
+    providedInExam: "Tax rates and allowances — provided on screen (Scholify content states rates in the question, Finance Act 2025 basis)",
     cbeTools: ["word", "spreadsheet"],
     tutorNote: "The 15-markers are income tax and corporation tax computations — build them in the spreadsheet, label every line.",
   },

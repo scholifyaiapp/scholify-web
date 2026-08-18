@@ -184,7 +184,30 @@ export function buildCbeMock(paperId: string, form: number): CbeMock {
     : authoredOutsideForm(paperId, form, new Set(rawPool.map((q) => q.id)))
   const pool = [...authoredHere, ...borrowed, ...recallHere]
 
-  const written = shuffle(getWrittenQuestions(paperId), paperSeed(paperId) * 17 + form * 131)
+  /*
+   * Written tasks are BLOCK-ROTATED by form, for exactly the reason the cases are
+   * (see the comment below) — and until 19 Aug 2026 they were not.
+   *
+   * This shuffled the whole bank with a seed that included the form. That gives three
+   * INDEPENDENT draws, not three DISJOINT ones, so the same task could appear in more
+   * than one form of the same paper. It did: 11 repeats across the library, all of them
+   * written tasks — SBL-G-W01 and TXW-04 each appeared in ALL THREE forms of their
+   * paper, so a candidate sitting the full set met them three times.
+   *
+   * It was a selection defect, not a bank-depth one. Every paper's written bank holds
+   * enough for three disjoint sittings, the shallowest by a factor of two: PM, TX and FR
+   * carry 200–300 task marks against the 120 three forms consume.
+   *
+   * The order is now fixed by a PAPER-ONLY seed so the blocks are stable across forms,
+   * and form f starts at block f with the remaining blocks following as fallback. This
+   * matters more than a plain shuffle would suggest, because exactWrittenTasks returns
+   * the FIRST exact combination it finds walking the pool in order — so pool order alone
+   * decides the answer, and a form-independent order was bound to return the same tasks.
+   */
+  const writtenAll = shuffle(getWrittenQuestions(paperId), paperSeed(paperId) * 17)
+  const writtenBlock = Math.ceil(writtenAll.length / MOCK_FORMS)
+  const writtenStart = (((Math.max(1, form) - 1) % MOCK_FORMS) * writtenBlock) % Math.max(1, writtenAll.length)
+  const written = [...writtenAll.slice(writtenStart), ...writtenAll.slice(0, writtenStart)]
   /*
    * Rotate authored cases with the form so repeat sitters see variety once the case
    * bank outgrows one sitting's worth.

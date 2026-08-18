@@ -196,6 +196,47 @@ describe("authored OT cases", () => {
    * output of completeFrSectionB - over twenty-three sittings' worth of a paper that examines
    * three - and nine is exactly three DISJOINT sittings at the real 10-mark unit size.
    */
+  /*
+   * THE WHOLE LIBRARY IS 45 MOCKS: fifteen papers × three forms. This asserts the two
+   * things that make that number mean something — every one composes to exactly its
+   * blueprint, and a paper's three forms share NO item.
+   *
+   * The disjointness half is the one that was broken. Written tasks were shuffled with a
+   * seed containing the form, which produces three independent draws rather than three
+   * disjoint ones, and 11 items appeared in more than one form of their paper — SBL-G-W01
+   * and TXW-04 in all three. Every bank is deep enough for three clean sittings (PM, TX
+   * and FR are the shallowest and still carry more than double what three forms consume),
+   * so nothing about it was a content shortage.
+   *
+   * If a paper's bank is ever trimmed below three sittings' worth this test is what fails,
+   * and the fix is to author more tasks rather than to relax the assertion.
+   */
+  it("builds 45 blueprint-exact mocks and no paper repeats an item across its three forms", () => {
+    let built = 0
+    for (const paper of ALL_PAPERS) {
+      const blueprint = EXAM_BLUEPRINTS[paper.id]
+      if (!blueprint) continue
+      const seen = new Set<string>()
+      for (const form of [1, 2, 3]) {
+        const mock = buildCbeMock(paper.id, form)
+        built++
+        expect(mock.totalMarks, `${paper.id} form ${form} total`).toBe(100)
+        expect(
+          mock.sections.map((section) => section.marks),
+          `${paper.id} form ${form} section marks`,
+        ).toEqual(blueprint.sections.map((section) => section.marks))
+        for (const section of mock.sections) {
+          for (const item of section.items) {
+            const id = item.kind === "task" ? item.task.id : item.q.id
+            expect(seen.has(id), `${paper.id} repeats ${id} in form ${form}`).toBe(false)
+            seen.add(id)
+          }
+        }
+      }
+    }
+    expect(built, "15 papers × 3 forms").toBe(45)
+  })
+
   it("FR has 9 × 10-mark cases and FA has at least 2 × 15-mark MTQ cases", () => {
     const fr = getOtCases("FR")
     expect(fr).toHaveLength(9)

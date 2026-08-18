@@ -1,12 +1,12 @@
 import { useMemo } from "react"
-import { motion } from "motion/react"
-import { Icon, Card, Button, Badge, BackButton, C, SP, R, SHADOW, TYPE } from "@/components/acca/ui"
+import { motion, useReducedMotion } from "motion/react"
+import { Icon, Card, Button, Badge, BackButton, C, SP, R, SHADOW, TYPE, type IconName } from "@/components/acca/ui"
 import { RingGauge, TrendBars, StatCard, MeterBar, bandColor } from "@/components/acca/charts"
 import { buildCbeMock, type CbeMock } from "@/lib/acca-cbe-mock"
 import { MOCK_FORMS, nextMockForm } from "@/lib/acca-mockforms"
 import { mockProgress, passProbability, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
 import { getMockHistory, getPaper, getPaperStats, type MockResult, type AreaStat } from "@/lib/acca"
-import { examBlueprint } from "@/lib/acca-exam-structure"
+import { examBlueprint, type ExamBlueprint } from "@/lib/acca-exam-structure"
 
 /*
  * The Mock Exam Centre — the hub the sectioned CBE runner (CbeMockRunner) opens
@@ -37,6 +37,7 @@ export default function MockCentre({
 }) {
   const paper = getPaper(paperId)
   const bp = examBlueprint(paperId)
+  const reduced = useReducedMotion()
   const history = useMemo(() => getMockHistory(paperId), [paperId]) // most recent first
   const progress = useMemo(() => mockProgress(paperId), [paperId])
   const prob = passProbability(paperId)
@@ -142,6 +143,9 @@ export default function MockCentre({
         </div>
       </Card>
 
+      {/* ── The real exam this rehearses ── */}
+      {bp && <ExamBlueprintCard bp={bp} paperId={paperId} reduced={!!reduced} />}
+
       {/* ── Stats ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: SP.md }}>
         <StatCard index={0} icon="stats" label="Mocks sat" value={progress.attempts} suffix={`/${MOCKS_REQUIRED}`} footnote="required before exam day" />
@@ -190,13 +194,23 @@ export default function MockCentre({
 
       {/* ── Forms ── */}
       <div>
-        <div style={{ ...TYPE.label, color: C.faint, marginBottom: SP.md, display: "flex", alignItems: "center", gap: 7 }}>
+        <div style={{ ...TYPE.label, color: C.faint, marginBottom: 6, display: "flex", alignItems: "center", gap: 7 }}>
           <Icon name="topics" size={13} color={C.brand} strokeWidth={2.4} /> The three mock forms
         </div>
+        {/*
+         * Worth stating, because it is a promise the composer now actually keeps. The three
+         * forms were independently drawn rather than partitioned, so a task could appear in
+         * two of them — one appeared in all three. They are block-partitioned now, and a
+         * test asserts no paper repeats an item across its forms.
+         */}
+        <p style={{ ...TYPE.small, color: C.faint, margin: `0 0 ${SP.md}px`, maxWidth: "62ch", lineHeight: 1.5 }}>
+          Three separate sittings of the same exam shape. No question or task appears in more than one form, so
+          sitting all three is {MOCK_FORMS} genuinely different papers.
+        </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: SP.md }}>
           {forms.map((mock, i) => {
             const form = i + 1
-            return <FormCard key={form} form={form} mock={mock} isNext={form === nextForm} best={bestForForm(form)} attempts={attemptsForForm(form)} index={i} onStart={() => onStart(form)} />
+            return <FormCard key={form} form={form} mock={mock} isNext={form === nextForm} best={bestForForm(form)} attempts={attemptsForForm(form)} index={i} reduced={!!reduced} onStart={() => onStart(form)} />
           })}
         </div>
       </div>
@@ -218,6 +232,147 @@ export default function MockCentre({
   )
 }
 
+/*
+ * THE REAL EXAM PANEL.
+ *
+ * The blueprint carried `providedInExam` and `cbeTools` from the day it was written and
+ * nothing on this screen rendered either of them — they only appeared inside the runner,
+ * which a candidate reaches AFTER committing to a sitting. So the one screen where you
+ * choose a mock never told you what the real paper hands you or which CBE tools it expects
+ * you to work in, and both change how you prepare: a paper with no formulae sheet has to be
+ * revised differently from one that supplies it.
+ *
+ * Every figure here is measured against the OFFICIAL syllabus rather than a mock cover
+ * sheet. That distinction matters: the founder's Kaplan mock papers print "3 hours and 15
+ * minutes" on PM, AA and FM, but the current ACCA syllabus is explicit that PM, TX-UK, FR,
+ * AA and FM are THREE-HOUR exams and only Strategic Professional runs to 3h15. The
+ * blueprint follows ACCA.
+ */
+const TOOL_META: Record<string, { icon: IconName; label: string }> = {
+  word: { icon: "notes", label: "Word processor" },
+  spreadsheet: { icon: "sheet", label: "Spreadsheet" },
+}
+
+function ExamBlueprintCard({ bp, paperId, reduced }: { bp: ExamBlueprint; paperId: string; reduced: boolean }) {
+  const totalMarks = bp.sections.reduce((sum, s) => sum + s.marks, 0)
+  const hours = Math.floor(bp.durationMin / 60)
+  const mins = bp.durationMin % 60
+  const duration = `${hours}h${mins ? ` ${mins}m` : ""}`
+
+  return (
+    <div>
+      <div style={{ ...TYPE.label, color: C.faint, marginBottom: SP.md, display: "flex", alignItems: "center", gap: 7 }}>
+        <Icon name="exam" size={13} color={C.brand} strokeWidth={2.4} /> The real {paperId} exam — what each mock rehearses
+      </div>
+      <Card style={{ display: "flex", flexDirection: "column", gap: SP.lg }}>
+        {/* Headline facts */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: SP.md }}>
+          {[
+            { icon: "time" as IconName, value: duration, label: "on the clock" },
+            { icon: "exam" as IconName, value: String(totalMarks), label: "marks" },
+            { icon: "shield" as IconName, value: `${MOCK_PASS}%`, label: "to pass" },
+            { icon: "topics" as IconName, value: String(bp.sections.length), label: bp.sections.length === 1 ? "section" : "sections" },
+          ].map((f) => (
+            <div key={f.label} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <div style={{ width: 30, height: 30, borderRadius: R.md, display: "grid", placeItems: "center", background: C.brandSoft, flexShrink: 0 }}>
+                <Icon name={f.icon} size={14} color={C.brand} strokeWidth={2.4} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>{f.value}</div>
+                <div style={{ ...TYPE.small, color: C.faint, lineHeight: 1.3 }}>{f.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/*
+         * Proportional weighting bar. A candidate reading "30 / 30 / 40" does not feel the
+         * shape of the paper; seeing Section C take almost half of it does. Marks are the
+         * only input, so the bar cannot drift from the section list beneath it.
+         */}
+        <div style={{ display: "flex", gap: 3, height: 8, borderRadius: 999, overflow: "hidden" }} aria-hidden>
+          {bp.sections.map((s, i) => (
+            <motion.div
+              key={s.id}
+              initial={reduced ? false : { scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.35, delay: 0.05 + i * 0.04, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                flex: s.marks,
+                background: i === 0 ? C.brand : i === 1 ? "rgba(200,0,0,0.55)" : "rgba(200,0,0,0.28)",
+                transformOrigin: "left",
+                borderRadius: 999,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Section-by-section makeup */}
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
+          {bp.sections.map((s, i) => (
+            <motion.div
+              key={s.id}
+              initial={reduced ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.06 + i * 0.04, ease: [0.22, 1, 0.36, 1] }}
+              style={{ display: "flex", alignItems: "flex-start", gap: SP.md, minWidth: 0 }}
+            >
+              <div
+                style={{
+                  width: 24, height: 24, borderRadius: R.sm, flexShrink: 0, display: "grid", placeItems: "center",
+                  background: C.card2, color: C.muted, fontWeight: 800, fontSize: 12,
+                }}
+              >
+                {s.id}
+              </div>
+              <span style={{ ...TYPE.small, color: C.muted, flex: 1, minWidth: 0, lineHeight: 1.5 }}>{s.makeup}</span>
+              <span style={{ ...TYPE.small, fontWeight: 800, color: C.text, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                {s.marks} marks
+              </span>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* What the exam gives you, and what you work in */}
+        {(bp.providedInExam || bp.cbeTools.length > 0) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: SP.sm, paddingTop: SP.md, borderTop: `1px solid ${C.hairline}` }}>
+            {bp.providedInExam && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <Icon name="formula" size={13} color={C.green} strokeWidth={2.4} style={{ marginTop: 2 }} />
+                <span style={{ ...TYPE.small, color: C.muted, lineHeight: 1.5 }}>
+                  <b style={{ color: C.text }}>Provided in the exam:</b> {bp.providedInExam}
+                </span>
+              </div>
+            )}
+            {bp.cbeTools.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ ...TYPE.small, color: C.muted }}>
+                  <b style={{ color: C.text }}>You answer in:</b>
+                </span>
+                {bp.cbeTools.map((tool) => {
+                  const meta = TOOL_META[tool] ?? { icon: "notes" as IconName, label: tool }
+                  return (
+                    <span
+                      key={tool}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px",
+                        borderRadius: 999, background: C.card2, border: `1px solid ${C.hairline}`,
+                        ...TYPE.small, color: C.muted, fontWeight: 600,
+                      }}
+                    >
+                      <Icon name={meta.icon} size={12} color={C.soft} strokeWidth={2.4} /> {meta.label}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
 function FormCard({
   form,
   mock,
@@ -225,6 +380,7 @@ function FormCard({
   best,
   attempts,
   index,
+  reduced,
   onStart,
 }: {
   form: number
@@ -233,14 +389,15 @@ function FormCard({
   best: number | null
   attempts: number
   index: number
+  reduced: boolean
   onStart: () => void
 }) {
   const marks = mock?.totalMarks ?? 100
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={reduced ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.35, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
       style={{
         background: C.card,
         border: `1px solid ${isNext ? C.brandLine : C.border}`,
