@@ -66,9 +66,12 @@ export const DEVELOPING_PAPERS: readonly string[] = [
   // APM followed on 19 Aug 2026: 5 chapters → 40 (APM-01..40) across all SIX
   // official areas, and all four legacy files deleted. Its shim was the worst
   // of them — areas COMPOSED by a take() helper from several legacy chapters
-  // at once — and Area F did not exist at all. Two papers remain.
+  // at once — and Area F did not exist at all.
+  // ATX followed on 19 Aug 2026: 5 chapters → 33 (ATX-01..33), all five legacy
+  // files deleted. Its shim was a different species again — content FILTERED at
+  // load time by a currentOnly() helper, because Finance Act 2025 had made the
+  // FA23 overseas material actively wrong rather than merely thin.
   "AAA",
-  "ATX",
 ] as const
 
 /** True when this paper's course is still short of full length. */

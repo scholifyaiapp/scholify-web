@@ -1,14 +1,76 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
-import { ATX_A } from "@/lib/acca-study-atx-a"
-import { ATX_B } from "@/lib/acca-study-atx-b"
-import { ATX_C } from "@/lib/acca-study-atx-c"
-import { ATX_D } from "@/lib/acca-study-atx-d"
-import { ATX_E } from "@/lib/acca-study-atx-e"
-const sectionsWithoutOldOverseas=ATX_A.sections.filter(s=>s.id!=="overseas")
-const currentOnly=<T>(items:T[])=>items.filter(item=>{const text=JSON.stringify(item).toLowerCase();return !text.includes("remittance basis")&&!text.includes("non-dom")&&!text.includes("domicile")})
-const figSection:StudyChapter["sections"][number]={id:"overseas-fig",heading:"Overseas income and gains — residence, FIG relief and double taxation",blocks:[{kind:"text",md:"For 2025/26, domicile and the remittance basis are no longer the governing income-tax and CGT concepts. A UK-resident individual is generally within UK tax on worldwide income and gains, subject to the new **four-year foreign income and gains (FIG) regime** for a qualifying new resident after at least ten consecutive tax years of non-UK residence."},{kind:"table",caption:"Four-year FIG decision",head:["Question","Consequence"],rows:[["UK resident this year?","Apply the statutory residence test; a split year counts as a UK-resident year for the four-year test."],["At least 10 consecutive prior non-UK-resident tax years?","Required before the qualifying period begins."],["Within first four UK-resident tax years?","Eligible foreign income/gains may be claimed under the regime."],["Claim made?","Specified foreign income/gains obtain relief, but relevant personal allowances and the CGT annual exempt amount are lost."],["Foreign tax suffered?","Consider treaty/unilateral double-tax relief on amounts charged in the UK."]]},{kind:"callout",tone:"warn",title:"Retire the remittance-basis answer",md:"For Finance Act 2025 exams, do not advise using domicile, deemed domicile or the former remittance basis for income tax and CGT. Identify residence, qualification and the consequences of a FIG claim."}]}
-export const ATX_OFFICIAL_A:StudyChapter={...ATX_A,title:"Knowledge and understanding of the UK tax system",intro:"Apply current Finance Act 2025 rules across advanced income tax, NIC, gains, inheritance tax, corporation tax, VAT and stamp taxes, including overseas and trust aspects.",sections:[...sectionsWithoutOldOverseas,figSection,...ATX_B.sections,...ATX_C.sections,...ATX_D.sections],outcomes:[...currentOnly(ATX_A.outcomes),...ATX_B.outcomes,...ATX_C.outcomes,...ATX_D.outcomes,"Apply the four-year FIG regime for qualifying new UK residents"],examTraps:[...currentOnly(ATX_A.examTraps),{trap:"Applying the former overseas-income regime after 5 April 2025.",fix:"Apply residence, the four-year FIG qualification rules and the consequences of a FIG claim."}],keyTerms:[...currentOnly(ATX_A.keyTerms),{term:"Four-year FIG regime",def:"Relief for eligible foreign income and gains of a qualifying new UK resident during the first four UK-resident tax years after at least ten consecutive non-resident years."}],summary:[...currentOnly(ATX_A.summary),"Residence determines the UK charging scope; qualifying new residents may claim four-year FIG relief, subject to its conditions and loss of specified allowances."]}
-export const ATX_OFFICIAL_B:StudyChapter={paper:"ATX",area:"B",title:"The impact and interaction of taxes",minutes:18,intro:"Clients make one decision, not separate decisions for each tax. Evaluate all affected taxpayers, taxes, dates, relief conditions and commercial consequences together.",outcomes:["Identify taxes arising from alternative actions","Evaluate interactions, timing and later events","Compare business and personal consequences","Recommend using total net and commercial effects"],sections:[{id:"interaction",heading:"One decision, multiple tax consequences",blocks:[{kind:"text",md:"Build an **event map**: transaction, parties, assets, consideration, dates and intended future. Then layer income tax/NIC, corporation tax, CGT, IHT, VAT and stamp taxes as relevant. Track whether one relief changes another tax base or merely defers liability."},{kind:"table",caption:"Alternative-course schedule",head:["Column","Content"],rows:[["Taxpayer and tax","Who bears each liability"],["Trigger and date","When liability, filing and payment arise"],["Relief and condition","Eligibility, election and clawback risk"],["Net cash","Tax plus consideration, finance and transaction cost"],["Later event","Death, disposal, extraction, cessation or group exit"],["Commercial effect","Control, liquidity, risk and objectives"]]},{kind:"example",title:"Gift of business shares",scenario:"A client proposes a lifetime gift that may qualify for CGT hold-over relief and IHT business relief.",steps:[{label:"CGT",detail:"Test eligibility, election and transferred base cost."},{label:"IHT",detail:"Test transfer type, business-relief conditions and death within seven years."},{label:"Interact",detail:"Consider how death, continued ownership conditions and future disposal affect total tax."},{label:"Advise",detail:"Compare with alternatives and explain non-tax loss of control and liquidity."}],result:"The recommendation reflects the whole lifecycle, not an isolated immediate saving."}]}],examTraps:[{trap:"Computing one tax in isolation.",fix:"Map every relevant tax, taxpayer, date and interaction."}],keyTerms:[{term:"Tax interaction",def:"The way a transaction or relief changes liabilities, bases, timing or conditions across more than one tax."}],summary:["Map the event and parties first.","Layer all relevant taxes and dates.","Distinguish permanent saving from deferral.","Include later events and commercial effects."]}
-export const ATX_OFFICIAL_C:StudyChapter={...ATX_E,area:"C",title:"Tax planning",intro:"Recommend lawful, standard planning measures only after comparing total tax, timing, conditions, liquidity, risk and the client's commercial objectives.",sections:ATX_E.sections.filter(s=>["medium","extraction"].includes(s.id))}
-export const ATX_OFFICIAL_D:StudyChapter={...ATX_E,area:"D",title:"Professional skills and communication",intro:"Apply ethical judgement, scepticism, analysis, commercial acumen and recipient-appropriate communication when advising clients, dealing with HMRC and working with other professionals.",sections:ATX_E.sections.filter(s=>["spectrum","armoury","ethics","errors"].includes(s.id))}
-export const ATX_OFFICIAL_E:StudyChapter={paper:"ATX",area:"E",title:"Employability and technology skills",minutes:14,intro:"Control complex tax evidence and computations in the digital workspace, then turn them into clear advice, deadlines and actions.",outcomes:["Navigate requirements and exhibits efficiently","Validate taxpayer, period, units and tax basis","Build reviewable multi-tax computations","Present client-ready advice digitally"],sections:[{id:"digital-tax",heading:"Controlled digital tax workflow",blocks:[{kind:"text",md:"Map each requirement to its client, decision and exhibits. Tag every input by **taxpayer, tax year, source, unit and gross/net basis**. Keep assumptions separate from calculations and reconcile alternative courses into a timed summary."},{kind:"table",caption:"Digital tax controls",head:["Control","Output"],rows:[["Evidence index","No taxpayer or period is mixed"],["Separate tax schedules","Reviewable computations and relief claims"],["Deadline register","Elections, returns, payments and owners visible"],["Alternative summary","Comparable net cash by date"],["Client memorandum","Liabilities, conditions, risks and actions in plain language"]]}]}],examTraps:[{trap:"Combining figures from different tax years.",fix:"Label and validate every period and tax basis."},{trap:"Leaving computations uninterpreted.",fix:"Translate them into decisions, deadlines and client action."}],keyTerms:[{term:"Tax evidence index",def:"A controlled map of each input by taxpayer, period, tax, source and measurement basis."}],summary:["Map requirements to evidence.","Validate years and taxpayers.","Keep workings traceable and reconciled.","Communicate conditions, deadlines and actions."]}
+import { ATX_TREE_AREA_A_PART1 } from "@/lib/acca-study-atx-tree-a"
+import { ATX_TREE_AREA_A_PART2 } from "@/lib/acca-study-atx-tree-a2"
+import { ATX_TREE_AREA_A_PART3 } from "@/lib/acca-study-atx-tree-a3"
+import { ATX_TREE_AREA_A_PART4 } from "@/lib/acca-study-atx-tree-a4"
+import { ATX_TREE_AREA_A_PART5 } from "@/lib/acca-study-atx-tree-a5"
+import { ATX_TREE_AREA_B } from "@/lib/acca-study-atx-tree-b"
+import { ATX_TREE_AREA_C } from "@/lib/acca-study-atx-tree-c"
+import { ATX_TREE_AREA_C2, ATX_TREE_AREA_D, ATX_TREE_AREA_E } from "@/lib/acca-study-atx-tree-d"
+
+/*
+ * THE SHIM IS GONE — and ATX's was a different species from the others.
+ *
+ * Until August 2026 this file did not merely relabel five legacy chapters, it
+ * FILTERED them at load time. A `currentOnly()` helper stripped out any item
+ * whose JSON mentioned "remittance basis", "non-dom" or "domicile", the legacy
+ * overseas section was dropped by id, and a hand-written replacement section
+ * covering the four-year foreign income and gains regime was spliced in.
+ *
+ * That was a sound emergency response to a real problem — Finance Act 2025
+ * abolished domicile, deemed domicile and the remittance basis for income tax
+ * and capital gains tax, which made the existing content actively wrong rather
+ * than merely thin. But it left the paper's overseas teaching as a filter over
+ * stale content, and everything else in the paper at five chapters and ~11,300
+ * words against 23,500 to 42,000 for the other finished Strategic Professional
+ * papers.
+ *
+ * Every area is now an authored tree written for Finance Act 2025, and all five
+ * legacy files are deleted.
+ *
+ *   Area A  ATX-01..20  acca-study-atx-tree-a.ts … -a5.ts
+ *   Area B  ATX-21..26  acca-study-atx-tree-b.ts
+ *   Area C  ATX-27..31  acca-study-atx-tree-c.ts, -d.ts
+ *   Area D  ATX-32      acca-study-atx-tree-d.ts
+ *   Area E  ATX-33      acca-study-atx-tree-d.ts
+ *
+ * TWO RULES GOVERN ANY FUTURE EDIT, both set out at length in the header of
+ * acca-study-atx-tree-a.ts:
+ *
+ *  1. **Finance Act 2025 is the examinable law** for June 2026 to June 2027.
+ *     The founder's Kaplan ATX books are FA23 and are simply wrong on the
+ *     overseas regime. Do not reintroduce domicile or the remittance basis.
+ *  2. **Never bake a rate, band, threshold or allowance into the teaching.**
+ *     The exam supplies them and they change every Finance Act. Teach the ORDER
+ *     of a computation and the CONDITIONS of a relief; where a worked example
+ *     needs a figure, mark it as an illustrative assumption.
+ *
+ * Do not reintroduce `currentOnly()` or any helper that filters content at load
+ * time — if content is out of date, rewrite it.
+ */
+
+/* Area A is a twenty-chapter authored tree across five modules, split for file
+   size only. It covers the six syllabus subsections: income tax including the
+   FIG regime (ATX-02..06), capital gains tax (ATX-07..10), inheritance tax
+   (ATX-11..14), corporation tax (ATX-15..18), stamp taxes (ATX-19) and VAT with
+   administration (ATX-20), plus an orientation chapter. */
+export const ATX_OFFICIAL_A: StudyChapter[] = [
+  ...ATX_TREE_AREA_A_PART1,
+  ...ATX_TREE_AREA_A_PART2,
+  ...ATX_TREE_AREA_A_PART3,
+  ...ATX_TREE_AREA_A_PART4,
+  ...ATX_TREE_AREA_A_PART5,
+]
+
+/* Areas B and C contain no new taxes at all. They examine combining the Area A
+   techniques, choosing between routes, and advising on them — which is what
+   separates ATX from TX. */
+export const ATX_OFFICIAL_B: StudyChapter[] = ATX_TREE_AREA_B
+
+/* Area C ends with ATX-31, which carries the FIVE ETHICS MARKS Section A
+   awards in every sitting — separately identified in the syllabus's own marks
+   breakdown of 35 technical, 5 ethics and 10 professional skills. */
+export const ATX_OFFICIAL_C: StudyChapter[] = [...ATX_TREE_AREA_C, ...ATX_TREE_AREA_C2]
+
+export const ATX_OFFICIAL_D: StudyChapter[] = ATX_TREE_AREA_D
+export const ATX_OFFICIAL_E: StudyChapter[] = ATX_TREE_AREA_E
