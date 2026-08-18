@@ -15,7 +15,7 @@ describe("AFM September 2026–June 2027 official structure", () => {
    */
   const CHAPTER_FLOOR: Record<string, number> = {
     A: 9, // trees a + a2 — AFM-01..09, one chapter per syllabus subsection group (A1, A2×3, A3×2, A4, A5, A6)
-    B: 5, // tree b1 — B1 authored as AFM-10..13, plus the legacy chapter still spliced in last
+    B: 7, // trees b1 + b2 — B1 as AFM-10..13, B2 as AFM-14..15, plus the legacy chapter still spliced in last
     C: 1, // legacy — acquisitions and mergers
     D: 1, // legacy — corporate reconstruction and reorganisation
     E: 1, // legacy — treasury and advanced risk management

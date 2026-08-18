@@ -42,8 +42,14 @@ const ALL_PAPERS = paperLevels().flatMap((level) => level.papers.map((p) => p.id
  */
 // SBR passed through the window on 17 Aug 2026 — entered when areas A–C
 // crossed 20 chapters while D–F were still shim-served, and came off the same
-// day its last area landed. The list is kept, empty, for the next SP rebuild.
-const MID_REBUILD: readonly string[] = []
+// day its last area landed.
+//
+// AFM entered the window on 18 Aug 2026, on exactly the same pattern: Area A
+// (9 chapters) plus Area B subsections B1 and B2 (6 more) take it past twenty
+// while Areas C, D and E are still served by one relabelled legacy chapter
+// each. Remove the entry — and the paper's entry in DEVELOPING_PAPERS — on the
+// commit that lands Area E.
+const MID_REBUILD: readonly string[] = ["AFM"]
 
 describe("the developing-paper flag tracks reality", () => {
   it("covers every paper in the qualification, once", () => {
