@@ -47,9 +47,14 @@ const ALL_PAPERS = paperLevels().flatMap((level) => level.papers.map((p) => p.id
 // AFM entered the window on 18 Aug 2026 on exactly the same pattern — Area A
 // plus Area B subsections B1 and B2 took it past twenty chapters while Areas
 // C, D and E were still shim-served — and came off it the same day, when Area
-// E landed and the last legacy file was deleted. The list is kept, empty, for
-// the next Strategic Professional rebuild.
-const MID_REBUILD: readonly string[] = []
+// E landed and the last legacy file was deleted.
+//
+// APM entered on 19 Aug 2026, again the same shape: Areas A and B authored
+// (APM-01..27) take it well past twenty while Areas C, D and E are still the
+// thin one-chapter-per-area content and Area F does not exist at all. Remove
+// the entry — and the paper's entry in DEVELOPING_PAPERS — on the commit that
+// lands Area F.
+const MID_REBUILD: readonly string[] = ["APM"]
 
 describe("the developing-paper flag tracks reality", () => {
   it("covers every paper in the qualification, once", () => {

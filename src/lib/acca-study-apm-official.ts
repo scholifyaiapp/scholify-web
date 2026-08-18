@@ -1,10 +1,9 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { APM_TREE_AREA_A_PART1 } from "@/lib/acca-study-apm-tree-a"
 import { APM_TREE_AREA_A_PART2 } from "@/lib/acca-study-apm-tree-a2"
-import { APM_A } from "@/lib/acca-study-apm-a"
+import { APM_TREE_AREA_B_PART1 } from "@/lib/acca-study-apm-tree-b"
+import { APM_TREE_AREA_B_PART2 } from "@/lib/acca-study-apm-tree-b2"
 import { APM_B } from "@/lib/acca-study-apm-b"
-import { APM_C } from "@/lib/acca-study-apm-c"
-import { APM_D } from "@/lib/acca-study-apm-d"
 
 /*
  * APM's rebuild is IN PROGRESS — and its shim was the worst in the library.
@@ -25,7 +24,7 @@ import { APM_D } from "@/lib/acca-study-apm-d"
  * part of this rebuild.
  *
  *   Area A  DONE — APM-01..14, acca-study-apm-tree-a.ts + -a2.ts
- *   Area B  legacy composite (performance optimisation)
+ *   Area B  DONE — APM-15..27, acca-study-apm-tree-b.ts + -b2.ts
  *   Area C  authored — performance reporting (below)
  *   Area D  authored — data science and technology (below)
  *   Area E  authored — professional skills (below)
@@ -39,8 +38,23 @@ import { APM_D } from "@/lib/acca-study-apm-d"
    size only. It replaces a composite assembled from two legacy chapters that
    between them left A5 (sustainability) with no coverage at all. */
 export const APM_OFFICIAL_A: StudyChapter[] = [...APM_TREE_AREA_A_PART1, ...APM_TREE_AREA_A_PART2]
+/* Area B is a thirteen-chapter authored tree in two modules, split for file
+   size only. It replaces a composite that drew sections from all four legacy
+   chapters at once — APM_A, APM_B, APM_C and the whole of APM_D — and it is
+   the largest area in the paper, with four subsections and twenty-four
+   learning outcomes. With Area A it supplies the 50-mark Section A case study
+   every sitting.
+
+     B1  budgetary planning and control        APM-15..17
+     B2  performance and reward                APM-18..19
+     B3  improvement models and techniques     APM-20..24
+     B4  optimisation in specific contexts     APM-25..27 */
+export const APM_OFFICIAL_B: StudyChapter[] = [...APM_TREE_AREA_B_PART1, ...APM_TREE_AREA_B_PART2]
+
+/* The last surviving use of `take()`. Area D still lifts the blocks out of one
+   legacy section (APM_B's "it-information"); this and the APM_B import go when
+   Area D is authored. */
 const take=(base:StudyChapter,ids:string[])=>base.sections.filter(s=>ids.includes(s.id))
-export const APM_OFFICIAL_B: StudyChapter={...APM_B,title:"Performance optimisation",intro:"Use planning, control, improvement, reward and evaluation techniques to improve performance without creating dysfunctional behaviour or destroying long-term value.",sections:[...take(APM_A,["strategic-budgeting","forecasting-models","benchmarking"]),...take(APM_B,["systems-design","cost-toolkit","throughput-tpar","transfer-pricing","behavioural"]),...take(APM_C,["not-for-profit"]),...APM_D.sections]}
 
 export const APM_OFFICIAL_C: StudyChapter={paper:"APM",area:"C",title:"Performance reporting",minutes:17,intro:"A performance report succeeds only when a defined user can see what matters, understand why it matters and act. Evaluate the report itself—not merely whether the organisation performed well.",outcomes:["Evaluate performance reports against user and strategic needs","Control information overload and KPI comparability","Assess data visualisation without distortion","Write useful narrative commentary and recommendations"],sections:[{id:"report-design",heading:"Decision-useful performance reporting",blocks:[{kind:"text",md:"Start with the **user, decision and strategic objectives**. A report should select material KPIs, show targets and trends, highlight exceptions and connect outcomes to drivers and accountable action. Completeness does not mean including every available measure."},{kind:"table",caption:"Report-quality test",head:["Test","Question"],rows:[["Relevance","Does it address the user's objectives and decisions?"],["Balance","Are financial/non-financial and leading/lagging signals represented?"],["Comparability","Are definitions, scope, periods and targets consistent?"],["Clarity","Are hierarchy, exceptions, units and visuals immediately intelligible?"],["Actionability","Are causes, owners, responses and uncertainties explained?"]]},{kind:"callout",tone:"warn",title:"Evaluate the report, not only performance",md:"If the task asks whether a dashboard is fit for purpose, rising profit is evidence inside the report—not proof that its design is good."}]},{id:"visual-commentary",heading:"Visualisation and narrative insight",blocks:[{kind:"text",md:"Choose the visual for the relationship: lines for time, bars for category comparisons and scatterplots for association. Use honest axes, readable labels and consistent colour meaning. Narrative should explain significant exceptions, causes, limitations and actions rather than restate the chart."},{kind:"example",title:"A broken trend",scenario:"Customer retention appears to rise from 78% to 86%, but the definition changed from all customers to subscribers active for six months.",steps:[{label:"Challenge",detail:"The series is not comparable across the definition change."},{label:"Repair",detail:"Restate prior periods on the new basis where possible or show a visible break."},{label:"Explain",detail:"Quantify the definition effect and separate it from operational movement."},{label:"Act",detail:"Assign one governed KPI definition and owner."}],result:"Management receives a defensible trend rather than a visually persuasive fiction."}]}],examTraps:[{trap:"Evaluating company results when asked to evaluate the report.",fix:"Test relevance, balance, comparability, clarity and actionability."},{trap:"Treating more measures as better reporting.",fix:"Prioritise strategic and material insight and manage overload."}],keyTerms:[{term:"Information overload",def:"Excess volume or detail that obscures material issues and reduces decision usefulness."},{term:"Narrative commentary",def:"Context explaining significant results, causes, uncertainty and intended response."}],summary:["Design from user, strategy and decision.","Keep KPI definitions comparable and governed.","Use visuals honestly.","Turn exceptions into explanation and action."]}
 
