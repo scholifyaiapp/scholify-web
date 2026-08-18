@@ -13,6 +13,7 @@ import {
 } from "@/lib/acca"
 import { getCurrentPaper } from "@/lib/acca-qualification"
 import { usePaperContent } from "@/hooks/usePaperContent"
+import { readDiagnosticSitting, saveDiagnosticSitting, clearDiagnosticSitting, diagnosticSittingDisposition, type DiagnosticSitting } from "@/lib/acca-diagnostic-sitting"
 import { PaperContentSkeleton, PaperContentError } from "@/components/acca/PaperContentGate"
 import {
   buildDiagnostic,
@@ -195,22 +196,63 @@ export default function AccaDiagnostic() {
   const learnerRoute = getLearnerBaseline()?.route
   const [showTrialPaywall, setShowTrialPaywall] = useState(false)
 
-  const [phase, setPhase] = useState<Phase>("intro")
+  /*
+   * A saved sitting means the learner left mid-assessment — closed the tab,
+   * crashed, walked away with the clock running. Read it once. Rebuilding from
+   * the stored SEED reproduces the identical questions in the identical order
+   * (buildDiagnostic is seed-deterministic; withShuffledOptions seeds from each
+   * question id), so index-keyed responses land back on the right questions.
+   * An EXPIRED sitting with real answers also restores into "assessing": the
+   * deadline timeout below then fires immediately and grades what was answered,
+   * honest about coverage — the page's own end-of-clock behaviour. An expired
+   * sitting with nothing answered is discarded rather than scored as a 0%
+   * baseline the learner never sat.
+   */
+  const [restored] = useState<DiagnosticSitting | null>(() => {
+    const saved = readDiagnosticSitting(defaultPaper)
+    if (!saved) return null
+    if (diagnosticSittingDisposition(saved) === "discard") {
+      clearDiagnosticSitting(defaultPaper)
+      return null
+    }
+    return saved
+  })
+
+  const [phase, setPhase] = useState<Phase>(restored ? "assessing" : "intro")
   const [paperId, setPaperId] = useState(defaultPaper)
   const content = usePaperContent(paperId)
-  const [questions, setQuestions] = useState<AccaQuestion[]>([])
-  const [idx, setIdx] = useState(0)
+  const seedRef = useRef<number>(restored?.seed ?? 0)
+  const [questions, setQuestions] = useState<AccaQuestion[]>(() =>
+    restored ? buildDiagnostic(defaultPaper, restored.seed).map((q) => withShuffledOptions(q)) : [],
+  )
+  const [idx, setIdx] = useState(restored ? Math.min(restored.idx, Math.max(0, questions.length - 1)) : 0)
+  /*
+   * Cold-load restore: on a fresh page load the paper's content chunk has not
+   * landed when the initializers above run, so buildDiagnostic returned an
+   * empty list. The page's !content.ready gate shows a loader in the meantime;
+   * the moment the chunk lands, rebuild the form from the same seed and clamp
+   * the cursor. On a warm navigation (content already loaded) the initializer
+   * built the questions and this effect never fires.
+   */
+  useEffect(() => {
+    if (!restored || !content.ready || questions.length > 0) return
+    const qs = buildDiagnostic(restored.paperId, restored.seed).map((q) => withShuffledOptions(q))
+    if (qs.length === 0) return
+    setQuestions(qs)
+    setIdx(Math.min(restored.idx, qs.length - 1))
+  }, [restored, content.ready, questions.length])
   // Exam-style: answers live per index so the learner can jump around and change
   // them; grading happens once, at Finish (or when the clock hits zero).
-  const [responses, setResponses] = useState<Record<number, DiagResponse>>({})
-  const [flags, setFlags] = useState<Record<number, boolean>>({})
+  const [responses, setResponses] = useState<Record<number, DiagResponse>>(restored ? restored.responses : {})
+  const [flags, setFlags] = useState<Record<number, boolean>>(restored ? restored.flags : {})
   const answersRef = useRef<AnsweredDiagnostic[]>([])
   const [result, setResult] = useState<DiagnosticResult | null>(null)
   const [prior, setPrior] = useState<DiagnosticResult | null>(() => getLatestDiagnostic(defaultPaper))
   // Fixed 40-minute countdown, held as a wall-clock DEADLINE rather than a
   // ticking count. Manual submission requires all answers; at zero, unanswered
-  // items count as incorrect.
-  const [deadline, setDeadline] = useState<number | null>(null)
+  // items count as incorrect. A restored sitting keeps its original deadline —
+  // closing the tab never paused the clock.
+  const [deadline, setDeadline] = useState<number | null>(restored?.deadline ?? null)
   // Lets the expiry timeout call the latest handler without a stale closure.
   const endAssessingRef = useRef<() => void>(() => {})
 
@@ -223,6 +265,17 @@ export default function AccaDiagnostic() {
     const t = window.setTimeout(() => endAssessingRef.current(), Math.max(0, deadline - Date.now()))
     return () => window.clearTimeout(t)
   }, [phase, deadline])
+
+  /*
+   * PERSIST THE SITTING as it progresses — every answer, flag and cursor move
+   * while the assessment is live — so a closed tab or crash costs nothing. The
+   * slot is cleared the moment the result is finalized, so a finished
+   * diagnostic can never resurrect.
+   */
+  useEffect(() => {
+    if (phase !== "assessing" || deadline == null || seedRef.current === 0) return
+    saveDiagnosticSitting({ paperId, seed: seedRef.current, deadline, idx, responses, flags, savedAt: Date.now() })
+  }, [phase, deadline, paperId, idx, responses, flags])
 
   const paper = getPaper(paperId)
 
@@ -247,8 +300,11 @@ export default function AccaDiagnostic() {
   }, [paperId, phase])
 
   function start() {
-    const qs = buildDiagnostic(paperId, Date.now(), assessmentMode === "gaps" ? "gaps" : "full")
+    // The seed is CAPTURED so the persisted sitting can rebuild this exact form.
+    const seed = Date.now()
+    const qs = buildDiagnostic(paperId, seed, assessmentMode === "gaps" ? "gaps" : "full")
     if (qs.length === 0) return
+    seedRef.current = seed
     answersRef.current = []
     setResponses({})
     setFlags({})
@@ -310,6 +366,8 @@ export default function AccaDiagnostic() {
 
   // Score, persist, track — the one place the result is finalized.
   const finalizeDiagnostic = () => {
+    // The sitting is done — its resume slot must die with it.
+    clearDiagnosticSitting(paperId)
     const scored = scoreDiagnostic(paperId, answersRef.current)
     setResult(scored)
     trackEvent("diagnostic_completed", { paper: paperId, passProbability: scored.passProbability, estimatedScore: scored.estimatedScore, answered: scored.questionsAnswered, fromOnboarding: fromWelcome, learnerRoute, assessmentMode })

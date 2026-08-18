@@ -283,3 +283,142 @@ describe("the student who closes the tab mid-mock", () => {
     expect(localStorage.getItem("scholify-acca-mock-sitting:MA:1")).toBeNull()
   })
 })
+
+/* ── Batch 2: more lives the loop has to absorb ─────────────────── */
+
+import { buildDiagnostic, scoreDiagnostic, saveDiagnosticLocal, getLatestDiagnostic, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
+import { buildAdaptiveSession, getQuestions } from "@/lib/acca"
+import { generateStudyPlan, currentPhase, todayMission } from "@/lib/acca-plan"
+import { buildTodayPlan } from "@/lib/acca-today"
+import { mockProgress } from "@/lib/acca-loop"
+import {
+  saveDiagnosticSitting, readDiagnosticSitting, clearDiagnosticSitting,
+  diagnosticSittingDisposition, diagnosticSittingHasWork, type DiagnosticSitting,
+} from "@/lib/acca-diagnostic-sitting"
+
+describe("the student who closes the tab mid-diagnostic", () => {
+  const sitting = (over: Partial<DiagnosticSitting> = {}): DiagnosticSitting => ({
+    paperId: "MA",
+    seed: 424242,
+    deadline: Date.now() + 20 * 60_000,
+    idx: 11,
+    responses: { 0: 2, 3: "1,250", 5: [0, 2] },
+    flags: { 7: true },
+    savedAt: Date.now(),
+    ...over,
+  })
+
+  it("the same seed rebuilds the identical form — what makes resume sound at all", () => {
+    const a = buildDiagnostic("MA", 424242).map((q) => q.id)
+    const b = buildDiagnostic("MA", 424242).map((q) => q.id)
+    expect(a.length).toBeGreaterThan(0)
+    expect(b).toEqual(a) // identical questions, identical order
+    const c = buildDiagnostic("MA", 424243).map((q) => q.id)
+    expect(c).not.toEqual(a) // and the seed genuinely varies the form
+  })
+
+  it("a live sitting round-trips with every answer type intact", () => {
+    saveDiagnosticSitting(sitting())
+    const back = readDiagnosticSitting("MA")
+    expect(back).not.toBeNull()
+    expect(back!.idx).toBe(11)
+    expect(back!.responses[0]).toBe(2) // mcq choice
+    expect(back!.responses[3]).toBe("1,250") // numeric entry, as typed
+    expect(back!.responses[5]).toEqual([0, 2]) // multi-select
+    expect(diagnosticSittingDisposition(back!)).toBe("resume")
+  })
+
+  it("expired with real answers → graded honestly; expired untouched → discarded", () => {
+    expect(diagnosticSittingDisposition(sitting({ deadline: Date.now() - 1000 }))).toBe("expire")
+    const untouched = sitting({ deadline: Date.now() - 1000, responses: {} })
+    expect(diagnosticSittingHasWork(untouched)).toBe(false)
+    expect(diagnosticSittingDisposition(untouched)).toBe("discard")
+    // Blank strings and empty selections are not answers.
+    const blanks = sitting({ deadline: Date.now() - 1000, responses: { 0: "  ", 1: [] as number[] } })
+    expect(diagnosticSittingHasWork(blanks)).toBe(false)
+  })
+
+  it("corrupt or foreign data degrades to a fresh start", () => {
+    localStorage.setItem("scholify-acca-diagnostic-sitting:MA", "][")
+    expect(readDiagnosticSitting("MA")).toBeNull()
+    localStorage.setItem("scholify-acca-diagnostic-sitting:MA", JSON.stringify({ paperId: "FM", seed: 1 }))
+    expect(readDiagnosticSitting("MA")).toBeNull()
+    saveDiagnosticSitting(sitting())
+    clearDiagnosticSitting("MA")
+    expect(readDiagnosticSitting("MA")).toBeNull()
+  })
+})
+
+describe("the heavy user who exhausts the bank", () => {
+  it("answering every question in the paper never leaves a session empty", () => {
+    const all = getQuestions("MA")
+    for (const q of all) recordAnswer("MA", q, true) // seen absolutely everything
+    const session = buildSession("MA", 10, undefined, 5)
+    expect(session.length).toBeGreaterThan(0) // backfills from seen material
+    const adaptive = buildAdaptiveSession("MA", 10)
+    expect(adaptive.length).toBeGreaterThan(0)
+    expect(new Set(adaptive.map((q) => q.id)).size).toBe(adaptive.length)
+    const diag = buildDiagnostic("MA", 99)
+    expect(diag.length).toBeGreaterThan(0)
+  })
+})
+
+describe("the student whose exam is tomorrow", () => {
+  it("a one-day runway still produces a plan, a phase and a mission — no crash, no nonsense", () => {
+    setPlan("MA", { examDate: ymd(daysAhead(1)), dailyMinutes: 45, daysPerWeek: 7, studyDays: [0, 1, 2, 3, 4, 5, 6], dailyGoal: 12, targetProb: 65 })
+    const sp = generateStudyPlan("MA")
+    expect(sp.phases.length).toBeGreaterThan(0)
+    expect(currentPhase("MA").key).toBeTruthy()
+    expect(todayMission("MA").title).toBeTruthy()
+    expect(buildTodayPlan("MA").length).toBeGreaterThan(0)
+    expect(daysUntilExam("MA")).toBe(1)
+  })
+
+  it("an exam date of TODAY still holds together", () => {
+    setPlan("MA", { examDate: ymd(new Date()) })
+    expect(daysUntilExam("MA")).toBe(0)
+    expect(buildTodayPlan("MA").length).toBeGreaterThan(0)
+    expect(examDayDue("MA")).toBe(true) // the "how did it go?" flow is live on the day
+  })
+})
+
+describe("the student who keeps failing mocks", () => {
+  it("three sittings with the LATEST a fail is not exam-ready — the rehab loop holds the gate", () => {
+    recordMock("MA", 62, 100, 1)
+    recordMock("MA", 55, 100, 2)
+    recordMock("MA", 41, 100, 3) // slipped on the last one
+    const prog = mockProgress("MA")
+    expect(prog.attempts).toBe(3)
+    expect(prog.passed).toBe(2)
+    expect(prog.latestPassed).toBe(false)
+    expect(prog.examReady).toBe(false) // required count met, but the LATEST must pass
+    // A fresh pass reopens the door.
+    recordMock("MA", 57, 100, 1)
+    expect(mockProgress("MA").examReady).toBe(true)
+  })
+})
+
+describe("the student running two papers in parallel", () => {
+  it("today plans, shields and streaks are fully independent per paper", () => {
+    setPlan("MA", { examDate: ymd(daysAhead(40)), dailyMinutes: 30, daysPerWeek: 5, studyDays: [1, 2, 3, 4, 5], dailyGoal: 10, targetProb: 65 })
+    setPlan("FM", { examDate: ymd(daysAhead(80)), dailyMinutes: 60, daysPerWeek: 3, studyDays: [1, 3, 5], dailyGoal: 15, targetProb: 75 })
+    expect(buildTodayPlan("MA").length).toBeGreaterThan(0)
+    expect(buildTodayPlan("FM").length).toBeGreaterThan(0)
+    recordDayActive("MA")
+    expect(shieldState("MA").activeToday).toBe(true)
+    expect(shieldState("FM").activeToday).toBe(false) // studying MA does not tick FM's streak
+  })
+})
+
+describe("the student who retakes the diagnostic", () => {
+  it("the newest result replaces the old one as the baseline", () => {
+    const qs = buildDiagnostic("MA", 5)
+    const weak: AnsweredDiagnostic[] = qs.map((q, i) => ({ q, correct: i % 3 === 0 }))
+    saveDiagnosticLocal(scoreDiagnostic("MA", weak))
+    const first = getLatestDiagnostic("MA")!
+    const strong: AnsweredDiagnostic[] = qs.map(() => ({ q: qs[0], correct: true })).map((_, i) => ({ q: qs[i], correct: true }))
+    saveDiagnosticLocal(scoreDiagnostic("MA", strong))
+    const second = getLatestDiagnostic("MA")!
+    expect(second.passProbability).toBeGreaterThan(first.passProbability) // improvement shows
+  })
+})

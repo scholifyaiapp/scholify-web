@@ -77,3 +77,40 @@ describe("public pages render without crashing", () => {
     render(<Page><NotFound /></Page>)
   })
 })
+
+/*
+ * THE INTERRUPTED DIAGNOSTIC. The assessment now survives leaving the app
+ * (acca-diagnostic-sitting.ts); these drive the PAGE through the two mount
+ * paths that matter — a live sitting reopens inside the assessment, and an
+ * expired-empty one is discarded back to the intro.
+ */
+import AccaDiagnostic from "@/pages/AccaDiagnostic"
+import { saveDiagnosticSitting, readDiagnosticSitting } from "@/lib/acca-diagnostic-sitting"
+import { setStudyingPapers } from "@/lib/acca-qualification"
+
+describe("diagnostic resumes after a closed tab", () => {
+  it("a live saved sitting reopens INSIDE the assessment, not at the intro", () => {
+    setStudyingPapers(["MA"])
+    saveDiagnosticSitting({
+      paperId: "MA", seed: 424242, deadline: Date.now() + 20 * 60_000, idx: 2,
+      responses: { 0: 1 }, flags: {}, savedAt: Date.now(),
+    })
+    const { container } = render(<Page><AccaDiagnostic /></Page>)
+    // POSITIVE assertion on the assessing view: the "Question 3 / N" counter
+    // (idx 2 restored, 1-based display) exists only inside the assessment.
+    expect(container.textContent).toContain("Question 3 /")
+    // And the intro's CTA is gone.
+    expect(container.textContent).not.toContain("Start the gap check")
+  })
+
+  it("an expired sitting with nothing answered is discarded — fresh intro, slot cleaned", () => {
+    setStudyingPapers(["MA"])
+    saveDiagnosticSitting({
+      paperId: "MA", seed: 424242, deadline: Date.now() - 60_000, idx: 0,
+      responses: {}, flags: {}, savedAt: Date.now() - 40 * 60_000,
+    })
+    const { container } = render(<Page><AccaDiagnostic /></Page>)
+    expect(readDiagnosticSitting("MA")).toBeNull() // discarded on mount
+    expect(container.textContent).toContain("Start the gap check") // back at the intro
+  })
+})
