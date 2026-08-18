@@ -62,8 +62,11 @@ export const DEVELOPING_PAPERS: readonly string[] = [
   // AFM followed on 18 Aug 2026: 7 chapters → 42 (AFM-01..42) across all five
   // technical areas, ~12,000 words → ~44,000, and all five legacy files
   // deleted. Its shim was a straight 1:1 relabel rather than a subset() re-cut,
-  // so the defect was depth alone. Three Strategic Professional papers remain.
-  "APM",
+  // so the defect was depth alone.
+  // APM followed on 19 Aug 2026: 5 chapters → 40 (APM-01..40) across all SIX
+  // official areas, and all four legacy files deleted. Its shim was the worst
+  // of them — areas COMPOSED by a take() helper from several legacy chapters
+  // at once — and Area F did not exist at all. Two papers remain.
   "AAA",
   "ATX",
 ] as const

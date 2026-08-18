@@ -10,23 +10,27 @@ describe("APM September 2026–June 2027 restructured syllabus",()=>{
   * and is being authored as part of the rebuild; every other Strategic
   * Professional paper carries its equivalent. `areas` covers what the question
   * bank is mapped to; `chapterAreas` covers what the reading tree must deliver,
-  * and gains "F" in the commit that authors it.
+  * and gained "F" in the commit that authored it.
+  *
+  * Both lists now include F. The question bank picked it up automatically:
+  * APM's questions are partly derived from the chapter tree, so authoring the
+  * Area F chapter produced Area F questions as a side effect.
   */
- const areas=["A","B","C","D","E"]
- const chapterAreas=["A","B","C","D","E"]
+ const areas=["A","B","C","D","E","F"]
+ const chapterAreas=["A","B","C","D","E","F"]
 
  /*
-  * The authored-tree ratchet. APM's rebuild replaces one area at a time, so
-  * this records what has landed and forbids regression — raise an area's floor
-  * in the commit that authors it. Areas still on 1 are the legacy composites
-  * that acca-study-apm-official.ts assembles with `take()`.
+  * The authored-tree ratchet, now at its finished state: every area is an
+  * authored tree and all four legacy files are deleted. Raise a floor if an
+  * area grows; never lower one.
   */
  const CHAPTER_FLOOR: Record<string, number> = {
-  A: 14, // trees a + a2 — APM-01..14, one chapter per syllabus subsection group (A1 ×7, A2 ×3, A3 ×2, A4, A5)
-  B: 1,  // legacy composite — performance optimisation
-  C: 1,  // authored — performance reporting
-  D: 1,  // authored — data science and technology
-  E: 1,  // authored — professional skills
+  A: 14, // trees a + a2 — APM-01..14 (A1 ×7, A2 ×3, A3 ×2, A4, A5)
+  B: 13, // trees b + b2 — APM-15..27 (B1 ×3, B2 ×2, B3 ×5, B4 ×3)
+  C: 4,  // tree c — APM-28..31; one Section B question comes from C every sitting
+  D: 7,  // trees d + d2 — APM-32..38; the other guaranteed Section B question
+  E: 1,  // APM-39 — professional skills
+  F: 1,  // APM-40 — employability and technology skills, the area that was missing
  }
 
  it("covers every official area in questions and chapters",()=>{expect(new Set(getQuestions("APM").map(x=>x.area))).toEqual(new Set(areas));expect([...new Set(chaptersForPaper("APM").map(x=>x.area))].sort()).toEqual(chapterAreas)})
@@ -42,7 +46,7 @@ describe("APM September 2026–June 2027 restructured syllabus",()=>{
   // The legacy composites carry none of these, which is how you tell an
   // authored area from one still awaiting its rebuild.
   const authored=chaptersForPaper("APM").filter(x=>x.id?.startsWith("APM-"))
-  expect(authored.length).toBeGreaterThanOrEqual(14)
+  expect(authored.length).toBeGreaterThanOrEqual(40)
   const numbers=new Set<number>()
   for(const chapter of authored){
    expect(typeof chapter.number,`${chapter.id} number`).toBe("number")
@@ -60,8 +64,8 @@ describe("APM September 2026–June 2027 restructured syllabus",()=>{
   }
  })
  it("provides written practice for reporting, data science and professional skills",()=>{const represented=new Set(getWrittenQuestions("APM").map(x=>x.area));for(const area of ["C","D","E"])expect(represented.has(area)).toBe(true)})
- it("covers the analytics ladder and responsible AI",()=>{const text=JSON.stringify(chaptersForPaper("APM").find(x=>x.area==="D")).toLowerCase();for(const term of ["descriptive","diagnostic","predictive","prescriptive","overfitting","bias","human oversight"])expect(text).toContain(term)})
- it("tests performance reports as decision products",()=>{const text=JSON.stringify(chaptersForPaper("APM").find(x=>x.area==="C")).toLowerCase();for(const term of ["user","comparability","information overload","visual","narrative commentary"])expect(text).toContain(term)})
+ it("covers the analytics ladder and responsible AI",()=>{const text=JSON.stringify(chaptersForPaper("APM").filter(x=>x.area==="D")).toLowerCase();for(const term of ["descriptive","diagnostic","predictive","prescriptive","overfitting","bias","human oversight"])expect(text).toContain(term)})
+ it("tests performance reports as decision products",()=>{const text=JSON.stringify(chaptersForPaper("APM").filter(x=>x.area==="C")).toLowerCase();for(const term of ["user","comparability","information overload","visual","narrative commentary"])expect(text).toContain(term)})
  it("builds three distinct exact 100-mark compulsory mocks",()=>{
   const seen=new Set<string>()
   for(const form of [1,2,3]){
