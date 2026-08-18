@@ -58,8 +58,11 @@ export const DEVELOPING_PAPERS: readonly string[] = [
   // line, by going red until the entry was removed.
   // SBR followed on 17 Aug 2026: 7 shim-served areas → 38 authored chapters
   // (SBR-01..38) across all seven official areas, and the five legacy files
-  // deleted. That leaves the four remaining Strategic Professional papers.
-  "AFM",
+  // deleted.
+  // AFM followed on 18 Aug 2026: 7 chapters → 42 (AFM-01..42) across all five
+  // technical areas, ~12,000 words → ~44,000, and all five legacy files
+  // deleted. Its shim was a straight 1:1 relabel rather than a subset() re-cut,
+  // so the defect was depth alone. Three Strategic Professional papers remain.
   "APM",
   "AAA",
   "ATX",

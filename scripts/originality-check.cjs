@@ -84,6 +84,22 @@
  * The residue at 8 words is all deliberate: passages that tell the learner what the
  * syllabus requirement says, plus the named central banks and "free cash flow to
  * equity". None reach the gate, so none needed an exception.
+ *
+ * ── AFM, WHOLE PAPER (Aug 2026) ───────────────────────────────────
+ * The finished rebuild — 79,275 authored words across acca-study-afm-tree-*.ts —
+ * runs at ZERO findings at 10, 12 and 15 words against the same 364k-word corpus,
+ * with NO allow-list entry. Twenty windows remain at 8 words and every one is a
+ * term of art or a statement of what a syllabus outcome requires.
+ *
+ * Worth recording for the next paper: every single finding across the whole
+ * rebuild was ACCA's own wording absorbed into prose, and none was ever the
+ * publisher's. Areas C, D and E each came in clean on the FIRST pass, once the
+ * habit formed of paraphrasing a learning outcome rather than quoting it — so the
+ * cost of this defect is front-loaded and disappears if you write that way from
+ * the start. Two of the fixes are the standing techniques rather than allow-list
+ * entries: a canonical list long enough to breach the gate (B3(a)'s eleven
+ * sources of finance) is fixed by REORDERING the enumeration, and a quoted
+ * outcome is fixed by saying what it requires in Scholify's own voice.
  */
 const fs = require("fs")
 const path = require("path")

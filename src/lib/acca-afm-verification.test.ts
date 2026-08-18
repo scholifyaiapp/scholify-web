@@ -18,7 +18,7 @@ describe("AFM September 2026–June 2027 official structure", () => {
     B: 15, // trees b1..b4 — AFM-10..24 across all five subsections; the legacy splice is retired
     C: 6, // trees c + c2 — AFM-25..30, one chapter per syllabus subsection group (C1 ×2, C2 ×2, C3, C4)
     D: 4, // tree d — AFM-31..34 (diagnosis, reconstruction, unbundling, buy-outs)
-    E: 1, // legacy — treasury and advanced risk management
+    E: 8, // trees e1 + e2 — AFM-35..42 across all three subsections; the legacy splice is retired
     F: 1, // authored — professional skills
     G: 1, // authored — employability and technology skills
   }

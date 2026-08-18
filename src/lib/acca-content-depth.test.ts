@@ -44,12 +44,12 @@ const ALL_PAPERS = paperLevels().flatMap((level) => level.papers.map((p) => p.id
 // crossed 20 chapters while D–F were still shim-served, and came off the same
 // day its last area landed.
 //
-// AFM entered the window on 18 Aug 2026, on exactly the same pattern: Area A
-// (9 chapters) plus Area B subsections B1 and B2 (6 more) take it past twenty
-// while Areas C, D and E are still served by one relabelled legacy chapter
-// each. Remove the entry — and the paper's entry in DEVELOPING_PAPERS — on the
-// commit that lands Area E.
-const MID_REBUILD: readonly string[] = ["AFM"]
+// AFM entered the window on 18 Aug 2026 on exactly the same pattern — Area A
+// plus Area B subsections B1 and B2 took it past twenty chapters while Areas
+// C, D and E were still shim-served — and came off it the same day, when Area
+// E landed and the last legacy file was deleted. The list is kept, empty, for
+// the next Strategic Professional rebuild.
+const MID_REBUILD: readonly string[] = []
 
 describe("the developing-paper flag tracks reality", () => {
   it("covers every paper in the qualification, once", () => {

@@ -8,28 +8,32 @@ import { AFM_TREE_AREA_B_PART4 } from "@/lib/acca-study-afm-tree-b4"
 import { AFM_TREE_AREA_C_PART1 } from "@/lib/acca-study-afm-tree-c"
 import { AFM_TREE_AREA_C_PART2 } from "@/lib/acca-study-afm-tree-c2"
 import { AFM_TREE_AREA_D_PART1 } from "@/lib/acca-study-afm-tree-d"
-import { AFM_E } from "@/lib/acca-study-afm-e"
+import { AFM_TREE_AREA_E_PART1 } from "@/lib/acca-study-afm-tree-e1"
+import { AFM_TREE_AREA_E_PART2 } from "@/lib/acca-study-afm-tree-e2"
 
 /*
- * AFM's rebuild is IN PROGRESS. Area E below is still the legacy
- * one-chapter-per-area content, relabelled onto the official structure: this
- * file used to do that for all five technical areas, and the five legacy
- * chapters carried the whole paper at ~12,000 words against 40,000+ for the
- * finished Strategic Professional papers.
+ * THE SHIM IS GONE. Until August 2026 this file was a relabelling layer: five
+ * legacy chapters (AFM_A–AFM_E) were mapped 1:1 onto the official syllabus
+ * areas, with Area A additionally given a new title. Those five chapters
+ * carried the entire paper at ~12,000 words, against 37,000–40,000 for the
+ * finished Strategic Professional papers, and six of Area A's syllabus
+ * subsections shared a single chapter.
  *
- * AFM's shim was a straight 1:1 relabel rather than SBL's `subset()` re-cut, so
- * the area MAPPING was already correct — the defect here is depth alone. Each
- * area is being replaced by an authored tree, one area at a time.
+ * AFM's shim differed from SBL's and SBR's in one useful respect: it was a
+ * straight relabel rather than a `subset()` re-cut, so the area MAPPING was
+ * already correct and the defect was depth alone. Every area is now an authored
+ * tree and all five legacy files are deleted.
  *
- *   Area A  DONE — AFM-01..09, acca-study-afm-tree-a.ts + -a2.ts
- *   Area B  DONE — AFM-10..24, acca-study-afm-tree-b1..b4.ts
- *   Area C  DONE — AFM-25..30, acca-study-afm-tree-c.ts + -c2.ts
- *   Area D  DONE — AFM-31..34, acca-study-afm-tree-d.ts
- *   Area E  legacy (treasury and advanced risk management)
- *   Area F  authored — professional skills (below)
- *   Area G  authored — employability and technology skills (below)
+ *   Area A  AFM-01..09  acca-study-afm-tree-a.ts, -a2.ts
+ *   Area B  AFM-10..24  acca-study-afm-tree-b1.ts … -b4.ts
+ *   Area C  AFM-25..30  acca-study-afm-tree-c.ts, -c2.ts
+ *   Area D  AFM-31..34  acca-study-afm-tree-d.ts
+ *   Area E  AFM-35..42  acca-study-afm-tree-e1.ts, -e2.ts
+ *   Area F  professional skills (authored, below)
+ *   Area G  employability and technology skills (authored, below)
  *
- * Do not reintroduce a helper that derives one area's chapters from another's.
+ * If you are adding to an area, add a chapter to that area's tree module — do
+ * not reintroduce a helper that derives one area's content from another's.
  */
 
 /* Area A is a nine-chapter authored tree, split across two modules for file
@@ -71,7 +75,17 @@ export const AFM_OFFICIAL_C: StudyChapter[] = [...AFM_TREE_AREA_C_PART1, ...AFM_
    therefore teaches the better-off test as a comparison of columns, built from
    the liquidation waterfall, rather than as a definition. */
 export const AFM_OFFICIAL_D: StudyChapter[] = AFM_TREE_AREA_D_PART1
-export const AFM_OFFICIAL_E = AFM_E
+/* Area E is an eight-chapter authored tree, AFM-35..42, in two modules split
+   for file size only. With Area B it is one of the two areas the syllabus
+   guarantees in EVERY sitting, and the legacy chapter covered treasury,
+   interest rate hedging, currency hedging and value at risk in six sections
+   between them.
+
+   House rule for these chapters: every worked hedge is SETTLED, not merely set
+   up — each runs through to an effective rate and is compared against the
+   alternative, because a candidate who can size a hedge and cannot state the
+   net cost once the outcome is known scores about half the marks. */
+export const AFM_OFFICIAL_E: StudyChapter[] = [...AFM_TREE_AREA_E_PART1, ...AFM_TREE_AREA_E_PART2]
 
 export const AFM_OFFICIAL_F: StudyChapter = {
   paper: "AFM", area: "F", title: "Professional skills", minutes: 16,
