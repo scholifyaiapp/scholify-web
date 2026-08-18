@@ -37,7 +37,56 @@ const localStorage = new MemoryStorage()
 const globalAny = globalThis as unknown as Record<string, unknown>
 globalAny.localStorage = localStorage
 globalAny.window = globalAny.window ?? {}
-;(globalAny.window as Record<string, unknown>).localStorage = localStorage
+const win = globalAny.window as Record<string, unknown>
+win.localStorage = localStorage
+
+/*
+ * DOM shims for the jsdom render tests (files with `@vitest-environment jsdom`).
+ * jsdom omits matchMedia, the observers and rAF, which framer-motion's
+ * useReducedMotion and the chart components reach for — without these a render
+ * test throws before it can assert anything. Guarded (only added when missing)
+ * and additive, so the node-env logic tests are untouched.
+ */
+if (typeof win.matchMedia !== "function") {
+  win.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })
+  globalAny.matchMedia = win.matchMedia
+}
+if (typeof globalAny.ResizeObserver !== "function") {
+  class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  globalAny.ResizeObserver = ResizeObserverStub
+  win.ResizeObserver = ResizeObserverStub
+}
+if (typeof globalAny.IntersectionObserver !== "function") {
+  class IntersectionObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+    takeRecords(): [] {
+      return []
+    }
+  }
+  globalAny.IntersectionObserver = IntersectionObserverStub
+  win.IntersectionObserver = IntersectionObserverStub
+}
+if (typeof globalAny.requestAnimationFrame !== "function") {
+  globalAny.requestAnimationFrame = (cb: (t: number) => void) => setTimeout(() => cb(Date.now()), 0) as unknown as number
+  globalAny.cancelAnimationFrame = (id: number) => clearTimeout(id)
+  win.requestAnimationFrame = globalAny.requestAnimationFrame
+  win.cancelAnimationFrame = globalAny.cancelAnimationFrame
+}
 
 // Every test starts from a clean slate: state leaking between tests is how a
 // suite starts lying to you.

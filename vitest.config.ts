@@ -18,6 +18,12 @@ import { fileURLToPath } from "node:url"
  *
  * Node has no localStorage; setup.ts provides one, since the whole engine is
  * localStorage-first by design.
+ *
+ * The default environment is `node` (fast, for the logic suite). Component
+ * RENDER tests are `.test.tsx` files that opt into jsdom with a
+ * `// @vitest-environment jsdom` docblock — they render real components to catch
+ * the render-time crashes typecheck cannot. setup.ts adds the DOM shims jsdom
+ * omits (matchMedia, observers, rAF).
  */
 export default defineConfig({
   resolve: {
@@ -27,6 +33,6 @@ export default defineConfig({
     environment: "node",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "tests/**/*.test.ts", "tests/**/*.test.tsx"],
   },
 })
