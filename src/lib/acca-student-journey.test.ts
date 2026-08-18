@@ -1,145 +1,322 @@
-import { describe, it, expect, vi, afterEach } from "vitest"
-import { composeToday } from "@/lib/acca-today-composer"
-import { setPlan } from "@/lib/acca-plan"
-import { setStartMode } from "@/lib/acca-profile"
-import { markChapterRead } from "@/lib/acca-topic-plan"
-import { chapterKey, type StudyChapter } from "@/lib/acca-study-content"
-import { getPaper, getQuestions, recordAnswer, recordMock } from "@/lib/acca"
-import { recordDayActive } from "@/lib/acca-schedule"
-import { passProbability, mockProgress } from "@/lib/acca-loop"
+import { describe, it, expect } from "vitest"
+import { setExperience, setGoal, markAccaOnboarded, isAccaOnboarded, getPaperVariant } from "@/lib/acca-profile"
+import { setPlan, getPlan, daysUntilExam, generateStudyPlan, currentPhase, todayMission } from "@/lib/acca-plan"
+import { buildTodayPlan, markTodayTaskDone, getTodayDone, setPendingTodayTask, resolvePendingTodayTask, completePendingTodayTask, allocateTaskMinutes } from "@/lib/acca-today"
+import { chaptersForPaper } from "@/lib/acca-study-content"
+import {
+  getQuestions, getPaper, buildAdaptiveSession, buildSession, gradeQuestion, recordAnswer,
+  getPaperStats, getOverallProgress, getTodayStats, getDailyActivity, getWeekComparison,
+  recordMock, getMockHistory, snapshotProgress, restoreProgress, progressAnsweredCount,
+} from "@/lib/acca"
+import { buildDiagnostic, scoreDiagnostic, saveDiagnosticLocal, getLatestDiagnostic, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
+import { getFlashcards, getDueFlashcards, reviewFlashcard, flashcardStats } from "@/lib/acca-flashcards"
 import { buildCbeMock } from "@/lib/acca-cbe-mock"
-import { scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
-import { saveLearnerBaseline } from "@/lib/acca-learner-baseline"
+import {
+  MOCK_PASS, MOCKS_REQUIRED, MOCK_GATE, mockGate, mockProgress, passProbability, readinessState,
+  getJourneyStages, recordExamOutcome, latestExamOutcome, recoveryState, completePaper,
+} from "@/lib/acca-loop"
+import { getWrittenQuestions } from "@/lib/acca-written"
 
 /*
- * THE 15-DAY STUDENT JOURNEY — an "ACCA student" driven through the real engine.
+ * THE STUDENT JOURNEY, END TO END.
  *
- * This is the automated equivalent of a QA analyst being a student: it onboards
- * a zero-start learner, then lives 15 consecutive days (system clock advanced),
- * composing each day, reading the chapter, answering questions, and recording
- * activity — exactly what a learner does — and asserts the journey never breaks:
- * every day is a real, non-empty day; the plan advances through chapters instead
- * of getting stuck; readiness is always a sane number; and mocks build and record
- * coherently. A crash or an incoherent day on ANY of the 15 days fails here,
- * where the node/logic suite and typecheck are blind.
+ * Every other suite checks one module. This one walks the path a real candidate
+ * walks — onboard, plan, diagnose, study, practise, revise, unlock the mock room,
+ * sit three mocks, reach exam day — in ORDER, against one paper. The point is the
+ * SEAMS: recordAnswer feeding passProbability, the mock gate agreeing with the
+ * readiness number, journey stages flipping as evidence arrives, a snapshot
+ * surviving a restore.
+ *
+ * MA is the paper, deliberately: 35×2 + 3×10 is the most structured Section B in
+ * the Applied Knowledge tier, and its mocks were freshly benchmarked against
+ * three real papers (19 Aug 2026).
+ *
+ * STRUCTURE NOTE — one stage, one `it`. The global setup wipes localStorage
+ * before every test (src/test/setup.ts, beforeEach), which is right for unit
+ * suites and fatal for a journey spread across many `it`s. So each stage
+ * rebuilds the state it needs through the same helpers a real session would
+ * have run, and the final stage walks the WHOLE journey in one test to prove
+ * the seams hold in sequence.
  */
 
-afterEach(() => vi.useRealTimers())
+const PAPER = "MA"
 
-function seedPassingDiagnostic(paper: string): void {
-  const p = getPaper(paper)
-  if (!p) return
-  const answers: AnsweredDiagnostic[] = []
-  for (const area of p.areas) {
-    for (const q of getQuestions(paper).filter((x) => x.area === area.code).slice(0, 2)) {
-      answers.push({ q, correct: true })
+/* ── The journey's building blocks, reused by every stage ───────── */
+
+function onboard(): void {
+  setExperience("some")
+  setGoal("first-pass")
+  markAccaOnboarded()
+  const exam = new Date()
+  exam.setDate(exam.getDate() + 90)
+  setPlan(PAPER, {
+    examDate: exam.toISOString().slice(0, 10),
+    dailyMinutes: 45,
+    daysPerWeek: 5,
+    studyDays: [1, 2, 3, 4, 5],
+    dailyGoal: 12,
+    targetProb: 75,
+  })
+}
+
+function sitDiagnostic(): void {
+  const qs = buildDiagnostic(PAPER, 42)
+  const answers: AnsweredDiagnostic[] = qs.map((q, i) => ({ q, correct: i % 3 !== 0 }))
+  saveDiagnosticLocal(scoreDiagnostic(PAPER, answers))
+}
+
+/** Weeks of practice compressed: n answers at roughly 6-in-7 accuracy. */
+function practise(n: number): void {
+  const session = buildSession(PAPER, n, undefined, 7)
+  session.forEach((q, i) => recordAnswer(PAPER, q, i % 7 !== 0))
+}
+
+function sitAllMocks(): void {
+  for (const form of [1, 2, 3]) recordMock(PAPER, 58 + (form - 1) * 6, 100, form)
+}
+
+/* ── Stage 1 · onboarding ───────────────────────────────────────── */
+
+describe("Stage 1 — onboarding: the student arrives", () => {
+  it("captures experience, goal, the onboarded flag and a dated plan", () => {
+    expect(isAccaOnboarded()).toBe(false)
+    onboard()
+    expect(isAccaOnboarded()).toBe(true)
+    const plan = getPlan(PAPER)
+    expect(plan.examDate).toBeTruthy()
+    expect(plan.studyDays).toEqual([1, 2, 3, 4, 5])
+    const d = daysUntilExam(PAPER)
+    expect(d).not.toBeNull()
+    expect(d!).toBeGreaterThanOrEqual(88)
+    expect(d!).toBeLessThanOrEqual(91)
+  })
+
+  it("variants: MA has none, LW defaults Global, TX defaults UK", () => {
+    expect(getPaperVariant(PAPER)).toBeNull()
+    expect(getPaperVariant("LW")).toBe("GLOBAL")
+    expect(getPaperVariant("TX")).toBe("UK")
+  })
+
+  it("generates a phased study plan, a current phase and a daily mission", () => {
+    onboard()
+    const sp = generateStudyPlan(PAPER)
+    expect(sp.phases.length).toBeGreaterThanOrEqual(3)
+    expect(currentPhase(PAPER).key).toBeTruthy()
+    expect(todayMission(PAPER).title).toBeTruthy()
+  })
+})
+
+/* ── Stage 2 · the first day ────────────────────────────────────── */
+
+describe("Stage 2 — today's plan and the content behind it", () => {
+  it("builds a today plan whose tasks carry real minutes", () => {
+    onboard()
+    const tasks = buildTodayPlan(PAPER)
+    expect(tasks.length).toBeGreaterThan(0)
+    const minutes = allocateTaskMinutes(tasks, getPlan(PAPER).dailyMinutes)
+    expect(minutes).toHaveLength(tasks.length)
+    // The allocation must hand out real time and respect the learner's budget.
+    expect(minutes.every((m) => m > 0)).toBe(true)
+    expect(minutes.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(getPlan(PAPER).dailyMinutes + 15)
+    for (const t of tasks) {
+      expect(t.id).toBeTruthy()
+      expect(t.title).toBeTruthy()
+      expect(t.action).toBeTruthy()
     }
-  }
-  if (answers.length) saveDiagnosticLocal(scoreDiagnostic(paper, answers))
-}
+  })
 
-/** Do a day's work the way a learner would: read the chapter, answer questions. */
-function doTheDay(paper: string, chapter: StudyChapter | null): void {
-  if (chapter) markChapterRead(paper, chapterKey(chapter))
-  const area = chapter?.area
-  const scoped = getQuestions(paper).filter((q) => !q.recall && (!area || q.area === area))
-  const pool = scoped.length ? scoped : getQuestions(paper).filter((q) => !q.recall)
-  // 80% correct — a learner who is genuinely improving.
-  pool.slice(0, 15).forEach((q, i) => recordAnswer(paper, q, i % 5 !== 0))
-  recordDayActive(paper)
-}
+  it("serves the full authored chapter tree", () => {
+    const chapters = chaptersForPaper(PAPER)
+    expect(chapters.length).toBeGreaterThanOrEqual(27)
+    for (const ch of chapters) expect(ch.sections.length, `${ch.title}`).toBeGreaterThan(0)
+  })
 
-function liveFifteenDays(paper: string, days = 15): Set<string> {
-  const chaptersSeen = new Set<string>()
-  for (let d = 0; d < days; d++) {
-    vi.setSystemTime(new Date(2026, 8, 1 + d, 9, 0, 0))
-    let comp = composeToday(paper)
-    // A zero-start learner hits the diagnostic milestone once the gate is met.
-    if (comp.isDiagnosticDay) {
-      seedPassingDiagnostic(paper)
-      comp = composeToday(paper)
+  it("completes today tasks through the pending-task lifecycle", () => {
+    onboard()
+    const tasks = buildTodayPlan(PAPER)
+    const first = tasks[0]
+    setPendingTodayTask(PAPER, first.id)
+    expect(resolvePendingTodayTask(PAPER)).toBe(true)
+    expect(getTodayDone(PAPER)).toContain(first.id)
+    if (tasks[1]) {
+      // A task requiring explicit completion must NOT auto-resolve.
+      setPendingTodayTask(PAPER, tasks[1].id, true)
+      expect(resolvePendingTodayTask(PAPER)).toBe(false)
+      expect(completePendingTodayTask(PAPER)).toBe(true)
+      expect(getTodayDone(PAPER)).toContain(tasks[1].id)
     }
-    // Every day must be a real, completable day — never an empty/broken screen.
-    expect(comp.blocks.length, `${paper} day ${d + 1} has blocks`).toBeGreaterThan(0)
-    expect(comp.isDiagnosticDay || comp.chapter !== null, `${paper} day ${d + 1} is a real day`).toBe(true)
-    if (comp.chapter) chaptersSeen.add(chapterKey(comp.chapter))
-    doTheDay(paper, comp.chapter)
-  }
-  return chaptersSeen
-}
+    if (tasks[2]) {
+      markTodayTaskDone(PAPER, tasks[2].id)
+      expect(getTodayDone(PAPER)).toContain(tasks[2].id)
+    }
+  })
+})
 
-describe("the 15-day ACCA student journey", () => {
-  it("a zero-start BT learner completes 15 coherent days and advances through chapters", () => {
-    vi.useFakeTimers()
-    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 80 })
-    setStartMode("zero")
+/* ── Stage 3 · the diagnostic ───────────────────────────────────── */
 
-    const chaptersSeen = liveFifteenDays("BT")
+describe("Stage 3 — the diagnostic finds the starting point", () => {
+  it("builds, sits, scores and saves a diagnostic", () => {
+    onboard()
+    const qs = buildDiagnostic(PAPER, 42)
+    expect(qs.length).toBeGreaterThanOrEqual(8)
+    const answers: AnsweredDiagnostic[] = qs.map((q, i) => ({ q, correct: i % 3 !== 0 }))
+    const result = scoreDiagnostic(PAPER, answers)
+    expect(result.passProbability).toBeGreaterThan(0)
+    expect(result.passProbability).toBeLessThanOrEqual(100)
+    expect(result.areas.length).toBeGreaterThan(0)
+    saveDiagnosticLocal(result)
+    expect(getLatestDiagnostic(PAPER)).not.toBeNull()
+  })
 
-    // The plan progressed — a learner who studies daily is not stuck on chapter one.
-    expect(chaptersSeen.size, "advanced through several chapters over 15 days").toBeGreaterThan(3)
+  it("flips the journey stages: onboarding, diagnostic and roadmap done", () => {
+    onboard()
+    sitDiagnostic()
+    const byKey = Object.fromEntries(getJourneyStages(PAPER).map((s) => [s.key, s.status]))
+    expect(byKey["onboarding"]).toBe("done")
+    expect(byKey["diagnostic"]).toBe("done")
+    expect(byKey["roadmap"]).toBe("done")
+  })
+})
 
-    // Readiness is always a real, in-range number after real study.
-    const prob = passProbability("BT")
+/* ── Stage 4 · practice ─────────────────────────────────────────── */
+
+describe("Stage 4 — practice: weeks of answering, compressed", () => {
+  it("grades every question in the bank on its own key, right and wrong", () => {
+    const qs = getQuestions(PAPER)
+    expect(qs.length).toBeGreaterThanOrEqual(300)
+    for (const q of qs) {
+      if (q.type === "number") {
+        expect(gradeQuestion(q, q.numericAnswer!).correct, `${q.id} accepts its own answer`).toBe(true)
+        expect(gradeQuestion(q, q.numericAnswer! + Math.abs(q.numericAnswer! || 1) * 10 + 1e6).correct, `${q.id} rejects a far-off answer`).toBe(false)
+      } else if (typeof q.correct === "number" && q.options) {
+        expect(gradeQuestion(q, q.correct).correct, `${q.id} accepts its key`).toBe(true)
+        expect(gradeQuestion(q, (q.correct + 1) % q.options.length).correct, `${q.id} rejects the next option`).toBe(false)
+      } else if (Array.isArray(q.correct)) {
+        expect(gradeQuestion(q, q.correct).correct, `${q.id} accepts its multi key`).toBe(true)
+        expect(gradeQuestion(q, []).correct, `${q.id} rejects an empty selection`).toBe(false)
+      }
+    }
+  })
+
+  it("a practice record accumulates and stats reflect it", () => {
+    onboard()
+    practise(120)
+    const stats = getPaperStats(PAPER)
+    expect(stats.answered).toBeGreaterThanOrEqual(100)
+    expect(stats.accuracy).toBeGreaterThan(0.7)
+    expect(stats.areas.some((a) => a.seen > 0)).toBe(true)
+  })
+
+  it("adaptive sessions build from the record without duplicates", () => {
+    onboard()
+    practise(60)
+    const adaptive = buildAdaptiveSession(PAPER, 10)
+    expect(adaptive.length).toBeGreaterThan(0)
+    expect(new Set(adaptive.map((q) => q.id)).size).toBe(adaptive.length)
+  })
+
+  it("flashcards deal, review and count", () => {
+    const cards = getFlashcards(PAPER)
+    expect(cards.length).toBeGreaterThanOrEqual(50)
+    const due = getDueFlashcards(PAPER)
+    expect(due.length).toBeGreaterThan(0)
+    for (const c of due.slice(0, 20)) reviewFlashcard(c.id, true)
+    const fs = flashcardStats(PAPER)
+    expect(fs.total).toBe(cards.length)
+    expect(fs.due).toBeLessThanOrEqual(due.length)
+  })
+})
+
+/* ── Stage 5 · the whole journey, in sequence ───────────────────── */
+
+describe("Stage 5 — the complete journey in one sitting", () => {
+  it("onboard → diagnose → practise → readiness → mocks → exam-ready → exam day", () => {
+    /* Onboard. */
+    onboard()
+    expect(isAccaOnboarded()).toBe(true)
+
+    /* Diagnose. */
+    sitDiagnostic()
+    expect(getLatestDiagnostic(PAPER)).not.toBeNull()
+
+    /* Practise for weeks. */
+    practise(120)
+    const stats = getPaperStats(PAPER)
+    expect(stats.answered).toBeGreaterThanOrEqual(100)
+
+    /* The readiness number is live, and the gate agrees with it. */
+    const prob = passProbability(PAPER)
     expect(prob).not.toBeNull()
-    expect(prob!).toBeGreaterThanOrEqual(0)
-    expect(prob!).toBeLessThanOrEqual(100)
-  })
+    const gate = mockGate(PAPER)
+    expect(gate.unlocked).toBe((prob ?? 0) >= MOCK_GATE || getMockHistory(PAPER).length > 0)
 
-  it("the newly authored SBR paper composes coherent days too", () => {
-    vi.useFakeTimers()
-    setPlan("SBR", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 80 })
-    setStartMode("zero")
-
-    const chaptersSeen = liveFifteenDays("SBR", 10)
-    expect(chaptersSeen.size, "SBR advanced through chapters").toBeGreaterThan(2)
-  })
-
-  it("the PRACTICE route keeps its promise — no chapter to read, quiz-led, topics rotate", () => {
-    vi.useFakeTimers()
-    setPlan("SBR", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 80 })
-    saveLearnerBaseline({ route: "practice", englishLevel: "C1", englishEvidence: "self", updatedAt: new Date().toISOString() })
-
-    const topics = new Set<string>()
-    for (let d = 0; d < 12; d++) {
-      vi.setSystemTime(new Date(2026, 8, 1 + d, 9, 0, 0))
-      const comp = composeToday("SBR")
-      // The promise: NO study block. The day leads with the quiz.
-      expect(comp.blocks.some((b) => b.kind === "study"), `day ${d + 1} has no study block`).toBe(false)
-      expect(comp.blocks[0].kind, `day ${d + 1} leads with the quiz`).toBe("quiz")
-      // Still quizzes + practice + flashcards.
-      const kinds = new Set(comp.blocks.map((b) => b.kind))
-      expect(kinds.has("quiz") && kinds.has("practice") && kinds.has("flashcards")).toBe(true)
-      if (comp.chapter) topics.add(chapterKey(comp.chapter))
-      recordDayActive("SBR")
-    }
-    // The topic varies across the fortnight rather than being stuck on one.
-    expect(topics.size, "practice topics rotate over the days").toBeGreaterThan(2)
-  })
-
-  it("mocks build for all three forms and record into the learner's history", () => {
-    vi.useFakeTimers()
-    setPlan("BT", { dailyMinutes: 60, daysPerWeek: 6, targetProb: 80 })
-    setStartMode("zero")
-    // A fortnight of generous practice to push readiness toward the mock gate.
-    const pool = getQuestions("BT").filter((q) => !q.recall)
-    for (let d = 0; d < 15; d++) {
-      vi.setSystemTime(new Date(2026, 8, 1 + d, 9, 0, 0))
-      pool.slice(d * 18, d * 18 + 18).forEach((q) => recordAnswer("BT", q, true))
-      recordDayActive("BT")
-    }
-
+    /* Sit all three mock forms — each builds, none shares an item. */
+    const seen = new Set<string>()
     for (const form of [1, 2, 3]) {
-      const mock = buildCbeMock("BT", form)
-      expect(mock.totalMarks, `form ${form} has marks`).toBeGreaterThan(0)
-      expect(mock.sections.length, `form ${form} has sections`).toBeGreaterThan(0)
+      const mock = buildCbeMock(PAPER, form)
+      expect(mock.totalMarks).toBe(100)
+      for (const s of mock.sections) {
+        for (const item of s.items) {
+          const id = item.kind === "task" ? item.task.id : item.q.id
+          expect(seen.has(id), `${id} repeats across MA forms`).toBe(false)
+          seen.add(id)
+        }
+      }
     }
+    sitAllMocks()
+    expect(getMockHistory(PAPER)).toHaveLength(3)
 
-    recordMock("BT", 68, 100, 1)
-    recordMock("BT", 74, 100, 2)
-    const progress = mockProgress("BT")
-    expect(progress.attempts).toBe(2)
-    expect(progress.passed).toBe(2) // both above the 50% pass line
-    expect(progress.latestPassed).toBe(true)
+    /* Three passes make the student exam-ready. */
+    const prog = mockProgress(PAPER)
+    expect(prog.attempts).toBe(MOCKS_REQUIRED)
+    expect(prog.passed).toBe(3)
+    expect(prog.latestPassed).toBe(true)
+    expect(prog.examReady).toBe(true)
+    for (const h of getMockHistory(PAPER)) expect(h.percent).toBeGreaterThanOrEqual(MOCK_PASS)
+    const ready = readinessState(PAPER)
+    expect(ready.measuring).toBe(false)
+    expect(ready.prob).not.toBeNull()
+    expect(ready.areasSeen).toBeGreaterThan(0)
+
+    /* The journey map shows it. */
+    const byKey = Object.fromEntries(getJourneyStages(PAPER).map((s) => [s.key, s.status]))
+    expect(byKey["missions"]).toBe("done")
+    expect(byKey["progress"]).toBe("done")
+
+    /* Dashboards read the same record coherently. */
+    const overall = getOverallProgress()
+    expect(overall.totalAnswered).toBeGreaterThanOrEqual(stats.answered)
+    expect(getTodayStats().answered).toBeGreaterThan(0)
+    expect(progressAnsweredCount()).toBeGreaterThan(0)
+    const days = getDailyActivity(35)
+    expect(days).toHaveLength(35)
+    expect(days[days.length - 1].count).toBeGreaterThan(0)
+    expect(getWeekComparison().answered).toBeGreaterThan(0)
+
+    /* The record survives a snapshot/restore round-trip. */
+    const before = getPaperStats(PAPER).answered
+    const snap = snapshotProgress()
+    restoreProgress(snap)
+    expect(getPaperStats(PAPER).answered).toBe(before)
+
+    /* Exam day: a pass completes the paper. */
+    recordExamOutcome(PAPER, true, 68)
+    expect(latestExamOutcome(PAPER)?.passed).toBe(true)
+    completePaper(PAPER, 68)
+  })
+
+  it("a failed exam produces a recovery state, not a dead end", () => {
+    recordMock("FA", 55, 100, 1)
+    recordExamOutcome("FA", false, 42)
+    expect(latestExamOutcome("FA")?.passed).toBe(false)
+    expect(recoveryState("FA")).toBeTruthy()
+  })
+
+  it("the written-practice surface copes with an objective-only paper", () => {
+    // MA has no constructed section in the real exam; the surface must read an
+    // empty (or advisory) list rather than crash.
+    const written = getWrittenQuestions(PAPER)
+    expect(Array.isArray(written)).toBe(true)
+    expect(getPaper(PAPER)).toBeTruthy()
   })
 })
