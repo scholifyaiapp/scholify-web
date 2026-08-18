@@ -20,6 +20,7 @@ import { serializeForMarking, type Cells } from "@/lib/spreadsheet"
 import SpreadsheetPad from "@/components/acca/SpreadsheetPad"
 import CbeToolsDock from "@/components/acca/CbeTools"
 import { examBlueprint } from "@/lib/acca-exam-structure"
+import { readMockSitting, saveMockSitting, clearMockSitting, sittingDisposition, type MockSitting } from "@/lib/acca-mock-sitting"
 import type { AccaQuestion } from "@/lib/acca-content"
 
 /*
@@ -92,11 +93,32 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
   const paper = getPaper(paperId)
   const bp = examBlueprint(paperId)
 
+  /*
+   * A saved sitting for THIS form means the learner left mid-exam — closed the
+   * tab, crashed, walked away. Read it once, before anything is composed.
+   * Resuming is sound because the composition below is fully deterministic
+   * (buildCbeMock is pure; withShuffledOptions seeds from each question id),
+   * so the restored answer indices land on the identical options.
+   */
+  const [restored] = useState<{ sitting: MockSitting; mode: "resume" | "expire" } | null>(() => {
+    const form = chosenForm ?? nextMockForm(mockProgress(paperId).attempts)
+    const saved = readMockSitting(paperId, form)
+    if (!saved) return null
+    const mode = sittingDisposition(saved)
+    if (mode === "discard") {
+      // Time ran out on an untouched sitting — throw it away rather than
+      // record a 0% the learner never sat.
+      clearMockSitting(paperId, form)
+      return null
+    }
+    return { sitting: saved, mode }
+  })
+
   // Compose once per sitting: the form the learner chose in the Mock Centre, or
   // their next form in sequence. Options de-biased the same way every other
   // session is (shuffled options, remapped answer).
   const [mock] = useState<CbeMock>(() => {
-    const form = chosenForm ?? nextMockForm(mockProgress(paperId).attempts)
+    const form = restored?.sitting.form ?? chosenForm ?? nextMockForm(mockProgress(paperId).attempts)
     const raw = buildCbeMock(paperId, form)
     return {
       ...raw,
@@ -119,19 +141,47 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
     )
   }, [mock])
 
-  const [stage, setStage] = useState<Stage>("intro")
-  const [cursor, setCursor] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, ObjAnswer>>({})
-  const [essays, setEssays] = useState<Record<string, TaskAnswer>>({})
+  /*
+   * All exam state initialises from the restored sitting when there is one.
+   * A resumed learner lands back INSIDE the exam ("run"), on the question they
+   * left, with the same wall-clock deadline — closing the tab never paused the
+   * clock, exactly as backgrounding it never did. An EXPIRED sitting also
+   * mounts into "run": the deadline timeout below then fires immediately and
+   * submits what was answered, which is precisely what the real CBE does when
+   * time runs out.
+   */
+  const [stage, setStage] = useState<Stage>(restored ? "run" : "intro")
+  const [cursor, setCursor] = useState(restored ? restored.sitting.cursor : 0)
+  const [answers, setAnswers] = useState<Record<string, ObjAnswer>>(restored ? restored.sitting.answers : {})
+  const [essays, setEssays] = useState<Record<string, TaskAnswer>>(restored ? restored.sitting.essays : {})
   const [essayTab, setEssayTab] = useState<Record<string, "word" | "sheet">>({})
-  const [flags, setFlags] = useState<Record<string, boolean>>({})
+  const [flags, setFlags] = useState<Record<string, boolean>>(restored ? restored.sitting.flags : {})
   const [navOpen, setNavOpen] = useState(false)
   // The navigator is opt-in during an attempt. Moving into or out of the exam
   // must always close it so the first question starts unobstructed.
   useEffect(() => setNavOpen(false), [stage])
-  // The sitting's wall-clock deadline, fixed once. ProCountdown ticks itself off
-  // this, so the clock never re-renders the runner.
-  const [deadline] = useState(() => Date.now() + mock.seconds * 1000)
+  /*
+   * The sitting's wall-clock deadline, fixed ONCE — when the learner presses
+   * Start, not when the component mounts. It was set at mount, which meant the
+   * clock was already running while the intro screen was still explaining the
+   * exam: five minutes reading the summary was five minutes silently gone from
+   * the sitting. Zero means "not started yet"; a restored sitting carries its
+   * original deadline, because closing the tab never pauses a live exam.
+   * ProCountdown ticks itself off this, so the clock never re-renders the runner.
+   */
+  const [deadline, setDeadline] = useState<number>(() => restored?.sitting.deadline ?? 0)
+
+  /*
+   * PERSIST THE SITTING as it progresses — every answer, essay keystroke batch,
+   * flag and cursor move while the exam is live. This is what makes a closed
+   * tab, a crash or a dead battery cost nothing: the next open of this form
+   * resumes exactly here. The slot is cleared the moment the sitting is
+   * recorded (in submit) so a finished mock can never resurrect.
+   */
+  useEffect(() => {
+    if ((stage !== "run" && stage !== "review") || deadline === 0) return
+    saveMockSitting({ paperId, form: mock.form, deadline, cursor, answers, essays, flags, savedAt: Date.now() })
+  }, [stage, paperId, mock.form, deadline, cursor, answers, essays, flags])
   /** Seconds actually used, computed on demand rather than tracked every second. */
   const secondsUsed = (): number => Math.min(mock.seconds, Math.max(0, Math.round((Date.now() - (deadline - mock.seconds * 1000)) / 1000)))
   const [markingNote, setMarkingNote] = useState("")
@@ -156,7 +206,7 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
   // A wall-clock deadline is also honest across a backgrounded tab, where a
   // decrementing interval is throttled and the exam clock effectively pauses.
   useEffect(() => {
-    if (stage !== "run" && stage !== "review") return
+    if ((stage !== "run" && stage !== "review") || deadline === 0) return
     const t = window.setTimeout(() => {
       // Time: the CBE submits your exam for you.
       if (!submittingRef.current) void submitRef.current(true)
@@ -272,6 +322,9 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
     // The learner record: this WAS a mock — it feeds the gate, the trend and
     // the pass-probability model exactly as before.
     recordMock(paperId, Math.round(earned), total, mock.form)
+    // The sitting is recorded, so its resume slot must die with it — a finished
+    // mock that could resurrect on the next open would double-record.
+    clearMockSitting(paperId, mock.form)
     if (expired && unanswered > 0) recordMistake(paperId, "time", unanswered)
     recordDayActive(paperId)
     snapshotProbability(paperId)
@@ -367,7 +420,7 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
           </ul>
         </Card>
 
-        <Button full size="lg" onClick={() => setStage("run")}>
+        <Button full size="lg" onClick={() => { setDeadline(Date.now() + mock.seconds * 1000); setStage("run") }}>
           <Icon name="time" size={18} color="#fff" /> Start the exam — {fmtClock(mock.seconds)}
         </Button>
       </motion.div>

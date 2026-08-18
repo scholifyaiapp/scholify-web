@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest"
-import { render, cleanup } from "@testing-library/react"
+import { render, cleanup, waitFor } from "@testing-library/react"
 import { TodayBoard } from "./TodayBoard"
 import { PracticeHub } from "./PracticeHub"
 import LearningDashboard from "./LearningDashboard"
@@ -11,7 +11,9 @@ import ExaminerView from "./ExaminerView"
 import FlashcardsView from "./FlashcardsView"
 import CbeMockRunner from "./CbeMockRunner"
 import { setPlan } from "@/lib/acca-plan"
-import { buildSession, recordAnswer, recordMock, getPaper } from "@/lib/acca"
+import { buildSession, recordAnswer, recordMock, getPaper, getMockHistory } from "@/lib/acca"
+import { buildCbeMock } from "@/lib/acca-cbe-mock"
+import { saveMockSitting, readMockSitting } from "@/lib/acca-mock-sitting"
 import { buildDiagnostic, scoreDiagnostic, saveDiagnosticLocal, type AnsweredDiagnostic } from "@/lib/acca-diagnostic"
 
 /*
@@ -137,5 +139,54 @@ describe("CBE mock runner — the actual exam sitting", () => {
   it("renders a Strategic Professional sitting too (AAA: 50+25+25 written)", () => {
     const { container } = render(<CbeMockRunner paperId="AAA" form={1} onBack={noop} />)
     expect(container.textContent?.length ?? 0).toBeGreaterThan(0)
+  })
+})
+
+/*
+ * THE CLOSED TAB. A mock sitting now survives leaving the app entirely, so the
+ * runner must honour all three dispositions of a saved sitting on mount:
+ * resume it, submit it (time ran out on real work), or discard it (time ran
+ * out on nothing).
+ */
+describe("CBE mock runner — resuming an abandoned sitting", () => {
+  function firstOtId(): string {
+    const mock = buildCbeMock("MA", 1)
+    for (const s of mock.sections) for (const it of s.items) if (it.kind !== "task") return it.q.id
+    throw new Error("no OT in MA mock")
+  }
+
+  it("a live saved sitting reopens INSIDE the exam, not at the intro", () => {
+    saveMockSitting({
+      paperId: "MA", form: 1, deadline: Date.now() + 30 * 60_000, cursor: 3,
+      answers: { [firstOtId()]: { choice: 1 } }, essays: {}, flags: {}, savedAt: Date.now(),
+    })
+    const { container } = render(<CbeMockRunner paperId="MA" form={1} onBack={noop} />)
+    // No intro "Start the exam" button — the learner is back in the sitting.
+    expect(container.textContent).not.toContain("Start the exam")
+  })
+
+  it("an expired sitting WITH work auto-submits — the CBE hands the exam in", async () => {
+    const before = getMockHistory("MA").length
+    saveMockSitting({
+      paperId: "MA", form: 1, deadline: Date.now() - 60_000, cursor: 3,
+      answers: { [firstOtId()]: { choice: 1 } }, essays: {}, flags: {}, savedAt: Date.now() - 90 * 60_000,
+    })
+    render(<CbeMockRunner paperId="MA" form={1} onBack={noop} />)
+    // The deadline timer fires immediately and submit records the sitting.
+    await waitFor(() => expect(getMockHistory("MA").length).toBe(before + 1), { timeout: 5000 })
+    // And the resume slot died with it — a finished mock cannot resurrect.
+    expect(readMockSitting("MA", 1)).toBeNull()
+  })
+
+  it("an expired sitting with NOTHING answered is discarded — no 0% for an exam never sat", () => {
+    const before = getMockHistory("MA").length
+    saveMockSitting({
+      paperId: "MA", form: 1, deadline: Date.now() - 60_000, cursor: 0,
+      answers: {}, essays: {}, flags: {}, savedAt: Date.now() - 90 * 60_000,
+    })
+    const { container } = render(<CbeMockRunner paperId="MA" form={1} onBack={noop} />)
+    expect(container.textContent).toContain("Start the exam") // fresh intro
+    expect(getMockHistory("MA").length).toBe(before) // nothing recorded
+    expect(readMockSitting("MA", 1)).toBeNull() // slot cleaned
   })
 })

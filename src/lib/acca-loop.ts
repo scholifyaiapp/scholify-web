@@ -269,10 +269,22 @@ export function recoveryState(paperId: string): RecoveryState {
   // local). Slicing the ISO string would give the UTC date and misclassify the
   // boundary day for users far from UTC.
   const failDate = todayStr(new Date(outcome.recordedAt))
+  /*
+   * SAME-DAY RECOVERY COUNTS. Mock and activity dates are day-granular, and the
+   * comparison was strictly `>` — so the student who recorded a fail and got
+   * straight back on the horse THAT EVENING with practice and a passing mock
+   * was told nothing had happened, on exactly the day motivation is most
+   * fragile. `>=` credits it. The trade-off is a mock sat earlier the same day,
+   * BEFORE the result was recorded, also counting as recovery evidence — and
+   * with results arriving days after the sitting, that mock was genuine
+   * revision anyway. Between discouraging the comeback and over-crediting a
+   * morning mock, the second error is harmless and the first is the one that
+   * loses learners.
+   */
   const answeredSince = getDailyActivity(120)
-    .filter((d) => d.date > failDate)
+    .filter((d) => d.date >= failDate)
     .reduce((s, d) => s + d.count, 0)
-  const freshMocks = getMockHistory(paperId).filter((m) => m.date > failDate)
+  const freshMocks = getMockHistory(paperId).filter((m) => m.date >= failDate)
   return {
     active: true,
     outcome,

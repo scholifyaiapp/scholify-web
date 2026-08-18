@@ -7,6 +7,7 @@ import { MOCK_FORMS, nextMockForm } from "@/lib/acca-mockforms"
 import { mockProgress, passProbability, MOCK_PASS, MOCKS_REQUIRED } from "@/lib/acca-loop"
 import { getMockHistory, getPaper, getPaperStats, type MockResult, type AreaStat } from "@/lib/acca"
 import { examBlueprint, type ExamBlueprint } from "@/lib/acca-exam-structure"
+import { hasLiveSitting } from "@/lib/acca-mock-sitting"
 
 /*
  * The Mock Exam Centre — the hub the sectioned CBE runner (CbeMockRunner) opens
@@ -393,6 +394,7 @@ function FormCard({
   onStart: () => void
 }) {
   const marks = mock?.totalMarks ?? 100
+  const live = mock ? hasLiveSitting(mock.paperId, form) : false
   return (
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 12 }}
@@ -456,8 +458,20 @@ function FormCard({
         )}
       </div>
 
-      <Button variant={isNext ? "primary" : "secondary"} size="sm" full trailingIcon="chevron" onClick={onStart}>
-        {attempts > 0 ? "Resit" : "Start"} Form {form}
+      {/*
+       * A live saved sitting means the learner left this form mid-exam — the
+       * runner will restore their answers with the clock still honest, so the
+       * button must promise exactly that. "Start" over a resumable sitting
+       * reads like starting over, which is the fear that stops people
+       * returning at all.
+       */}
+      {live && (
+        <Badge tone="amber">
+          <Icon name="time" size={11} strokeWidth={2.6} /> In progress — clock running
+        </Badge>
+      )}
+      <Button variant={isNext || live ? "primary" : "secondary"} size="sm" full trailingIcon="chevron" onClick={onStart}>
+        {live ? "Resume" : attempts > 0 ? "Resit" : "Start"} Form {form}
       </Button>
     </motion.div>
   )
