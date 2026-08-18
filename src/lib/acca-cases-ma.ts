@@ -151,46 +151,60 @@ const MTQ_D2: OtCase = {
   ],
 }
 
+/*
+ * CAPITAL BUDGETING — added 19 Aug 2026, replacing a third budget-preparation MTQ.
+ *
+ * The three F2 mock papers the founder supplied show what the budgeting MTQ actually
+ * examines: two of the three set budget preparation, and the third set a DISCOUNTED CASH
+ * FLOW appraisal of two machines, laid out as a spreadsheet. Capital budgeting and DCF is
+ * squarely in MA's Area D and is taught in this library's MA-19 and MA-20 — and no MTQ in
+ * this file rehearsed it. All three budgeting units were budget preparation.
+ *
+ * MA's Section B is exactly three 10-mark MTQs, so nine units is precisely three disjoint
+ * sittings and there is no spare slot: adding a topic means replacing one. The unit that
+ * went was "flexing the budget", because flexing is the ONLY one of the four whose subject
+ * is already rehearsed elsewhere in this same file — ma-mtq-e2 flexes, and ma-mtq-e3 names
+ * the sales volume variance "the flexing step in an operating statement".
+ *
+ * What flexing DID teach uniquely was controllability: that a manager should be judged only
+ * on what they can influence. That is preserved here rather than dropped, as the relevant
+ * cash flow test — an apportioned head office charge is excluded from an appraisal for the
+ * same reason it was excluded from that manager's report. Tasks 1 and 5 carry it.
+ */
 const MTQ_D3: OtCase = {
   id: "ma-mtq-d3",
   paper: "MA",
   area: "D",
-  title: "Rossmere Ltd — flexing the budget",
+  title: "Halberd Ltd — appraising the machine",
   scenario:
-    "Rossmere Ltd budgeted to produce 10,000 units. Its budget was: direct materials $60,000, direct labour $40,000, variable overhead $20,000 and fixed overhead $30,000. Actual output was 12,000 units, and actual costs were direct materials $70,800, direct labour $49,200, variable overhead $25,000 and fixed overhead $31,500. The production manager's report includes an apportioned share of head office administration of $18,000, which is unaffected by output.",
+    "Halberd Ltd is deciding whether to buy a bottling machine costing $24,000, payable immediately. The machine has a three-year life and is expected to be sold for $6,000 at the end of year 3. It will generate contribution of $14,000 a year. Production overheads charged against the machine are $9,500 a year, made up of straight-line depreciation, cash running costs of $2,000, and an apportioned share of head office administration of $1,500 which will be incurred whether or not the machine is bought. Maintenance of $1,500 a year is payable IN ADVANCE. Halberd's cost of capital is 10% a year. Discount factors at 10% are: year 1 0.909, year 2 0.826, year 3 0.751. Assume all other cash flows arise at the end of the year.",
   questions: [
-    calc("ma-mtq-d3", 1, "D", "MA-18", 2, "medium",
-      "What is the total FLEXED budget cost for 12,000 units, in $?",
-      174000, "$", 1,
-      "Variable costs flex by 12/10: materials $72,000, labour $48,000, variable overhead $24,000 = $144,000. Fixed overhead does NOT flex and stays at $30,000. Flexed total = $174,000."),
-    calc("ma-mtq-d3", 2, "D", "MA-18", 2, "hard",
-      "What is the total variance against the FLEXED budget, in $, treating adverse as a positive figure?",
-      2500, "$", 1,
-      "Actual total = $70,800 + $49,200 + $25,000 + $31,500 = $176,500, against the flexed $174,000 — $2,500 ADVERSE. Against the ORIGINAL budget of $150,000 the gap appears to be $26,500, but $24,000 of that is simply the cost of making 2,000 more units."),
-    calc("ma-mtq-d3", 3, "D", "MA-18", 2, "medium",
-      "What is the direct materials variance against the flexed budget, in $, treating favourable as a positive figure?",
-      1200, "$", 1,
-      "Flexed materials = $60,000 × 12/10 = $72,000, against actual $70,800 — $1,200 FAVOURABLE. Note that the fixed-budget comparison would have shown materials $10,800 adverse and prompted an investigation of the one cost being managed well."),
-    task("ma-mtq-d3", 4, "D", "MA-18", 2, "hard",
-      "Why should the apportioned head office charge be reported separately from the manager's assessed costs?",
+    calc("ma-mtq-d3", 1, "D", "MA-20", 2, "medium",
+      "What is the net operating cash flow for each of years 1 to 3, in $, before maintenance and scrap proceeds?",
+      12000, "$", 1,
+      "Of the $9,500 of overheads, only the $2,000 of cash running costs is relevant. Depreciation is (24,000 − 6,000) / 3 = $6,000, an accounting spread of a cost already counted in full at t0. The $1,500 head office apportionment is incurred either way, so it does not change with the decision. $14,000 − $2,000 = $12,000."),
+    calc("ma-mtq-d3", 2, "D", "MA-20", 2, "medium",
+      "What is the total cash outflow at t0, in $?",
+      25500, "$", 1,
+      "The $24,000 purchase PLUS the first maintenance payment of $1,500, because maintenance is payable IN ADVANCE. Treating maintenance as a year-end cost pushes that payment to t1 and understates the initial outflow — the single most common slip in this question type."),
+    calc("ma-mtq-d3", 3, "D", "MA-20", 2, "medium",
+      "What is the present value of the year 3 cash flow, in $?",
+      13518, "$", 5,
+      "Year 3 carries the $12,000 operating flow plus the $6,000 scrap proceeds — $18,000 — discounted at 0.751 to $13,518. Scrap is a cash inflow of the project even though it is not trading income, and no maintenance is paid in year 3 because the last payment in advance fell at t2."),
+    calc("ma-mtq-d3", 4, "D", "MA-20", 2, "hard",
+      "What is the net present value of the machine, in $ to the nearest dollar?",
+      6236, "$", 10,
+      "Flows are t0 −$25,500, t1 $10,500, t2 $10,500 and t3 $18,000, because years 1 and 2 each bear a $1,500 maintenance payment in advance. NPV = −25,500 + (10,500 × 0.909) + (10,500 × 0.826) + (18,000 × 0.751) = −25,500 + 9,544.50 + 8,673.00 + 13,518.00 = $6,235.50. A POSITIVE NPV means the machine earns more than the 10% cost of capital, so it should be bought."),
+    task("ma-mtq-d3", 5, "D", "MA-20", 2, "hard",
+      "Why are the depreciation charge and the apportioned head office cost both excluded from the appraisal?",
       [
-        "Because it is immaterial in size",
-        "Because the manager cannot influence it, so including it is neither fair nor useful",
-        "Because head office costs are variable",
-        "Because it duplicates the fixed overhead already reported",
+        "Because they are fixed costs, and net present value considers only variable costs",
+        "Because neither is an incremental cash flow of this decision",
+        "Because both are already reflected in the 10% cost of capital",
+        "Because both will be recovered through the scrap proceeds",
       ],
       1,
-      "CONTROLLABILITY: a manager should be accountable only for what they can influence. An apportioned charge unaffected by output fails that test, so including it is unjust and useless — no available action changes it, and its presence invites the manager to dismiss the whole report."),
-    task("ma-mtq-d3", 5, "D", "MA-18", 2, "medium",
-      "What does the difference between Rossmere's fixed budget and its flexed budget represent?",
-      [
-        "A performance failure requiring investigation",
-        "The volume effect of producing 2,000 more units than planned",
-        "An error in the original budget",
-        "The uncontrollable element of cost",
-      ],
-      1,
-      "Fixed budget to flexed budget is the VOLUME effect — the consequence of operating at a different activity level, not of managing costs well or badly. Only flexed budget to actual measures performance, and separating the two is the whole purpose of flexing."),
+      "NPV discounts INCREMENTAL CASH FLOWS. Depreciation is not a cash flow at all — it spreads a payment already counted in full at t0, so charging it again would count the machine twice. The head office apportionment IS cash, but it is paid whether or not the machine is bought, so it does not change with the decision. Note that the test is relevance, not behaviour: a fixed cost that genuinely changes because of a decision is relevant, and a variable cost that does not change is not."),
   ],
 }
 
