@@ -1619,9 +1619,11 @@ function Overview({
     const result = recordDayComplete(paper.id)
     if (!result.firstTime) return
     trackEvent("day_completed", { paper: paper.id, streak: result.streak, minutes: composition.totalMinutes })
-    void import("canvas-confetti").then((m) => {
-      m.default({ particleCount: result.milestone ? 160 : 90, spread: 78, origin: { y: 0.65 }, disableForReducedMotion: true })
-    }).catch(() => { /* confetti is decoration — never let it break the day */ })
+    // No confetti here — the DailyMissionCelebration modal that opens at 100%
+    // completion fires its own (see its corner cannons). Firing a second burst
+    // from here stacked three celebrations on one moment (confetti + the
+    // full-screen modal + the board's own "mission complete" card); the modal
+    // now owns the celebration.
     if (!congratulationSent(paper.id)) {
       const gate = tomorrowGate(paper.id)
       const preview = composeToday(paper.id, true)
