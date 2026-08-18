@@ -1,11 +1,40 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
-import { AFM_A } from "@/lib/acca-study-afm-a"
+import { AFM_TREE_AREA_A_PART1 } from "@/lib/acca-study-afm-tree-a"
+import { AFM_TREE_AREA_A_PART2 } from "@/lib/acca-study-afm-tree-a2"
 import { AFM_B } from "@/lib/acca-study-afm-b"
 import { AFM_C } from "@/lib/acca-study-afm-c"
 import { AFM_D } from "@/lib/acca-study-afm-d"
 import { AFM_E } from "@/lib/acca-study-afm-e"
 
-export const AFM_OFFICIAL_A = { ...AFM_A, title: "Role of the senior financial adviser in the multinational organisation" }
+/*
+ * AFM's rebuild is IN PROGRESS. Areas B–E below are still the legacy
+ * one-chapter-per-area content, relabelled onto the official structure: this
+ * file used to do that for all five technical areas, and the five legacy
+ * chapters carried the whole paper at ~12,000 words against 40,000+ for the
+ * finished Strategic Professional papers.
+ *
+ * AFM's shim was a straight 1:1 relabel rather than SBL's `subset()` re-cut, so
+ * the area MAPPING was already correct — the defect here is depth alone. Each
+ * area is being replaced by an authored tree, one area at a time.
+ *
+ *   Area A  DONE — AFM-01..09, acca-study-afm-tree-a.ts + -a2.ts
+ *   Area B  legacy (advanced investment appraisal)
+ *   Area C  legacy (acquisitions and mergers)
+ *   Area D  legacy (corporate reconstruction and reorganisation)
+ *   Area E  legacy (treasury and advanced risk management)
+ *   Area F  authored — professional skills (below)
+ *   Area G  authored — employability and technology skills (below)
+ *
+ * Do not reintroduce a helper that derives one area's chapters from another's.
+ */
+
+/* Area A is a nine-chapter authored tree, split across two modules for file
+   size only. The shim served all six of its syllabus subsections — including
+   international trade and finance, multinational planning and dividend
+   capacity, which carry real technical marks — from one legacy chapter written
+   mainly about the adviser's role and ethics. */
+export const AFM_OFFICIAL_A: StudyChapter[] = [...AFM_TREE_AREA_A_PART1, ...AFM_TREE_AREA_A_PART2]
+
 export const AFM_OFFICIAL_B = AFM_B
 export const AFM_OFFICIAL_C = AFM_C
 export const AFM_OFFICIAL_D = AFM_D

@@ -63,10 +63,27 @@
  * ended 31 March 2026" scenario openings. An allow-list written before that pass would
  * have quietly absorbed all of them.
  *
- * Run it from the directory holding the extracted book text, passing the books and the
- * authored files for the paper under review:
+ * Run it from the REPO ROOT, passing the books and the authored files for the paper
+ * under review. `--books` takes paths (Windows-style absolute paths work; a git-bash
+ * /c/... path does not, because Node resolves it as relative). `--mine` takes bare
+ * FILENAMES, which are matched against src/lib — not paths.
  *   node scripts/originality-check.cjs --books a.txt,b.txt --mine "acca-study-xx-*.ts,…"
  * Set ORIG_ALL=1 to print every finding rather than the first 40.
+ *
+ * ── AFM, Area A (Aug 2026) ────────────────────────────────────────
+ * Corpus: the founder's Kaplan AFM Study Text and Exam Kit (2020-21) plus the
+ * official S26-J27 syllabus PDF, 364k words in total. The syllabus is included in
+ * the corpus deliberately: on every rebuild so far the dominant finding has been
+ * ACCA's own learning-outcome wording absorbed verbatim, and indexing the syllabus
+ * is what catches it. Area A opened at 10 findings at 10 words — all three culprits
+ * were syllabus outcomes quoted into prose (A1(c)(iv) on communicating policy,
+ * A3(b) on the physical environment, A5(a)(ii) on capital mobility) — and rewording
+ * took it to zero at 10, 12 and 15 with no allow-list entry.
+ *   node scripts/originality-check.cjs --books "<dir>/afm-text.txt,<dir>/afm-kit.txt,<dir>/afm-syllabus.txt" \
+ *     --mine "acca-study-afm-tree-*.ts"
+ * The residue at 8 words is all deliberate: passages that tell the learner what the
+ * syllabus requirement says, plus the named central banks and "free cash flow to
+ * equity". None reach the gate, so none needed an exception.
  */
 const fs = require("fs")
 const path = require("path")

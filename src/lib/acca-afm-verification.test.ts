@@ -6,9 +6,56 @@ import { buildCbeMock } from "@/lib/acca-cbe-mock"
 
 describe("AFM September 2026–June 2027 official structure", () => {
   const areas = ["A", "B", "C", "D", "E", "F", "G"]
+
+  /*
+   * The authored-tree ratchet. AFM's rebuild replaces one area at a time, so
+   * this records what has landed and forbids regression — raise an area's floor
+   * in the commit that authors it. Areas still on 1 are the legacy
+   * one-chapter-per-area content that acca-study-afm-official.ts relabels.
+   */
+  const CHAPTER_FLOOR: Record<string, number> = {
+    A: 9, // trees a + a2 — AFM-01..09, one chapter per syllabus subsection group (A1, A2×3, A3×2, A4, A5, A6)
+    B: 1, // legacy — advanced investment appraisal
+    C: 1, // legacy — acquisitions and mergers
+    D: 1, // legacy — corporate reconstruction and reorganisation
+    E: 1, // legacy — treasury and advanced risk management
+    F: 1, // authored — professional skills
+    G: 1, // authored — employability and technology skills
+  }
+
   it("covers all seven official capabilities in questions and chapters", () => {
     expect(new Set(getQuestions("AFM").map((item) => item.area))).toEqual(new Set(areas))
-    expect(chaptersForPaper("AFM").map((item) => item.area).sort()).toEqual(areas)
+    expect([...new Set(chaptersForPaper("AFM").map((item) => item.area))].sort()).toEqual(areas)
+  })
+
+  it("keeps the authored chapter tree from regressing", () => {
+    for (const area of areas) {
+      const count = chaptersForPaper("AFM").filter((item) => item.area === area).length
+      expect(count, `AFM area ${area} chapter count`).toBeGreaterThanOrEqual(CHAPTER_FLOOR[area])
+    }
+  })
+
+  it("gives every authored tree chapter a stable id, number and syllabus references", () => {
+    // The shim-served legacy chapters carry none of these, which is how you tell
+    // an authored area from one still awaiting its rebuild.
+    const authored = chaptersForPaper("AFM").filter((item) => item.id?.startsWith("AFM-"))
+    expect(authored.length).toBeGreaterThanOrEqual(9)
+    const numbers = new Set<number>()
+    for (const chapter of authored) {
+      expect(typeof chapter.number, `${chapter.id} number`).toBe("number")
+      expect(chapter.syllabusRefs?.length ?? 0, `${chapter.id} syllabusRefs`).toBeGreaterThan(0)
+      expect(numbers.has(chapter.number as number), `${chapter.id} duplicate number`).toBe(false)
+      numbers.add(chapter.number as number)
+    }
+  })
+
+  it("teaches Area A's international and distribution subsections, which the shim buried", () => {
+    // A4, A5 and A6 carry real technical marks and were served by one legacy
+    // chapter written mainly about the adviser's role and ethics.
+    const areaA = JSON.stringify(chaptersForPaper("AFM").filter((item) => item.area === "A")).toLowerCase()
+    for (const term of ["dividend capacity", "transfer pric", "withholding tax", "exchange control", "trade diversion", "behavioural"]) {
+      expect(areaA, `Area A should teach ${term}`).toContain(term)
+    }
   })
   it("includes constructed practice for professional and technology skills", () => {
     const represented = new Set(getWrittenQuestions("AFM").map((item) => item.area))
