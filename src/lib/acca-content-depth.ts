@@ -71,7 +71,16 @@ export const DEVELOPING_PAPERS: readonly string[] = [
   // files deleted. Its shim was a different species again — content FILTERED at
   // load time by a currentOnly() helper, because Finance Act 2025 had made the
   // FA23 overseas material actively wrong rather than merely thin.
-  "AAA",
+  // AAA followed on 19 Aug 2026: 9 chapters → 30 (AAA-01..30) across all NINE
+  // official areas, the largest area count in the library, with all five legacy
+  // files deleted.
+  //
+  // THE LIST IS NOW EMPTY, AND THAT IS THE POINT. Every paper in the
+  // qualification — nine Applied Skills and six Strategic Professional — has a
+  // full authored chapter tree. The array is kept rather than deleted because
+  // the flag will be needed again the moment a syllabus is restructured or a
+  // new paper is added, and because its test is what proves the list still
+  // matches reality. Add a paper here the day its content falls short.
 ] as const
 
 /** True when this paper's course is still short of full length. */
