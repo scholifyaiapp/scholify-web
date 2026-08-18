@@ -1,6 +1,7 @@
 import type { StudyChapter } from "@/lib/acca-study-content"
 import { AFM_TREE_AREA_A_PART1 } from "@/lib/acca-study-afm-tree-a"
 import { AFM_TREE_AREA_A_PART2 } from "@/lib/acca-study-afm-tree-a2"
+import { AFM_TREE_AREA_B_PART1 } from "@/lib/acca-study-afm-tree-b1"
 import { AFM_B } from "@/lib/acca-study-afm-b"
 import { AFM_C } from "@/lib/acca-study-afm-c"
 import { AFM_D } from "@/lib/acca-study-afm-d"
@@ -18,7 +19,7 @@ import { AFM_E } from "@/lib/acca-study-afm-e"
  * area is being replaced by an authored tree, one area at a time.
  *
  *   Area A  DONE — AFM-01..09, acca-study-afm-tree-a.ts + -a2.ts
- *   Area B  legacy (advanced investment appraisal)
+ *   Area B  IN PROGRESS — B1 authored (AFM-10..13); legacy spliced last
  *   Area C  legacy (acquisitions and mergers)
  *   Area D  legacy (corporate reconstruction and reorganisation)
  *   Area E  legacy (treasury and advanced risk management)
@@ -35,7 +36,14 @@ import { AFM_E } from "@/lib/acca-study-afm-e"
    mainly about the adviser's role and ethics. */
 export const AFM_OFFICIAL_A: StudyChapter[] = [...AFM_TREE_AREA_A_PART1, ...AFM_TREE_AREA_A_PART2]
 
-export const AFM_OFFICIAL_B = AFM_B
+/* Area B is being authored subsection by subsection — the syllabus states that
+   EVERY exam carries question(s) focused on B and E, so it is the area a
+   candidate can least afford to meet as a shim. B1 (discounted cash flow
+   techniques) has landed as AFM-10..13. The legacy chapter stays SPLICED IN
+   LAST until the final subsection module retires it, so nothing it still
+   uniquely covers — options, APV, valuation, international appraisal —
+   disappears mid-rebuild. Delete it, and this import, when B5 lands. */
+export const AFM_OFFICIAL_B: StudyChapter[] = [...AFM_TREE_AREA_B_PART1, AFM_B]
 export const AFM_OFFICIAL_C = AFM_C
 export const AFM_OFFICIAL_D = AFM_D
 export const AFM_OFFICIAL_E = AFM_E
