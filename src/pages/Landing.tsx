@@ -20,7 +20,6 @@ import {
   Star,
 } from "lucide-react"
 import NavHeader from "@/components/ui/nav-header"
-import LanguageSwitcher from "@/components/LanguageSwitcher"
 import { GlowCard } from "@/components/ui/spotlight-card"
 import { QUESTION_COUNTS } from "@/lib/acca-content-counts"
 
@@ -310,7 +309,6 @@ function Nav() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <LanguageSwitcher />
         {/* Visible at EVERY width. This was `hidden md:inline-flex`, which left
             a returning customer on a phone with no route to sign-in from the
             homepage at all (the footer dropped its link too). */}
