@@ -33,7 +33,7 @@ type TabKey = "today" | "learn" | "practice" | "progress" | "settings"
 
 const TABS: { key: TabKey; label: string; Icon: typeof Zap }[] = [
   { key: "today", label: "Today", Icon: Zap },
-  { key: "learn", label: "Learn", Icon: BookOpen },
+  { key: "learn", label: "Study", Icon: BookOpen },
   { key: "practice", label: "Practice", Icon: Pencil },
   { key: "progress", label: "Progress", Icon: BarChart3 },
   { key: "settings", label: "Settings", Icon: Settings2 },
@@ -97,31 +97,44 @@ const exampleImages: ImageItem[] = [
         </div>
         <div className="flex items-center gap-1 rounded-full bg-[#fdf3e4] px-2.5 py-1.5 text-[9.5px] font-black tabular-nums text-[#c2740b]"><Flame size={12} /> 12</div>
       </div>
-      <Card className="mt-3 border-[#c80000]/20 bg-gradient-to-b from-[#fdeeec] to-white">
+      {/*
+       * The mission mirrors the REAL composed day — the five block kinds the
+       * app itself serves and labels (BLOCK_LABEL in TodayBoard): Study (the
+       * chapter/theme), Quiz, Practice, Flashcards, Technical article.
+       */}
+      <Card className="mt-3 border-[#c80000]/20 bg-gradient-to-b from-[#fdeeec] to-white !p-3">
         <Label>Your next action · the plan already chose</Label>
-        <div className="mt-2 flex items-center gap-2.5 border-b border-black/[.05] pb-2 text-[10.5px] text-[#8e817b]">
-          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#e3f5ee] text-[#0e9f6e]"><Check size={13} /></span>
-          Learn — Flexing the budget<span className="ml-auto tabular-nums text-[9px]">18m</span>
+        <div className="mt-1.5 flex items-center gap-2 border-b border-black/[.05] pb-1.5 text-[10px] text-[#8e817b]">
+          <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-[#e3f5ee] text-[#0e9f6e]"><Check size={12} /></span>
+          <span className="min-w-0 flex-1 truncate">Study — Chapter 18 · Flexing the budget</span><span className="tabular-nums text-[8.5px]">18m</span>
         </div>
-        <div className="mt-2 flex items-center gap-2.5 text-[11px] font-bold">
-          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#c80000] via-[#e50068] to-[#f4a405] text-white"><Pencil size={13} /></span>
-          Practice — 12 on variances<span className="ml-auto rounded-full bg-[#c80000]/10 px-2 py-0.5 text-[8.5px] font-extrabold text-[#c80000]">14m</span>
+        <div className="mt-1.5 flex items-center gap-2 border-b border-black/[.05] pb-1.5 text-[10.5px] font-bold">
+          <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#c80000] via-[#e50068] to-[#f4a405] text-white"><Zap size={12} /></span>
+          <span className="min-w-0 flex-1 truncate">Quiz — 5 quizzes on the chapter</span><span className="rounded-full bg-[#c80000]/10 px-1.5 py-0.5 text-[8px] font-extrabold text-[#c80000]">NEXT</span>
         </div>
-        <div className="mt-3 w-full rounded-xl bg-[#c80000] py-2.5 text-center text-[11px] font-extrabold text-white shadow-[0_8px_20px_-8px_rgba(200,0,0,.5)]">Continue mission</div>
+        {[
+          { Icon: Pencil, label: "Practice — 12 practice questions", mins: "14m" },
+          { Icon: GraduationCap, label: "Flashcards — 10 due", mins: "6m" },
+          { Icon: BookOpen, label: "Technical article — Budgeting in volatile costs", mins: "4m" },
+        ].map(({ Icon, label, mins }) => (
+          <div key={label} className="mt-1.5 flex items-center gap-2 border-b border-black/[.05] pb-1.5 text-[10px] text-[#5c4f4a] last:border-b-0 last:pb-0">
+            <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-[#f2eeeb] text-[#8e817b]"><Icon size={12} /></span>
+            <span className="min-w-0 flex-1 truncate">{label}</span><span className="tabular-nums text-[8.5px] text-[#a1948d]">{mins}</span>
+          </div>
+        ))}
+        <div className="mt-2.5 w-full rounded-xl bg-[#c80000] py-2.5 text-center text-[11px] font-extrabold text-white shadow-[0_8px_20px_-8px_rgba(200,0,0,.5)]">Continue — Quiz · 1 of 5 done</div>
       </Card>
-      <div className="mt-3 grid grid-cols-2 gap-2.5">
-        <Card className="!p-3"><Label>Streak</Label><div className="mt-1 text-[17px] font-black tabular-nums">12 <span className="text-[9.5px] font-bold text-[#8e817b]">days</span></div><div className="text-[8.5px] font-extrabold text-[#0e9f6e]">Secured for today ✓</div></Card>
-        <Card className="!p-3"><Label>Today’s goal</Label><div className="mt-1 text-[17px] font-black tabular-nums">9<span className="text-[10px] text-[#8e817b]">/12</span></div><Meter pct={75} color="#c80000" track="rgba(200,0,0,.08)" /></Card>
-        <Card className="!p-3"><Label>Weakest area</Label><div className="mt-1 text-[17px] font-black tabular-nums">D <span className="text-[9.5px] font-bold text-[#c2740b]">41%</span></div><Meter pct={41} color="#c2740b" track="rgba(194,116,11,.1)" /></Card>
-        <Card className="!p-3"><Label>Mock gate</Label><div className="mt-1 text-[17px] font-black tabular-nums">54<span className="text-[10px] text-[#8e817b]">/60%</span></div><Meter pct={90} color="#c2740b" track="rgba(194,116,11,.1)" /></Card>
+      <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+        <Card className="!p-3"><Label>Streak</Label><div className="mt-1 text-[16px] font-black tabular-nums">12 <span className="text-[9px] font-bold text-[#8e817b]">days</span></div><div className="text-[8px] font-extrabold text-[#0e9f6e]">Secured for today ✓</div></Card>
+        <Card className="!p-3"><Label>Mock gate</Label><div className="mt-1 text-[16px] font-black tabular-nums">54<span className="text-[9.5px] text-[#8e817b]">/60%</span></div><Meter pct={90} color="#c2740b" track="rgba(194,116,11,.1)" /></Card>
       </div>
     </Shell>,
   },
   {
-    title: "Learn — the authored chapters",
+    title: "Study — the authored chapters",
     alt: "Scholify mobile learning screen with continue card and chapter list",
     content: <Shell tab="learn">
-      <h3 className="text-[21px] font-black tracking-[-.05em]">Learn</h3>
+      <h3 className="text-[21px] font-black tracking-[-.05em]">Study</h3>
       <Card className="mt-3 border-[#c80000]/20 bg-gradient-to-b from-[#fdeeec] to-white">
         <Label>Continue where you left off</Label>
         <div className="mt-1.5 text-[13px] font-black tracking-[-.02em]">MA-18 · Flexing the budget</div>
