@@ -1150,7 +1150,7 @@ export default function Settings() {
       return
     }
     if (!isSupabaseConfigured) {
-      toast.error("Password changes need a connected account — email support@scholifyapp.com")
+      toast.error("Password changes need a connected account — email info@scholifyapp.com")
       return
     }
     setSavingPassword(true)

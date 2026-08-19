@@ -196,7 +196,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.status(400).json({ ok: false, reason: "unknown_action" })
 }
 
+/*
+ * TWO INBOXES, TWO JOBS (founder's split, 19 Aug 2026):
+ *
+ *   ADMIN_EMAIL     — the internal admin account. Receives USER-INFO
+ *                     notifications: partner applications, partner
+ *                     activations, payout requests. Also the identity the
+ *                     admin endpoints authenticate against (stripe.ts,
+ *                     waitlist.ts, admin-analytics.ts) — changing it there
+ *                     would lock the founder out.
+ *   OFFICIAL_EMAIL  — info@scholifyapp.com, the address the PUBLIC sees and
+ *                     writes to. Receives all user FEEDBACK, appears as the
+ *                     contact in outbound email footers, and is the default
+ *                     reply-to.
+ */
 const ADMIN_EMAIL = "scholifyaiapp@gmail.com"
+const OFFICIAL_EMAIL = "info@scholifyapp.com"
 
 /** Permanently delete only the caller's own authenticated account. */
 async function deleteAccount(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
@@ -395,7 +410,7 @@ async function submitFeedback(req: VercelRequest, res: VercelResponse, supa: Sup
     footerLabel: "Scholify Product Team",
   })
   const notificationResults = await Promise.allSettled([
-    sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: email, subject: `New Scholify feedback · ${category}`, html: adminHtml }),
+    sendPartnerEmail({ to: OFFICIAL_EMAIL, replyTo: email, subject: `New Scholify feedback · ${category}`, html: adminHtml }),
     sendPartnerEmail({ to: email, subject: "Thanks for your feedback — Scholify loves you", html: userHtml }),
   ])
   const notifications = {
@@ -556,7 +571,7 @@ function emailFrame(options: {
         ${cta}
         <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">
           ${escapeHtml(options.footerLabel || "Scholify Preferred Partner Program")}<br>
-          <a href="mailto:${ADMIN_EMAIL}" style="color:#C80000;text-decoration:none;">${ADMIN_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>${SOCIAL_FOOTER}
+          <a href="mailto:${OFFICIAL_EMAIL}" style="color:#C80000;text-decoration:none;">${OFFICIAL_EMAIL}</a> · <a href="${SITE_URL}" style="color:#C80000;text-decoration:none;">scholifyapp.com</a>${SOCIAL_FOOTER}
         </td></tr>
       </table>
     </td></tr>
@@ -582,7 +597,7 @@ export async function sendPartnerEmail(payload: {
       body: JSON.stringify({
         from,
         to: payload.to,
-        reply_to: payload.replyTo || ADMIN_EMAIL,
+        reply_to: payload.replyTo || OFFICIAL_EMAIL,
         subject: payload.subject,
         html: payload.html,
       }),

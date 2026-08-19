@@ -16,7 +16,7 @@ const en: PageContent = {
     {
       heading: "Email us",
       body: [
-        "The quickest way to reach a human is email: support@scholifyapp.com.",
+        "The quickest way to reach a human is email: info@scholifyapp.com.",
         "We answer most messages within 24 hours on weekdays. Tell us your account email and what is happening, and we will jump in.",
       ],
     },
@@ -38,7 +38,7 @@ const en: PageContent = {
     {
       heading: "Report a bug or suggest a feature",
       body: [
-        "Found something broken, or have an idea that would make Scholify better? Email support@scholifyapp.com with the details — screenshots help a lot. Your feedback genuinely shapes what we build next.",
+        "Found something broken, or have an idea that would make Scholify better? Email info@scholifyapp.com with the details — screenshots help a lot. Your feedback genuinely shapes what we build next.",
       ],
     },
     {

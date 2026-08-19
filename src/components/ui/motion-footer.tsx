@@ -134,6 +134,10 @@ const FOOTER_COMPANY_LINKS = [
   { label: "Support", href: "/support" },
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
+  // The official inbox (19 Aug 2026) — the one address the public writes to.
+  // Feedback routes here; admin/user-info notifications stay on the internal
+  // admin account (see api/affiliate.ts's ADMIN_EMAIL/OFFICIAL_EMAIL split).
+  { label: "info@scholifyapp.com", href: "mailto:info@scholifyapp.com" },
 ]
 
 interface CinematicFooterProps {

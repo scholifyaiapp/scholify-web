@@ -764,7 +764,7 @@ async function sendTrialEmail(apiKey: string, from: string, to: string, slot: Tr
         from,
         to,
         subject: copy.subject,
-        reply_to: "scholifyaiapp@gmail.com",
+        reply_to: "info@scholifyapp.com",
         html,
         text: `${copy.heading}\n\n${copy.body}\n\nYour next move: ${copy.detail}\n\n${copy.cta}: ${copy.href}\n\nManage subscription: ${SITE}/settings\nSupport: ${SITE}/support`,
       }),

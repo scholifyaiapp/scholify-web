@@ -20,7 +20,7 @@ import { secureLatestLogin } from "@/lib/account-session"
  * in supabase.ts). It says so, once, in one place.
  */
 const ACCOUNTS_CLOSED =
-  "Accounts aren't open yet — we're putting the finishing touches to Scholify. Email support@scholifyapp.com and we'll tell you the moment they are."
+  "Accounts aren't open yet — we're putting the finishing touches to Scholify. Email info@scholifyapp.com and we'll tell you the moment they are."
 
 /* ──────────────────────────────────────────────────────────────
  *  AuthContext — wraps Supabase auth.
@@ -355,7 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) {
       return {
         error:
-          "Password reset isn't available on this build. Email support@scholifyapp.com and we'll reset it for you.",
+          "Password reset isn't available on this build. Email info@scholifyapp.com and we'll reset it for you.",
       }
     }
     const siteUrl =

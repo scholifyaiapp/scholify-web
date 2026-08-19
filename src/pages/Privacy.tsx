@@ -51,7 +51,7 @@ const en: PageContent = {
       heading: "Your rights",
       body: [
         "You can view and edit your account information at any time inside the app.",
-        "You can export study data and delete your account from Settings. You may also request help, a copy, correction or deletion by emailing support@scholifyapp.com.",
+        "You can export study data and delete your account from Settings. You may also request help, a copy, correction or deletion by emailing info@scholifyapp.com.",
       ],
     },
     {
