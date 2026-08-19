@@ -113,6 +113,16 @@ export interface ExaminerResult {
   missed: string[]
   feedback: string
   isFallback: boolean
+  /**
+   * True only when NO marking of any kind happened — the examiner endpoint
+   * could not be reached at all. Distinct from isFallback, which the SERVER
+   * also sets when its keyword heuristic marked the answer (rough but real
+   * marks, fair to record). An unmarked task's zero is not a mark, and the
+   * mock runner must never record it as one: a network blip on an all-written
+   * paper would otherwise book a near-0% sitting from three hours of genuine
+   * answers, kill examReady and poison the trend.
+   */
+  unmarked?: boolean
 }
 
 /** Submit a written answer to the AI Examiner for marking against the rubric. */
@@ -153,6 +163,7 @@ export async function markAnswer(
     missed: wq.rubric,
     feedback: "Couldn't reach the examiner. Please try again.",
     isFallback: true,
+    unmarked: true,
   }
 }
 

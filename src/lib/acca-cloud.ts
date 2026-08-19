@@ -16,7 +16,30 @@
  */
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { snapshotProgress, restoreProgress, progressAnsweredCount } from "@/lib/acca"
+import { snapshotProgress, restoreProgress, progressAnsweredCount, type AccaProgressSnapshot } from "@/lib/acca"
+import { mergeProgressSnapshots } from "@/lib/acca-progress-merge"
+
+/**
+ * Shape-guard a cloud row before merging. The row is user-writable, so the
+ * merge must never see a primitive where it expects a map — restoreProgress
+ * runs its own full validation afterwards, this only keeps the merge itself
+ * from reading properties off garbage.
+ */
+function coerceCloudSnapshot(raw: unknown): AccaProgressSnapshot {
+  const o = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>
+  const obj = (v: unknown) => (typeof v === "object" && v !== null && !Array.isArray(v) ? v : {})
+  return {
+    questions: obj(o.questions),
+    areas: obj(o.areas),
+    totalAnswered: Number(o.totalAnswered) || 0,
+    totalCorrect: Number(o.totalCorrect) || 0,
+    lastStudied: typeof o.lastStudied === "string" ? o.lastStudied : null,
+    history: Array.isArray(o.history) ? o.history.filter((d): d is string => typeof d === "string") : [],
+    streak: Number(o.streak) || 0,
+    daily: obj(o.daily),
+    dailyCorrect: obj(o.dailyCorrect),
+  } as AccaProgressSnapshot
+}
 import {
   getLatestDiagnostic,
   mergeDiagnostic,
@@ -182,7 +205,17 @@ export async function syncAccaProgress(): Promise<boolean> {
     const localAnswered = progressAnsweredCount()
 
     if (data && cloudAnswered > localAnswered) {
-      restoreProgress(data.data ?? {})
+      /*
+       * MERGE, never replace. The old rule hydrated the whole cloud snapshot
+       * over local, which destroyed any unsynced local work — a new phone with
+       * 50 fresh FM answers lost all of them to a laptop's 300 MA answers the
+       * moment it first synced. The paper-level merge keeps whichever side is
+       * richer PER PAPER, so the different-papers fork is lossless and the
+       * same-paper fork degrades to exactly the old behaviour. The merged
+       * result is then pushed back up, so the cloud row converges too.
+       */
+      restoreProgress(mergeProgressSnapshots(snapshotProgress(), coerceCloudSnapshot(data.data)))
+      void pushAccaProgress()
       return true
     }
     if (localAnswered > cloudAnswered) {

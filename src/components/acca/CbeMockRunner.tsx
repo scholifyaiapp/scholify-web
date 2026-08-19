@@ -76,6 +76,10 @@ interface Outcome {
   flagged: number
   secondsUsed: number
   expired: boolean
+  /** Marks Charles could NOT reach to mark — excluded from the recorded score. */
+  unmarkedMarks: number
+  /** False when nothing could be marked: the sitting was kept, not booked. */
+  recorded: boolean
 }
 
 function fmtClock(s: number): string {
@@ -289,7 +293,11 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
     }
 
     // Constructed tasks — marked one at a time so the learner sees progress.
+    // A task Charles cannot REACH is not a zero: its marks are excluded from
+    // the recorded denominator (see below). The server's own keyword-heuristic
+    // fallback is different — rough but real marks — and records normally.
     const tasks: TaskOutcome[] = []
+    let unmarkedMarks = 0
     const taskItems = items.filter((f) => f.item.kind === "task")
     for (let i = 0; i < taskItems.length; i++) {
       const f = taskItems[i]
@@ -307,24 +315,53 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
         const workings = serializeForMarking(e.cells)
         const submission = workings ? `${e.text.trim()}\n\n${workings}` : e.text
         const r = await markAnswer(task, submission)
+        if (r.unmarked) {
+          unmarkedMarks += task.maxMarks
+          tasks.push({ key: f.key, title: task.topic, maxMarks: task.maxMarks, attempted: true, result: r })
+          continue
+        }
         earned += r.marks
         const sec = perSection.find((s) => s.id === f.section.id)
         if (sec) sec.earned += r.marks
         tasks.push({ key: f.key, title: task.topic, maxMarks: task.maxMarks, attempted: true, result: r })
       } catch {
+        // markAnswer never throws in practice (it returns its unreachable
+        // shape), but a defensive throw is the same situation: unmarked.
+        unmarkedMarks += task.maxMarks
         tasks.push({ key: f.key, title: task.topic, maxMarks: task.maxMarks, attempted: true, result: null })
       }
     }
 
     const total = mock.totalMarks
-    const percent = total ? Math.round((earned / total) * 100) : 0
+    /*
+     * SCORE WHAT WAS ACTUALLY MARKED. The percent is earned over the marks
+     * that received real marking — objective sections plus genuinely marked
+     * tasks. Marks Charles couldn't reach are excluded from the denominator
+     * rather than silently counted as zeros: a marking outage on an
+     * all-written SP paper would otherwise book a near-0% sitting from three
+     * hours of real answers, flip latestPassed, kill examReady and poison the
+     * trend — a false fail recorded by a network blip.
+     */
+    const markedTotal = total - unmarkedMarks
+    const percent = markedTotal > 0 ? Math.round((earned / markedTotal) * 100) : 0
+    const recorded = markedTotal > 0
 
-    // The learner record: this WAS a mock — it feeds the gate, the trend and
-    // the pass-probability model exactly as before.
-    recordMock(paperId, Math.round(earned), total, mock.form)
-    // The sitting is recorded, so its resume slot must die with it — a finished
-    // mock that could resurrect on the next open would double-record.
-    clearMockSitting(paperId, mock.form)
+    if (recorded) {
+      // The learner record: this WAS a mock — it feeds the gate, the trend and
+      // the pass-probability model exactly as before, over the marked total.
+      recordMock(paperId, Math.round(earned), markedTotal, mock.form)
+      // The sitting is recorded, so its resume slot must die with it — a
+      // finished mock that could resurrect on the next open would double-record.
+      clearMockSitting(paperId, mock.form)
+    }
+    /*
+     * NOTHING could be marked (a full outage on an all-written paper): record
+     * no mock and KEEP the resume slot. The learner's answers are safe in the
+     * sitting store; reopening this form resubmits them for marking through
+     * the ordinary expired-sitting path. Losing three hours of answers to a
+     * blip — or booking them as 0% — are both worse than asking for one more
+     * click when the connection returns.
+     */
     if (expired && unanswered > 0) recordMistake(paperId, "time", unanswered)
     recordDayActive(paperId)
     snapshotProbability(paperId)
@@ -342,7 +379,7 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
 
     setOutcome({
       earned: Math.round(earned * 10) / 10,
-      total,
+      total: markedTotal > 0 ? markedTotal : total,
       percent,
       perSection,
       tasks,
@@ -350,6 +387,8 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
       flagged: Object.values(flags).filter(Boolean).length,
       secondsUsed: expired ? mock.seconds : secondsUsed(),
       expired,
+      unmarkedMarks,
+      recorded,
     })
     setStage("results")
   }
@@ -453,6 +492,19 @@ export default function CbeMockRunner({ paperId, onBack, form: chosenForm }: { p
           {outcome.expired && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.amber, marginBottom: 8 }}><Icon name="mock" size={13} color={C.amber} /> The clock submitted this exam — just like the real thing.</div>
           )}
+          {/* Marking honesty. A partial outage: the score covers what Charles
+              could actually mark, and says so. A full outage: nothing was
+              booked and the answers are safe — reopening the form resubmits
+              them, which the kept resume slot makes true. */}
+          {!outcome.recorded ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: C.amber, marginBottom: 8, maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+              <Icon name="alert" size={13} color={C.amber} /> Charles couldn't be reached to mark your written answers, so this sitting hasn't been recorded. Your answers are saved — reopen this form to submit them for marking.
+            </div>
+          ) : outcome.unmarkedMarks > 0 ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.amber, marginBottom: 8, maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+              <Icon name="alert" size={13} color={C.amber} /> {outcome.unmarkedMarks} marks couldn't be reached for marking and are excluded from this score — it covers what was actually marked.
+            </div>
+          ) : null}
           <RingGauge value={outcome.percent} size={132} label="mock score" />
           <div style={{ fontSize: 15, fontWeight: 800, color: passed ? C.green : C.red, marginTop: 10 }}>
             {passed ? "Pass standard" : "Below the pass line"} · {outcome.earned}/{outcome.total} marks
