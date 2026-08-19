@@ -4,6 +4,7 @@
  * Kept in its own tiny module (not acca-loop) so acca-diagnostic can feed the
  * experience level into Charles's learner context without an import cycle.
  */
+import { swapVariantScopedRecords } from "@/lib/acca-variant-progress"
 
 export type Experience = "new" | "some" | "professional"
 
@@ -45,11 +46,23 @@ export function getPaperVariant(paperId: string): PaperVariant | null {
 
 export function setPaperVariant(paperId: string, variant: PaperVariant): void {
   if (paperId !== "LW" && paperId !== "TX") return
+  const previous = getPaperVariant(paperId)
   try {
     const saved = JSON.parse(window.localStorage.getItem(VARIANT_KEY) ?? "{}") as Record<string, PaperVariant>
     saved[paperId] = variant
     window.localStorage.setItem(VARIANT_KEY, JSON.stringify(saved))
   } catch { /* ignore */ }
+  /*
+   * The two variants are DIFFERENT SYLLABUSES sharing area letters, so the
+   * knowledge model measured on one must never be read as evidence about the
+   * other — LW-Global's Area B is the CISG, LW-English's is the law of
+   * obligations, and blending them steered weak-area drilling at the wrong
+   * law while a Global mock best-% counted toward the UK mock gate. The swap
+   * archives the old variant's records and restores any the new variant had,
+   * so switching back returns the learner exactly where they left off.
+   * Streaks, daily activity and the plan stay put: effort is variant-free.
+   */
+  if (previous && previous !== variant) swapVariantScopedRecords(paperId, previous, variant)
 }
 
 /*

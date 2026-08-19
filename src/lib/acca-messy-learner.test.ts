@@ -422,3 +422,114 @@ describe("the student who retakes the diagnostic", () => {
     expect(second.passProbability).toBeGreaterThan(first.passProbability) // improvement shows
   })
 })
+
+/* ── Batch 3: the variant switcher, the composer's promise, and Charles's voice ── */
+
+import { setPaperVariant, getPaperVariant } from "@/lib/acca-profile"
+import { getMockHistory, getDailyActivity } from "@/lib/acca"
+import { saveDiagnosticLocal as saveDiag, scoreDiagnostic as scoreD, buildDiagnostic as buildD } from "@/lib/acca-diagnostic"
+import { composeToday, dayProgress } from "@/lib/acca-today-composer"
+import { greeting, todayHeadline } from "@/lib/acca-today"
+
+describe("the student who switches syllabus variant mid-journey", () => {
+  function studyOn(paperId: string): void {
+    buildSession(paperId, 30, undefined, 3).forEach((q, i) => recordAnswer(paperId, q, i % 3 !== 0))
+    recordMock(paperId, 64, 100, 1)
+    const qs = buildD(paperId, 9)
+    saveDiag(scoreD(paperId, qs.map((q, i) => ({ q, correct: i % 2 === 0 }))))
+  }
+
+  it("switching archives the old syllabus's knowledge model — nothing measured on one is read as the other", () => {
+    // A default-variant LW learner (GLOBAL) builds a real record…
+    expect(getPaperVariant("LW")).toBe("GLOBAL")
+    studyOn("LW")
+    expect(getPaperStats("LW").answered).toBeGreaterThan(20)
+    expect(getMockHistory("LW")).toHaveLength(1)
+    expect(getLatestDiagnostic("LW")).not.toBeNull()
+
+    // …then switches to the UK variant.
+    setPaperVariant("LW", "UK")
+    expect(getPaperVariant("LW")).toBe("UK")
+    // The UK variant starts honestly at zero: no CISG accuracy steering an
+    // obligations-law learner, no Global mock % counting toward the UK gate.
+    expect(getPaperStats("LW").answered).toBe(0)
+    expect(getMockHistory("LW")).toHaveLength(0)
+    expect(getLatestDiagnostic("LW")).toBeNull()
+  })
+
+  it("switching BACK restores the archived record exactly — nothing was destroyed", () => {
+    studyOn("LW") // GLOBAL record
+    const answered = getPaperStats("LW").answered
+    const mockPct = getMockHistory("LW")[0].percent
+    setPaperVariant("LW", "UK")
+    expect(getPaperStats("LW").answered).toBe(0)
+    // Study a little on UK, then return to Global.
+    buildSession("LW", 10, undefined, 5).forEach((q) => recordAnswer("LW", q, true))
+    const ukAnswered = getPaperStats("LW").answered
+    expect(ukAnswered).toBeGreaterThan(0)
+    setPaperVariant("LW", "GLOBAL")
+    expect(getPaperStats("LW").answered).toBe(answered) // the Global record, intact
+    expect(getMockHistory("LW")[0].percent).toBe(mockPct)
+    // And forward again: the UK record survived its own archive round-trip.
+    setPaperVariant("LW", "UK")
+    expect(getPaperStats("LW").answered).toBe(ukAnswered)
+  })
+
+  it("effort records survive the switch — a streak was not sat on a syllabus", () => {
+    studyOn("LW")
+    const activityBefore = getDailyActivityTotal()
+    seedShield("LW", 1, 7)
+    setPaperVariant("LW", "UK")
+    expect(getDailyActivityTotal()).toBe(activityBefore) // daily counts untouched
+    expect(shieldState("LW").streak).toBeGreaterThan(0) // streak untouched
+    setPaperVariant("LW", "GLOBAL")
+  })
+
+  it("re-selecting the SAME variant changes nothing", () => {
+    studyOn("LW")
+    const before = getPaperStats("LW").answered
+    setPaperVariant("LW", "GLOBAL")
+    expect(getPaperStats("LW").answered).toBe(before)
+  })
+})
+
+function getDailyActivityTotal(): number {
+  return getDailyActivity(35).reduce((s, d) => s + d.count, 0)
+}
+
+describe("the day composer's dry-run promise", () => {
+  it("previewing the day never consumes it — dry runs are idempotent and match the real composition", () => {
+    setPlan("MA", { examDate: ymd(daysAhead(60)), dailyMinutes: 45, daysPerWeek: 5, studyDays: [1, 2, 3, 4, 5], dailyGoal: 12, targetProb: 75 })
+    const dry1 = composeToday("MA", true)
+    const dry2 = composeToday("MA", true)
+    expect(dry2.blocks.map((b) => b.id)).toEqual(dry1.blocks.map((b) => b.id))
+    // The real composition after two previews is the SAME day — the dashboard
+    // peeking at the plan must never change what /study serves.
+    const real = composeToday("MA", false)
+    expect(real.blocks.map((b) => b.id)).toEqual(dry1.blocks.map((b) => b.id))
+    const progress = dayProgress("MA", real, [])
+    expect(progress.done).toBe(0)
+    expect(progress.total).toBe(real.blocks.length)
+  })
+})
+
+describe("Charles's voice never goes blank or off-tone", () => {
+  it("greeting and headline hold in every state a learner can reach", () => {
+    // Brand new, no plan at all.
+    expect(greeting("Amina").length).toBeGreaterThan(0)
+    expect(todayHeadline("MA").length).toBeGreaterThan(0)
+    // Mid-journey.
+    setPlan("MA", { examDate: ymd(daysAhead(40)), dailyMinutes: 45, daysPerWeek: 5, studyDays: [1, 2, 3, 4, 5], dailyGoal: 12, targetProb: 75 })
+    buildSession("MA", 30, undefined, 3).forEach((q, i) => recordAnswer("MA", q, i % 2 === 0))
+    expect(todayHeadline("MA").length).toBeGreaterThan(0)
+    // Exam date passed without an outcome; then recovery.
+    setPlan("MA", { examDate: ymd(daysAgo(2)) })
+    expect(todayHeadline("MA").length).toBeGreaterThan(0)
+    recordExamOutcome("MA", false, 44)
+    expect(todayHeadline("MA").length).toBeGreaterThan(0)
+    // No string Charles produces scolds or hypes.
+    for (const s of [greeting("Amina"), todayHeadline("MA")]) {
+      expect(s).not.toMatch(/!!|😢|🎉/)
+    }
+  })
+})
