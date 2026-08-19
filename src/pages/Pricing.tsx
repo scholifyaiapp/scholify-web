@@ -197,17 +197,36 @@ export default function Pricing() {
     setTimeout(() => setNotice(null), 2800)
   }
 
+  /*
+   * Which plan's checkout is being opened, or null. Creating the session takes
+   * 2–5 seconds (cold start + Stripe), and the buttons gave no feedback for
+   * any of it — users pressed again or assumed the page was broken. The
+   * pressed button flips to "Opening secure checkout…" instantly and the other
+   * purchase buttons lock; on success the browser navigates away, so the
+   * state never needs clearing.
+   */
+  const [checkingOut, setCheckingOut] = useState<StripePlan | "portal" | null>(null)
+
   const checkout = (plan: StripePlan) => {
+    if (checkingOut) return // one session at a time — a double press must not open two
     // Existing subscribers change plans and payment details in Stripe's hosted
     // portal. Starting a second Checkout subscription would double-bill them.
     if (entitlement.isPaid) {
+      setCheckingOut("portal")
       void openStripeBillingPortal().then((ok) => {
-        if (!ok) flash("Couldn't open billing management — please try again in a moment.")
+        if (!ok) {
+          setCheckingOut(null)
+          flash("Couldn't open billing management — please try again in a moment.")
+        }
       })
       return
     }
+    setCheckingOut(plan)
     void startStripeCheckout(plan).then((ok) => {
-      if (!ok) flash("Couldn't open checkout — please try again in a moment.")
+      if (!ok) {
+        setCheckingOut(null)
+        flash("Couldn't open checkout — please try again in a moment.")
+      }
     })
   }
 
@@ -443,8 +462,8 @@ export default function Pricing() {
             description="For steady daily practice"
             featuresHeader="The full study loop:"
             features={BEGINNER_FEATURES}
-            cta={paymentsOpen ? beginnerCta : "Payments open soon"}
-            disabled={!paymentsOpen}
+            cta={!paymentsOpen ? "Payments open soon" : checkingOut === (annual ? "annual_beginner" : "beginner") || checkingOut === "portal" ? "Opening secure checkout…" : beginnerCta}
+            disabled={!paymentsOpen || (checkingOut !== null && checkingOut !== "portal" && checkingOut !== (annual ? "annual_beginner" : "beginner"))}
             onCta={() => checkout(annual ? "annual_beginner" : "beginner")}
           />
           <PricingCard
@@ -458,8 +477,8 @@ export default function Pricing() {
             description="Mocks, AI Examiner & custom practice"
             featuresHeader="Everything in Beginner, plus:"
             features={PRO_FEATURES}
-            cta={paymentsOpen ? proCta : "Payments open soon"}
-            disabled={!paymentsOpen}
+            cta={!paymentsOpen ? "Payments open soon" : checkingOut === (annual ? "annual_pro" : "pro") || checkingOut === "portal" ? "Opening secure checkout…" : proCta}
+            disabled={!paymentsOpen || (checkingOut !== null && checkingOut !== "portal" && checkingOut !== (annual ? "annual_pro" : "pro"))}
             badge="Most Popular"
             onCta={() => checkout(annual ? "annual_pro" : "pro")}
           />
@@ -562,7 +581,7 @@ export default function Pricing() {
               boxShadow: paymentsOpen ? "0 0 30px rgba(255,215,0,0.2)" : "none",
             }}
           >
-            {paymentsOpen ? "Choose Annual →" : "Payments open soon"}
+            {!paymentsOpen ? "Payments open soon" : checkingOut === "annual_pro" || checkingOut === "portal" ? "Opening secure checkout…" : "Choose Annual →"}
           </motion.button>
         </motion.div>
 

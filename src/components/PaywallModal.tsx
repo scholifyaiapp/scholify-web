@@ -134,6 +134,17 @@ export default function PaywallModal({
   const [celebrating, setCelebrating] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshNote, setRefreshNote] = useState<string | null>(null)
+  /*
+   * Which plan's checkout is being opened, or null. Creating the Stripe
+   * session takes 2–5 seconds (serverless cold start + the double-subscription
+   * guard + session creation), and the button gave NO feedback for any of it —
+   * on the one screen where hesitation costs money, the modal looked frozen
+   * and users pressed again or gave up. The pressed button now flips to a
+   * spinner instantly and every other purchase button locks, so a double
+   * press cannot open two sessions. The state never needs clearing on
+   * success: the browser navigates to Stripe.
+   */
+  const [checkingOut, setCheckingOut] = useState<StripePlan | null>(null)
 
   // Paywalls are dismissible — EXCEPT "expired". Once the 3-day trial ends, the
   // whole app is gated behind this modal until the learner pays (founder call),
@@ -229,13 +240,17 @@ export default function PaywallModal({
   }
 
   const handleCheckout = (plan: StripePlan) => {
+    if (checkingOut) return // one session at a time — a double press must not open two
+    setCheckingOut(plan)
     trackEvent("upgrade_started", { plan })
     trackEvent("paywall_checkout_clicked", { type })
     void startStripeCheckout(plan).then((ok) => {
       if (!ok) {
+        setCheckingOut(null)
         setNotice("Couldn't open checkout — please try again in a moment.")
         setTimeout(() => setNotice(null), 3200)
       }
+      // On success the browser is navigating to Stripe — keep the spinner up.
     })
   }
 
@@ -463,7 +478,8 @@ export default function PaywallModal({
                 unit="/month"
                 description="Steady daily practice"
                 cta={paymentsOpen ? "Choose Beginner" : "Payments open soon"}
-                disabled={!paymentsOpen}
+                disabled={!paymentsOpen || (checkingOut !== null && checkingOut !== "beginner")}
+                busy={checkingOut === "beginner"}
                 onClick={() => handleCheckout("beginner")}
               />}
               <PlanMini
@@ -473,7 +489,8 @@ export default function PaywallModal({
                 unit="/month"
                 description="Your complete adaptive system"
                 cta={paymentsOpen ? "Start 3 days free →" : "Payments open soon"}
-                disabled={!paymentsOpen}
+                disabled={!paymentsOpen || (checkingOut !== null && checkingOut !== "pro")}
+                busy={checkingOut === "pro"}
                 onClick={() => handleCheckout("pro")}
               />
             </div>
@@ -493,7 +510,7 @@ export default function PaywallModal({
               <motion.button
                 type="button"
                 onClick={() => handleCheckout("annual_pro")}
-                whileHover={paymentsOpen ? { scale: 1.01 } : undefined}
+                whileHover={paymentsOpen && !checkingOut ? { scale: 1.01 } : undefined}
                 style={{
                   width: "100%",
                   display: "flex",
@@ -503,14 +520,14 @@ export default function PaywallModal({
                   borderRadius: 14,
                   border: "1px solid var(--sch-border)",
                   background: "var(--sch-card)",
-                  cursor: paymentsOpen ? "pointer" : "not-allowed",
-                  opacity: paymentsOpen ? 1 : 0.55,
+                  cursor: paymentsOpen && !checkingOut ? "pointer" : "not-allowed",
+                  opacity: paymentsOpen && (!checkingOut || checkingOut === "annual_pro") ? 1 : 0.55,
                   textAlign: "left",
                 }}
               >
                 <span>
                   <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--sch-text)" }}>
-                    Annual Pro
+                    {checkingOut === "annual_pro" ? "Opening secure checkout…" : "Annual Pro"}
                   </span>
                   <span style={{ fontSize: 12, color: "var(--sch-tx-2)" }}>
                     Billed today · save 33% vs monthly
@@ -762,6 +779,7 @@ function PlanMini({
   onClick,
   featured,
   disabled,
+  busy,
 }: {
   name: string
   price: string
@@ -772,6 +790,8 @@ function PlanMini({
   featured?: boolean
   /** Payments not configured — the button stays visible but is not purchasable. */
   disabled?: boolean
+  /** This plan's checkout session is being created — spinner instead of the CTA. */
+  busy?: boolean
 }) {
   const cardStyle: CSSProperties = featured
     ? {
@@ -834,13 +854,14 @@ function PlanMini({
       </div>
       <motion.button
         type="button"
-        onClick={onClick}
+        onClick={disabled || busy ? undefined : onClick}
+        aria-busy={busy || undefined}
         whileHover={
-          disabled
+          disabled || busy
             ? undefined
             : { scale: featured ? 1.02 : 1, boxShadow: featured ? "0 0 50px rgba(200,0,0,0.45)" : undefined }
         }
-        whileTap={disabled ? undefined : { scale: 0.98 }}
+        whileTap={disabled || busy ? undefined : { scale: 0.98 }}
         style={{
           width: "100%",
           height: 44,
@@ -848,14 +869,39 @@ function PlanMini({
           borderRadius: 12,
           fontSize: 14,
           fontWeight: featured ? 700 : 600,
-          cursor: disabled ? "not-allowed" : "pointer",
+          cursor: disabled ? "not-allowed" : busy ? "progress" : "pointer",
           color: disabled ? "var(--sch-tx-2)" : featured ? "#fff" : "var(--sch-tx-1)",
           background: disabled ? "var(--sch-card)" : featured ? IRIDESCENT : "var(--sch-card)",
           border: disabled || !featured ? "1px solid var(--sch-border-2)" : "none",
           boxShadow: !disabled && featured ? "0 0 30px rgba(200,0,0,0.3)" : "none",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
         }}
       >
-        {cta}
+        {busy ? (
+          <>
+            {/* The instant answer to the click: motion, not silence, while the
+                secure session is created (2–5s of cold start + Stripe). */}
+            <motion.span
+              aria-hidden
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+              style={{
+                width: 15,
+                height: 15,
+                borderRadius: "50%",
+                border: `2px solid ${featured ? "rgba(255,255,255,0.4)" : "var(--sch-border-2)"}`,
+                borderTopColor: featured ? "#fff" : "var(--sch-tx-1)",
+                flexShrink: 0,
+              }}
+            />
+            Opening secure checkout…
+          </>
+        ) : (
+          cta
+        )}
       </motion.button>
     </div>
   )

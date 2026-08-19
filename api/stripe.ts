@@ -787,29 +787,38 @@ async function checkout(req: VercelRequest, res: VercelResponse): Promise<void> 
 
   const origin = safeReturnOrigin(req.headers.origin)
 
-  // A paying customer must manage their existing subscription rather than
-  // accidentally creating a second one. This server-side guard protects every
-  // checkout entry point, including stale browser tabs and older app builds.
+  /*
+   * The two lookups below are independent, so they run CONCURRENTLY. They were
+   * sequential — a Stripe round-trip, then up to three Supabase queries — on
+   * the click users feel most: every checkout paid the sum of both latencies
+   * on top of the cold start. Now it pays the max. If the guard routes to the
+   * portal, the already-resolved affiliate metadata is simply discarded (it is
+   * a read, attribution is only ever WRITTEN via the checkout session).
+   */
   const existingSubscriptionId = user.app_metadata?.stripe_subscription_id as string | undefined
   const existingCustomerId = user.app_metadata?.stripe_customer_id as string | undefined
-  if (existingSubscriptionId && existingCustomerId) {
+  const [existingSub, affMeta] = await Promise.all([
+    // A paying customer must manage their existing subscription rather than
+    // accidentally creating a second one. This server-side guard protects
+    // every checkout entry point, including stale tabs and older app builds.
+    existingSubscriptionId && existingCustomerId
+      ? stripe.subscriptions.retrieve(existingSubscriptionId).catch(() => null)
+      : Promise.resolve(null),
+    resolveAffiliateMetadata(supa, user.id, body.affiliateCode),
+  ])
+  if (existingSub && existingSub.status !== "canceled" && existingSub.status !== "incomplete_expired" && existingCustomerId) {
     try {
-      const existing = await stripe.subscriptions.retrieve(existingSubscriptionId)
-      if (existing.status !== "canceled" && existing.status !== "incomplete_expired") {
-        const portalSession = await stripe.billingPortal.sessions.create({
-          customer: existingCustomerId,
-          return_url: `${origin}/pricing?billing=updated`,
-        })
-        res.status(200).json({ ok: true, url: portalSession.url, destination: "portal" })
-        return
-      }
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: existingCustomerId,
+        return_url: `${origin}/pricing?billing=updated`,
+      })
+      res.status(200).json({ ok: true, url: portalSession.url, destination: "portal" })
+      return
     } catch {
       // A stale subscription id should not strand the customer; Checkout below
       // can create a fresh subscription and the webhook repairs app_metadata.
     }
   }
-
-  const affMeta = await resolveAffiliateMetadata(supa, user.id, body.affiliateCode)
   /*
    * THE TRIAL IS MONTHLY PRO ONLY.
    *
