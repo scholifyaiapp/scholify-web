@@ -1,105 +1,249 @@
 import React from "react"
-import { BookOpen, Check, ChevronRight, Clock3, Flame, Mic, Send, Sparkles, Target } from "lucide-react"
+import { BarChart3, BookOpen, Check, ChevronRight, Flame, GraduationCap, Lock, Pencil, Settings2, Timer, Zap } from "lucide-react"
 import {
   type ImageItem,
   PhoneCarousel,
 } from "@/components/ui/phone-mockups-1-utils/phone-carousel"
 
 /*
- * The four screens shown inside the device frame. Two rules hold this file
- * together:
+ * THE PHONE SHOWS THE REAL APP. These five screens are miniatures of the five
+ * internal surfaces a signed-in student actually uses — Dashboard, Learn,
+ * Practice, Progress, Settings — drawn with the app's own tokens (warm cream
+ * #f7f3f1 page, white cards, #C80000 brand, the green/amber bands) and the
+ * app's own data shapes (the composed mission, the mock gate at 60%, area
+ * mastery meters, the study-day chips). The previous set showed onboarding
+ * and a chat screen that don't exist in this form in the product; a visitor
+ * comparing the teaser with the real app should recognise every pixel.
+ *
+ * Two rules hold this file together:
  *
  * 1. NOTHING IN HERE IS INTERACTIVE. It is a picture of an app, so every
  *    control is a <div>. Real <button>s would each take a tab stop and answer
- *    with nothing — fifteen dead keyboard stops in the middle of the page.
- *    The carousel labels the whole screen with role="img", so descendants are
- *    presentational to assistive tech anyway.
+ *    with nothing. The carousel labels the whole screen with role="img", so
+ *    descendants are presentational to assistive tech anyway.
  * 2. TYPE IS SIZED FOR THE MOCKUP'S SCALE, not for the real device. The frame
  *    renders ~278px wide against a 393pt phone, so everything here is read at
- *    roughly 0.7×. 11px in this file is a 15-16px body line on a real handset;
- *    the 7-8px labels that used to be here were 10px equivalents — legible in
- *    a screenshot, not on the page.
+ *    roughly 0.7×. 11px in this file is a 15-16px body line on a real handset.
  *
  * The status bar, notch and home indicator are NOT drawn here — the carousel
- * paints one set of device chrome over all four screens so they cannot drift.
+ * paints one set of device chrome over all five screens so they cannot drift.
  */
 
-const Shell = ({ children, step }: { children: React.ReactNode; step: string }) => (
-  <div className="h-full bg-[#f8f5f2] px-4 pb-6 pt-[52px] font-sans text-[#201b1a]">
-    <div className="mb-5 flex items-center justify-between">
+type TabKey = "today" | "learn" | "practice" | "progress" | "settings"
+
+const TABS: { key: TabKey; label: string; Icon: typeof Zap }[] = [
+  { key: "today", label: "Today", Icon: Zap },
+  { key: "learn", label: "Learn", Icon: BookOpen },
+  { key: "practice", label: "Practice", Icon: Pencil },
+  { key: "progress", label: "Progress", Icon: BarChart3 },
+  { key: "settings", label: "Settings", Icon: Settings2 },
+]
+
+/** The app's own mobile chrome: wordmark header + the five-tab bar. */
+const Shell = ({ children, tab }: { children: React.ReactNode; tab: TabKey }) => (
+  <div className="relative h-full bg-[#f7f3f1] px-4 pb-[64px] pt-[52px] font-sans text-[#332b28]">
+    <div className="mb-4 flex items-center justify-between">
       <div className="text-[14px] font-black tracking-[-.04em]">SCHOLIFY<span className="text-[#c80000]">.</span></div>
-      <div className="rounded-full bg-white px-2.5 py-1 text-[8.5px] font-extrabold tracking-[.12em] text-[#8e817b] shadow-sm">{step}</div>
+      <div className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[8.5px] font-extrabold tracking-[.1em] text-[#8e817b] shadow-sm"><span className="text-[#c80000]">MA</span> · 67D TO EXAM</div>
     </div>
     {children}
+    <div className="absolute inset-x-0 bottom-0 flex h-[54px] items-stretch border-t border-black/[.06] bg-[#f7f3f1]/95">
+      {TABS.map(({ key, label, Icon }) => (
+        <div key={key} className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-[7.5px] font-bold ${key === tab ? "text-[#c80000]" : "text-[#8e817b]"}`}>
+          <Icon size={14} strokeWidth={key === tab ? 2.6 : 2} />
+          {label}
+        </div>
+      ))}
+    </div>
   </div>
 )
 
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`rounded-[18px] border border-black/[.055] bg-white p-4 shadow-[0_12px_30px_-22px_rgba(40,20,20,.35)] ${className}`}>{children}</div>
+  <div className={`rounded-[18px] border border-black/[.055] bg-white p-3.5 shadow-[0_12px_30px_-22px_rgba(40,20,20,.35)] ${className}`}>{children}</div>
 )
 
-/** A control that only looks like one. Never a <button>. */
-const FakeButton = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`select-none ${className}`}>{children}</div>
+const Label = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-[8px] font-extrabold uppercase tracking-[.12em] text-[#a1948d]">{children}</div>
 )
+
+const Meter = ({ pct, color, track }: { pct: number; color: string; track: string }) => (
+  <div className="mt-1.5 h-[5px] overflow-hidden rounded-full" style={{ background: track }}>
+    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+  </div>
+)
+
+/** The readiness ring exactly as the app draws it — band color, % centred. */
+const Ring = ({ size, pct, band }: { size: number; pct: number; band: string }) => {
+  const r = (size - 10) / 2
+  const circ = 2 * Math.PI * r
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f0e9e5" strokeWidth={9} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={band} strokeWidth={9} strokeLinecap="round" strokeDasharray={`${(circ * pct) / 100} ${circ}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+      <text x="50%" y="54%" textAnchor="middle" fontSize={size / 4.4} fontWeight={800} fill="#332b28" style={{ fontVariantNumeric: "tabular-nums" }}>{pct}%</text>
+    </svg>
+  )
+}
 
 const exampleImages: ImageItem[] = [
   {
-    title: "Onboarding — pick your paper",
-    alt: "Scholify mobile onboarding paper selection",
-    content: <Shell step="01 / 04">
-      <div className="mb-1.5 text-[9.5px] font-extrabold uppercase tracking-[.14em] text-[#c80000]">Build your route</div>
-      <h3 className="text-[24px] font-black leading-[1.05] tracking-[-.05em]">Which paper are you preparing for?</h3>
-      <p className="mt-2.5 text-[11px] leading-[1.45] text-[#8e817b]">Charles will shape your plan around the paper and exam date.</p>
-      <div className="mt-5 space-y-2.5">
-        {["Financial Reporting", "Audit & Assurance", "Performance Management"].map((paper, i) => <div key={paper} className={`flex items-center gap-3 rounded-2xl border p-3 ${i === 0 ? "border-[#c80000] bg-[#fff1ef]" : "border-black/[.06] bg-white"}`}><div className={`grid size-9 shrink-0 place-items-center rounded-xl ${i === 0 ? "bg-[#c80000] text-white" : "bg-[#f2eeeb] text-[#8e817b]"}`}><BookOpen size={16}/></div><div className="min-w-0 flex-1"><b className="block truncate text-[11.5px] tracking-[-.01em]">{paper}</b><span className="text-[9.5px] text-[#8e817b]">ACCA · Applied Skills</span></div>{i === 0 && <Check size={15} className="shrink-0 text-[#c80000]"/>}</div>)}
+    title: "Today — the plan already chose",
+    alt: "Scholify mobile dashboard with today's mission, streak and mock gate",
+    content: <Shell tab="today">
+      <div className="flex items-end justify-between">
+        <div>
+          <div className="text-[10px] font-bold text-[#8e817b]">Morning, Amina — day 23 of 90</div>
+          <h3 className="mt-0.5 text-[21px] font-black tracking-[-.05em]">Today’s mission</h3>
+        </div>
+        <div className="flex items-center gap-1 rounded-full bg-[#fdf3e4] px-2.5 py-1.5 text-[9.5px] font-black tabular-nums text-[#c2740b]"><Flame size={12} /> 12</div>
       </div>
-      <FakeButton className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#171319] py-3.5 text-[11.5px] font-extrabold text-white">Continue <ChevronRight size={14}/></FakeButton>
-    </Shell>,
-  },
-  {
-    title: "Today — your five blocks",
-    alt: "Scholify mobile daily study plan dashboard",
-    content: <Shell step="TODAY">
-      <div className="flex items-end justify-between"><div><div className="text-[10px] font-bold text-[#8e817b]">Good morning, Alex</div><h3 className="mt-1 text-[23px] font-black tracking-[-.05em]">Today’s mission</h3></div><div className="flex items-center gap-1 rounded-full bg-[#fff1df] px-2.5 py-1.5 text-[9.5px] font-black text-[#d27c00]"><Flame size={12}/> 12</div></div>
-      <Card className="mt-4 bg-gradient-to-br from-[#21191c] to-[#4b090d] text-white">
-        <div className="flex justify-between text-[9.5px] font-bold text-white/60"><span>FR · REVENUE</span><span className="tabular-nums">32 MIN</span></div>
-        <div className="mt-3 text-[17px] font-black tracking-[-.04em]">Master IFRS 15</div>
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[62%] rounded-full bg-gradient-to-r from-[#ef2b20] to-[#f4a405]"/></div>
-        <div className="mt-2 text-[9.5px] text-white/60">2 of 4 tasks complete</div>
+      <Card className="mt-3 border-[#c80000]/20 bg-gradient-to-b from-[#fdeeec] to-white">
+        <Label>Your next action · the plan already chose</Label>
+        <div className="mt-2 flex items-center gap-2.5 border-b border-black/[.05] pb-2 text-[10.5px] text-[#8e817b]">
+          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#e3f5ee] text-[#0e9f6e]"><Check size={13} /></span>
+          Learn — Flexing the budget<span className="ml-auto tabular-nums text-[9px]">18m</span>
+        </div>
+        <div className="mt-2 flex items-center gap-2.5 text-[11px] font-bold">
+          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#c80000] via-[#e50068] to-[#f4a405] text-white"><Pencil size={13} /></span>
+          Practice — 12 on variances<span className="ml-auto rounded-full bg-[#c80000]/10 px-2 py-0.5 text-[8.5px] font-extrabold text-[#c80000]">14m</span>
+        </div>
+        <div className="mt-3 w-full rounded-xl bg-[#c80000] py-2.5 text-center text-[11px] font-extrabold text-white shadow-[0_8px_20px_-8px_rgba(200,0,0,.5)]">Continue mission</div>
       </Card>
-      <div className="mt-4 space-y-2.5">
-        {[{Icon:BookOpen,title:"Topic brief",sub:"8 min",done:true},{Icon:Target,title:"Guided practice",sub:"10 questions",done:false},{Icon:Sparkles,title:"Charles review",sub:"Weak areas",done:false}].map(({Icon,title,sub,done}) => <Card key={title} className="flex items-center gap-3 !p-3"><div className={`grid size-9 shrink-0 place-items-center rounded-xl ${done ? "bg-[#ddfaf4] text-[#168c7d]" : "bg-[#f2eeeb] text-[#5c4f4a]"}`}><Icon size={16}/></div><div className="min-w-0 flex-1"><b className="block text-[11.5px] tracking-[-.01em]">{title}</b><span className="text-[9.5px] text-[#8e817b]">{sub}</span></div>{done ? <Check size={15} className="shrink-0 text-[#168c7d]"/> : <ChevronRight size={15} className="shrink-0 text-[#b9aca5]"/>}</Card>)}
+      <div className="mt-3 grid grid-cols-2 gap-2.5">
+        <Card className="!p-3"><Label>Streak</Label><div className="mt-1 text-[17px] font-black tabular-nums">12 <span className="text-[9.5px] font-bold text-[#8e817b]">days</span></div><div className="text-[8.5px] font-extrabold text-[#0e9f6e]">Secured for today ✓</div></Card>
+        <Card className="!p-3"><Label>Today’s goal</Label><div className="mt-1 text-[17px] font-black tabular-nums">9<span className="text-[10px] text-[#8e817b]">/12</span></div><Meter pct={75} color="#c80000" track="rgba(200,0,0,.08)" /></Card>
+        <Card className="!p-3"><Label>Weakest area</Label><div className="mt-1 text-[17px] font-black tabular-nums">D <span className="text-[9.5px] font-bold text-[#c2740b]">41%</span></div><Meter pct={41} color="#c2740b" track="rgba(194,116,11,.1)" /></Card>
+        <Card className="!p-3"><Label>Mock gate</Label><div className="mt-1 text-[17px] font-black tabular-nums">54<span className="text-[10px] text-[#8e817b]">/60%</span></div><Meter pct={90} color="#c2740b" track="rgba(194,116,11,.1)" /></Card>
       </div>
     </Shell>,
   },
   {
-    title: "Practice — exam-standard questions",
-    alt: "Scholify mobile ACCA question practice interface",
-    content: <Shell step="04 / 10">
-      <div className="flex items-center justify-between text-[9.5px] font-bold text-[#8e817b]"><span>FINANCIAL REPORTING</span><span className="flex items-center gap-1 tabular-nums"><Clock3 size={11}/> 12:46</span></div>
-      <div className="mt-3 h-1.5 rounded-full bg-black/[.06]"><div className="h-full w-[40%] rounded-full bg-[#c80000]"/></div>
-      <h3 className="mt-5 text-[15.5px] font-extrabold leading-[1.32] tracking-[-.025em]">Which amount should be recognised as revenue at year end?</h3>
-      <Card className="mt-3 !p-3"><p className="text-[10.5px] leading-[1.5] text-[#5c4f4a]">Arlo Co signed a £120,000 contract on 1 October. Performance is satisfied evenly over 12 months.</p></Card>
-      <div className="mt-3 space-y-2.5">{["£30,000","£40,000","£90,000","£120,000"].map((answer, i) => <FakeButton key={answer} className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left text-[11.5px] font-bold tabular-nums ${i === 0 ? "border-[#c80000] bg-[#fff1ef]" : "border-black/[.06] bg-white"}`}><span className={`grid size-6 shrink-0 place-items-center rounded-full text-[9px] ${i === 0 ? "bg-[#c80000] text-white" : "bg-[#f2eeeb] text-[#8e817b]"}`}>{String.fromCharCode(65+i)}</span>{answer}</FakeButton>)}</div>
-      <FakeButton className="mt-4 w-full rounded-2xl bg-[#171319] py-3.5 text-center text-[11.5px] font-extrabold text-white">Check answer</FakeButton>
+    title: "Learn — the authored chapters",
+    alt: "Scholify mobile learning screen with continue card and chapter list",
+    content: <Shell tab="learn">
+      <h3 className="text-[21px] font-black tracking-[-.05em]">Learn</h3>
+      <Card className="mt-3 border-[#c80000]/20 bg-gradient-to-b from-[#fdeeec] to-white">
+        <Label>Continue where you left off</Label>
+        <div className="mt-1.5 text-[13px] font-black tracking-[-.02em]">MA-18 · Flexing the budget</div>
+        <Meter pct={58} color="#c80000" track="rgba(200,0,0,.08)" />
+        <div className="mt-1.5 text-[9px] tabular-nums text-[#8e817b]">12 min left · 16 of 27 chapters read</div>
+        <div className="mt-2.5 w-full rounded-xl bg-[#c80000] py-2.5 text-center text-[11px] font-extrabold text-white">Continue reading</div>
+      </Card>
+      <div className="mt-4 flex items-baseline justify-between">
+        <Label>Area D · Budgeting</Label>
+        <span className="text-[9px] font-extrabold tabular-nums text-[#c2740b]">41% mastery</span>
+      </div>
+      <Card className="mt-1.5 !p-2">
+        {[
+          { id: "MA-16", title: "Budget preparation", state: "done" },
+          { id: "MA-17", title: "The cash budget", state: "done" },
+          { id: "MA-18", title: "Flexing the budget", state: "now" },
+          { id: "MA-19", title: "Capital budgeting", state: "todo", mins: "17m" },
+          { id: "MA-20", title: "Investment appraisal", state: "todo", mins: "15m" },
+        ].map((ch) => (
+          <div key={ch.id} className={`flex items-center gap-2.5 border-b border-black/[.045] px-1.5 py-2 text-[10.5px] last:border-b-0 ${ch.state === "now" ? "rounded-lg bg-[#c80000]/[.06] font-black" : ch.state === "done" ? "text-[#8e817b]" : "font-semibold"}`}>
+            <span className={`w-0.5 self-stretch rounded-full ${ch.state === "done" ? "bg-[#0e9f6e]/50" : ch.state === "now" ? "bg-[#c80000]" : "bg-black/[.08]"}`} />
+            <span className="tabular-nums text-[#c80000]">{ch.id}</span>
+            <span className="min-w-0 flex-1 truncate">{ch.title}</span>
+            {ch.state === "done" ? <Check size={12} className="shrink-0 text-[#0e9f6e]" /> : ch.state === "now" ? <span className="rounded-full bg-[#c80000]/10 px-1.5 py-0.5 text-[7.5px] font-extrabold text-[#c80000]">NOW</span> : <span className="text-[8.5px] tabular-nums text-[#a1948d]">{ch.mins}</span>}
+          </div>
+        ))}
+      </Card>
     </Shell>,
   },
   {
-    title: "Charles — your AI race engineer",
-    alt: "Scholify mobile Charles AI Tutor conversation",
-    content: <Shell step="AI TUTOR">
-      <div className="flex items-center gap-3 border-b border-black/[.06] pb-4">
-        <div className="relative grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#c80000] via-[#e50068] to-[#f4a405] text-[16px] font-black text-white shadow-lg shadow-red-900/15">C<span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-[#f8f5f2] bg-[#2dd4bf]" /></div>
-        <div><h3 className="text-[14px] font-black tracking-[-.03em]">Charles</h3><p className="text-[9.5px] font-bold text-[#168c7d]">AI race engineer · Online</p></div>
+    title: "Practice — drills, kits and the mock gate",
+    alt: "Scholify mobile practice room with recommended drill and exam formats",
+    content: <Shell tab="practice">
+      <h3 className="text-[21px] font-black tracking-[-.05em]">Practice room</h3>
+      <Card className="mt-3 border-[#c80000]/20 bg-gradient-to-b from-[#fdeeec] to-white">
+        <Label>Recommended now</Label>
+        <div className="mt-1.5 flex items-center gap-2.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#fdf3e4] text-[#c2740b]"><Zap size={16} /></span>
+          <div className="min-w-0">
+            <div className="text-[12px] font-black tracking-[-.02em]">Weak-area drill — Area D</div>
+            <div className="text-[9px] text-[#8e817b]">Your marks leak here (41%) · 10 questions · 12 min</div>
+          </div>
+        </div>
+        <div className="mt-2.5 w-full rounded-xl bg-[#c80000] py-2.5 text-center text-[11px] font-extrabold text-white">Start drill</div>
+      </Card>
+      <div className="mt-4"><Label>Exam formats</Label></div>
+      <div className="mt-1.5 grid grid-cols-2 gap-2.5">
+        <Card className="!p-3"><div className="flex items-center gap-2"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#c80000]/[.08] text-[10px] font-black text-[#c80000]">A</span><b className="text-[10.5px]">Section A</b></div><div className="mt-1.5 text-[8.5px] tabular-nums text-[#8e817b]">35 questions · 70 marks</div></Card>
+        <Card className="!p-3"><div className="flex items-center gap-2"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#c80000]/[.08] text-[10px] font-black text-[#c80000]">B</span><b className="text-[10.5px]">MTQ cases</b></div><div className="mt-1.5 text-[8.5px] tabular-nums text-[#8e817b]">3 cases · 30 marks</div></Card>
+        <Card className="!p-3"><div className="flex items-center gap-2"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#fdf3e4] text-[#c2740b]"><Lock size={12} /></span><b className="text-[10.5px]">CBE mock</b></div><Meter pct={90} color="#c2740b" track="rgba(194,116,11,.1)" /><div className="mt-1 text-[8.5px] tabular-nums text-[#c2740b]">54 of 60% to unlock</div></Card>
+        <Card className="!p-3"><div className="flex items-center gap-2"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#e3f5ee] text-[#0e9f6e]"><GraduationCap size={13} /></span><b className="text-[10.5px]">Flashcards</b></div><div className="mt-1.5 text-[8.5px] tabular-nums text-[#8e817b]">10 due today</div></Card>
       </div>
-      <div className="mt-4 space-y-3">
-        <div className="flex gap-2"><div className="grid size-6 shrink-0 place-items-center rounded-lg bg-[#c80000] text-[9px] font-black text-white">C</div><div className="max-w-[84%] rounded-2xl rounded-tl-sm bg-white p-3 text-[10.5px] leading-[1.5] shadow-sm">You selected <b>£30,000</b>—that’s correct. Want to see the fastest way to solve it?</div></div>
-        <div className="ml-auto max-w-[80%] rounded-2xl rounded-tr-sm bg-[#201b1a] p-3 text-[10.5px] leading-[1.45] text-white">Yes. Why do we only recognise three months?</div>
-        <div className="flex gap-2"><div className="grid size-6 shrink-0 place-items-center rounded-lg bg-[#c80000] text-[9px] font-black text-white">C</div><div className="max-w-[86%] rounded-2xl rounded-tl-sm bg-white p-3 text-[10.5px] leading-[1.5] shadow-sm"><b>Contract starts 1 October.</b><br/>By 31 December, 3 of 12 months are complete.<div className="mt-2 rounded-xl bg-[#fff1ef] p-2 text-[11px] font-black tabular-nums text-[#a60000]">£120,000 × 3/12 = £30,000</div><p className="mt-2 text-[9.5px] text-[#8e817b]">Exam cue: recognise revenue as the performance obligation is satisfied.</p></div></div>
+      <div className="mt-3.5"><Label>By chapter</Label></div>
+      <Card className="mt-1.5 !p-2">
+        {[
+          { id: "MA-18", title: "Flexing the budget", pct: 52, color: "#c2740b" },
+          { id: "MA-19", title: "Capital budgeting", pct: 34, color: "#dc2626" },
+        ].map((row) => (
+          <div key={row.id} className="flex items-center gap-2 border-b border-black/[.045] px-1.5 py-2 text-[10px] font-bold last:border-b-0">
+            <span className="min-w-0 flex-1 truncate">{row.id} · {row.title}</span>
+            <div className="h-[5px] w-[52px] overflow-hidden rounded-full" style={{ background: `${row.color}1a` }}><div className="h-full rounded-full" style={{ width: `${row.pct}%`, background: row.color }} /></div>
+            <span className="tabular-nums" style={{ color: row.color }}>{row.pct}%</span>
+          </div>
+        ))}
+      </Card>
+    </Shell>,
+  },
+  {
+    title: "Progress — the honest readiness number",
+    alt: "Scholify mobile analytics with exam readiness ring and weak areas",
+    content: <Shell tab="progress">
+      <h3 className="text-[21px] font-black tracking-[-.05em]">Progress</h3>
+      <Card className="mt-3 flex items-center gap-3.5">
+        <Ring size={86} pct={67} band="#0e9f6e" />
+        <div className="min-w-0">
+          <div className="text-[12px] font-black text-[#0e9f6e]">Strong pass zone</div>
+          <div className="text-[9px] text-[#8e817b]">Likely range 61–73% · ▲ 4 this week</div>
+          <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#c80000]/[.08] px-2 py-1 text-[8.5px] font-extrabold text-[#c80000]">Fix Area D first <ChevronRight size={9} /></div>
+        </div>
+      </Card>
+      <div className="mt-3.5"><Label>Where marks leak</Label></div>
+      <Card className="mt-1.5 !p-2.5">
+        {[
+          { code: "D", label: "Budgeting", pct: 41, color: "#dc2626" },
+          { code: "E", label: "Standard costing", pct: 58, color: "#c2740b" },
+          { code: "F", label: "Performance measurement", pct: 74, color: "#0e9f6e" },
+        ].map((a) => (
+          <div key={a.code} className="border-b border-black/[.045] px-1 py-2 last:border-b-0">
+            <div className="flex items-baseline justify-between text-[10px] font-bold">
+              <span><b className="text-[#c80000]">{a.code}</b> · {a.label}</span>
+              <span className="tabular-nums font-extrabold" style={{ color: a.color }}>{a.pct}%</span>
+            </div>
+            <Meter pct={a.pct} color={a.color} track={`${a.color}1a`} />
+          </div>
+        ))}
+      </Card>
+      <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+        <Card className="!p-3"><Label>Last 35 days</Label><div className="mt-2 flex gap-[3px]">{[0, 1, 2, 3, 2, 0, 1, 2, 3, 3, 2, 1].map((level, i) => <span key={i} className="size-[9px] rounded-[3px]" style={{ background: level === 0 ? "#f0e9e5" : `rgba(200,0,0,${0.16 + level * 0.22})` }} />)}</div><div className="mt-1.5 text-[8.5px] tabular-nums text-[#8e817b]">84 this week · <b className="text-[#0e9f6e]">▲ 38%</b></div></Card>
+        <Card className="!p-3"><Label>Mock trend</Label><div className="mt-1 flex items-end gap-1.5">{[58, 61, 59, 71].map((v, i) => <div key={i} className="w-4 rounded-t-md" style={{ height: v * 0.42, background: i === 3 ? "#0e9f6e" : "rgba(14,159,110,.25)" }} />)}</div><div className="mt-1 text-[8.5px] tabular-nums text-[#8e817b]">best <b className="text-[#0e9f6e]">71%</b> · pass 50%</div></Card>
       </div>
-      <div className="mt-4 flex gap-1.5 overflow-hidden">{["Give me a similar question","Explain IFRS 15"].map(prompt => <FakeButton key={prompt} className="whitespace-nowrap rounded-full border border-[#c80000]/15 bg-[#fff1ef] px-2.5 py-1.5 text-[8.5px] font-extrabold text-[#a60000]">{prompt}</FakeButton>)}</div>
-      <div className="mt-4 flex items-center gap-2 rounded-2xl border border-black/[.07] bg-white p-2 shadow-sm"><div className="grid size-7 shrink-0 place-items-center rounded-full bg-[#f2eeeb] text-[#8e817b]"><Mic size={13}/></div><span className="flex-1 text-[9.5px] text-[#a1948d]">Ask Charles anything…</span><div className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#c80000] text-white"><Send size={13}/></div></div>
+    </Shell>,
+  },
+  {
+    title: "Settings — the plan you committed to",
+    alt: "Scholify mobile settings with study days, exam date and reminders",
+    content: <Shell tab="settings">
+      <h3 className="text-[21px] font-black tracking-[-.05em]">Settings</h3>
+      <div className="mt-3"><Label>Study plan</Label></div>
+      <Card className="mt-1.5 !p-3">
+        <div className="flex items-center justify-between text-[10.5px] font-bold"><span>Study days</span><span className="text-[8.5px] font-extrabold text-[#8e817b]">5 / week</span></div>
+        <div className="mt-2 flex gap-1.5">{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i} className={`grid size-6 place-items-center rounded-lg text-[8.5px] font-extrabold ${i < 5 ? "bg-[#c80000] text-white" : "border border-black/[.08] text-[#8e817b]"}`}>{d}</span>)}</div>
+        <div className="mt-3 flex items-center justify-between border-t border-black/[.045] pt-2.5 text-[10.5px]"><div><b>Daily minutes</b><div className="text-[8.5px] text-[#8e817b]">goal recomputes from this</div></div><span className="rounded-lg border border-black/[.08] px-2 py-1 text-[9.5px] font-bold tabular-nums">45 min</span></div>
+        <div className="mt-2.5 flex items-center justify-between border-t border-black/[.045] pt-2.5 text-[10.5px]"><div><b>Exam date</b><div className="text-[8.5px] text-[#8e817b]">the roadmap re-derives from it</div></div><span className="rounded-lg border border-black/[.08] px-2 py-1 text-[9.5px] font-bold tabular-nums">25 Oct · 67d</span></div>
+      </Card>
+      <Card className="mt-2.5 !p-3">
+        <div className="flex items-center justify-between text-[10.5px]"><div><b>Study reminders</b><div className="text-[8.5px] text-[#8e817b]">19:00 on study days</div></div><span className="relative h-[18px] w-[32px] rounded-full bg-[#0e9f6e]"><span className="absolute right-[2px] top-[2px] size-[14px] rounded-full bg-white shadow" /></span></div>
+        <div className="mt-2.5 flex items-center justify-between border-t border-black/[.045] pt-2.5 text-[10.5px]"><div><b>Timed sessions</b><div className="text-[8.5px] text-[#8e817b]">exam-clock pacing on drills</div></div><Timer size={13} className="text-[#8e817b]" /></div>
+      </Card>
+      <Card className="mt-2.5 border-[#dc2626]/15 bg-[#dc2626]/[.04] !p-3">
+        <div className="text-[10.5px] font-black text-[#dc2626]">Danger zone</div>
+        <div className="text-[8.5px] text-[#8e817b]">Reset progress on this paper · two-step confirm</div>
+      </Card>
     </Shell>,
   },
 ]
