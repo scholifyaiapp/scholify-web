@@ -882,3 +882,15 @@ textarea {
     transform: rotate(6deg);
   }
 }
+
+/* Hover lift shadow as a CSS transition rather than a JS-tweened boxShadow.
+   Motion interpolates box-shadow numerically, which repaints the shadow every
+   frame of the hover; the roadmap alone renders 39 of these cards. */
+.soft-card-lift {
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .soft-card-lift:hover {
+    box-shadow: 0 1px 2px rgba(20, 20, 26, 0.04), 0 24px 48px rgba(20, 20, 26, 0.08);
+  }
+}

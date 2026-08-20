@@ -748,8 +748,8 @@ function StatCard({ value, label, source, delay, tone = "blue" }: { value: strin
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.7, delay, ease: EASE_DECISIVE }}
-        whileHover={{ y: -4, boxShadow: "0 1px 2px rgba(20,20,26,0.04), 0 24px 48px rgba(20,20,26,0.08)" }}
-        className="soft-card"
+        whileHover={{ y: -4 }}
+        className="soft-card soft-card-lift"
         style={{ padding: 36, textAlign: "center", borderRadius: 18 }}
       >
         <div
@@ -1759,9 +1759,12 @@ function PaperCard({ paper, accent, delay }: { paper: (typeof ROADMAP_LEVELS)[nu
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, delay, ease: EASE_DECISIVE }}
-      whileHover={{ y: -4, boxShadow: `0 1px 2px rgba(20,20,26,0.04), 0 18px 40px -14px ${accent}66` }}
+      // y only. Tweening boxShadow in JS repaints the shadow on every frame of
+      // the hover, and this card renders 39 times in the roadmap; the shadow is
+      // a CSS transition on .soft-card-lift instead.
+      whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
-      className="soft-card"
+      className="soft-card soft-card-lift"
       style={{
         padding: "16px 18px",
         borderRadius: 16,
@@ -2142,24 +2145,33 @@ function CompareROI() {
 /* ── Interactive savings calculator ───────────────────────────── */
 
 /** Eases a displayed number toward its target whenever the target moves. */
+/*
+ * Eases a figure toward a new target. The interrupted case is the whole point:
+ * these drive the ROI sliders, which change target on every drag tick.
+ *
+ * The bug this fixes: cleanup set `fromRef.current = target` — the target of the
+ * run being CANCELLED, a number that was never on screen. So the next drag tick
+ * started its ease from a stale value and the euro figure visibly jumped
+ * backwards mid-drag. The current DISPLAYED value is the only correct place to
+ * resume from, so that is what the ref now tracks.
+ */
 function useSmoothNumber(target: number, durationMs = 550): number {
   const [val, setVal] = useState(target)
-  const fromRef = useRef(target)
+  const shownRef = useRef(target)
+  shownRef.current = val
   useEffect(() => {
-    const from = fromRef.current
+    const from = shownRef.current
     if (from === target) return
     const t0 = performance.now()
     let raf = 0
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / durationMs)
       const eased = 1 - Math.pow(1 - p, 3)
-      const v = from + (target - from) * eased
-      setVal(v)
+      setVal(from + (target - from) * eased)
       if (p < 1) raf = requestAnimationFrame(tick)
-      else fromRef.current = target
     }
     raf = requestAnimationFrame(tick)
-    return () => { cancelAnimationFrame(raf); fromRef.current = target }
+    return () => cancelAnimationFrame(raf)
   }, [target, durationMs])
   return val
 }
@@ -2774,10 +2786,10 @@ export default function Landing() {
       />
       <LazyOnView style={{ minHeight: "100svh" }}><CharlesCarousel /></LazyOnView>
       {/* The size of the world you're joining, then the problem inside it. */}
-      <LazyOnView style={{ minHeight: 820 }}><MarketAtGlance /></LazyOnView>
-      <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
+      <LazyOnView style={{ minHeight: 1120 }}><MarketAtGlance /></LazyOnView>
+      <LazyOnView style={{ minHeight: 900 }}><Problem /></LazyOnView>
       {/* The receipts for the claim above: the official June 2026 pass-rate table. */}
-      <LazyOnView style={{ minHeight: 760 }}><PassRates /></LazyOnView>
+      <LazyOnView style={{ minHeight: 1080 }}><PassRates /></LazyOnView>
       {/*
         THE SYSTEM, TAUGHT. The old three-column "how it works" described a product
         that predated chapter-level planning, the computed exam date, the five-block
@@ -2785,16 +2797,16 @@ export default function Landing() {
         another. SystemWalkthrough replaces it with the real sequence plus a diagram
         of an actual day. See components/landing-system.tsx.
       */}
-      <LazyOnView id="how-it-works" style={{ minHeight: 900 }}><SystemWalkthrough /></LazyOnView>
-      <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
-      <LazyOnView style={{ minHeight: 900 }}><ThreeReasons /></LazyOnView>
-      <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
-      <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
-      <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
-      <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
-      <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
-      <LazyOnView id="partners" style={{ minHeight: 820 }}><PartnerProgramme /></LazyOnView>
-      <LazyOnView style={{ minHeight: 760 }}><MobileAppsTeaser /></LazyOnView>
+      <LazyOnView id="how-it-works" style={{ minHeight: 1500 }}><SystemWalkthrough /></LazyOnView>
+      <LazyOnView style={{ minHeight: 1000 }}><TheLoopSection /></LazyOnView>
+      <LazyOnView style={{ minHeight: 1400 }}><ThreeReasons /></LazyOnView>
+      <LazyOnView style={{ minHeight: 1500 }}><QualificationRoadmap /></LazyOnView>
+      <LazyOnView id="features" style={{ minHeight: 1900 }}><Features /></LazyOnView>
+      <LazyOnView style={{ minHeight: 1200 }}><CompareROI /></LazyOnView>
+      <LazyOnView style={{ minHeight: 780 }}><AccaFactsCTA /></LazyOnView>
+      <LazyOnView id="pricing" style={{ minHeight: 1300 }}><Pricing /></LazyOnView>
+      <LazyOnView id="partners" style={{ minHeight: 1000 }}><PartnerProgramme /></LazyOnView>
+      <LazyOnView style={{ minHeight: 900 }}><MobileAppsTeaser /></LazyOnView>
       <PaymentMethods style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter) 8px", maxWidth: "var(--page-max)", margin: "0 auto" }} />
       {/* contain={false}: the footer is position:fixed, and paint containment
           would make this wrapper its containing block. */}

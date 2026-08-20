@@ -92,6 +92,13 @@ function Tab({ item, setPosition }: { item: NavItem; setPosition: (p: CursorPosi
   )
 }
 
+/*
+ * Deliberately still animating `left`/`width` rather than `x`/`scaleX`: this
+ * pill has a 1px border and a 999px radius, and scaling a narrow box up to an
+ * item's width stretches both into a visibly distorted lozenge. It is a
+ * desktop-only, hover-only spring on a four-item list, so the relayout it costs
+ * is worth the fidelity. Do not "optimise" it without solving the distortion.
+ */
 function Cursor({ position }: { position: CursorPosition }) {
   return (
     <motion.li

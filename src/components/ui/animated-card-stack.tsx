@@ -31,15 +31,24 @@ function CardContent({
   ctaLabel: string
   onCta: () => void
 }) {
+  /*
+   * The card is a fixed 280px tall. The image asked for 200 of them, and the
+   * description — unclamped, in a ~172px column on a phone — wrapped to five
+   * lines, so the flex row grew and SQUEEZED the image down to as little as
+   * 88px. Each card squeezed by a different amount (the descriptions differ),
+   * so the three stacked cards visibly misaligned, and anything past the clip
+   * line was cut. A shorter, non-shrinking image plus a two-line clamp makes
+   * the whole column add up to ~252px inside 272px at every width.
+   */
   return (
     <div className="flex h-full w-full flex-col gap-4">
-      <div className="-outline-offset-1 flex h-[200px] w-full items-center justify-center overflow-hidden rounded-xl outline outline-black/10">
+      <div className="-outline-offset-1 flex h-[160px] w-full shrink-0 items-center justify-center overflow-hidden rounded-xl outline outline-black/10">
         <img src={fact.image} alt={fact.title} className="h-full w-full select-none object-cover" />
       </div>
-      <div className="flex w-full items-center justify-between gap-2 px-3 pb-6">
+      <div className="flex w-full items-center justify-between gap-2 px-3 pb-4">
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-bold text-[#14141A]">{fact.title}</span>
-          <span className="text-[#6B6B76]">{fact.description}</span>
+          <span className="line-clamp-2 text-sm leading-snug text-[#6B6B76]">{fact.description}</span>
         </div>
         <button
           onClick={onCta}
