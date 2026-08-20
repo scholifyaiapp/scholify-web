@@ -185,9 +185,31 @@ export async function claimCapturedAffiliate(): Promise<boolean> {
   }
 }
 
+/*
+ * DEV-ONLY: a local demo dashboard, for building and photographing the partner
+ * UI without a Supabase partner row. Set localStorage
+ * "scholify-partner-demo" to a full AffiliateDashboard JSON and /partners
+ * renders it. The `import.meta.env.DEV` guard strips this from production
+ * builds entirely — the same contract demo auth already relies on.
+ */
+function readPartnerDemoDashboard(): AffiliateDashboard | null {
+  try {
+    const raw = window.localStorage.getItem("scholify-partner-demo")
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as AffiliateDashboard
+    return parsed && parsed.totals && parsed.affiliate ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 /** Load the signed-in partner's row, exact invite count and commissions. The
  * API also links an older anonymous application to a matching verified email. */
 export async function fetchAffiliateDashboard(): Promise<AffiliateDashboard> {
+  if (import.meta.env.DEV) {
+    const demo = readPartnerDemoDashboard()
+    if (demo) return demo
+  }
   if (!isSupabaseConfigured) return EMPTY
   try {
     const { data } = await supabase.auth.getSession()

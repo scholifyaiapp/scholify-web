@@ -329,7 +329,14 @@ export default function Partners() {
                 <button
                   type="button"
                   onClick={() => copy(aff.code, "code")}
-                  style={{ fontFamily: MONO, fontSize: 14, fontWeight: 800, letterSpacing: "0.06em", ...iriText, background: "none", border: "1px dashed var(--sch-border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}
+                  /*
+                   * `...iriText` must spread AFTER `background: "none"`: iriText
+                   * is a gradient background clipped to the glyphs with
+                   * transparent text fill, so overriding its background left
+                   * transparent text on nothing — every partner saw an EMPTY
+                   * dashed chip where their referral code should be.
+                   */
+                  style={{ fontFamily: MONO, fontSize: 14, fontWeight: 800, letterSpacing: "0.06em", background: "none", ...iriText, border: "1px dashed var(--sch-border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}
                 >
                   {aff.code}
                 </button>
