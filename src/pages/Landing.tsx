@@ -22,6 +22,7 @@ import {
 import NavHeader from "@/components/ui/nav-header"
 import { GlowCard } from "@/components/ui/spotlight-card"
 import { QUESTION_COUNTS } from "@/lib/acca-content-counts"
+import { JUNE_2026_PASS_RATES } from "@/lib/acca-pass-rates"
 
 // Computed from the source of truth so the hero number can't drift stale again.
 // The old hardcoded "2,494" understated the real authored bank by ~2,000.
@@ -586,6 +587,102 @@ function Problem() {
           <StatCard tone="green" value="13" label={t("exams to qualify — one system for all of them")} source={t("BT to Strategic Professional")} delay={0.15} />
           <StatCard tone="purple" value="445" label={t("written practice tasks with examiner rubrics")} source={t("Built into the AI Examiner")} delay={0.25} />
         </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────── OFFICIAL PASS RATES ─────────────────────── */
+
+/*
+ * The bar slides in INSIDE a rounded mask rather than scaling — scaleX would
+ * squash the 999-radius end caps mid-animation, and animating width reflows.
+ * The ruler tick pokes 3px above and below the bar so it stays legible whether
+ * it lands on the ink fill (rates above 50) or the pale track (below).
+ */
+function PassRateBar({ rate, delay, started }: { rate: number; delay: number; started: boolean }) {
+  const calm = useCalmMotion()
+  return (
+    <div aria-hidden style={{ position: "relative", height: 16, marginTop: 7 }}>
+      <div style={{ position: "absolute", top: 3, left: 0, right: 0, height: 10, borderRadius: 999, background: "rgba(20,20,26,0.06)", overflow: "hidden" }}>
+        <motion.div
+          initial={calm ? false : { x: "-101%" }}
+          animate={started ? { x: "0%" } : {}}
+          transition={{ duration: 0.9, delay, ease: EASE_DECISIVE }}
+          style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${rate}%`, borderRadius: 999, background: INK }}
+        />
+      </div>
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: "calc(50% - 1px)", width: 2, borderRadius: 1, background: "rgba(20,20,26,0.25)" }} />
+    </div>
+  )
+}
+
+function PassRateRow({ code, name, rate, delay, started }: { code: string; name: string; rate: number; delay: number; started: boolean }) {
+  const animated = useCountUp(rate, 1200, started)
+  return (
+    <div style={{ marginTop: 15 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+        <span className="font-mono-pro" style={{ fontSize: 10.5, fontWeight: 500, letterSpacing: "0.08em", color: INK_MUTED, minWidth: 32 }}>{code}</span>
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 500, color: INK, textAlign: "left" }}>{name}</span>
+        <span className="font-mono-pro tabular" style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{Math.round(animated)}%</span>
+      </div>
+      <PassRateBar rate={rate} delay={delay} started={started} />
+    </div>
+  )
+}
+
+function PassRateLevel({ level, average, papers, index, started }: {
+  level: string
+  average: number
+  papers: readonly { code: string; name: string; rate: number }[]
+  index: number
+  started: boolean
+}) {
+  const t = useT()
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      animate={started ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay: 0.08 * index, ease: EASE_DECISIVE }}
+      className="soft-card"
+      style={{ padding: 26, borderRadius: 18 }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div className="font-display" style={{ fontSize: 20, letterSpacing: "-0.02em", color: INK }}>{t(level)}</div>
+        <span className="font-mono-pro tabular" style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: BRAND_500, padding: "4px 10px", borderRadius: 999, background: BRAND_100, whiteSpace: "nowrap" }}>
+          ≈{average}% {t("PASS")}
+        </span>
+      </div>
+      <div style={{ marginTop: 6 }}>
+        {papers.map((p, i) => (
+          <PassRateRow key={p.code} code={p.code} name={p.name} rate={p.rate} delay={0.08 * index + 0.06 * i} started={started} />
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+export function PassRates() {
+  const t = useT()
+  const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
+  return (
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
+        <SectionLabel>{t("OFFICIAL ACCA DATA — JUNE 2026 SITTING")}</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", color: INK, margin: "24px 0 0" }}>
+          {t("The pass rates, paper by paper.")}
+        </h2>
+        <p style={{ color: INK_MUTED, fontSize: "clamp(15px, 1.35vw, 18px)", maxWidth: 660, margin: "20px auto 0", lineHeight: 1.65 }}>
+          {t("Straight from ACCA's results release. The ruler mark on every bar is 50% — most Applied Skills and Strategic Professional papers sit at or below the coin flip.")}
+        </p>
+        <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20, marginTop: 56 }}>
+          {JUNE_2026_PASS_RATES.map((lvl, i) => (
+            <PassRateLevel key={lvl.level} level={lvl.level} average={lvl.average} papers={lvl.papers} index={i} started={inView} />
+          ))}
+        </div>
+        <p style={{ color: INK_MUTED, fontSize: 12, margin: "28px auto 0", maxWidth: 660, lineHeight: 1.6 }}>
+          {t("Source: ACCA official pass rates, June 2026 sitting (results release, July 2026). December 2025 was within 1–3 points on nearly every paper — the difficulty is structural, not one bad sitting.")}
+        </p>
       </div>
     </section>
   )
@@ -2585,6 +2682,8 @@ export default function Landing() {
       />
       <CharlesCarousel />
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
+      {/* The receipts for the claim above: the official June 2026 pass-rate table. */}
+      <LazyOnView style={{ minHeight: 760 }}><PassRates /></LazyOnView>
       {/*
         THE SYSTEM, TAUGHT. The old three-column "how it works" described a product
         that predated chapter-level planning, the computed exam date, the five-block
