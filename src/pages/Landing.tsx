@@ -62,7 +62,6 @@ import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
 import { CommissionTierLadder } from "@/components/partner/reward-progress"
 import { COMMISSION_TIERS } from "@/lib/partner-rewards"
 import { useCalmMotion } from "@/hooks/use-calm-motion"
-import { useReducedMotion } from "motion/react"
 
 const SIGN_IN_PATH = signInPath(PRELAUNCH_MODE ? "/admin" : undefined)
 const SIGN_UP_PATH = signUpPath()
@@ -403,200 +402,6 @@ function HeroHeadline() {
   )
 }
 
-/* ── The pit wall: the product loop as a live timing strip ──────────
- *
- * Replaces three static chips. One dark panel cycles through the three
- * stages of the loop, each with its own live mini-visualisation: lost marks
- * as area bars, the five-block day filling in sequence, and the pass odds
- * counting up. Auto-advances every few seconds, pauses under the pointer,
- * any stage is clickable, and reduced-motion gets the finished states with
- * no rotation.
- */
-
-const PIT_STAGES = [
-  { num: "01", label: "TELEMETRY", line: "Find the lost marks", caption: "ACCURACY BY SYLLABUS AREA — TWO ARE BLEEDING MARKS" },
-  { num: "02", label: "STRATEGY", line: "Race today's plan", caption: "ONE DAY · FIVE BLOCKS · EACH UNLOCKS THE NEXT" },
-  { num: "03", label: "SITTING", line: "Watch the odds climb", caption: "PASS PROBABILITY, RECALCULATED AS YOU ANSWER" },
-] as const
-
-const PIT_STAGE_MS = 3400
-
-function VizTelemetry({ calm }: { calm: boolean }) {
-  const bars = [34, 58, 72, 41, 86, 63, 22, 77]
-  const weak = new Set([3, 6])
-  return (
-    <div aria-hidden style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 44 }}>
-      {bars.map((h, i) => (
-        <motion.div
-          key={i}
-          initial={calm ? false : { scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 0.5, delay: i * 0.05, ease: EASE_DECISIVE }}
-          style={{ flex: 1, height: `${h}%`, transformOrigin: "bottom", borderRadius: 3, background: weak.has(i) ? BRAND_500 : "rgba(250,250,247,0.28)" }}
-        />
-      ))}
-    </div>
-  )
-}
-
-function VizStrategy({ calm }: { calm: boolean }) {
-  const blocks = ["STUDY", "QUIZ", "PRACTICE", "CARDS", "ARTICLE"]
-  return (
-    <div aria-hidden style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, height: 44, alignContent: "center" }}>
-      {blocks.map((block, i) => (
-        <div key={block}>
-          <div style={{ height: 8, borderRadius: 999, background: "rgba(250,250,247,0.14)", overflow: "hidden" }}>
-            <motion.div
-              initial={calm ? false : { x: "-101%" }}
-              animate={{ x: "0%" }}
-              transition={{ duration: 0.4, delay: 0.15 + i * 0.32, ease: EASE_DECISIVE }}
-              style={{ height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${BRAND_500}, ${PLUM_500})` }}
-            />
-          </div>
-          <span className="font-mono-pro" style={{ fontSize: 9, letterSpacing: "0.02em", color: "rgba(250,250,247,0.45)", display: "block", marginTop: 5, textAlign: "center" }}>{block}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function VizSitting({ calm }: { calm: boolean }) {
-  // 48% → 67%: the counter mounts fresh each time the stage activates.
-  const counted = useCountUpText(67, { from: 48, suffix: "%", durationMs: 1100 })
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, height: 44 }}>
-      <motion.span className="font-mono-pro tabular" style={{ fontSize: 30, fontWeight: 500, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
-        {counted}
-      </motion.span>
-      <div aria-hidden style={{ flex: 1, position: "relative", height: 8, borderRadius: 999, background: "rgba(250,250,247,0.14)" }}>
-        <div style={{ position: "absolute", inset: 0, width: "67%", borderRadius: 999, overflow: "hidden" }}>
-          <motion.div
-            initial={calm ? false : { scaleX: 0.72 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 1.1, ease: EASE_DECISIVE }}
-            style={{ position: "absolute", inset: 0, transformOrigin: "left", borderRadius: 999, background: `linear-gradient(90deg, ${FIRE_500}, ${SHIELD_500})` }}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PitWallStrip() {
-  const t = useT()
-  /*
-   * TWO different motion questions, and they have different answers here.
-   *
-   * `calm` is true on every touch device (see use-calm-motion), which is right
-   * for continuous loops — but gating the ROTATION on it would freeze the panel
-   * on stage 01 for every phone visitor, which is most of them. Advancing a
-   * stage is one discrete crossfade every few seconds, costs nothing, and is
-   * the whole point of the panel, so it follows the OS preference alone. The
-   * per-stage entrance animations still defer to `calm`.
-   */
-  const calm = useCalmMotion()
-  const stillPreferred = useReducedMotion()
-  const [active, setActive] = useState(0)
-  const [held, setHeld] = useState(false)
-
-  useEffect(() => {
-    if (stillPreferred || held) return
-    const timer = window.setInterval(() => setActive((a) => (a + 1) % PIT_STAGES.length), PIT_STAGE_MS)
-    return () => window.clearInterval(timer)
-  }, [stillPreferred, held])
-
-  const stage = PIT_STAGES[active]
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.95, ease: EASE_DECISIVE }}
-      // Hover-to-pause is a MOUSE affordance. On a touch screen a scroll that
-      // begins on the panel fires pointerenter and never fires pointerleave,
-      // which froze the rotation for the rest of the visit.
-      onPointerEnter={(e) => { if (e.pointerType === "mouse") setHeld(true) }}
-      onPointerLeave={(e) => { if (e.pointerType === "mouse") setHeld(false) }}
-      style={{ maxWidth: 600, margin: "26px auto 0", borderRadius: 20, background: BG_DARK, color: INK_INVERSE, textAlign: "left", padding: "16px 18px 18px", boxShadow: "0 30px 70px -40px rgba(20,20,26,.6)" }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span className="font-mono-pro" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 9.5, letterSpacing: "0.16em", color: "rgba(250,250,247,0.6)", fontWeight: 500 }}>
-          <motion.span
-            aria-hidden
-            animate={calm ? undefined : { opacity: [1, 0.25, 1] }}
-            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND_500, display: "inline-block" }}
-          />
-          {t("PIT WALL · LIVE")}
-        </span>
-        <span className="font-mono-pro" style={{ fontSize: 9.5, letterSpacing: "0.14em", color: "rgba(250,250,247,0.35)", fontWeight: 500 }}>SCHOLIFY</span>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 12 }}>
-        {PIT_STAGES.map((s, i) => {
-          const isActive = i === active
-          return (
-            <button
-              key={s.num}
-              type="button"
-              onClick={() => setActive(i)}
-              aria-pressed={isActive}
-              style={{
-                position: "relative", overflow: "hidden", textAlign: "left", padding: "9px 10px", minHeight: 48,
-                borderRadius: 12, cursor: "pointer", color: "inherit", fontFamily: "inherit",
-                border: `1px solid ${isActive ? "rgba(250,250,247,0.22)" : "rgba(250,250,247,0.08)"}`,
-                background: isActive ? "rgba(250,250,247,0.08)" : "transparent",
-                transition: "background .25s ease, border-color .25s ease",
-              }}
-            >
-              {/* Number and label on their own lines. Together on one line they
-                  measured ~87px inside a 78px box at 375px, so every tab
-                  wrapped; the stage's sentence now lives once, below, instead
-                  of three times across three 98px buttons. */}
-              <span className="font-mono-pro" style={{ display: "block", fontSize: 9, letterSpacing: "0.12em", fontWeight: 600, color: isActive ? FIRE_500 : "rgba(250,250,247,0.4)" }}>
-                {s.num}
-              </span>
-              <strong className="font-mono-pro" style={{ display: "block", marginTop: 3, fontSize: 10, letterSpacing: "0.06em", lineHeight: 1.2, fontWeight: 650, color: isActive ? "#fff" : "rgba(250,250,247,0.55)" }}>
-                {t(s.label)}
-              </strong>
-              {isActive && !stillPreferred && !held && (
-                <motion.span
-                  key={`sweep-${active}`}
-                  aria-hidden
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: PIT_STAGE_MS / 1000, ease: "linear" }}
-                  style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 2, transformOrigin: "left", background: `linear-gradient(90deg, ${BRAND_500}, ${FIRE_500})` }}
-                />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <div style={{ marginTop: 14, minHeight: 104 }}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={stage.num}
-            initial={calm ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={calm ? undefined : { opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: EASE_DECISIVE }}
-          >
-            <strong style={{ display: "block", marginBottom: 12, fontSize: 15, lineHeight: 1.25, fontWeight: 650, color: "#fff" }}>
-              {t(stage.line)}
-            </strong>
-            {active === 0 ? <VizTelemetry calm={calm} /> : active === 1 ? <VizStrategy calm={calm} /> : <VizSitting calm={calm} />}
-            <span className="font-mono-pro" style={{ display: "block", marginTop: 8, fontSize: 9, letterSpacing: "0.12em", color: "rgba(250,250,247,0.45)", fontWeight: 500 }}>
-              {t(stage.caption)}
-            </span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </motion.div>
-  )
-}
-
 function Hero() {
   const navigate = useNavigate()
   const t = useT()
@@ -662,13 +467,11 @@ function Hero() {
           {t("Scholify shows you where marks were lost, builds a focused daily comeback plan, and keeps adjusting it toward your next sitting.")}
         </motion.p>
 
-        <PitWallStrip />
-
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1, ease: EASE_DECISIVE }}
-          style={{ marginTop: 28, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
+          style={{ marginTop: 32, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}
         >
           <PrimaryCTA onClick={() => navigate(SIGN_UP_PATH)}>
             {t("Start for free")} <ArrowRight size={18} strokeWidth={2.4} />
