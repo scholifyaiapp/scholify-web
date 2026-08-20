@@ -36,10 +36,19 @@ export default function CharlesCarousel() {
       image.src = src
     })
 
-    const onResize = () => setIsMobile(window.innerWidth < 640)
-    window.addEventListener("resize", onResize)
+    /*
+     * matchMedia, not a resize listener. `resize` fires continuously while a
+     * mobile browser shows and hides its URL bar during a scroll, and this
+     * handler called setState on every one of those ticks — re-rendering a
+     * full-viewport section mid-scroll. The media query only fires when the
+     * answer actually changes.
+     */
+    const query = window.matchMedia("(max-width: 639px)")
+    const onChange = () => setIsMobile(query.matches)
+    onChange()
+    query.addEventListener("change", onChange)
     return () => {
-      window.removeEventListener("resize", onResize)
+      query.removeEventListener("change", onChange)
       if (unlockTimer.current) clearTimeout(unlockTimer.current)
     }
   }, [])
@@ -82,7 +91,13 @@ export default function CharlesCarousel() {
       opacity: role === "center" || role === "back" ? 1 : 0.85,
       zIndex: role === "center" ? 20 : side ? 10 : 5,
       transition: `transform ${EASE}, filter ${EASE}, opacity ${EASE}, left ${EASE}`,
-      willChange: "transform, filter, opacity",
+      /*
+       * will-change ONLY during the 650ms slide, not for the life of the page.
+       * Left on permanently it pinned four full-height compositor layers —
+       * three of them blurred — in a 100svh section that mounts at first paint,
+       * which is memory and paint budget spent on a carousel nobody is touching.
+       */
+      willChange: isAnimating ? "transform, filter, opacity" : undefined,
     }
   }
 

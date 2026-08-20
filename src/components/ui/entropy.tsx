@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 interface EntropyProps {
   className?: string
@@ -10,6 +11,18 @@ const NEIGHBOR_RADIUS = 100
 export function Entropy({ className = "", size = 400 }: EntropyProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  /*
+   * The draw loop is the heaviest thing on the landing page while it is on
+   * screen: 625 particles, each searching its neighbours within a 100px radius
+   * on a ~300px canvas, so every frame runs tens of thousands of distance
+   * calculations plus thousands of strokes — at device pixel ratio 2. That is a
+   * 15–30ms frame on a phone, i.e. a visibly stuttering scroll.
+   *
+   * It already stopped when off-screen or backgrounded; it now also holds a
+   * single static frame on touch and small screens, which is the same rule the
+   * rest of the page's ambient motion follows.
+   */
+  const calm = useCalmMotion()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -199,8 +212,9 @@ export function Entropy({ className = "", size = 400 }: EntropyProps) {
       animationId = 0
     }
 
-    // Reduced-motion: draw a single static frame, never loop.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    // Calm motion (reduced-motion, touch, small screen, hidden tab): draw a
+    // single static frame, never loop.
+    if (calm || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       updateNeighbors()
       frame()
       return
@@ -229,13 +243,13 @@ export function Entropy({ className = "", size = 400 }: EntropyProps) {
       io.disconnect()
       document.removeEventListener("visibilitychange", evaluate)
     }
-  }, [size])
+  }, [size, calm])
 
   return (
     <div
       ref={containerRef}
       className={`relative ${className}`}
-      style={{ width: size, height: size, background: "#000" }}
+      style={{ width: size, height: size, maxWidth: "100%", background: "#000" }}
     >
       <canvas ref={canvasRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
     </div>

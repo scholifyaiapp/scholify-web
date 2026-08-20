@@ -1,6 +1,7 @@
 import * as React from "react"
 import { motion, type Variants } from "motion/react"
 import { cn } from "@/lib/utils"
+import { useCalmMotion } from "@/hooks/use-calm-motion"
 
 interface AnimatedTextProps extends React.HTMLAttributes<HTMLDivElement> {
   text: string
@@ -25,18 +26,35 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
     ref
   ) => {
     const [isHovered, setIsHovered] = React.useState(false)
+    /*
+     * THE most expensive animation on the landing page, and until now the only
+     * infinite one with no motion guard whatsoever.
+     *
+     * `background-position` is a paint property, and this element is the hero
+     * H1 with `background-clip: text` at up to 6rem across the full page width.
+     * Every frame the browser re-rasterises the gradient AND re-clips it to the
+     * glyph outlines — forever, above the fold, on every device including
+     * phones. `will-change: background-position` does not make it compositable;
+     * it only pins the layer in memory.
+     *
+     * It now respects calm motion (touch, small screens, reduced-motion, hidden
+     * tab), where the headline simply wears the gradient without sweeping it.
+     */
+    const calm = useCalmMotion()
 
     const textVariants: Variants = {
       initial: { backgroundPosition: "0% 0" },
-      animate: {
-        backgroundPosition: "200% 0",
-        transition: {
-          duration: gradientAnimationDuration,
-          repeat: Infinity,
-          repeatType: "reverse",
-          ease: "linear",
-        },
-      },
+      animate: calm
+        ? { backgroundPosition: "100% 0" }
+        : {
+            backgroundPosition: "200% 0",
+            transition: {
+              duration: gradientAnimationDuration,
+              repeat: Infinity,
+              repeatType: "reverse",
+              ease: "linear",
+            },
+          },
     }
 
     return (
@@ -58,7 +76,7 @@ const AnimatedText = React.forwardRef<HTMLDivElement, AnimatedTextProps>(
             WebkitTextFillColor: "transparent",
             color: "transparent",
             textShadow: isHovered ? "0 0 12px rgba(91,91,245,0.35)" : "none",
-            willChange: "background-position",
+            willChange: calm ? undefined : "background-position",
           }}
           variants={textVariants}
           initial="initial"

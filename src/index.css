@@ -871,3 +871,14 @@ textarea {
   .pro-countdown-face span { font-size: 6.5px; }
   .pro-countdown-face small { font-size: 5.5px; }
 }
+
+/* The share-preview flourish only breaks out of its card where there is room
+   for it. On a phone the card is already the width of the screen, so a panel
+   hanging past its corner is a panel hanging past the viewport. */
+@media (min-width: 1024px) {
+  .pit-share-preview {
+    right: -16px !important;
+    bottom: -16px !important;
+    transform: rotate(6deg);
+  }
+}

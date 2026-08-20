@@ -31,7 +31,15 @@ const AUTHORED_QUESTION_TOTAL = Object.values(QUESTION_COUNTS).reduce((a, b) => 
 import { PricingInteraction } from "@/components/ui/pricing-interaction"
 import { LiquidGlassFilterDefs } from "@/components/ui/liquid-glass-button"
 import { HandWrittenTitle } from "@/components/ui/hand-writing-text"
-import { CinematicFooter } from "@/components/ui/motion-footer"
+/*
+ * The footer is the landing page's ONLY consumer of GSAP + ScrollTrigger (via
+ * itself and MagneticButton) — roughly 70 kB that was being parsed on first
+ * paint for a component fifteen screens down. LazyOnView defers rendering, not
+ * the import, so the code has to be split to actually leave the critical chunk.
+ */
+const CinematicFooter = lazy(() =>
+  import("@/components/ui/motion-footer").then((m) => ({ default: m.CinematicFooter })),
+)
 import PartnerLogos from "@/components/ui/partner-logos"
 import PaymentMethods from "@/components/PaymentMethods"
 import { AnimatedText } from "@/components/ui/animated-shiny-text"
@@ -301,12 +309,18 @@ function Nav() {
         boxShadow: "0 1px 2px rgba(20,20,26,0.04), 0 12px 32px rgba(20,20,26,0.06)",
       }}
     >
-      {/* Bigger + bolder logo, responsive so the enlarged lockup still fits
-          the single-row nav next to the toggle + CTA at every width:
-          ultra-narrow (<360) shows the mark alone, phones show the full
-          lockup at 31, tablet/desktop at 34. */}
-      <ScholifyLogo size={32} weight={800} wordmark={false} className="inline-flex min-[360px]:hidden" />
-      <ScholifyLogo size={31} weight={800} className="hidden min-[360px]:inline-flex sm:hidden" />
+      {/*
+        THE NAV DID NOT FIT ON A PHONE.
+        At 375px the pill is 343px wide with 24px of padding, and the row asked
+        for more than 400px: full lockup (~139) + "Sign in" (~88) + "Start for
+        free" (~142). Nothing could shrink — both CTAs are anchors inheriting
+        `white-space: nowrap`, so they simply spilled past the pill's right edge
+        and were amputated by the page's `overflow-x: clip`. Every phone visitor
+        saw a cut-off primary CTA.
+        Below `sm` the lockup is now the mark alone and the primary CTA reads
+        "Start free", which brings the row to ~256px — comfortable even at 320px.
+      */}
+      <ScholifyLogo size={32} weight={800} wordmark={false} className="inline-flex sm:hidden" />
       <ScholifyLogo size={34} weight={800} className="hidden sm:inline-flex" />
 
       <div
@@ -353,7 +367,8 @@ function Nav() {
           className="scholify-glass-pill-primary rounded-full px-4 py-2 text-sm font-bold sm:px-5"
           style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
         >
-          {t("Start for free")}
+          <span className="sm:hidden">{t("Start free")}</span>
+          <span className="hidden sm:inline">{t("Start for free")}</span>
         </a>
       </div>
     </motion.header>
@@ -438,7 +453,7 @@ function VizStrategy({ calm }: { calm: boolean }) {
               style={{ height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${BRAND_500}, ${PLUM_500})` }}
             />
           </div>
-          <span className="font-mono-pro" style={{ fontSize: 7.5, letterSpacing: "0.08em", color: "rgba(250,250,247,0.45)", display: "block", marginTop: 5, textAlign: "center" }}>{block}</span>
+          <span className="font-mono-pro" style={{ fontSize: 9, letterSpacing: "0.02em", color: "rgba(250,250,247,0.45)", display: "block", marginTop: 5, textAlign: "center" }}>{block}</span>
         </div>
       ))}
     </div>
@@ -497,8 +512,11 @@ function PitWallStrip() {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.95, ease: EASE_DECISIVE }}
-      onPointerEnter={() => setHeld(true)}
-      onPointerLeave={() => setHeld(false)}
+      // Hover-to-pause is a MOUSE affordance. On a touch screen a scroll that
+      // begins on the panel fires pointerenter and never fires pointerleave,
+      // which froze the rotation for the rest of the visit.
+      onPointerEnter={(e) => { if (e.pointerType === "mouse") setHeld(true) }}
+      onPointerLeave={(e) => { if (e.pointerType === "mouse") setHeld(false) }}
       style={{ maxWidth: 600, margin: "26px auto 0", borderRadius: 20, background: BG_DARK, color: INK_INVERSE, textAlign: "left", padding: "16px 18px 18px", boxShadow: "0 30px 70px -40px rgba(20,20,26,.6)" }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -531,11 +549,15 @@ function PitWallStrip() {
                 transition: "background .25s ease, border-color .25s ease",
               }}
             >
-              <span className="font-mono-pro" style={{ fontSize: 8.5, letterSpacing: "0.13em", fontWeight: 600, color: isActive ? FIRE_500 : "rgba(250,250,247,0.4)" }}>
-                {s.num} · {t(s.label)}
+              {/* Number and label on their own lines. Together on one line they
+                  measured ~87px inside a 78px box at 375px, so every tab
+                  wrapped; the stage's sentence now lives once, below, instead
+                  of three times across three 98px buttons. */}
+              <span className="font-mono-pro" style={{ display: "block", fontSize: 9, letterSpacing: "0.12em", fontWeight: 600, color: isActive ? FIRE_500 : "rgba(250,250,247,0.4)" }}>
+                {s.num}
               </span>
-              <strong style={{ display: "block", marginTop: 4, fontSize: 12.5, lineHeight: 1.25, fontWeight: 650, color: isActive ? "#fff" : "rgba(250,250,247,0.55)" }}>
-                {t(s.line)}
+              <strong className="font-mono-pro" style={{ display: "block", marginTop: 3, fontSize: 10, letterSpacing: "0.06em", lineHeight: 1.2, fontWeight: 650, color: isActive ? "#fff" : "rgba(250,250,247,0.55)" }}>
+                {t(s.label)}
               </strong>
               {isActive && !stillPreferred && !held && (
                 <motion.span
@@ -552,7 +574,7 @@ function PitWallStrip() {
         })}
       </div>
 
-      <div style={{ marginTop: 14, minHeight: 68 }}>
+      <div style={{ marginTop: 14, minHeight: 104 }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={stage.num}
@@ -561,8 +583,11 @@ function PitWallStrip() {
             exit={calm ? undefined : { opacity: 0, y: -8 }}
             transition={{ duration: 0.28, ease: EASE_DECISIVE }}
           >
+            <strong style={{ display: "block", marginBottom: 12, fontSize: 15, lineHeight: 1.25, fontWeight: 650, color: "#fff" }}>
+              {t(stage.line)}
+            </strong>
             {active === 0 ? <VizTelemetry calm={calm} /> : active === 1 ? <VizStrategy calm={calm} /> : <VizSitting calm={calm} />}
-            <span className="font-mono-pro" style={{ display: "block", marginTop: 8, fontSize: 9, letterSpacing: "0.13em", color: "rgba(250,250,247,0.45)", fontWeight: 500 }}>
+            <span className="font-mono-pro" style={{ display: "block", marginTop: 8, fontSize: 9, letterSpacing: "0.12em", color: "rgba(250,250,247,0.45)", fontWeight: 500 }}>
               {t(stage.caption)}
             </span>
           </motion.div>
@@ -596,9 +621,18 @@ function Hero() {
         overflow: "hidden",
       }}
     >
+      {/*
+        Charles flanks the hero only where he actually FITS beside it.
+        The content column is capped at --page-max (1180px) and the headline is
+        centred inside it, so on a 1024–1440px laptop this mascot — pinned to
+        the viewport's right edge and z-indexed above the non-positioned
+        headline — was painted straight over "…ACCA member." He now appears
+        only once the viewport is wide enough for him to sit outside the column
+        entirely: (1600 − 1180) / 2 = 210px of clear margin per side.
+      */}
       <div
         aria-hidden
-        className="hidden lg:block"
+        className="hidden min-[1600px]:block"
         style={{ position: "absolute", right: "clamp(18px,4vw,68px)", top: 170, zIndex: 1 }}
       >
         <CharlesMascot pose="thumbsup" size="clamp(118px,12vw,176px)" delay={0.45} />
@@ -753,7 +787,7 @@ function Problem() {
           {t("pass a typical Applied Skills exam. The difference isn't brains — it's practice, fast feedback, and a plan. Scholify is all three.")}
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginTop: 72 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 20, marginTop: 72 }}>
           <StatCard tone="blue" value="50%" label={t("average pass rate on Applied Skills exams")} source={t("Published ACCA global pass rates")} delay={0.05} />
           <StatCard tone="green" value="13" label={t("exams to qualify — one system for all of them")} source={t("BT to Strategic Professional")} delay={0.15} />
           <StatCard tone="purple" value="445" label={t("written practice tasks with examiner rubrics")} source={t("Built into the AI Examiner")} delay={0.25} />
@@ -846,7 +880,7 @@ export function PassRates() {
         <p style={{ color: INK_MUTED, fontSize: "clamp(15px, 1.35vw, 18px)", maxWidth: 660, margin: "20px auto 0", lineHeight: 1.65 }}>
           {t("Straight from ACCA's results release. The ruler mark on every bar is 50% — most Applied Skills and Strategic Professional papers sit at or below the coin flip.")}
         </p>
-        <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20, marginTop: 56 }}>
+        <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 20, marginTop: 56 }}>
           {JUNE_2026_PASS_RATES.map((lvl, i) => (
             <PassRateLevel key={lvl.level} level={lvl.level} average={lvl.average} papers={lvl.papers} index={i} started={inView} />
           ))}
@@ -993,7 +1027,7 @@ export function MarketAtGlance() {
         <p style={{ color: INK_MUTED, fontSize: "clamp(15px, 1.35vw, 18px)", maxWidth: 660, margin: "20px auto 0", lineHeight: 1.65 }}>
           {t("Audited headline figures from ACCA's Annual Integrated Report for the year to 31 March 2026 — the largest community in ACCA's history, and its strongest-ever student intake.")}
         </p>
-        <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 20, marginTop: 56, textAlign: "left" }}>
+        <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 20, marginTop: 56, textAlign: "left" }}>
           {MARKET_HEADLINES.map((stat, i) => (
             <MarketStatTile key={stat.label} stat={stat} delay={0.05 * i} started={inView} />
           ))}
@@ -1078,7 +1112,7 @@ function HowItWorks() {
             />
           </svg>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 36, position: "relative" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 36, position: "relative" }}>
             {steps.map((step, i) => (
               <motion.div
                 key={step.num}
@@ -1258,17 +1292,17 @@ function VisualExaminer() {
         borderRadius: 24,
         background: "#0B0B0F",
         color: "#FAFAF7",
-        // Clip the fixed 360px Entropy canvas to the card: on a ~360px phone the
-        // card is narrower than the canvas, so without this it pokes past the
-        // rounded edge. Clipped, it crops cleanly (the animation is abstract).
         overflow: "hidden",
         boxShadow: "0 1px 2px rgba(20,20,26,0.06), 0 24px 60px -12px rgba(20,20,26,0.25)",
       }}
     >
+      {/* 300, not 360: the card is 420 wide but only ~303px of content on a
+          375px phone, so a 360px canvas was cropped by 16% — the animation was
+          paying a full frame budget to draw pixels nobody could see. */}
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <LazyOnView style={{ width: 360, height: 360 }}>
+        <LazyOnView style={{ width: 300, height: 300, maxWidth: "100%" }}>
           <Suspense fallback={null}>
-            <Entropy size={360} className="rounded-xl overflow-hidden" />
+            <Entropy size={300} className="rounded-xl overflow-hidden" />
           </Suspense>
         </LazyOnView>
       </div>
@@ -1483,10 +1517,19 @@ function VisualProgress() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.95 }}
             transition={{ duration: 0.25, ease: EASE_DECISIVE }}
+            /*
+             * Was right/bottom: -16 with a 6deg rotation, so on a phone the
+             * panel hung ~29px past the card — which is past the viewport, where
+             * `overflow-x: clip` cut it in half. Tapping "Share" on a phone
+             * revealed a chopped, tilted card. It now tucks INSIDE the card's
+             * bottom-right corner, and only breaks out on desktop where there
+             * is room for the flourish.
+             */
+            className="pit-share-preview"
             style={{
               position: "absolute",
-              right: -16,
-              bottom: -16,
+              right: 8,
+              bottom: 8,
               width: 130,
               height: 230,
               borderRadius: 22,
@@ -1494,7 +1537,6 @@ function VisualProgress() {
               color: INK_INVERSE,
               padding: 14,
               boxShadow: `0 30px 60px -16px rgba(20,20,26,0.45), 0 0 0 4px ${BG_PRIMARY}`,
-              transform: "rotate(6deg)",
             }}
           >
             <div className="font-mono-pro" style={{ fontSize: 9, color: "rgba(250,250,247,0.6)", letterSpacing: "0.1em", fontWeight: 500 }}>{t("STORY · 1080×1920")}</div>
@@ -1808,7 +1850,7 @@ function QualificationRoadmap() {
                 )}
                 <span style={{ flex: 1, height: 1, background: HAIR }} />
               </motion.div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 150px), 1fr))", gap: 12 }}>
                 {level.papers.map((p, pi) => (
                   <PaperCard key={p.id} paper={p} accent={level.accent} delay={0.08 + li * 0.05 + pi * 0.05} />
                 ))}
@@ -1921,7 +1963,7 @@ function FutureQualification() {
               )}
               <span style={{ flex: 1, height: 1, background: HAIR }} />
             </motion.div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 150px), 1fr))", gap: 12 }}>
               {level.papers.map((p, pi) => (
                 <PaperCard key={p.id} paper={p} accent={level.accent} delay={0.08 + li * 0.05 + pi * 0.05} />
               ))}
@@ -2473,9 +2515,13 @@ function PartnerProgramme() {
   const reduced = useCalmMotion()
   const [demoPaid, setDemoPaid] = useState(300)
 
+  /*
+   * The #partners anchor lives on the LazyOnView wrapper, not on this section:
+   * the section does not exist in the DOM until the wrapper scrolls into range,
+   * and a hash link has to resolve before that. Same as #features / #pricing.
+   */
   return (
     <section
-      id="partners"
       aria-labelledby="partner-programme-heading"
       style={{ padding: "calc(var(--section-y) * 1.05) var(--page-gutter)", overflow: "hidden", scrollMarginTop: 96 }}
     >
@@ -2495,11 +2541,19 @@ function PartnerProgramme() {
           boxShadow: "0 34px 90px -58px rgba(20,20,26,.48)",
         }}
       >
+        {/*
+          whileInView, not animate: this loop used to start at first paint and
+          run forever on a 300px blurred circle roughly fifteen screens below
+          the fold. The blur is gone too — the circle is a 13%-alpha wash whose
+          3px blur was invisible and re-rasterised on every frame of the loop.
+        */}
         <motion.div
           aria-hidden
-          animate={reduced ? undefined : { x: [0, 28, 0], y: [0, -18, 0], scale: [1, 1.08, 1] }}
+          initial={false}
+          whileInView={reduced ? undefined : { x: [0, 28, 0], y: [0, -18, 0], scale: [1, 1.08, 1] }}
+          viewport={{ margin: "200px" }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          style={{ position: "absolute", right: "-8%", top: "-14%", width: 300, height: 300, borderRadius: "50%", background: "rgba(244,164,5,.13)", filter: "blur(3px)", pointerEvents: "none" }}
+          style={{ position: "absolute", right: "-8%", top: "-14%", width: 300, height: 300, borderRadius: "50%", background: "rgba(244,164,5,.13)", pointerEvents: "none" }}
         />
 
         <div className="relative grid items-start gap-10 lg:grid-cols-[minmax(0,.82fr)_minmax(420px,1.18fr)] lg:gap-16">
@@ -2718,7 +2772,7 @@ export default function Landing() {
         heading="Built for the ACCA world"
         caption="Scholify prepares you for the ACCA qualification — the pathway studied at the world's leading institutions."
       />
-      <CharlesCarousel />
+      <LazyOnView style={{ minHeight: "100svh" }}><CharlesCarousel /></LazyOnView>
       {/* The size of the world you're joining, then the problem inside it. */}
       <LazyOnView style={{ minHeight: 820 }}><MarketAtGlance /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
@@ -2739,10 +2793,16 @@ export default function Landing() {
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
       <LazyOnView id="pricing" style={{ minHeight: 900 }}><Pricing /></LazyOnView>
-      <PartnerProgramme />
+      <LazyOnView id="partners" style={{ minHeight: 820 }}><PartnerProgramme /></LazyOnView>
       <LazyOnView style={{ minHeight: 760 }}><MobileAppsTeaser /></LazyOnView>
       <PaymentMethods style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter) 8px", maxWidth: "var(--page-max)", margin: "0 auto" }} />
-      <LazyOnView style={{ minHeight: 500 }}><CinematicFooter heading="Your next paper is waiting." /></LazyOnView>
+      {/* contain={false}: the footer is position:fixed, and paint containment
+          would make this wrapper its containing block. */}
+      <LazyOnView contain={false} style={{ minHeight: 500 }}>
+        <Suspense fallback={null}>
+          <CinematicFooter heading="Your next paper is waiting." />
+        </Suspense>
+      </LazyOnView>
     </div>
   )
 }

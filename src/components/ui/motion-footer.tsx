@@ -1,5 +1,7 @@
 import * as React from "react"
 import { useEffect, useRef } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import { useInView } from "motion/react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { MagneticButton } from "@/components/ui/magnetic-button"
@@ -38,7 +40,9 @@ const STYLES = `
 }
 @keyframes footer-breathe { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } }
 @keyframes footer-scroll-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes footer-heartbeat { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 5px color-mix(in oklch, var(--destructive) 50%, transparent)); } 15%,45% { transform: scale(1.2); filter: drop-shadow(0 0 10px color-mix(in oklch, var(--destructive) 80%, transparent)); } 30% { transform: scale(1); } }
+/* Transform and opacity only. This used to animate filter: drop-shadow(), which
+   repaints the element on every one of the 2s loop's frames, forever. */
+@keyframes footer-heartbeat { 0%,100% { transform: scale(1); opacity: .75; } 15%,45% { transform: scale(1.2); opacity: 1; } 30% { transform: scale(1); opacity: .9; } }
 .animate-footer-breathe { animation: footer-breathe 8s ease-in-out infinite alternate; }
 .animate-footer-scroll-marquee { animation: footer-scroll-marquee 40s linear infinite; }
 .animate-footer-heartbeat { animation: footer-heartbeat 2s cubic-bezier(0.25,1,0.5,1) infinite; }
@@ -50,6 +54,12 @@ const STYLES = `
   mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
 }
+/* The aurora is a soft radial gradient that fades to transparent at 70%, so it
+   is ALREADY blurry. It also carried filter: blur(80px) while breathing
+   (scale 1 → 1.1, 8s, forever), which made the browser re-rasterise a
+   60vh × 80vw blurred layer for the life of the page — the single most
+   expensive thing on the landing page at laptop size. The gradient carries the
+   look on its own. */
 .footer-aurora {
   background: radial-gradient(circle at 50% 50%,
     color-mix(in oklch, var(--primary) 15%, transparent) 0%,
@@ -164,7 +174,43 @@ export function CinematicFooter({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const linksRef = useRef<HTMLDivElement>(null)
   const t = useT()
-  const reduced = useCalmMotion()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const calm = useCalmMotion()
+
+  /*
+   * Every link down here was a bare <a href>, so React Router never saw the
+   * click: choosing "Privacy" or "Start free" from the footer tore the SPA down
+   * and re-downloaded and re-booted the whole bundle. That is the longest
+   * "stop" on the site — a blank screen and a cold start, from a link that
+   * should have been instant.
+   *
+   * Same-origin paths now route in-app; a bare "#id" or a "/#id" while already
+   * on the landing page scrolls instead of navigating. Modified clicks
+   * (new tab, download, middle-click) and external links are left alone.
+   */
+  const routeInApp = (href: string) => (event: React.MouseEvent) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    if (!href.startsWith("/")) return
+    const [path, hash] = href.split("#")
+    if (hash && (path === "" || path === "/") && location.pathname === "/") {
+      event.preventDefault()
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" })
+      return
+    }
+    event.preventDefault()
+    navigate(href)
+  }
+  /*
+   * The footer is position:fixed inside a clip-path shell, so once it mounts it
+   * is never "off screen" as far as the compositor is concerned — its aurora,
+   * marquee and heartbeat kept painting for the rest of the session even while
+   * the visitor read the hero. LazyOnView mounts it 1200px early, so that was
+   * most of the page. Gate the ambient loops on the shell actually being near
+   * the viewport; scroll-in animation still runs the first time it appears.
+   */
+  const nearViewport = useInView(wrapperRef, { margin: "300px" })
+  const reduced = calm || !nearViewport
 
   useEffect(() => {
     if (reduced) return
@@ -207,7 +253,7 @@ export function CinematicFooter({
       <style dangerouslySetInnerHTML={{ __html: STYLES }} />
       <div ref={wrapperRef} className="cinematic-footer-shell relative h-dvh w-full" style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}>
         <footer className={`fixed bottom-0 left-0 flex h-dvh w-full flex-col justify-between overflow-hidden bg-background text-foreground cinematic-footer-wrapper${reduced ? " footer-calm" : ""}`}>
-          <div className="footer-aurora absolute left-1/2 top-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px] pointer-events-none z-0" />
+          <div className="footer-aurora absolute left-1/2 top-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] pointer-events-none z-0" />
           <div className="footer-bg-grid absolute inset-0 z-0 pointer-events-none" />
           <div
             ref={giantTextRef}
@@ -234,6 +280,7 @@ export function CinematicFooter({
                 <MagneticButton
                   as="a"
                   href={signUpPath()}
+                  onClick={routeInApp(signUpPath())}
                   className="footer-glass-pill px-10 py-5 rounded-full text-foreground font-bold text-sm md:text-base flex items-center gap-3 group"
                 >
                   <svg className="w-6 h-6 text-muted-foreground group-hover:text-foreground transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -251,6 +298,7 @@ export function CinematicFooter({
                 <MagneticButton
                   as="a"
                   href="/#partners"
+                  onClick={routeInApp("/#partners")}
                   className="footer-glass-pill px-5 py-2.5 rounded-full text-foreground font-semibold text-xs md:text-sm border-border"
                 >
                   {t("Partner programme — earn 27% for up to 5 payments")}
@@ -260,6 +308,7 @@ export function CinematicFooter({
                     key={link.href}
                     as="a"
                     href={link.href}
+                    onClick={routeInApp(link.href)}
                     className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
                   >
                     {t(link.label)}

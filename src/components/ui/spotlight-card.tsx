@@ -24,6 +24,60 @@ const sizeMap = {
   lg: "w-80 h-96",
 }
 
+/* ── One pointer listener for every glow card on the page ─────────────
+ *
+ * Each card used to attach its OWN `document` pointermove listener and write
+ * four custom properties from inside the event — so three cards meant three
+ * listeners and twelve style writes per pointer event, each invalidating a
+ * radial gradient, two pseudo-elements and a blurred child.
+ *
+ * Now: one shared listener, and the writes are coalesced into a single
+ * animation frame. All rects are READ first and all properties written after,
+ * so the loop never interleaves reads with writes (which is what turns a
+ * cheap update into layout thrash).
+ */
+const glowCards = new Set<HTMLElement>()
+let pointerFrame = 0
+let pointerX = 0
+let pointerY = 0
+
+function flushGlowCards() {
+  pointerFrame = 0
+  const measured: Array<{ el: HTMLElement; rect: DOMRect }> = []
+  for (const el of glowCards) measured.push({ el, rect: el.getBoundingClientRect() })
+  for (const { el, rect } of measured) {
+    const x = pointerX - rect.left
+    const y = pointerY - rect.top
+    el.style.setProperty("--x", x.toFixed(1))
+    el.style.setProperty("--y", y.toFixed(1))
+    el.style.setProperty("--xp", (rect.width ? x / rect.width : 0).toFixed(3))
+    el.style.setProperty("--yp", (rect.height ? y / rect.height : 0).toFixed(3))
+  }
+}
+
+function onGlowPointerMove(event: PointerEvent) {
+  pointerX = event.clientX
+  pointerY = event.clientY
+  if (!pointerFrame) pointerFrame = requestAnimationFrame(flushGlowCards)
+}
+
+function registerGlowCard(el: HTMLElement) {
+  glowCards.add(el)
+  if (glowCards.size === 1) {
+    document.addEventListener("pointermove", onGlowPointerMove, { passive: true })
+  }
+  return () => {
+    glowCards.delete(el)
+    if (glowCards.size === 0) {
+      document.removeEventListener("pointermove", onGlowPointerMove)
+      if (pointerFrame) {
+        cancelAnimationFrame(pointerFrame)
+        pointerFrame = 0
+      }
+    }
+  }
+}
+
 export function GlowCard({
   children,
   className = "",
@@ -47,17 +101,9 @@ export function GlowCard({
 
   useEffect(() => {
     if (isTouch) return
-    const syncPointer = (e: PointerEvent) => {
-      const { clientX: x, clientY: y } = e
-      if (cardRef.current) {
-        cardRef.current.style.setProperty("--x", x.toFixed(2))
-        cardRef.current.style.setProperty("--xp", (x / window.innerWidth).toFixed(2))
-        cardRef.current.style.setProperty("--y", y.toFixed(2))
-        cardRef.current.style.setProperty("--yp", (y / window.innerHeight).toFixed(2))
-      }
-    }
-    document.addEventListener("pointermove", syncPointer, { passive: true })
-    return () => document.removeEventListener("pointermove", syncPointer)
+    const el = cardRef.current
+    if (!el) return
+    return registerGlowCard(el)
   }, [isTouch])
 
   const { base, spread } = glowColorMap[glowColor]
@@ -89,7 +135,21 @@ export function GlowCard({
       border: "var(--border-size) solid var(--backup-border)",
       position: "relative",
       touchAction: "auto",
-      backgroundAttachment: isTouch ? "scroll" : "fixed",
+      /*
+       * NOT `background-attachment: fixed`.
+       *
+       * The spotlight was anchored to the viewport so that page-coordinate
+       * pointer values lined up with the gradient. That single declaration is
+       * the most reliable way to switch a page off fast-path compositor
+       * scrolling: the browser has to repaint the element's background on every
+       * scroll frame, whether or not the pointer moved. With three of these
+       * cards it taxed the whole page's scroll.
+       *
+       * The pointer values are card-relative now (see registerGlowCard), so the
+       * default `scroll` attachment puts the spotlight in exactly the same
+       * place and scrolling stays on the fast path.
+       */
+      backgroundAttachment: "scroll",
     }
     if (width !== undefined) baseStyles.width = typeof width === "number" ? `${width}px` : width
     if (height !== undefined) baseStyles.height = typeof height === "number" ? `${height}px` : height
@@ -105,7 +165,6 @@ export function GlowCard({
       inset: calc(var(--border-size) * -1);
       border: var(--border-size) solid transparent;
       border-radius: calc(var(--radius) * 1px);
-      background-attachment: fixed;
       background-size: calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
       background-repeat: no-repeat;
       background-position: 50% 50%;
@@ -138,7 +197,8 @@ export function GlowCard({
     [data-glow] [data-glow] {
       position: absolute;
       inset: 0;
-      will-change: filter;
+      /* No will-change: filter — it pinned a blurred layer in memory for the
+         life of the page, per card, for an effect that only moves on hover. */
       opacity: var(--outer, 1);
       border-radius: calc(var(--radius) * 1px);
       border-width: calc(var(--border-size) * 20);
