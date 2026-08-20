@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom"
 import {
+  animate,
   motion,
   useInView,
+  useMotionValue,
+  useTransform,
   AnimatePresence,
   type Variants,
 } from "motion/react"
@@ -51,6 +54,7 @@ import { PRELAUNCH_MODE, signInPath, signUpPath } from "@/lib/launch"
 import { CommissionTierLadder } from "@/components/partner/reward-progress"
 import { COMMISSION_TIERS } from "@/lib/partner-rewards"
 import { useCalmMotion } from "@/hooks/use-calm-motion"
+import { useReducedMotion } from "motion/react"
 
 const SIGN_IN_PATH = signInPath(PRELAUNCH_MODE ? "/admin" : undefined)
 const SIGN_UP_PATH = signUpPath()
@@ -81,32 +85,54 @@ const EASE_HOVER = [0.4, 0, 0.2, 1] as const
 
 /* ─────────────────────── UTILITY HOOKS ─────────────────────── */
 
-function useCountUp(target: number, durationMs = 1200, start = true) {
-  const [val, setVal] = useState(0)
-  const prefersReduced = useCalmMotion()
+/*
+ * Counting numbers, WITHOUT a React render per frame.
+ *
+ * The old hook held the value in useState and called setVal() from its own
+ * requestAnimationFrame loop. One of those is harmless; the page now has
+ * twenty-three (three hero stat cards, eight market tiles, fifteen pass-rate
+ * rows, the pit wall), and scrolling past a section started that many rAF
+ * loops each committing a React render EVERY FRAME. On a laptop that is
+ * twenty-three renders per frame competing with the scroll itself, which is
+ * exactly the stutter it looks like.
+ *
+ * The value now lives in a MotionValue and is written straight into the DOM
+ * text by <motion.span>, so the whole count costs zero React renders. Options
+ * are primitives rather than a formatter function, so the useTransform doesn't
+ * re-subscribe on every parent render.
+ */
+interface CountUpOptions {
+  from?: number
+  decimals?: number
+  prefix?: string
+  suffix?: string
+  durationMs?: number
+  /** Hold at the start value until this flips true (scroll-in). */
+  start?: boolean
+}
+
+function useCountUpText(target: number, options: CountUpOptions = {}) {
+  const { from = 0, decimals = 0, prefix = "", suffix = "", durationMs = 1200, start = true } = options
+  const calm = useCalmMotion()
+  const count = useMotionValue(calm ? target : from)
+  const text = useTransform(count, (v) =>
+    `${prefix}${v.toLocaleString("en-GB", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`,
+  )
+
   useEffect(() => {
-    if (!start) {
-      setVal(0)
+    if (!start) return
+    // Calm motion (touch, small screen, reduced-motion, hidden tab) shows the
+    // finished figure immediately — the number is the point, not the count.
+    if (calm) {
+      count.set(target)
       return
     }
-    if (prefersReduced) {
-      setVal(target)
-      return
-    }
-    const t0 = performance.now()
-    let raf = 0
-    const tick = (t: number) => {
-      const elapsed = t - t0
-      const p = Math.min(1, elapsed / durationMs)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setVal(target * eased)
-      if (p < 1) raf = requestAnimationFrame(tick)
-      else setVal(target)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [target, durationMs, start, prefersReduced])
-  return val
+    count.set(from)
+    const controls = animate(count, target, { duration: durationMs / 1000, ease: EASE_DECISIVE })
+    return () => controls.stop()
+  }, [count, target, from, durationMs, start, calm])
+
+  return text
 }
 
 function useInViewOnce<T extends HTMLElement>(margin = "-80px") {
@@ -421,12 +447,12 @@ function VizStrategy({ calm }: { calm: boolean }) {
 
 function VizSitting({ calm }: { calm: boolean }) {
   // 48% → 67%: the counter mounts fresh each time the stage activates.
-  const gain = useCountUp(19, 1100, true)
+  const counted = useCountUpText(67, { from: 48, suffix: "%", durationMs: 1100 })
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, height: 44 }}>
-      <span className="font-mono-pro tabular" style={{ fontSize: 30, fontWeight: 500, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
-        {48 + Math.round(gain)}%
-      </span>
+      <motion.span className="font-mono-pro tabular" style={{ fontSize: 30, fontWeight: 500, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
+        {counted}
+      </motion.span>
       <div aria-hidden style={{ flex: 1, position: "relative", height: 8, borderRadius: 999, background: "rgba(250,250,247,0.14)" }}>
         <div style={{ position: "absolute", inset: 0, width: "67%", borderRadius: 999, overflow: "hidden" }}>
           <motion.div
@@ -443,15 +469,26 @@ function VizSitting({ calm }: { calm: boolean }) {
 
 function PitWallStrip() {
   const t = useT()
+  /*
+   * TWO different motion questions, and they have different answers here.
+   *
+   * `calm` is true on every touch device (see use-calm-motion), which is right
+   * for continuous loops — but gating the ROTATION on it would freeze the panel
+   * on stage 01 for every phone visitor, which is most of them. Advancing a
+   * stage is one discrete crossfade every few seconds, costs nothing, and is
+   * the whole point of the panel, so it follows the OS preference alone. The
+   * per-stage entrance animations still defer to `calm`.
+   */
   const calm = useCalmMotion()
+  const stillPreferred = useReducedMotion()
   const [active, setActive] = useState(0)
   const [held, setHeld] = useState(false)
 
   useEffect(() => {
-    if (calm || held) return
+    if (stillPreferred || held) return
     const timer = window.setInterval(() => setActive((a) => (a + 1) % PIT_STAGES.length), PIT_STAGE_MS)
     return () => window.clearInterval(timer)
-  }, [calm, held])
+  }, [stillPreferred, held])
 
   const stage = PIT_STAGES[active]
 
@@ -500,7 +537,7 @@ function PitWallStrip() {
               <strong style={{ display: "block", marginTop: 4, fontSize: 12.5, lineHeight: 1.25, fontWeight: 650, color: isActive ? "#fff" : "rgba(250,250,247,0.55)" }}>
                 {t(s.line)}
               </strong>
-              {isActive && !calm && !held && (
+              {isActive && !stillPreferred && !held && (
                 <motion.span
                   key={`sweep-${active}`}
                   aria-hidden
@@ -663,14 +700,12 @@ function StatCard({ value, label, source, delay, tone = "blue" }: { value: strin
   const isPercent = value.endsWith("%")
   const isMin = value.includes("min")
   const isMult = value.endsWith("×")
-  const animated = useCountUp(isNaN(numeric) ? 0 : numeric, 1400, inView)
-  const display = isPercent
-    ? `${Math.round(animated)}%`
-    : isMin
-      ? `${Math.round(animated)} min`
-      : isMult
-        ? `${Math.round(animated)}×`
-        : value
+  const countable = !Number.isNaN(numeric)
+  const counted = useCountUpText(countable ? numeric : 0, {
+    suffix: isPercent ? "%" : isMin ? " min" : isMult ? "×" : "",
+    durationMs: 1400,
+    start: inView,
+  })
 
   return (
     <GlowCard customSize glowColor={tone} className="!w-full !p-1 !gap-0 !rounded-3xl !shadow-none">
@@ -693,7 +728,7 @@ function StatCard({ value, label, source, delay, tone = "blue" }: { value: strin
             lineHeight: 1,
           }}
         >
-          {display}
+          {countable ? <motion.span>{counted}</motion.span> : value}
         </div>
         <div style={{ marginTop: 14, color: INK, fontSize: 15, fontWeight: 500 }}>{label}</div>
         <div style={{ marginTop: 6, color: INK_MUTED, fontSize: 12 }}>{source}</div>
@@ -754,13 +789,13 @@ function PassRateBar({ rate, delay, started }: { rate: number; delay: number; st
 }
 
 function PassRateRow({ code, name, rate, delay, started }: { code: string; name: string; rate: number; delay: number; started: boolean }) {
-  const animated = useCountUp(rate, 1200, started)
+  const counted = useCountUpText(rate, { suffix: "%", durationMs: 1200, start: started })
   return (
     <div style={{ marginTop: 15 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
         <span className="font-mono-pro" style={{ fontSize: 10.5, fontWeight: 500, letterSpacing: "0.08em", color: INK_MUTED, minWidth: 32 }}>{code}</span>
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 500, color: INK, textAlign: "left" }}>{name}</span>
-        <span className="font-mono-pro tabular" style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{Math.round(animated)}%</span>
+        <motion.span className="font-mono-pro tabular" style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{counted}</motion.span>
       </div>
       <PassRateBar rate={rate} delay={delay} started={started} />
     </div>
@@ -827,12 +862,13 @@ export function PassRates() {
 /* ─────────────────────── GLOBAL MARKET AT A GLANCE ─────────────────────── */
 
 function MarketStatTile({ stat, delay, started }: { stat: MarketStat; delay: number; started: boolean }) {
-  const decimals = stat.decimals ?? 0
-  const animated = useCountUp(stat.value, 1400, started)
-  const display = `${stat.prefix ?? ""}${animated.toLocaleString("en-GB", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })}${stat.suffix ?? ""}`
+  const counted = useCountUpText(stat.value, {
+    decimals: stat.decimals ?? 0,
+    prefix: stat.prefix ?? "",
+    suffix: stat.suffix ?? "",
+    durationMs: 1400,
+    start: started,
+  })
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -841,9 +877,9 @@ function MarketStatTile({ stat, delay, started }: { stat: MarketStat; delay: num
       className="soft-card"
       style={{ padding: "26px 22px", borderRadius: 18 }}
     >
-      <div className="font-mono-pro tabular" style={{ fontSize: "clamp(30px, 2.8vw, 40px)", fontWeight: 500, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>
-        {display}
-      </div>
+      <motion.div className="font-mono-pro tabular" style={{ fontSize: "clamp(30px, 2.8vw, 40px)", fontWeight: 500, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>
+        {counted}
+      </motion.div>
       <div style={{ marginTop: 12, color: INK, fontSize: 14, fontWeight: 500, lineHeight: 1.45 }}>{stat.label}</div>
       <div style={{ marginTop: 6, color: INK_MUTED, fontSize: 11.5, lineHeight: 1.5 }}>{stat.source}</div>
     </motion.div>
