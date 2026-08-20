@@ -71,11 +71,9 @@ const BRAND_500 = "#C80000"
 const BRAND_400 = "#D92E10"
 const BRAND_100 = "#FBE7E4"
 const FIRE_500 = "#F4A405"
-const FIRE_100 = "#FDF2DC"
 const SHIELD_500 = "#2DD4BF"
 const SHIELD_100 = "#DDFAF4"
 const PLUM_500 = "#E50068"
-const PLUM_100 = "#FCE4EF"
 const HAIR = "rgba(20,20,26,0.08)"
 const GRAD_HERO = "linear-gradient(135deg, #C80000 0%, #E50068 50%, #F4A405 100%)"
 
@@ -2297,41 +2295,6 @@ function PartnerProgramme() {
   const reduced = useCalmMotion()
   const [demoPaid, setDemoPaid] = useState(300)
 
-  const trustRules = [
-    {
-      label: "90-DAY ATTRIBUTION",
-      title: "A return visit still belongs to you.",
-      body: "The first valid partner link is remembered in that browser for 90 days. After registration, the attribution is stored with the learner account.",
-      Icon: Target,
-      color: BRAND_500,
-      tint: BRAND_100,
-    },
-    {
-      label: "VERIFIED PAYMENTS",
-      title: "Trials and clicks are not fake sales.",
-      body: "Commission begins only when Stripe confirms a successful payment. Monthly renewals count inside the earned window; annual plans pay 27% once on the full annual charge.",
-      Icon: Check,
-      color: SHIELD_500,
-      tint: SHIELD_100,
-    },
-    {
-      label: "CLEAR VALIDATION",
-      title: "Every payable amount is traceable.",
-      body: "Each commission has a 30-day validation period. Refunds and chargebacks cancel it, while the dashboard shows the payment cycle and current status.",
-      Icon: Shield,
-      color: PLUM_500,
-      tint: PLUM_100,
-    },
-    {
-      label: "PROMOTION STUDIO",
-      title: "Campaign copy is ready to use.",
-      body: "Partners get disclosure-ready messages for study groups and LinkedIn, plus live clicks, registrations, unique paid learners and earnings progress.",
-      Icon: Share2,
-      color: FIRE_500,
-      tint: FIRE_100,
-    },
-  ] as const
-
   return (
     <section
       id="partners"
@@ -2435,25 +2398,6 @@ function PartnerProgramme() {
           </div>
         </div>
 
-        <div className="relative mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {trustRules.map(({ label, title, body, Icon, color, tint }, index) => (
-            <motion.article
-              key={label}
-              initial={reduced ? false : { opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.45 }}
-              transition={{ duration: 0.52, delay: index * 0.07, ease: EASE_DECISIVE }}
-              style={{ borderRadius: 20, border: `1px solid ${HAIR}`, background: "rgba(255,255,255,.72)", padding: 20 }}
-            >
-              <div style={{ width: 38, height: 38, borderRadius: 13, display: "grid", placeItems: "center", color, background: tint }}>
-                <Icon size={19} strokeWidth={2.3} />
-              </div>
-              <div className="font-mono-pro" style={{ marginTop: 16, color, fontSize: 9.5, letterSpacing: ".13em", fontWeight: 800 }}>{t(label)}</div>
-              <h3 style={{ margin: "7px 0 0", color: INK, fontSize: 16, lineHeight: 1.3, letterSpacing: "-.015em" }}>{t(title)}</h3>
-              <p style={{ margin: "9px 0 0", color: INK_MUTED, fontSize: 12.5, lineHeight: 1.62 }}>{t(body)}</p>
-            </motion.article>
-          ))}
-        </div>
       </motion.div>
     </section>
   )
