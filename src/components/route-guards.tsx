@@ -9,6 +9,8 @@ import { isLaunchAdmin, PRELAUNCH_MODE, LAUNCH_DATE_LABEL, signInPath } from "@/
 import { isAccaOnboarded } from "@/lib/acca-profile"
 import { getCurrentPaper } from "@/lib/acca-qualification"
 import { getLatestDiagnostic } from "@/lib/acca-diagnostic"
+import { progressAnsweredCount } from "@/lib/acca"
+import { accaProgressLoadSyncSettled, ensureAccaProgressLoadSync } from "@/lib/acca-cloud"
 import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
 import { currentAuthSessionIsActive, markSessionReplaced } from "@/lib/account-session"
@@ -143,13 +145,22 @@ function UnlockingScreen() {
 }
 
 /** Full-screen loader shown while the auth session is being resolved. */
-function AuthLoading() {
+function AuthLoading({ label }: { label?: string }) {
   return (
     <div
       style={{ background: "var(--sch-bg)" }}
       className="min-h-[100dvh] w-full flex items-center justify-center"
     >
-      <LogoSpinner size={52} />
+      <div style={{ textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <LogoSpinner size={52} />
+        </div>
+        {label ? (
+          <p style={{ marginTop: 14, fontSize: 13.5, fontWeight: 650, color: "var(--sch-tx-1)", fontFamily: "var(--sch-font)" }}>
+            {label}
+          </p>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -231,6 +242,25 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   const [, setEntitlementClock] = useState(0)
   /* Set only by the watchdog below, and only on a definitive server answer. */
   const [serverRevoked, setServerRevoked] = useState(false)
+  /* Bumped when the app-load progress reconcile settles, so the hold below lifts. */
+  const [, setProgressClock] = useState(0)
+
+  /*
+   * Reconcile the learner record with the cloud on app load — not only when
+   * /study mounts. Once per user per page load; ensure() reuses the in-flight
+   * promise, so StrictMode's double effect and route changes cost nothing.
+   */
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return
+    if (accaProgressLoadSyncSettled(user.id)) return
+    let alive = true
+    void ensureAccaProgressLoadSync(user.id).then(() => {
+      if (alive) setProgressClock((n) => n + 1)
+    })
+    return () => {
+      alive = false
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -352,6 +382,17 @@ export function ProtectedRoute({ children, gate = false }: { children: ReactNode
   // so there is one paywall in the product rather than a second "you've been
   // ejected" screen that would need its own copy and its own way out.
   if (decision === "paywall" || serverRevoked) return <TrialExpiredBlock />
+  /*
+   * Hold the first paint ONLY for the learner it matters to: signed in, and
+   * this browser holds no answers at all — the fresh-device / cleared-cache
+   * case, where every dashboard figure would render as zero and then jump once
+   * the cloud copy landed (or worse, be read as "my progress is gone").
+   * Everyone with local work renders instantly; their reconcile runs in the
+   * background above, and the timeout inside ensure() caps this wait too.
+   */
+  if (user && isSupabaseConfigured && !accaProgressLoadSyncSettled(user.id) && progressAnsweredCount() === 0) {
+    return <AuthLoading label="Restoring your progress…" />
+  }
   return <>{children}</>
 }
 

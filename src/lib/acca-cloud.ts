@@ -236,3 +236,45 @@ export function queueAccaProgressPush(delayMs = 2500): void {
     void pushAccaProgress()
   }, delayMs)
 }
+
+/* ── App-load reconcile (once per user, per page load) ────────── */
+
+/*
+ * ProtectedRoute drives this so the learner record is reconciled when the app
+ * OPENS, not only when /study happens to mount. The gap it closes: a returning
+ * learner on a new device (or cleared browser) lands on /dashboard, where
+ * streak, mastery and today's figures all read an empty localStorage — the
+ * cloud copy was only ever consulted by /study's own mount effect, a page they
+ * may not reach for minutes.
+ *
+ * Keyed by user id so an account switch on the same browser reconciles the new
+ * account, and raced against a timeout so a hung request can never hold the
+ * app shut — the underlying sync keeps running and lands for a later mount.
+ * StrictMode double-mounts and route changes reuse the in-flight promise.
+ */
+let loadSyncUser: string | null = null
+let loadSyncSettled = false
+let loadSyncInflight: Promise<void> | null = null
+
+/** Has the app-load reconcile finished (or timed out) for this user? */
+export function accaProgressLoadSyncSettled(userId: string): boolean {
+  return loadSyncUser === userId && loadSyncSettled
+}
+
+/** Start (or join) the app-load reconcile for this user. Never rejects. */
+export function ensureAccaProgressLoadSync(userId: string, timeoutMs = 8000): Promise<void> {
+  if (loadSyncUser !== userId) {
+    loadSyncUser = userId
+    loadSyncSettled = false
+    loadSyncInflight = null
+  }
+  if (!loadSyncInflight) {
+    loadSyncInflight = Promise.race([
+      syncAccaProgress().then(() => undefined),
+      new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+    ]).then(() => {
+      loadSyncSettled = true
+    })
+  }
+  return loadSyncInflight
+}
