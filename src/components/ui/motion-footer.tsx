@@ -8,9 +8,15 @@ import { useT } from "@/i18n/LanguageProvider"
 import { PRELAUNCH_MODE, signUpPath } from "@/lib/launch"
 import { useCalmMotion } from "@/hooks/use-calm-motion"
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger)
-}
+/*
+ * ScrollTrigger is registered when the footer MOUNTS, not at module scope.
+ * Registration spins up ScrollTrigger's global scroll/resize listeners and its
+ * sync timer, so doing it on import started them in every environment that
+ * merely imported Landing — including jsdom test runs, where the timer
+ * outlived the torn-down environment and crashed the suite with
+ * "requestAnimationFrame is not defined". registerPlugin is idempotent, and
+ * the only consumer is the effect below.
+ */
 
 const STYLES = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
@@ -164,6 +170,7 @@ export function CinematicFooter({
     if (reduced) return
     if (typeof window === "undefined") return
     if (!wrapperRef.current) return
+    gsap.registerPlugin(ScrollTrigger)
     const ctx = gsap.context(() => {
       gsap.fromTo(
         giantTextRef.current,

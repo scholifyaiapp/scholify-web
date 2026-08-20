@@ -23,6 +23,7 @@ import NavHeader from "@/components/ui/nav-header"
 import { GlowCard } from "@/components/ui/spotlight-card"
 import { QUESTION_COUNTS } from "@/lib/acca-content-counts"
 import { JUNE_2026_PASS_RATES } from "@/lib/acca-pass-rates"
+import { MARKET_HEADLINES, MEMBERS_BY_YEAR, MEMBER_GROWTH_PCT, MEMBER_GROWTH_CAGR_PCT, type MarketStat } from "@/lib/acca-market-stats"
 
 // Computed from the source of truth so the hero number can't drift stale again.
 // The old hardcoded "2,494" understated the real authored bank by ~2,000.
@@ -682,6 +683,153 @@ export function PassRates() {
         </div>
         <p style={{ color: INK_MUTED, fontSize: 12, margin: "28px auto 0", maxWidth: 660, lineHeight: 1.6 }}>
           {t("Source: ACCA official pass rates, June 2026 sitting (results release, July 2026). December 2025 was within 1–3 points on nearly every paper — the difficulty is structural, not one bad sitting.")}
+        </p>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────── GLOBAL MARKET AT A GLANCE ─────────────────────── */
+
+function MarketStatTile({ stat, delay, started }: { stat: MarketStat; delay: number; started: boolean }) {
+  const decimals = stat.decimals ?? 0
+  const animated = useCountUp(stat.value, 1400, started)
+  const display = `${stat.prefix ?? ""}${animated.toLocaleString("en-GB", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}${stat.suffix ?? ""}`
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={started ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay, ease: EASE_DECISIVE }}
+      className="soft-card"
+      style={{ padding: "26px 22px", borderRadius: 18 }}
+    >
+      <div className="font-mono-pro tabular" style={{ fontSize: "clamp(30px, 2.8vw, 40px)", fontWeight: 500, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>
+        {display}
+      </div>
+      <div style={{ marginTop: 12, color: INK, fontSize: 14, fontWeight: 500, lineHeight: 1.45 }}>{stat.label}</div>
+      <div style={{ marginTop: 6, color: INK_MUTED, fontSize: 11.5, lineHeight: 1.5 }}>{stat.source}</div>
+    </motion.div>
+  )
+}
+
+/*
+ * A line, not bars: the members axis starts at 233k, and truncated-baseline
+ * BARS would lie about the growth (length encodes quantity; position doesn't).
+ * The path draws itself once in view; only the endpoints carry value labels.
+ */
+function MembersGrowthLine() {
+  const t = useT()
+  const calm = useCalmMotion()
+  const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
+  const W = 640
+  const H = 150
+  const PAD_X = 12
+  const PAD_TOP = 30
+  const PAD_BOTTOM = 26
+  const values = MEMBERS_BY_YEAR.map((d) => d.members)
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const x = (i: number) => PAD_X + (i * (W - PAD_X * 2)) / (values.length - 1)
+  const y = (v: number) => PAD_TOP + (1 - (v - min) / (max - min)) * (H - PAD_TOP - PAD_BOTTOM)
+  const dPath = values.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")
+  const first = MEMBERS_BY_YEAR[0]
+  const last = MEMBERS_BY_YEAR[MEMBERS_BY_YEAR.length - 1]
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 24 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, ease: EASE_DECISIVE }}
+      className="soft-card"
+      style={{ padding: 26, borderRadius: 18, marginTop: 20 }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div className="font-display" style={{ fontSize: 20, letterSpacing: "-0.02em", color: INK }}>{t("Six years of members")}</div>
+        <span className="font-mono-pro tabular" style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: BRAND_500, padding: "4px 10px", borderRadius: 999, background: BRAND_100, whiteSpace: "nowrap" }}>
+          +{MEMBER_GROWTH_PCT}% {t("SINCE 2021")} · ≈{MEMBER_GROWTH_CAGR_PCT}%/{t("YR")}
+        </span>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={t(`ACCA members grew from ${first.members.toLocaleString("en-GB")} in 2021 to ${last.members.toLocaleString("en-GB")} in 2026.`)}
+        style={{ width: "100%", height: "auto", display: "block", marginTop: 18, overflow: "visible" }}
+      >
+        <motion.path
+          d={dPath}
+          fill="none"
+          stroke={INK}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={calm ? false : { pathLength: 0 }}
+          animate={inView ? { pathLength: 1 } : {}}
+          transition={{ duration: 1.4, ease: EASE_DECISIVE, delay: 0.15 }}
+        />
+        {MEMBERS_BY_YEAR.map((d, i) => (
+          <motion.circle
+            key={d.year}
+            cx={x(i)}
+            cy={y(d.members)}
+            r={4}
+            fill={BG_PRIMARY}
+            stroke={INK}
+            strokeWidth={2}
+            initial={calm ? false : { opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.25, delay: 0.15 + 1.3 * (i / (values.length - 1)) }}
+          />
+        ))}
+        <text x={x(0)} y={y(first.members) - 12} textAnchor="start" style={{ fontFamily: "Geist Mono, monospace", fontSize: 11.5, fill: INK, fontWeight: 500 }}>
+          {first.members.toLocaleString("en-GB")}
+        </text>
+        <text x={x(values.length - 1)} y={y(last.members) - 12} textAnchor="end" style={{ fontFamily: "Geist Mono, monospace", fontSize: 11.5, fill: INK, fontWeight: 500 }}>
+          {last.members.toLocaleString("en-GB")}
+        </text>
+        {MEMBERS_BY_YEAR.map((d, i) => (
+          <text
+            key={d.year}
+            x={x(i)}
+            y={H - 4}
+            textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"}
+            style={{ fontFamily: "Geist Mono, monospace", fontSize: 10, fill: INK_MUTED, fontWeight: 500 }}
+          >
+            {d.year}
+          </text>
+        ))}
+      </svg>
+      <div style={{ marginTop: 14, color: INK_MUTED, fontSize: 11.5, lineHeight: 1.5, textAlign: "left" }}>
+        {t("Headcount at 31 March each year — ACCA Annual Integrated Reports 2025 & 2026, five-year summaries.")}
+      </div>
+    </motion.div>
+  )
+}
+
+export function MarketAtGlance() {
+  const t = useT()
+  const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
+  return (
+    <section style={{ padding: "var(--section-y) var(--page-gutter)" }}>
+      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
+        <SectionLabel>{t("OFFICIAL ACCA DATA — THE GLOBAL MARKET")}</SectionLabel>
+        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", color: INK, margin: "24px 0 0" }}>
+          {t("The global ACCA market, at a glance.")}
+        </h2>
+        <p style={{ color: INK_MUTED, fontSize: "clamp(15px, 1.35vw, 18px)", maxWidth: 660, margin: "20px auto 0", lineHeight: 1.65 }}>
+          {t("Audited headline figures from ACCA's Annual Integrated Report for the year to 31 March 2026 — the largest community in ACCA's history, and its strongest-ever student intake.")}
+        </p>
+        <div ref={ref} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 20, marginTop: 56, textAlign: "left" }}>
+          {MARKET_HEADLINES.map((stat, i) => (
+            <MarketStatTile key={stat.label} stat={stat} delay={0.05 * i} started={inView} />
+          ))}
+        </div>
+        <MembersGrowthLine />
+        <p style={{ color: INK_MUTED, fontSize: 12, margin: "28px auto 0", maxWidth: 660, lineHeight: 1.6 }}>
+          {t("All figures as published: ACCA Annual Integrated Report FY 2025–26 and ACCA results releases (December 2025, June 2026). The exams-completed total is the sum of the two releases.")}
         </p>
       </div>
     </section>
@@ -2681,6 +2829,8 @@ export default function Landing() {
         caption="Scholify prepares you for the ACCA qualification — the pathway studied at the world's leading institutions."
       />
       <CharlesCarousel />
+      {/* The size of the world you're joining, then the problem inside it. */}
+      <LazyOnView style={{ minHeight: 820 }}><MarketAtGlance /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><Problem /></LazyOnView>
       {/* The receipts for the claim above: the official June 2026 pass-rate table. */}
       <LazyOnView style={{ minHeight: 760 }}><PassRates /></LazyOnView>
