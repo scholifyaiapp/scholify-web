@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  animate,
   motion,
   useInView,
-  useMotionValue,
-  useTransform,
   AnimatePresence,
   type Variants,
 } from "motion/react"
@@ -37,7 +34,6 @@ import PaymentMethods from "@/components/PaymentMethods"
 import { AnimatedText } from "@/components/ui/animated-shiny-text"
 import { ImageComparison } from "@/components/ui/image-comparison-slider"
 import { ImageSwiper } from "@/components/ui/image-swiper"
-import { InteractiveFolderGallery } from "@/components/ui/interactive-folder-gallery"
 import AnimatedCardStack, { type StackFact } from "@/components/ui/animated-card-stack"
 import { StoreBadge } from "@/components/ui/store-badge"
 import PhoneMockupBasic from "@/components/ui/phone-mockups-1"
@@ -46,7 +42,7 @@ import { AnimatedText as AnimatedUnderlineText } from "@/components/ui/animated-
 import { UpgradeBanner } from "@/components/ui/upgrade-banner"
 import { startStripeCheckout, type StripePlan } from "@/lib/stripe"
 import { Hero3DShowcase, TheLoopSection } from "@/components/landing-3d"
-import { SystemWalkthrough, MissionSection, ThreeReasons } from "@/components/landing-system"
+import { SystemWalkthrough, ThreeReasons } from "@/components/landing-system"
 import { ScholifyLockup } from "@/components/brand"
 import CharlesMascot from "@/components/CharlesMascot"
 import CharlesCarousel from "@/components/CharlesCarousel"
@@ -1662,234 +1658,6 @@ function QualificationRoadmap() {
   )
 }
 
-/* ─────────────────────── MILESTONE GALLERY ─────────────────────── */
-
-const MILESTONE_PHOTOS: Array<{ id: string; image: string; altKey: string }> = [
-  { id: "achievement", image: "/milestones/cert-achievement.svg", altKey: "Specimen certificate of achievement for a single ACCA paper" },
-  { id: "diploma", image: "/milestones/cert-diploma.svg", altKey: "Specimen Diploma in Accounting and Business certificate" },
-  { id: "advanced-diploma", image: "/milestones/cert-advanced-diploma.svg", altKey: "Specimen Advanced Diploma in Accounting and Business certificate" },
-  { id: "professional", image: "/milestones/cert-professional.svg", altKey: "Specimen Professional Level completion certificate" },
-  { id: "member", image: "/milestones/cert-member.svg", altKey: "Specimen ACCA Member certificate" },
-]
-
-/* ── The full route to the letters ────────────────────────────────
- *
- * The certificates above are the destination; this is what it costs to reach
- * it, and it is the part most people only discover halfway through. Exams are
- * not the whole requirement — ACCA membership also needs the ethics module and
- * three years of logged experience.
- *
- * Every figure is checked against the app's own data rather than the internet:
- * 15 papers across 3 levels from ROADMAP_LEVELS above (13 sat, because the
- * Strategic Professional Options are 2 chosen from 4), and PER_TARGET_MONTHS /
- * PER_TARGET_OBJECTIVES from src/lib/acca-journey.ts.
- */
-const ROUTE_STEPS = [
-  { value: 13, suffix: "", label: "EXAMS", note: "Chosen from 15 papers, across 3 levels", accent: BRAND_500 },
-  { value: null, display: "EPSM", label: "ETHICS MODULE", note: "Ethics & Professional Skills, completed online", accent: PLUM_500 },
-  { value: 36, suffix: "", label: "MONTHS", note: "Practical experience, with 9 performance objectives", accent: FIRE_500 },
-] as const
-
-function RouteFigure({ value, delay }: { value: number; delay: number }) {
-  const reduce = useCalmMotion()
-  const ref = useRef<HTMLSpanElement>(null)
-  const inView = useInView(ref, { once: true, margin: "-60px" })
-  const count = useMotionValue(reduce ? value : 0)
-  const shown = useTransform(count, (v) => Math.round(v))
-
-  useEffect(() => {
-    if (!inView) return
-    if (reduce) {
-      count.set(value)
-      return
-    }
-    const controls = animate(count, value, { duration: 1.1, delay, ease: EASE_DECISIVE })
-    return () => controls.stop()
-  }, [inView, reduce, count, value, delay])
-
-  return (
-    <span ref={ref} className="font-display tabular">
-      <motion.span>{shown}</motion.span>
-    </span>
-  )
-}
-
-function AccaRouteStrip() {
-  const t = useT()
-  const reduce = useCalmMotion()
-  const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: "-80px" })
-
-  return (
-    <div ref={ref} style={{ marginTop: "clamp(40px,6vw,72px)" }}>
-      <SectionLabel>{t("THE FULL ROUTE TO THOSE LETTERS")}</SectionLabel>
-      <p style={{ color: INK_MUTED, fontSize: 14.5, maxWidth: 520, margin: "12px auto 0", lineHeight: 1.6 }}>
-        {t("Passing every paper is most of it — but not all of it. Membership needs three things, and Scholify tracks all three.")}
-      </p>
-
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "stretch",
-          justifyContent: "center",
-          gap: "clamp(10px,1.6vw,18px)",
-          marginTop: 30,
-        }}
-      >
-        {ROUTE_STEPS.map((step, i) => (
-          <motion.div
-            key={step.label}
-            initial={reduce ? false : { opacity: 0, y: 26 }}
-            animate={inView ? { opacity: 1, y: 0 } : undefined}
-            transition={{ duration: 0.6, delay: i * 0.14, ease: EASE_DECISIVE }}
-            style={{
-              flex: "1 1 190px",
-              maxWidth: 250,
-              padding: "22px 20px",
-              borderRadius: 20,
-              background: BG_PRIMARY,
-              border: `1px solid ${HAIR}`,
-              borderTop: `3px solid ${step.accent}`,
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: "clamp(34px,4.6vw,46px)", color: step.accent, lineHeight: 1, letterSpacing: "-0.03em" }}>
-              {step.value === null ? (
-                <span className="font-display">{step.display}</span>
-              ) : (
-                <RouteFigure value={step.value} delay={0.2 + i * 0.14} />
-              )}
-            </div>
-            <div
-              className="font-mono-pro"
-              style={{ fontSize: 10.5, letterSpacing: "0.16em", fontWeight: 600, color: INK, marginTop: 12 }}
-            >
-              {t(step.label)}
-            </div>
-            <div style={{ fontSize: 12.5, color: INK_MUTED, lineHeight: 1.5, marginTop: 8 }}>{t(step.note)}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* The route closes into the designation. */}
-      <motion.div
-        initial={reduce ? false : { scaleX: 0 }}
-        animate={inView ? { scaleX: 1 } : undefined}
-        transition={{ duration: 0.8, delay: 0.5, ease: EASE_DECISIVE }}
-        style={{
-          height: 2,
-          maxWidth: 260,
-          margin: "26px auto 0",
-          background: `linear-gradient(90deg, ${BRAND_500}, ${PLUM_500}, ${FIRE_500})`,
-        }}
-      />
-
-      <motion.div
-        initial={reduce ? false : { opacity: 0, y: 18 }}
-        animate={inView ? { opacity: 1, y: 0 } : undefined}
-        transition={{ duration: 0.7, delay: 0.66, ease: EASE_DECISIVE }}
-        style={{ marginTop: 22 }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", gap: "clamp(4px,1vw,10px)" }}>
-          {"ACCA".split("").map((letter, i) => (
-            <motion.span
-              key={letter + i}
-              className="font-display"
-              initial={reduce ? false : { opacity: 0, y: 20, filter: "blur(6px)" }}
-              animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : undefined}
-              transition={{ duration: 0.6, delay: 0.78 + i * 0.09, ease: EASE_DECISIVE }}
-              style={{
-                fontSize: "clamp(44px,7vw,84px)",
-                lineHeight: 1,
-                letterSpacing: "-0.02em",
-                color: INK,
-              }}
-            >
-              {letter}
-            </motion.span>
-          ))}
-        </div>
-        <div style={{ color: INK_MUTED, fontSize: 13.5, marginTop: 14, lineHeight: 1.6 }}>
-          {t("The letters after your name. Scholify takes you to the exams; it tracks the other two the whole way.")}
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-function MilestoneGallery() {
-  const t = useT()
-  const reveal = {
-    hidden: { opacity: 0, y: 32 },
-    visible: (index: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: index * 0.12, duration: 0.6, ease: EASE_DECISIVE },
-    }),
-  }
-  return (
-    <section style={{ padding: "calc(var(--section-y) * 0.62) var(--page-gutter)", background: BG_SECONDARY }}>
-      <div style={{ maxWidth: "var(--page-max)", margin: "0 auto", textAlign: "center" }}>
-        <motion.div
-          custom={0}
-          variants={reveal}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-        >
-          <SectionLabel>{t("WHERE THE ROADMAP LEADS")}</SectionLabel>
-        </motion.div>
-        <h2 className="font-display text-pro-h" style={{ fontSize: "clamp(28px, 4vw, 44px)", color: INK, margin: "14px 0 0", lineHeight: 1.12 }}>
-          {[
-            { text: t("Every paper closes with"), emphasis: false },
-            { text: t("a real document."), emphasis: true },
-          ].map((part, index) => (
-            <span key={part.text} className="inline-block overflow-hidden" style={{ paddingBottom: 3 }}>
-              <motion.span
-                className={part.emphasis ? "grad-hero-text" : undefined}
-                initial={{ y: "110%" }}
-                whileInView={{ y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ delay: 0.16 + index * 0.14, duration: 0.7, ease: EASE_DECISIVE }}
-                style={{ display: "inline-block", fontStyle: part.emphasis ? "italic" : "normal", marginLeft: index ? "0.24em" : 0 }}
-              >
-                {part.text}
-              </motion.span>
-            </span>
-          ))}
-        </h2>
-        <motion.p
-          custom={3}
-          variants={reveal}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          style={{ color: INK_MUTED, fontSize: 15, maxWidth: 520, margin: "14px auto 0", lineHeight: 1.6 }}
-        >
-          {t("ACCA issues the certificate. Scholify gets you there.")}
-        </motion.p>
-
-        <motion.div
-          custom={4}
-          variants={reveal}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-        >
-          <InteractiveFolderGallery
-            folderName={t("Your qualification.folder")}
-            dragHintText={t("Drag any card down to close")}
-            photos={MILESTONE_PHOTOS.map((p) => ({ id: p.id, image: p.image, alt: t(p.altKey) }))}
-          />
-        </motion.div>
-
-        <AccaRouteStrip />
-      </div>
-    </section>
-  )
-}
-
 /* ── The redesigned ACCA Qualification — second roadmap (official, from 2027) ── */
 
 const FUTURE_LEVELS: typeof ROADMAP_LEVELS = [
@@ -2004,8 +1772,9 @@ function FutureQualification() {
 
 /**
  * NO LONGER MOUNTED. A brand-transformation showcase between the feature grid and
- * the ROI table — beautiful, and answering no question a buyer has. MissionSection
- * now carries the "why" at that altitude, in the founder's words.
+ * the ROI table — beautiful, and answering no question a buyer has. The "why" at
+ * that altitude now lives in ThreeReasons (MissionSection carried it until the
+ * founder cut that section on 20 Aug 2026).
  */
 function Identity() {
   const t = useT()
@@ -2843,11 +2612,8 @@ export default function Landing() {
       */}
       <LazyOnView id="how-it-works" style={{ minHeight: 900 }}><SystemWalkthrough /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><TheLoopSection /></LazyOnView>
-      {/* WHY it exists, before what it costs. */}
-      <LazyOnView style={{ minHeight: 620 }}><MissionSection /></LazyOnView>
       <LazyOnView style={{ minHeight: 900 }}><ThreeReasons /></LazyOnView>
       <LazyOnView style={{ minHeight: 700 }}><QualificationRoadmap /></LazyOnView>
-      <LazyOnView style={{ minHeight: 700 }}><MilestoneGallery /></LazyOnView>
       <LazyOnView id="features" style={{ minHeight: 800 }}><Features /></LazyOnView>
       <LazyOnView style={{ minHeight: 800 }}><CompareROI /></LazyOnView>
       <LazyOnView style={{ minHeight: 600 }}><AccaFactsCTA /></LazyOnView>
