@@ -683,10 +683,19 @@ const steadyAt = (day: number) => STEADY_END * Math.pow(day / RUN_DAYS, 1.4)
 /** The day the steady line clears the pass mark — solved, not eyeballed. */
 const CROSSING_DAY = Math.round(RUN_DAYS * Math.pow(PASS_MARK / STEADY_END, 1 / 1.4))
 
-/** Study in bursts and the forgetting curve takes it back between them. */
+/**
+ * Study in bursts and the forgetting curve takes it back between them: the
+ * sawtooth climbs, but every gap gives some of it away, so the run finishes
+ * short of the pass line while the steady curve is well past it.
+ *
+ * The end value is a named constant because the chart PRINTS it — a hardcoded
+ * label beside a dot positioned from the data is a number that can silently
+ * start lying the moment either one is edited.
+ */
+const ERRATIC_END = 41
 const ERRATIC_POINTS: Array<[number, number]> = [
-  [0, 0], [4, 10], [8, 6], [13, 17], [18, 11], [24, 21],
-  [29, 14], [35, 23], [40, 16], [46, 26], [51, 18], [55, 24], [RUN_DAYS, 20],
+  [0, 0], [4, 12], [8, 7], [13, 20], [18, 14], [24, 26],
+  [29, 20], [35, 31], [40, 24], [46, 35], [51, 29], [55, 38], [RUN_DAYS, ERRATIC_END],
 ]
 
 const steadyPathFor = (c: ChartConfig) =>
@@ -1121,16 +1130,16 @@ function CompoundingVisual() {
             >
               {STEADY_END}%
             </text>
-            <circle cx={xOf(chart, RUN_DAYS)} cy={yOf(chart, 20)} r={compact ? 6 : 5} fill={SERIES_ERRATIC} />
+            <circle cx={xOf(chart, RUN_DAYS)} cy={yOf(chart, ERRATIC_END)} r={compact ? 6 : 5} fill={SERIES_ERRATIC} />
             <text
               x={xOf(chart, RUN_DAYS)}
-              y={yOf(chart, 20) + 24}
+              y={yOf(chart, ERRATIC_END) + 24}
               textAnchor="end"
               fontSize={chart.endFont}
               fontWeight="600"
               fill={INK}
             >
-              20%
+              {ERRATIC_END}%
             </text>
           </motion.g>
 
