@@ -96,11 +96,10 @@ const EASE_HOVER = [0.4, 0, 0.2, 1] as const
  * Counting numbers, WITHOUT a React render per frame.
  *
  * The old hook held the value in useState and called setVal() from its own
- * requestAnimationFrame loop. One of those is harmless; the page now has
- * twenty-three (three hero stat cards, eight market tiles, fifteen pass-rate
- * rows, the pit wall), and scrolling past a section started that many rAF
- * loops each committing a React render EVERY FRAME. On a laptop that is
- * twenty-three renders per frame competing with the scroll itself, which is
+ * requestAnimationFrame loop. One of those is harmless; the page has twenty-six
+ * (three hero stat cards, eight market tiles, fifteen pass-rate rows), and
+ * scrolling past a section started that many rAF loops each committing a React
+ * render EVERY FRAME — renders competing with the scroll itself, which is
  * exactly the stutter it looks like.
  *
  * The value now lives in a MotionValue and is written straight into the DOM
