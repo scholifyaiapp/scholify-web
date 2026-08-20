@@ -43,14 +43,16 @@ export const QUESTION_COUNTS: Record<string, number> = {
   PM: 468,
   TX: 359,
   FR: 339,
-  AA: 174,
-  FM: 177,
-  SBL: 185,
-  SBR: 180,
-  AFM: 174,
-  APM: 173,
-  ATX: 174,
-  AAA: 183,
+  // AA through AAA were rebuilt to authored kits in Aug 2026; these are the
+  // census counts after that rebuild (was: 174/177/185/180/174/173/174/183).
+  AA: 204,
+  FM: 216,
+  SBL: 301,
+  SBR: 271,
+  AFM: 273,
+  APM: 248,
+  ATX: 225,
+  AAA: 226,
 }
 
 /**
@@ -71,14 +73,14 @@ export const DRILL_COUNTS: Record<string, number> = {
   PM: 0,
   TX: 0,
   FR: 0,
-  AA: 176,
-  FM: 173,
-  SBL: 165,
-  SBR: 170,
-  AFM: 176,
-  APM: 177,
-  ATX: 176,
-  AAA: 167,
+  AA: 146,
+  FM: 134,
+  SBL: 49,
+  SBR: 79,
+  AFM: 77,
+  APM: 102,
+  ATX: 125,
+  AAA: 124,
 }
 
 /** Authored bank size for a paper — 0 for a paper with no curated bank. */

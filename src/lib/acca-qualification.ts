@@ -2,10 +2,10 @@
  * Scholify — the full ACCA qualification map.
  *
  * The whole journey: 13 exams across three levels (plus 4 Options to choose 2
- * from), and the non-exam requirements (EPSM + PER). All nine Applied
- * Knowledge/Skills papers carry curated question banks (acca-content.ts);
- * Strategic Professional papers are practisable via AI-generated questions
- * and (SBR) the AI Examiner's written bank, with a personalised study plan.
+ * from), and the non-exam requirements (EPSM + PER). All fifteen papers carry
+ * authored question banks (acca-content.ts + the per-paper kits), and every
+ * paper with a constructed-response section feeds the AI Examiner's written
+ * bank, with a personalised study plan.
  *
  * myACCA has no public API, so "your ACCA record" is self-reported: the
  * learner marks the exams they've passed. The storage shape below is ready for
@@ -160,6 +160,7 @@ const OTHER_PAPERS: AccaPaper[] = [
       { code: "C", label: "Performance reporting" },
       { code: "D", label: "Data science & technology for insights" },
       { code: "E", label: "Professional skills" },
+      { code: "F", label: "Employability & technology skills" },
     ],
   },
   {

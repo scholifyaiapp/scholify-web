@@ -1020,17 +1020,18 @@ function FeatureBlock({ tag, title, desc, bullets, visual, reverse, index }: { t
 function VisualPlanGen() {
   const { ref, inView } = useInViewOnce<HTMLDivElement>("-100px")
   const t = useT()
+  // The app's real method phases (METHOD_PHASES in acca-plan.ts), in order.
   const tasks = [
-    "Phase 1 · Learn — areas A to C",
-    "Phase 2 · Drill your weak areas",
-    "Phase 3 · Timed mock exams",
-    "Exam week · Final review",
+    "Phase 1 · Learn — every chapter, timed",
+    "Phase 2 · Strengthen — weakest areas first",
+    "Phase 3 · Revise — lock it into memory",
+    "Phase 4 · Rehearse — timed mock exams",
   ]
   return (
     <div ref={ref} className="soft-card" style={{ width: 420, maxWidth: "100%", padding: 28 }}>
       <div className="font-mono-pro" style={{ fontSize: 11, letterSpacing: "0.12em", color: INK_MUTED, fontWeight: 500 }}>{t("YOUR GOAL")}</div>
       <div style={{ color: INK, fontSize: 16, marginTop: 8, fontWeight: 500 }}>
-        {t("Pass FR (F7) in")} <span className="font-mono-pro tabular">47</span> {t("days")} · <span className="font-mono-pro tabular">25</span> {t("min/day")}
+        {t("Pass FR in")} <span className="font-mono-pro tabular">47</span> {t("days")} · <span className="font-mono-pro tabular">25</span> {t("min/day")}
       </div>
       <div style={{ height: 1, background: HAIR, margin: "18px 0" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1237,7 +1238,7 @@ function HeatmapCell({ delay, intensity }: { delay: number; intensity: number })
 function VisualProgress() {
   const [hovered, setHovered] = useState(false)
   const t = useT()
-  const cells = Array.from({ length: 30 }, (_, i) => {
+  const cells = Array.from({ length: 35 }, (_, i) => {
     const seed = (i * 7 + 3) % 10
     return seed < 2 ? 0 : seed < 4 ? 1 : seed < 6 ? 2 : seed < 8 ? 3 : 4
   })
@@ -1261,7 +1262,7 @@ function VisualProgress() {
         ))}
       </div>
 
-      <div className="font-mono-pro" style={{ marginTop: 22, color: INK_MUTED, fontSize: 10, letterSpacing: "0.12em", fontWeight: 500 }}>{t("LAST 30 DAYS")}</div>
+      <div className="font-mono-pro" style={{ marginTop: 22, color: INK_MUTED, fontSize: 10, letterSpacing: "0.12em", fontWeight: 500 }}>{t("LAST 35 DAYS")}</div>
       <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gap: 4 }}>
         {cells.map((intensity, i) => (
           <HeatmapCell key={i} delay={i * 0.04} intensity={intensity} />
@@ -1361,12 +1362,12 @@ function Features() {
           reverse={false}
           tag="QUESTION BANK + AI TUTOR"
           title="Practise like it's the real exam."
-          desc="Original, syllabus-aligned question banks for every Applied Knowledge and Applied Skills paper — marked instantly, explained properly. When you need more laps, Charles writes fresh exam-style questions from any topic or your own notes."
+          desc="Original, syllabus-aligned question banks for all fifteen papers — Knowledge, Skills and Strategic Professional — marked instantly, explained properly. When you need more laps, Charles writes fresh exam-style questions from any topic or your own notes."
           bullets={[
-            "Curated banks for all nine OT papers",
+            `${AUTHORED_QUESTION_TOTAL.toLocaleString("en-GB")} expert-written questions across all 15 papers`,
             "Instant marking with teaching explanations",
-            "Ask Charles why — on any question, 24/7",
-            "Unlimited AI questions from topics or your notes",
+            "Charles one tap away on every screen, briefed on your weak areas",
+            "Extra AI questions from any topic or your own notes — on Pro",
           ]}
           visual={<VisualPlanGen />}
         />
@@ -1406,12 +1407,12 @@ function Features() {
           reverse
           tag="READINESS"
           title="Know you're ready before you book."
-          desc="A readiness score per paper. Accuracy per syllabus area. Full mock history against the pass line. A 30-day study heatmap. Exam day should be a formality, not a gamble."
+          desc="A readiness score per paper. Accuracy per syllabus area. Full mock history against the pass line. A 35-day study heatmap. Exam day should be a formality, not a gamble."
           bullets={[
-            "Exam readiness score per paper",
+            "Exam readiness score per paper — quoted only once it's earned",
             "Accuracy by syllabus area — see the gaps",
             "Timed mock history against the 50% pass line",
-            "30-day study heatmap",
+            "35-day study heatmap",
             "Your full BT → AAA qualification roadmap",
           ]}
           visual={<VisualProgress />}
@@ -1605,7 +1606,7 @@ function QualificationRoadmap() {
             <em style={{ fontStyle: "italic" }} className="grad-hero-text">{t("One roadmap.")}</em>
           </h2>
           <p style={{ color: INK_MUTED, fontSize: 17, maxWidth: 580, margin: "20px auto 0", lineHeight: 1.65 }}>
-            {t("Expert-written question banks for every Applied Knowledge and Applied Skills exam. Unlimited AI practice across all fifteen papers. One roadmap that follows you from your first exam to full ACCA membership.")}
+            {t("Expert-written question banks for all fifteen papers, from BT to AAA. One roadmap that follows you from your first exam to full ACCA membership.")}
           </p>
         </div>
 

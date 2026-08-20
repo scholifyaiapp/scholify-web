@@ -109,13 +109,13 @@ const STAGES: Stage[] = [
     label: "ONBOARDING",
     title: "Seven questions. Ninety seconds.",
     body:
-      "Which paper, where you're starting from, how many minutes you can genuinely protect, and the score you're aiming for. Every answer is read by the planner, and you can change any of them later without losing progress.",
+      "Which paper, where you're starting from, how many minutes you can genuinely protect, and the score you're aiming for. Every answer is read by the planner, and your minutes, target, study days and exam date can all be changed later without losing progress.",
     accent: BRAND_500,
     Icon: Compass,
     facts: [
       "Starting point decides whether you're measured first or taught first",
-      "Your minutes and days become the real shape of every day",
-      "Your target (65 / 75 / 85%) scales how much practice you get",
+      "Your minutes decide how much fits into every day, block by block",
+      "Your target — 65 / 75 / 85%, or custom 50–95 — stretches the whole plan",
     ],
   },
   {
@@ -123,7 +123,7 @@ const STAGES: Stage[] = [
     label: "PLAN GENERATION",
     title: "Charles builds the whole paper, not a to-do list.",
     body:
-      "Every chapter is timed from its own content, then spread across the days you actually have. Your sitting date is calculated rather than guessed: total hours ÷ your weekly hours, mapped onto the next real ACCA session.",
+      "Every chapter is timed from its own content, then spread across the days you actually have. Leave the sitting date blank and Charles computes one — the paper's hours ÷ your weekly hours, mapped onto the next ACCA session, or the next working day for the on-demand papers.",
     accent: PLUM_500,
     Icon: CalendarClock,
     facts: [
@@ -137,7 +137,7 @@ const STAGES: Stage[] = [
     label: "YOUR DAY",
     title: "One topic, five ways.",
     body:
-      "Not \"practise 30 questions\". An exact chapter, then five quizzes on it, 10–15 exam-standard questions, 5–10 flashcards, and a technical article in the examiner's own language. Each step unlocks the next.",
+      "Not \"practise 30 questions\". An exact chapter, then five quizzes on it, 10–15 exam-standard questions, 5–10 flashcards, and — when your minutes allow — a technical article in the examiner's own language. Each step unlocks the next.",
     accent: FIRE_500,
     Icon: Layers,
     facts: [
@@ -151,13 +151,13 @@ const STAGES: Stage[] = [
     label: "MEASUREMENT",
     title: "A readiness score that earns its number.",
     body:
-      "Built from coverage of the paper, accuracy on what you've covered, and the difficulty of what's left. It stays unquoted until there's enough evidence to mean something, so it measures you instead of guessing.",
+      "Built from your coverage of the paper and your accuracy on what you've covered. It stays unquoted until there's enough evidence to mean something — around twenty answers across half the syllabus — so it measures you instead of guessing.",
     accent: GREEN_500,
     Icon: Target,
     facts: [
       "Seconds per mark by exam section, against ACCA's own 1.8 min/mark",
       "Accuracy by syllabus area, so the floor is always visible",
-      "Projected score on exam day at your current pace, with the shortfall in minutes",
+      "Projected score on exam day, with the extra minutes a day that close the gap",
     ],
   },
   {

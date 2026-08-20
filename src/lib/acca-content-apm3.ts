@@ -972,4 +972,66 @@ export const APM_WAVE1B: AccaQuestion[] = [
       "In uncertain, highly interdependent settings, rigid budget targets are unfair and distorting, so the style fits worst. Options 0, 1 and 2 each describe stable, predictable or low-interdependence conditions — precisely where a tight budget-constrained style is more workable, not least appropriate.",
     marks: 2, difficulty: "hard",
   },
+
+  /* ═══════ Area F — Employability & technology skills — from APM-40 ═══════
+   * The diagnostic needs an easy, a medium and a hard question in EVERY area;
+   * APM-40's two derived knowledge checks are both medium, so these four
+   * authored questions complete the tiers. Content is the chapter's own. */
+
+  {
+    id: "APM3-F-01", paper: "APM", area: "F", type: "mcq",
+    stem: "In the APM computer-based exam, which response tool should carry the calculations supporting a performance evaluation, and which the evaluation itself?",
+    options: [
+      "Calculations in the spreadsheet with live formulae; the discussion and recommendation in the word processor",
+      "Everything in the word processor, so the answer reads as one document",
+      "Everything in the spreadsheet, so all the marks are in one place",
+      "Calculations on paper, with only the results entered on screen",
+    ],
+    correct: 0,
+    explanation:
+      "Each tool for what it is good at: spreadsheet formulae keep the method visible and let changes flow through, while the word processor gives the discussion structure a marker can read at speed. One long document buries the workings; a spreadsheet full of prose is unreadable; and paper workings are invisible to the marker entirely.",
+    marks: 2, difficulty: "easy",
+  },
+  {
+    id: "APM3-F-02", paper: "APM", area: "F", type: "mcq",
+    stem: "A candidate presents a table of divisional figures with no units, periods or currencies shown. Which presentation habit has been ignored?",
+    options: [
+      "Rounding sensibly and consistently",
+      "Labelling everything — the marker should never have to infer what a figure represents",
+      "Stating assumptions where an exhibit is ambiguous",
+      "Building headings from the requirement's wording",
+    ],
+    correct: 1,
+    explanation:
+      "Units, periods and currencies are labels, and a marker asked to guess them may not credit the figure at all. Rounding concerns precision, not identification; assumptions concern ambiguous source data; and headings concern the answer's structure — none of the three is what an unlabelled table breaches.",
+    marks: 2, difficulty: "easy",
+  },
+  {
+    id: "APM3-F-03", paper: "APM", area: "F", type: "mcq",
+    stem: "Why should the answer's headings be built from the requirement's own wording BEFORE any writing begins?",
+    options: [
+      "Longer answers with more headings earn more marks automatically",
+      "The exam software requires a heading before it accepts text",
+      "Nothing in the requirement gets missed, and the marker can locate the answer to each part under a heading that matches its wording",
+      "It removes the need to read the exhibits at all",
+    ],
+    correct: 2,
+    explanation:
+      "Headings taken from the requirement act as a completeness checklist while writing and as a map while marking. Length alone earns nothing; the software imposes no such rule; and the exhibits still have to be searched for evidence — headings decide the structure, not the reading.",
+    marks: 2, difficulty: "medium",
+  },
+  {
+    id: "APM3-F-04", paper: "APM", area: "F", type: "mcq",
+    stem: "An exhibit is ambiguous about whether a head-office charge is controllable by divisional managers, and the figure feeds a divisional performance calculation the requirement demands. What should the candidate do?",
+    options: [
+      "Leave the item out of the calculation so the ambiguity cannot cause an error",
+      "Choose whichever treatment produces the better-looking divisional result, without comment",
+      "Spend the remaining reading time searching every exhibit for a certainty that may not exist",
+      "State the assumption made about controllability and proceed, so the marker can follow the judgement and credit the method either way",
+    ],
+    correct: 3,
+    explanation:
+      "Where the source is genuinely ambiguous, a stated assumption turns the ambiguity into a visible, creditable judgement. Omitting a demanded item loses the marks outright; choosing silently — especially self-servingly — hides the judgement the skill is testing; and hunting for certainty the exhibits don't contain spends time the 50-mark case cannot spare.",
+    marks: 2, difficulty: "hard",
+  },
 ]
