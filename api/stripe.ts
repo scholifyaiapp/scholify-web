@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
-import { sendPurchaseEmail, sendReceiptEmail, sendPaymentFailedEmail, sendCancellationEmail } from "./purchase-email.js"
+import { sendPurchaseEmail, sendReceiptEmail, sendPaymentFailedEmail } from "./purchase-email.js"
 import { sendPartnerEmail, emailFrame, escapeHtml } from "./affiliate.js"
 import { sendTierUpEmail } from "./partner-emails.js"
 import { commissionTierForPaidCustomers } from "../src/lib/partner-rewards.js"
@@ -1164,30 +1164,15 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           eventType: event.type,
         })
         /*
-         * THE CANCELLATION ACKNOWLEDGMENT — sent on the one update where
-         * cancel_at_period_end flipped false → true. previous_attributes
-         * carries the old value only on the event that changed it, so this
-         * cannot re-fire on later unrelated subscription updates.
+         * NO cancellation acknowledgment goes out here — founder decision
+         * (23 Aug 2026): of the three lifecycle emails, payment-failed and
+         * tier-up are approved; the cancellation email is held back. The
+         * built template stays in purchase-email.ts. To enable it later,
+         * send on the one update where cancel_at_period_end flips
+         * false → true (previous_attributes carries the old value only on
+         * the event that changed it, so it cannot re-fire) — with a fresh
+         * founder go, not by default.
          */
-        const prev = event.data.previous_attributes as Partial<Stripe.Subscription> | undefined
-        if (prev?.cancel_at_period_end === false && sub.cancel_at_period_end) {
-          try {
-            const { data: userData } = await supa.auth.admin.getUserById(userId)
-            const email = userData?.user?.email
-            if (email) {
-              await sendCancellationEmail(email, {
-                firstName: (userData.user?.user_metadata?.first_name as string | undefined) ?? null,
-                planLabel: plan === "beginner" ? "Beginner" : plan === "annual_pro" ? "Annual Pro" : "Pro",
-                accessUntil:
-                  typeof sub.current_period_end === "number"
-                    ? new Date(sub.current_period_end * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
-                    : null,
-              })
-            }
-          } catch (error) {
-            console.error("cancellation email:", error)
-          }
-        }
       }
     } else if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object as Stripe.Subscription

@@ -598,6 +598,10 @@ export async function sendPartnerEmail(payload: {
   if (!apiKey) throw new Error("RESEND_API_KEY is not configured")
   const from = process.env.FEEDBACK_FROM || process.env.REMINDER_FROM
   if (!from) throw new Error("FEEDBACK_FROM or REMINDER_FROM is not configured")
+  // Resend's sandbox senders deliver only to the Resend account owner, so a
+  // resend.dev "from" silently turns every partner email into admin-inbox
+  // spam — the same guard email-theme.ts applies to learner mail.
+  if (/resend\.dev/i.test(from)) throw new Error("Refusing to send from a resend.dev sandbox address — set FEEDBACK_FROM/REMINDER_FROM to the verified scholifyapp.com domain")
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const response = await fetch("https://api.resend.com/emails", {
