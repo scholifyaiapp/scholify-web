@@ -436,7 +436,7 @@ const STEPS = [
   {
     title: "Your 27% commission clears",
     label: "Earn",
-    detail: "Each eligible paid invoice appears in your dashboard as pending. Monthly referrals earn across the 1, 3 or 5 payments your performance tier locked when they first paid.",
+    detail: "Each eligible paid invoice appears in your dashboard as pending. Monthly referrals earn across the 1, 3 or 5 payments your performance tier locked when they first paid — month by month, for as long as each learner actually keeps paying.",
   },
 ]
 
@@ -708,7 +708,9 @@ export default function PartnersApply() {
               <motion.p {...rise(0.05)} style={{ fontSize: 16, lineHeight: 1.6, color: "var(--sch-tx-1)", fontWeight: 500 }}>
                 Every partner earns <b style={{ color: "var(--sch-text)" }}>27%</b>. Performance extends the earning
                 window: the first successful monthly payment at Launch, three payments from 300 unique paid learners,
-                and five from 600. Annual plans pay 27% once on the full annual charge.
+                and five from 600. Annual plans pay 27% once on the full annual charge. You earn on payments that
+                actually happen — if a learner cancels mid-window, commissions simply stop with their last paid month,
+                and every learner who keeps paying earns you their full window.
               </motion.p>
 
               <motion.div {...rise(0.1)} style={{ ...card, marginTop: 18, padding: 0, overflow: "hidden" }}>
@@ -1015,7 +1017,9 @@ export default function PartnersApply() {
               <b style={{ color: "var(--sch-text)" }}>A qualifying payment</b> is a successfully collected subscription
               payment inside the referral's locked 1/3/5-payment window. First valid partner touch is remembered for
               90 days and becomes permanent at registration; the 300th and 600th unique paid learners unlock the next
-              tier for themselves and future referrals, not earlier ones. Annual plans earn once. Refunds and
+              tier for themselves and future referrals, not earlier ones. Annual plans earn once. The window is a
+              maximum, not a guarantee: commissions accrue month by month only while the learner actually pays, so a
+              cancellation ends that learner's window early — and a learner who stays earns you all of it. Refunds and
               chargebacks void the related commission, and every payment completes the 30-day validation hold.
             </div>
           </motion.div>
