@@ -23,6 +23,7 @@ const MIGRATIONS = [
   "0029_day_completion_email.sql",
   "0030_individual_account_sessions.sql",
   "0031_partner_commission_tiers.sql",
+  "0032_lifecycle_emails.sql",
 ]
 
 /*
@@ -42,7 +43,11 @@ const REQUIRED_COLUMNS = {
     "sent_catchup_date",
     // 0029 — the exactly-once guard for the day-completion congratulation email.
     "sent_done_date",
+    // 0032 — the lapse win-back guards that replace the endless daily cadence.
+    "sent_lapse3_date",
+    "sent_lapse7_date",
   ],
+  affiliates: ["digest_sent_date"],
   affiliate_referrals: ["stripe_customer_id", "first_paid_at", "commission_cycles"],
   affiliate_commissions: ["payout_reference", "stripe_invoice_id", "billing_cycle", "commission_cycles", "plan"],
 }

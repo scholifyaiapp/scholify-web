@@ -1,13 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createHmac, timingSafeEqual } from "node:crypto"
-import { socialRowHtml } from "../src/lib/social-links.js"
-
-/**
- * Appended inside every learner-facing email footer cell. Built once at module
- * load, since the account list is static.
- */
-const SOCIAL_FOOTER = `<br><br><span style="display:inline-block;margin-bottom:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B7B2AC;">Follow Scholify</span><br>${socialRowHtml()}`
+import { deliverEmail, esc, renderBrandEmail, renderTextEmail, verifiedSender } from "./email-theme.js"
 
 /*
  * Practice-time reminders — three a day, in the learner's own clock.
@@ -114,17 +108,14 @@ function admin() {
  * by the window — so widening these cannot double-send.
  */
 /*
- * The sender address, with no silent fallback — see the long note in
- * api/purchase-email.ts. REMINDER_FROM was present in Vercel with an EMPTY
- * value, so this file was sending every reminder from Resend's sandbox
- * address, which delivers only to the Resend account owner. Real learners got
- * nothing and Resend returned success.
+ * The sender address, with no silent fallback and no sandbox — see
+ * verifiedSender() in api/email-theme.ts. Both failure modes have happened in
+ * production: REMINDER_FROM present-but-empty (fallback silently used the
+ * sandbox, learners got nothing), and REMINDER_FROM set TO the sandbox
+ * address, which routed every learner email into the admin inbox instead.
  */
 function senderAddress(): string | null {
-  const from = process.env.REMINDER_FROM?.trim()
-  if (from) return from
-  console.error('[email] REMINDER_FROM is not set. Refusing to send from Resend sandbox; set it to an address on a domain verified in Resend.')
-  return null
+  return verifiedSender()
 }
 
 const SLOTS = [
@@ -243,6 +234,65 @@ export function dueSlot(
   return null
 }
 
+/* ── The lapse back-off ────────────────────────────────────────────
+ *
+ * Before migration 0032, a learner who stopped studying kept receiving the
+ * soon + catchup pair EVERY day, forever — two emails a day to someone who has
+ * already stopped listening. That is the classic way a sender domain earns a
+ * spam reputation, and it was also a large silent send volume nobody watched.
+ *
+ * From day 3 of a lapse the daily cadence stops entirely and is replaced by
+ * exactly two messages: one on day 3, one on day 7, then silence until the
+ * learner returns. "Returned" means last_session_date moved, which re-arms
+ * both — the guard is `sent_lapse*_date >= anchor`, a comparison, not a flag.
+ *
+ * Both fire in a wide window anchored just before the learner's practice time,
+ * because that is the hour they once chose as "when I study" — the one moment
+ * of the day the message lands on a decision instead of interrupting one.
+ */
+export type LapseKey = "lapse3" | "lapse7"
+
+const LAPSE_WINDOW = 180
+
+/** Whole local days between two ISO dates; null when either is unparseable. */
+export function daysBetween(fromDate: string, toDate: string): number | null {
+  const from = Date.parse(fromDate)
+  const to = Date.parse(toDate)
+  if (!Number.isFinite(from) || !Number.isFinite(to)) return null
+  return Math.round((to - from) / 86_400_000)
+}
+
+/**
+ * Which lapse email (if any) is due right now. `anchor` is the learner's last
+ * session date — the reference the whole episode is measured from.
+ */
+export function dueLapse(
+  row: {
+    practice_time: string
+    last_session_date?: string | null
+    sent_lapse3_date?: string | null
+    sent_lapse7_date?: string | null
+  },
+  local: { date: string; minutes: number },
+): LapseKey | null {
+  const anchor = row.last_session_date ?? null
+  if (!anchor) return null
+  const gap = daysBetween(anchor, local.date)
+  if (gap === null || gap < 3) return null
+
+  const practice = parseHHMM(row.practice_time)
+  if (practice === null) return null
+  const target = practice - 10
+  if (target < 0 || target >= MINUTES_IN_DAY) return null
+  if (local.minutes < target || local.minutes >= target + LAPSE_WINDOW) return null
+
+  const sentThisEpisode = (sent?: string | null) => Boolean(sent && sent >= anchor)
+  // Day 7 first: a learner whose lapse was only discovered late gets ONE
+  // message, the truthful one, never a day-3 email four days stale.
+  if (gap >= 7) return sentThisEpisode(row.sent_lapse7_date) ? null : "lapse7"
+  return sentThisEpisode(row.sent_lapse3_date) ? null : "lapse3"
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const action = String(req.query.action || "").toLowerCase()
   if (action === "send") return handleSend(req, res)
@@ -353,7 +403,7 @@ async function handleComplete(req: VercelRequest, res: VercelResponse): Promise<
       res.status(200).json({ ok: true, emailed: false, reason: "REMINDER_FROM not configured" })
       return
     }
-    const ok = await sendCompletionEmail(resendKey, senderFrom, to, unsubUrl, {
+    const ok = await sendCompletionEmail(senderFrom, to, unsubUrl, {
       paperId,
       streak,
       nextTime,
@@ -391,51 +441,43 @@ function streakLine(streak: number): { badge: string; line: string } {
   return { badge: `${streak}-day streak`, line: `${streak} days. This is the discipline that passes ACCA papers — nothing about your exam is in doubt except the date.` }
 }
 
-async function sendCompletionEmail(apiKey: string, from: string, to: string, unsubUrl: string, facts: CompletionFacts): Promise<boolean> {
+async function sendCompletionEmail(from: string, to: string, unsubUrl: string, facts: CompletionFacts): Promise<boolean> {
   const s = streakLine(facts.streak)
   const paper = facts.paperId || "your paper"
-  const avatar = `${SITE}/charles/email-avatar.png`
-  const logo = `${SITE}/icon-192.png`
   const subject = facts.streak >= 2 ? `${paper} done — ${s.badge}` : `${paper} done for today`
-  const heading = "Today's mission is complete"
-  const did = [
-    facts.minutes > 0 ? `${facts.minutes} minutes` : null,
-    facts.questions > 0 ? `${facts.questions} questions` : null,
-  ].filter(Boolean).join(" · ")
 
   const tomorrow = facts.nextTime
-    ? `Tomorrow opens at <strong>${facts.nextTime}</strong>${facts.nextTopic ? ` with ${escapeHtmlLite(facts.nextTopic)}` : ""}. It is locked until then on purpose — working ahead tonight is how a daily plan turns into a backlog.`
-    : `Tomorrow's plan is already built and waiting${facts.nextTopic ? `: ${escapeHtmlLite(facts.nextTopic)}` : ""}.`
+    ? `Tomorrow opens at <b>${esc(facts.nextTime)}</b>${facts.nextTopic ? ` with <b>${esc(facts.nextTopic)}</b>` : ""}. It is locked until then on purpose — working ahead tonight is how a daily plan turns into a backlog, and the plan protects you from that the same way it protects you from falling behind.`
+    : `Tomorrow's plan is already built and waiting${facts.nextTopic ? `: <b>${esc(facts.nextTopic)}</b>` : ""}.`
 
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
-    <tr><td align="center" style="padding:28px 12px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
-        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
-        <tr><td style="padding:28px 32px 18px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle"><img src="${avatar}" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;"></td>
-            <td align="right" valign="middle"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
-          </tr></table>
-        </td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#0E9F6E;text-transform:uppercase;">Charles &middot; ${escapeHtmlLite(paper)} &middot; ${escapeHtmlLite(s.badge)}</td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${heading}</td></tr>
-        <tr><td style="padding:14px 32px 4px;font-size:15px;line-height:24px;color:#5F5753;">${escapeHtmlLite(s.line)}</td></tr>
-        ${did ? `<tr><td style="padding:10px 32px 4px;"><div style="display:inline-block;background:#F2FBF6;border:1px solid #CFEEDF;border-radius:12px;padding:11px 15px;font-size:13px;font-weight:700;color:#0B7A55;">Today: ${escapeHtmlLite(did)}</div></td></tr>` : ""}
-        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${tomorrow}</td></tr>
-        <tr><td style="padding:0 32px 22px;font-size:14px;line-height:22px;color:#8F8C85;">Now stop. Rest is part of the plan, not a reward for finishing it.</td></tr>
-        <tr><td style="padding:0 32px 30px;"><a href="${SITE}/study?tab=tomorrow" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">See tomorrow's plan &rarr;</a></td></tr>
-        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you completed a day of your ${escapeHtmlLite(paper)} plan.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change what you get in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.${SOCIAL_FOOTER}</td></tr>
-      </table>
-    </td></tr>
-  </table>
-  </body></html>`
+  const stats: Array<{ value: string; label: string }> = [
+    { value: s.badge, label: "Streak" },
+    ...(facts.minutes > 0 ? [{ value: String(facts.minutes), label: "Minutes" }] : []),
+    ...(facts.questions > 0 ? [{ value: String(facts.questions), label: "Questions" }] : []),
+  ]
 
-  const text = [
-    heading,
+  const html = renderBrandEmail({
+    preheader: `${paper} is done for today. ${facts.nextTime ? `Tomorrow opens at ${facts.nextTime}.` : "Tomorrow is already built."}`,
+    eyebrow: `Charles · ${esc(paper)} · ${esc(s.badge)}`,
+    title: "Today's mission is complete",
+    blocks: [
+      { type: "p", lead: true, html: esc(s.line) },
+      { type: "stats", items: stats },
+      { type: "p", html: tomorrow },
+      { type: "note", html: `Now stop. Rest is part of the plan, not a reward for finishing it — consolidation happens away from the desk, and tomorrow's session is better for it.` },
+    ],
+    cta: { label: "See tomorrow's plan", href: `${SITE}/study?tab=tomorrow` },
+    reason: `You are receiving this because you completed a day of your ${paper} plan.`,
+    unsubUrl,
+  })
+
+  const text = renderTextEmail([
+    "Today's mission is complete",
     "",
     s.line,
-    did ? `Today: ${did}` : "",
+    facts.minutes > 0 || facts.questions > 0
+      ? `Today: ${[facts.minutes > 0 ? `${facts.minutes} minutes` : null, facts.questions > 0 ? `${facts.questions} questions` : null].filter(Boolean).join(" · ")}`
+      : null,
     "",
     facts.nextTime ? `Tomorrow opens at ${facts.nextTime}${facts.nextTopic ? ` with ${facts.nextTopic}` : ""}.` : "Tomorrow's plan is already built.",
     "Now stop. Rest is part of the plan.",
@@ -444,37 +486,9 @@ async function sendCompletionEmail(apiKey: string, from: string, to: string, uns
     "",
     "— Charles · Your Scholify race engineer",
     `Unsubscribe: ${unsubUrl}`,
-  ].filter(Boolean).join("\n")
+  ])
 
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to,
-        subject,
-        html,
-        text,
-        headers: {
-          "List-Unsubscribe": `<${unsubUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
-      }),
-    })
-    return r.ok
-  } catch {
-    return false
-  }
-}
-
-/** Minimal HTML escape for the few learner-supplied strings in the mail. */
-function escapeHtmlLite(value: string): string {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
+  return Boolean(await deliverEmail({ from, to, subject, html, text, unsubUrl }))
 }
 
 /**
@@ -627,7 +641,7 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
     const { data, error } = await db
       .from(TABLE)
       .select(
-        "user_id, email, timezone, practice_time, last_session_date, lead_on, soon_on, catchup_on, sent_lead_date, sent_soon_date, sent_catchup_date",
+        "user_id, email, timezone, practice_time, last_session_date, lead_on, soon_on, catchup_on, sent_lead_date, sent_soon_date, sent_catchup_date, sent_lapse3_date, sent_lapse7_date",
       )
       .eq("opt_in", true)
       .limit(2000)
@@ -654,6 +668,37 @@ async function handleSend(req: VercelRequest, res: VercelResponse): Promise<void
        * what gets a sender marked as spam.
        */
       if (r.last_session_date === local.date) continue
+
+      /*
+       * THE BACK-OFF (migration 0032). Three or more days since the last
+       * session and this learner leaves the daily cadence entirely: one email
+       * on day 3, one on day 7, then silence until they return. Without this,
+       * a dormant opted-in learner received soon + catchup every day forever —
+       * unread mail at best, a spam report at worst, and in the sandbox-sender
+       * incident it was the bulk of the 90-a-day admin-inbox flood.
+       */
+      const gap = r.last_session_date ? daysBetween(String(r.last_session_date), local.date) : null
+      if (gap !== null && gap >= 3) {
+        const lapse = dueLapse(r as Parameters<typeof dueLapse>[0], local)
+        if (!lapse) continue
+        considered += 1
+        const lapseCol = lapse === "lapse7" ? "sent_lapse7_date" : "sent_lapse3_date"
+        const anchor = String(r.last_session_date)
+        const { data: lapseClaimed, error: lapseClaimErr } = await db
+          .from(TABLE)
+          .update({ [lapseCol]: local.date })
+          .eq("user_id", r.user_id)
+          .or(`${lapseCol}.is.null,${lapseCol}.lt.${anchor}`)
+          .select("user_id")
+        if (lapseClaimErr || !lapseClaimed || lapseClaimed.length === 0) continue
+        const lapseUnsub = `${SITE}/api/reminders?action=unsubscribe&u=${encodeURIComponent(
+          r.user_id as string,
+        )}&t=${unsubToken(r.user_id as string, secret as string)}`
+        const lapseOk = await sendLapseEmail(from, r.email as string, lapseUnsub, lapse, gap)
+        if (lapseOk) sent += 1
+        else await db.from(TABLE).update({ [lapseCol]: null }).eq("user_id", r.user_id)
+        continue
+      }
 
       const slot = dueSlot(r as Parameters<typeof dueSlot>[0], local)
       if (!slot) continue
@@ -733,46 +778,84 @@ async function sendDueTrialEmails(db: NonNullable<ReturnType<typeof admin>>, api
 }
 
 async function sendTrialEmail(apiKey: string, from: string, to: string, slot: TrialReminderKey): Promise<boolean> {
-  const copy = slot === "10h"
-    ? { subject: "Your Scholify plan is ready for tonight", kicker: "Pro trial · Day 1", heading: "Your first study block is ready.", body: "Charles has turned your diagnosis into a focused session for today. Your 3-day Pro trial currently unlocks all 15 ACCA papers, full mocks, the AI Examiner, analytics and custom AI practice—so this is the best time to test the complete Scholify workspace.", detail: "Open your dashboard, follow the first recommended task, and answer enough questions for Scholify to begin adapting tomorrow’s workload to your real performance.", cta: "Continue today’s plan", href: `${SITE}/dashboard` }
-    : slot === "day2"
-      ? { subject: "Day 2 of your Scholify trial", kicker: "Pro trial · Day 2", heading: "Your plan is learning from you.", body: "Every answer updates your accuracy, weak-topic map and readiness trend. Charles uses that evidence to move the highest-impact work forward instead of giving you another generic revision list.", detail: "Complete today’s recommended session, then open Analytics to see which syllabus areas are strengthening and which ones still need deliberate practice.", cta: "Start day 2", href: `${SITE}/dashboard` }
-      : { subject: "Your Scholify trial ends today", kicker: "Pro trial · Final day", heading: "Your final free day is running.", body: "Your personalized plan, answers and progress remain saved. Your selected Pro subscription begins when the Stripe trial ends, using the payment method added at checkout.", detail: "Want to continue? No action is needed. If you do not want the subscription to start, open Settings and cancel before the exact trial deadline shown there; cancelling before that deadline prevents the first charge.", cta: "Review my subscription", href: `${SITE}/settings` }
-  const avatar = `${SITE}/charles/email-avatar.png`
-  const logo = `${SITE}/icon-192.png`
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F7F3F1;"><tr><td align="center" style="padding:28px 12px;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
-      <tr><td style="height:5px;background:linear-gradient(90deg,#C80000,#E50068,#F4A405);font-size:0;">&nbsp;</td></tr>
-      <tr><td style="padding:28px 32px 18px;"><table role="presentation" width="100%"><tr>
-        <td><img src="${avatar}" width="72" height="72" alt="Charles, Scholify study coach" style="display:block;border-radius:18px;border:1px solid #E8E0DC;"></td>
-        <td align="right"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
-      </tr></table></td></tr>
-      <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.7px;color:#C80000;text-transform:uppercase;">Charles &middot; ${copy.kicker}</td></tr>
-      <tr><td style="padding:8px 32px 0;font-size:28px;line-height:35px;font-weight:800;color:#14141A;">${copy.heading}</td></tr>
-      <tr><td style="padding:14px 32px 8px;font-size:15px;line-height:24px;color:#5F5753;">${copy.body}</td></tr>
-      <tr><td style="padding:8px 32px 18px;"><div style="padding:16px 18px;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;font-size:14px;line-height:22px;color:#5F5753;"><strong style="color:#14141A;">Your next move</strong><br>${copy.detail}</div></td></tr>
-      <tr><td style="padding:4px 32px 30px;"><a href="${copy.href}" style="display:inline-block;padding:13px 22px;border-radius:12px;background:#C80000;color:#fff;text-decoration:none;font-size:14px;font-weight:800;">${copy.cta} &rarr;</a></td></tr>
-      <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify study coach<br>Your learning data remains saved to your account.<br><a href="${SITE}/settings" style="color:#C80000;text-decoration:none;">Manage subscription</a> &middot; <a href="${SITE}/support" style="color:#C80000;text-decoration:none;">Get support</a>${SOCIAL_FOOTER}</td></tr>
-    </table>
-  </td></tr></table></body></html>`
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: copy.subject,
-        reply_to: "info@scholifyapp.com",
-        html,
-        text: `${copy.heading}\n\n${copy.body}\n\nYour next move: ${copy.detail}\n\n${copy.cta}: ${copy.href}\n\nManage subscription: ${SITE}/settings\nSupport: ${SITE}/support`,
-      }),
-    })
-    return response.ok
-  } catch {
-    return false
-  }
+  void apiKey // delivery reads RESEND_API_KEY itself; parameter kept for the call-site contract
+  const copy =
+    slot === "10h"
+      ? {
+          subject: "Your Scholify plan is ready for tonight",
+          kicker: "Pro trial · Day 1 of 3",
+          heading: "Your first study block is ready.",
+          preheader: "Your diagnostic became a plan. Tonight's session is already on the desk.",
+          lead: `While you were away, I turned your diagnostic into an actual plan — sequenced against your exam date, your available hours and the topics where your marks are cheapest to win. Tonight's session is already selected and waiting.`,
+          body: `These three days unlock everything: all 15 ACCA papers, full CBE-style mocks, the AI Examiner that marks written answers, analytics, and custom practice built on demand. The best way to judge Scholify is not to browse it — it is to do one real session and watch tomorrow's plan change shape because of it.`,
+          facts: [
+            { label: "Tonight", value: "One block — it's already chosen" },
+            { label: "Tomorrow", value: "The plan re-sequences on your answers" },
+            { label: "Day 3", value: "Your readiness score turns real" },
+          ],
+          cta: { label: "Open tonight's block", href: `${SITE}/dashboard` },
+        }
+      : slot === "day2"
+        ? {
+            subject: "Day 2 — your plan is learning from you",
+            kicker: "Pro trial · Day 2 of 3",
+            heading: "The plan is no longer a guess.",
+            preheader: "Every answer you gave yesterday moved something. Come and see what.",
+            lead: `Every answer you have given so far updated three things: your accuracy per syllabus area, your weak-topic map, and your readiness trend. Today's session was built from that evidence — not from a generic revision list that looks the same for everyone.`,
+            body: `After today's block, open Analytics and look at the readiness panel. You will see exactly which areas are strengthening and which still need deliberate practice — the same view you will use in the final week before the exam, when knowing where NOT to spend hours is what protects your pass.`,
+            facts: [
+              { label: "Today", value: "The recommended session, then Analytics" },
+              { label: "Worth knowing", value: "Streaks compound — day 2 is the hinge" },
+            ],
+            cta: { label: "Start day 2", href: `${SITE}/dashboard` },
+          }
+        : {
+            subject: "Your trial ends today — here is exactly what happens",
+            kicker: "Pro trial · Final day",
+            heading: "Your final free day is running.",
+            preheader: "No action needed to continue. The honest cancel path is inside, with its deadline.",
+            lead: `Everything you have built — your plan, your answers, your analytics — is saved to your account either way. When the trial ends, your selected Pro subscription starts on the payment method you added at checkout. To continue, you do nothing at all.`,
+            body: `If you do not want the subscription to start, open Settings and cancel before the exact deadline shown there — cancelling before that moment prevents the first charge entirely, no questions asked. That is the whole policy; there is no small print to find later. And if you stay: tonight's block is already on the desk.`,
+            facts: [
+              { label: "To continue", value: "No action needed" },
+              { label: "To cancel", value: "Settings, before the deadline shown there" },
+              { label: "Your data", value: "Saved to your account either way" },
+            ],
+            cta: { label: "Review my subscription", href: `${SITE}/settings` },
+          }
+
+  const html = renderBrandEmail({
+    preheader: copy.preheader,
+    eyebrow: `Charles · ${copy.kicker}`,
+    title: copy.heading,
+    blocks: [
+      { type: "p", lead: true, html: copy.lead },
+      { type: "p", html: copy.body },
+      { type: "facts", rows: copy.facts },
+    ],
+    cta: copy.cta,
+    secondary: { label: "Questions? Just reply — a person reads it.", href: `mailto:info@scholifyapp.com` },
+    reason: "You are receiving this because you started a Scholify Pro trial.",
+  })
+
+  const text = renderTextEmail([
+    copy.heading,
+    "",
+    copy.lead,
+    "",
+    copy.body,
+    "",
+    ...copy.facts.map((fact) => `  ${fact.label} — ${fact.value}`),
+    "",
+    `${copy.cta.label}: ${copy.cta.href}`,
+    "",
+    "— Charles · Your Scholify race engineer",
+    `Manage subscription: ${SITE}/settings`,
+  ])
+
+  return Boolean(
+    await deliverEmail({ from, to, subject: copy.subject, html, text, replyTo: "info@scholifyapp.com" }),
+  )
 }
 
 /*
@@ -785,15 +868,26 @@ async function sendTrialEmail(apiKey: string, from: string, to: string, slot: Tr
  * `at` is the learner's own practice time, echoed back so the mail is obviously
  * about a commitment they made rather than a generic broadcast.
  */
-function copyFor(slot: SlotKey, at: string): { subject: string; kicker: string; heading: string; body: string; cta: string } {
+function copyFor(slot: SlotKey, at: string): {
+  subject: string
+  kicker: string
+  heading: string
+  preheader: string
+  lead: string
+  body: string
+  note: string
+  cta: string
+} {
   const time = /^\d{1,2}:\d{2}$/.test(at) ? at : null
   if (slot === "lead") {
     return {
       subject: time ? `Your ACCA session is at ${time}` : "Your ACCA session is scheduled for today",
       kicker: "Today's schedule",
       heading: time ? `Your session is at ${time}` : "Your session is scheduled for today",
-      body:
-        "This is your advance notice, two hours ahead, so the time is easy to protect. Your questions are already selected and the session will be waiting when you arrive — nothing to set up.",
+      preheader: "Advance notice, two hours ahead, so the time is easy to protect.",
+      lead: `This is your advance notice, two hours ahead — enough time to move what needs moving so ${time ? `<b>${time}</b>` : "your session"} stays yours.`,
+      body: `Everything is already on the desk: today's chapter, the five quizzes, your practice set, the flashcards due for review and the technical article. There is nothing to set up and nothing to decide — the plan chose today's work from your own numbers. Your only job is to arrive.`,
+      note: `A protected half hour beats a hopeful evening. Put it in the calendar like a meeting with someone you respect — because it is.`,
       cta: "Review today's plan",
     }
   }
@@ -802,17 +896,21 @@ function copyFor(slot: SlotKey, at: string): { subject: string; kicker: string; 
       subject: time ? `You start at ${time} — ten minutes` : "Your session starts in 10 minutes",
       kicker: "Starting in 10 minutes",
       heading: time ? `Ten minutes until ${time}` : "Ten minutes until your session",
-      body:
-        "Time to finish what you are on and get to the desk. Today's chapter, five quizzes, your practice set, flashcards and the technical article are already selected — opening the session is the whole task, and Charles takes it from there.",
+      preheader: "Everything is selected and waiting. Opening the session is the whole task.",
+      lead: `Time to finish what you are on and get to the desk. Ten minutes is exactly enough to close the tabs, refill the glass and sit down.`,
+      body: `Today's chapter, five quizzes, your practice set, flashcards and the technical article are already selected. Opening the session is the whole task — I take it from there, one block at a time, and the session ends when the plan says it ends, not when guilt does.`,
+      note: `The hardest rep of any session is the first ten seconds. Everything after the click is easier than the click.`,
       cta: "Open today's session",
     }
   }
   return {
     subject: "Today's session is still open",
-    heading: "Two hours on, and today is still open",
     kicker: "Still open",
-    body:
-      "Your start time passed two hours ago and today's plan has not been opened. A shortened version still counts: the chapter alone keeps your plan on its schedule and your streak intact, and tomorrow absorbs the difference. Nothing is piling up.",
+    heading: "Two hours on, and today is still open",
+    preheader: "A shortened session still counts. The chapter alone keeps everything on schedule.",
+    lead: `Your start time passed two hours ago and today's plan has not been opened. That is all this email is — a fact, not a verdict.`,
+    body: `A shortened version still counts, and counts fully: the chapter alone keeps your plan on its schedule and your streak intact, and tomorrow absorbs the difference automatically. Nothing is piling up behind you — the plan re-balances every night precisely so that one irregular day never becomes a debt.`,
+    note: `Twenty minutes tonight is worth more than a perfect plan for tomorrow. The evening is still usable — that is why this email arrives now and not at midnight.`,
     cta: "Start a shorter session",
   }
 }
@@ -825,36 +923,28 @@ async function sendEmail(
   slot: SlotKey = "soon",
   practiceTime = "",
 ): Promise<boolean> {
+  void apiKey // delivery reads RESEND_API_KEY itself; parameter kept for the call-site contract
   const c = copyFor(slot, practiceTime)
-  // Email-safe PNG assets (Outlook/Apple Mail don't reliably render SVG/WebP).
-  const avatar = `${SITE}/charles/email-avatar.png`
-  const logo = `${SITE}/icon-192.png`
-  // Premium Scholify frame shared by reminders and transactional notifications.
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
-    <tr><td align="center" style="padding:28px 12px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
-        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
-        <tr><td style="padding:28px 32px 18px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle"><img src="${avatar}" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;"></td>
-            <td align="right" valign="middle"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
-          </tr></table>
-        </td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">Charles &middot; ${c.kicker}</td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${c.heading}</td></tr>
-        <tr><td style="padding:14px 32px 16px;font-size:15px;line-height:24px;color:#5F5753;">${c.body}</td></tr>
-        <tr><td style="padding:8px 32px 30px;"><a href="${SITE}/study" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">${c.cta} &rarr;</a></td></tr>
-        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you set a daily practice time in Scholify.<br><a href="${unsubUrl}" style="color:#8F8C85;">Unsubscribe</a> &middot; or change the times in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.${SOCIAL_FOOTER}</td></tr>
-      </table>
-    </td></tr>
-  </table>
-  </body></html>`
+  const html = renderBrandEmail({
+    preheader: c.preheader,
+    eyebrow: `Charles · ${c.kicker}`,
+    title: c.heading,
+    blocks: [
+      { type: "p", lead: true, html: c.lead },
+      { type: "p", html: c.body },
+      { type: "note", html: c.note },
+    ],
+    cta: { label: c.cta, href: `${SITE}/study` },
+    reason: "You are receiving this because you set a daily practice time in Scholify.",
+    unsubUrl,
+  })
   // Plain-text alternative — lowers spam score and covers text-only clients.
-  const text = [
+  const text = renderTextEmail([
     c.heading,
     "",
-    c.body,
+    c.lead.replace(/<[^>]+>/g, ""),
+    "",
+    c.body.replace(/<[^>]+>/g, ""),
     "",
     `${c.cta}: ${SITE}/study`,
     "",
@@ -862,27 +952,69 @@ async function sendEmail(
     "You are receiving this because you set a daily practice time in Scholify.",
     `Change the times: ${SITE}/settings`,
     `Unsubscribe: ${unsubUrl}`,
-  ].join("\n")
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: c.subject,
-        html,
-        text,
-        // One-click unsubscribe (RFC 8058) — required by Gmail/Yahoo bulk-sender
-        // rules and a strong signal against the spam folder.
-        headers: {
-          "List-Unsubscribe": `<${unsubUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
-      }),
-    })
-    return r.ok
-  } catch {
-    return false
-  }
+  ])
+  return Boolean(await deliverEmail({ from, to, subject: c.subject, html, text, unsubUrl }))
+}
+
+/*
+ * THE LAPSE EMAILS. Two messages, an honest bargain stated out loud: we notice
+ * you have stepped away, we stop the daily cadence, and we say so — "this is
+ * the only email you'll get this week" is itself the most premium sentence a
+ * reminder system can send. Day 3 is practical (what actually happens to
+ * recall and how cheaply it is repaired); day 7 is warm and final (everything
+ * is saved, one session restarts the engine, and we go quiet until then).
+ */
+async function sendLapseEmail(from: string, to: string, unsubUrl: string, slot: LapseKey, gapDays: number): Promise<boolean> {
+  const days = Math.max(gapDays, slot === "lapse7" ? 7 : 3)
+  const copy =
+    slot === "lapse3"
+      ? {
+          subject: "Three days out — your plan has already adjusted",
+          kicker: "Charles · Day 3 away",
+          heading: "The plan bent. It didn't break.",
+          preheader: "The daily reminders have stopped. Here is what three days actually costs, and how cheaply it is repaired.",
+          lead: `It has been ${days} days since your last session, so I have stopped the daily reminders — you will not hear from me again this week unless you come back. This email is the exception, and it exists because day 3 is the cheapest day to return.`,
+          body: `Here is what three days actually does: recall on your most recent topics starts to soften, so your next session begins with a short, targeted review the plan has already built. Nothing else moved. Your streak trees, your XP, your readiness history — all exactly where you left them. One ordinary session tonight and the plan re-sequences around your exam date as if nothing happened.`,
+          note: `Missing days is not failing the plan. Staying away because missing days feels like failing — that is the only mistake worth avoiding.`,
+          cta: "Pick it back up tonight",
+        }
+      : {
+          subject: "A week away — everything is exactly where you left it",
+          kicker: "Charles · Day 7 away",
+          heading: "This is my last email until you return.",
+          preheader: "No streak guilt, no countdown. Your work is saved, and one session restarts everything.",
+          lead: `A week is long enough that another reminder would be noise, so this is the last one — after today I go quiet, and the next move is entirely yours. Before I do, three things worth knowing.`,
+          body: `First: nothing has been lost. Every answer, every streak tree, every hour of progress is saved to your account, permanently. Second: a restart is one session long — not a re-diagnosis, not starting over. The plan re-sequences itself around your exam date the moment you finish one block. Third: exam dates do not move. Whatever pushed studying aside this week, the mathematics of your paper is the same tonight as it was last Monday — and it is still entirely winnable from here.`,
+          note: `Whenever you are ready, the desk is set. That is the whole message.`,
+          cta: "Restart with one session",
+        }
+
+  const html = renderBrandEmail({
+    preheader: copy.preheader,
+    eyebrow: copy.kicker,
+    title: copy.heading,
+    blocks: [
+      { type: "p", lead: true, html: copy.lead },
+      { type: "p", html: copy.body },
+      { type: "note", html: copy.note },
+    ],
+    cta: { label: copy.cta, href: `${SITE}/study` },
+    reason: "You are receiving this because your Scholify study plan has been inactive, and the daily reminders have been paused for you.",
+    unsubUrl,
+  })
+
+  const text = renderTextEmail([
+    copy.heading,
+    "",
+    copy.lead.replace(/<[^>]+>/g, ""),
+    "",
+    copy.body.replace(/<[^>]+>/g, ""),
+    "",
+    `${copy.cta}: ${SITE}/study`,
+    "",
+    "— Charles · Your Scholify race engineer",
+    `Unsubscribe: ${unsubUrl}`,
+  ])
+
+  return Boolean(await deliverEmail({ from, to, subject: copy.subject, html, text, unsubUrl }))
 }

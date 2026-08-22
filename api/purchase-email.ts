@@ -1,27 +1,25 @@
-/*
- * The email nobody was sending.
- *
- * A learner pays, Stripe redirects them back, and until now that was the whole
- * conversation — no confirmation, no receipt, nothing in their inbox with the
- * word Scholify on it. The founder found this the only way it gets found: by
- * buying his own product and waiting for an email that never came.
- *
- * Two separate things are missing when that happens, and only one of them is
- * ours:
- *
- *   · the RECEIPT is Stripe's job — Dashboard → Settings → Emails →
- *     "Successful payments". It is a toggle, not code, and it is off.
- *   · the WELCOME is ours, and it is the more valuable of the two. It is the
- *     first thing a paying learner reads, it is the only moment they are
- *     guaranteed to be feeling good about the decision, and it is where the
- *     habit that decides whether they pass gets set.
- *
- * The copy therefore sells consistency, not features. Someone who has just
- * paid does not need to be told what they bought; they need to be told what to
- * do tomorrow, and the day after.
- */
+import { deliverEmail, esc, renderBrandEmail, renderTextEmail, verifiedSender, SITE } from "./email-theme.js"
 
-const SITE = "https://www.scholifyapp.com"
+/*
+ * The money emails: welcome, receipt, failed payment, cancellation.
+ *
+ * Four moments in a subscriber's financial life, each with exactly one job:
+ *
+ *   WELCOME    — the only moment they are guaranteed to feel good about the
+ *                decision. Sets the habit, not the feature list.
+ *   RECEIPT    — proof. Amount, date, plan, and Stripe's own hosted invoice.
+ *                (Stripe's "Successful payments" toggle has no API and is off.)
+ *   FAILED     — the highest-ROI email in any subscription business. A card
+ *                expires, Stripe retries for two weeks, and a subscriber who
+ *                never hears about it churns by accident. Ours tells them
+ *                calmly, twice at most, with the fix one click away.
+ *   CANCELLED  — the exit interview. Confirms what they keep (everything),
+ *                when access ends, and that resuming is one click. A graceful
+ *                goodbye is the cheapest re-acquisition channel there is.
+ *
+ * All builders are pure so the wording is unit-testable without sending.
+ * All senders are fire-and-forget: a failed email must never fail a webhook.
+ */
 
 export interface PurchaseEmailFacts {
   firstName?: string | null
@@ -35,73 +33,62 @@ export interface PurchaseEmailFacts {
   chargeDate?: string | null
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
-  )
-}
-
 /**
- * Subject + HTML + text for the post-purchase welcome. Kept as a pure builder
- * so the wording can be unit-tested without sending anything.
+ * Subject + HTML + text for the post-purchase welcome. The copy sells
+ * consistency, not features: someone who has just paid does not need to be
+ * told what they bought; they need to be told what to do tomorrow.
  */
 export function buildPurchaseEmail(facts: PurchaseEmailFacts): { subject: string; html: string; text: string } {
   const name = (facts.firstName || "").trim()
-  const hello = name ? `${escapeHtml(name)}, you're in.` : "You're in."
-  const plan = escapeHtml(facts.planLabel)
-  const price = escapeHtml(facts.priceLabel)
+  const hello = name ? `${esc(name)}, you're in.` : "You're in."
+  const plan = esc(facts.planLabel)
+  const price = esc(facts.priceLabel)
 
   const billingLine = facts.onTrial
-    ? `Your 3 free days have started. ${facts.chargeDate ? `The first charge is on <b>${escapeHtml(facts.chargeDate)}</b>` : "You'll be charged when they end"}${price ? ` (${price})` : ""}.`
-    : `You're on <b>${plan}</b>${price ? ` — ${price}` : ""}.${facts.chargeDate ? ` Your next charge is on <b>${escapeHtml(facts.chargeDate)}</b>.` : ""}`
+    ? `Your 3 free days have started. ${facts.chargeDate ? `The first charge is on <b>${esc(facts.chargeDate)}</b>` : "You'll be charged when they end"}${price ? ` (${price})` : ""}.`
+    : `You're on <b>${plan}</b>${price ? ` — ${price}` : ""}.${facts.chargeDate ? ` Your next charge is on <b>${esc(facts.chargeDate)}</b>.` : ""}`
 
   /*
-   * The motivational line is deliberately about EFFORT OVER TIME rather than
-   * talent or speed, because that is the thing this product can actually
-   * deliver on and the thing ACCA rewards. No promises about passing — that
-   * would be a claim we cannot make and they would remember it if it failed.
+   * EFFORT OVER TIME, never talent, speed or a promised pass — that is the
+   * thing this product can actually deliver on and the thing ACCA rewards. A
+   * guarantee we cannot keep is the one line a failing learner would remember.
    */
-  const body = [
-    `You've just done the part most people put off. Now the only thing that matters is showing up tomorrow, and the day after that.`,
-    `Nobody passes ACCA in a weekend. It goes to the person who did 25 focused minutes on the days they didn't feel like it — and Scholify exists to make sure those minutes land on the right topic, in the right order, every single day.`,
-    `Your plan is built and waiting. Open it, do today's block, and start the streak.`,
-  ]
+  const html = renderBrandEmail({
+    preheader: facts.onTrial
+      ? "Your plan is built. Here is exactly what your first week looks like."
+      : `${facts.planLabel} is active. Here is exactly what your first week looks like.`,
+    eyebrow: "Charles · Welcome aboard",
+    title: hello,
+    blocks: [
+      { type: "p", lead: true, html: `You've just done the part most people put off. From here, the only thing that matters is showing up tomorrow, and the day after that — and my whole job is making those minutes land on the right topic, in the right order, every single day.` },
+      { type: "p", html: `Nobody passes ACCA in a weekend. The qualification goes to the person who did 25 focused minutes on the days they didn't feel like it. Your plan is already built around your diagnostic, your exam date and your available hours — you never have to decide <i>what</i> to study again, only to arrive.` },
+      {
+        type: "facts",
+        title: "Your first week, in order",
+        rows: [
+          { label: "Today", value: "Open today's block — it's already selected" },
+          { label: "Tomorrow", value: "Same time, same desk. The streak starts" },
+          { label: "By day 7", value: "Your readiness score runs on real evidence" },
+        ],
+      },
+      { type: "panel", title: "Your plan", html: `<b style="color:#14141A;">${plan}</b><br>${billingLine}`, tone: "neutral" },
+      { type: "note", html: `One honest warning from your race engineer: motivation gets you through week one. The schedule gets you through the rest. Protect the time you chose — I'll take care of everything on the desk.` },
+    ],
+    cta: { label: "Start today's block", href: `${SITE}/study` },
+    reason: "You are receiving this because you started a Scholify subscription.",
+  })
 
-  const avatar = `${SITE}/charles/email-avatar.png`
-  const logo = `${SITE}/icon-192.png`
-
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
-    <tr><td align="center" style="padding:28px 12px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
-        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
-        <tr><td style="padding:28px 32px 18px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle"><img src="${avatar}" width="72" height="72" alt="Charles, Scholify race engineer" style="display:block;width:72px;height:72px;border-radius:18px;border:1px solid #E8E0DC;"></td>
-            <td align="right" valign="middle"><img src="${logo}" width="68" height="68" alt="Scholify" style="display:inline-block;width:68px;height:68px;border-radius:17px;"><div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8F8C85;margin-top:5px;">LEARN DAILY &middot; GROW STEADILY</div></td>
-          </tr></table>
-        </td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#C80000;text-transform:uppercase;">Charles &middot; Welcome aboard</td></tr>
-        <tr><td style="padding:8px 32px 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.8px;color:#14141A;">${hello}</td></tr>
-        ${body.map((p) => `<tr><td style="padding:14px 32px 0;font-size:15px;line-height:24px;color:#5F5753;">${p}</td></tr>`).join("")}
-        <tr><td style="padding:18px 32px 0;">
-          <table role="presentation" width="100%" style="border-collapse:collapse;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;">
-            <tr><td style="padding:14px 18px;font-size:13px;line-height:21px;color:#5F5753;">
-              <b style="color:#14141A;">Your plan:</b> ${plan}<br>${billingLine}
-            </td></tr>
-          </table>
-        </td></tr>
-        <tr><td style="padding:20px 32px 30px;"><a href="${SITE}/study" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">Start today's block &rarr;</a></td></tr>
-        <tr><td style="padding:20px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Charles &middot; Your Scholify race engineer<br>You are receiving this because you started a Scholify subscription.<br>Manage your plan in <a href="${SITE}/settings" style="color:#8F8C85;">Settings</a>.</td></tr>
-      </table>
-    </td></tr>
-  </table>
-  </body></html>`
-
-  const text = [
+  const text = renderTextEmail([
     hello,
     "",
-    ...body.map((p) => p.replace(/<[^>]+>/g, "")),
+    "You've just done the part most people put off. From here, the only thing that matters is showing up tomorrow, and the day after that — my whole job is making those minutes land on the right topic, in the right order, every single day.",
+    "",
+    "Nobody passes ACCA in a weekend. The qualification goes to the person who did 25 focused minutes on the days they didn't feel like it. Your plan is already built around your diagnostic, your exam date and your available hours.",
+    "",
+    "Your first week, in order:",
+    "  Today — open today's block, it's already selected.",
+    "  Tomorrow — same time, same desk. The streak starts.",
+    "  By day 7 — your readiness score runs on real evidence.",
     "",
     `Your plan: ${facts.planLabel}`,
     billingLine.replace(/<[^>]+>/g, ""),
@@ -110,7 +97,7 @@ export function buildPurchaseEmail(facts: PurchaseEmailFacts): { subject: string
     "",
     "— Charles · Your Scholify race engineer",
     `Manage your plan: ${SITE}/settings`,
-  ].join("\n")
+  ])
 
   return {
     subject: facts.onTrial ? "You're in — your 3 free days start now" : `You're in — ${facts.planLabel} is active`,
@@ -119,66 +106,15 @@ export function buildPurchaseEmail(facts: PurchaseEmailFacts): { subject: string
   }
 }
 
-/*
- * THE SENDER ADDRESS, WITH NO SILENT FALLBACK.
- *
- * Every sender in this codebase used to fall back to
- * "Charles at Scholify <onboarding@resend.dev>" when REMINDER_FROM was unset.
- * That is Resend's SANDBOX address: it delivers only to the Resend account
- * owner, so every customer receipt, welcome email and reminder went nowhere —
- * and returned success, because Resend accepts the request.
- *
- * It happened. REMINDER_FROM existed in Vercel with an EMPTY value, which is
- * falsy, so the fallback was live in production. The variable being present
- * made it look configured. api/social.ts even carried a written warning about
- * this exact failure; nothing surfaced it where anyone would look.
- *
- * A fallback that quietly discards mail is worse than no delivery at all,
- * because it removes the symptom that would have led someone to the cause.
- * Returning null makes the caller log a real reason instead.
- */
-function senderAddress(): string | null {
-  const from = process.env.REMINDER_FROM?.trim()
-  if (from) return from
-  console.error(
-    "[email] REMINDER_FROM is not set. Refusing to send from Resend's sandbox address, " +
-      "which only delivers to the account owner. Set REMINDER_FROM to an address on a domain verified in Resend.",
-  )
-  return null
-}
-
 /** Fire-and-forget delivery. Never throws: a failed email must not fail a webhook. */
 export async function sendPurchaseEmail(to: string, facts: PurchaseEmailFacts): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey || !to) return false
-  const from = senderAddress()
-  if (!from) return false
+  const from = verifiedSender()
+  if (!from || !to) return false
   const { subject, html, text } = buildPurchaseEmail(facts)
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({ from, to, subject, html, text }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
+  return Boolean(await deliverEmail({ from, to, subject, html, text }))
 }
 
-/* ── The receipt Stripe is not sending ──────────────────────────────
- *
- * Stripe's "Successful payments" email is a dashboard toggle with no API, and
- * it is off. So every charge — the first one and every renewal after it —
- * completed in silence. A customer who pays and receives nothing has no proof,
- * no amount, no date and nothing to forward to an employer who is reimbursing
- * them; the next thing many of them open is their bank app.
- *
- * This does not recreate an invoice. Stripe already generates a proper hosted
- * invoice and PDF for every subscription charge, so the email carries the
- * numbers and LINKS to the real document. Ours is the covering note; Stripe's
- * remains the record.
- */
+/* ── The receipt ─────────────────────────────────────────────────── */
 
 export interface ReceiptFacts {
   firstName?: string | null
@@ -195,51 +131,29 @@ export interface ReceiptFacts {
 
 export function buildReceiptEmail(facts: ReceiptFacts): { subject: string; html: string; text: string } {
   const name = (facts.firstName || "").trim()
-  const hello = name ? `Thanks, ${escapeHtml(name)}.` : "Thank you."
-  const amount = escapeHtml(facts.amount)
-  const plan = escapeHtml(facts.planLabel)
-  const paidOn = escapeHtml(facts.paidOn)
-
-  const rows: string[] = [
-    `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Plan</td><td align="right" style="padding:6px 0;font-size:13px;color:#14141A;font-weight:700;">${plan}</td></tr>`,
-    `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Paid</td><td align="right" style="padding:6px 0;font-size:13px;color:#14141A;font-weight:700;">${paidOn}</td></tr>`,
-    `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Amount</td><td align="right" style="padding:6px 0;font-size:16px;color:#14141A;font-weight:800;">${amount}</td></tr>`,
+  const hello = name ? `Thanks, ${esc(name)}.` : "Thank you."
+  const rows = [
+    { label: "Plan", value: esc(facts.planLabel) },
+    { label: "Paid", value: esc(facts.paidOn) },
+    { label: "Amount", value: `<span style="font-size:16px;">${esc(facts.amount)}</span>` },
+    ...(facts.nextChargeOn ? [{ label: "Next charge", value: esc(facts.nextChargeOn) }] : []),
   ]
-  if (facts.nextChargeOn) {
-    rows.push(
-      `<tr><td style="padding:6px 0;font-size:13px;color:#8F8C85;">Next charge</td><td align="right" style="padding:6px 0;font-size:13px;color:#14141A;font-weight:700;">${escapeHtml(facts.nextChargeOn)}</td></tr>`,
-    )
-  }
 
-  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F7F3F1;font-family:Arial,Helvetica,sans-serif;color:#332B28;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F7F3F1;">
-    <tr><td align="center" style="padding:28px 12px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8E0DC;border-radius:20px;overflow:hidden;">
-        <tr><td style="height:5px;background:linear-gradient(90deg,#C80000 0%,#E50068 52%,#F4A405 100%);font-size:0;">&nbsp;</td></tr>
-        <tr><td style="padding:26px 32px 0;">
-          <img src="${SITE}/icon-192.png" width="52" height="52" alt="Scholify" style="display:block;width:52px;height:52px;border-radius:13px;">
-        </td></tr>
-        <tr><td style="padding:14px 32px 0;font-size:10px;font-weight:800;letter-spacing:1.8px;color:#8F8C85;text-transform:uppercase;">Receipt</td></tr>
-        <tr><td style="padding:6px 32px 0;font-size:24px;line-height:30px;font-weight:800;letter-spacing:-0.6px;color:#14141A;">${hello}</td></tr>
-        <tr><td style="padding:10px 32px 0;font-size:15px;line-height:24px;color:#5F5753;">Your payment went through. Here are the details for your records.</td></tr>
-        <tr><td style="padding:18px 32px 0;">
-          <table role="presentation" width="100%" style="border-collapse:collapse;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;">
-            <tr><td style="padding:14px 18px;"><table role="presentation" width="100%" style="border-collapse:collapse;">${rows.join("")}</table></td></tr>
-          </table>
-        </td></tr>
-        ${
-          facts.invoiceUrl
-            ? `<tr><td style="padding:18px 32px 0;"><a href="${escapeHtml(facts.invoiceUrl)}" style="display:inline-block;background:#C80000;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:800;line-height:20px;padding:13px 22px;border-radius:12px;">View or download the invoice &rarr;</a></td></tr>`
-            : ""
-        }
-        <tr><td style="padding:20px 32px;font-size:13px;line-height:21px;color:#5F5753;">Manage your plan or payment method any time in <a href="${SITE}/settings" style="color:#C80000;">Settings</a>.</td></tr>
-        <tr><td style="padding:18px 32px;background:#FAFAF7;border-top:1px solid #EEE7E3;font-size:12px;line-height:19px;color:#8F8C85;">Scholify · You are receiving this because you have an active Scholify subscription.</td></tr>
-      </table>
-    </td></tr>
-  </table>
-  </body></html>`
+  const html = renderBrandEmail({
+    preheader: `Payment received — ${facts.amount} for ${facts.planLabel}. Your record is inside.`,
+    eyebrow: "Receipt · Payment received",
+    title: hello,
+    blocks: [
+      { type: "p", lead: true, html: `Your payment went through. Here are the details for your records — and the official invoice, should an employer be reimbursing you.` },
+      { type: "facts", rows },
+      { type: "p", html: `Every charge generates a proper Stripe invoice with a downloadable PDF; this email is the covering note, Stripe's document is the record. You can change your plan or payment method any time in <a href="${SITE}/settings" style="color:#C80000;">Settings</a>.` },
+    ],
+    ...(facts.invoiceUrl ? { cta: { label: "View or download the invoice", href: facts.invoiceUrl } } : {}),
+    signoff: "Scholify Billing",
+    reason: "You are receiving this because you have an active Scholify subscription.",
+  })
 
-  const text = [
+  const text = renderTextEmail([
     hello,
     "",
     "Your payment went through. Here are the details for your records.",
@@ -247,30 +161,175 @@ export function buildReceiptEmail(facts: ReceiptFacts): { subject: string; html:
     `Plan: ${facts.planLabel}`,
     `Paid: ${facts.paidOn}`,
     `Amount: ${facts.amount}`,
-    ...(facts.nextChargeOn ? [`Next charge: ${facts.nextChargeOn}`] : []),
-    ...(facts.invoiceUrl ? ["", `Invoice: ${facts.invoiceUrl}`] : []),
+    facts.nextChargeOn ? `Next charge: ${facts.nextChargeOn}` : null,
+    facts.invoiceUrl ? "" : null,
+    facts.invoiceUrl ? `Invoice: ${facts.invoiceUrl}` : null,
     "",
     `Manage your plan: ${SITE}/settings`,
-  ].join("\n")
+  ])
 
   return { subject: `Your Scholify receipt — ${facts.amount}`, html, text }
 }
 
 /** Fire-and-forget. Never throws: a failed receipt must not fail a webhook. */
 export async function sendReceiptEmail(to: string, facts: ReceiptFacts): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey || !to) return false
-  const from = senderAddress()
-  if (!from) return false
+  const from = verifiedSender()
+  if (!from || !to) return false
   const { subject, html, text } = buildReceiptEmail(facts)
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({ from, to, subject, html, text }),
-    })
-    return res.ok
-  } catch {
-    return false
+  return Boolean(await deliverEmail({ from, to, subject, html, text }))
+}
+
+/* ── The failed payment ──────────────────────────────────────────── */
+
+export interface PaymentFailedFacts {
+  firstName?: string | null
+  /** e.g. "$14.99" in the invoice's currency. */
+  amount: string
+  planLabel: string
+  /** Stripe's attempt number for this invoice: 1 on the first failure. */
+  attempt: number
+  /** When Stripe will retry, if known. */
+  nextRetryOn?: string | null
+}
+
+/**
+ * Sent on failure attempts 1 and 3 only — the first says "no action may be
+ * needed", the third says "this is the last window". Stripe retries a card up
+ * to four times over roughly two weeks; a learner who fixes it after either
+ * email never notices an interruption, which is the entire point.
+ */
+export function buildPaymentFailedEmail(facts: PaymentFailedFacts): { subject: string; html: string; text: string } {
+  const name = (facts.firstName || "").trim()
+  const urgent = facts.attempt >= 3
+  const title = urgent ? "Last call on your payment" : (name ? `${esc(name)}, a payment didn't go through` : "A payment didn't go through")
+
+  const lead = urgent
+    ? `Stripe has now tried your card ${facts.attempt} times without success, and its retry window is nearly over. When it closes, your subscription pauses and your plan stops adapting — your progress stays saved, but the daily engine goes quiet.`
+    : `Your card declined today's ${esc(facts.amount)} charge for <b>${esc(facts.planLabel)}</b>. This is almost always mundane — an expired card, a limit, a bank being cautious — and nothing has been interrupted: your access continues while Stripe retries automatically${facts.nextRetryOn ? `, next on <b>${esc(facts.nextRetryOn)}</b>` : ""}.`
+
+  const html = renderBrandEmail({
+    preheader: urgent
+      ? "Stripe's retry window is nearly over — one minute fixes it."
+      : "Nothing is interrupted. Updating your card takes one minute.",
+    eyebrow: urgent ? "Billing · Action needed" : "Billing · Heads-up",
+    title,
+    blocks: [
+      { type: "p", lead: true, html: lead },
+      {
+        type: "facts",
+        rows: [
+          { label: "Plan", value: esc(facts.planLabel) },
+          { label: "Amount", value: esc(facts.amount) },
+          { label: "Attempt", value: String(facts.attempt) },
+          ...(facts.nextRetryOn ? [{ label: "Next automatic retry", value: esc(facts.nextRetryOn) }] : []),
+        ],
+      },
+      { type: "p", html: `Updating your payment method takes about a minute: open Settings, choose <b>Manage billing</b>, and Stripe's secure page does the rest. The moment a retry succeeds, everything continues as if nothing happened — streak, plan and progress untouched.` },
+      ...(urgent ? [{ type: "panel" as const, tone: "red" as const, title: "If the window closes", html: `Your data is never deleted. But the plan stops re-sequencing around your exam date, and restarting later means rebuilding momentum — the most expensive thing in exam preparation.` }] : []),
+    ],
+    cta: { label: "Update payment method", href: `${SITE}/settings` },
+    reason: "You are receiving this because a subscription payment could not be collected.",
+  })
+
+  const text = renderTextEmail([
+    title,
+    "",
+    lead.replace(/<[^>]+>/g, ""),
+    "",
+    `Plan: ${facts.planLabel}`,
+    `Amount: ${facts.amount}`,
+    `Attempt: ${facts.attempt}`,
+    facts.nextRetryOn ? `Next automatic retry: ${facts.nextRetryOn}` : null,
+    "",
+    "Updating your payment method takes about a minute: Settings -> Manage billing.",
+    urgent ? "If the window closes: your data is never deleted, but the plan stops adapting until billing resumes." : null,
+    "",
+    `Update payment method: ${SITE}/settings`,
+    "",
+    "— Charles · Your Scholify race engineer",
+  ])
+
+  return {
+    subject: urgent ? "Last call — your Scholify payment needs a minute" : "A payment didn't go through — your access is safe",
+    html,
+    text,
   }
+}
+
+export async function sendPaymentFailedEmail(to: string, facts: PaymentFailedFacts): Promise<boolean> {
+  const from = verifiedSender()
+  if (!from || !to) return false
+  const { subject, html, text } = buildPaymentFailedEmail(facts)
+  return Boolean(await deliverEmail({ from, to, subject, html, text }))
+}
+
+/* ── The cancellation ────────────────────────────────────────────── */
+
+export interface CancellationFacts {
+  firstName?: string | null
+  planLabel: string
+  /** Localised date access runs to. */
+  accessUntil?: string | null
+}
+
+/**
+ * Sent once, when a learner schedules a cancellation. No dark patterns, no
+ * "are you sure" theatrics — a plain statement of what they keep (everything),
+ * when access ends, and that the door is one click wide. People remember how
+ * a product lets them leave; that memory is what brings them back at the next
+ * exam session.
+ */
+export function buildCancellationEmail(facts: CancellationFacts): { subject: string; html: string; text: string } {
+  const name = (facts.firstName || "").trim()
+  const until = facts.accessUntil ? esc(facts.accessUntil) : null
+
+  const html = renderBrandEmail({
+    preheader: until ? `Your access runs to ${facts.accessUntil}. Everything you built stays saved.` : "Everything you built stays saved.",
+    eyebrow: "Subscription · Cancellation confirmed",
+    title: name ? `Understood, ${esc(name)}.` : "Understood.",
+    blocks: [
+      { type: "p", lead: true, html: `Your <b>${esc(facts.planLabel)}</b> subscription is set to end${until ? ` on <b>${until}</b>` : " at the close of the current billing period"}. Until then, nothing changes — your full plan keeps running and every session still counts.` },
+      {
+        type: "facts",
+        title: "What happens to your work",
+        rows: [
+          { label: "Progress & answers", value: "Saved, permanently" },
+          { label: "Streak trees & XP", value: "Saved, permanently" },
+          { label: "Your study plan", value: "Paused where you left it" },
+          { label: "Further charges", value: "None" },
+        ],
+      },
+      { type: "p", html: `If you cancelled because the exam is done — congratulations, genuinely. If something about Scholify wasn't right, reply to this email and tell me what; the founder reads every answer, and it changes what gets built next.` },
+      { type: "p", html: `And if you sit another paper later: sign back in, press resume, and your plan re-sequences around the new date in about a minute. Nothing to rebuild.` },
+    ],
+    cta: { label: "Manage subscription", href: `${SITE}/settings` },
+    reason: "You are receiving this because you cancelled your Scholify subscription.",
+  })
+
+  const text = renderTextEmail([
+    name ? `Understood, ${name}.` : "Understood.",
+    "",
+    `Your ${facts.planLabel} subscription is set to end${facts.accessUntil ? ` on ${facts.accessUntil}` : " at the close of the current billing period"}. Until then, nothing changes — your full plan keeps running.`,
+    "",
+    "What happens to your work:",
+    "  Progress & answers — saved, permanently.",
+    "  Streak trees & XP — saved, permanently.",
+    "  Your study plan — paused where you left it.",
+    "  Further charges — none.",
+    "",
+    "If something about Scholify wasn't right, reply to this email and tell us what — the founder reads every answer.",
+    "",
+    `Manage subscription: ${SITE}/settings`,
+    "",
+    "— Charles · Your Scholify race engineer",
+  ])
+
+  return { subject: until ? `Your Scholify access runs to ${facts.accessUntil}` : "Your Scholify cancellation is confirmed", html, text }
+}
+
+export async function sendCancellationEmail(to: string, facts: CancellationFacts): Promise<boolean> {
+  const from = verifiedSender()
+  if (!from || !to) return false
+  const { subject, html, text } = buildCancellationEmail(facts)
+  return Boolean(await deliverEmail({ from, to, subject, html, text }))
 }
