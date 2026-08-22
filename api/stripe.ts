@@ -2,8 +2,9 @@ import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
-import { sendPurchaseEmail, sendReceiptEmail } from "./purchase-email.js"
+import { sendPurchaseEmail, sendReceiptEmail, sendPaymentFailedEmail, sendCancellationEmail } from "./purchase-email.js"
 import { sendPartnerEmail, emailFrame, escapeHtml } from "./affiliate.js"
+import { sendTierUpEmail } from "./partner-emails.js"
 import { commissionTierForPaidCustomers } from "../src/lib/partner-rewards.js"
 
 /*
@@ -452,6 +453,15 @@ export async function recordPaidInvoiceCommission(
       })
       .eq("id", referral.id)
     if (referralUpdateError) throw new Error(`affiliate referral tier lock failed: ${referralUpdateError.message}`)
+    /*
+     * Unique paid learner #300 or #600 → the tier-up milestone email. The
+     * count passes each threshold exactly once in a partner's life, so this
+     * cannot double-send; sendTierUpEmail itself never throws.
+     */
+    const newPaidCount = (alreadyPaid ?? 0) + 1
+    if (newPaidCount === 300 || newPaidCount === 600) {
+      await sendTierUpEmail(supa, affiliateId, newPaidCount)
+    }
   } else if (!referral.stripe_customer_id) {
     const { error: customerLinkError } = await supa.from("affiliate_referrals").update({ stripe_customer_id: customerId }).eq("id", referral.id)
     if (customerLinkError) throw new Error(`affiliate customer link failed: ${customerLinkError.message}`)
@@ -1087,6 +1097,33 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           }).catch((e) => console.error("receipt email:", e))
         }
       }
+    } else if (event.type === "invoice.payment_failed") {
+      /*
+       * THE DUNNING EMAIL — the highest-ROI message in any subscription
+       * business. Stripe retries a declined card up to four times over about
+       * two weeks; a subscriber who never hears about it churns by accident.
+       * Attempts 1 and 3 only: the first is calm ("no action may be needed"),
+       * the third is the last call. Zero-amount invoices never got charged,
+       * so they never get a scare email either.
+       */
+      const invoice = event.data.object as Stripe.Invoice
+      const attempt = Number(invoice.attempt_count || 0)
+      const to = invoice.customer_email || ""
+      if (to && invoice.amount_due > 0 && (attempt === 1 || attempt === 3)) {
+        const priceId = invoice.lines?.data?.[0]?.price?.id
+        const plan = planForPrice(priceId)
+        const fmt = (seconds: number | null | undefined) =>
+          typeof seconds === "number"
+            ? new Date(seconds * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+            : null
+        await sendPaymentFailedEmail(to, {
+          firstName: invoice.customer_name?.split(" ")[0] ?? null,
+          amount: `${(invoice.amount_due / 100).toFixed(2)} ${invoice.currency.toUpperCase()}`,
+          planLabel: plan === "beginner" ? "Beginner" : plan === "annual_pro" ? "Annual Pro" : "Pro",
+          attempt,
+          nextRetryOn: fmt(invoice.next_payment_attempt),
+        }).catch((e) => console.error("payment failed email:", e))
+      }
     } else if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
       // Refund / chargeback → pull back any still-pending commission for that customer.
       const charge = event.data.object as Stripe.Charge | Stripe.Dispute
@@ -1126,6 +1163,31 @@ async function webhook(req: VercelRequest, res: VercelResponse): Promise<void> {
           trialEndsAt: iso(sub.trial_end),
           eventType: event.type,
         })
+        /*
+         * THE CANCELLATION ACKNOWLEDGMENT — sent on the one update where
+         * cancel_at_period_end flipped false → true. previous_attributes
+         * carries the old value only on the event that changed it, so this
+         * cannot re-fire on later unrelated subscription updates.
+         */
+        const prev = event.data.previous_attributes as Partial<Stripe.Subscription> | undefined
+        if (prev?.cancel_at_period_end === false && sub.cancel_at_period_end) {
+          try {
+            const { data: userData } = await supa.auth.admin.getUserById(userId)
+            const email = userData?.user?.email
+            if (email) {
+              await sendCancellationEmail(email, {
+                firstName: (userData.user?.user_metadata?.first_name as string | undefined) ?? null,
+                planLabel: plan === "beginner" ? "Beginner" : plan === "annual_pro" ? "Annual Pro" : "Pro",
+                accessUntil:
+                  typeof sub.current_period_end === "number"
+                    ? new Date(sub.current_period_end * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+                    : null,
+              })
+            }
+          } catch (error) {
+            console.error("cancellation email:", error)
+          }
+        }
       }
     } else if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object as Stripe.Subscription
