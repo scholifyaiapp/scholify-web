@@ -369,10 +369,10 @@ function ApplicationReceived({ code, email, reduced }: { code: string; email: st
 /* ── Content ─────────────────────────────────────────────────── */
 
 const STATS: Array<[string, string]> = [
-  ["530,100", "ACCA students worldwide, in 180 countries"],
-  ["~100,000", "New students register every single year"],
-  ["~400,000", "Exam entries a year across 4 sittings"],
-  ["$130M", "Annual ACCA digital self-study market"],
+  ["546,534", "People studying toward ACCA worldwide — an audited record"],
+  ["118,592", "New students registered this year — ACCA's largest intake ever"],
+  ["274,153", "Exam entries across the two latest sittings alone"],
+  ["$130M", "Annual ACCA digital self-study market (Scholify model)"],
 ]
 
 const WHY: Array<[string, string]> = [
@@ -547,9 +547,9 @@ export default function PartnersApply() {
               fontWeight: 500,
             }}
           >
-            You've been hand-picked as a Scholify Preferred Partner. Introduce the students you already reach to the
-            app that helps them pass ACCA — and earn a real commission on every plan they buy, tracked end-to-end and
-            paid on time.
+            The Partner Programme is application-only — every partner is personally reviewed and approved. Introduce
+            the students you already reach to the app that helps them pass ACCA, and earn a real commission on every
+            plan they buy: tracked end-to-end, governed by a written agreement, and paid on time.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <motion.button
@@ -629,8 +629,8 @@ export default function PartnersApply() {
             <div style={{ ...eyebrow, fontSize: 10, color: "#C80000", marginBottom: 8 }}>What is Scholify</div>
             <p style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--sch-tx-1)", fontWeight: 500 }}>
               <b style={{ color: "var(--sch-text)" }}>Scholify is the AI-native way to pass ACCA.</b> All 15 papers
-              (BT → AAA) with 2,400+ expert-written questions, an <b style={{ color: "var(--sch-text)" }}>AI Examiner</b>{" "}
-              that marks written answers in seconds, timed mock exams, a live Exam Readiness Score, and{" "}
+              (BT → AAA) with 5,040 exam-standard questions, an <b style={{ color: "var(--sch-text)" }}>AI Examiner</b>{" "}
+              that marks written answers in seconds, 45 timed mock exams, a live Exam Readiness Score, and{" "}
               <b style={{ color: "var(--sch-text)" }}>Charles</b> — an AI race-engineer mentor who builds and adjusts
               each student's study plan. A finished, paying product students feel value from on day one — not a
               waitlist.
@@ -654,8 +654,8 @@ export default function PartnersApply() {
             ))}
           </div>
           <p style={{ fontSize: 11.5, color: "var(--sch-tx-2)", marginTop: 12, lineHeight: 1.5 }}>
-            Sources: ACCA official reporting (students, members, entries) · Scholify market model (category revenue).
-            Emerging-market centre of gravity: India, China, Pakistan, Malaysia & Central Asia.
+            Sources: ACCA Annual Integrated Report FY2026 (audited) and official results releases · Scholify market
+            model (category revenue). Emerging-market centre of gravity: India, China, Pakistan, Malaysia & Central Asia.
           </p>
         </Section>
 
@@ -1021,6 +1021,23 @@ export default function PartnersApply() {
               maximum, not a guarantee: commissions accrue month by month only while the learner actually pays, so a
               cancellation ends that learner's window early — and a learner who stays earns you all of it. Refunds and
               chargebacks void the related commission, and every payment completes the 30-day validation hold.
+              <div style={{ marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <a
+                  href="/partner-agreement.html"
+                  target="_blank"
+                  rel="noopener"
+                  style={{ color: "#C80000", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3 }}
+                >
+                  Read the full Partner Agreement (v1.0)
+                </a>
+                <a
+                  href="/partner-agreement.pdf"
+                  download
+                  style={{ color: "#C80000", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3 }}
+                >
+                  Download as PDF
+                </a>
+              </div>
             </div>
           </motion.div>
         </Section>
@@ -1120,9 +1137,20 @@ export default function PartnersApply() {
                       style={{ marginTop: 3, width: 18, height: 18, accentColor: "#C80000", flexShrink: 0 }}
                     />
                     <span>
-                      I agree to the Scholify partner terms: I'll promote honestly and won't bid on Scholify's brand
-                      terms or spam. I understand the 90-day first-touch rule, prospective 1/3/5-payment tiers,
-                      30-day validation period, and that refunds or chargebacks void the related commission.
+                      I have read and agree to the{" "}
+                      <a
+                        href="/partner-agreement.html"
+                        target="_blank"
+                        rel="noopener"
+                        style={{ color: "#C80000", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3 }}
+                      >
+                        Scholify Partner Agreement
+                      </a>{" "}
+                      (<a href="/partner-agreement.pdf" download style={{ color: "#C80000", fontWeight: 600 }}>PDF</a>):
+                      I'll promote honestly with disclosure, and won't bid on Scholify's brand terms or spam. I
+                      understand the 90-day first-touch rule, the prospective 1/3/5-payment tiers, that commissions
+                      accrue only on payments actually collected, the 30-day validation hold, and that refunds or
+                      chargebacks void the related commission.
                     </span>
                   </label>
 
@@ -1203,9 +1231,12 @@ export default function PartnersApply() {
           </motion.div>
 
           <p style={{ fontSize: 11, color: "var(--sch-tx-2)", lineHeight: 1.55, marginTop: 20, textAlign: "center", maxWidth: 820, marginLeft: "auto", marginRight: "auto" }}>
-            This is an invitation to join the Scholify Preferred Partner Program and is not a binding contract; final
-            terms, the exact commission percentage and reward details are confirmed on activation at launch (10 August
-            2026). Scholify is an independent ACCA study tool and is not affiliated with or endorsed by ACCA; ACCA is a
+            The binding terms of the Programme are the{" "}
+            <a href="/partner-agreement.html" target="_blank" rel="noopener" style={{ color: "#C80000", fontWeight: 600 }}>
+              Scholify Partner Agreement (v1.0)
+            </a>
+            , accepted with your application and downloadable from this page; this page is a summary of it.
+            Scholify is an independent ACCA study tool and is not affiliated with or endorsed by ACCA; ACCA is a
             registered trademark of the Association of Chartered Certified Accountants. "Formula 1", "F1", "Grand Prix"
             and related marks are trademarks of Formula One Licensing BV; the Qatar and Abu Dhabi Grand Prix rewards
             (including flights and tickets) are provided by Scholify and are not sponsored or endorsed by any Formula 1
