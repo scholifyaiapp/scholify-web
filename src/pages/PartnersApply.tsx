@@ -96,42 +96,36 @@ function Section({ children, style }: { children: ReactNode; style?: CSSProperti
   return <section style={{ marginTop: 64, ...style }}>{children}</section>
 }
 
-/* ── Application received ─────────────────────────────────────────
+/* ── Partner activated ────────────────────────────────────────────
  *
- * The old success state said "we'll review it and email you" and showed the code.
- * The applicant then sat on the page with no idea whether anything had actually
- * been sent, and the confirmation email — which IS sent, immediately, by
- * /api/affiliate?action=apply — routinely lands in Promotions or takes a minute to
- * clear the queue. So the two most common next actions were "refresh the page" and
- * "email the founder asking if it worked".
- *
- * This state answers the only question the applicant has: it names the exact
- * address the mail is going to, counts the two minutes down so the wait is
- * bounded and visible, and then — once the countdown is done — tells them where
- * to look if it has not arrived. Below it, the three real stages of the process,
- * including the one nobody explained before: after approval the partner dashboard
- * opens by itself when they sign in with this address. No code to paste, no second
- * form.
+ * Activation is instant (founder decision, 23 Aug 2026): the application IS
+ * the activation, and the first email a partner receives is the welcome email
+ * carrying their live link. This state's job is therefore not "please wait" —
+ * it is "you are live": the link is shown on the page immediately, and the
+ * countdown only bounds the wait for the welcome email, which routinely lands
+ * in Promotions or takes a minute to clear the queue. Below it, the three
+ * things that are true right now — including the one nobody explains: signing
+ * in with this address opens the partner dashboard by itself.
  */
 
-/** How long we tell the applicant to wait, in seconds. */
+/** How long we tell the new partner to wait for the welcome email, in seconds. */
 const CONFIRM_WAIT_SECONDS = 120
 
 const RECEIVED_STAGES: Array<{ badge: string; title: string; detail: string }> = [
   {
-    badge: "Now",
-    title: "Confirmation email on its way",
-    detail: "It confirms we have your application, repeats your partner code, and comes from Charles at Scholify. Nothing to do — it is a receipt, not a step.",
+    badge: "Live",
+    title: "Your link is active right now",
+    detail: "Clicks and sign-ups through your link are attributed to you from this moment. The welcome email repeats the link and your code so you always have them at hand.",
   },
   {
-    badge: "24–48h",
-    title: "Personal review by our founder",
-    detail: "Every partner application is read by a person, not a filter. We look at where you'll promote and who you reach, and reply either way.",
+    badge: "Share",
+    title: "Start promoting today",
+    detail: "Post your link where your audience already is — class groups, LinkedIn, communities. Promote honestly and disclose the partnership, as the Partner Agreement requires.",
   },
   {
-    badge: "On approval",
+    badge: "Track",
     title: "Your dashboard opens itself",
-    detail: "You'll get an approval email, and from then on signing in with this same address takes you straight to your partner dashboard — link, clicks, commissions and payouts. Nothing to claim or paste.",
+    detail: "Sign in with this same address and you land straight on your partner dashboard — link, clicks, sign-ups, commissions and payouts. Payouts run monthly: $50+ cleared balances, first week of the month.",
   },
 ]
 
@@ -184,10 +178,18 @@ function ApplicationReceived({ code, email, reduced }: { code: string; email: st
       </div>
 
       <h2 style={{ fontSize: "clamp(22px,4.4vw,28px)", fontWeight: 800, color: "var(--sch-text)", margin: "0 0 8px", textAlign: "center", letterSpacing: "-0.02em" }}>
-        Application received
+        You're a Scholify Partner
       </h2>
-      <p style={{ fontSize: 15, color: "var(--sch-tx-2)", lineHeight: 1.6, maxWidth: 460, margin: "0 auto 22px", textAlign: "center" }}>
-        It's with our founder now. Your partner code is reserved for you.
+      <p style={{ fontSize: 15, color: "var(--sch-tx-2)", lineHeight: 1.6, maxWidth: 480, margin: "0 auto 10px", textAlign: "center" }}>
+        Your account is active and your link is live right now:
+      </p>
+      <p style={{ textAlign: "center", margin: "0 auto 22px" }}>
+        <a
+          href={`https://www.scholifyapp.com/?aff=${code}`}
+          style={{ fontFamily: MONO, fontSize: 15.5, fontWeight: 800, color: "#C80000", textDecoration: "underline", textUnderlineOffset: 4, wordBreak: "break-all" }}
+        >
+          scholifyapp.com/?aff={code}
+        </a>
       </p>
 
       {/* ── The headline instruction: check your email in ~2 minutes ── */}
@@ -244,19 +246,19 @@ function ApplicationReceived({ code, email, reduced }: { code: string; email: st
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15.5, fontWeight: 800, color: "var(--sch-text)", lineHeight: 1.35 }}>
-            {waiting ? "Check your email in about 2 minutes" : "Your confirmation email should be there now"}
+            {waiting ? "Your welcome email arrives in about 2 minutes" : "Your welcome email should be there now"}
           </div>
           <div style={{ fontSize: 13.5, color: "var(--sch-tx-2)", marginTop: 4, lineHeight: 1.5, wordBreak: "break-word" }}>
             {waiting ? (
               <>
-                We've sent your confirmation to <b style={{ color: "var(--sch-text)" }}>{email}</b>. Leave this page open
-                or close it — either is fine.
+                We've sent your welcome email — with your live link and code — to{" "}
+                <b style={{ color: "var(--sch-text)" }}>{email}</b>. Leave this page open or close it — either is fine.
               </>
             ) : (
               <>
                 Sent to <b style={{ color: "var(--sch-text)" }}>{email}</b>. Not there? Check{" "}
                 <b style={{ color: "var(--sch-text)" }}>Promotions</b> and <b style={{ color: "var(--sch-text)" }}>Spam</b>,
-                and add our address to your contacts so the approval email lands in your inbox.
+                and add our address to your contacts so your commission emails land in your inbox too.
               </>
             )}
           </div>
@@ -411,17 +413,17 @@ const STEPS = [
   {
     title: "Send your application",
     label: "Apply",
-    detail: "Tell us about you, your audience and where you plan to promote Scholify. You’ll receive an email confirming that your request is pending review.",
+    detail: "Tell us about you, your audience and where you plan to promote Scholify. One short form — that is the whole process.",
   },
   {
-    title: "Get personally reviewed",
-    label: "Review",
-    detail: "Our founder reviews every application. We’ll email you with the decision, so you always know where your application stands.",
-  },
-  {
-    title: "Receive your partner link",
+    title: "Activated instantly",
     label: "Activate",
-    detail: "Once approved, you receive your unique referral link and partner code. Your dashboard becomes the home for your clicks, sales and commissions.",
+    detail: "Your partner code and tracked link go live the moment you apply — no review queue. Every account remains governed by the Partner Agreement, and abusive accounts can be revoked.",
+  },
+  {
+    title: "Your link arrives by email",
+    label: "Receive",
+    detail: "The welcome email carries your live referral link and partner code. Sign in with the same address and your dashboard opens automatically — clicks, sales and commissions.",
   },
   {
     title: "Share Scholify",
@@ -547,9 +549,9 @@ export default function PartnersApply() {
               fontWeight: 500,
             }}
           >
-            The Partner Programme is application-only — every partner is personally reviewed and approved. Introduce
+            Apply in one minute and your partner link goes live instantly — no waiting for review. Introduce
             the students you already reach to the app that helps them pass ACCA, and earn a real commission on every
-            plan they buy: tracked end-to-end, governed by a written agreement, and paid on time.
+            plan they buy: tracked end-to-end, governed by a written agreement, and paid monthly.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <motion.button
@@ -1020,7 +1022,10 @@ export default function PartnersApply() {
               tier for themselves and future referrals, not earlier ones. Annual plans earn once. The window is a
               maximum, not a guarantee: commissions accrue month by month only while the learner actually pays, so a
               cancellation ends that learner's window early — and a learner who stays earns you all of it. Refunds and
-              chargebacks void the related commission, and every payment completes the 30-day validation hold.
+              chargebacks void the related commission, and every payment completes the 30-day validation hold.{" "}
+              <b style={{ color: "var(--sch-text)" }}>Payouts run monthly:</b> cleared balances of $50 or more are paid
+              in the first week of each month (bank transfer, Wise or PayPal); smaller balances roll over. You get an
+              email for every commission you earn, plus a weekly Monday summary.
               <div style={{ marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
                 <a
                   href="/partner-agreement.html"
@@ -1028,7 +1033,7 @@ export default function PartnersApply() {
                   rel="noopener"
                   style={{ color: "#C80000", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3 }}
                 >
-                  Read the full Partner Agreement (v1.0)
+                  Read the full Partner Agreement (v1.1)
                 </a>
                 <a
                   href="/partner-agreement.pdf"
@@ -1077,7 +1082,7 @@ export default function PartnersApply() {
                   Apply to become a partner
                 </h2>
                 <p style={{ fontSize: 13.5, color: "var(--sch-tx-2)", margin: "0 0 18px", lineHeight: 1.5 }}>
-                  Send your details and they go straight to our founder. Questions? Email{" "}
+                  Your account activates instantly — your live link appears right here and arrives by email. Questions? Email{" "}
                   <a href="mailto:info@scholifyapp.com" style={{ color: "#C80000", fontWeight: 600, textDecoration: "none" }}>
                     info@scholifyapp.com
                   </a>
@@ -1233,7 +1238,7 @@ export default function PartnersApply() {
           <p style={{ fontSize: 11, color: "var(--sch-tx-2)", lineHeight: 1.55, marginTop: 20, textAlign: "center", maxWidth: 820, marginLeft: "auto", marginRight: "auto" }}>
             The binding terms of the Programme are the{" "}
             <a href="/partner-agreement.html" target="_blank" rel="noopener" style={{ color: "#C80000", fontWeight: 600 }}>
-              Scholify Partner Agreement (v1.0)
+              Scholify Partner Agreement (v1.1)
             </a>
             , accepted with your application and downloadable from this page; this page is a summary of it.
             Scholify is an independent ACCA study tool and is not affiliated with or endorsed by ACCA; ACCA is a

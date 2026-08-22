@@ -63,5 +63,8 @@
     { "source": "/api/security-check", "destination": "/api/social?action=security" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ],
-  "crons": [{ "path": "/api/reminders?action=send", "schedule": "0 8 * * *" }]
+  "crons": [
+    { "path": "/api/reminders?action=send", "schedule": "0 8 * * *" },
+    { "path": "/api/affiliate?action=weekly-digest", "schedule": "30 9 * * *" }
+  ]
 }

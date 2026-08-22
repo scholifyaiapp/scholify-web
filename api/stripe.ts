@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { timingSafeEqual } from "node:crypto"
 import { sendPurchaseEmail, sendReceiptEmail } from "./purchase-email.js"
+import { sendPartnerEmail, emailFrame, escapeHtml } from "./affiliate.js"
 import { commissionTierForPaidCustomers } from "../src/lib/partner-rewards.js"
 
 /*
@@ -405,7 +406,7 @@ export async function recordPaidInvoiceCommission(
 
   const { data: affiliate } = await supa
     .from("affiliates")
-    .select("commission_rate, status")
+    .select("commission_rate, status, name, email, code")
     .eq("id", affiliateId)
     .maybeSingle()
   if (!affiliate || affiliate.status !== "active") return
@@ -469,6 +470,7 @@ export async function recordPaidInvoiceCommission(
   const commission = commissionAmount(invoice.amount_paid, rate)
   if (commission <= 0) return
   const paymentIntent = stripeObjectId((invoice as unknown as { payment_intent?: unknown }).payment_intent)
+  const availableAfter = new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5)
   const { error: commissionError } = await supa.from("affiliate_commissions").insert({
     affiliate_id: affiliateId,
     stripe_invoice_id: invoice.id,
@@ -478,13 +480,47 @@ export async function recordPaidInvoiceCommission(
     sale_amount: invoice.amount_paid,
     commission_amount: commission,
     status: "pending",
-    available_after: new Date(Date.now() + COMMISSION_HOLD_DAYS * 864e5).toISOString(),
+    available_after: availableAfter.toISOString(),
     billing_cycle: billingCycle,
     commission_cycles: commissionCycles,
     plan,
   })
   if (commissionError && commissionError.code !== "23505") {
     throw new Error(`affiliate commission insert failed: ${commissionError.message}`)
+  }
+
+  // The partner hears about every commission the moment it exists — the
+  // engagement loop the programme audit flagged. Strictly best-effort: a mail
+  // failure must never fail the webhook (the commission row is already safe,
+  // and Stripe retries would be pointless — the insert is invoice-unique).
+  if (!commissionError && affiliate.email) {
+    try {
+      const money = (cents: number) => `$${(Math.round(cents) / 100).toFixed(2)}`
+      const planLabel = interval === "year"
+        ? (plan === "beginner" ? "Beginner annual" : "Pro annual")
+        : (plan === "beginner" ? "Beginner monthly" : plan === "pro" ? "Pro monthly" : "subscription")
+      const windowLine = interval === "year"
+        ? "Annual plan — this single payment is the full earning for this learner."
+        : `Payment <strong>${billingCycle} of ${commissionCycles}</strong> in this learner's earning window.`
+      const first = String(affiliate.name || "there").split(/\s+/)[0] || "there"
+      const html = emailFrame({
+        eyebrow: "Commission earned · Pending",
+        title: `You just earned ${money(commission)}, ${first}`,
+        intro: `A learner you referred paid for <strong>${escapeHtml(planLabel)}</strong> (${money(invoice.amount_paid)}), and your <strong>27%</strong> is recorded.`,
+        content: `<div style="background:#F1FBF6;border:1px solid #CBEBD9;border-radius:14px;padding:16px 18px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#1E7D50;text-transform:uppercase;">New commission</div>
+          <div style="font-size:24px;font-weight:800;color:#14141A;margin-top:6px;">${money(commission)}</div>
+          <div style="font-size:13px;line-height:20px;color:#5F5753;margin-top:6px;">${windowLine}</div>
+          <div style="font-size:12px;color:#8F8C85;margin-top:6px;">Status: pending · clears after the 30-day validation hold on ${escapeHtml(availableAfter.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}.</div>
+        </div>
+        <p style="font-size:12.5px;line-height:20px;color:#8F8C85;margin:14px 0 0;">Payouts run monthly — cleared balances of $50+ are paid in the first week of each month; smaller balances roll over.</p>`,
+        cta: { label: "Open your partner dashboard", href: "https://www.scholifyapp.com/partners" },
+        charles: true,
+      })
+      await sendPartnerEmail({ to: affiliate.email, subject: `You earned ${money(commission)} — a referred learner just paid`, html })
+    } catch (error) {
+      console.error("commission notification email:", error)
+    }
   }
 }
 

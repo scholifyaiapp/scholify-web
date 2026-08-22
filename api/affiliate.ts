@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "./vercel-types.js"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import postgres from "postgres"
 import { socialRowHtml } from "../src/lib/social-links.js"
+import { commissionTierProgress } from "../src/lib/partner-rewards.js"
 
 /** Appended inside every partner-facing email footer cell. */
 const SOCIAL_FOOTER = `<br><br><span style="display:inline-block;margin-bottom:7px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B7B2AC;">Follow Scholify</span><br>${socialRowHtml()}`
@@ -165,7 +166,10 @@ export function emailsMatch(a: unknown, b: unknown): boolean {
 export const config = { api: { bodyParser: false } }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  if (req.method !== "POST") {
+  // The weekly-digest cron arrives as a GET (Vercel crons only send GET, with
+  // Authorization: Bearer CRON_SECRET). Everything else stays POST-only.
+  const requestedAction = String(req.query.action || "").trim().toLowerCase()
+  if (req.method !== "POST" && !(req.method === "GET" && requestedAction === "weekly-digest")) {
     res.status(405).json({ ok: false, reason: "post_only" })
     return
   }
@@ -193,6 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (action === "mark-due-paid") return markDuePaid(req, res, supa)
   if (action === "feedback-submit") return submitFeedback(req, res, supa)
   if (action === "feedback-status") return updateFeedbackStatus(req, res, supa)
+  if (action === "weekly-digest") return weeklyDigest(req, res, supa)
   res.status(400).json({ ok: false, reason: "unknown_action" })
 }
 
@@ -462,7 +467,7 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
   // loop could spam arbitrary inboxes and squat codes. A filled hidden field is
   // a bot: acknowledge success without inserting or emailing anyone.
   if (String(b.website || "")) {
-    res.status(200).json({ ok: true, status: "pending" })
+    res.status(200).json({ ok: true, status: "active" })
     return
   }
   const name = String(b.name || "").trim().slice(0, 120)
@@ -504,7 +509,11 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     area_of_study: String(b.areaOfStudy || "").slice(0, 120) || null,
     code,
     commission_rate: 0.27,
-    status: "pending",
+    // Founder decision (23 Aug 2026): partners are activated INSTANTLY on
+    // application — the link must work and the welcome email must carry it
+    // the moment they apply. The founder keeps the ability to revoke any
+    // account from the admin panel; review moved from before to after.
+    status: "active",
   })
   if (error) {
     // Log the Postgres detail, don't return it. /apply is unauthenticated, and a
@@ -519,16 +528,16 @@ async function apply(req: VercelRequest, res: VercelResponse, supa: SupabaseClie
     return
   }
   // Await the best-effort sends so the serverless function is not frozen before
-  // Resend receives the founder notification and applicant confirmation.
+  // Resend receives the founder notification and the partner's welcome email.
   await notifyApplication({ name, email, code, b }).catch((error: unknown) => {
     console.error("partner application email:", error)
   })
-  res.status(200).json({ ok: true, code, status: "pending" })
+  res.status(200).json({ ok: true, code, status: "active" })
 }
 
 const SITE_URL = "https://www.scholifyapp.com"
 
-function escapeHtml(value: unknown): string {
+export function escapeHtml(value: unknown): string {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -537,7 +546,7 @@ function escapeHtml(value: unknown): string {
     .replaceAll("'", "&#039;")
 }
 
-function emailFrame(options: {
+export function emailFrame(options: {
   eyebrow: string
   title: string
   intro: string
@@ -618,7 +627,11 @@ async function sendAllPartnerEmails(messages: Promise<unknown>[]): Promise<void>
   if (failures.length > 0) throw new Error(`${failures.length} partner email send(s) failed`)
 }
 
-/** Email the admin and applicant when a new partner application arrives. */
+/** Email the admin and the new partner the moment an application arrives.
+ * Activation is instant (founder decision, 23 Aug 2026): the partner's first
+ * email IS the welcome email, carrying their live link — no waiting, no second
+ * message. The founder is notified of the activation and can revoke from the
+ * admin panel if the account turns out to be abusive. */
 async function notifyApplication(app: {
   name: string
   email: string
@@ -630,34 +643,36 @@ async function notifyApplication(app: {
     return v ? `<tr><td style="padding:7px 12px 7px 0;color:#8F8C85;font-size:12px;">${escapeHtml(label)}</td><td style="padding:7px 0;color:#14141A;font-size:13px;font-weight:700;">${escapeHtml(v)}</td></tr>` : ""
   }
   const adminHtml = emailFrame({
-    eyebrow: "Race control · New application",
-    title: `${app.name} wants to partner with Scholify`,
-    intro: `A new Preferred Partner application is waiting for your review. The requested code is <strong style="color:#C80000;">${escapeHtml(app.code)}</strong>.`,
+    eyebrow: "Race control · Partner auto-activated",
+    title: `${app.name} just joined as a Scholify Partner`,
+    intro: `A new partner applied and was activated instantly. Their code <strong style="color:#C80000;">${escapeHtml(app.code)}</strong> is live and can already attribute clicks and sales. Review the details below — you can revoke the account from the admin panel at any time.`,
     content: `<table role="presentation" width="100%" style="border-collapse:collapse;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:14px;">
       <tr><td style="padding:12px 16px;"><table role="presentation" width="100%" style="border-collapse:collapse;">
       ${row("Name", app.name)}${row("Email", app.email)}${row("University", app.b.university)}${row("Country", app.b.country)}${row("Promotes on", app.b.socials)}${row("Audience", app.b.audienceSize)}${row("Area", app.b.areaOfStudy)}
       </table></td></tr></table>`,
-    cta: { label: "Review partner applications", href: `${SITE_URL}/admin` },
+    cta: { label: "Review partners in the admin panel", href: `${SITE_URL}/admin` },
   })
 
   const first = escapeHtml(app.name.split(/\s+/)[0] || "there")
   const applicantHtml = emailFrame({
-    eyebrow: "Application received · Pending review",
-    title: `You’re on the starting grid, ${app.name.split(/\s+/)[0] || "there"}`,
-    intro: `Thanks for applying to the <strong>Scholify Preferred Partner Program</strong>. Your application is safely with our founder and is now pending personal review.`,
-    content: `<div style="background:#FFF8E7;border:1px solid #F4DDA2;border-radius:14px;padding:16px 18px;">
-      <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#9A6500;text-transform:uppercase;">Your application status</div>
-      <div style="font-size:18px;font-weight:800;color:#14141A;margin-top:6px;">Pending review</div>
-      <div style="font-size:13px;line-height:20px;color:#5F5753;margin-top:7px;">Requested partner code: <strong style="color:#C80000;">${escapeHtml(app.code)}</strong></div>
+    eyebrow: "Partner activated · Welcome aboard",
+    title: `You’re officially a Scholify Partner, ${app.name.split(/\s+/)[0] || "there"}`,
+    intro: `Welcome to the <strong>Scholify Partner Programme</strong> — your account is active right now. Share your link below and earn <strong>27%</strong> across a performance-based one, three or five-payment window on every learner you bring.`,
+    content: `<div style="background:#F1FBF6;border:1px solid #CBEBD9;border-radius:14px;padding:16px 18px;">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.3px;color:#1E7D50;text-transform:uppercase;">Your live partner link</div>
+      <div style="font-size:15px;font-weight:800;margin-top:7px;"><a href="${SITE_URL}/?aff=${escapeHtml(app.code)}" style="color:#C80000;text-decoration:none;">scholifyapp.com/?aff=${escapeHtml(app.code)}</a></div>
+      <div style="font-size:12px;color:#8F8C85;margin-top:6px;">Partner code: <strong style="color:#C80000;">${escapeHtml(app.code)}</strong></div>
     </div>
-    <p style="font-size:14px;line-height:22px;color:#5F5753;margin:18px 0 0;">We’ll email you again as soon as a decision is made. Once approved, you’ll receive your referral link and can earn <strong>27%</strong> for one, three or five successful monthly payments as your paid audience grows.</p>
-    <p style="font-size:13px;line-height:20px;color:#8F8C85;margin:18px 0 0;">Good luck, ${first}.<br>— Makhmudov Nuriddin, Founder, Scholify</p>`,
+    <p style="font-size:14px;line-height:22px;color:#5F5753;margin:18px 0 0;">Sign in to Scholify with this email address and your partner dashboard opens automatically — link, clicks, sign-ups, commissions and payouts, live. Payouts run monthly: cleared balances of <strong>$50 or more</strong> are paid in the first week of each month, and smaller balances simply roll over.</p>
+    <p style="font-size:13px;line-height:20px;color:#5F5753;margin:14px 0 0;">The full terms are the <a href="${SITE_URL}/partner-agreement.html" style="color:#C80000;">Partner Agreement</a> you accepted with your application — promote honestly, disclose the partnership, never spam.</p>
+    <p style="font-size:13px;line-height:20px;color:#8F8C85;margin:18px 0 0;">Welcome to the team, ${first}.<br>— Makhmudov Nuriddin, Founder, Scholify</p>`,
+    cta: { label: "Open your partner dashboard", href: `${SITE_URL}/partners` },
     charles: true,
   })
 
   await sendAllPartnerEmails([
-    sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: app.email, subject: `New partner application — ${app.name} (${app.code})`, html: adminHtml }),
-    sendPartnerEmail({ to: app.email, subject: "Your Scholify partner application is pending review", html: applicantHtml }),
+    sendPartnerEmail({ to: ADMIN_EMAIL, replyTo: app.email, subject: `Partner auto-activated — ${app.name} (${app.code})`, html: adminHtml }),
+    sendPartnerEmail({ to: app.email, subject: "You’re in — your Scholify partner link is live", html: applicantHtml }),
   ])
 }
 
@@ -772,6 +787,95 @@ async function dashboard(req: VercelRequest, res: VercelResponse, supa: Supabase
     else if (commission.status === "paid") totals.paid += Number(commission.commission_amount || 0)
   }
   res.status(200).json({ ok: true, affiliate, commissions: commissions ?? [], totals })
+}
+
+/*
+ * Weekly partner digest — the engagement loop the programme was missing.
+ *
+ * The Vercel cron fires daily (Hobby crons are day-granular); this handler
+ * no-ops except on Mondays (UTC), so the digest is weekly without needing a
+ * weekly schedule. Guarded by CRON_SECRET exactly like api/reminders.ts.
+ * Partners with zero activity in the window AND zero unpaid balance are
+ * skipped — a "nothing happened" email every week trains people to ignore us.
+ */
+const usd = (cents: number): string => `$${(Math.round(cents) / 100).toFixed(2)}`
+
+async function weeklyDigest(req: VercelRequest, res: VercelResponse, supa: SupabaseClient): Promise<void> {
+  const secret = process.env.CRON_SECRET
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+  if (!secret || token !== secret) {
+    res.status(403).json({ ok: false, reason: "forbidden" })
+    return
+  }
+  const force = String(req.query.force || "") === "1"
+  if (new Date().getUTCDay() !== 1 && !force) {
+    res.status(200).json({ ok: true, skipped: "not_monday" })
+    return
+  }
+
+  const { data: partners } = await supa
+    .from("affiliates")
+    .select("id, name, email, code")
+    .eq("status", "active")
+    .not("email", "is", null)
+    .limit(500)
+  const since = new Date(Date.now() - 7 * 864e5).toISOString()
+
+  let sent = 0
+  let failed = 0
+  for (const partner of partners ?? []) {
+    try {
+      const [{ count: newInvited }, { data: commissionRows }, { count: paidUsers }] = await Promise.all([
+        supa.from("affiliate_referrals").select("id", { count: "exact", head: true })
+          .eq("affiliate_id", partner.id).gte("created_at", since),
+        supa.from("affiliate_commissions").select("commission_amount, status, created_at")
+          .eq("affiliate_id", partner.id),
+        supa.from("affiliate_referrals").select("id", { count: "exact", head: true })
+          .eq("affiliate_id", partner.id).not("first_paid_at", "is", null),
+      ])
+      const rows = commissionRows ?? []
+      const weekRows = rows.filter((row) => row.status !== "canceled" && String(row.created_at) >= since)
+      const weekEarned = weekRows.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
+      const pending = rows.filter((row) => row.status === "pending").reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
+      const cleared = rows.filter((row) => row.status === "approved").reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
+      const hasNews = (newInvited ?? 0) > 0 || weekRows.length > 0 || pending > 0 || cleared > 0
+      if (!hasNews) continue
+
+      const progress = commissionTierProgress(paidUsers ?? 0)
+      const tierLine = progress.next
+        ? `You are on the <strong>${progress.current.name}</strong> tier — <strong>${progress.remaining}</strong> more paid learners to <strong>${progress.next.name}</strong> (${progress.next.monthlyPayments} payments per new referral).`
+        : `You are on the top <strong>${progress.current.name}</strong> tier — every new monthly referral earns across ${progress.current.monthlyPayments} payments.`
+      const stat = (label: string, value: string) =>
+        `<td style="padding:12px 14px;background:#FAFAF7;border:1px solid #EEE7E3;border-radius:12px;">
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:1.1px;color:#8F8C85;text-transform:uppercase;">${escapeHtml(label)}</div>
+          <div style="font-size:19px;font-weight:800;color:#14141A;margin-top:4px;">${escapeHtml(value)}</div>
+        </td>`
+      const html = emailFrame({
+        eyebrow: "Your partner week · Monday briefing",
+        title: `Your Scholify week, ${String(partner.name || "there").split(/\s+/)[0] || "there"}`,
+        intro: `Here is what your link <strong style="color:#C80000;">${escapeHtml(partner.code)}</strong> did over the last seven days, and where your balance stands.`,
+        content: `<table role="presentation" width="100%" style="border-collapse:separate;border-spacing:8px 0;"><tr>
+          ${stat("New sign-ups", String(newInvited ?? 0))}
+          ${stat("Commissions", `${weekRows.length} · ${usd(weekEarned)}`)}
+          ${stat("Paid learners", String(paidUsers ?? 0))}
+        </tr></table>
+        <table role="presentation" width="100%" style="border-collapse:separate;border-spacing:8px 0;margin-top:8px;"><tr>
+          ${stat("Pending (30-day hold)", usd(pending))}
+          ${stat("Cleared · payable", usd(cleared))}
+        </tr></table>
+        <p style="font-size:14px;line-height:22px;color:#5F5753;margin:16px 0 0;">${tierLine}</p>
+        <p style="font-size:12.5px;line-height:20px;color:#8F8C85;margin:12px 0 0;">Payouts run monthly: cleared balances of $50+ are paid in the first week of each month; smaller balances roll over automatically.</p>`,
+        cta: { label: "Open your partner dashboard", href: `${SITE_URL}/partners` },
+        charles: true,
+      })
+      await sendPartnerEmail({ to: partner.email, subject: `Your Scholify partner week — ${usd(weekEarned)} earned, ${newInvited ?? 0} new sign-ups`, html })
+      sent += 1
+    } catch (error) {
+      failed += 1
+      console.error("partner digest:", partner.id, error)
+    }
+  }
+  res.status(200).json({ ok: true, partners: (partners ?? []).length, sent, failed })
 }
 
 /** Tell an applicant when the founder approves or rejects their application. */

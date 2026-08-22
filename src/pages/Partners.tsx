@@ -455,6 +455,15 @@ export default function Partners() {
                 <Stat reduced={reduced} label="Approved" value={dollarsFromCents(data.totals.approved + data.totals.paid)} format={{ style: "currency", currency: "USD" }} hint="Cleared and payable" />
                 <Stat reduced={reduced} label="Lifetime commission" value={derived.lifetime} format={{ style: "currency", currency: "USD" }} />
               </motion.div>
+              <p style={{ fontSize: 12, color: "var(--sch-tx-2)", lineHeight: 1.55, margin: "12px 2px 0" }}>
+                Payouts run monthly: cleared balances of <b style={{ color: "var(--sch-text)" }}>$50 or more</b> are paid
+                in the first week of each month (bank transfer, Wise or PayPal); smaller balances roll over. You get an
+                email for every new commission, plus a weekly Monday summary. Full terms:{" "}
+                <a href="/partner-agreement.html" target="_blank" rel="noopener" style={{ color: "#C80000", fontWeight: 700 }}>
+                  Partner Agreement
+                </a>
+                .
+              </p>
             </div>
 
             {/* ── Where the money came from ───────────────────────── */}
