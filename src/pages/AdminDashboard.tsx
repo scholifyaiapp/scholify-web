@@ -10,17 +10,23 @@ import { markAffiliateDuePaid, setAffiliateStatus } from "@/lib/affiliate"
 
 type Data = {
   generatedAt: string
-  summary: { users: number; active7d: number; waitlist: number; partners: number; activePartners: number; partnerClicks: number; partnerInvitedUsers: number; partnerPaidInvitedUsers: number; partnerSales: number; revenue: number; feedback: number; newFeedback: number }
+  summary: { users: number; active7d: number; active30d?: number; waitlist: number; partners: number; activePartners: number; partnerClicks: number; partnerInvitedUsers: number; partnerPaidInvitedUsers: number; partnerSales: number; revenue: number; partnerCommission?: number; partnerDueCommission?: number; feedback: number; newFeedback: number }
   users: Array<{ id: string; email?: string; name: string; createdAt: string; lastSignInAt?: string; provider: string; plan: string; firstTaskAt?: string; day3: boolean; day7: boolean; converted: boolean }>
   waitlist: Array<{ id: string; email: string; name: string; source?: string; created_at: string }>
   partners: Array<{ id: string; name: string; email: string; code: string; status: string; clicks: number; invitedUsers: number; paidInvitedUsers: number; conversionRate: number; sales: number; revenue: number; commission: number; dueCommission: number; approvedCommission: number; created_at: string }>
   feedback: Array<{ id: string; name?: string; email: string; category: string; rating?: number; message: string; source: string; page_url?: string; status: string; created_at: string }>
   posthog: { connected: boolean; events: unknown[][]; funnel: unknown[]; error?: string }
+  billing?: { connected: boolean; currency: string; mrrCents: number; activePaid: number; trialing: number; byPlan: Array<{ plan: string; count: number; mrrCents: number }>; gross90dCents: number; refunded90dCents: number; charges90d: number; refunds90d: number; daily: Array<{ day: string; grossCents: number; charges: number }>; error?: string }
+  subscriptionsSummary?: { rows: number; paying: number; trialing: number; canceled: number; byPlan: Record<string, number> }
+  ai?: { totalCalls: number; tokensIn: number; tokensOut: number; users: number; activeUsers7d: number; byAction: Array<{ action: string; calls: number; tokensIn: number; tokensOut: number }>; daily: Array<{ day: string; calls: number; tokensIn: number; tokensOut: number }> }
+  study?: { learners: number; totalAnswered: number; medianAnswered: number; active7d: number; active30d: number; totalXp: number; avgLevel: number; streakTrees: number; reminders: number }
 }
 
 const C = { ink: "#14141A", muted: "#6B6B76", red: "#C80000", gold: "#F4A405", paper: "#FAFAF7" }
 const card = { background: "rgba(255,255,255,.9)", border: "1px solid rgba(20,20,26,.08)", borderRadius: 18, boxShadow: "0 14px 40px rgba(20,20,26,.055)" }
 const money = (cents: number) => new Intl.NumberFormat("en", { style: "currency", currency: "USD" }).format(cents / 100)
+const num = (value: number) => new Intl.NumberFormat("en").format(value)
+const compact = (value: number) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value)
 const date = (value?: string) => value ? new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Never"
 
 export default function AdminDashboard() {
@@ -29,7 +35,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [reviewing, setReviewing] = useState("")
-  const [tab, setTab] = useState<"overview" | "users" | "waitlist" | "partners" | "feedback" | "journeys">("overview")
+  const [tab, setTab] = useState<"overview" | "revenue" | "usage" | "users" | "waitlist" | "partners" | "feedback" | "journeys">("overview")
 
   const load = async () => {
     setLoading(true)
@@ -132,13 +138,15 @@ export default function AdminDashboard() {
         </section>
 
         <nav style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 3, marginBottom: 22 }}>
-          {(["overview", "users", "waitlist", "partners", "feedback", "journeys"] as const).map((item) => <button key={item} onClick={() => setTab(item)} style={{ border: 0, borderRadius: 999, padding: "9px 15px", cursor: "pointer", whiteSpace: "nowrap", textTransform: "capitalize", fontWeight: 800, fontSize: 12, background: tab === item ? C.ink : "#fff", color: tab === item ? "#fff" : C.muted, boxShadow: "0 0 0 1px rgba(20,20,26,.08)" }}>{item}{item === "feedback" && data?.summary.newFeedback ? ` · ${data.summary.newFeedback}` : ""}</button>)}
+          {(["overview", "revenue", "usage", "users", "waitlist", "partners", "feedback", "journeys"] as const).map((item) => <button key={item} onClick={() => setTab(item)} style={{ border: 0, borderRadius: 999, padding: "9px 15px", cursor: "pointer", whiteSpace: "nowrap", textTransform: "capitalize", fontWeight: 800, fontSize: 12, background: tab === item ? C.ink : "#fff", color: tab === item ? "#fff" : C.muted, boxShadow: "0 0 0 1px rgba(20,20,26,.08)" }}>{item}{item === "feedback" && data?.summary.newFeedback ? ` · ${data.summary.newFeedback}` : ""}</button>)}
         </nav>
 
         {loading && <div style={{ ...card, padding: 50, textAlign: "center", color: C.muted }}>Loading founder analytics…</div>}
         {error && <div style={{ ...card, padding: 24, color: C.red }}>{error}</div>}
         {data && !loading && <>
           {tab === "overview" && <Overview data={data} />}
+          {tab === "revenue" && <Revenue data={data} />}
+          {tab === "usage" && <Usage data={data} />}
           {tab === "users" && <Table title="Registered users" columns={["User", "Plan", "Joined", "Last sign-in", "Journey", "Refund"]} rows={data.users.map((u) => [<span><b>{u.name || "Unnamed"}</b><small>{u.email}</small></span>, u.plan, date(u.createdAt), date(u.lastSignInAt), <Journey user={u} />, u.converted || u.plan !== "free" ? <Action label="Full refund" disabled={reviewing === u.id} onClick={() => void refundUser(u.id, u.email)} /> : "—"])} />}
           {tab === "waitlist" && <Table title={`Launch waitlist · ${data.waitlist.length}`} columns={["Contact", "Source", "Joined"]} rows={data.waitlist.map((w) => [<span><b>{w.name}</b><small>{w.email}</small></span>, w.source || "website", date(w.created_at)])} />}
           {tab === "partners" && <PartnerTable partners={data.partners} reviewing={reviewing} onReview={reviewPartner} onMarkPaid={markDuePaid} />}
@@ -165,8 +173,55 @@ function FeedbackInbox({ feedback, onStatus }: { feedback: Data["feedback"]; onS
 }
 
 function Overview({ data }: { data: Data }) {
-  const stats = [[Users, "Registered users", data.summary.users], [Activity, "Active · 7 days", data.summary.active7d], [Clock3, "Launch waitlist", data.summary.waitlist], [UserRoundCheck, "Active partners", data.summary.activePartners], [BarChart3, "Partner clicks", data.summary.partnerClicks], [Users, "Partner invited users", data.summary.partnerInvitedUsers], [CheckCircle2, "Paid invited users", data.summary.partnerPaidInvitedUsers], [Activity, "New feedback", data.summary.newFeedback]]
+  const stats = [[Users, "Registered users", data.summary.users], [Activity, "Active · 7 days", data.summary.active7d], [Activity, "Active · 30 days", data.summary.active30d ?? "—"], [BarChart3, "MRR · live Stripe", money(data.billing?.mrrCents || 0)], [CheckCircle2, "Gross · 90 days", money(data.billing?.gross90dCents || 0)], [Clock3, "Launch waitlist", data.summary.waitlist], [UserRoundCheck, "Active partners", data.summary.activePartners], [BarChart3, "Partner clicks", data.summary.partnerClicks], [Users, "Partner invited users", data.summary.partnerInvitedUsers], [CheckCircle2, "Paid invited users", data.summary.partnerPaidInvitedUsers], [Users, "AI learners · 7 days", data.ai?.activeUsers7d ?? 0], [Activity, "New feedback", data.summary.newFeedback]]
   return <><div className="admin-grid">{stats.map(([Icon, label, value]) => { const I = Icon as typeof Users; return <div key={String(label)} style={{ ...card, padding: 18 }}><I size={18} color={C.red} /><div style={{ fontSize: 25, fontWeight: 900, marginTop: 15 }}>{String(value)}</div><div style={{ color: C.muted, fontSize: 11, marginTop: 4 }}>{String(label)}</div></div> })}</div><div style={{ ...card, padding: 20, marginTop: 16 }}><b>Data status</b><p style={{ color: C.muted, fontSize: 13, lineHeight: 1.6, marginBottom: 0 }}>Supabase account, waitlist and partner records are live. {data.posthog?.connected ? "PostHog’s private query API is connected and reporting the last 30 days." : "Add POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID in Vercel to display live event funnels and journeys here."}</p></div></>
+}
+
+function MiniBars({ title, points, format }: { title: string; points: Array<{ day: string; value: number; hint?: string }>; format: (value: number) => string }) {
+  const max = Math.max(...points.map((point) => point.value), 1)
+  const total = points.reduce((sum, point) => sum + point.value, 0)
+  return <section style={{ ...card, padding: 22 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 16 }}><b>{title}</b><b style={{ color: C.red }}>{format(total)}</b></div>
+    {points.length ? <>
+      <div style={{ display: "flex", gap: 2, height: 120, borderBottom: "1px solid rgba(20,20,26,.1)" }}>
+        {points.map((point) => <div key={point.day} title={`${point.day} · ${format(point.value)}${point.hint ? ` · ${point.hint}` : ""}`} style={{ flex: 1, minWidth: 2, display: "flex", alignItems: "flex-end" }}><div style={{ width: "100%", height: `${(point.value / max) * 100}%`, background: C.red, borderRadius: "3px 3px 0 0" }} /></div>)}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", color: C.muted, fontSize: 10, marginTop: 6 }}><span>{points[0].day}</span><span>peak {format(max)}</span><span>{points[points.length - 1].day}</span></div>
+    </> : <div style={{ color: C.muted, fontSize: 13 }}>No activity recorded yet.</div>}
+  </section>
+}
+
+function StatGrid({ stats }: { stats: Array<[typeof Users, string, string | number]> }) {
+  return <div className="admin-grid">{stats.map(([Icon, label, value]) => <div key={label} style={{ ...card, padding: 18 }}><Icon size={18} color={C.red} /><div style={{ fontSize: 25, fontWeight: 900, marginTop: 15 }}>{String(value)}</div><div style={{ color: C.muted, fontSize: 11, marginTop: 4 }}>{label}</div></div>)}</div>
+}
+
+function Revenue({ data }: { data: Data }) {
+  const billing = data.billing
+  const subs = data.subscriptionsSummary
+  if (!billing?.connected) return <div style={{ ...card, padding: 36, color: C.muted, lineHeight: 1.65 }}>Live Stripe reporting is not connected yet. {billing?.error ? `Stripe answered: ${billing.error}.` : "Add STRIPE_SECRET_KEY in Vercel and this tab fills itself with live MRR, subscriptions and 90-day revenue."}</div>
+  const avgCharge = billing.charges90d ? Math.round(billing.gross90dCents / billing.charges90d) : 0
+  const stats: Array<[typeof Users, string, string | number]> = [[BarChart3, "MRR · live Stripe", money(billing.mrrCents)], [CheckCircle2, "Paying subscriptions", num(billing.activePaid)], [Clock3, "Trialing now", num(billing.trialing)], [BarChart3, "Gross · 90 days", money(billing.gross90dCents)], [Activity, "Refunded · 90 days", money(billing.refunded90dCents)], [CheckCircle2, "Charges · 90 days", num(billing.charges90d)], [Activity, "Refunds · 90 days", num(billing.refunds90d)], [BarChart3, "Average charge", money(avgCharge)]]
+  return <div style={{ display: "grid", gap: 16 }}>
+    <StatGrid stats={stats} />
+    <MiniBars title="Daily gross revenue · 90 days" points={billing.daily.map((day) => ({ day: day.day, value: day.grossCents, hint: `${day.charges} charge${day.charges === 1 ? "" : "s"}` }))} format={money} />
+    <Table title="Live subscriptions by plan" columns={["Plan", "Subscribers", "MRR / month"]} rows={billing.byPlan.map((plan) => [<b>{plan.plan}</b>, num(plan.count), money(plan.mrrCents)])} />
+    <div style={{ ...card, padding: 20 }}><b>Database cross-check</b><p style={{ color: C.muted, fontSize: 13, lineHeight: 1.65, margin: "10px 0 0" }}>Webhook-written subscription rows: {num(subs?.rows || 0)} total · {num(subs?.paying || 0)} paying · {num(subs?.trialing || 0)} trialing · {num(subs?.canceled || 0)} canceled. By plan: {Object.entries(subs?.byPlan || {}).map(([plan, count]) => `${plan} ${count}`).join(" · ") || "none yet"}. If these drift from the live Stripe numbers above, a webhook was missed — check the Stripe event log.</p></div>
+    <div style={{ ...card, padding: 20 }}><b>Partner economics</b><p style={{ color: C.muted, fontSize: 13, lineHeight: 1.65, margin: "10px 0 0" }}>Partner-attributed revenue {money(data.summary.revenue)} · commission earned {money(data.summary.partnerCommission || 0)} · matured and due for payout now {money(data.summary.partnerDueCommission || 0)}. Record payouts from the partners tab once the transfer has actually been sent.</p></div>
+  </div>
+}
+
+function Usage({ data }: { data: Data }) {
+  const ai = data.ai
+  const study = data.study
+  const aiStats: Array<[typeof Users, string, string | number]> = [[Activity, "AI calls · all time", num(ai?.totalCalls || 0)], [Users, "Learners who used AI", num(ai?.users || 0)], [UserRoundCheck, "AI active · 7 days", num(ai?.activeUsers7d || 0)], [BarChart3, "Tokens in", compact(ai?.tokensIn || 0)], [BarChart3, "Tokens out", compact(ai?.tokensOut || 0)], [Activity, "Tokens out / call", compact(ai?.totalCalls ? Math.round((ai.tokensOut || 0) / ai.totalCalls) : 0)]]
+  const studyStats: Array<[typeof Users, string, string | number]> = [[Users, "Learners with progress", num(study?.learners || 0)], [CheckCircle2, "Questions answered", num(study?.totalAnswered || 0)], [BarChart3, "Median per learner", num(study?.medianAnswered || 0)], [Activity, "Studying · 7 days", num(study?.active7d || 0)], [Activity, "Studying · 30 days", num(study?.active30d || 0)], [BarChart3, "Total XP earned", compact(study?.totalXp || 0)], [CheckCircle2, "Streak trees grown", num(study?.streakTrees || 0)], [Clock3, "Study reminders set", num(study?.reminders || 0)]]
+  return <div style={{ display: "grid", gap: 16 }}>
+    <StatGrid stats={aiStats} />
+    <MiniBars title="Daily AI calls · 30 days" points={(ai?.daily || []).map((day) => ({ day: day.day, value: day.calls, hint: `${compact(day.tokensIn)} in / ${compact(day.tokensOut)} out` }))} format={num} />
+    <Table title="AI usage by action" columns={["Action", "Calls", "Tokens in", "Tokens out"]} rows={(ai?.byAction || []).map((action) => [<b>{action.action}</b>, num(action.calls), compact(action.tokensIn), compact(action.tokensOut)])} />
+    <div style={{ fontWeight: 850, margin: "6px 0 -4px" }}>Study engagement</div>
+    <StatGrid stats={studyStats} />
+  </div>
 }
 
 function Journeys({ data, funnel }: { data: Data; funnel: Array<{ label: string; value: number }> }) {
